@@ -20,7 +20,6 @@ function measureSingleUrlLatency (url, experiment = 0) {
     `___e=${experiment || 0}&___r=${Math.floor(Math.random() * 1000000)}`;
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
-    xhr.withCredentials = true;
     xhr.timeout = 2000;
     xhr.onload = () => {
       if (performance !== undefined) {
