@@ -1392,7 +1392,7 @@ class Logs extends localization.LocalizedReactComponent {
                       <MultizoneUrl
                         configuration={url}
                         style={{display: 'inline-flex'}}
-                        dropDownIconStyle={{marginTop: 2}}
+                        dropDownIconStyle={{marginTop: 5}}
                       >
                         {name}
                       </MultizoneUrl>
@@ -1756,14 +1756,26 @@ class Logs extends localization.LocalizedReactComponent {
 
       if (this.sshEnabled) {
         SSHButton = (
-          <MultizoneUrl configuration={this.props.runSSH.value}>
+          <MultizoneUrl
+            configuration={this.props.runSSH.value}
+            dropDownIconStyle={{
+              paddingLeft: 4,
+              marginLeft: -2
+            }}
+          >
             SSH
           </MultizoneUrl>
         );
       }
       if (this.fsBrowserEnabled) {
         FSBrowserButton = (
-          <MultizoneUrl configuration={this.props.runFSBrowser.value}>
+          <MultizoneUrl
+            configuration={this.props.runFSBrowser.value}
+            dropDownIconStyle={{
+              paddingLeft: 4,
+              marginLeft: -2
+            }}
+          >
             BROWSE
           </MultizoneUrl>
         );

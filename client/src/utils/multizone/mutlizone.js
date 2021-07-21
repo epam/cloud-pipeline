@@ -41,6 +41,7 @@ function getDefaultServiceUrl (regionServiceUrl) {
 class Mutlizone {
   @observable _defaultRegion;
   @observable _latencies = {};
+  _checkRegions = {};
 
   constructor (defaultRegion) {
     this._defaultRegion = defaultRegion;
@@ -108,16 +109,18 @@ class Mutlizone {
     const result = {...this._latencies};
     const configurations = Object.entries(urlConfiguration)
       .map(([region, url]) => ({region, url}))
-      .filter(({region}) => recalculate || !result.hasOwnProperty(region));
-    const regionsToCheck = [...new Set(configurations.map(configuration => configuration.region))];
+      .filter(({region}) => recalculate ||
+        !result.hasOwnProperty(region) ||
+        result[region] === Infinity
+      );
+    const regionsToCheck = [...new Set(configurations.map(configuration => configuration.region))]
+      .filter(region => !this._checkRegions[region]);
     if (regionsToCheck.length === 0) {
       return Promise.resolve(this.defaultRegion);
     }
-    if (!recalculate) {
-      regionsToCheck.forEach(region => {
-        this._latencies[region] = Infinity;
-      });
-    }
+    regionsToCheck.forEach(region => {
+      this._checkRegions[region] = true;
+    });
     const check = regionsToCheck
       .map(region => configurations.find(configuration => configuration.region === region))
       .filter(Boolean);
@@ -126,10 +129,16 @@ class Mutlizone {
         check.map(({region, url}) => getRegionLatency(region, url))
       )
         .then(latencies => {
+          let changed = false;
           latencies.forEach(({region, latency}) => {
-            result[region] = latency;
+            if (result[region] !== latency) {
+              result[region] = latency;
+              changed = true;
+            }
           });
-          this._latencies = result;
+          if (changed) {
+            this._latencies = result;
+          }
           const ms = value => value === Infinity ? '---' : (`${Math.round(value * 100) / 100.0}ms`);
           console.info(
             'Multi-zone latency check:',
@@ -141,6 +150,11 @@ class Mutlizone {
         })
         .then(() => {
           resolve(this.defaultRegion);
+        })
+        .then(() => {
+          regionsToCheck.forEach(region => {
+            delete this._checkRegions[region];
+          });
         });
     });
   }
@@ -151,7 +165,10 @@ class Mutlizone {
       .entries(this._latencies)
       .map(([region, latency]) => ({region, latency: Number(latency)}))
       .sort((latencyA, latencyB) => latencyA.latency - latencyB.latency);
-    this._defaultRegion = latencies.length > 0 ? latencies[0].region : undefined;
+    const defaultRegion = latencies.length > 0 ? latencies[0].region : undefined;
+    if (defaultRegion !== this._defaultRegion) {
+      this._defaultRegion = defaultRegion;
+    }
   }
 
   getDefaultRegion (...regions) {
