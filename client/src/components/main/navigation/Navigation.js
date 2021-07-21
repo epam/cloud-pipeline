@@ -16,6 +16,8 @@
 
 import React from 'react';
 import {Link} from 'react-router';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import {SERVER, VERSION} from '../../../config';
 import {Button, Icon, message, Popover, Row, Tooltip} from 'antd';
 import styles from './Navigation.css';
@@ -26,6 +28,8 @@ import SupportMenuItem from './SupportMenuItem';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 
+@inject('uiNavigation')
+@observer
 export default class Navigation extends React.Component {
   static propTypes = {
     router: PropTypes.object,
@@ -44,98 +48,15 @@ export default class Navigation extends React.Component {
     supportModalVisible: false
   };
 
-  navigationItems = [
-    {
-      title: 'Home',
-      icon: 'home',
-      path: '/',
-      key: 'home',
-      keys: ['home', ''],
-      isDefault: false,
-      isLink: true
-    },
-    {
-      title: 'Library',
-      icon: 'fork',
-      path: '/library',
-      key: 'pipelines',
-      isDefault: true,
-      isLink: true
-    },
-    {
-      title: 'Cluster state',
-      icon: 'bars',
-      path: '/cluster',
-      key: 'cluster',
-      isDefault: false,
-      isLink: true
-    },
-    {
-      title: 'Tools',
-      icon: 'tool',
-      path: '/tools',
-      key: 'tools',
-      keys: ['tools', 'tool'],
-      isDefault: false,
-      isLink: true
-    },
-    {
-      title: 'Runs',
-      icon: 'play-circle',
-      path: '/runs',
-      key: 'runs',
-      isDefault: false,
-      isLink: true
-    },
-    {
-      title: 'Settings',
-      icon: 'setting',
-      path: '/settings',
-      key: 'settings',
-      keys: [
-        'settings',
-        'cli',
-        'events',
-        'user',
-        'email',
-        'preferences',
-        'regions',
-        'logs',
-        'dictionaries'
-      ],
-      isDefault: false,
-      isLink: true
-    },
-    {
-      title: 'Search',
-      icon: 'search',
-      path: '/search/advanced',
-      key: 'search',
-      isDefault: false
-    },
-    {
-      title: 'Billing',
-      icon: 'area-chart',
-      path: '/billing',
-      key: 'billing',
-      isDefault: false,
-      isLink: true
-    },
-    {
-      key: 'divider',
-      isDivider: true
-    },
-    {
-      title: 'Log out',
-      icon: 'poweroff',
-      path: '/logout',
-      key: 'logout',
-      isDefault: false
-    }
-  ];
+  @computed
+  get navigationItems () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.navigationItems
+      .filter(item => !item.hidden);
+  }
 
   menuItemClassSelector = (navigationItem, activeItem) => {
-    if (navigationItem.key.toLowerCase() === activeItem.toLowerCase()) {
+    if (navigationItem.key === activeItem) {
       return styles.navigationMenuItemSelected;
     } else {
       return styles.navigationMenuItem;
@@ -143,7 +64,7 @@ export default class Navigation extends React.Component {
   };
 
   highlightedMenuItemClassSelector = (navigationItem, activeItem) => {
-    if (navigationItem.key.toLowerCase() === activeItem.toLowerCase()) {
+    if (navigationItem.key === activeItem) {
       return styles.highlightedNavigationMenuItemSelected;
     } else {
       return styles.highlightedNavigationMenuItem;
@@ -186,20 +107,7 @@ export default class Navigation extends React.Component {
   }
 
   render () {
-    let activeTabPath = this.props.activeTabPath || '';
-    const [navigationItem] = this.navigationItems.filter(
-      item => item.key.toLowerCase() === activeTabPath || (item.keys && item.keys.indexOf(activeTabPath) >= 0)
-    );
-    if (navigationItem) {
-      activeTabPath = navigationItem.key;
-    }
-    if (!navigationItem && activeTabPath.toLowerCase() !== 'run' &&
-      activeTabPath.toLowerCase() !== 'launch') {
-      const activeTab = this.navigationItems.filter(item => item.isDefault)[0];
-      if (activeTab) {
-        activeTabPath = activeTab.key;
-      }
-    }
+    const {activeTabPath} = this.props;
     const menuItems = this.navigationItems.map((navigationItem, index) => {
       if (navigationItem.isDivider) {
         return <div
