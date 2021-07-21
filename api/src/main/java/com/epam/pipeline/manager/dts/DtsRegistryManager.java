@@ -53,6 +53,7 @@ public class DtsRegistryManager {
 
     /**
      * Loads all existing {@link DtsRegistry}s.
+     *
      * @return list of existing {@link DtsRegistry}s
      */
     public List<DtsRegistry> loadAll() {
@@ -69,6 +70,7 @@ public class DtsRegistryManager {
 
     /**
      * Loads {@link DtsRegistry} specified by ID.
+     *
      * @param registryId a {@link DtsRegistry} ID
      * @return existing {@link DtsRegistry} or error if required registry does not exist.
      */
@@ -79,6 +81,7 @@ public class DtsRegistryManager {
 
     /**
      * Loads {@link DtsRegistry} specified by name.
+     *
      * @param registryName a {@link DtsRegistry} name
      * @return existing {@link DtsRegistry} or error if required registry does not exist.
      */
@@ -92,6 +95,7 @@ public class DtsRegistryManager {
 
     /**
      * Creates a new {@link DtsRegistry}.
+     *
      * @param dtsRegistryVO a {@link DtsRegistryVO} to create
      * @return created {@link DtsRegistry}
      */
@@ -105,8 +109,10 @@ public class DtsRegistryManager {
     }
 
     /**
-     * Updates a {@link DtsRegistry} specified by ID. If required {@link DtsRegistry} does not exist an error will be
-     * thrown.
+     * Updates a {@link DtsRegistry} specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID to update
      * @param dtsRegistryVO a {@link DtsRegistryVO} to update
      * @return updated {@link DtsRegistry}
@@ -123,8 +129,10 @@ public class DtsRegistryManager {
     }
 
     /**
-     * Updates a {@link DtsRegistry} heartbeat specified by ID. If required {@link DtsRegistry} does not exist an error will be
-     * thrown.
+     * Updates a {@link DtsRegistry} heartbeat specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID to update heartbeat
      * @return updated {@link DtsRegistry}
      */
@@ -138,8 +146,10 @@ public class DtsRegistryManager {
     }
 
     /**
-     * Updates a {@link DtsRegistry} status specified by ID. If required {@link DtsRegistry} does not exist an error will be
-     * thrown.
+     * Updates a {@link DtsRegistry} status specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID to update heartbeat
      * @param status a {@link DtsRegistry} status to set
      * @return updated {@link DtsRegistry}
@@ -153,8 +163,10 @@ public class DtsRegistryManager {
     }
 
     /**
-     * Deletes a {@link DtsRegistry} specified by ID. If required {@link DtsRegistry} does not exist an error will be
-     * thrown.
+     * Deletes a {@link DtsRegistry} specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID to delete
      * @return deleted {@link DtsRegistry}
      */
@@ -168,7 +180,9 @@ public class DtsRegistryManager {
 
     /**
      * Creates new or updates existing preferences in a {@link DtsRegistry} specified by ID or name.
+     *
      * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID or name of a registry to update
      * @param preferencesVO preferences, that need to be set for a registry
      * @return updated {@link DtsRegistry}
@@ -186,8 +200,10 @@ public class DtsRegistryManager {
 
     /**
      * Removes preferences in a {@link DtsRegistry} specified by ID or name.
+     *
      * If required {@link DtsRegistry} does not exist an error will be thrown.
      * If any key specified for removal, is not presented in a registry's preferences, an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID or name of a registry to update
      * @param preferencesVO list of keys indicating which preferences need to be removed from a registry
      * @return updated {@link DtsRegistry}

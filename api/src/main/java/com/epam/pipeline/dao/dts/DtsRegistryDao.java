@@ -69,7 +69,8 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     private String updateDtsRegistryStatusQuery;
 
     public List<DtsRegistry> loadAll() {
-        return ListUtils.emptyIfNull(getJdbcTemplate().query(loadAllDtsRegistriesQuery, DtsRegistryParameters.getRowMapper()));
+        return ListUtils.emptyIfNull(getJdbcTemplate().query(loadAllDtsRegistriesQuery,
+                DtsRegistryParameters.getRowMapper()));
     }
 
     public Optional<DtsRegistry> loadById(Long registryId) {
