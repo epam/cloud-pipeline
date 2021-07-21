@@ -155,7 +155,7 @@ class WsiFileTagProcessor:
         metadata = self.xml_info_tree.find(SCHEMA_PREFIX + 'StructuredAnnotations')
         if not metadata:
             self.log_processing_info('No metadata found for file, skipping tags processing...')
-
+            return 0
         tags_to_push = self.extract_matching_tags_from_metadata(metadata.findall(SCHEMA_PREFIX + 'XMLAnnotation'),
                                                                 tags_mapping)
         if not tags_to_push:
@@ -310,8 +310,11 @@ class WsiFileParser:
     def process_file(self):
         self.log_processing_info('Start processing')
         if self.tags_mapping_rules:
-            if WsiFileTagProcessor(self.file_path, self.xml_info_tree, self.tags_mapping_rules).process_tags() != 0:
-                self.log_processing_info('Some errors occurred during file tagging')
+            try:
+                if WsiFileTagProcessor(self.file_path, self.xml_info_tree, self.tags_mapping_rules).process_tags() != 0:
+                    self.log_processing_info('Some errors occurred during file tagging')
+            except Exception as e:
+                log_info('An error occurred during tags processing: {}'.format(str(e)))
         target_series = self.calculate_target_series()
         if target_series is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation ')
