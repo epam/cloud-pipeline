@@ -98,7 +98,7 @@ public class DtsRegistryController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) Long registryId,
+    public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) String registryId,
                                                  @RequestBody DtsRegistryVO dtsRegistryVO) {
         return Result.success(dtsRegistryApiService.update(registryId, dtsRegistryVO));
     }
@@ -125,7 +125,7 @@ public class DtsRegistryController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) Long registryId) {
+    public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) String registryId) {
         return Result.success(dtsRegistryApiService.delete(registryId));
     }
 

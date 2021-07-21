@@ -118,14 +118,13 @@ public class DtsRegistryManager {
      * @return updated {@link DtsRegistry}
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public DtsRegistry update(Long registryId, DtsRegistryVO dtsRegistryVO) {
-        validateDtsRegistryId(registryId);
+    public DtsRegistry update(final String registryId, final DtsRegistryVO dtsRegistryVO) {
+        final DtsRegistry originalDtsRegistry = loadByNameOrId(registryId);
         validateDtsRegistryVO(dtsRegistryVO);
-        loadOrThrow(registryId);
-        DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
-        dtsRegistry.setId(registryId);
+        final DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
+        dtsRegistry.setId(originalDtsRegistry.getId());
         dtsRegistryDao.update(dtsRegistry);
-        return dtsRegistry;
+        return loadById(dtsRegistry.getId());
     }
 
     /**
@@ -171,10 +170,9 @@ public class DtsRegistryManager {
      * @return deleted {@link DtsRegistry}
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public DtsRegistry delete(Long registryId) {
-        validateDtsRegistryId(registryId);
-        DtsRegistry dtsRegistry = loadOrThrow(registryId);
-        dtsRegistryDao.delete(registryId);
+    public DtsRegistry delete(final String registryId) {
+        final DtsRegistry dtsRegistry = loadByNameOrId(registryId);
+        dtsRegistryDao.delete(dtsRegistry.getId());
         return dtsRegistry;
     }
 
