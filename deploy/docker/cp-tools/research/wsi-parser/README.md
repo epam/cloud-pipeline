@@ -11,3 +11,4 @@
 - `WSI_PARSING_TAG_MAPPING` - comma-separated list, containing mapping between the metadata tags in a processed file and system dictionaries
 > tag1=cp_system_dictionary_name_1;...;tagN=cp_system_dictionary_name_N
 - `WSI_PARSING_CONVERSION_LIMIT` - an area limit in pixels on a chunk processing during conversion to PNG
+- `WSI_PARSING_THREADS` - number of threads, that will be used for file processing (single-thread processing is the default)

@@ -14,6 +14,7 @@
 
 import json
 import os
+import multiprocessing
 import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
@@ -314,13 +315,14 @@ class WsiFileParser:
         target_series = self.calculate_target_series()
         if target_series is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation ')
-            return
+            return 1
         self.log_processing_info('Series #{} selected for DZ creation'.format(target_series))
         conversion_result = os.system('bash {} {} {} {}'.format(self._DEEP_ZOOM_CREATION_SCRIPT, self.file_path,
                                                                 self.xml_info_file, target_series))
         if conversion_result == 0:
             self.update_stat_file()
             self.log_processing_info('File processing is finished')
+        return conversion_result
 
 
 def log_success(message):
@@ -329,6 +331,13 @@ def log_success(message):
 
 def log_info(message, status=TaskStatus.RUNNING):
     Logger.log_task_event(WSI_PROCESSING_TASK_NAME, message, status)
+
+
+def try_process_file(file_path):
+    try:
+        return WsiFileParser(file_path, os.getenv('WSI_PARSING_TAG_MAPPING', '')).process_file()
+    except Exception as e:
+        log_info('An error occurred during [{}] parsing: {}'.format(file_path, str(e)))
 
 
 def process_wsi_files():
@@ -344,11 +353,18 @@ def process_wsi_files():
         log_success('Found no files requires processing in the target directories.')
         exit(0)
     log_info('Found {} files for processing.'.format(len(paths_to_wsi_files)))
-    for file_path in paths_to_wsi_files:
-        try:
-            WsiFileParser(file_path, os.getenv('WSI_PARSING_TAG_MAPPING', '')).process_file()
-        except Exception as e:
-            log_info('An error occurred during [{}] parsing: {}'.format(file_path, str(e)))
+    processing_threads = int(os.getenv('WSI_PARSING_THREADS', 1))
+    if processing_threads < 1:
+        log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
+                 .format(processing_threads))
+        processing_threads = 1
+    log_info('{} threads enabled for WSI processing'.format(processing_threads))
+    if processing_threads == 1:
+        for file_path in paths_to_wsi_files:
+            try_process_file(file_path)
+    else:
+        pool = multiprocessing.Pool(processing_threads)
+        pool.map(try_process_file, paths_to_wsi_files)
     log_success('Finished WSI files processing')
     exit(0)
 
