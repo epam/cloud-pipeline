@@ -68,9 +68,21 @@ class WsiParsingUtils:
         return WsiParsingUtils._get_service_file_name(file_path, 'wsiparser')
 
     @staticmethod
-    def _get_service_file_name(file_path, suffix):
+    def get_service_directory(file_path):
         name_without_extension = WsiParsingUtils.get_basename_without_extension(file_path)
         parent_dir = os.path.dirname(file_path)
+        return os.path.join(parent_dir, '.{}-wsiparser'.format(name_without_extension))
+
+    @staticmethod
+    def create_service_dir_if_not_exist(file_path):
+        directory = WsiParsingUtils.get_service_directory(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+    @staticmethod
+    def _get_service_file_name(file_path, suffix):
+        name_without_extension = WsiParsingUtils.get_basename_without_extension(file_path)
+        parent_dir = WsiParsingUtils.get_service_directory(file_path)
         parser_flag_file = '.{}.{}'.format(name_without_extension, suffix)
         return os.path.join(parent_dir, parser_flag_file)
 
@@ -262,16 +274,22 @@ class WsiFileParser:
         self.file_path = file_path
         self.tags_mapping_rules = tags_mapping_rules.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules else None
         self.log_processing_info('Generating XML description')
-        self.xml_info_file = WsiParsingUtils.get_file_without_extension(self.file_path) + '_info.xml'
-        os.system('showinf -nopix -omexml-only {} > {}'.format(self.file_path, self.xml_info_file))
+        self.xml_info_file = os.path.join(WsiParsingUtils.get_service_directory(file_path),
+                                          WsiParsingUtils.get_basename_without_extension(self.file_path) + '_info.xml')
+        self.generate_xml_info_file()
         self.xml_info_tree = ET.parse(self.xml_info_file).getroot()
         self.stat_file_name = WsiParsingUtils.get_stat_file_name(self.file_path)
         self.tmp_stat_file_name = WsiParsingUtils.get_stat_active_file_name(self.file_path)
+
+    def generate_xml_info_file(self):
+        WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
+        os.system('showinf -nopix -omexml-only {} > {}'.format(self.file_path, self.xml_info_file))
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
 
     def create_tmp_stat_file(self):
+        WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
         self._write_processing_stats_to_file(self.tmp_stat_file_name)
 
     def clear_tmp_stat_file(self):
@@ -279,6 +297,7 @@ class WsiFileParser:
             os.remove(self.tmp_stat_file_name)
 
     def update_stat_file(self):
+        WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
         self._write_processing_stats_to_file(self.stat_file_name)
 
     def _write_processing_stats_to_file(self, file_path):
@@ -346,8 +365,11 @@ class WsiFileParser:
             self.log_processing_info('Unable to determine target series, skipping DZ creation ')
             return 1
         self.log_processing_info('Series #{} selected for DZ creation'.format(target_series))
-        conversion_result = os.system('bash {} {} {} {}'.format(self._DEEP_ZOOM_CREATION_SCRIPT, self.file_path,
-                                                                self.xml_info_file, target_series))
+        conversion_result = os.system('bash {} {} {} {} {} {}'.format(self._DEEP_ZOOM_CREATION_SCRIPT, self.file_path,
+                                                                      self.xml_info_file, target_series,
+                                                                      os.path.dirname(self.file_path),
+                                                                      WsiParsingUtils.get_service_directory(
+                                                                          self.file_path)))
         if conversion_result == 0:
             self.update_stat_file()
             self.log_processing_info('File processing is finished')
