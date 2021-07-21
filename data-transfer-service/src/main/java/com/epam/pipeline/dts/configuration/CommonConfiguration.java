@@ -71,8 +71,8 @@ public class CommonConfiguration {
     public CloudPipelineAPIClient apiClient(final @Value("${dts.api.url}") String apiUrl,
                                             final @Value("${dts.api.token}") String apiToken,
                                             final @Value("${dts.api.timeout.seconds}") int apiTimeoutInSeconds) {
-        return CloudPipelineAPIClient.from(new CloudPipelineApiBuilder(apiTimeoutInSeconds, apiTimeoutInSeconds, apiUrl, apiToken)
-                .buildClient());
+        return CloudPipelineAPIClient.from(new CloudPipelineApiBuilder(apiTimeoutInSeconds, apiTimeoutInSeconds,
+                apiUrl, apiToken).buildClient());
     }
 
     @Bean

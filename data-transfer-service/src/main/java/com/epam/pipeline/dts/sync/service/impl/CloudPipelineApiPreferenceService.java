@@ -66,7 +66,8 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
 
     @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
     public void synchronizePreferences() {
-        final Map<String, String> updatedPreferences = apiClient.findDtsRegistryByNameOrId(identificationService.getId())
+        final Map<String, String> updatedPreferences = Optional.of(identificationService.getId())
+            .flatMap(apiClient::findDtsRegistryByNameOrId)
             .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
         log.warn("Following preferences received during sync iteration: {}", updatedPreferences.toString());
