@@ -58,13 +58,19 @@ import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
+import UINavigation from '../../utils/ui-navigation';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
-const issuesRenderer = new IssuesRenderer(pipelinesLibrary, dockerRegistries, preferences, hiddenObjects);
+const issuesRenderer = new IssuesRenderer(
+  pipelinesLibrary,
+  dockerRegistries,
+  preferences,
+  hiddenObjects
+);
 const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
@@ -84,6 +90,8 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
+
+const uiNavigation = new UINavigation(authenticatedUserInfo);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -141,7 +149,8 @@ const Root = () =>
       systemDictionaries,
       userMetadataKeys,
       cloudCredentialProfiles,
-      [HiddenObjects.injectionName]: hiddenObjects
+      [HiddenObjects.injectionName]: hiddenObjects,
+      uiNavigation
     }}>
     <AppRouter />
   </Provider>;
