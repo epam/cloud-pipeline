@@ -128,7 +128,7 @@ class WsiProcessingFileGenerator:
         if not os.path.isfile(stat_file):
             return True
         active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
-        if os.path.isfile(active_stat_file):
+        if os.path.exists(active_stat_file):
             return False
         with open(stat_file) as last_sync_stats:
             json_stats = json.load(last_sync_stats)

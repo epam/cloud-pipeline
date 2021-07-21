@@ -129,6 +129,7 @@ if [ $? -ne 0 ]; then
     log_warn "Errors during deep zoom generation, exiting..."
     exit 1
 fi
+log_info "Moving DZ to the final location..."
 mv -f "$dz_tmp/" "$_TILES_PARENT_DIR/$_FILE_BASENAME.tiles"
 log_info "Deep zoom is generated successfully!"
 
