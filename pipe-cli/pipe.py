@@ -1730,7 +1730,8 @@ def import_users(file_path, create_user, create_group, create_metadata):
 
 @cli.group()
 def dts():
-    """ Data-transfer-service commands
+    """
+    Data transfer service commands
     """
     pass
 
@@ -1749,7 +1750,18 @@ def dts():
 @stacktracing
 def create_dts(url, name, schedulable, prefix, preference, json_out, trace):
     """
-    Registers a DTS
+    Registers new data transfer service.
+
+    Examples:
+
+    I.  Registers data transfer service which can be used for input / output data transferring in runs.
+
+        pipe dts create -n "dtsname" -u "https://exampledtsurl/restapi" -p "/path/prefix/to/example/dts/local/paths"
+
+    II. Registers data transfer service which can be used for autonomous local data synchronisation.
+
+        pipe dts create -n "autonomousdtshostname" -u "autonomousdtshostname" -p "autonomousdtshostname"
+
     """
     DtsOperationsManager().create(url, name, schedulable, prefix, preference, json_out)
 
@@ -1762,14 +1774,54 @@ def create_dts(url, name, schedulable, prefix, preference, json_out, trace):
 @stacktracing
 def list_dts(registry_name_or_id, json_out, trace):
     """
-    Shows details of all DTS registries or the one for ID specified
+    Either shows details of a data transfer service or lists all data transfer services.
+
+    Examples:
+
+    I.  List all data transfer services.
+
+        pipe dts list
+
+    II. Show details of a single data transfer service with some name (dtsname).
+
+        pipe dts list dtsname
+
+    II. Show details of a single data transfer service with some id (123).
+
+        pipe dts list 123
+
     """
     DtsOperationsManager().list(registry_name_or_id, json_out)
 
 
+@dts.command(name='delete')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def create_dts(registry_name_or_id, json_out, trace):
+    """
+    Deletes data transfer service.
+
+    Examples:
+
+    I.  Deletes data transfer service with some name (dtsname).
+
+        pipe dts delete dtsname
+
+    II. Deletes data transfer service with some id (123).
+
+        pipe dts delete 123
+
+    """
+    DtsOperationsManager().delete(registry_name_or_id, json_out)
+
+
 @dts.group()
 def preferences():
-    """ Commands for DTS preferences management
+    """
+    Commands for data transfer service preferences management
     """
     pass
 
@@ -1784,7 +1836,22 @@ def preferences():
 @stacktracing
 def update_dts_preferences(registry_name_or_id, preference, json_out, trace):
     """
-    Updates preferences for the given DTS
+    Updates existing preferences or adds new preferences for the given data transfer service.
+
+    Examples:
+
+    I.   Adds single preference for a data transfer service with some name (dtsname).
+
+        pipe dts preferences update dtsname -p key=value
+
+    II.  Adds multiple preferences for a data transfer service with some name (dtsname).
+
+        pipe dts preferences update dtsname -p key1=value1 -p key2=value2
+
+    III. Adds a single preference for a data transfer service with some id (123).
+
+        pipe dts preferences update 123 -p key=value
+
     """
     DtsOperationsManager().upsert_preferences(registry_name_or_id, preference, json_out)
 
@@ -1799,7 +1866,22 @@ def update_dts_preferences(registry_name_or_id, preference, json_out, trace):
 @stacktracing
 def delete_dts_preferences(registry_name_or_id, key, json_out, trace):
     """
-    Removes preferences for specified keys from the given DTS
+    Deletes preferences for the given data transfer service.
+
+    Examples:
+
+    I.   Deletes a single preference (key) from a data transfer service with some name (dtsname).
+
+        pipe dts preferences delete dtsname -k key
+
+    II.  Deletes multiple preferences (key1, key2) from a data transfer service with some name (dtsname).
+
+        pipe dts preferences delete dtsname -k key1 -k key2
+
+    III. Deletes a single preference (key) from a data transfer service with some id (123).
+
+        pipe dts preferences delete 123 -k key
+
     """
     DtsOperationsManager().delete_preferences(registry_name_or_id, key, json_out)
 

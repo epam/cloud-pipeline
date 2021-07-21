@@ -54,6 +54,12 @@ class DTS(API):
         return DtsModel().load(response)
 
     @classmethod
+    def delete(cls, registry_id):
+        api = cls.instance()
+        response = api.retryable_call('DELETE', '/dts/{}'.format(registry_id))
+        return DtsModel().load(response)
+
+    @classmethod
     def update_preferences(cls, registry_id, preferences):
         api = cls.instance()
         preferences_update = {

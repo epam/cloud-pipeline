@@ -46,6 +46,10 @@ class DtsOperationsManager:
             else:
                 click.echo('No data transfer services are available.')
 
+    def delete(self, registry_id, json_out):
+        registry = DTS.delete(registry_id)
+        self._print_registry(registry, json_out)
+
     def upsert_preferences(self, registry_id, preferences_list, json_out):
         if not preferences_list:
             click.echo('Preferences should not be empty!', err=True)
