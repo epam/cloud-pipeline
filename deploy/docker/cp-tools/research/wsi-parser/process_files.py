@@ -60,10 +60,18 @@ class WsiParsingUtils:
         return int(os.stat(file_path).st_mtime)
 
     @staticmethod
+    def get_stat_active_file_name(file_path):
+        return WsiParsingUtils._get_service_file_name(file_path, 'wsiparser.inprog')
+
+    @staticmethod
     def get_stat_file_name(file_path):
+        return WsiParsingUtils._get_service_file_name(file_path, 'wsiparser')
+
+    @staticmethod
+    def _get_service_file_name(file_path, suffix):
         name_without_extension = WsiParsingUtils.get_basename_without_extension(file_path)
         parent_dir = os.path.dirname(file_path)
-        parser_flag_file = '.{}.wsiparser'.format(name_without_extension)
+        parser_flag_file = '.{}.{}'.format(name_without_extension, suffix)
         return os.path.join(parent_dir, parser_flag_file)
 
 
@@ -107,6 +115,9 @@ class WsiProcessingFileGenerator:
         stat_file = WsiParsingUtils.get_stat_file_name(file_path)
         if not os.path.isfile(stat_file):
             return True
+        active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
+        if os.path.isfile(active_stat_file):
+            return False
         with open(stat_file) as last_sync_stats:
             json_stats = json.load(last_sync_stats)
             if 'dz_pixel_limit' in json_stats and json_stats['dz_pixel_limit'] != DZ_IMAGE_AREA_LIMIT:
@@ -254,14 +265,25 @@ class WsiFileParser:
         self.xml_info_file = WsiParsingUtils.get_file_without_extension(self.file_path) + '_info.xml'
         os.system('showinf -nopix -omexml-only {} > {}'.format(self.file_path, self.xml_info_file))
         self.xml_info_tree = ET.parse(self.xml_info_file).getroot()
+        self.stat_file_name = WsiParsingUtils.get_stat_file_name(self.file_path)
+        self.tmp_stat_file_name = WsiParsingUtils.get_stat_active_file_name(self.file_path)
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
 
+    def create_tmp_stat_file(self):
+        self._write_processing_stats_to_file(self.tmp_stat_file_name)
+
+    def clear_tmp_stat_file(self):
+        if os.path.exists(self.tmp_stat_file_name):
+            os.remove(self.tmp_stat_file_name)
+
     def update_stat_file(self):
-        stat_file_name = WsiParsingUtils.get_stat_file_name(self.file_path)
+        self._write_processing_stats_to_file(self.stat_file_name)
+
+    def _write_processing_stats_to_file(self, file_path):
         details = {'file': self.file_path, 'dz_pixel_limit': DZ_IMAGE_AREA_LIMIT}
-        with open(stat_file_name, 'w') as output_file:
+        with open(file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
 
     def calculate_target_series(self):
@@ -309,6 +331,10 @@ class WsiFileParser:
 
     def process_file(self):
         self.log_processing_info('Start processing')
+        if os.path.exists(self.tmp_stat_file_name):
+            log_info('This file is processed by another parser, skipping...')
+            return 0
+        self.create_tmp_stat_file()
         if self.tags_mapping_rules:
             try:
                 if WsiFileTagProcessor(self.file_path, self.xml_info_tree, self.tags_mapping_rules).process_tags() != 0:
@@ -337,10 +363,16 @@ def log_info(message, status=TaskStatus.RUNNING):
 
 
 def try_process_file(file_path):
+    parser = None
     try:
-        return WsiFileParser(file_path, os.getenv('WSI_PARSING_TAG_MAPPING', '')).process_file()
+        parser = WsiFileParser(file_path, os.getenv('WSI_PARSING_TAG_MAPPING', ''))
+        processing_result = parser.process_file()
+        return processing_result
     except Exception as e:
         log_info('An error occurred during [{}] parsing: {}'.format(file_path, str(e)))
+    finally:
+        if parser:
+            parser.clear_tmp_stat_file()
 
 
 def process_wsi_files():
