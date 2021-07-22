@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -48,19 +49,24 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final IdentificationService identificationService;
     private final String dtsShutdownKey;
     private final String dtsSyncRulesKey;
+    private final String dtsHeartbeatEnabledKey;
 
     @Autowired
-    public CloudPipelineApiPreferenceService(final @Value("${dts.preference.shutdown.key:dts.restart.force}")
-                                                         String dtsShutdownKey,
-                                             final @Value("${dts.local.preference.sync.rules.key:dts.local.sync.rules}")
-                                                         String dtsSyncRulesKey,
-                                             final CloudPipelineAPIClient apiClient,
-                                             final IdentificationService identificationService) {
+    public CloudPipelineApiPreferenceService(
+            @Value("${dts.preference.shutdown.key:dts.restart.force}")
+            final String dtsShutdownKey,
+            @Value("${dts.preference.sync.rules.key:dts.local.sync.rules}")
+            final String dtsSyncRulesKey,
+            @Value("${dts.preference.heartbeat.enabled.key:dts.heartbeat.enabled}")
+            final String dtsHeartbeatEnabledKey,
+            final CloudPipelineAPIClient apiClient,
+            final IdentificationService identificationService) {
         this.apiClient = apiClient;
         this.identificationService = identificationService;
         this.preferences = new ConcurrentHashMap<>();
         this.dtsShutdownKey = dtsShutdownKey;
         this.dtsSyncRulesKey = dtsSyncRulesKey;
+        this.dtsHeartbeatEnabledKey = dtsHeartbeatEnabledKey;
         log.info("Synchronizing preferences for current host: `{}`", identificationService.getId());
     }
 
@@ -88,7 +94,19 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
 
     @Override
     public boolean isShutdownRequired() {
-        return Boolean.TRUE.toString().equalsIgnoreCase(preferences.get(dtsShutdownKey));
+        return getBooleanPreference(dtsShutdownKey);
+    }
+
+    @Override
+    public boolean isHeartbeatEnabled() {
+        return getBooleanPreference(dtsHeartbeatEnabledKey);
+    }
+
+    private boolean getBooleanPreference(final String preference) {
+        return Optional.of(preference)
+                .map(preferences::get)
+                .map(BooleanUtils::toBoolean)
+                .orElse(false);
     }
 
     @Override
