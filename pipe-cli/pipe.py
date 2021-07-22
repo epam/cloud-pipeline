@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import traceback
+from functools import update_wrapper
+
 import click
 import requests
 import sys
@@ -84,16 +86,19 @@ def set_user_token(ctx, param, value):
 
 
 def stacktracing(func):
-    def wrapper(*args, **kwargs):
-        trace = kwargs.get('trace') or False
-        try:
-            return func(*args, **kwargs)
-        except Exception as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-            if trace:
-                traceback.print_exc()
-            sys.exit(1)
-    return wrapper
+    def _stacktracing_decorator(f):
+        @click.pass_context
+        def _stacktracing_wrapper(ctx, *args, **kwargs):
+            trace = ctx.params.get('trace') or False
+            try:
+                return ctx.invoke(f, *args, **kwargs)
+            except Exception as runtime_error:
+                click.echo('Error: {}'.format(str(runtime_error)), err=True)
+                if trace:
+                    traceback.print_exc()
+                sys.exit(1)
+        return update_wrapper(_stacktracing_wrapper, f)
+    return _stacktracing_decorator(func)
 
 
 @click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
@@ -1778,15 +1783,15 @@ def list_dts(registry_name_or_id, json_out, trace):
 
     Examples:
 
-    I.  List all data transfer services.
+    I.   List all data transfer services.
 
         pipe dts list
 
-    II. Show details of a single data transfer service with some name (dtsname).
+    II.  Show details of a single data transfer service with some name (dtsname).
 
         pipe dts list dtsname
 
-    II. Show details of a single data transfer service with some id (123).
+    III. Show details of a single data transfer service with some id (123).
 
         pipe dts list 123
 
