@@ -1807,7 +1807,7 @@ def list_dts(registry_name_or_id, json_out, trace):
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
 @stacktracing
-def create_dts(registry_name_or_id, json_out, trace):
+def delete_dts(registry_name_or_id, json_out, trace):
     """
     Deletes data transfer service.
 
