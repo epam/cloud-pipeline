@@ -373,6 +373,8 @@ class WsiFileParser:
         if conversion_result == 0:
             self.update_stat_file()
             self.log_processing_info('File processing is finished')
+        else:
+            self.log_processing_info('File processing was not successful')
         return conversion_result
 
 

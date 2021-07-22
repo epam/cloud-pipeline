@@ -42,6 +42,12 @@ function get_file_basename() {
     basename "$(get_file_without_extention "$_path")"
 }
 
+function get_cloud_path() {
+    _path="$1"
+    cloud_path=$(echo $_path | sed -rn 's/^(\/cloud-data\/)(.*)/\2/p')
+    echo "cp://$cloud_path"
+}
+
 function convert_to_jpeg() {
     _path="$1"
     _dest_file="$(get_file_without_extention "$_path").jpeg"
@@ -130,8 +136,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 log_info "Moving DZ to the final location..."
-dz_final="$_TILES_PARENT_DIR/$_FILE_BASENAME.tiles"
-rm -rf "$dz_final" && mv -f "$dz_tmp/" "$dz_final"
+dz_final_cloud="$(get_cloud_path $_TILES_PARENT_DIR/$_FILE_BASENAME.tiles)"
+pipe storage rm -r -y "$dz_final_cloud"
+
+dz_tmp_cloud="$(get_cloud_path $dz_tmp)"
+pipe storage mkdir "$dz_final_cloud" && \
+pipe storage mv -r -f "$dz_tmp_cloud" "$dz_final_cloud"
+if [ $? -ne 0 ]; then
+    log_warn "Errors during deep zoom finalization, exiting..."
+    exit 1
+fi
 log_info "Deep zoom is generated successfully!"
 
 exit 0
