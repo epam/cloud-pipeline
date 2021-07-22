@@ -1552,7 +1552,8 @@ export default class Folder extends localization.LocalizedReactComponent {
                 mode="vertical"
                 selectedKeys={[]}
                 onClick={onCreateActionSelect}
-                subMenuOpenDelay={0.1}
+                subMenuOpenDelay={0.2}
+                subMenuCloseDelay={0.2}
                 openAnimation="zoom"
                 getPopupContainer={node => node.parentNode}
               >
