@@ -1275,6 +1275,7 @@ def chown(user_name, entity_class, entity_name):
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @click.pass_context
 @Config.validate_access_token
 @stacktracing
@@ -1311,6 +1312,7 @@ def ssh(ctx, run_id, retries, trace, region):
 @click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @Config.validate_access_token
 @stacktracing
 def scp(source, destination, recursive, quiet, retries, trace, region):
