@@ -53,5 +53,6 @@ RUN mkdir -p $WSI_PARSER_HOME && \
 ENV PATH="$WSI_PARSER_HOME/bftools:$PATH"
 ADD create_deepzoom.sh "$WSI_PARSER_HOME/create_deepzoom.sh"
 ADD process_files.py "$WSI_PARSER_HOME/process_files.py"
+ADD start.sh /start.sh
 
 ENTRYPOINT ["python", "/opt/local/wsi-parser/process_files.py"]
