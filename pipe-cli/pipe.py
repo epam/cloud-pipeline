@@ -1858,13 +1858,13 @@ def update_dts_preferences(registry_name_or_id, preference, json_out, trace):
 
 @preferences.command(name='delete')
 @click.argument('registry-name-or-id', required=True, type=str)
-@click.option('--key', '-k', multiple=True, type=str,
+@click.option('--preference', '-p', multiple=True, type=str,
               help="Key of the preference, that should be removed. Multiple options supported")
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
 @stacktracing
-def delete_dts_preferences(registry_name_or_id, key, json_out, trace):
+def delete_dts_preferences(registry_name_or_id, preference, json_out, trace):
     """
     Deletes preferences for the given data transfer service.
 
@@ -1872,18 +1872,18 @@ def delete_dts_preferences(registry_name_or_id, key, json_out, trace):
 
     I.   Deletes a single preference (key) from a data transfer service with some name (dtsname).
 
-        pipe dts preferences delete dtsname -k key
+        pipe dts preferences delete dtsname -p key
 
     II.  Deletes multiple preferences (key1, key2) from a data transfer service with some name (dtsname).
 
-        pipe dts preferences delete dtsname -k key1 -k key2
+        pipe dts preferences delete dtsname -p key1 -p key2
 
     III. Deletes a single preference (key) from a data transfer service with some id (123).
 
-        pipe dts preferences delete 123 -k key
+        pipe dts preferences delete 123 -p key
 
     """
-    DtsOperationsManager().delete_preferences(registry_name_or_id, key, json_out)
+    DtsOperationsManager().delete_preferences(registry_name_or_id, preference, json_out)
 
 
 # Used to run a PyInstaller "freezed" version
