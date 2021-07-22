@@ -35,7 +35,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class NavigationMenuAO {
 
     public PipelinesLibraryAO library() {
-        final By pipelinesPageSelector = byId("navigation-button-pipelines");
+        final By pipelinesPageSelector = byId("navigation-button-library");
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         $(byXpath("//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))

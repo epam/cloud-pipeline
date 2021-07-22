@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,14 @@ import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
 public interface Navigation {
 
     default NavigationMenuAO navigationMenu() {
-        final By pipelinesPageSelector = byId("navigation-button-pipelines");
+        final By pipelinesPageSelector = byId("navigation-button-library");
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         return new NavigationMenuAO();
     }
 
     default NavigationHomeAO home() {
-        final By homePageSelector = byId("navigation-button-home");
+        final By homePageSelector = byId("navigation-button-dashboard");
         $(homePageSelector).shouldBe(visible).click();
         $(homePageSelector).shouldBe(selectedMenuItem);
         return new NavigationHomeAO();
