@@ -185,9 +185,9 @@ class WsiFileTagProcessor:
             self.log_processing_info('No matching tags found')
             return 0
         pipe_tags = self.prepare_tags(existing_attributes_dictionary, tags_to_push)
-        tags_to_push_str = ','.join(pipe_tags)
+        tags_to_push_str = ' '.join(pipe_tags)
         self.log_processing_info('Following tags will be assigned to the file: {}'.format(tags_to_push_str))
-        return os.system('pipe storage set-object-tags "cp://{}" "{}"'.format(self.cloud_path, tags_to_push_str))
+        return os.system('pipe storage set-object-tags "cp://{}" {}'.format(self.cloud_path, tags_to_push_str))
 
     def prepare_tags(self, existing_attributes_dictionary, tags_to_push):
         attribute_updates = list()
@@ -203,7 +203,7 @@ class WsiFileTagProcessor:
             if value not in existing_values_names:
                 existing_values.append({'key': attribute_name, 'value': value})
                 attribute_updates.append({'key': attribute_name, 'values': existing_values})
-            pipe_tags.append(attribute_name + '=' + value)
+            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value))
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
                                      .format(attribute_updates))
