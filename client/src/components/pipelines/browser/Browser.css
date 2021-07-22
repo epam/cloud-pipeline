@@ -399,7 +399,15 @@ tr.table-row-selected {
   padding: 5px;
   min-height: 37px;
 }
-
+.menu-container > .menu > .actions-sub-menu > div,
+.menu-container > .menu > .menu-item,
+.menu-container > .menu .actions-sub-menu .menu-item {
+  padding: 7px 8px;
+}
+.menu-container > .menu {
+  padding-top: 0;
+  cursor: pointer;
+}
 .actions-sub-menu ul {
   right: 100% !important;
   left: auto !important;
