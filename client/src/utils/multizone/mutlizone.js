@@ -17,6 +17,7 @@
 import {action, computed, observable} from 'mobx';
 import measureUrlLatency from './measure-url-latency';
 import parseRunServiceUrl from '../parseRunServiceUrl';
+import PreferenceLoad from '../../models/preferences/PreferenceLoad';
 
 function getRegionLatency (region, url) {
   return new Promise((resolve) => {
@@ -40,16 +41,44 @@ function getDefaultServiceUrl (regionServiceUrl) {
 
 class Mutlizone {
   @observable _defaultRegion;
+  @observable _defaultRegionPreference;
+  _defaultRegionPreferenceFetched;
   @observable _latencies = {};
   _checkRegions = {};
 
   constructor (defaultRegion) {
     this._defaultRegion = defaultRegion;
+    this.fetchDefaultRegionPreference();
   }
 
   @computed
   get defaultRegion () {
-    return this._defaultRegion;
+    return this._defaultRegion || this._defaultRegionPreference;
+  }
+
+  fetchDefaultRegionPreference () {
+    if (this._defaultRegionPreferenceFetched) {
+      return Promise.resolve(this._defaultRegionPreference);
+    }
+    return new Promise((resolve) => {
+      const request = new PreferenceLoad('default.edge.region');
+      request
+        .fetch()
+        .then(() => {
+          if (request.loaded && request.value) {
+            this._defaultRegionPreference = request.value.value;
+          }
+        })
+        .catch(() => {})
+        .then(() => {
+          this._defaultRegionPreferenceFetched = true;
+          console.info(
+            'Default region (preference):',
+            this._defaultRegionPreference || '<not set>'
+          );
+          console.info('Default region:', this.defaultRegion);
+        });
+    });
   }
 
   /**
@@ -164,10 +193,12 @@ class Mutlizone {
     const latencies = Object
       .entries(this._latencies)
       .map(([region, latency]) => ({region, latency: Number(latency)}))
+      .filter(info => info.latency !== Infinity)
       .sort((latencyA, latencyB) => latencyA.latency - latencyB.latency);
     const defaultRegion = latencies.length > 0 ? latencies[0].region : undefined;
     if (defaultRegion !== this._defaultRegion) {
       this._defaultRegion = defaultRegion;
+      console.info('Default region changed:', this.defaultRegion);
     }
   }
 
@@ -200,7 +231,17 @@ class Mutlizone {
     const getRegionLatency = region => this._latencies.hasOwnProperty(region)
       ? this._latencies[region]
       : Infinity;
-    sorted.sort((a, b) => getRegionLatency(a) - getRegionLatency(b));
+    sorted
+      .sort((a, b) => {
+        if (a === this._defaultRegionPreference) {
+          return -1;
+        }
+        if (b === this._defaultRegionPreference) {
+          return 1;
+        }
+        return 0;
+      })
+      .sort((a, b) => getRegionLatency(a) - getRegionLatency(b));
     return sorted;
   }
 
