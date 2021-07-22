@@ -130,7 +130,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 log_info "Moving DZ to the final location..."
-mv -f "$dz_tmp/" "$_TILES_PARENT_DIR/$_FILE_BASENAME.tiles"
+dz_final="$_TILES_PARENT_DIR/$_FILE_BASENAME.tiles"
+rm -rf "$dz_final" && mv -f "$dz_tmp/" "$dz_final"
 log_info "Deep zoom is generated successfully!"
 
 exit 0
