@@ -86,6 +86,8 @@ class TestRStudioEndpoints(object):
                                                       }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
 
     @pipe_test
@@ -101,6 +103,8 @@ class TestRStudioEndpoints(object):
                                                   }, custom_dns_endpoints=0)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
 
     @pipe_test
@@ -153,6 +157,8 @@ class TestRStudioEndpoints(object):
                                                       }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_custom_domain_rstudio_spark_no_machine_endpoint_friendly_path(self):
@@ -173,3 +179,5 @@ class TestRStudioEndpoints(object):
                                                       }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
