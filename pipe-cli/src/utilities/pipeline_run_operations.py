@@ -15,6 +15,7 @@
 from time import sleep
 
 import click
+import json
 import sys
 import requests
 from prettytable import prettytable
@@ -429,6 +430,12 @@ class PipelineRunOperations(object):
     @classmethod
     def _build_pretty_url(cls, pretty_url):
         path = str(pretty_url).strip('/')
+        try:
+            json.loads(path)
+            return path
+        except ValueError:
+            pass
+
         parts = path.split('/')
         if len(parts) > 2:
             click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
