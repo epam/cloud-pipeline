@@ -36,7 +36,7 @@ public class DtsMonitoringManager extends AbstractSchedulingManager {
                 TimeUnit.SECONDS, "Data Transfer Service Monitoring");
     }
 
-    private void monitor() {
+    public void monitor() {
         final LocalDateTime offlineThreshold = DateUtils.nowUTC().minus(getOfflineTimeout());
         for (final DtsRegistry registry : registryManager.loadAll()) {
             final LocalDateTime heartbeat = Optional.ofNullable(registry.getHeartbeat()).orElse(LocalDateTime.MIN);
