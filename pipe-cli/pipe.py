@@ -1892,5 +1892,5 @@ def delete_dts_preferences(registry_name_or_id, preference, json_out, trace):
 
 
 # Used to run a PyInstaller "freezed" version
-# if getattr(sys, 'frozen', False):
-cli(sys.argv[1:])
+if getattr(sys, 'frozen', False):
+    cli(sys.argv[1:])
