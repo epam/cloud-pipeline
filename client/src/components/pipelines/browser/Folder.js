@@ -33,9 +33,7 @@ import {
   Button,
   Checkbox,
   Col,
-  Dropdown,
   Icon,
-  Menu,
   message,
   Modal,
   Popover,
@@ -43,6 +41,10 @@ import {
   Table,
   Tooltip
 } from 'antd';
+import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
+import 'rc-dropdown/assets/index.css';
+import 'rc-menu/assets/index.css';
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
@@ -1371,9 +1373,9 @@ export default class Folder extends localization.LocalizedReactComponent {
         if (!this.props.templates.error && (this.props.templates.value || []).length > 0) {
           const templates = (this.props.templates.value || []).filter(template => !template.defaultTemplate);
           pipelineTemplatesMenu = [
-            <Menu.Item
+            <MenuItem
               id="create-pipeline-button"
-              className="create-pipeline-button"
+              className={`${styles.menuItem} create-pipeline-button`}
               key={pipelineKey}>
               <Row>
                 DEFAULT
@@ -1381,13 +1383,13 @@ export default class Folder extends localization.LocalizedReactComponent {
               <Row style={{fontSize: 'smaller'}}>
                 Create {this.localizedString('pipeline')} without template
               </Row>
-            </Menu.Item>,
-            <Menu.Divider key="divider" />,
+            </MenuItem>,
+            <Divider key="divider" />,
             ...templates.map(t => {
               return (
-                <Menu.Item
+                <MenuItem
                   id={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
-                  className={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
+                  className={` ${styles.menuItem} create-pipeline-by-template-button-${t.id.toLowerCase()}`}
                   key={`${pipelineKey}_${t.id}`}>
                   <Row>
                     {t.id.toUpperCase()}
@@ -1395,7 +1397,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                   <Row style={{fontSize: 'smaller'}}>
                     {t.description}
                   </Row>
-                </Menu.Item>
+                </MenuItem>
               );
             })
           ];
@@ -1404,7 +1406,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       if (roleModel.isManager.pipeline(this)) {
         if (pipelineTemplatesMenu) {
           createActions.push(
-            <Menu.SubMenu
+            <SubMenu
               id="create-pipeline-sub-menu-button"
               onTitleClick={() => {
                 this.setState({
@@ -1415,18 +1417,19 @@ export default class Folder extends localization.LocalizedReactComponent {
               }}
               key={pipelineKey}
               title={<span><Icon type="fork" /> {this.localizedString('Pipeline')}</span>}
-              className={`${styles.actionsSubMenu} create-pipeline-sub-menu-button`}>
+              className={`${styles.actionsSubMenu} create-pipeline-sub-menu-button`}
+            >
               {pipelineTemplatesMenu}
-            </Menu.SubMenu>
+            </SubMenu>
           );
         } else {
           createActions.push(
-            <Menu.Item
+            <MenuItem
               id="create-pipeline-button"
-              className="create-pipeline-button"
+              className={`${styles.menuItem} create-pipeline-button`}
               key={pipelineKey}>
               <Icon type="fork" /> {this.localizedString('Pipeline')}
-            </Menu.Item>
+            </MenuItem>
           );
         }
       }
@@ -1434,7 +1437,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         const fsMountsAvailable = this.props.awsRegions.loaded &&
           extractFileShareMountList(this.props.awsRegions.value).length > 0;
         createActions.push(
-          <Menu.SubMenu
+          <SubMenu
             key={storageKey}
             onTitleClick={() => {
               this.setState({
@@ -1444,39 +1447,40 @@ export default class Folder extends localization.LocalizedReactComponent {
               });
             }}
             title={<span><Icon type="hdd" /> Storages</span>}
-            className={`${styles.actionsSubMenu} create-storage-sub-menu`}>
-            <Menu.Item
+            className={`${styles.actionsSubMenu} create-storage-sub-menu`}
+          >
+            <MenuItem
               id="create-new-storage-button"
-              className="create-new-storage-button"
+              className={`${styles.menuItem} create-new-storage-button`}
               key={`${storageKey}_new`}>
               Create new object storage
-            </Menu.Item>
-            <Menu.Item
+            </MenuItem>
+            <MenuItem
               id="add-existing-storage-button"
-              className="add-existing-storage-button"
+              className={`${styles.menuItem} add-existing-storage-button`}
               key={`${storageKey}_existing`}>
               Add existing object storage
-            </Menu.Item>
-            {fsMountsAvailable && (<Menu.Divider key="storages_divider" />)}
+            </MenuItem>
+            {fsMountsAvailable && (<Divider key="storages_divider" />)}
             {fsMountsAvailable && (
-              <Menu.Item
+              <MenuItem
                 id="create-new-nfs-mount"
-                className="create-new-nfs-mount"
+                className={`${styles.menuItem} create-new-nfs-mount`}
                 key={`${storageKey}_${nfsStorageKey}`}>
                 Create new FS mount
-              </Menu.Item>
+              </MenuItem>
             )}
-          </Menu.SubMenu>
+          </SubMenu>
         );
       }
       if (roleModel.isManager.configuration(this)) {
         createActions.push(
-          <Menu.Item
+          <MenuItem
             id="create-configuration-button"
-            className="create-configuration-button"
+            className={`${styles.menuItem} create-configuration-button`}
             key={configurationKey}>
             <Icon type="setting" /> Configuration
-          </Menu.Item>
+          </MenuItem>
         );
       }
       let folderTemplatesMenu;
@@ -1485,9 +1489,9 @@ export default class Folder extends localization.LocalizedReactComponent {
           folderTemplatesMenu =
             (this.props.folderTemplates.value || []).map(t => {
               return (
-                <Menu.Item
+                <MenuItem
                   id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                  className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
+                  className={`${styles.menuItem} create-folder-by-template-button-${t.id.toLowerCase()}`}
                   key={`${folderKey}_${t.id}`}>
                   <Row>
                     {t.id.toUpperCase()}
@@ -1495,7 +1499,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                   <Row style={{fontSize: 'smaller'}}>
                     {t.description}
                   </Row>
-                </Menu.Item>
+                </MenuItem>
               );
             });
         }
@@ -1503,27 +1507,27 @@ export default class Folder extends localization.LocalizedReactComponent {
       if (roleModel.isManager.folder(this)) {
         let divider;
         createActions.push(
-          <Menu.Item
+          <MenuItem
             id="create-folder-button"
-            className="create-folder-button"
+            className={`${styles.menuItem} create-folder-button`}
             key={folderKey}>
             <Icon type="folder" /> Folder
-          </Menu.Item>
+          </MenuItem>
         );
         if (folderTemplatesMenu) {
-          divider = <Menu.Divider key="divider one" />;
+          divider = <Divider key="divider one" />;
           createActions.push(divider);
           createActions.push(...folderTemplatesMenu);
         }
       }
       if (roleModel.isManager.pipeline(this)) {
         if (!folderTemplatesMenu) {
-          createActions.push(<Menu.Divider key="divider versioned storages" />);
+          createActions.push(<Divider key="divider versioned storages" />);
         }
         createActions.push(
-          <Menu.Item
+          <MenuItem
             id="create-versioned-storage-button"
-            className="create-versioned-storage-button"
+            className={`${styles.menuItem} create-versioned-storage-button`}
             key={versionedStorageKey}
           >
             <Row style={{textTransform: 'uppercase'}}>
@@ -1532,24 +1536,34 @@ export default class Folder extends localization.LocalizedReactComponent {
             <Row style={{fontSize: 'smaller'}}>
               storage with revision control
             </Row>
-          </Menu.Item>
+          </MenuItem>
         );
       }
     }
     if (createActions.filter(action => !!action).length > 0) {
       actions.push(
         <Dropdown
+          className={`${styles.dropdown}`}
           visible={this.state.createDropDownVisible}
           onVisibleChange={(visible) => this.setState({createDropDownVisible: visible})}
-          placement="bottomRight"
-          trigger={['hover']}
+          minOverlayWidthMatchTrigger={false}
           overlay={
-            <Menu
-              selectedKeys={[]}
-              onClick={onCreateActionSelect}
-              style={{width: 200}}>
-              {createActions}
-            </Menu>
+            <div
+              style={{backgroundColor: '#ffff', width: 200, cursor: 'pointer'}}
+              className={styles.menuContainer}>
+              <Menu
+                className={styles.menu}
+                mode="vertical"
+                selectedKeys={[]}
+                onClick={onCreateActionSelect}
+                subMenuOpenDelay={0.2}
+                subMenuCloseDelay={0.2}
+                openAnimation="zoom"
+                getPopupContainer={node => node.parentNode}
+              >
+                {createActions}
+              </Menu>
+            </div>
           }
           key="create actions">
           <Button
@@ -1579,43 +1593,46 @@ export default class Folder extends localization.LocalizedReactComponent {
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
+          className={styles.menuItem}
           id="show-hide-descriptions"
           key="descriptions">
           <Row type="flex" justify="space-between" align="middle">
             <span>Descriptions</span>
             <Icon type="check-circle" style={{display: this.state.showDescription ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (this.props.folderId !== undefined && !this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
+         className={styles.menuItem}
           id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
           key="metadata">
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if ((this.showIssues || this.props.folderId !== undefined) && !this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
+          className={styles.menuItem}
           id={this.showIssues ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
           key="issues">
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
             <Icon type="check-circle" style={{display: this.showIssues ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
+        <Menu onClick={onSelectDisplayOption} style={{width: 125}} className={styles.menu}>
           {displayOptionsMenuItems}
         </Menu>
       );
@@ -1637,44 +1654,62 @@ export default class Folder extends localization.LocalizedReactComponent {
       const editActions = [];
       if (roleModel.readAllowed(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="edit-folder-button" key="edit">
+          <MenuItem
+            id="edit-folder-button"
+            key="edit"
+            className={styles.menuItem}
+        >
             <Icon type="edit" /> {roleModel.writeAllowed(this.props.folder.value) ? 'Edit folder' : 'Permissions'}
-          </Menu.Item>
+          </MenuItem>
         );
       }
       if (!this.props.readOnly && roleModel.isOwner(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item
+          <MenuItem
             key="clone"
-            id="clone-folder-button">
+            id="clone-folder-button"
+            className={styles.menuItem}
+          >
             <Icon type="copy" /> Clone
-          </Menu.Item>
+          </MenuItem>
         );
       }
       const folderIsReadOnly = this.props.folder.value.locked;
       if (folderIsReadOnly && roleModel.isOwner(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="unlock-button" key="unlock">
+          <MenuItem
+            id="unlock-button"
+            key="unlock"
+            className={styles.menuItem}
+          >
             <Icon type="unlock" /> Unlock
-          </Menu.Item>
+          </MenuItem>
         );
       } else if (!folderIsReadOnly && roleModel.writeAllowed(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="lock-button" key="lock">
+          <MenuItem
+            id="lock-button"
+            key="lock"
+            className={styles.menuItem}
+          >
             <Icon type="lock" /> Lock
-          </Menu.Item>
+          </MenuItem>
         );
       }
       if (!this.props.readOnly && roleModel.writeAllowed(this.props.folder.value) && roleModel.isManager.folder(this)) {
         if (editActions.length > 0) {
-          editActions.push(<Menu.Divider key="divider" />);
+          editActions.push(<Divider key="divider" />);
         }
         editActions.push(
-          <Menu.Item id="delete-folder-button" key="delete">
+          <MenuItem
+            id="delete-folder-button"
+            key="delete"
+            className={styles.menuItem}
+          >
             <Icon
               type="delete"
               style={{color: 'red'}} /> Delete
-          </Menu.Item>
+          </MenuItem>
         );
       }
       if (editActions.length > 0) {
@@ -1692,6 +1727,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             placement="bottomRight"
             overlay={
               <Menu
+                className={styles.menu}
                 selectedKeys={[]}
                 onClick={onClick}
                 style={{width: 100}}>
