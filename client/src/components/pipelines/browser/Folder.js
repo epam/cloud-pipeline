@@ -43,8 +43,6 @@ import {
 } from 'antd';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
-import 'rc-dropdown/assets/index.css';
-import 'rc-menu/assets/index.css';
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
