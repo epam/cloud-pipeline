@@ -13,3 +13,4 @@
 - `WSI_PARSING_CONVERSION_LIMIT` - an area limit in pixels on a chunk processing during conversion to PNG
 - `WSI_PARSING_THREADS` - number of threads, that will be used for file processing (single-thread processing is the default)
 - `WSI_ACTIVE_PROCESSING_TIMEOUT_MIN` - amount of minutes a parser will consider a file being processed by another process before starting processing (based on the last modification of temporary progress stat file)
+- `WSI_PARSER_TAGS_ONLY` - flag to enable processing of the tags only

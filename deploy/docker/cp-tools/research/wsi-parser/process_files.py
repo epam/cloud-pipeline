@@ -17,6 +17,7 @@ import os
 import multiprocessing
 import datetime
 import time
+import tempfile
 import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
@@ -94,6 +95,10 @@ class WsiParsingUtils:
         processing_stat_file_modification_date = WsiParsingUtils.get_file_last_modification_time(active_stat_file)
         processing_deadline = datetime.datetime.now() - datetime.timedelta(minutes=WSI_ACTIVE_PROCESSING_TIMEOUT_MIN)
         return (processing_stat_file_modification_date - time.mktime(processing_deadline.timetuple())) < 0
+
+    @staticmethod
+    def generate_xml_info(file_path, xml_output_file):
+        os.system('showinf -nopix -omexml-only {} > {}'.format(file_path, xml_output_file))
 
 
 class WsiProcessingFileGenerator:
@@ -292,7 +297,7 @@ class WsiFileParser:
 
     def generate_xml_info_file(self):
         WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
-        os.system('showinf -nopix -omexml-only {} > {}'.format(self.file_path, self.xml_info_file))
+        WsiParsingUtils.generate_xml_info(self.file_path, self.xml_info_file)
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
@@ -409,12 +414,52 @@ def try_process_file(file_path):
             parser.clear_tmp_stat_file()
 
 
-def process_wsi_files():
+def get_lookup_paths():
     lookup_paths = os.getenv('WSI_TARGET_DIRECTORIES')
     if not lookup_paths:
         log_success('No paths for WSI processing specified')
         exit(0)
-    target_file_formats = tuple(['.' + extension for extension in os.getenv('WSI_FILE_FORMATS', 'vsi,mrxs').split(',')])
+    return lookup_paths
+
+
+def get_target_file_formats():
+    return tuple(['.' + extension for extension in os.getenv('WSI_FILE_FORMATS', 'vsi,mrxs').split(',')])
+
+
+def try_process_file_tags(file_path, rules_list):
+    tmp_xml_path = None
+    try:
+        log_info('Generating XML info for [{}]'.format(file_path))
+        tmp_xml_path = tempfile.mktemp(suffix='.xml', dir='/tmp')
+        WsiParsingUtils.generate_xml_info(file_path, tmp_xml_path)
+        log_info('Reading metadata [{}]'.format(file_path))
+        xml_info_tree = ET.parse(tmp_xml_path).getroot()
+        WsiFileTagProcessor(file_path, xml_info_tree, rules_list).process_tags()
+    except Exception as e:
+        log_info('An error occurred during [{}] parsing: {}'.format(file_path, str(e)))
+    finally:
+        if tmp_xml_path:
+            os.remove(tmp_xml_path)
+
+
+def process_wsi_files_tags():
+    log_info('Processing tags only')
+    tags_mapping_rules_str = os.getenv('WSI_PARSING_TAG_MAPPING', '')
+    rules_list = tags_mapping_rules_str.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules_str else None
+    if not rules_list:
+        log_info('No tags are specified for processing, exiting')
+        exit(0)
+    lookup_paths = get_lookup_paths()
+    target_file_formats = get_target_file_formats()
+    all_wsi_files = WsiProcessingFileGenerator(lookup_paths.split(','), target_file_formats).find_all_matching_files()
+    log_info('Found {} files for processing.'.format(len(all_wsi_files)))
+    for file_path in all_wsi_files:
+        try_process_file_tags(file_path, rules_list)
+
+
+def process_wsi_files():
+    lookup_paths = get_lookup_paths()
+    target_file_formats = get_target_file_formats()
     log_info('Following paths are specified for processing: {}'.format(lookup_paths))
     log_info('Lookup for unprocessed files')
     paths_to_wsi_files = WsiProcessingFileGenerator(lookup_paths.split(','), target_file_formats).generate_paths()
@@ -439,4 +484,7 @@ def process_wsi_files():
 
 
 if __name__ == '__main__':
-    process_wsi_files()
+    if os.getenv('WSI_PARSER_TAGS_ONLY'):
+        process_wsi_files_tags()
+    else:
+        process_wsi_files()
