@@ -126,26 +126,38 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+function generate_deepzoom() {
+    _src_img="$1"
+    _dz_location="$2"
+    vips dzsave "$_src_img" "$_dz_location" --background 0 --centre --layout google
+    if [ $? -ne 0 ]; then
+        log_warn "Errors during deep zoom generation, exiting..."
+        exit 1
+    fi
+}
+
 _FILE_BASENAME=$(get_file_basename "$_FILE_PATH")
 log_info "Generating deep zoom structure..."
 dz_tmp="$_PARSER_TMP_DIR/$_FILE_BASENAME.tiles.new"
-rm -rf "$dz_tmp"
-vips dzsave "$_PARSER_TMP_DIR/$_FILE_BASENAME.jpeg" "$dz_tmp" --background 0 --centre --layout google
-if [ $? -ne 0 ]; then
-    log_warn "Errors during deep zoom generation, exiting..."
-    exit 1
-fi
-log_info "Moving DZ to the final location..."
-dz_final_cloud="$(get_cloud_path $_TILES_PARENT_DIR/$_FILE_BASENAME.tiles)"
-pipe storage rm -r -y "$dz_final_cloud"
+dz_final="$_TILES_PARENT_DIR/$_FILE_BASENAME.tiles"
+if [[ ! -d "$dz_final" ]]; then
+    log_info "The final location is empty, generating DZ there immediately"
+    generate_deepzoom "$_PARSER_TMP_DIR/$_FILE_BASENAME.jpeg" "$dz_final"
+else
+    log_info "Generating DZ in temporary location"
+    rm -rf "$dz_tmp"
+    generate_deepzoom "$_PARSER_TMP_DIR/$_FILE_BASENAME.jpeg" "$dz_tmp"
+    log_info "Moving DZ to the final location..."
+    dz_final_cloud="$(get_cloud_path $dz_final)"
+    pipe storage rm -r -y "$dz_final_cloud"
 
-dz_tmp_cloud="$(get_cloud_path $dz_tmp)"
-pipe storage mkdir "$dz_final_cloud" && \
-pipe storage mv -r -f "$dz_tmp_cloud" "$dz_final_cloud"
-if [ $? -ne 0 ]; then
-    log_warn "Errors during deep zoom finalization, exiting..."
-    exit 1
+    dz_tmp_cloud="$(get_cloud_path $dz_tmp)"
+    pipe storage mkdir "$dz_final_cloud" && \
+    pipe storage mv -r -f "$dz_tmp_cloud" "$dz_final_cloud"
+    if [ $? -ne 0 ]; then
+        log_warn "Errors during deep zoom finalization, exiting..."
+        exit 1
+    fi
 fi
 log_info "Deep zoom is generated successfully!"
-
 exit 0
