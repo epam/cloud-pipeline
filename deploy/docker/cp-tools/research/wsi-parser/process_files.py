@@ -89,6 +89,12 @@ class WsiParsingUtils:
         parser_flag_file = '.{}.{}'.format(name_without_extension, suffix)
         return os.path.join(parent_dir, parser_flag_file)
 
+    @staticmethod
+    def active_processing_exceed_timeout(active_stat_file):
+        processing_stat_file_modification_date = WsiParsingUtils.get_file_last_modification_time(active_stat_file)
+        processing_deadline = datetime.datetime.now() - datetime.timedelta(minutes=WSI_ACTIVE_PROCESSING_TIMEOUT_MIN)
+        return (processing_stat_file_modification_date - time.mktime(processing_deadline.timetuple())) < 0
+
 
 class WsiProcessingFileGenerator:
 
@@ -126,18 +132,13 @@ class WsiProcessingFileGenerator:
                         paths.add(os.path.join(dir_root, file))
         return paths
 
-    def active_processing_exceed_timeout(self, active_stat_file):
-        processing_stat_file_modification_date = WsiParsingUtils.get_file_last_modification_time(active_stat_file)
-        processing_deadline = datetime.datetime.now() - datetime.timedelta(minutes=WSI_ACTIVE_PROCESSING_TIMEOUT_MIN)
-        return (processing_stat_file_modification_date - time.mktime(processing_deadline.timetuple())) < 0
-
     def is_processing_required(self, file_path):
+        active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
+        if os.path.exists(active_stat_file):
+            return WsiParsingUtils.active_processing_exceed_timeout(active_stat_file)
         stat_file = WsiParsingUtils.get_stat_file_name(file_path)
         if not os.path.isfile(stat_file):
             return True
-        active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
-        if os.path.exists(active_stat_file):
-            return self.active_processing_exceed_timeout(active_stat_file)
         with open(stat_file) as last_sync_stats:
             json_stats = json.load(last_sync_stats)
             if 'dz_pixel_limit' in json_stats and json_stats['dz_pixel_limit'] != DZ_IMAGE_AREA_LIMIT:
@@ -358,7 +359,8 @@ class WsiFileParser:
 
     def process_file(self):
         self.log_processing_info('Start processing')
-        if os.path.exists(self.tmp_stat_file_name):
+        if os.path.exists(self.tmp_stat_file_name) \
+                and not WsiParsingUtils.active_processing_exceed_timeout(self.tmp_stat_file_name):
             log_info('This file is processed by another parser, skipping...')
             return 0
         self.create_tmp_stat_file()
