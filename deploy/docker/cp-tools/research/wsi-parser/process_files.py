@@ -15,6 +15,8 @@
 import json
 import os
 import multiprocessing
+import datetime
+import time
 import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
@@ -26,6 +28,7 @@ TAGS_MAPPING_RULE_DELIMITER = ','
 TAGS_MAPPING_KEYS_DELIMITER = '='
 SCHEMA_PREFIX = '{http://www.openmicroscopy.org/Schemas/OME/2016-06}'
 DZ_IMAGE_AREA_LIMIT = int(os.getenv('WSI_PARSING_DZ_IMAGE_LIMIT', 15000 * 25000))
+WSI_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('WSI_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
 
 
 class ImageDetails(object):
@@ -123,13 +126,18 @@ class WsiProcessingFileGenerator:
                         paths.add(os.path.join(dir_root, file))
         return paths
 
+    def active_processing_exceed_timeout(self, active_stat_file):
+        processing_stat_file_modification_date = WsiParsingUtils.get_file_last_modification_time(active_stat_file)
+        processing_deadline = datetime.datetime.now() - datetime.timedelta(minutes=WSI_ACTIVE_PROCESSING_TIMEOUT_MIN)
+        return (processing_stat_file_modification_date - time.mktime(processing_deadline.timetuple())) < 0
+
     def is_processing_required(self, file_path):
         stat_file = WsiParsingUtils.get_stat_file_name(file_path)
         if not os.path.isfile(stat_file):
             return True
         active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
         if os.path.exists(active_stat_file):
-            return False
+            return self.active_processing_exceed_timeout(active_stat_file)
         with open(stat_file) as last_sync_stats:
             json_stats = json.load(last_sync_stats)
             if 'dz_pixel_limit' in json_stats and json_stats['dz_pixel_limit'] != DZ_IMAGE_AREA_LIMIT:
