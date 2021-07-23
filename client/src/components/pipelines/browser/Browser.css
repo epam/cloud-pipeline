@@ -406,6 +406,7 @@ tr.table-row-selected {
 }
 .menu-container > .menu {
   padding-top: 0;
+  padding-bottom: 0;
   cursor: pointer;
 }
 .actions-sub-menu ul {

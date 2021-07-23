@@ -18,10 +18,10 @@ import React from 'react';
 import classNames from 'classnames';
 import {
   Button,
-  Dropdown,
-  Icon,
-  Menu
+  Icon
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import styles from './auto-fill-entities.css';
 import MetadataEntitySave from '../../../../models/folderMetadata/MetadataEntitySave';
 
@@ -563,9 +563,9 @@ class AutoFillEntitiesActions extends React.Component {
               >
                 {
                   actions.map((action, index) => (
-                    <Menu.Item key={`${index}`}>
+                    <MenuItem key={`${index}`}>
                       {action.title}
-                    </Menu.Item>
+                    </MenuItem>
                   ))
                 }
               </Menu>

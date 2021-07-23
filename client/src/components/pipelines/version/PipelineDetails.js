@@ -17,7 +17,9 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
-import {Alert, Menu, message, Row, Dropdown, Button, Icon, Col} from 'antd';
+import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -203,11 +205,14 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         this.runPipelineConfiguration(key);
       };
       const configurationsMenu = (
-        <Menu onClick={onSelectConfiguration}>
+        <Menu
+          onClick={onSelectConfiguration}
+          style={{cursor: 'pointer'}}
+        >
           {
             configurations.map(c => {
               return (
-                <Menu.Item key={c.name}>{c.name}</Menu.Item>
+                <MenuItem key={c.name}>{c.name}</MenuItem>
               );
             })
           }
@@ -317,53 +322,53 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           justify="center"
           className={`${styles.rowMenu} ${styles[activeTab] || ''}`}
         >
-          <Menu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
-            <Menu.Item key="documents">
+          <TabMenu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
+            <TabMenu.Item key="documents">
               <AdaptedLink
                 to={`/${id}/${version}/documents`}
                 location={location}>
                 Documents
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="code">
+            </TabMenu.Item>
+            <TabMenu.Item key="code">
               <AdaptedLink
                 to={`/${id}/${version}/code`}
                 location={location}>
                 Code
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="configuration">
+            </TabMenu.Item>
+            <TabMenu.Item key="configuration">
               <AdaptedLink
                 to={`/${id}/${version}/configuration`}
                 location={location}>
                 Configuration
               </AdaptedLink>
-            </Menu.Item>
+            </TabMenu.Item>
             {
               displayGraph &&
-              <Menu.Item key="graph">
+              <TabMenu.Item key="graph">
                 <AdaptedLink
                   to={`/${id}/${version}/graph`}
                   location={location}>
                   Graph
                 </AdaptedLink>
-              </Menu.Item>
+              </TabMenu.Item>
             }
-            <Menu.Item key="history">
+            <TabMenu.Item key="history">
               <AdaptedLink
                 to={`/${id}/${version}/history`}
                 location={location}>
                 History
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="storage">
+            </TabMenu.Item>
+            <TabMenu.Item key="storage">
               <AdaptedLink
                 to={`/${id}/${version}/storage`}
                 location={location}>
                 Storage rules
               </AdaptedLink>
-            </Menu.Item>
-          </Menu>
+            </TabMenu.Item>
+          </TabMenu>
         </Row>
         <div
           className={styles.fullHeightContainer} style={{overflow: 'auto'}}>

@@ -16,11 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Dropdown,
-  Menu,
-  Icon
-} from 'antd';
+import {Icon} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
 import MultizoneUrlPopover from './multizone-url-popover';
@@ -58,12 +56,12 @@ export default class MultizoneUrl extends React.Component {
     const defaultRegion = regions[0];
     const menu = (
       <Menu
-        style={{minWidth: 150}}
+        style={{minWidth: 150, cursor: 'pointer'}}
       >
         {
           regions
             .map(({region, url}) => (
-              <Menu.Item key={region} style={{display: 'flex'}}>
+              <MenuItem key={region} style={{display: 'flex'}}>
                 <AWSRegionTag
                   style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
                   regionUID={region}
@@ -80,7 +78,7 @@ export default class MultizoneUrl extends React.Component {
                       : false
                   }
                 </a>
-              </Menu.Item>
+              </MenuItem>
             ))
         }
       </Menu>
