@@ -167,15 +167,17 @@ class Mutlizone {
           });
           if (changed) {
             this._latencies = result;
+            const ms = value => value === Infinity
+              ? '---'
+              : (`${Math.round(value * 100) / 100.0}ms`);
+            console.info(
+              'Multi-zone latency check:',
+              Object.entries(result)
+                .map(([key, value]) => `${key}: ${ms(value)}`)
+                .join(', ')
+            );
+            this.updateDefaultRegion();
           }
-          const ms = value => value === Infinity ? '---' : (`${Math.round(value * 100) / 100.0}ms`);
-          console.info(
-            'Multi-zone latency check:',
-            Object.entries(result)
-              .map(([key, value]) => `${key}: ${ms(value)}`)
-              .join(', ')
-          );
-          this.updateDefaultRegion();
         })
         .then(() => {
           resolve(this.defaultRegion);
