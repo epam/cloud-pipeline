@@ -85,6 +85,9 @@ class SystemLogs extends React.Component {
       this.logsScrollContainer
     ) {
       requestAnimationFrame(() => {
+        if (!this.logsScrollContainer) {
+          return;
+        }
         const width = this.logsScrollContainer.clientWidth;
         const height = this.logsScrollContainer.clientHeight;
         const {logContainerSize} = this.state;

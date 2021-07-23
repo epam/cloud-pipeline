@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
  *  limitations under the License.
  */
 
-import Remote from '../basic/Remote';
-
-class PreferenceLoad extends Remote {
-  constructor (name) {
-    super();
-    this.url = `/preferences/${name}`;
-  }
-}
-
-export default PreferenceLoad;
+export default {
+  dashboard: 'dashboard',
+  library: 'library',
+  cluster: 'cluster',
+  tools: 'tools',
+  runs: 'runs',
+  run: 'run',
+  settings: 'settings',
+  search: 'search',
+  billing: 'billing',
+  miew: 'miew'
+};

@@ -15,10 +15,11 @@
  */
 
 function measureSingleUrlLatency (url, experiment = 0) {
-  const urlWithQuery = url;// + `?e=${experiment || 0}&r=${Math.floor(Math.random() * 1000000)}`;
+  const urlWithQuery = url +
+    (/\?.+/.test(url) ? '&' : '?') +
+    `___e=${experiment || 0}&___r=${Math.floor(Math.random() * 1000000)}`;
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
-    xhr.withCredentials = true;
     xhr.timeout = 2000;
     xhr.onload = () => {
       if (performance !== undefined) {
@@ -39,7 +40,6 @@ function measureSingleUrlLatency (url, experiment = 0) {
       }
     };
     xhr.onerror = () => {
-      console.log('error');
       resolve(Infinity);
     };
     xhr.ontimeout = () => {
