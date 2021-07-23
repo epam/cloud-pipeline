@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -27,15 +28,15 @@ import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataE
 import {
   Button,
   Checkbox,
-  Dropdown,
   Icon,
   Input,
   message,
-  Menu,
   Modal,
   Pagination,
   Row
 } from 'antd';
+import Menu, {MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -1754,28 +1755,28 @@ export default class Metadata extends React.Component {
       };
       const menuItems = [];
       menuItems.push((
-        <Menu.Item
+        <MenuItem
           key={Actions.addMetadata}
-          className={Actions.addMetadata}
+          className={classNames(styles.menuItem, Actions.addMetadata)}
         >
           <Icon
             type="plus"
             style={{marginRight: 5}}
           />
           Add instance
-        </Menu.Item>
+        </MenuItem>
       ));
       menuItems.push((
-        <Menu.Item
+        <MenuItem
           key={Actions.upload}
-          className={Actions.upload}
+          className={classNames(styles.menuItem, Actions.upload)}
         >
           <Icon
             type="upload"
             style={{marginRight: 5}}
           />
           Upload metadata
-        </Menu.Item>
+        </MenuItem>
       ));
       if (
         this.transferJobId &&
@@ -1783,25 +1784,25 @@ export default class Metadata extends React.Component {
         this.currentClassEntityPathFields.length > 0
       ) {
         menuItems.push((
-          <Menu.Item
+          <MenuItem
             key={Actions.transfer}
-            className={Actions.transfer}
+            className={classNames(styles.menuItem, Actions.transfer)}
           >
             <Icon
               type="cloud-upload-o"
               style={{marginRight: 5}}
             />
             Transfer to the cloud
-          </Menu.Item>
+          </MenuItem>
         ));
         menuItems.push((
-          <Menu.Divider key="divider-1" />
+          <Divider key="divider-1" />
         ));
       }
       menuItems.push((
-        <Menu.Item
+        <MenuItem
           key={Actions.deleteClass}
-          className={Actions.deleteClass}
+          className={classNames(styles.menuItem, Actions.deleteClass)}
           style={{color: 'red'}}
         >
           <Icon
@@ -1809,24 +1810,25 @@ export default class Metadata extends React.Component {
             style={{marginRight: 5}}
           />
           Delete class
-        </Menu.Item>
+        </MenuItem>
       ));
       menuItems.push((
-        <Menu.Divider key="divider-2" />
+        <Divider key="divider-2" />
       ));
       menuItems.push((
-        <Menu.Item
+        <MenuItem
           key={Actions.showAttributes}
-          className={Actions.showAttributes}
+          className={classNames(styles.menuItem, Actions.showAttributes)}
         >
           {
             this.state.metadata ? 'Hide attributes' : 'Show attributes'
           }
-        </Menu.Item>
+        </MenuItem>
       ));
       const menu = (
         <Menu
           onClick={triggerMenuItem}
+          selectedKeys={[]}
         >
           {menuItems}
         </Menu>
@@ -2115,11 +2117,12 @@ export default class Metadata extends React.Component {
         }
       };
       const menuItems = [(
-        <Menu.Item
+        <MenuItem
           key={Actions.clearSelection}
+          className={classNames(styles.menuItem, Actions.clearSelection)}
         >
           Clear selection
-        </Menu.Item>
+        </MenuItem>
       )];
       if (
         roleModel.writeAllowed(this.props.folder.value) &&
@@ -2127,26 +2130,29 @@ export default class Metadata extends React.Component {
         roleModel.isManager.entities(this)
       ) {
         menuItems.push((
-          <Menu.Item
+          <MenuItem
             key={Actions.copySelection}
+            className={classNames(styles.menuItem, Actions.copySelection)}
           >
             Copy
-          </Menu.Item>
+          </MenuItem>
         ));
-        menuItems.push((<Menu.Divider key="divider" />));
+        menuItems.push((<Divider key="divider" />));
         menuItems.push((
-          <Menu.Item
+          <MenuItem
             key={Actions.delete}
             style={{color: 'red'}}
+            className={classNames(styles.menuItem, Actions.delete)}
           >
             Delete
-          </Menu.Item>
+          </MenuItem>
         ));
       }
       const menu = (
         <Menu
           onClick={triggerMenuItem}
           style={{width: 150}}
+          selectedKeys={[]}
         >
           {menuItems}
         </Menu>

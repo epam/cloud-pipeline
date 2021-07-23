@@ -15,17 +15,16 @@
  */
 
 import React from 'react';
-import {findDOMNode} from 'react-dom';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import classNames from 'classnames';
 import {
-  Dropdown,
   Icon,
-  Menu, message
+  message
 } from 'antd';
 import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
+import Menu, {MenuItem, Divider, ItemGroup, SubMenu} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
@@ -46,12 +45,6 @@ import {
   GitCommitDialog,
   ConflictsDialog
 } from './components';
-import '../../../staticStyles/vs-actions-dropdown.css';
-
-const SUBMENU_POSITION = {
-  right: 'right',
-  left: 'left'
-};
 
 class VSActions extends React.Component {
   state = {
@@ -59,7 +52,6 @@ class VSActions extends React.Component {
     storagesStatuses: {},
     dropDownVisible: false,
     vsBrowserVisible: false,
-    subMenuPosition: SUBMENU_POSITION.right,
     gitCommit: undefined,
     gitCheckout: undefined,
     gitDiff: undefined,
@@ -633,57 +625,53 @@ class VSActions extends React.Component {
     });
   };
 
-  setSubMenuPosition = () => {
-    const {subMenuPosition} = this.state;
-    if (!this.menuContainerRef) {
-      return;
-    }
-    const menuNode = findDOMNode(this.menuContainerRef);
-    if (menuNode && menuNode instanceof HTMLElement) {
-      const menuRect = menuNode.getBoundingClientRect();
-      const padding = 25;
-      const availableSpace = window.innerWidth - menuRect.right;
-      const spaceNeeded = padding + menuRect.width;
-      const preferredPosition = availableSpace > spaceNeeded
-        ? SUBMENU_POSITION.right
-        : SUBMENU_POSITION.left;
-      if (preferredPosition !== subMenuPosition) {
-        this.setState({subMenuPosition: preferredPosition});
-      }
-    }
-  }
-
   renderOverlay = () => {
     const {storagesStatuses} = this.state;
     const menuItems = [];
     let onChange;
     if (!this.vsList || (!this.vsList.loaded && this.vsList.pending)) {
       menuItems.push((
-        <Menu.Item disabled key="loading">
-          <Icon type="loading" /> Fetching versioned storage info...
-        </Menu.Item>
+        <MenuItem
+          disabled key="loading"
+          className={styles.menuItem}
+        >
+          <Icon type="loading" />
+          <span>Fetching versioned storage info...</span>
+        </MenuItem>
       ));
     } else if (this.vsList.error) {
       menuItems.push((
-        <Menu.Item disabled key="error">
+        <MenuItem
+          disabled
+          key="error"
+          className={styles.menuItem}
+        >
           <i>VCS not configured</i>
-        </Menu.Item>
+        </MenuItem>
       ));
     } else if (!this.vsList.loaded) {
       menuItems.push((
-        <Menu.Item disabled key="error">
+        <MenuItem
+          disabled
+          key="error"
+          className={styles.menuItem}
+        >
           <i>Error fetching versioned storages</i>
-        </Menu.Item>
+        </MenuItem>
       ));
     } else {
       const storages = this.repositories;
       menuItems.push((
-        <Menu.Item key="clone">
-          <Icon type="cloud-download-o" /> Clone
-        </Menu.Item>
+        <MenuItem
+          key="clone"
+          className={styles.menuItem}
+        >
+          <Icon type="cloud-download-o" />
+          <span>Clone</span>
+        </MenuItem>
       ));
       if (storages.length > 0) {
-        menuItems.push((<Menu.Divider key="clone-divider" />));
+        menuItems.push((<Divider key="clone-divider" />));
       }
       storages.forEach((storage, index, array) => {
         const status = storagesStatuses.hasOwnProperty(storage.id)
@@ -706,10 +694,11 @@ class VSActions extends React.Component {
             unsaved
           );
         const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
-        const Container = array.length === 1 ? Menu.ItemGroup : Menu.SubMenu;
+        const Container = array.length === 1 ? ItemGroup : SubMenu;
         menuItems.push((
           <Container
             key={`-${storage.id}`}
+            className={styles.actionsSubMenu}
             title={(
               <span>
                 {storage.name}
@@ -724,15 +713,18 @@ class VSActions extends React.Component {
               this.menuContainerRef = el;
             }}
           >
-            <Menu.Item
+            <MenuItem
               key={`diff-${storage.id}`}
               disabled={!diffEnabled}
+              className={styles.menuItem}
             >
-              <Icon type="exception" /> Diff
-            </Menu.Item>
-            <Menu.Item
+              <Icon type="exception" />
+              <span> Diff</span>
+            </MenuItem>
+            <MenuItem
               key={`save-${storage.id}`}
               disabled={!saveEnabled}
+              className={styles.menuItem}
             >
               <Icon type="save" /> Save
               {
@@ -742,28 +734,31 @@ class VSActions extends React.Component {
                   </span>
                 )
               }
-            </Menu.Item>
-            <Menu.Item
+            </MenuItem>
+            <MenuItem
               key={`refresh-${storage.id}`}
               disabled={!refreshEnabled}
+              className={styles.menuItem}
             >
               <Icon type="sync" /> Refresh
-            </Menu.Item>
-            <Menu.Divider />
-            <Menu.Item
+            </MenuItem>
+            <Divider />
+            <MenuItem
               key={`checkout-${storage.id}`}
               disabled={mergeInProgress || unsaved}
+              className={styles.menuItem}
             >
               <Icon type="fork" /> Checkout revision
-            </Menu.Item>
-            <Menu.Divider />
+            </MenuItem>
+            <Divider />
             {
               hasConflicts && (
-                <Menu.Item
+                <MenuItem
                   key={`resolve-${storage.id}`}
+                  className={styles.menuItem}
                 >
                   <Icon type="exclamation-circle" /> Resolve conflicts
-                </Menu.Item>
+                </MenuItem>
               )
             }
           </Container>
@@ -805,22 +800,27 @@ class VSActions extends React.Component {
         this.setState({dropDownVisible: false});
       };
     }
-    const {subMenuPosition} = this.state;
     return (
-      <Menu
-        className={
-          classNames(
-            styles.menu,
-            'vs-actions-dropdown',
-            `vs-actions-dropdown-${subMenuPosition}`
-          )
-        }
-        openTransition="none"
-        onClick={onChange}
-        onOpenChange={this.setSubMenuPosition}
+      <div
+        style={{
+          minWidth: 200,
+          cursor: 'pointer'
+        }}
+        className={styles.menuContainer}
       >
-        {menuItems}
-      </Menu>
+        <Menu
+          className={styles.menu}
+          onClick={onChange}
+          openTransition="none"
+          subMenuOpenDelay={0.2}
+          subMenuCloseDelay={0.2}
+          openAnimation="zoom"
+          getPopupContainer={node => node.parentNode}
+          selectedKeys={[]}
+        >
+          {menuItems}
+        </Menu>
+      </div>
     );
   };
 

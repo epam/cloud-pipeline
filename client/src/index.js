@@ -20,6 +20,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Root from './components/main/Root';
 import './index.css';
+import 'rc-dropdown/assets/index.css';
+import 'rc-menu/assets/index.css';
+import './staticStyles/rc-menu.css';
 
 ReactDOM.render(
   <Root />,

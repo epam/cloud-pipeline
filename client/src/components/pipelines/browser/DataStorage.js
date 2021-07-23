@@ -24,10 +24,8 @@ import {
   Button,
   Checkbox,
   Col,
-  Dropdown,
   Icon,
   Input,
-  Menu,
   message,
   Modal,
   Popover,
@@ -35,6 +33,8 @@ import {
   Spin,
   Table
 } from 'antd';
+import Dropdown from 'rc-dropdown';
+import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
@@ -1370,19 +1370,19 @@ export default class DataStorage extends React.Component {
                     <Menu
                       selectedKeys={[]}
                       onClick={onCreateActionSelect}
-                      style={{width: 200}}>
-                      <Menu.Item
+                      style={{width: 200, cursor: 'pointer'}}>
+                      <MenuItem
                         id="create-folder-button"
                         className="create-folder-button"
                         key={folderKey}>
                         <Icon type="folder" /> Folder
-                      </Menu.Item>
-                      <Menu.Item
+                      </MenuItem>
+                      <MenuItem
                         id="create-file-button"
                         className="create-file-button"
                         key={fileKey}>
                         <Icon type="file" /> File
-                      </Menu.Item>
+                      </MenuItem>
                     </Menu>
                   }
                   key="create actions">

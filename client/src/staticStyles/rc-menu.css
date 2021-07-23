@@ -14,13 +14,13 @@
  *  limitations under the License.
  */
 
-.vs-actions-dropdown.vs-actions-dropdown-left .ant-dropdown-menu-sub {
-  left: unset;
-  right: 100%;
-  margin-left: unset;
-  margin-right: 4px;
+.rc-menu-item.rc-menu-item-disabled,
+.rc-menu-submenu-title.rc-menu-item-disabled,
+.rc-menu-item.rc-menu-submenu-disabled,
+.rc-menu-submenu-title.rc-menu-submenu-disabled {
+  color: #aaa !important;
 }
 
-.vs-actions-dropdown * {
-  animation-duration: 0s !important;
+.rc-dropdown-menu {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
 }
