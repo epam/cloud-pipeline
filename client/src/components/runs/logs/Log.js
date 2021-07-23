@@ -108,6 +108,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 @localization.localizedComponent
 @runPipelineActions
 @inject('preferences', 'dtsList', 'multiZoneManager')
+@VSActions.check
 @inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
@@ -1903,17 +1904,21 @@ class Logs extends localization.LocalizedReactComponent {
               {CommitStatusButton}
             </Row>
             <br />
-            {!this.props.run.value.sensitive && this.props.run.value.platform !== 'windows' ? (
-              <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-                <VSActions
-                  run={this.props.run.value}
-                  showDownIcon
-                  trigger={['click']}
-                >
-                  VERSIONED STORAGE
-                </VSActions>
-              </Row>
-            ) : null}
+            {
+              !this.props.run.value.sensitive &&
+              this.props.run.value.platform !== 'windows' &&
+              this.props.vsActions.available && (
+                <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+                  <VSActions
+                    run={this.props.run.value}
+                    showDownIcon
+                    trigger={['click']}
+                  >
+                    VERSIONED STORAGE
+                  </VSActions>
+                </Row>
+              )
+            }
           </Col>
         </Row>
         <Row>

@@ -25,6 +25,7 @@ import {
   Icon,
   Menu, message
 } from 'antd';
+import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
 import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
@@ -917,4 +918,7 @@ VSActions.defaultProps = {
   trigger: ['hover']
 };
 
+VSActions.check = vsAvailabilityCheck;
+
 export default observer(VSActions);
+export {VsActionsAvailable};

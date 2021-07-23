@@ -60,6 +60,7 @@ import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
 import multiZoneManager from '../../utils/multizone';
 import UINavigation from '../../utils/ui-navigation';
+import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -93,6 +94,8 @@ const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 const allConfigurations = new AllConfigurations();
 
 const uiNavigation = new UINavigation(authenticatedUserInfo);
+
+const vsActions = new VsActionsAvailable(pipelines);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -152,7 +155,8 @@ const Root = () =>
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
-      uiNavigation
+      uiNavigation,
+      vsActions
     }}>
     <AppRouter />
   </Provider>;

@@ -35,12 +35,14 @@ import {openReRunForm, runPipelineActions, stopRun, terminateRun} from '../../..
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
+import VSActions from '../../../versioned-storages/vs-actions';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
 @inject('pipelines', 'multiZoneManager')
+@VSActions.check
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -154,7 +156,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
             emptyMessage="There are no active runs"
             actions={
               getRunActions(
-                this.props.multiZoneManager,
+                this.props,
                 {
                   pause: run => this.confirmPause(
                     run,

@@ -27,6 +27,7 @@ import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
+import VSActions from '../../../versioned-storages/vs-actions';
 import {openReRunForm} from '../../../runs/actions';
 import roleModel from '../../../../utils/roleModel';
 import moment from 'moment-timezone';
@@ -35,6 +36,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @inject('pipelines', 'multiZoneManager')
+@VSActions.check
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -126,7 +128,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
             emptyMessage="There are no completed runs yet."
             actions={
               getRunActions(
-                this.props.multiZoneManager,
+                this.props,
                 {
                   pause: run => this.confirm(
                     `Are you sure you want to pause run ${run.podId}?`,

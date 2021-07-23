@@ -21,7 +21,7 @@ import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
-export default function (multiZoneManager, callbacks) {
+export default function ({multiZoneManager, vsActions}, callbacks) {
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -85,7 +85,12 @@ export default function (multiZoneManager, callbacks) {
             runSSH: true,
             runId: run.id
           });
-          if (!run.sensitive && run.platform !== 'windows') {
+          if (
+            !run.sensitive &&
+            run.platform !== 'windows' &&
+            vsActions &&
+            vsActions.available
+          ) {
             actions.push({
               title: (
                 <VSActions
