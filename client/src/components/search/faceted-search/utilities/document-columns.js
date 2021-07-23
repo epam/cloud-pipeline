@@ -167,7 +167,7 @@ const DocumentColumns = [
     width: '15%',
     renderFn: value => (
       <span className={styles.overflowEllipsis}>
-        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+        {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
     types: new Set([
@@ -215,7 +215,7 @@ const DocumentColumns = [
     width: '15%',
     renderFn: value => (
       <span className={styles.overflowEllipsis}>
-        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+        {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
     types: new Set([SearchItemTypes.run])
@@ -226,7 +226,7 @@ const DocumentColumns = [
     width: '15%',
     renderFn: value => (
       <span className={styles.overflowEllipsis}>
-        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+        {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
     types: new Set([SearchItemTypes.run])
