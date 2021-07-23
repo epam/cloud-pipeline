@@ -22,10 +22,9 @@ import {
   Button,
   Card,
   Col,
-  Dropdown,
   Icon,
   Input,
-  Menu,
+  Menu as MenuHorizontal,
   message,
   Modal,
   Popover,
@@ -34,6 +33,8 @@ import {
   Tooltip,
   Upload
 } from 'antd';
+import Menu, {MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -129,7 +130,6 @@ const DEFAULT_FILE_SIZE_KB = 50;
 })
 @observer
 export default class Tool extends localization.LocalizedReactComponent {
-
   state = {
     metadata: false,
     editDescriptionMode: false,
@@ -701,7 +701,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       switch (item.status.toUpperCase()) {
         case ScanStatuses.completed:
           if (item.successScanDate) {
-            scanningInfo = <span>Successfully scanned at {displayDate(item.successScanDate)}</span>
+            scanningInfo = <span>Successfully scanned at {displayDate(item.successScanDate)}</span>;
           } else {
             scanningInfo = <span>Successfully scanned</span>;
           }
@@ -716,8 +716,8 @@ export default class Tool extends localization.LocalizedReactComponent {
         case ScanStatuses.failed:
           if (item.successScanDate) {
             scanningInfo = <span>
-            Scanning <span
-              className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
+              Scanning <span
+                className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
           } else {
             scanningInfo = <span>Scanning <span
               className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}</span>;
@@ -1075,12 +1075,12 @@ export default class Tool extends localization.LocalizedReactComponent {
     const warningForLatestVersion = this.getWarningForLatestVersion();
     return (
       <div>
-          { warningForLatestVersion &&
+        { warningForLatestVersion &&
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="warning"
             message={warningForLatestVersion} />
-          }
+        }
         {
           !this.defaultTag && this.props.versions.loaded &&
           <Alert
@@ -1275,21 +1275,21 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     return (
       <Row type="flex" justify="center">
-        <Menu
+        <MenuHorizontal
           className={styles.toolMenu}
           onClick={onChangeSection}
           mode="horizontal"
           selectedKeys={[this.props.section]}>
-          <Menu.Item key="description">
+          <MenuHorizontal.Item key="description">
             DESCRIPTION
-          </Menu.Item>
-          <Menu.Item key="versions">
+          </MenuHorizontal.Item>
+          <MenuHorizontal.Item key="versions">
             VERSIONS
-          </Menu.Item>
-          <Menu.Item key="settings">
+          </MenuHorizontal.Item>
+          <MenuHorizontal.Item key="settings">
             SETTINGS
-          </Menu.Item>
-        </Menu>
+          </MenuHorizontal.Item>
+        </MenuHorizontal>
       </Row>
     );
   };
@@ -1600,35 +1600,39 @@ export default class Tool extends localization.LocalizedReactComponent {
         }
       };
       const runMenu = (
-        <Menu selectedKeys={[]} onClick={onSelect}>
-          <Menu.Item id="run-default-button" key={runDefaultKey}>
+        <Menu
+          selectedKeys={[]}
+          onClick={onSelect}
+          style={{cursor: 'pointer'}}
+        >
+          <MenuItem id="run-default-button" key={runDefaultKey}>
             {
               tooltip && !notLoaded
                 ? (
-                <Tooltip
-                  placement="left"
-                  title={tooltip}
-                  trigger="hover">
-                  Default settings
-                </Tooltip>
-              )
+                  <Tooltip
+                    placement="left"
+                    title={tooltip}
+                    trigger="hover">
+                    Default settings
+                  </Tooltip>
+                )
                 : 'Default settings'
             }
-          </Menu.Item>
-          <Menu.Item id="run-custom-button" key={runCustomKey}>
+          </MenuItem>
+          <MenuItem id="run-custom-button" key={runCustomKey}>
             {
               tooltip && !notLoaded
                 ? (
-                <Tooltip
-                  placement="left"
-                  title={tooltip}
-                  trigger="hover">
-                  Custom settings
-                </Tooltip>
-              )
+                  <Tooltip
+                    placement="left"
+                    title={tooltip}
+                    trigger="hover">
+                    Custom settings
+                  </Tooltip>
+                )
                 : 'Custom settings'
             }
-          </Menu.Item>
+          </MenuItem>
         </Menu>
       );
       return (
@@ -1668,7 +1672,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                 }}
                 size="small"
                 type="primary">
-                <Icon type="down" style={{verticalAlign: 'middle', lineHeight: 'inherit'}}/>
+                <Icon type="down" style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
               </Button>
             </Dropdown>
           </Button.Group>
@@ -1687,28 +1691,28 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     const displayOptionsMenuItems = [];
     displayOptionsMenuItems.push(
-      <Menu.Item
+      <MenuItem
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
         key="metadata">
         <Row type="flex" justify="space-between" align="middle">
           <span>Attributes</span>
           <Icon type="check-circle" style={{display: this.state.metadata ? 'inherit' : 'none'}} />
         </Row>
-      </Menu.Item>
+      </MenuItem>
     );
     displayOptionsMenuItems.push(
-      <Menu.Item
+      <MenuItem
         id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
         key="issues">
         <Row type="flex" justify="space-between" align="middle">
           <span>{this.localizedString('Issue')}s</span>
           <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
         </Row>
-      </Menu.Item>
+      </MenuItem>
     );
     if (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={
             this.state.instanceTypesManagementPanel
               ? 'hide-instance-types-management-panel-button'
@@ -1719,13 +1723,17 @@ export default class Tool extends localization.LocalizedReactComponent {
             <span>Instance management</span>
             <Icon
               type="check-circle"
-              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}}/>
+              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     const displayOptionsMenu = (
-      <Menu onClick={onSelectDisplayOption} style={{width: 150}}>
+      <Menu
+        onClick={onSelectDisplayOption}
+        style={{width: 150, cursor: 'pointer'}}
+        selectedKeys={[]}
+      >
         {displayOptionsMenuItems}
       </Menu>
     );
@@ -1823,14 +1831,18 @@ export default class Tool extends localization.LocalizedReactComponent {
       }
     };
     const menu = (
-      <Menu onClick={onClick}>
-        <Menu.Item key={permissionsKey}>
+      <Menu
+        onClick={onClick}
+        style={{cursor: 'pointer'}}
+        selectedKeys={[]}
+      >
+        <MenuItem key={permissionsKey}>
           <Icon type="setting" /> Permissions
-        </Menu.Item>
-        <Menu.Divider />
-        <Menu.Item key={deleteKey} style={{color: 'red'}}>
+        </MenuItem>
+        <Divider />
+        <MenuItem key={deleteKey} style={{color: 'red'}}>
           <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
-        </Menu.Item>
+        </MenuItem>
       </Menu>
     );
     return (

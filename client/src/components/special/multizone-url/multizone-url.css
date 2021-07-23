@@ -23,6 +23,11 @@
 .menu-link {
   height: 100%;
   width: 100%;
+  color: inherit;
+}
+
+.menu-link:hover {
+  color: inherit;
 }
 
 .expander {

@@ -24,12 +24,10 @@ import {
   Alert,
   Button,
   Checkbox,
-  Dropdown,
   Icon,
   Input,
   InputNumber,
   Modal,
-  Menu,
   message,
   Form,
   Row,
@@ -37,6 +35,8 @@ import {
   Table,
   Tooltip, Col, AutoComplete
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
@@ -471,13 +471,17 @@ export default class AWSRegionsForm extends React.Component {
   renderAddNewRegionButton = () => {
     if (this.cloudProviders.length > 1) {
       const menu = (
-        <Menu onClick={({key}) => this.onAddNewRegionClicked(key)}>
+        <Menu
+          onClick={({key}) => this.onAddNewRegionClicked(key)}
+          selectedKeys={[]}
+          style={{cursor: 'pointer'}}
+        >
           {
             this.cloudProviders.map(c => {
               return (
-                <Menu.Item key={c}>
+                <MenuItem key={c}>
                   {c}
-                </Menu.Item>
+                </MenuItem>
               );
             })
           }

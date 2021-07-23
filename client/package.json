@@ -28,6 +28,8 @@
     "papaparse": "^4.3.6",
     "pipeline-builder": "0.3.10-dev.313",
     "prop-types": "^15.5.8",
+    "rc-dropdown": "^2.2.0",
+    "rc-menu": "^6.0.1",
     "react": "^15.4.2",
     "react-day-picker": "^5.5.3",
     "react-dom": "^15.4.2",
