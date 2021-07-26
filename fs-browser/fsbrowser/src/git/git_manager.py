@@ -71,8 +71,6 @@ class GitManager:
             full_item_path = os.path.join(self.root_folder, item_name)
             if os.path.isfile(full_item_path):
                 continue
-            if not item_name.isdigit():
-                continue
             try:
                 versioned_storage = self.api_client.get_pipeline(item_name)
             except Exception as e:
