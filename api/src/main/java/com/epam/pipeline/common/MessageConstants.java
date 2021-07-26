@@ -458,10 +458,14 @@ public final class MessageConstants {
     public static final String ERROR_DTS_REGISTRY_ID_IS_EMPTY = "error.dts.registry.id.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_IS_EMPTY = "error.dts.registry.name.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_CONSIST_OF_NUMBERS = "error.dts.registry.name.numbers.only";
+    public static final String ERROR_DTS_REGISTRY_NAME_ALREADY_EXISTS = "error.dts.registry.name.already.exists";
     public static final String ERROR_DTS_NOT_SCHEDULABLE = "error.dts.registry.not.schedulable";
     public static final String ERROR_DTS_PREFERENCES_DOESNT_EXIST = "error.dts.preferences.not.exist";
     public static final String ERROR_DTS_PREFERENCES_UPDATE_EMPTY = "error.dts.preferences.update.empty";
     public static final String ERROR_DTS_PREFERENCES_DELETE_EMPTY = "error.dts.preferences.delete.empty";
+    public static final String INFO_DTS_MONITORING_STATUS = "info.dts.monitoring.status";
+    public static final String INFO_DTS_MONITORING_STATUS_MISSING_HEARTBEAT =
+            "info.dts.monitoring.status.missing.heartbeat";
 
     //Cloud region
     public static final String ERROR_REGION_NOT_FOUND = "error.region.not.found";

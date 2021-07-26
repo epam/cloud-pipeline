@@ -41,7 +41,7 @@ class DTS(API):
     @classmethod
     def load_all(cls):
         api = cls.instance()
-        response = api.retryable_call('GET', '/dts')
+        response = api.retryable_call('GET', '/dts') or []
         registries = []
         for registry_json in response:
             registries.append(DtsModel().load(registry_json))
@@ -51,6 +51,12 @@ class DTS(API):
     def load(cls, registry_id):
         api = cls.instance()
         response = api.retryable_call('GET', '/dts/{}'.format(registry_id))
+        return DtsModel().load(response)
+
+    @classmethod
+    def delete(cls, registry_id):
+        api = cls.instance()
+        response = api.retryable_call('DELETE', '/dts/{}'.format(registry_id))
         return DtsModel().load(response)
 
     @classmethod

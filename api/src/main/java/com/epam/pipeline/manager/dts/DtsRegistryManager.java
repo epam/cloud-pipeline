@@ -23,6 +23,8 @@ import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.dao.dts.DtsRegistryDao;
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.entity.dts.DtsStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -51,6 +53,7 @@ public class DtsRegistryManager {
 
     /**
      * Loads all existing {@link DtsRegistry}s.
+     *
      * @return list of existing {@link DtsRegistry}s
      */
     public List<DtsRegistry> loadAll() {
@@ -67,6 +70,7 @@ public class DtsRegistryManager {
 
     /**
      * Loads {@link DtsRegistry} specified by ID.
+     *
      * @param registryId a {@link DtsRegistry} ID
      * @return existing {@link DtsRegistry} or error if required registry does not exist.
      */
@@ -77,6 +81,7 @@ public class DtsRegistryManager {
 
     /**
      * Loads {@link DtsRegistry} specified by name.
+     *
      * @param registryName a {@link DtsRegistry} name
      * @return existing {@link DtsRegistry} or error if required registry does not exist.
      */
@@ -90,51 +95,92 @@ public class DtsRegistryManager {
 
     /**
      * Creates a new {@link DtsRegistry}.
+     *
      * @param dtsRegistryVO a {@link DtsRegistryVO} to create
      * @return created {@link DtsRegistry}
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public DtsRegistry create(DtsRegistryVO dtsRegistryVO) {
         validateDtsRegistryVO(dtsRegistryVO);
+        validateDtsRegistryDoesNotExist(dtsRegistryVO.getName());
         DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
+        dtsRegistry.setStatus(DtsStatus.OFFLINE);
         return dtsRegistryDao.create(dtsRegistry);
     }
 
     /**
-     * Updates a {@link DtsRegistry} specified by ID. If required {@link DtsRegistry} does not exist an error will be
-     * thrown.
+     * Updates a {@link DtsRegistry} specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID to update
      * @param dtsRegistryVO a {@link DtsRegistryVO} to update
      * @return updated {@link DtsRegistry}
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public DtsRegistry update(Long registryId, DtsRegistryVO dtsRegistryVO) {
-        validateDtsRegistryId(registryId);
+    public DtsRegistry update(final String registryId, final DtsRegistryVO dtsRegistryVO) {
+        final DtsRegistry originalDtsRegistry = loadByNameOrId(registryId);
         validateDtsRegistryVO(dtsRegistryVO);
-        loadOrThrow(registryId);
-        DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
-        dtsRegistry.setId(registryId);
+        final DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
+        dtsRegistry.setId(originalDtsRegistry.getId());
         dtsRegistryDao.update(dtsRegistry);
+        return loadById(dtsRegistry.getId());
+    }
+
+    /**
+     * Updates a {@link DtsRegistry} heartbeat specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
+     * @param registryId a {@link DtsRegistry} ID to update heartbeat
+     * @return updated {@link DtsRegistry}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public DtsRegistry updateHeartbeat(final String registryId) {
+        final DtsRegistry dtsRegistry = loadByNameOrId(registryId);
+        dtsRegistry.setHeartbeat(DateUtils.nowUTC());
+        dtsRegistry.setStatus(DtsStatus.ONLINE);
+        dtsRegistryDao.updateHeartbeat(dtsRegistry.getId(), dtsRegistry.getHeartbeat(), dtsRegistry.getStatus());
         return dtsRegistry;
     }
 
     /**
-     * Deletes a {@link DtsRegistry} specified by ID. If required {@link DtsRegistry} does not exist an error will be
-     * thrown.
+     * Updates a {@link DtsRegistry} status specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
+     * @param registryId a {@link DtsRegistry} ID to update heartbeat
+     * @param status a {@link DtsRegistry} status to set
+     * @return updated {@link DtsRegistry}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public DtsRegistry updateStatus(final Long registryId, final DtsStatus status) {
+        final DtsRegistry dtsRegistry = loadById(registryId);
+        dtsRegistry.setStatus(status);
+        dtsRegistryDao.updateStatus(dtsRegistry.getId(), dtsRegistry.getStatus());
+        return dtsRegistry;
+    }
+
+    /**
+     * Deletes a {@link DtsRegistry} specified by ID.
+     *
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID to delete
      * @return deleted {@link DtsRegistry}
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public DtsRegistry delete(Long registryId) {
-        validateDtsRegistryId(registryId);
-        DtsRegistry dtsRegistry = loadOrThrow(registryId);
-        dtsRegistryDao.delete(registryId);
+    public DtsRegistry delete(final String registryId) {
+        final DtsRegistry dtsRegistry = loadByNameOrId(registryId);
+        dtsRegistryDao.delete(dtsRegistry.getId());
         return dtsRegistry;
     }
 
     /**
      * Creates new or updates existing preferences in a {@link DtsRegistry} specified by ID or name.
+     *
      * If required {@link DtsRegistry} does not exist an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID or name of a registry to update
      * @param preferencesVO preferences, that need to be set for a registry
      * @return updated {@link DtsRegistry}
@@ -152,8 +198,10 @@ public class DtsRegistryManager {
 
     /**
      * Removes preferences in a {@link DtsRegistry} specified by ID or name.
+     *
      * If required {@link DtsRegistry} does not exist an error will be thrown.
      * If any key specified for removal, is not presented in a registry's preferences, an error will be thrown.
+     *
      * @param registryId a {@link DtsRegistry} ID or name of a registry to update
      * @param preferencesVO list of keys indicating which preferences need to be removed from a registry
      * @return updated {@link DtsRegistry}
@@ -196,5 +244,10 @@ public class DtsRegistryManager {
 
     private void validateDtsRegistryId(Long registryId) {
         Assert.notNull(registryId, messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_ID_IS_EMPTY));
+    }
+
+    private void validateDtsRegistryDoesNotExist(final String registryId) {
+        Assert.isTrue(!dtsRegistryDao.loadByName(registryId).isPresent(),
+                messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_ALREADY_EXISTS, registryId));
     }
 }

@@ -16,17 +16,17 @@
 
 package com.epam.pipeline.dts.sync.model;
 
-import lombok.Getter;
+import lombok.Value;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 
 import java.util.Date;
 
-@Getter
+@Value
 public class AutonomousSyncCronDetails {
 
-    private String expression;
-    private CronSequenceGenerator generator;
-    private Date lastExecution;
+    String expression;
+    CronSequenceGenerator generator;
+    Date lastExecution;
 
     public AutonomousSyncCronDetails(final String expression, final Date lastExecution) {
         this.expression = expression;

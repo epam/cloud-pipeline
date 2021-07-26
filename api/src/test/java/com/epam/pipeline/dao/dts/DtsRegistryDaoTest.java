@@ -17,11 +17,13 @@
 package com.epam.pipeline.dao.dts;
 
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.entity.dts.DtsStatus;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.junit.Assert.assertEquals;
 
 @Transactional
@@ -37,6 +40,9 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
     private static final String TEST_URL = "token";
     private static final String TEST_PREFIX_1 = "prefix_1";
     private static final String TEST_PREFIX_2 = "prefix_2";
+    private static final LocalDateTime TEST_DATETIME = LocalDateTime.now();
+    private static final DtsStatus TEST_DTS_STATUS = DtsStatus.OFFLINE;
+    private static final DtsStatus TEST_DTS_ANOTHER_STATUS = DtsStatus.ONLINE;
     private static final String DTS = "DTS";
     private static final String DTS_PREFERENCE_1 = "dts.preference1";
     private static final String DTS_PREFERENCE_2 = "dts.preference2";
@@ -61,6 +67,13 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         assertEquals(Stream.of(dtsRegistry).collect(Collectors.toList()), dtsRegistryDao.loadAll());
         dtsRegistryDao.delete(dtsRegistry.getId());
         assertEquals(0, dtsRegistryDao.loadAll().size());
+    }
+
+    @Test
+    public void testDtsNameUniquenessRequirement() {
+        dtsRegistryDao.create(getDtsRegistry(TEST_URL));
+
+        assertThrows(() -> dtsRegistryDao.create(getDtsRegistry(TEST_URL)));
     }
 
     @Test
@@ -91,6 +104,29 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         assertEqualsToEntityInDb(dtsRegistry);
     }
 
+    @Test
+    public void testDtsHeartbeatUpdate() {
+        final DtsRegistry dtsRegistry = getDtsRegistry(TEST_URL);
+        dtsRegistryDao.create(dtsRegistry);
+        assertEqualsToEntityInDb(dtsRegistry);
+
+        dtsRegistryDao.updateHeartbeat(dtsRegistry.getId(), TEST_DATETIME, TEST_DTS_ANOTHER_STATUS);
+        dtsRegistry.setHeartbeat(TEST_DATETIME);
+        dtsRegistry.setStatus(TEST_DTS_ANOTHER_STATUS);
+        assertEqualsToEntityInDb(dtsRegistry);
+    }
+
+    @Test
+    public void testDtsStatusUpdate() {
+        final DtsRegistry dtsRegistry = getDtsRegistry(TEST_URL);
+        dtsRegistryDao.create(dtsRegistry);
+        assertEqualsToEntityInDb(dtsRegistry);
+
+        dtsRegistryDao.updateStatus(dtsRegistry.getId(), TEST_DTS_ANOTHER_STATUS);
+        dtsRegistry.setStatus(TEST_DTS_ANOTHER_STATUS);
+        assertEqualsToEntityInDb(dtsRegistry);
+    }
+
     private void assertEqualsToEntityInDb(final DtsRegistry dtsRegistry) {
         final DtsRegistry loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);
         assertEquals(dtsRegistry, loaded);
@@ -103,6 +139,14 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         assertEqualsToEntityInDb(dtsRegistry);
     }
 
+    private DtsRegistry getDtsRegistry(final String url) {
+        return getDtsRegistry(url, Collections.emptyList());
+    }
+
+    private DtsRegistry getDtsRegistry(final String url, final List<String> prefixes) {
+        return getDtsRegistry(url, prefixes, Collections.emptyMap());
+    }
+
     private DtsRegistry getDtsRegistry(final String url, final List<String> prefixes,
                                        final Map<String, String> preferences) {
         DtsRegistry dtsRegistry = new DtsRegistry();
@@ -110,6 +154,7 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         dtsRegistry.setUrl(url);
         dtsRegistry.setPrefixes(prefixes);
         dtsRegistry.setPreferences(preferences);
+        dtsRegistry.setStatus(TEST_DTS_STATUS);
         return dtsRegistry;
     }
 }

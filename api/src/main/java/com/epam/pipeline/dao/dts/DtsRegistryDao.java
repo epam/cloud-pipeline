@@ -19,9 +19,11 @@ package com.epam.pipeline.dao.dts;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.entity.dts.DtsStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Array;
 import java.sql.Connection;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -61,9 +65,12 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     private String deleteDtsRegistryQuery;
     private String upsertDtsRegistryPreferencesQuery;
     private String deleteDtsRegistryPreferencesQuery;
+    private String updateDtsRegistryHeartbeatQuery;
+    private String updateDtsRegistryStatusQuery;
 
     public List<DtsRegistry> loadAll() {
-        return getJdbcTemplate().query(loadAllDtsRegistriesQuery, DtsRegistryParameters.getRowMapper());
+        return ListUtils.emptyIfNull(getJdbcTemplate().query(loadAllDtsRegistriesQuery,
+                DtsRegistryParameters.getRowMapper()));
     }
 
     public Optional<DtsRegistry> loadById(Long registryId) {
@@ -111,7 +118,21 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     public void deletePreferences(final Long registryId, final List<String> preferencesKeys) {
         getNamedParameterJdbcTemplate()
             .update(buildDeletePreferencesQuery(preferencesKeys),
-                    DtsRegistryParameters.getRemovingPreferencesParameters(registryId));
+                    DtsRegistryParameters.getParameters(registryId));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateHeartbeat(final Long registryId, final LocalDateTime heartbeat, final DtsStatus status) {
+        getNamedParameterJdbcTemplate()
+                .update(updateDtsRegistryHeartbeatQuery,
+                        DtsRegistryParameters.getHeartbeatParameters(registryId, heartbeat, status));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateStatus(final Long registryId, final DtsStatus status) {
+        getNamedParameterJdbcTemplate()
+                .update(updateDtsRegistryStatusQuery,
+                        DtsRegistryParameters.getStatusParameters(registryId, status));
     }
 
     @Required
@@ -159,12 +180,24 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         this.deleteDtsRegistryPreferencesQuery = deleteDtsRegistryPreferencesQuery;
     }
 
+    @Required
+    public void setUpdateDtsRegistryHeartbeatQuery(final String updateDtsRegistryHeartbeatQuery) {
+        this.updateDtsRegistryHeartbeatQuery = updateDtsRegistryHeartbeatQuery;
+    }
+
+    @Required
+    public void setUpdateDtsRegistryStatusQuery(final String updateDtsRegistryStatusQuery) {
+        this.updateDtsRegistryStatusQuery = updateDtsRegistryStatusQuery;
+    }
+
     enum DtsRegistryParameters {
         ID,
         NAME,
         SCHEDULABLE,
         CREATED_DATE,
         URL,
+        HEARTBEAT,
+        STATUS,
         PREFIXES,
         PREFERENCES,
         PREFERENCES_KEYS;
@@ -184,6 +217,7 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
             Array prefixesArray = mapListToSqlArray(dtsRegistry.getPrefixes(), connection);
             params.addValue(PREFIXES.name(), prefixesArray);
             if (extended) {
+                params.addValue(STATUS.name(), dtsRegistry.getStatus().getId());
                 params.addValue(PREFERENCES.name(), JsonMapper
                     .convertDataToJsonStringForQuery(MapUtils.emptyIfNull(dtsRegistry.getPreferences())));
             }
@@ -192,17 +226,25 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
 
         static MapSqlParameterSource getPreferencesParameters(final Long dtsRegistryId,
                                                               final Map<String, String> preferences) {
-            final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(ID.name(), dtsRegistryId);
-            params.addValue(PREFERENCES.name(),
+            return getParameters(dtsRegistryId)
+                    .addValue(PREFERENCES.name(),
                             JsonMapper.convertDataToJsonStringForQuery(MapUtils.emptyIfNull(preferences)));
-            return params;
         }
 
-        static MapSqlParameterSource getRemovingPreferencesParameters(final Long registryId) {
-            final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(ID.name(), registryId);
-            return params;
+        public static MapSqlParameterSource getHeartbeatParameters(final Long registryId, final LocalDateTime heartbeat,
+                                                                   final DtsStatus status) {
+            return getStatusParameters(registryId, status)
+                    .addValue(HEARTBEAT.name(), Timestamp.valueOf(heartbeat));
+        }
+
+        public static MapSqlParameterSource getStatusParameters(final Long registryId, final DtsStatus status) {
+            return getParameters(registryId)
+                    .addValue(STATUS.name(), status.getId());
+        }
+
+        static MapSqlParameterSource getParameters(final Long registryId) {
+            return new MapSqlParameterSource()
+                    .addValue(ID.name(), registryId);
         }
 
         static RowMapper<DtsRegistry> getRowMapper() {
@@ -213,6 +255,10 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
                 dtsRegistry.setName(rs.getString(NAME.name()));
                 dtsRegistry.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
                 dtsRegistry.setSchedulable(rs.getBoolean(SCHEDULABLE.name()));
+                Optional.ofNullable(rs.getTimestamp(HEARTBEAT.name()))
+                        .map(Timestamp::toLocalDateTime)
+                        .ifPresent(dtsRegistry::setHeartbeat);
+                dtsRegistry.setStatus(DtsStatus.findById(rs.getLong(STATUS.name())).orElse(DtsStatus.OFFLINE));
                 Array prefixesSqlArray = rs.getArray(PREFIXES.name());
                 List<String> prefixesList = Arrays.asList((String[]) prefixesSqlArray.getArray());
                 dtsRegistry.setPrefixes(prefixesList);

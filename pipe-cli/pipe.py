@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import traceback
+from functools import update_wrapper
+
 import click
 import requests
 import sys
@@ -81,6 +83,22 @@ def print_version(ctx, param, value):
 def set_user_token(ctx, param, value):
     if value:
         UserTokenOperations().set_user_token(value)
+
+
+def stacktracing(func):
+    def _stacktracing_decorator(f):
+        @click.pass_context
+        def _stacktracing_wrapper(ctx, *args, **kwargs):
+            trace = ctx.params.get('trace') or False
+            try:
+                return ctx.invoke(f, *args, **kwargs)
+            except Exception as runtime_error:
+                click.echo('Error: {}'.format(str(runtime_error)), err=True)
+                if trace:
+                    traceback.print_exc()
+                sys.exit(1)
+        return update_wrapper(_stacktracing_wrapper, f)
+    return _stacktracing_decorator(func)
 
 
 @click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
@@ -1260,6 +1278,7 @@ def chown(user_name, entity_class, entity_name):
                                                       'will be used.')
 @click.pass_context
 @Config.validate_access_token
+@stacktracing
 def ssh(ctx, run_id, retries, trace, region):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
@@ -1279,14 +1298,8 @@ def ssh(ctx, run_id, retries, trace, region):
 
         pipe ssh 12345 echo \$HOSTNAME
     """
-    try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
-        sys.exit(ssh_exit_code)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
+    sys.exit(ssh_exit_code)
 
 
 @cli.command(name='scp')
@@ -1301,6 +1314,7 @@ def ssh(ctx, run_id, retries, trace, region):
 @click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
                                                       'will be used.')
 @Config.validate_access_token
+@stacktracing
 def scp(source, destination, recursive, quiet, retries, trace, region):
     """
     Transfers files or directories between local workstation and run instance.
@@ -1334,13 +1348,7 @@ def scp(source, destination, recursive, quiet, retries, trace, region):
 
         pipe scp -r 12345:/common/workdir/dir dir
     """
-    try:
-        run_scp(source, destination, recursive, quiet, retries, region)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    run_scp(source, destination, recursive, quiet, retries, region)
 
 
 @cli.group()
@@ -1362,6 +1370,7 @@ def tunnel():
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@stacktracing
 def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
     """
     Stops background tunnel processes.
@@ -1389,13 +1398,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
         pipe tunnel stop -lp 4567 12345
 
     """
-    try:
-        kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
 
 
 @tunnel.command(name='start')
@@ -1427,6 +1430,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
                                                       'will be used.')
 @Config.validate_access_token
+@stacktracing
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                  timeout, foreground, retries, trace, region):
@@ -1499,15 +1503,9 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
-    try:
-        create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                      ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                      timeout, foreground, retries, region)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    create_tunnel(host_id, local_port, remote_port, connection_timeout,
+                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                  timeout, foreground, retries, region)
 
 
 @cli.command(name='update')
@@ -1739,7 +1737,8 @@ def import_users(file_path, create_user, create_group, create_metadata):
 
 @cli.group()
 def dts():
-    """ Data-transfer-service commands
+    """
+    Data transfer service commands
     """
     pass
 
@@ -1753,10 +1752,23 @@ def dts():
 @click.option('--preference', required=False, type=str, multiple=True,
               help='String, describing preference''s key and value: key=value. Multiple options supported')
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def create_dts(url, name, schedulable, prefix, preference, json_out):
+@stacktracing
+def create_dts(url, name, schedulable, prefix, preference, json_out, trace):
     """
-    Registers a DTS
+    Registers new data transfer service.
+
+    Examples:
+
+    I.  Registers data transfer service which can be used for input / output data transferring in runs.
+
+        pipe dts create -n "dtsname" -u "https://exampledtsurl/restapi" -p "/path/prefix/to/example/dts/local/paths"
+
+    II. Registers data transfer service which can be used for autonomous local data synchronisation.
+
+        pipe dts create -n "autonomousdtshostname" -u "autonomousdtshostname" -p "autonomousdtshostname"
+
     """
     DtsOperationsManager().create(url, name, schedulable, prefix, preference, json_out)
 
@@ -1764,17 +1776,59 @@ def create_dts(url, name, schedulable, prefix, preference, json_out):
 @dts.command(name='list')
 @click.argument('registry-name-or-id', required=False, type=str)
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def list_dts(registry_name_or_id, json_out):
+@stacktracing
+def list_dts(registry_name_or_id, json_out, trace):
     """
-    Shows details of all DTS registries or the one for ID specified
+    Either shows details of a data transfer service or lists all data transfer services.
+
+    Examples:
+
+    I.   List all data transfer services.
+
+        pipe dts list
+
+    II.  Show details of a single data transfer service with some name (dtsname).
+
+        pipe dts list dtsname
+
+    III. Show details of a single data transfer service with some id (123).
+
+        pipe dts list 123
+
     """
     DtsOperationsManager().list(registry_name_or_id, json_out)
 
 
+@dts.command(name='delete')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def delete_dts(registry_name_or_id, json_out, trace):
+    """
+    Deletes data transfer service.
+
+    Examples:
+
+    I.  Deletes data transfer service with some name (dtsname).
+
+        pipe dts delete dtsname
+
+    II. Deletes data transfer service with some id (123).
+
+        pipe dts delete 123
+
+    """
+    DtsOperationsManager().delete(registry_name_or_id, json_out)
+
+
 @dts.group()
 def preferences():
-    """ Commands for DTS preferences management
+    """
+    Commands for data transfer service preferences management
     """
     pass
 
@@ -1784,23 +1838,59 @@ def preferences():
 @click.option('--preference', '-p', multiple=True, type=str,
               help='String, describing preference''s key and value: key=value. Multiple options supported')
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
-def update_dts_preferences(registry_name_or_id, preference, json_out):
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def update_dts_preferences(registry_name_or_id, preference, json_out, trace):
     """
-    Updates preferences for the given DTS
+    Updates existing preferences or adds new preferences for the given data transfer service.
+
+    Examples:
+
+    I.   Adds single preference for a data transfer service with some name (dtsname).
+
+        pipe dts preferences update dtsname -p key=value
+
+    II.  Adds multiple preferences for a data transfer service with some name (dtsname).
+
+        pipe dts preferences update dtsname -p key1=value1 -p key2=value2
+
+    III. Adds a single preference for a data transfer service with some id (123).
+
+        pipe dts preferences update 123 -p key=value
+
     """
     DtsOperationsManager().upsert_preferences(registry_name_or_id, preference, json_out)
 
 
 @preferences.command(name='delete')
 @click.argument('registry-name-or-id', required=True, type=str)
-@click.option('--key', '-k', multiple=True, type=str,
+@click.option('--preference', '-p', multiple=True, type=str,
               help="Key of the preference, that should be removed. Multiple options supported")
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
-def delete_dts_preferences(registry_name_or_id, key, json_out):
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def delete_dts_preferences(registry_name_or_id, preference, json_out, trace):
     """
-    Removes preferences for specified keys from the given DTS
+    Deletes preferences for the given data transfer service.
+
+    Examples:
+
+    I.   Deletes a single preference (key) from a data transfer service with some name (dtsname).
+
+        pipe dts preferences delete dtsname -p key
+
+    II.  Deletes multiple preferences (key1, key2) from a data transfer service with some name (dtsname).
+
+        pipe dts preferences delete dtsname -p key1 -p key2
+
+    III. Deletes a single preference (key) from a data transfer service with some id (123).
+
+        pipe dts preferences delete 123 -p key
+
     """
-    DtsOperationsManager().delete_preferences(registry_name_or_id, key, json_out)
+    DtsOperationsManager().delete_preferences(registry_name_or_id, preference, json_out)
 
 
 # Used to run a PyInstaller "freezed" version

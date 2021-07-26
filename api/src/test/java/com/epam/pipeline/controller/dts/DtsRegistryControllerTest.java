@@ -47,6 +47,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     private static final String DTS_URL = SERVLET_PATH + "/dts";
     private static final String ID_URL = DTS_URL + "/%d";
     private static final String DTS_PREFERENCES_URL = ID_URL + "/preferences";
+    private static final String DTS_HEARTBEAT_URL = ID_URL + "/heartbeat";
     private static final String ADMIN = "ADMIN";
     private static final String REGISTRY_ID_AS_STRING = Long.toString(ID);
 
@@ -112,11 +113,11 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldUpdateDtsRegistry() throws Exception {
         final String content = getObjectMapper().writeValueAsString(dtsRegistryVO);
-        doReturn(dtsRegistry).when(mockDtsRegistryApiService).update(ID, dtsRegistryVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).update(REGISTRY_ID_AS_STRING, dtsRegistryVO);
 
         final MvcResult mvcResult = performRequest(put(String.format(ID_URL, ID)).content(content));
 
-        verify(mockDtsRegistryApiService).update(ID, dtsRegistryVO);
+        verify(mockDtsRegistryApiService).update(REGISTRY_ID_AS_STRING, dtsRegistryVO);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
@@ -127,12 +128,28 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
+    public void shouldUpdateDtsRegistryHeartbeat() throws Exception {
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).updateHeartbeat(REGISTRY_ID_AS_STRING);
+
+        final MvcResult mvcResult = performRequest(put(String.format(DTS_HEARTBEAT_URL, ID)));
+
+        verify(mockDtsRegistryApiService).updateHeartbeat(REGISTRY_ID_AS_STRING);
+        assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateDtsRegistryHeartbeat() {
+        performUnauthorizedRequest(put(String.format(DTS_HEARTBEAT_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
     public void shouldDeleteDtsRegistry() {
-        doReturn(dtsRegistry).when(mockDtsRegistryApiService).delete(ID);
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).delete(REGISTRY_ID_AS_STRING);
 
         final MvcResult mvcResult = performRequest(delete(String.format(ID_URL, ID)));
 
-        verify(mockDtsRegistryApiService).delete(ID);
+        verify(mockDtsRegistryApiService).delete(REGISTRY_ID_AS_STRING);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 

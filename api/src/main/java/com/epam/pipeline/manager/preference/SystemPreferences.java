@@ -509,6 +509,10 @@ public class SystemPreferences {
             "", DTS_GROUP, pass);
     public static final StringPreference DTS_DISTRIBUTION_URL = new StringPreference("dts.dist.url",
             "", DTS_GROUP, pass);
+    public static final IntPreference DTS_MONITORING_PERIOD_SECONDS = new IntPreference("dts.monitoring.period.seconds",
+            (int) TimeUnit.MINUTES.toSeconds(1), DTS_GROUP, isGreaterThan(10));
+    public static final IntPreference DTS_OFFLINE_TIMEOUT_SECONDS = new IntPreference("dts.offline.timeout.seconds",
+            (int) TimeUnit.MINUTES.toSeconds(5), DTS_GROUP, isGreaterThan(0));
 
     /**
      * Controls maximum number of scheduled at once runs
