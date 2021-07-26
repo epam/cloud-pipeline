@@ -83,7 +83,7 @@ class GitManager:
             versioned_storage_name = versioned_storage.get('name')
             repo_path = os.path.join(self.root_folder, item_name)
             repo = self.git_client.get_repo(repo_path)
-            items.append(VersionedStorage(item_name, versioned_storage_name, repo_path,
+            items.append(VersionedStorage(versioned_storage.get('id'), versioned_storage_name, repo_path,
                                           repo.get('revision'), repo.get('detached'))
                          .to_json())
         return items
