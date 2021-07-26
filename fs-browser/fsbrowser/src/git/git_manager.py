@@ -21,7 +21,7 @@ from fsbrowser.src.git.git_task import GitTask
 from fsbrowser.src.model.git_repo_status import GitRepositoryStatus
 from fsbrowser.src.model.versioned_storage import VersionedStorage
 
-VERSION_STORAGE_IDENTIFIER = 'id'
+VERSION_STORAGE_IDENTIFIER = 'name'
 GIT_CREDENTIALS_DURATION_DAYS = 30
 
 

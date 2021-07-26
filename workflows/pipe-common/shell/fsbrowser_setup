@@ -32,7 +32,6 @@ CP_FSBROWSER_HOST="${CP_FSBROWSER_HOST:-0.0.0.0}"
 CP_FSBROWSER_WD="${CP_FSBROWSER_WD:-/}"
 CP_FSBROWSER_TMP="${CP_FSBROWSER_TMP:-/tmp}"
 CP_FSBROWSER_BLACK_LIST="${CP_FSBROWSER_BLACK_LIST:-/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc}"
-CP_FSBROWSER_PASS=$(echo -n "root:${SSH_PASS}" | base64)
 if [ -z "$CP_FSBROWSER_STORAGE" ]; then
     CP_FSBROWSER_STORAGE="$(curl -k \
                                     -s \
@@ -87,7 +86,7 @@ if [ "$_RESUMED_RUN" == true ]; then
 elif [ $_fsbfowser_launch_exit_code -eq 0 ] && [ -n "$PIPELINE_ID" ]; then
     timeout 5 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' "$CP_FSBROWSER_HOST" "${CP_FSBROWSER_PORT}"
     if [ "$?" -ne 0 ]; then
-      echo "Excited max retries count for waiting FSBrowser startup"
+      echo "Exceeded max retries count for waiting FSBrowser startup"
       exit 1
     fi
     _pipeline_type="$(curl -k \
@@ -97,6 +96,30 @@ elif [ $_fsbfowser_launch_exit_code -eq 0 ] && [ -n "$PIPELINE_ID" ]; then
                                "${API}pipeline/$PIPELINE_ID/load" | \
                                   jq -r '.payload.pipelineType//""')"
     if [ "$_pipeline_type" = 'VERSIONED_STORAGE' ]; then
-      clone_git_repo "$CP_FSBROWSER_VS_WD/$PIPELINE_ID" "$_GIT_REPO" "$_REPO_REVISION" "$_RESUMED_RUN" "$_BRANCH"
+        task_id="$(curl -k -s -X POST -u root:$SSH_PASS  \
+          "http://localhost:$CP_FSBROWSER_PORT/vs/$PIPELINE_ID/clone?revision=$_REPO_REVISION" | \
+          jq -r '.payload.task//""')"
+        if [ -z "$task_id" ]; then
+          echo "Failed to clone versioned storage $PIPELINE_ID"
+          exit 1
+        fi
+
+        clone_wait_retries="${CP_FSBROWSER_VS_CLONE_WAIT_RETRIES:-50}"
+        clone_status=""
+        while [ $clone_wait_retries -ge 0 ];
+        do
+          clone_status="$(curl -k -s -X GET -u root:$SSH_PASS \
+            "http://localhost:$CP_FSBROWSER_PORT/status/$task_id" | jq -r '.payload.status//""')"
+          if [ "$clone_status" == "success" ]; then
+            break
+          fi
+          clone_wait_retries=$(( $clone_wait_retries - 1 ))
+          sleep 5
+        done
+        if [ "$clone_status" != "success" ]; then
+            echo "Failed to clone versioned storage $PIPELINE_ID"
+          exit 1
+        fi
+        echo "Successfully initialized versioned storage $PIPELINE_NAME"
     fi
 fi
