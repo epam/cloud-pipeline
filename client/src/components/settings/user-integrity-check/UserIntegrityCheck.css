@@ -1,0 +1,16 @@
+table, th, td {
+    border-bottom: 1px solid rgba(244, 244, 244, 0.4);
+    padding: 10px;
+    cursor: pointer;
+    text-align: left;
+}
+table {
+    margin: 30px auto;
+    width: 100%;
+    border-collapse: collapse;
+}
+thead {
+    background-color: #eeee;;
+}
+table tbody tr:nth-child(even){background-color: rgba(244, 244, 244, 0.4);}
+table  tbody tr:hover {background-color: rgba(16, 142, 233, 0.1)}
