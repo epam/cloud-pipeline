@@ -51,7 +51,7 @@ import static org.testng.Assert.assertTrue;
 
 public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(ADD_INSTANCE, $(byClassName("ant-btn-sm")))
+            entry(ADD_INSTANCE, $(byId("metadata-actions-button")))
     );
 
     public static final By hideMetadata = byId("hide-metadata-button");
