@@ -1837,6 +1837,7 @@ export default class Metadata extends React.Component {
           trigger={['click']}
         >
           <Button
+            id="metadata-actions-button"
             size="small"
             style={{lineHeight: 1, margin: '0 0 0 5px'}}
           >
