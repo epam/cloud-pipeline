@@ -42,7 +42,8 @@
     "react-tap-event-plugin": "2.0.1",
     "react-test-renderer": "^15.5.4",
     "react-virtualized": "^9.7.2",
-    "remarkable": "^1.7.1"
+    "remarkable": "^1.7.1",
+    "slideatlas-viewer": "^4.4.1"
   },
   "devDependencies": {
     "@babel/core": "7.2.2",
@@ -126,8 +127,9 @@
     "whatwg-fetch": "2.0.3"
   },
   "scripts": {
-    "start": "node scripts/start.js",
-    "build": "node --max-old-space-size=6144 scripts/build.js",
+    "fix-sa-viewer": "node scripts/fix-sa-viewer.js",
+    "start": "npm run fix-sa-viewer & node scripts/start.js",
+    "build": "npm run fix-sa-viewer & node --max-old-space-size=6144 scripts/build.js",
     "test": "node scripts/test.js",
     "lint": "eslint src",
     "lint:fix": "npm run lint -- --fix",

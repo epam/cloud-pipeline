@@ -27,7 +27,14 @@ import Leaflet from 'leaflet/dist/leaflet';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import {API_PATH, SERVER} from '../../../../config';
 import styles from '../preview.css';
+import 'slideatlas-viewer/dist/sa-lib';
+import 'slideatlas-viewer/dist/sa.max';
 import 'leaflet/dist/leaflet.css';
+import 'slideatlas-viewer/css/saViewer.css';
+import 'slideatlas-viewer/css/main.css';
+import 'slideatlas-viewer/css/viewer.css';
+
+console.log(SA);
 
 function generateTileSource (storageId, tilesFolder) {
   // eslint-disable-next-line
