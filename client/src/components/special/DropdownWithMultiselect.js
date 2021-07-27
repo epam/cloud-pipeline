@@ -139,6 +139,7 @@ export default class DropdownWithMultiselect extends React.Component {
         placement="bottomRight"
         content={this.renderColumnsMenu()}>
         <Button
+          id="metadata-manage-columns-button"
           className={className}
           style={Object.assign({lineHeight: 1}, style || {})}
           onClick={this.openMenu}
