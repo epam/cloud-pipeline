@@ -105,6 +105,9 @@ class Pipeline(API):
                         docker_image=None, cmd_template=None,
                         timeout=None, config_name=None, instance_count=None,
                         price_type=None, region_id=None, parent_node=None, non_pause=None, friendly_url=None,
+                        status_notifications=False,
+                        status_notifications_status=None, status_notifications_recipient=None,
+                        status_notifications_subject=None, status_notifications_body=None,
                         run_as_user=None):
         api = cls.instance()
         params = {}
@@ -139,6 +142,14 @@ class Pipeline(API):
             payload['prettyUrl'] = friendly_url
         if run_as_user:
             payload['runAs'] = run_as_user
+        if status_notifications:
+            payload['notifications'] = [{
+                'type': 'PIPELINE_RUN_STATUS',
+                'triggerStatuses': status_notifications_status or None,
+                'recipients': status_notifications_recipient or None,
+                'subject': status_notifications_subject or None,
+                'body': status_notifications_body or None
+            }]
         data = json.dumps(payload)
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
