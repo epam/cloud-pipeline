@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,12 @@ package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
+import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -32,32 +36,31 @@ public class CategoricalAttributeApiService {
     private final CategoricalAttributeManager categoricalAttributesManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesManager.updateCategoricalAttributes(dict);
+    public CategoricalAttribute updateCategoricalAttribute(final CategoricalAttribute attribute) {
+        return attribute.getId() == null
+               ? categoricalAttributesManager.create(attribute)
+               : categoricalAttributesManager.update(attribute);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PostFilter(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST)
+    @AclMaskList
     public List<CategoricalAttribute> loadAll() {
         return categoricalAttributesManager.loadAll();
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PostAuthorize(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT)
+    @AclMask
     public CategoricalAttribute loadAllValuesForKey(final String key) {
-        return categoricalAttributesManager.loadAllValuesForKey(key);
+        return categoricalAttributesManager.loadByNameOrId(key);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public boolean deleteAttributeValues(final String key) {
-        return categoricalAttributesManager.deleteAttributeValues(key);
+        return categoricalAttributesManager.delete(key);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public boolean deleteAttributeValue(final String key, final String value) {
         return categoricalAttributesManager.deleteAttributeValue(key, value);
-    }
-
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void syncWithMetadata() {
-        categoricalAttributesManager.syncWithMetadata();
     }
 }

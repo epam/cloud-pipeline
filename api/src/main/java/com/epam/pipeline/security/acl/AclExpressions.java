@@ -134,6 +134,12 @@ public final class AclExpressions {
 
     public static final String DTS_REGISTRY_PERMISSIONS = ADMIN_ONLY + OR + "hasRole('ROLE_DTS_MANAGER')";
 
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST =
+        ADMIN_ONLY + OR + "hasPermission(filterObject, 'READ')";
+
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT =
+        ADMIN_ONLY + OR + "hasPermission(returnObject, 'READ')";
+
     private AclExpressions() {
         // no op
     }
