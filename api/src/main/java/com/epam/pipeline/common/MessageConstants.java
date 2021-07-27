@@ -554,8 +554,11 @@ public final class MessageConstants {
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //System dictionaries
-    public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_KEY_DOESNT_EXIST = "categorical.attribute.key.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_ID_DOESNT_EXIST = "categorical.attribute.id.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY = "categorical.attribute.exists.already";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME = "categorical.attribute.null.name.key";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";

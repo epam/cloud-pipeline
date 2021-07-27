@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,5 +101,10 @@ public class MetadataApiService {
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public Set<String> getMetadataKeys(final AclClass entityClass) {
         return metadataManager.getMetadataKeys(entityClass);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public void syncWithCategoricalAttributes() {
+        metadataManager.syncWithCategoricalAttributes();
     }
 }
