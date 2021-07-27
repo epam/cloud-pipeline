@@ -16,7 +16,7 @@
 
 import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
-import {Icon, Row} from 'antd';
+import {Icon, Popover, Row} from 'antd';
 import moment from 'moment-timezone';
 import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
@@ -25,7 +25,7 @@ import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info'
 import styles from './CardsPanel.css';
 import RunTags from '../../../../runs/run-tags';
 import PlatformIcon from '../../../../tools/platform-icon';
-import MultizoneUrl, {MultizoneUrlPopover} from '../../../../special/multizone-url';
+import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
 function renderTitle (run) {
@@ -65,34 +65,30 @@ function renderPipeline (run) {
   }
   displayName = <span type="main">{displayName}</span>;
   if (run.serviceUrl && run.initialized) {
-    const renderMultiZoneServiceUrls = () => {
-      const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
-      return (
-        <div>
-          <ul>
-            {
-              regionedUrls.map(({name, url}, index) =>
-                <li key={index} style={{margin: 4}}>
-                  <MultizoneUrl configuration={url}>
-                    {name}
-                  </MultizoneUrl>
-                </li>
-              )
-            }
-          </ul>
-        </div>
-      );
-    };
+    const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
     return (
       <span>
         <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
-        <MultizoneUrlPopover
-          trigger={['hover']}
-          content={renderMultiZoneServiceUrls}
-          runServiceUrlConfiguration={run.serviceUrl}
-        >
-          {clusterIcon} <Icon type="export" /> {displayName}
-        </MultizoneUrlPopover>
+        <Popover
+          mouseEnterDelay={1}
+          content={
+            <div>
+              <ul>
+                {
+                  regionedUrls.map(({name, url}, index) =>
+                    <li key={index} style={{margin: 4}}>
+                      <MultizoneUrl configuration={url}>
+                        {name}
+                      </MultizoneUrl>
+                    </li>
+                  )
+                }
+              </ul>
+            </div>
+          }
+          trigger="hover">
+          <Icon type="export" /> {clusterIcon} {displayName}
+        </Popover>
       </span>
     );
   } else {

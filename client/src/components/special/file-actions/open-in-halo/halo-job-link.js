@@ -18,15 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {Icon} from 'antd';
-import {inject, observer} from 'mobx-react';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import MultizoneUrl from '../../multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../utils/multizone';
 
 const FETCH_INFO_SEC = 2;
 
-@inject('multiZoneManager')
-@observer
 class HaloJobLink extends React.Component {
   state = {
     jobInfo: undefined
@@ -79,7 +76,7 @@ class HaloJobLink extends React.Component {
 
   fetchJobStatus = () => {
     this.clearJobStatusTimer();
-    const {jobId, multiZoneManager} = this.props;
+    const {jobId} = this.props;
     const {jobInfo} = this.state;
     if (jobId && (!jobInfo || !jobInfo.initialized)) {
       const timer = () => {
@@ -94,16 +91,12 @@ class HaloJobLink extends React.Component {
         .then(() => {
           if (request.loaded) {
             const jobInfo = request.value;
-            multiZoneManager
-              .checkRunServiceUrl(jobInfo.serviceUrl)
-              .then(() => {
-                this.updateJobInfoCallback &&
-                this.updateJobInfoCallback(jobInfo, () => {
-                  if (!jobInfo.initialized) {
-                    timer();
-                  }
-                });
-              });
+            this.updateJobInfoCallback &&
+            this.updateJobInfoCallback(jobInfo, () => {
+              if (!jobInfo.initialized) {
+                timer();
+              }
+            });
           } else {
             throw new Error(request.error || 'Error fetching job info');
           }
@@ -118,7 +111,7 @@ class HaloJobLink extends React.Component {
   };
 
   render () {
-    const {jobId, multiZoneManager} = this.props;
+    const {jobId} = this.props;
     const {jobInfo} = this.state;
     if (!jobId || !jobInfo) {
       return (<Icon type="loading" />);

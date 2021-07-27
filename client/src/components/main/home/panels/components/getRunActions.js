@@ -50,31 +50,25 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
                 : undefined
             });
           } else {
-            const multizoneOverlay = {
-              content: () => {
-                return (
-                  <div>
-                    <ul>
-                      {
-                        regionedUrls.map(({name, url}, index) =>
-                          <li key={index} style={{margin: 4}}>
-                            <MultizoneUrl configuration={url}>
-                              {name}
-                            </MultizoneUrl>
-                          </li>
-                        )
-                      }
-                    </ul>
-                  </div>
-                );
-              },
-              runServiceUrlConfiguration: run.serviceUrl,
-              runId: run.id
-            };
+            const overlay = (
+              <div>
+                <ul>
+                  {
+                    regionedUrls.map(({name, url}, index) =>
+                      <li key={index} style={{margin: 4}}>
+                        <MultizoneUrl configuration={url}>
+                          {name}
+                        </MultizoneUrl>
+                      </li>
+                    )
+                  }
+                </ul>
+              </div>
+            );
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              multizoneOverlay
+              overlay
             });
           }
         }

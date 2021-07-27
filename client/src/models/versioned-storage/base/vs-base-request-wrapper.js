@@ -58,7 +58,7 @@ function fetchEndpoint (runId, defaultRegion = undefined) {
         } else {
           const multiZoneEndpoints = fsBrowserRequest.value;
           multiZoneManager
-            .check(multiZoneEndpoints)
+            .checkRegions()
             .then(() => {
               let bestRegion = defaultRegion;
               if (!bestRegion || !multiZoneEndpoints.hasOwnProperty(bestRegion)) {

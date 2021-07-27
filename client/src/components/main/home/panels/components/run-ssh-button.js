@@ -16,15 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
 import {Icon, Tooltip} from 'antd';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../special/multizone-url';
 
 const MOUSE_ENTER_DELAY_MS = 500;
 
-@inject('multiZoneManager')
-@observer
 class RunSSHButton extends React.Component {
   state = {
     pending: false,
@@ -67,24 +64,20 @@ class RunSSHButton extends React.Component {
             }
           })
           .then((configuration) => {
-            const {multiZoneManager} = this.props;
             return new Promise((resolve) => {
-              multiZoneManager.check(configuration)
-                .then(() => {
-                  this.setState({
-                    sshConfiguration: {...configuration}
-                  }, () => {
-                    const {defaultNavigationRequested} = this.state;
-                    if (defaultNavigationRequested) {
-                      if (Object.values(configuration).length === 1) {
-                        window.open(Object.values(configuration).pop(), '_blank').focus();
-                      } else {
-                        this.setState({visible: true});
-                      }
-                    }
-                    resolve();
-                  });
-                });
+              this.setState({
+                sshConfiguration: {...configuration}
+              }, () => {
+                const {defaultNavigationRequested} = this.state;
+                if (defaultNavigationRequested) {
+                  if (Object.values(configuration).length === 1) {
+                    window.open(Object.values(configuration).pop(), '_blank').focus();
+                  } else {
+                    this.setState({visible: true});
+                  }
+                }
+                resolve();
+              });
             });
           })
           .catch((e) => {
@@ -164,7 +157,7 @@ class RunSSHButton extends React.Component {
         onMouseLeave={this.clearLoadRunSSHConfigurationTimer}
       >
         {
-          icon && (<Icon type={icon}/>)
+          icon && (<Icon type={icon} />)
         }
         <span>SSH</span>
         {

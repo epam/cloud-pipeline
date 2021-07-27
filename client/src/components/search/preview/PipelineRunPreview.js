@@ -139,7 +139,6 @@ function getTimingInfoString (from, to) {
       ? pipelineRun.runTasks((params.item.id || params.item.elasticId))
       : null,
     multiZone: multiZoneManager
-      .getMultiZoneConfiguration(`run-${params.item.id || params.item.elasticId}`)
   };
 })
 @observer
@@ -153,24 +152,6 @@ export default class PipelineRunPreview extends React.Component {
     }),
     lightMode: PropTypes.bool
   };
-
-  componentDidMount () {
-    this.updateMultiZone();
-  }
-
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    this.updateMultiZone();
-  }
-
-  updateMultiZone () {
-    const {
-      multiZone,
-      runInfo
-    } = this.props;
-    if (runInfo) {
-      multiZone.checkRun(runInfo);
-    }
-  }
 
   @computed
   get runName () {

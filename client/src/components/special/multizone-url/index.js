@@ -23,10 +23,7 @@ import {
 } from 'antd';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
-import MultizoneUrlPopover from './multizone-url-popover';
 import styles from './multizone-url.css';
-
-export {MultizoneUrlPopover};
 
 @inject('multiZoneManager')
 @observer

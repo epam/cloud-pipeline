@@ -54,12 +54,12 @@ import registryName from '../tools/registryName';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
-import MultizoneUrl, {MultizoneUrlPopover} from '../special/multizone-url';
+import MultizoneUrl from '../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
-@inject('routing', 'pipelines', 'localization', 'dockerRegistries', 'multiZoneManager')
+@inject('routing', 'pipelines', 'localization', 'dockerRegistries')
 @runPipelineActions
 @observer
 export default class RunTable extends localization.LocalizedReactComponent {
@@ -966,41 +966,38 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const name = <b>{text}</b>;
         if (run.serviceUrl && run.initialized) {
-          const renderMultiZoneServiceUrls = () => {
-            const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
-            return (
-              <div>
-                <ul>
-                  {
-                    regionedUrls.map(({name, url}, index) =>
-                      <li key={index} style={{margin: 4}}>
-                        <MultizoneUrl configuration={url}>
-                          {name}
-                        </MultizoneUrl>
-                      </li>
-                    )
-                  }
-                </ul>
-              </div>
-            );
-          };
+          const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
           return (
             <div style={style}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
-              <MultizoneUrlPopover
+              <Popover
+                mouseEnterDelay={1}
+                content={
+                  <div>
+                    <ul>
+                      {
+                        regionedUrls.map(({name, url}, index) =>
+                          <li key={index} style={{margin: 4}}>
+                            <MultizoneUrl configuration={url}>
+                              {name}
+                            </MultizoneUrl>
+                          </li>
+                        )
+                      }
+                    </ul>
+                  </div>
+                }
                 trigger={['hover']}
-                content={renderMultiZoneServiceUrls}
-                runServiceUrlConfiguration={run.serviceUrl}
               >
                 {clusterIcon} <Icon type="export" /> {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
                   instanceOrSensitiveFlag &&
                   <span style={{marginLeft: 18}}>
-                    {instanceOrSensitiveFlag}
-                  </span>
+                  {instanceOrSensitiveFlag}
+                </span>
                 }
-              </MultizoneUrlPopover>
+              </Popover>
             </div>
           );
         } else {

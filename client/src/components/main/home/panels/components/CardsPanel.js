@@ -21,7 +21,7 @@ import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
-import MultizoneUrl, {MultizoneUrlPopover} from '../../../../special/multizone-url';
+import MultizoneUrl from '../../../../special/multizone-url';
 import RunSSHButton from './run-ssh-button';
 
 const ACTION = PropTypes.shape({
@@ -183,7 +183,6 @@ export default class CardsPanel extends React.Component {
                 icon,
                 style,
                 overlay,
-                multizoneOverlay,
                 multiZoneUrl,
                 runSSH,
                 runId
@@ -266,19 +265,7 @@ export default class CardsPanel extends React.Component {
                       )
                     }
                     {
-                      multizoneOverlay && (
-                        <MultizoneUrlPopover
-                          onVisibleChange={onVisibleChange}
-                          trigger={['click']}
-                          content={multizoneOverlay.content}
-                          runServiceUrlConfiguration={multizoneOverlay.runServiceUrlConfiguration}
-                        >
-                          {title}
-                        </MultizoneUrlPopover>
-                      )
-                    }
-                    {
-                      (!multizoneOverlay && !overlay) && (
+                      !overlay && (
                         <span style={style}>
                           {title}
                         </span>

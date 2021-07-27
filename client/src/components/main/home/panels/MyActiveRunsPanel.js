@@ -238,16 +238,5 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
 
   componentDidMount () {
     this.props.onInitialize && this.props.onInitialize(this);
-    this.updateMultiZoneRegions();
-  }
-
-  componentDidUpdate () {
-    this.updateMultiZoneRegions();
-  }
-
-  updateMultiZoneRegions () {
-    if (this.props.activeRuns.loaded) {
-      this.props.multiZoneManager.checkRunsServiceUrls(this.getActiveRuns());
-    }
   }
 }

@@ -14,27 +14,43 @@
  *  limitations under the License.
  */
 
-import Mutlizone from './mutlizone';
+import Multizone from './multizone';
+import cloudRegionsInfo from '../../models/cloudRegions/CloudRegionsInfo';
 import parseRunServiceUrlConfiguration from './parse-run-service-url-configuration';
+import getEdgeExternalEndpoints from './get-edge-external-endpoints';
 
-class MultizoneManager extends Mutlizone {
+class MultizoneManager extends Multizone {
   constructor () {
     super();
-    this.cache = new Map();
+    this.checkRegions();
   }
 
-  getRunMultiZoneConfiguration (runId) {
-    return this.getMultiZoneConfiguration(`run-${runId}`);
-  }
-
-  getMultiZoneConfiguration (key) {
-    if (!this.cache.has(key)) {
-      this.cache.set(key, new Mutlizone(this.defaultRegion));
+  checkRegions () {
+    if (this.checkRegionsPromise) {
+      return this.checkRegionsPromise;
     }
-    return this.cache.get(key);
+    this.checkRegionsPromise = new Promise((resolve) => {
+      cloudRegionsInfo.fetchIfNeededOrWait()
+        .then(() => {
+          if (cloudRegionsInfo.loaded) {
+            const regionIds = (cloudRegionsInfo.value || [])
+              .map(region => region.regionId);
+            return getEdgeExternalEndpoints(regionIds);
+          } else {
+            throw new Error(cloudRegionsInfo.error);
+          }
+        })
+        .then(endpoints => {
+          console.info('Edge external endpoints: ', endpoints);
+          return this.check(endpoints);
+        })
+        .catch(() => Promise.resolve(this.defaultRegion))
+        .then(resolve);
+    });
+    return this.checkRegionsPromise;
   }
 }
 
 const defaultManager = new MultizoneManager();
 export default defaultManager;
-export {MultizoneManager, Mutlizone, parseRunServiceUrlConfiguration};
+export {MultizoneManager, Multizone, parseRunServiceUrlConfiguration};

@@ -15,8 +15,7 @@
  */
 
 import {action, computed, observable} from 'mobx';
-import measureUrlLatency from './measure-url-latency';
-import parseRunServiceUrl from '../parseRunServiceUrl';
+import measureUrlLatency, {clearPerformanceEntries} from './measure-url-latency';
 import PreferenceLoad from '../../models/preferences/PreferenceLoad';
 
 function getRegionLatency (region, url) {
@@ -26,25 +25,13 @@ function getRegionLatency (region, url) {
   });
 }
 
-function getDefaultServiceUrl (regionServiceUrl) {
-  try {
-    const urls = parseRunServiceUrl(regionServiceUrl);
-    const defaultUrl = urls.find(url => url.default) || urls[0];
-    if (defaultUrl) {
-      return defaultUrl.url;
-    }
-    return undefined;
-  } catch (_) {
-    return undefined;
-  }
-}
-
-class Mutlizone {
+class Multizone {
   @observable _defaultRegion;
   @observable _defaultRegionPreference;
   _defaultRegionPreferenceFetched;
   @observable _latencies = {};
   _checkRegions = {};
+  _checkCall = 0;
 
   constructor (defaultRegion) {
     this._defaultRegion = defaultRegion;
@@ -81,59 +68,6 @@ class Mutlizone {
     });
   }
 
-  /**
-   * Checks run ssh / fsbrowser response
-   * @param request
-   */
-  checkRunUrlRequest (request) {
-    return new Promise((resolve) => {
-      request
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (request.loaded) {
-            return this.check(request.value);
-          }
-          return Promise.resolve();
-        })
-        .then(resolve)
-        .catch(() => resolve());
-    });
-  }
-
-  checkRun (runRequest) {
-    return new Promise((resolve) => {
-      runRequest
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (runRequest.loaded && runRequest.value.serviceUrl) {
-            const {serviceUrl = {}} = runRequest.value;
-            return this.checkRunServiceUrl(serviceUrl);
-          }
-          return Promise.resolve();
-        })
-        .then(resolve)
-        .catch(() => resolve());
-    });
-  }
-
-  checkRunsServiceUrls (runs) {
-    const serviceUrls = (runs || [])
-      .map(run => run.serviceUrl)
-      .filter(Boolean);
-    const configuration = serviceUrls.reduce((r, c) => ({...r, ...c}), {});
-    return this.checkRunServiceUrl(configuration);
-  }
-
-  checkRunServiceUrl (serviceUrl) {
-    const configurations = Object
-      .entries(serviceUrl || {})
-      .map(([region, urlConfiguration]) => ({
-        [region]: getDefaultServiceUrl(urlConfiguration)
-      }))
-      .reduce((r, c) => ({...r, ...c}), {});
-    return this.check(configurations);
-  }
-
   check (urlConfiguration, recalculate = false) {
     const result = {...this._latencies};
     const configurations = Object.entries(urlConfiguration)
@@ -153,6 +87,8 @@ class Mutlizone {
     const check = regionsToCheck
       .map(region => configurations.find(configuration => configuration.region === region))
       .filter(Boolean);
+    this._checkCall += 1;
+    const checkCall = this._checkCall;
     return new Promise((resolve) => {
       Promise.all(
         check.map(({region, url}) => getRegionLatency(region, url))
@@ -186,6 +122,11 @@ class Mutlizone {
           regionsToCheck.forEach(region => {
             delete this._checkRegions[region];
           });
+        })
+        .then(() => {
+          if (checkCall === this._checkCall) {
+            clearPerformanceEntries();
+          }
         });
     });
   }
@@ -257,4 +198,4 @@ class Mutlizone {
   }
 }
 
-export default Mutlizone;
+export default Multizone;

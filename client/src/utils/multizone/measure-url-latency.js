@@ -50,6 +50,10 @@ function measureSingleUrlLatency (url, experiment = 0) {
   });
 }
 
+export function clearPerformanceEntries () {
+  performance.clearResourceTimings();
+}
+
 export default function measureUrlLatency (url, experimentsCount = 5) {
   return new Promise(resolve => {
     measureSingleUrlLatency(url, 0)

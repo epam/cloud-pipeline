@@ -157,22 +157,6 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
-    this.updateMultiZone();
-  }
-
-  updateMultiZone () {
-    const {
-      multiZone,
-      run,
-      runSSH,
-      runFSBrowser
-    } = this.props;
-    if (this.initializeEnvironmentFinished) {
-      multiZone
-        .checkRun(run)
-        .then(() => multiZone.checkRunUrlRequest(runSSH))
-        .then(() => multiZone.checkRunUrlRequest(runFSBrowser));
-    }
   }
 
   componentWillUnmount () {
@@ -1968,7 +1952,6 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate () {
-    this.updateMultiZone();
     if (this.language === null && this.props.run.loaded) {
       if (this.props.run.value.pipelineId && this.props.run.value.version) {
         this.language = pipelines.getLanguage(

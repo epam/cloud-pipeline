@@ -206,17 +206,5 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
 
   componentDidMount () {
     this.props.onInitialize && this.props.onInitialize(this);
-    this.updateMultiZoneRegions();
-  }
-
-  componentDidUpdate () {
-    this.updateMultiZoneRegions();
-  }
-
-  updateMultiZoneRegions () {
-    if (this.props.services.loaded) {
-      const runs = (this.props.services.value || []).filter(r => r.status === 'RUNNING');
-      this.props.multiZoneManager.checkRunsServiceUrls(runs);
-    }
   }
 }
