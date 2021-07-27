@@ -29,7 +29,7 @@ spec:
             value: "--max_old_space_size=4096"
           - name: CP_EDGE_REGION
             value: "$CP_CLOUD_ADDITIONAL_REGION_ID"
-          - name: CP_EDGE_EXTERNAL
+          - name: EDGE_EXTERNAL
             value: "${CP_EDGE_ADDITIONAL_EXTERNAL}"
           - name: CP_EDGE_EXTERNAL_HOST
             value: "${CP_EDGE_ADDITIONAL_EXTERNAL_HOST}"
