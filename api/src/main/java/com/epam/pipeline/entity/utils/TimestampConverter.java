@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.ontology;
+package com.epam.pipeline.entity.utils;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
