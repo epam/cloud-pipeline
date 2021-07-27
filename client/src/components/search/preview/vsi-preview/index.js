@@ -23,22 +23,18 @@ import {
   Icon
 } from 'antd';
 import classNames from 'classnames';
-import Leaflet from 'leaflet/dist/leaflet';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
-import {API_PATH, SERVER} from '../../../../config';
+import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
+import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
 import styles from '../preview.css';
-import 'slideatlas-viewer/dist/sa-lib';
-import 'slideatlas-viewer/dist/sa.max';
-import 'leaflet/dist/leaflet.css';
-import 'slideatlas-viewer/css/saViewer.css';
-import 'slideatlas-viewer/css/main.css';
-import 'slideatlas-viewer/css/viewer.css';
+import './girder-mock/index';
+import '../../../../staticStyles/sa-styles.css';
 
-console.log(SA);
+const {SA, SAM, $} = window;
 
-function generateTileSource (storageId, tilesFolder) {
+function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
-  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${tilesFolder}/{z}/{y}/{x}.jpg`;
+  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${tilesFolder}/${z}/${y}/${x}.jpg`;
 }
 
 function getFolderContents (storageId, folder) {
@@ -63,6 +59,56 @@ function getFolderContents (storageId, folder) {
       })
       .catch(() => {
         resolve([]);
+      });
+  });
+}
+
+function readStorageFileJson (storage, path) {
+  return new Promise((resolve) => {
+    const request = new DataStorageItemContent(storage, path);
+    request
+      .fetch()
+      .then(() => {
+        if (request.loaded) {
+          const {
+            content
+          } = request.value;
+          if (content) {
+            try {
+              resolve(JSON.parse(atob(content)));
+            } catch (e) {
+              // eslint-disable-next-line
+              throw new Error(`Error reading content for path ${path} (storage #${storage}): ${e.message}`);
+            }
+          } else {
+            throw new Error(`Empty content for path ${path} (storage #${storage})`);
+          }
+        } else {
+          throw new Error(request.error);
+        }
+      })
+      .catch(() => resolve());
+  });
+}
+
+function getTiles (storageId, folder) {
+  return new Promise((resolve) => {
+    getFolderContents(storageId, folder)
+      .then(tiles => {
+        if (tiles && tiles.length > 0) {
+          readStorageFileJson(
+            storageId,
+            `${folder}/info.json`
+          )
+            .then(info => {
+              resolve({
+                folder,
+                info
+              });
+            });
+        } else {
+          resolve(undefined);
+        }
       });
   });
 }
@@ -143,9 +189,8 @@ class VSIPreview extends React.Component {
 
   fetchPreviewItems = () => {
     const {file, storageId, dataStorageCache} = this.props;
-    if (this.map) {
-      this.map.remove();
-      this.map = undefined;
+    if (this.saViewer) {
+      this.saViewer = undefined;
     }
     if (!file || !storageId || !dataStorageCache) {
       this.setState({
@@ -169,12 +214,12 @@ class VSIPreview extends React.Component {
         if (e && e.length === 4) {
           const tilesFolder = `${e[1] || ''}${e[2]}.tiles`;
           const folder = `${e[1] || ''}${e[2]}`;
-          getFolderContents(storageId, tilesFolder)
+          getTiles(storageId, tilesFolder)
             .then(tiles => {
-              if (tiles.length > 0) {
+              if (tiles) {
                 this.setState({
                   items: [],
-                  tiles: tilesFolder,
+                  tiles,
                   pending: false
                 });
               } else {
@@ -307,22 +352,38 @@ class VSIPreview extends React.Component {
       return null;
     }
     const initializeTiles = (element) => {
-      if (element && !this.map) {
-        this.map = Leaflet.map(
-          element,
+      if (element && !this.saViewer) {
+        const {
+          width = 10000,
+          height = 10000,
+          minLevel = 0,
+          maxLevel = 5,
+          bounds = [0, width - 1, 0, height - 1],
+          ...rest
+        } = tiles.info || {};
+        const viewers = SA.SAViewer($(element),
           {
-            center: [0, 0],
-            zoom: 0
-          }
-        );
-        Leaflet.tileLayer(
-          generateTileSource(storageId, tiles),
-          {
-            noWrap: true
-          }
-        ).addTo(this.map);
-      } else if (this.map) {
-        this.map.invalidateSize();
+            zoomWidget: true,
+            drawWidget: true,
+            prefixUrl: `${PUBLIC_URL}/slideatlas-viewer/img/`,
+            tileSource: {
+              height,
+              width,
+              bounds,
+              minLevel,
+              maxLevel,
+              ...rest,
+              getTileUrl: function (level, x, y) {
+                return generateTileSource(storageId, tiles.folder, x, y, level);
+              }
+            }
+          });
+        this.saViewer = viewers[0].saViewer;
+        this.saViewer.ShareTab.hide();
+        // eslint-disable-next-line
+        const panel = new SAM.LayerPanel(this.saViewer, `${storageId}/${tiles.folder}`);
+      } else if (this.saViewer) {
+        $(window).trigger('resize');
       }
     };
     const goFullScreen = () => {
@@ -340,6 +401,7 @@ class VSIPreview extends React.Component {
           )
         }
       >
+        {/* eslint-disable-next-line */}
         <div
           ref={initializeTiles}
           style={{
@@ -347,11 +409,10 @@ class VSIPreview extends React.Component {
             height: '100%'
           }}
         >
-          {'\u00A0'}
         </div>
         <Button
           id="vsi-preview-fullscreen-button"
-          className={styles.leafletFullscreenButton}
+          className={styles.vsiPreviewFullscreenButton}
           onClick={goFullScreen}
         >
           <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
