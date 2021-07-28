@@ -696,20 +696,21 @@ def view_cluster_for_node(node_name):
               help='Specifies run status to send run status change notifications. '
                    'The option can be specified several times. '
                    'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Supported values are: SUCCESS, FAILURE, RUNNING, STOPPED, PAUSING, PAUSED and RESUMING. '
                    'Defaults to SUCCESS, FAILURE and STOPPED run statuses.')
 @click.option('-sn-recipient', '--status-notifications-recipient', multiple=True, type=str, required=False,
-              help='Specifies run status change notification recipient. '
+              help='Specifies run status change notification recipient user id or user name. '
                    'The option can be specified several times. '
                    'The option will be ignored if -sn (--status-notifications) option was not specified. '
                    'Defaults to run owner.')
 @click.option('-sn-subject', '--status-notifications-subject', type=str, required=False,
               help='Specifies run status change notification subject. '
                    'The option will be ignored if -sn (--status-notifications) option was not specified. '
-                   'Defaults to a corresponding default notification subject.')
+                   'Defaults to global run status change notification subject.')
 @click.option('-sn-body', '--status-notifications-body', type=str, required=False,
               help='Specifies run status change notification body file path. '
                    'The option will be ignored if -sn (--status-notifications) option was not specified. '
-                   'Defaults to a corresponding default notification body.')
+                   'Defaults to global run status change notification body.')
 @click.option('-u', '--user', required=False, type=str, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
@@ -745,18 +746,18 @@ def run(pipeline,
 
     Examples:
 
-    I.  Launches a run with default run status change notifications enabled.
+    I.  Launches pipeline (mypipeline) run with default run status change notifications enabled.
 
-        pipe run -n pipeline -sn
+        pipe run -n mypipeline -y -sn
 
-    II. Launches a run with custom run status change notifications enabled.
+    II. Launches pipeline (mypipeline) run with custom run status change notifications enabled.
     In this case notifications will only be sent if run reaches
     one of the statuses (SUCCESS or FAILURE)
     to some users (USER1 and USER2)
     with the specified subject (Run has changed its status)
     and body from some local file (/path/to/email/body/template/file).
 
-        pipe run -n pipeline -sn
+        pipe run -n mypipeline -y -sn
         -sn-status SUCCESS -sn-status FAILURE
         -sn-recipient USER1 -sn-recipient USER2
         -sn-subject "Run status has changed"
