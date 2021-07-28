@@ -886,7 +886,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     super.elements(),
                     entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
                             .find(byClassName("ant-table-content"))),
-                    entry(SEARCH, context().find(byClassName("ant-input-search")))
+                    entry(SEARCH, context().find(byId("search-roles-input")))
             );
 
             public RolesTabAO(PipelinesLibraryAO parentAO) {
@@ -906,6 +906,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public EditRolePopup editRole(final String role) {
                 sleep(1, SECONDS);
+                searchRoleBySubstring(role);
                 context().$$(byText(role))
                         .filterBy(visible)
                         .first()
@@ -917,6 +918,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public RolesTabAO clickSearch() {
                 click(SEARCH);
+                return this;
+            }
+
+            public RolesTabAO searchRoleBySubstring(final String part) {
+                setValue(SEARCH, part);
                 return this;
             }
 
