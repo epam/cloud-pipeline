@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
             entry(VERSION, $(byId("version"))),
             entry(FIRST_VERSION, $(byCssSelector(".ant-table-row .anticon-tag")).closest(".ant-table-row")),
             entry(SETTINGS, $(byId("edit-pipeline-menu-button"))),
-            entry(EDIT, context().find(menuitem("ant-dropdown-menu-item", " Edit"))),
+            entry(EDIT, context().find(menuitem("rc-dropdown-menu-item", " Edit"))),
             entry(GIT_REPOSITORY, $(byId("pipeline-repository-button")))
     );
     private final String pipelineName;
