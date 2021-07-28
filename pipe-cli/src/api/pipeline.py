@@ -143,12 +143,17 @@ class Pipeline(API):
         if run_as_user:
             payload['runAs'] = run_as_user
         if status_notifications:
+            if status_notifications_body:
+                with open(status_notifications_body, 'r') as f:
+                    status_notifications_body_content = f.read()
+            else:
+                status_notifications_body_content = None
             payload['notifications'] = [{
                 'type': 'PIPELINE_RUN_STATUS',
                 'triggerStatuses': status_notifications_status or None,
                 'recipients': status_notifications_recipient or None,
                 'subject': status_notifications_subject or None,
-                'body': status_notifications_body or None
+                'body': status_notifications_body_content or None
             }]
         data = json.dumps(payload)
         response_data = api.call('run', data)
@@ -190,12 +195,17 @@ class Pipeline(API):
         if run_as_user:
             payload['runAs'] = run_as_user
         if status_notifications:
+            if status_notifications_body:
+                with open(status_notifications_body, 'r') as f:
+                    status_notifications_body_content = f.read()
+            else:
+                status_notifications_body_content = None
             payload['notifications'] = [{
                 'type': 'PIPELINE_RUN_STATUS',
                 'triggerStatuses': status_notifications_status or None,
                 'recipients': status_notifications_recipient or None,
                 'subject': status_notifications_subject or None,
-                'body': status_notifications_body or None
+                'body': status_notifications_body_content or None
             }]
         if parameters is not None:
             params = {}
