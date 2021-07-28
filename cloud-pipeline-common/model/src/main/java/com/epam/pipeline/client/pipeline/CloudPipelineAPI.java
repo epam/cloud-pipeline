@@ -252,5 +252,5 @@ public interface CloudPipelineAPI {
                                                    @Body DtsRegistryPreferencesRemovalVO removalVO);
 
     @PUT("dts/{id}/heartbeat")
-    Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) final String dtsId);
+    Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) String dtsId);
 }
