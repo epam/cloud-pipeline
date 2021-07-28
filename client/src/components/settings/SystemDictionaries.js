@@ -89,7 +89,6 @@ class SystemDictionaries extends React.Component {
       return {values: []};
     }
     const {currentDictionary} = this.props;
-    console.log('currentDictionary', this.dictionaries.find(dict => dict.key === currentDictionary));
     return this.dictionaries.find(dict => dict.key === currentDictionary);
   }
 
