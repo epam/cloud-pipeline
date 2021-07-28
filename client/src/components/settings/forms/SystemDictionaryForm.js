@@ -92,9 +92,7 @@ class SystemDictionaryForm extends React.Component {
   state = {
     id: undefined,
     name: undefined,
-    initialName: undefined,
     items: [],
-    initialItems: [],
     errors: {
       name: undefined,
       itemsValidation: undefined,
@@ -110,7 +108,7 @@ class SystemDictionaryForm extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (
-      prevProps.name !== this.props.name ||
+      prevProps.id !== this.props.id ||
       !dictionariesAreEqual(prevProps.items, this.props.items)
     ) {
       this.updateState();
@@ -126,28 +124,25 @@ class SystemDictionaryForm extends React.Component {
   }
 
   get modified () {
+    const {name: initialName, filter, items: initialItems} = this.props;
+    const initialItemsFiltered = (initialItems || []).map(mapValue(filter));
     const {
       name,
-      initialName,
-      items,
-      initialItems
+      items
     } = this.state;
-    return name !== initialName || !dictionariesAreEqual(items, initialItems);
+    return name !== initialName || !dictionariesAreEqual(items, initialItemsFiltered);
   }
 
   get dictionaries () {
-    const {dictionaries, name, isNew} = this.props;
-    return (dictionaries || []).filter(d => isNew || d.key !== name);
+    const {id, dictionaries, name} = this.props;
+    return (dictionaries || []).filter(d => !id || d.key !== name);
   }
 
   updateState = () => {
-    const {id, name, items} = this.props;
+    const {name, items} = this.props;
     this.setState({
-      id,
       name,
-      initialName: name,
-      items: (items || []).map(mapValue(this.props.filter)),
-      initialItems: (items || []).map(mapValue(this.props.filter))
+      items: (items || []).map(mapValue(this.props.filter))
     }, this.afterChange);
   };
 
@@ -205,19 +200,19 @@ class SystemDictionaryForm extends React.Component {
   };
 
   onSave = () => {
-    const {onSave, isNew} = this.props;
+    const {id, onSave, name: initialName} = this.props;
     if (onSave && this.valid && this.modified) {
-      const {id, name, initialName, items} = this.state;
+      const {name, items} = this.state;
       const itemsProcessed = (items || [])
         .map((item) => {
           const {filtered, ...rest} = item;
           return rest;
         });
       onSave(
-        !isNew && initialName !== name ? undefined : id,
+        id,
         name,
         itemsProcessed,
-        !isNew && initialName !== name ? initialName : undefined
+        initialName
       );
     }
   };
@@ -281,9 +276,9 @@ class SystemDictionaryForm extends React.Component {
   };
 
   onDelete = () => {
-    const {name, onDelete, isNew} = this.props;
+    const {id, name, onDelete} = this.props;
     if (onDelete) {
-      if (isNew) {
+      if (!id) {
         onDelete();
       } else {
         Modal.confirm({
@@ -304,7 +299,7 @@ class SystemDictionaryForm extends React.Component {
   }
 
   render () {
-    const {disabled, isNew} = this.props;
+    const {id, disabled} = this.props;
     const {linksFormVisible, editableLinksIndex} = this.state;
     const {
       name,
@@ -432,13 +427,13 @@ class SystemDictionaryForm extends React.Component {
             className={styles.action}
             disabled={disabled}
             onClick={this.onDelete}
-            type={isNew ? 'default' : 'danger'}
+            type={!id ? 'default' : 'danger'}
           >
-            {isNew ? 'Cancel' : 'Delete'}
+            {!id ? 'Cancel' : 'Delete'}
           </Button>
           <div>
             {
-              !isNew && (
+              !!id && (
                 <Button
                   className={styles.action}
                   disabled={disabled || !this.modified}
@@ -476,9 +471,9 @@ class SystemDictionaryForm extends React.Component {
 
 SystemDictionaryForm.propTypes = {
   disabled: PropTypes.bool,
-  items: PropTypes.array,
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   name: PropTypes.string,
-  isNew: PropTypes.bool,
+  items: PropTypes.array,
   onChange: PropTypes.func,
   onSave: PropTypes.func,
   onDelete: PropTypes.func,

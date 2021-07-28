@@ -155,7 +155,8 @@ class SystemDictionaries extends React.Component {
     const hide = message.loading('Saving dictionary...', 0);
     const {systemDictionaries, router} = this.props;
     this.setState({pending: true}, async () => {
-      if (previousName) {
+      const isNew = name !== previousName || !id;
+      if (id && name !== previousName) {
         const removeRequest = new SystemDictionariesDelete(previousName);
         await removeRequest.send();
         if (removeRequest.error) {
@@ -167,7 +168,7 @@ class SystemDictionaries extends React.Component {
       }
       const request = new SystemDictionariesUpdate();
       await request.send({
-        id,
+        id: isNew ? undefined : id,
         key: name,
         values: items
       });
@@ -342,7 +343,6 @@ class SystemDictionaries extends React.Component {
               <SystemDictionaryForm
                 filter={this.state.filter}
                 disabled={this.state.pending}
-                isNew={this.state.newDictionary}
                 onDelete={this.onDictionaryDelete}
                 onSave={this.onDictionarySave}
                 onChange={this.onDictionaryChanged}
