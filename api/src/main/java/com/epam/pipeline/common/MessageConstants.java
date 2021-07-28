@@ -389,7 +389,8 @@ public final class MessageConstants {
     public static final String ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED = "error.notification.receiver.not.specified";
 
     //Contextual notifications
-    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TYPE_MISSING = "error.contextual.notification.type.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TYPE_MISSING =
+            "error.contextual.notification.type.missing";
     public static final String ERROR_CONTEXTUAL_NOTIFICATION_TRIGGER_ID_MISSING =
             "error.contextual.notification.trigger.id.missing";
     public static final String ERROR_CONTEXTUAL_NOTIFICATION_RECIPIENTS_MISSING =

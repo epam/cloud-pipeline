@@ -9,6 +9,7 @@ import com.epam.pipeline.mapper.PipelineRunMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Service
 @Slf4j
 @RequiredArgsConstructor
 public class ContextualNotificationManager implements NotificationService {
@@ -28,9 +30,14 @@ public class ContextualNotificationManager implements NotificationService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyRunStatusChanged(final PipelineRun run) {
         contextualNotificationSettingsManager.find(NotificationType.PIPELINE_RUN_STATUS, run.getId())
+                .filter(notification -> triggersOnStatus(notification, run))
                 .map(notification -> toMessage(notification, run))
                 .map(message -> log(message, run))
                 .ifPresent(monitoringNotificationDao::createMonitoringNotification);
+    }
+
+    private boolean triggersOnStatus(final ContextualNotification notification, final PipelineRun run) {
+        return ListUtils.emptyIfNull(notification.getTriggerStatuses()).contains(run.getStatus());
     }
 
     private NotificationMessage toMessage(final ContextualNotification notification,
