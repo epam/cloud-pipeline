@@ -152,6 +152,9 @@ public class SystemPreferences {
     public static final StringPreference VERSION_STORAGE_BINARY_FILE_EXTS = new StringPreference(
             "storage.version.storage.report.binary.file.exts",
             "pdf", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference VERSION_STORAGE_IGNORED_FILES = new StringPreference(
+            "storage.version.storage.report.ignored.files",
+            ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
 
 
     /**

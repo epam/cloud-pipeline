@@ -33,11 +33,13 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import java.util.List;
+
 public interface GitReaderApi {
 
     String REF = "ref";
     String PROJECT = "project";
-    String PATH = "path";
+    String PATH_GLOBS = "paths";
     String PAGE = "page";
     String PAGE_SIZE = "page_size";
     String INCLUDE_DIFF = "include_diff";
@@ -55,7 +57,7 @@ public interface GitReaderApi {
      */
     @GET("git/{project}/ls_tree")
     Call<Result<GitReaderEntryListing<GitReaderObject>>> getRepositoryTree(@Path(PROJECT) String name,
-                                                                           @Query(PATH) String path,
+                                                                           @Query(PATH_GLOBS) List<String> path,
                                                                            @Query(REF) String reference,
                                                                            @Query(PAGE) Long page,
                                                                            @Query(PAGE_SIZE) Integer pageSize);
@@ -73,7 +75,7 @@ public interface GitReaderApi {
     @GET("git/{project}/logs_tree")
     Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(
             @Path(PROJECT) String name,
-            @Query(PATH) String path,
+            @Query(PATH_GLOBS) List<String> path,
             @Query(REF) String reference,
             @Query(PAGE) Long page,
             @Query(PAGE_SIZE) Integer pageSize);
@@ -124,7 +126,7 @@ public interface GitReaderApi {
      */
     @GET("git/{project}/diff/{commit}")
     Call<Result<GitReaderDiffEntry>> getCommitDiff(@Path(PROJECT) String name, @Path(COMMIT) String commit,
-                                                   @Query(PATH) String path);
+                                                   @Query(PATH_GLOBS) List<String> path);
 
 
 }

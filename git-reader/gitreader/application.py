@@ -67,8 +67,8 @@ def health():
 def git_list_tree(repo):
     manager = app.config['gitmanager']
     try:
-        path, page, page_size, ref = parse_url_params()
-        list_tree = manager.ls_tree(repo, path, ref, page, page_size)
+        path_masks, page, page_size, ref = parse_url_params()
+        list_tree = manager.ls_tree(repo, path_masks, ref, page, page_size)
         return jsonify(success(list_tree.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -80,9 +80,9 @@ def git_list_tree(repo):
 @swag_from('flasgger-doc/logs-tree.yml')
 def git_logs_tree(repo):
     manager = app.config['gitmanager']
-    path, page, page_size, ref = parse_url_params()
+    path_masks, page, page_size, ref = parse_url_params()
     try:
-        logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
+        logs_tree = manager.logs_tree(repo, path_masks, ref, page, page_size)
         return jsonify(success(logs_tree.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -148,15 +148,15 @@ def git_diff_report(repo):
 def git_diff_by_commit(repo, commit):
     manager = app.config['gitmanager']
     try:
-        if request.args.get('path'):
-            path = request.args.get('path')
+        if request.args.getlist('paths'):
+            path_masks = request.args.getlist('paths')
         else:
-            path = "."
+            path_masks = ["."]
 
         unified_lines = 3
         if request.args.get('unified_lines'):
             unified_lines = int(request.args.get('unified_lines'))
-        commit_diff = manager.diff(repo, commit, path, unified_lines)
+        commit_diff = manager.diff(repo, commit, path_masks, unified_lines)
         return jsonify(success(commit_diff.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -182,9 +182,9 @@ def str_to_bool(input_value):
 
 
 def parse_url_params():
-    path = "."
-    if request.args.get('path'):
-        path = request.args.get('path')
+    path_masks = ["."]
+    if request.args.getlist('paths'):
+        path_masks = request.args.getlist('paths')
     page = 0
     if request.args.get('page'):
         page = int(request.args.get('page'))
@@ -194,7 +194,7 @@ def parse_url_params():
     ref = "HEAD"
     if request.args.get('ref'):
         ref = request.args.get('ref')
-    return path, page, page_size, ref
+    return path_masks, page, page_size, ref
 
 
 def main():

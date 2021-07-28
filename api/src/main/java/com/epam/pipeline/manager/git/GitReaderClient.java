@@ -68,21 +68,23 @@ public class GitReaderClient {
     public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> getRepositoryCommits(final GitRepositoryUrl repo,
                                                                                          final Long page,
                                                                                          final Integer pageSize,
-                                                                                         final GitCommitsFilter filter)
+                                                                                         final GitCommitsFilter filter,
+                                                                                         final List<String> ignored)
         throws GitClientException {
         return callAndCheckResult(
                 gitReaderApi.listCommits(
-                        getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter)
+                        getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter, ignored)
                 )
         ).getPayload();
     }
 
     public GitReaderDiff getRepositoryCommitDiffs(final GitRepositoryUrl repo,
                                                   final Boolean includeDiff,
-                                                  final GitCommitsFilter filter) throws GitClientException {
+                                                  final GitCommitsFilter filter,
+                                                  final List<String> filesToIgnore) throws GitClientException {
         final Result<GitReaderRepositoryCommitDiff> result = callAndCheckResult(
                 gitReaderApi.listCommitDiffs(getRepositoryPath(repo), includeDiff,
-                        toGitReaderRequestFilter(filter))
+                        toGitReaderRequestFilter(filter, filesToIgnore))
         );
         return GitReaderDiff.builder()
                 .entries(Optional.ofNullable(result.getPayload())
@@ -94,28 +96,29 @@ public class GitReaderClient {
 
     public GitReaderDiffEntry getRepositoryCommitDiff(final GitRepositoryUrl repo,
                                                       final String commit,
-                                                      final String path) throws GitClientException {
+                                                      final List<String> paths) throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getCommitDiff(getRepositoryPath(repo), commit, path)
+                gitReaderApi.getCommitDiff(getRepositoryPath(repo), commit, paths)
         ).getPayload();
     }
 
-    public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final GitRepositoryUrl repo, final String path,
+    public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final GitRepositoryUrl repo,
+                                                                    final List<String> paths,
                                                                     final String ref, final Long page,
                                                                     final Integer pageSize)
             throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryTree(getRepositoryPath(repo), path, ref, page, pageSize)
+                gitReaderApi.getRepositoryTree(getRepositoryPath(repo), paths, ref, page, pageSize)
         ).getPayload();
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
-                                                                                    final String path,
+                                                                                    final List<String> paths,
                                                                                     final String ref, final Long page,
                                                                                     final Integer pageSize)
             throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), path, ref, page, pageSize)
+                gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), paths, ref, page, pageSize)
         ).getPayload();
     }
 
@@ -149,25 +152,30 @@ public class GitReaderClient {
                 userJwtToken.toHeader(), DATA_FORMAT).build();
     }
 
-    static GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
+    static GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter,
+                                                              final List<String> filesToIgnore) {
         return GitReaderLogRequestFilter.builder()
                 .authors(filter.getAuthors())
                 .dateFrom(filter.getDateFrom())
                 .dateTo(filter.getDateTo())
                 .ref(filter.getRef())
-                .pathMasks(getPathMasks(filter))
+                .pathMasks(getPathMasks(filter, filesToIgnore))
                 .build();
     }
 
-    private static List<String> getPathMasks(final GitCommitsFilter filter) {
+    private static List<String> getPathMasks(final GitCommitsFilter filter, final List<String> filesToIgnore) {
+        final List<String> excluded = ListUtils.emptyIfNull(filesToIgnore);
         if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
-            return null;
+            return excluded;
         } else if (CollectionUtils.isEmpty(filter.getExtensions())) {
-            return Collections.singletonList(filter.getPath());
+            return ListUtils.union(excluded, Collections.singletonList(filter.getPath()));
         }
-        return ListUtils.emptyIfNull(filter.getExtensions())
-                .stream().map(ext -> getPathMask(filter.getPath(), ext))
-                .collect(Collectors.toList());
+        return ListUtils.union(
+                excluded,
+                ListUtils.emptyIfNull(filter.getExtensions())
+                        .stream().map(ext -> getPathMask(filter.getPath(), ext))
+                        .collect(Collectors.toList())
+        );
     }
 
     private static String getPathMask(final String path, final String ext) {
