@@ -69,6 +69,9 @@ import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.notification.ContextualNotificationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -365,4 +368,13 @@ public class AspectTestBeans {
 
     @MockBean
     protected PipelineRunServiceUrlRepository mockPipelineRunServiceUrlRepository;
+
+    @MockBean
+    protected ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    protected ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+
+    @MockBean
+    protected ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 }

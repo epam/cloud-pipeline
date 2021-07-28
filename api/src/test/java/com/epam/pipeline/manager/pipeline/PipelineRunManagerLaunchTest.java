@@ -49,7 +49,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +72,7 @@ import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDef
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -179,9 +179,9 @@ public class PipelineRunManagerLaunchTest {
     private final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
             TOOL, tool.getId().toString());
     public static final PipelineStartNotificationRequest NOTIFICATION_REQUEST = new PipelineStartNotificationRequest(
-            NotificationType.PIPELINE_RUN_STATUS, Collections.emptyList(), Collections.emptyList(),
-            TEST_STRING, TEST_STRING);
-    public static final List<PipelineStartNotificationRequest> NOTIFICATION_REQUESTS = Collections.singletonList(NOTIFICATION_REQUEST);
+            NotificationType.PIPELINE_RUN_STATUS, emptyList(), emptyList(), TEST_STRING, TEST_STRING);
+    public static final List<PipelineStartNotificationRequest> NOTIFICATION_REQUESTS =
+            singletonList(NOTIFICATION_REQUEST);
 
     @Before
     public void setUp() throws Exception {
@@ -438,7 +438,7 @@ public class PipelineRunManagerLaunchTest {
     }
 
     private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
-        launchPipeline(configuration, null, instanceType, null,null);
+        launchPipeline(configuration, null, instanceType, null, null);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType) {

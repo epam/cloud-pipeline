@@ -25,7 +25,8 @@ import static org.mockito.Mockito.verify;
 public class ContextualNotificationManagerTest {
 
     private static final NotificationType TYPE = NotificationType.PIPELINE_RUN_STATUS;
-    private static final PipelineRun RUN = PipelineCreatorUtils.getPipelineRun();
+    private static final PipelineRun RUN = PipelineCreatorUtils.getPipelineRunWithStatus(ID, TaskStatus.SUCCESS);
+    private static final PipelineRun ACTIVE_RUN = PipelineCreatorUtils.getPipelineRun(ID);
     private static final String SUBJECT = "subject";
     private static final String BODY = "body";
     private static final ContextualNotification NOTIFICATION = new ContextualNotification(TYPE, ID,
@@ -42,6 +43,15 @@ public class ContextualNotificationManagerTest {
         mockNoNotification();
 
         manager.notifyRunStatusChanged(RUN);
+
+        verify(monitoringNotificationDao, never()).createMonitoringNotification(any());
+    }
+
+    @Test
+    public void notifyRunStatusChangedShouldNotCreateNotificationMessageIfRunStatusDoesNotMatch() {
+        mockNotification(NOTIFICATION);
+
+        manager.notifyRunStatusChanged(ACTIVE_RUN);
 
         verify(monitoringNotificationDao, never()).createMonitoringNotification(any());
     }

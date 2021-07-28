@@ -95,8 +95,8 @@ public class ContextualNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void findByByTypeAndTriggerIdShouldReturnNotification() {
-        final ContextualNotificationEntity notification = repository.save(new ContextualNotificationEntity(null,
-                TYPE, RECIPIENTS, TRIGGER_ID, TRIGGER_STATUSES, SUBJECT, BODY, CREATED));
+        repository.save(new ContextualNotificationEntity(null, TYPE, RECIPIENTS,
+                TRIGGER_ID, TRIGGER_STATUSES, SUBJECT, BODY, CREATED));
 
         final Optional<ContextualNotificationEntity> loadedNotification =
                 repository.findByTypeAndTriggerId(TYPE, TRIGGER_ID);
