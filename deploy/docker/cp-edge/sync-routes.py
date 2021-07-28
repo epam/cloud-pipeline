@@ -697,19 +697,33 @@ if len(edge_kube_service.response['items']) == 0:
                % (EDGE_SVC_REGION_LABEL, edge_region))
         exit(1)
 else:
-        edge_kube_service_object = edge_kube_service.response['items'][0]
-        edge_kube_service_object_metadata = edge_kube_service_object['metadata']
+        # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
+        # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't
+        # applied yet - so we will wait
+        for n in range(NUMBER_OF_RETRIES):
+            edge_kube_service_object = edge_kube_service.response['items'][0]
+            edge_kube_service_object_metadata = edge_kube_service_object['metadata']
 
-        if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_HOST_LABEL in edge_kube_service_object_metadata['labels']:
+            if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_HOST_LABEL in edge_kube_service_object_metadata['labels']:
+                do_log('Getting EDGE service host from service label')
                 edge_service_external_ip = edge_kube_service_object_metadata['labels'][EDGE_SVC_HOST_LABEL]
 
-        if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_PORT_LABEL in edge_kube_service_object_metadata['labels']:
+            if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_PORT_LABEL in edge_kube_service_object_metadata['labels']:
+                do_log('Getting EDGE service host port from service label')
                 edge_service_port = edge_kube_service_object_metadata['labels'][EDGE_SVC_PORT_LABEL]
 
+            if edge_service_external_ip and edge_service_port:
+                break
+            else:
+                do_log('Sleep for {} sec and perform kube API call again ({}/{})'.format(1, n + 2, NUMBER_OF_RETRIES))
+                sleep(1)
+
         if not edge_service_external_ip:
-                edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
+            do_log('Getting EDGE service host from externalIP')
+            edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
         if not edge_service_port:
-                edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
+            do_log('Getting EDGE service host port from nodePort')
+            edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
         do_log('EDGE service port: ' + str(edge_service_port))
         do_log('EDGE service ip: ' + edge_service_external_ip)
 
