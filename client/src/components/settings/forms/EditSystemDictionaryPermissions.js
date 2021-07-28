@@ -4,29 +4,8 @@ import {Modal, Button, Icon} from 'antd';
 
 export default class EditSystemDictionaryPermissions extends React.Component {
     state = {
-      visible: false,
-      objectId: undefined,
-      isNew: false
+      visible: false
     }
-    componentDidMount () {
-      this.updateState();
-    }
-    componentDidUpdate (prevProps) {
-      if (
-        prevProps.isNew !== this.props.isNew ||
-        prevProps.objectId !== this.props.objectId
-      ) {
-        this.updateState();
-      }
-    }
-
-    updateState = () => {
-      const {objectId, isNew} = this.props;
-      this.setState({
-        objectId,
-        isNew
-      });
-    };
 
     showModalWindow = () => {
       this.setState({visible: true});
@@ -46,18 +25,16 @@ export default class EditSystemDictionaryPermissions extends React.Component {
         >
           <PermissionsForm
             objectType="CATEGORICAL_ATTRIBUTE"
-            objectIdentifier={this.state.objectId}
+            objectIdentifier={this.props.objectId}
           />
         </Modal>
       );
     };
     render () {
-      const {objectId, isNew} = this.state;
-      if (objectId && !isNew) {
+      if (this.props.objectId) {
         return (
           <Button
             id="permissions-setting-button"
-            style={{marginLeft: 5, height: 28}}
             size="small"
             onClick={() => this.showModalWindow()}
           >

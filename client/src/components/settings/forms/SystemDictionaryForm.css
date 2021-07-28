@@ -32,6 +32,9 @@
   padding: 2px;
   border-bottom: 1px solid #ddd;
 }
+.name {
+  padding: 2px;
+}
 
 .item:nth-child(even) {
   background-color: #fafafa;
