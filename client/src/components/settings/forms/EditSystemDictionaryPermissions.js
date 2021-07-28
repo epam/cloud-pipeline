@@ -47,7 +47,6 @@ export default class EditSystemDictionaryPermissions extends React.Component {
           <PermissionsForm
             objectType="CATEGORICAL_ATTRIBUTE"
             objectIdentifier={this.state.objectId}
-            onOk={this.savePermissionsSettings}
           />
         </Modal>
       );
