@@ -254,6 +254,11 @@ class PipelineRunOperations(object):
                                                              parent_node=parent_node,
                                                              non_pause=non_pause,
                                                              friendly_url=friendly_url,
+                                                             status_notifications=status_notifications,
+                                                             status_notifications_status=status_notifications_status,
+                                                             status_notifications_recipient=status_notifications_recipient,
+                                                             status_notifications_subject=status_notifications_subject,
+                                                             status_notifications_body=status_notifications_body,
                                                              run_as_user=run_as_user)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:

@@ -158,7 +158,11 @@ class Pipeline(API):
     def launch_command(cls, instance_disk, instance_type,
                        docker_image, cmd_template, parameters,
                        timeout=None, instance_count=None, price_type=None,
-                       region_id=None, parent_node=None, non_pause=None, friendly_url=None, run_as_user=None):
+                       region_id=None, parent_node=None, non_pause=None, friendly_url=None,
+                       status_notifications=False,
+                       status_notifications_status=None, status_notifications_recipient=None,
+                       status_notifications_subject=None, status_notifications_body=None,
+                       run_as_user=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -185,6 +189,14 @@ class Pipeline(API):
             payload['prettyUrl'] = friendly_url
         if run_as_user:
             payload['runAs'] = run_as_user
+        if status_notifications:
+            payload['notifications'] = [{
+                'type': 'PIPELINE_RUN_STATUS',
+                'triggerStatuses': status_notifications_status or None,
+                'recipients': status_notifications_recipient or None,
+                'subject': status_notifications_subject or None,
+                'body': status_notifications_body or None
+            }]
         if parameters is not None:
             params = {}
             for key in parameters.keys():
