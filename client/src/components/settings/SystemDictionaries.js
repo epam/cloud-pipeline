@@ -348,6 +348,7 @@ class SystemDictionaries extends React.Component {
                 onChange={this.onDictionaryChanged}
                 id={this.currentDictionary ? this.currentDictionary.id : undefined}
                 name={this.currentDictionary ? this.currentDictionary.key : undefined}
+                isNew={this.state.newDictionary}
                 items={
                   this.currentDictionary
                     ? (this.currentDictionary.values || []).map(o => o)

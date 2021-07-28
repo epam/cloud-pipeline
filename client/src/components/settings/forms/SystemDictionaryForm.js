@@ -23,6 +23,7 @@ import {
   Modal
 } from 'antd';
 import SystemDictionaryLinksForm from './SystemDictionaryLinksForm';
+import EditSystemDictionaryPermissions from './EditSystemDictionaryPermissions';
 import styles from './SystemDictionaryForm.css';
 
 function linksAreEqual (linksA, linksB) {
@@ -90,6 +91,7 @@ function mapValue (filter) {
 
 class SystemDictionaryForm extends React.Component {
   state = {
+    isNew: undefined,
     id: undefined,
     name: undefined,
     items: [],
@@ -139,9 +141,11 @@ class SystemDictionaryForm extends React.Component {
   }
 
   updateState = () => {
-    const {name, items} = this.props;
+    const {id, name, isNew, items} = this.props;
     this.setState({
+      id,
       name,
+      isNew,
       items: (items || []).map(mapValue(this.props.filter))
     }, this.afterChange);
   };
@@ -302,6 +306,7 @@ class SystemDictionaryForm extends React.Component {
     const {id, disabled} = this.props;
     const {linksFormVisible, editableLinksIndex} = this.state;
     const {
+      isNew,
       name,
       items,
       errors
@@ -316,6 +321,10 @@ class SystemDictionaryForm extends React.Component {
             style={{flex: 1}}
             value={name}
             onChange={this.onNameChanged}
+          />
+          <EditSystemDictionaryPermissions
+            objectId={this.props.id}
+            isNew={isNew}
           />
         </div>
         {
