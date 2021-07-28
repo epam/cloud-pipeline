@@ -632,9 +632,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PipelineRunParameters.NAME.name(), user.getUserName());
         }
 
-        if (CollectionUtils.isNotEmpty(user.getGroups())) {
+        if (CollectionUtils.isNotEmpty(user.getAuthorities())) {
             whereBuilder.append(" OR  (is_principal = FALSE AND name IN (:USER_GROUPS))");
-            params.addValue("USER_GROUPS", user.getGroups());
+            params.addValue("USER_GROUPS", user.getAuthorities());
         }
         whereBuilder.append(')');
         return whereBuilder.toString();
