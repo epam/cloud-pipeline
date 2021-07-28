@@ -41,8 +41,10 @@ export default function getPathParameters (pipelinesLibrary, folderId) {
         }
         const pipelinesLibraryValue = pipelinesLibrary.value;
         if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
+          const folders = (checkFolder(pipelinesLibraryValue, folderId) || []);
+          const path = [...folders].reverse().join('/');
           resolve(
-            (checkFolder(pipelinesLibraryValue, folderId) || [])
+            folders
               .map((path, index) => ({
                 key: `METADATA_FOLDER_${index + 1}`,
                 value: path
@@ -50,7 +52,9 @@ export default function getPathParameters (pipelinesLibrary, folderId) {
               .reduce((res, cur) => ({
                 ...res,
                 [cur.key]: {value: cur.value, type: 'string', required: false}
-              }), {})
+              }), {
+                METADATA_FOLDER_PATH: path
+              })
           );
         } else {
           resolve({});
