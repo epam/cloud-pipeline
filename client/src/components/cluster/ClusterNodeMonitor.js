@@ -505,7 +505,7 @@ class ClusterNodeMonitor extends React.Component {
   };
 
   render () {
-    if (this.windowsOS || !this.props.node.loaded) {
+    if (this.windowsOS || (!this.props.node.loaded && this.props.node.pending)) {
       return null;
     }
     const {
