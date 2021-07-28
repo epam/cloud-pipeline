@@ -89,6 +89,7 @@ class SystemDictionaries extends React.Component {
       return {values: []};
     }
     const {currentDictionary} = this.props;
+    console.log('currentDictionary', this.dictionaries.find(dict => dict.key === currentDictionary));
     return this.dictionaries.find(dict => dict.key === currentDictionary);
   }
 
@@ -150,7 +151,7 @@ class SystemDictionaries extends React.Component {
     this.setState({modified: changed});
   };
 
-  onDictionarySave = (name, items, previousName) => {
+  onDictionarySave = (id, name, items, previousName) => {
     const {currentDictionary} = this.props;
     const hide = message.loading('Saving dictionary...', 0);
     const {systemDictionaries, router} = this.props;
@@ -166,10 +167,11 @@ class SystemDictionaries extends React.Component {
         }
       }
       const request = new SystemDictionariesUpdate();
-      await request.send([{
+      await request.send({
+        id,
         key: name,
         values: items
-      }]);
+      });
       if (request.error) {
         hide();
         message.error(request.error, 5);
@@ -345,6 +347,7 @@ class SystemDictionaries extends React.Component {
                 onDelete={this.onDictionaryDelete}
                 onSave={this.onDictionarySave}
                 onChange={this.onDictionaryChanged}
+                id={this.currentDictionary ? this.currentDictionary.id : undefined}
                 name={this.currentDictionary ? this.currentDictionary.key : undefined}
                 items={
                   this.currentDictionary

@@ -75,11 +75,13 @@ function mapValue (filter) {
     const {
       autofill = true,
       value: linkValue,
+      id,
       links = []
     } = value || {};
     return {
       autofill,
       value: linkValue,
+      id,
       links: links.map(link => ({key: link.key, value: link.value})),
       filtered: !filter || (linkValue || '').toLowerCase().indexOf(filter.toLowerCase()) >= 0
     };
@@ -88,6 +90,7 @@ function mapValue (filter) {
 
 class SystemDictionaryForm extends React.Component {
   state = {
+    id: undefined,
     name: undefined,
     initialName: undefined,
     items: [],
@@ -138,8 +141,9 @@ class SystemDictionaryForm extends React.Component {
   }
 
   updateState = () => {
-    const {name, items} = this.props;
+    const {id, name, items} = this.props;
     this.setState({
+      id,
       name,
       initialName: name,
       items: (items || []).map(mapValue(this.props.filter)),
@@ -203,13 +207,18 @@ class SystemDictionaryForm extends React.Component {
   onSave = () => {
     const {onSave, isNew} = this.props;
     if (onSave && this.valid && this.modified) {
-      const {name, initialName, items} = this.state;
+      const {id, name, initialName, items} = this.state;
       const itemsProcessed = (items || [])
         .map((item) => {
           const {filtered, ...rest} = item;
           return rest;
         });
-      onSave(name, itemsProcessed, !isNew && initialName !== name ? initialName : undefined);
+      onSave(
+        !isNew && initialName !== name ? undefined : id,
+        name,
+        itemsProcessed,
+        !isNew && initialName !== name ? initialName : undefined
+      );
     }
   };
 
