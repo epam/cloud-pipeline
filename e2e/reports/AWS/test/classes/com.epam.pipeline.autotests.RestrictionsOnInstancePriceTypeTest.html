@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">18</div>
+<div class="counter">17</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">6</div>
+<div class="counter">5</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">5</div>
+<div class="counter">10</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">24m40.64s</div>
+<div class="counter">15m29.13s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">53%</div>
+<div class="percent">28%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,14 +73,13 @@
 <a name="deletingEntities"></a>
 <h3 class="failures">deletingEntities</h3>
 <span class="code">
-<pre>Element not found {By.id: userName}
+<pre>Element not found {By.id: root-content/by text: ROLE_USER.filter(visible)}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627399191299.149.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627399191299.149.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1627473435483.155.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1627473435483.155.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
+	at com.codeborne.selenide.impl.CollectionElement.createElementNotFoundError(CollectionElement.java:48)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
@@ -88,10 +87,28 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AuthenticationPageAO.login(AuthenticationPageAO.java:26)
-	at com.epam.pipeline.autotests.mixins.Authorization.loginAs(Authorization.java:60)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.deletingEntities(RestrictionsOnInstancePriceTypeTest.java:106)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$UserManagementAO$RolesTabAO.editRole(SettingsPageAO.java:914)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForRole(RestrictionsOnInstancePriceTypeTest.java:672)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.deletingEntities(RestrictionsOnInstancePriceTypeTest.java:109)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -105,17 +122,71 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
+Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
+	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
+	at java.util.ArrayList.get(ArrayList.java:435)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 41 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637"></a>
+<h3 class="failures">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</h3>
+<span class="code">
+<pre>Element not found {By.className: ant-dropdown-placement-bottomRight}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1627472547403.142.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1627472547403.142.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-dropdown-placement-bottomRight&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:100)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.createFolder(PipelinesLibraryAO.java:342)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.preparationForValidationOfInstanceTypesRestrictions(RestrictionsOnInstancePriceTypeTest.java:145)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-dropdown-placement-bottomRight&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '62b734c321f5', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '8ed19d2f0d88', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: eb4e7aa5fdbc7798c8e339b80a537e70
-*** Element info: {Using=id, value=userName}
+Session ID: e3e76cbd5d525b5a89967d4adf07e91a
+*** Element info: {Using=class name, value=ant-dropdown-placement-bottomRight}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -128,42 +199,54 @@ Session ID: eb4e7aa5fdbc7798c8e339b80a537e70
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
 	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
-	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByClassName(RemoteWebDriver.java:457)
+	at org.openqa.selenium.By$ByClassName.findElement(By.java:391)
 	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
 	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
 	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 23 more
+	... 32 more
 </pre>
 </span>
 </div>
 <div class="test">
-<a name="logoutUser"></a>
-<h3 class="failures">logoutUser</h3>
+<a name="validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650"></a>
+<h3 class="failures">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</h3>
 <span class="code">
-<pre>Element not found {By.id: navigation-button-logout}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627399106078.148.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627399106078.148.html
+<pre>Element not found {visible(By.className: ant-dropdown-menu)}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1627472750520.144.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1627472750520.144.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 425). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+Caused by: NoSuchElementException: Cannot locate an element using visible(By.className: ant-dropdown-menu)
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.NavigationMenuAO.logout(NavigationMenuAO.java:96)
-	at com.epam.pipeline.autotests.mixins.Authorization.logout(Authorization.java:72)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.logoutUser(RestrictionsOnInstancePriceTypeTest.java:137)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.ao.ToolDescription.showMetadata(ToolDescription.java:101)
+	at com.epam.pipeline.autotests.ao.ToolDescription.showInstanceManagement(ToolDescription.java:78)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.lambda$validationOfPriceTypesRestrictionsOverInstanceManagement$25(RestrictionsOnInstancePriceTypeTest.java:590)
+	at java.util.function.Consumer.lambda$andThen$0(Consumer.java:65)
+	at com.epam.pipeline.autotests.ao.ToolGroup.toolWithin(ToolGroup.java:52)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$0(ToolsPage.java:90)
+	at com.epam.pipeline.autotests.ao.Registry.groupWithin(Registry.java:49)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$performWithin$1(ToolsPage.java:89)
+	at com.epam.pipeline.autotests.ao.ToolsPage.registryWithin(ToolsPage.java:127)
+	at com.epam.pipeline.autotests.ao.ToolsPage.performWithin(ToolsPage.java:88)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfPriceTypesRestrictionsOverInstanceManagement(RestrictionsOnInstancePriceTypeTest.java:589)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:723)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
 	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
@@ -171,220 +254,17 @@ Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;naviga
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 425). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.className: ant-dropdown-menu)
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '62b734c321f5', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: eb4e7aa5fdbc7798c8e339b80a537e70
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 20 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640"></a>
-<h3 class="failures">validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640</h3>
-<span class="code">
-<pre>Element not found {By.id: root-content/by text: ROLE_USER.filter(visible)}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627398590416.139.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627398590416.139.html
-Timeout: 80 s.
-Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
-	at com.codeborne.selenide.impl.CollectionElement.createElementNotFoundError(CollectionElement.java:48)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$UserManagementAO$RolesTabAO.editRole(SettingsPageAO.java:914)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForRole(RestrictionsOnInstancePriceTypeTest.java:672)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsForUserGroup(RestrictionsOnInstancePriceTypeTest.java:253)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
-	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
-	at java.util.ArrayList.get(ArrayList.java:435)
-	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
+System info: host: '8ed19d2f0d88', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: unknown
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 41 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646"></a>
-<h3 class="failures">validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646</h3>
-<span class="code">
-<pre>Element not found {By.id: root-content/by text: ROLE_USER.filter(visible)}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627398825929.145.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627398825929.145.html
-Timeout: 80 s.
-Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
-	at com.codeborne.selenide.impl.CollectionElement.createElementNotFoundError(CollectionElement.java:48)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$UserManagementAO$RolesTabAO.editRole(SettingsPageAO.java:914)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForRole(RestrictionsOnInstancePriceTypeTest.java:672)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsHierarchy(RestrictionsOnInstancePriceTypeTest.java:458)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
-	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
-	at java.util.ArrayList.get(ArrayList.java:435)
-	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 41 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644"></a>
-<h3 class="failures">validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-logout}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627399019745.147.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627399019745.147.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 425). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.NavigationMenuAO.logout(NavigationMenuAO.java:96)
-	at com.epam.pipeline.autotests.mixins.Authorization.logout(Authorization.java:72)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsSystemSettings(RestrictionsOnInstancePriceTypeTest.java:388)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 425). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '62b734c321f5', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: eb4e7aa5fdbc7798c8e339b80a537e70
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
+	... 32 more
 </pre>
 </span>
 </div>
@@ -394,8 +274,8 @@ Session ID: eb4e7aa5fdbc7798c8e339b80a537e70
 <span class="code">
 <pre>Element not found {By.id: root-content/by text: ROLE_USER.filter(visible)}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627397980183.133.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627397980183.133.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1627472951870.150.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1627472951870.150.html
 Timeout: 80 s.
 Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
 	at com.codeborne.selenide.impl.CollectionElement.createElementNotFoundError(CollectionElement.java:48)
@@ -450,6 +330,65 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
 </pre>
 </span>
 </div>
+<div class="test">
+<a name="validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642"></a>
+<h3 class="failures">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</h3>
+<span class="code">
+<pre>Element not found {visible(By.className: ant-dropdown-menu)}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1627473154749.152.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1627473154749.152.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: Cannot locate an element using visible(By.className: ant-dropdown-menu)
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.ao.ToolDescription.showMetadata(ToolDescription.java:101)
+	at com.epam.pipeline.autotests.ao.ToolDescription.showInstanceManagement(ToolDescription.java:78)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.lambda$validationOfToolsInstanceTypesRestrictionsOverInstanceManagement$10(RestrictionsOnInstancePriceTypeTest.java:321)
+	at java.util.function.Consumer.lambda$andThen$0(Consumer.java:65)
+	at com.epam.pipeline.autotests.ao.ToolGroup.toolWithin(ToolGroup.java:52)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$0(ToolsPage.java:90)
+	at com.epam.pipeline.autotests.ao.Registry.groupWithin(Registry.java:49)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$performWithin$1(ToolsPage.java:89)
+	at com.epam.pipeline.autotests.ao.ToolsPage.registryWithin(ToolsPage.java:127)
+	at com.epam.pipeline.autotests.ao.ToolsPage.performWithin(ToolsPage.java:88)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfToolsInstanceTypesRestrictionsOverInstanceManagement(RestrictionsOnInstancePriceTypeTest.java:320)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.className: ant-dropdown-menu)
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '8ed19d2f0d88', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: unknown
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 32 more
+</pre>
+</span>
+</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -463,92 +402,87 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
 </thead>
 <tr>
 <td class="failures">deletingEntities</td>
-<td>1m25.21s</td>
+<td>1m41.36s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">logoutUser</td>
-<td>1m26.35s</td>
+<td class="failures">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</td>
+<td>1m32.63s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</td>
-<td>1m2.96s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="success">validationOfInstanceTypesRestrictionsCreatingObjects - EPMCMBIBPC-2639</td>
-<td>1m15.48s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="success">validationOfInstanceTypesRestrictionsExistingObjects - EPMCMBIBPC-2638</td>
-<td>1m4.66s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640</td>
-<td>3m11.54s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="failures">validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646</td>
-<td>3m46.90s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="failures">validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644</td>
-<td>3m5.20s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">validationOfPriceTypesRestrictionsForUserGroup - EPMCMBIBPC-2649</td>
+<td class="skipped">validationOfInstanceTypesRestrictionsCreatingObjects</td>
 <td>-</td>
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="skipped">validationOfPriceTypesRestrictionsHierarchy - EPMCMBIBPC-2652</td>
+<td class="skipped">validationOfInstanceTypesRestrictionsExistingObjects</td>
 <td>-</td>
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</td>
-<td>1m23.95s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="skipped">validationOfPriceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2648</td>
+<td class="skipped">validationOfInstanceTypesRestrictionsForUserGroup</td>
 <td>-</td>
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="skipped">validationOfPriceTypesRestrictionsSystemSettings - EPMCMBIBPC-2651</td>
+<td class="skipped">validationOfInstanceTypesRestrictionsHierarchy</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="skipped">validationOfInstanceTypesRestrictionsSystemSettings</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="skipped">validationOfPriceTypesRestrictionsForUserGroup</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="skipped">validationOfPriceTypesRestrictionsHierarchy</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="failures">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</td>
+<td>3m14.47s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="skipped">validationOfPriceTypesRestrictionsOverUserManagement</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="skipped">validationOfPriceTypesRestrictionsSystemSettings</td>
 <td>-</td>
 <td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="failures">validationOfToolsInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2643</td>
-<td>3m11.08s</td>
+<td>3m12.76s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfToolsInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2647</td>
+<td class="skipped">validationOfToolsInstanceTypesRestrictionsHierarchy</td>
 <td>-</td>
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</td>
-<td>1m19.57s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</td>
+<td>3m14.29s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2641</td>
-<td>1m1.18s</td>
+<td>1m3.44s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645</td>
-<td>1m26.56s</td>
+<td>1m30.19s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -561,7 +495,7 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 27, 2021 3:30:34 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 28, 2021 12:01:41 PM</p>
 </div>
 </div>
 </body>
