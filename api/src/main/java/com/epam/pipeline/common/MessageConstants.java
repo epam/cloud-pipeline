@@ -382,6 +382,20 @@ public final class MessageConstants {
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
     public static final String ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED = "error.notification.receiver.not.specified";
 
+    //Contextual notifications
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TYPE_MISSING =
+            "error.contextual.notification.type.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TRIGGER_ID_MISSING =
+            "error.contextual.notification.trigger.id.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_RECIPIENTS_MISSING =
+            "error.contextual.notification.recipients.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_GLOBAL_TEMPLATE_NOT_FOUND =
+            "error.contextual.notification.global.template.not.found";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_SUBJECT_MISSING =
+            "error.contextual.notification.subject.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_BODY_MISSING =
+            "error.contextual.notification.body.missing";
+
     //Parameters mapping
     public static final String ERROR_PARAMETER_MISSING_REFERENCE = "error.parameter.missing.reference";
     public static final String ERROR_PARAMETER_MISSING_VALUE = "error.parameter.missing.value";

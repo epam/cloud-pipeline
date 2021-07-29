@@ -52,6 +52,7 @@ public class PipelineStart {
     private String prettyUrl;
     private boolean nonPause;
     private String runAs;
+    private List<PipelineStartNotificationRequest> notifications;
 
     @JsonDeserialize(using = PipelineConfValuesMapDeserializer.class)
     private Map<String, PipeConfValueVO> params;

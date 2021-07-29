@@ -128,6 +128,14 @@ public final class PipelineCreatorUtils {
         pipelineRun.setId(id);
         pipelineRun.setOwner(owner);
         pipelineRun.setName(TEST_STRING);
+        pipelineRun.setStartDate(DateUtils.now());
+        pipelineRun.setStatus(TaskStatus.RUNNING);
+        return pipelineRun;
+    }
+
+    public static PipelineRun getPipelineRunWithStatus(final Long id, final TaskStatus status) {
+        final PipelineRun pipelineRun = getPipelineRun(id);
+        pipelineRun.setStatus(status);
         return pipelineRun;
     }
 

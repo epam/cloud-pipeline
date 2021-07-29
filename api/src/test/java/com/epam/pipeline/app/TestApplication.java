@@ -24,6 +24,10 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
+import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -112,6 +116,15 @@ public class TestApplication {
 
     @MockBean
     public UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    public ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    public ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+
+    @MockBean
+    public ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 
     @MockBean
     public CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
