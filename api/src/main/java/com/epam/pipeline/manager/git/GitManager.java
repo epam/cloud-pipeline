@@ -936,16 +936,17 @@ public class GitManager {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
                 GitRepositoryUrl.from(pipeline.getRepository()),
-                Collections.singletonList(path), version, page, pageSize
+                new GitReaderLogsPathFilter(getContextPathList(path)), version, page, pageSize
         ));
     }
 
-    public GitReaderObject lsTreeRepositoryObject(Long id, String version, String path) {
+    public GitReaderObject lsTreeRepositoryObject(final Long id, final String version, final String path) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         final GitReaderEntryListing<GitReaderObject> listing =
                 callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
                     GitRepositoryUrl.from(pipeline.getRepository()),
-                    Collections.singletonList(path), version, 0L, 1
+                        new GitReaderLogsPathFilter(getContextPathList(path)),
+                        version, 0L, 1
                 ));
         if (CollectionUtils.isNotEmpty(listing.getListing())) {
             return listing.getListing().get(0);
@@ -963,7 +964,7 @@ public class GitManager {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
                 GitRepositoryUrl.from(pipeline.getRepository()),
-                Collections.singletonList(path),
+                new GitReaderLogsPathFilter(getContextPathList(path)),
                 version, page, pageSize
         ));
     }
@@ -1004,20 +1005,29 @@ public class GitManager {
         final Pipeline pipeline = pipelineManager.load(id);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
                 GitRepositoryUrl.from(pipeline.getRepository()),
-                commit, ListUtils.union(Collections.singletonList(path), getFilesToIgnore())
+                commit,
+                new GitReaderLogsPathFilter(
+                        ListUtils.union(getContextPathList(path), getFilesToIgnore())
+                )
         ));
+    }
+
+    private List<String> getContextPathList(String path) {
+        return Objects.nonNull(path) ? Collections.singletonList(path) : Collections.emptyList();
     }
 
     private List<String> getFilesToIgnore() {
         return Arrays.stream(Optional.ofNullable(
                         preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_IGNORED_FILES)
-                ).orElse(EMPTY).split(COMMA)).map(p -> {
+                ).orElse(EMPTY).split(COMMA))
+                .filter(p -> !StringUtils.isNullOrEmpty(p))
+                .map(p -> {
                     if (!p.startsWith(ROOT_PATH)) {
                         return EXCLUDE_MARK + ANY_SUB_PATH + p;
                     } else {
                         return EXCLUDE_MARK + p;
                     }
-        }).collect(Collectors.toList());
+                }).collect(Collectors.toList());
     }
 
     private GitCommitsFilter buildFiltersWithUsersFromGitLab(GitCommitsFilter filter) {

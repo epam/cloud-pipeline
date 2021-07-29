@@ -96,29 +96,28 @@ public class GitReaderClient {
 
     public GitReaderDiffEntry getRepositoryCommitDiff(final GitRepositoryUrl repo,
                                                       final String commit,
-                                                      final List<String> paths) throws GitClientException {
+                                                      final GitReaderLogsPathFilter paths) throws GitClientException {
         return callAndCheckResult(
                 gitReaderApi.getCommitDiff(getRepositoryPath(repo), commit, paths)
         ).getPayload();
     }
 
     public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final GitRepositoryUrl repo,
-                                                                    final List<String> paths,
+                                                                    final GitReaderLogsPathFilter paths,
                                                                     final String ref, final Long page,
-                                                                    final Integer pageSize)
-            throws GitClientException {
+                                                                    final Integer pageSize) throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryTree(getRepositoryPath(repo), paths, ref, page, pageSize)
+                gitReaderApi.getRepositoryTree(getRepositoryPath(repo), ref, page, pageSize, paths)
         ).getPayload();
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
-                                                                                    final List<String> paths,
+                                                                                    final GitReaderLogsPathFilter paths,
                                                                                     final String ref, final Long page,
                                                                                     final Integer pageSize)
             throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), paths, ref, page, pageSize)
+                gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), ref, page, pageSize, paths)
         ).getPayload();
     }
 

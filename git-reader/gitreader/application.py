@@ -61,13 +61,14 @@ def health():
     return jsonify(success({"healthy": True}))
 
 
-@app.route('/git/<path:repo>/ls_tree')
+@app.route('/git/<path:repo>/ls_tree',  methods=["POST"])
 @auth.login_required
 @swag_from('flasgger-doc/list-tree.yml')
 def git_list_tree(repo):
     manager = app.config['gitmanager']
     try:
-        path_masks, page, page_size, ref = parse_url_params()
+        path_masks = extract_path_masks()
+        page, page_size, ref = parse_url_params()
         list_tree = manager.ls_tree(repo, path_masks, ref, page, page_size)
         return jsonify(success(list_tree.to_json()))
     except Exception as e:
@@ -75,13 +76,14 @@ def git_list_tree(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<path:repo>/logs_tree',  methods=["GET"])
+@app.route('/git/<path:repo>/logs_tree',  methods=["POST"])
 @auth.login_required
 @swag_from('flasgger-doc/logs-tree.yml')
 def git_logs_tree(repo):
     manager = app.config['gitmanager']
-    path_masks, page, page_size, ref = parse_url_params()
+    page, page_size, ref = parse_url_params()
     try:
+        path_masks = extract_path_masks()
         logs_tree = manager.logs_tree(repo, path_masks, ref, page, page_size)
         return jsonify(success(logs_tree.to_json()))
     except Exception as e:
@@ -95,7 +97,7 @@ def git_logs_tree(repo):
 def git_logs_tree_by_paths(repo):
     manager = app.config['gitmanager']
     try:
-        _, _, _, ref = parse_url_params()
+        _, _, ref = parse_url_params()
         data = load_data_from_request(request)
         if "paths" in data:
             logs_tree = manager.logs_paths(repo, ref, data['paths'])
@@ -114,7 +116,7 @@ def git_list_commits(repo):
     manager = app.config['gitmanager']
     try:
         filters = load_filters_from_request(request)
-        _, page, page_size, _ = parse_url_params()
+        page, page_size, _ = parse_url_params()
         commits = manager.list_commits(repo, filters, page, page_size)
         return jsonify(success(commits.to_json()))
     except Exception as e:
@@ -142,17 +144,13 @@ def git_diff_report(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<path:repo>/diff/<commit>', methods=["GET"])
+@app.route('/git/<path:repo>/diff/<commit>', methods=["POST"])
 @auth.login_required
 @swag_from('flasgger-doc/diff-by-commit.yml')
 def git_diff_by_commit(repo, commit):
     manager = app.config['gitmanager']
     try:
-        if request.args.getlist('paths'):
-            path_masks = request.args.getlist('paths')
-        else:
-            path_masks = ["."]
-
+        path_masks = extract_path_masks()
         unified_lines = 3
         if request.args.get('unified_lines'):
             unified_lines = int(request.args.get('unified_lines'))
@@ -161,6 +159,15 @@ def git_diff_by_commit(repo, commit):
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
+
+
+def extract_path_masks():
+    data = load_data_from_request(request)
+    if "paths" in data:
+        path_masks = data['paths']
+    else:
+        path_masks = ["."]
+    return path_masks
 
 
 def load_filters_from_request(req):
@@ -182,9 +189,6 @@ def str_to_bool(input_value):
 
 
 def parse_url_params():
-    path_masks = ["."]
-    if request.args.getlist('paths'):
-        path_masks = request.args.getlist('paths')
     page = 0
     if request.args.get('page'):
         page = int(request.args.get('page'))
@@ -194,7 +198,7 @@ def parse_url_params():
     ref = "HEAD"
     if request.args.get('ref'):
         ref = request.args.get('ref')
-    return path_masks, page, page_size, ref
+    return page, page_size, ref
 
 
 def main():
