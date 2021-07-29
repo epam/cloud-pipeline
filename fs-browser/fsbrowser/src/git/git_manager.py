@@ -235,7 +235,7 @@ class GitManager:
     @staticmethod
     def _is_latest_version(pipeline, revision):
         current_version = pipeline.get('currentVersion')
-        return revision and current_version and current_version.get('commitId') == revision
+        return revision and current_version and current_version.get('commitId').startswith(revision)
 
     @staticmethod
     def _build_version_storage_error(item_name, item_path, error_message):
