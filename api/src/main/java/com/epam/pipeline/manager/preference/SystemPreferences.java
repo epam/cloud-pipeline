@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -196,6 +197,9 @@ public class SystemPreferences {
                     isNullOrGreaterThan(0));
     public static final BooleanPreference STORAGE_ALLOW_SIGNED_URLS =
             new BooleanPreference("storage.allow.signed.urls", true, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_CONVERT_SOURCE_ACTION =
+            new StringPreference("storage.convert.source.action", DataStorageConvertRequestAction.LEAVE.name(),
+                    DATA_STORAGE_GROUP, (v, ignored) -> DataStorageConvertRequestAction.isValid(v));
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
