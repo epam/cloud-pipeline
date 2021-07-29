@@ -715,8 +715,8 @@ else:
             if edge_service_external_ip and edge_service_port:
                 break
             else:
-                do_log('Sleep for {} sec and perform kube API call again ({}/{})'.format(1, n + 2, NUMBER_OF_RETRIES))
-                sleep(1)
+                do_log('Sleep for {} sec and perform kube API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 2, NUMBER_OF_RETRIES))
+                sleep(SECS_TO_WAIT_BEFORE_RETRY)
 
         if not edge_service_external_ip:
             do_log('Getting EDGE service host from externalIP')
