@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">6m20.06s</div>
+<div class="counter">6m23.48s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">75%</div>
+<div class="percent">77%</div>
 <p>successful</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>Element not found {By.id: userName}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627464779984.113.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627464779984.113.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1627556868127.159.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1627556868127.159.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -114,10 +114,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8ed19d2f0d88', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'f5e076949f78', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: c85199b84e2a7853c9d790c8fc1b68e4
+Session ID: 1a4ab5eba36de30886a1266c52d86917
 *** Element info: {Using=id, value=userName}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -142,27 +142,22 @@ Session ID: c85199b84e2a7853c9d790c8fc1b68e4
 </span>
 </div>
 <div class="test">
-<a name="provideAdminRightsToTheUser - EPMCMBIBPC-3017"></a>
-<h3 class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</h3>
+<a name="generateListOfUsers - EPMCMBIBPC-3168"></a>
+<h3 class="failures">generateListOfUsers - EPMCMBIBPC-3168</h3>
 <span class="code">
-<pre>Element not found {By.id: navigation-button-library}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627465089475.116.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627465089475.116.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-library&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
-	at com.epam.pipeline.autotests.RoleBasedAccessControlTest.provideAdminRightsToTheUser(RoleBasedAccessControlTest.java:167)
+<pre>java.nio.file.NoSuchFileException: /headless/Downloads/export.csv
+	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:86)
+	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:102)
+	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:107)
+	at sun.nio.fs.UnixFileSystemProvider.newByteChannel(UnixFileSystemProvider.java:214)
+	at java.nio.file.Files.newByteChannel(Files.java:361)
+	at java.nio.file.Files.newByteChannel(Files.java:407)
+	at java.nio.file.spi.FileSystemProvider.newInputStream(FileSystemProvider.java:384)
+	at java.nio.file.Files.newInputStream(Files.java:152)
+	at java.nio.file.Files.newBufferedReader(Files.java:2784)
+	at java.nio.file.Files.readAllLines(Files.java:3202)
+	at java.nio.file.Files.readAllLines(Files.java:3242)
+	at com.epam.pipeline.autotests.RoleBasedAccessControlTest.generateListOfUsers(RoleBasedAccessControlTest.java:262)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -176,36 +171,6 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-library&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8ed19d2f0d88', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: d0035149f6379d5fbe63eecb22deae2a
-*** Element info: {Using=id, value=navigation-button-library}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
-	at org.openqa.selenium.By$ById.findElement(By.java:218)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
 </pre>
 </span>
 </div>
@@ -222,47 +187,47 @@ Session ID: d0035149f6379d5fbe63eecb22deae2a
 </thead>
 <tr>
 <td class="success">addTheUser - EPMCMBIBPC-3019</td>
-<td>20.869s</td>
+<td>20.305s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">authenticationInPlatform - EPMCMBIBPC-3014</td>
-<td>7.192s</td>
+<td>7.346s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">blockUnblockUser - EPMCMBIBPC-3016</td>
-<td>3m42.09s</td>
+<td>3m42.74s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">checkAnonymousAccess - EPMCMBIBPC-3169</td>
-<td>0.001s</td>
+<td>0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">failedAuthentication - EPMCMBIBPC-3015</td>
-<td>15.009s</td>
+<td>15.231s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">generateListOfUsers - EPMCMBIBPC-3168</td>
-<td>14.581s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
-<td>1m26.29s</td>
+<td class="failures">generateListOfUsers - EPMCMBIBPC-3168</td>
+<td>20.076s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">removeAdminRightsFromTheUser</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
+<td>54.797s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">removeAdminRightsFromTheUser - EPMCMBIBPC-3018</td>
+<td>29.208s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">removeTheUser - EPMCMBIBPC-3020</td>
-<td>14.035s</td>
+<td>13.775s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -270,24 +235,24 @@ Session ID: d0035149f6379d5fbe63eecb22deae2a
 <div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Jul 28, 2021 9:35:53 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 713 -&gt; ChromeDriver: chrome on LINUX (c85199b84e2a7853c9d790c8fc1b68e4)
-Jul 28, 2021 9:35:53 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 724 -&gt; ChromeDriver: chrome on LINUX (1a4ab5eba36de30886a1266c52d86917)
+Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Jul 28, 2021 9:35:53 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
 INFO: Closed webdriver in 89 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 22710
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 3596
 Only local connections are allowed.
-Jul 28, 2021 9:35:54 AM org.openqa.selenium.remote.ProtocolHandshake createSession
+Jul 29, 2021 11:12:41 AM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Jul 28, 2021 9:35:54 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Jul 29, 2021 11:12:41 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Jul 28, 2021 9:35:54 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Jul 29, 2021 11:12:41 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Jul 28, 2021 9:35:54 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Jul 29, 2021 11:12:41 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Jul 28, 2021 9:35:54 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 713: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (d0035149f6379d5fbe63eecb22deae2a)
+Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 724: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (dd1040605e5397780d1835d6a2e31641)
 </pre>
 </span>
 </div>
@@ -299,7 +264,7 @@ INFO: Create webdriver in current thread 713: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 28, 2021 12:01:41 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 29, 2021 12:12:47 PM</p>
 </div>
 </div>
 </body>
