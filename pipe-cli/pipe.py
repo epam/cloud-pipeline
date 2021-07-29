@@ -690,6 +690,27 @@ def view_cluster_for_node(node_name):
               is_flag=True)
 @click.option('-fu', '--friendly-url', help='A friendly URL. The URL should have the following formats: '
                                             '<domain>/<path> or <path>', type=str, required=False)
+@click.option('-sn', '--status-notifications', help='Enables run status change notifications.',
+              is_flag=True, required=False)
+@click.option('-sn-status', '--status-notifications-status', multiple=True, type=str, required=False,
+              help='Specifies run status to send run status change notifications. '
+                   'The option can be specified several times. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Supported values are: SUCCESS, FAILURE, RUNNING, STOPPED, PAUSING, PAUSED and RESUMING. '
+                   'Defaults to SUCCESS, FAILURE and STOPPED run statuses.')
+@click.option('-sn-recipient', '--status-notifications-recipient', multiple=True, type=str, required=False,
+              help='Specifies run status change notification recipient user id or user name. '
+                   'The option can be specified several times. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Defaults to run owner.')
+@click.option('-sn-subject', '--status-notifications-subject', type=str, required=False,
+              help='Specifies run status change notification subject. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Defaults to global run status change notification subject.')
+@click.option('-sn-body', '--status-notifications-body', type=str, required=False,
+              help='Specifies run status change notification body file path. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Defaults to global run status change notification body.')
 @click.option('-u', '--user', required=False, type=str, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
@@ -711,15 +732,48 @@ def run(pipeline,
         parent_node,
         non_pause,
         friendly_url,
+        status_notifications,
+        status_notifications_status,
+        status_notifications_recipient,
+        status_notifications_subject,
+        status_notifications_body,
         user):
-    """Schedules a pipeline execution
+    """
+    Launches a new run.
+
+    Optional run status change notifications can be enabled.
+    Check the examples below to find out how to enable notifications.
+
+    Examples:
+
+    I.  Launches pipeline (mypipeline) run with default run status change notifications enabled.
+
+        pipe run -n mypipeline -y -sn
+
+    II. Launches pipeline (mypipeline) run with custom run status change notifications enabled.
+    In this case notifications will only be sent if run reaches
+    one of the statuses (SUCCESS or FAILURE)
+    to some users (USER1 and USER2)
+    with the specified subject (Run has changed its status)
+    and body from some local file (/path/to/email/body/template/file).
+
+        pipe run -n mypipeline -y -sn
+        -sn-status SUCCESS -sn-status FAILURE
+        -sn-recipient USER1 -sn-recipient USER2
+        -sn-subject "Run status has changed"
+        -sn-body /path/to/email/body/template/file
+
     """
     if user and not pipeline and not docker_image:
         UserTokenOperations().set_user_token(user)
         user = None
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
-                              region_id, parent_node, non_pause, friendly_url, user)
+                              region_id, parent_node, non_pause, friendly_url,
+                              status_notifications,
+                              status_notifications_status, status_notifications_recipient,
+                              status_notifications_subject, status_notifications_body,
+                              user)
 
 
 @cli.command(name='stop')

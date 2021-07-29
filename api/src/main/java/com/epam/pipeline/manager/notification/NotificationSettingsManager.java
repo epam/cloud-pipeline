@@ -24,13 +24,13 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.notification.NotificationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 @Service
 public class NotificationSettingsManager {

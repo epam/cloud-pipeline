@@ -50,6 +50,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -67,6 +68,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -204,6 +206,9 @@ public class PipelineRunManager {
     @Autowired
     private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
 
+    @Autowired
+    private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -232,7 +237,7 @@ public class PipelineRunManager {
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
         run.setParent(tool);
         run.setAclClass(AclClass.TOOL);
 
@@ -308,7 +313,7 @@ public class PipelineRunManager {
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
         run.setParent(pipeline);
 
         if (isClusterRun) {
@@ -340,7 +345,8 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun launchPipeline(PipelineConfiguration configuration, Pipeline pipeline, String version,
             String instanceType, Long parentNodeId, String configurationName, String clusterId,
-            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids) {
+            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids,
+            List<PipelineStartNotificationRequest> notificationRequests) {
         Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
         Tool tool = getToolForRun(configuration);
         Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
@@ -377,6 +383,7 @@ public class PipelineRunManager {
         run.setActualCmd(launchedCommand);
         save(run);
         dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(run));
+        contextualNotificationRegistrationManager.register(notificationRequests, run);
         return run;
     }
 
@@ -1156,7 +1163,8 @@ public class PipelineRunManager {
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
                     runVO.getInstanceType(), runVO.getParentNodeId(),
-                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids());
+                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids(),
+                    runVO.getNotifications());
         }
     }
 

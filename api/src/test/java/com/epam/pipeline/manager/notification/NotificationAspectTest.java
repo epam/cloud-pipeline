@@ -62,6 +62,9 @@ public class NotificationAspectTest extends AbstractAspectTest {
     private NotificationSettingsDao mockNotificationSettingsDao;
 
     @Autowired
+    private ContextualNotificationManager contextualNotificationManager;
+
+    @Autowired
     private UserDao mockUserDao;
 
     @Autowired
@@ -118,6 +121,20 @@ public class NotificationAspectTest extends AbstractAspectTest {
 
         final NotificationMessage capturedMessage = captor.getValue();
         Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
+    }
+
+    @Test
+    public void testNotifyRunStatusChangedDeligatesToContextualNotificationManager() {
+        final NotificationSettings settings = NotificationCreatorUtils
+                .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
+        doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
+        doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        mockRole();
+
+        pipelineRunManager.updatePipelineStatus(run);
+
+        verify(contextualNotificationManager).notifyRunStatusChanged(run);
     }
 
     private void mockRole() {

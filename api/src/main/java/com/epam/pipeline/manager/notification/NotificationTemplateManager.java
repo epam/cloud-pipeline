@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
-import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
