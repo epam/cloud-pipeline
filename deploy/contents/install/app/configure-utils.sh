@@ -909,6 +909,7 @@ function api_setup_base_preferences {
 
     ## Storage
     api_set_preference "storage.allow.signed.urls" "${CP_PREF_STORAGE_ALLOW_SIGNED_URLS:-"true"}" "true"
+    api_set_preference "storage.version.storage.ignored.files" ".gitkeep" "true"
 
     ## Metadata
     api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"

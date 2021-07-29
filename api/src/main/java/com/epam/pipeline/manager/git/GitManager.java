@@ -1021,6 +1021,7 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_IGNORED_FILES)
                 ).orElse(EMPTY).split(COMMA))
                 .filter(p -> !StringUtils.isNullOrEmpty(p))
+                .map(String::trim)
                 .map(p -> {
                     if (!p.startsWith(ROOT_PATH)) {
                         return EXCLUDE_MARK + ANY_SUB_PATH + p;
