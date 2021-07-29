@@ -14,29 +14,29 @@
  *  limitations under the License.
  */
 
-.rc-menu-item.rc-menu-item-disabled,
-.rc-menu-submenu-title.rc-menu-item-disabled,
-.rc-menu-item.rc-menu-submenu-disabled,
-.rc-menu-submenu-title.rc-menu-submenu-disabled {
-  color: #aaa !important;
-}
+import React from 'react';
+import classNames from 'classnames';
+import styles from './dropdown-wrapper.css';
 
-.rc-menu-submenu-title {
-  z-index: 1;
-}
-
-.rc-dropdown-menu {
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
-}
-
-.rc-menu-vertical .rc-menu-submenu-arrow,
-.rc-menu-vertical-left .rc-menu-submenu-arrow,
-.rc-menu-vertical-right .rc-menu-submenu-arrow,
-.rc-menu-inline .rc-menu-submenu-arrow {
-  font-family: "anticon" !important;
-}
-
-.rc-menu-submenu-arrow::before {
-  content: "\E61F" !important;
-  font-family: anticon;
+export default function DropDownWrapper ({children, visible}) {
+  return (
+    <div
+      style={{display: 'inline'}}
+      className={
+        classNames(
+          styles.dropDownWrapper,
+          {
+            [styles.visible]: visible
+          }
+        )
+      }
+    >
+      <div
+        className={styles.dropDownOutside}
+      >
+        {'\u00A0'}
+      </div>
+      {children}
+    </div>
+  );
 }

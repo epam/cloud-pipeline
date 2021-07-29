@@ -14,29 +14,21 @@
  *  limitations under the License.
  */
 
-.rc-menu-item.rc-menu-item-disabled,
-.rc-menu-submenu-title.rc-menu-item-disabled,
-.rc-menu-item.rc-menu-submenu-disabled,
-.rc-menu-submenu-title.rc-menu-submenu-disabled {
-  color: #aaa !important;
+.drop-down-wrapper.visible .drop-down-trigger {
+  z-index: 2;
 }
 
-.rc-menu-submenu-title {
+.drop-down-outside {
   z-index: 1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  display: none;
 }
 
-.rc-dropdown-menu {
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
-}
-
-.rc-menu-vertical .rc-menu-submenu-arrow,
-.rc-menu-vertical-left .rc-menu-submenu-arrow,
-.rc-menu-vertical-right .rc-menu-submenu-arrow,
-.rc-menu-inline .rc-menu-submenu-arrow {
-  font-family: "anticon" !important;
-}
-
-.rc-menu-submenu-arrow::before {
-  content: "\E61F" !important;
-  font-family: anticon;
+.drop-down-wrapper.visible .drop-down-outside {
+  display: block;
 }

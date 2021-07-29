@@ -45,6 +45,7 @@ import {
   GitCommitDialog,
   ConflictsDialog
 } from './components';
+import DropDownWrapper from '../../special/dropdown-wrapper';
 
 class VSActions extends React.Component {
   state = {
@@ -844,62 +845,64 @@ class VSActions extends React.Component {
       return null;
     }
     return (
-      <Dropdown
-        overlay={this.renderOverlay()}
-        visible={dropDownVisible}
-        onVisibleChange={this.onDropDownVisibilityChange}
-        trigger={trigger}
-        placement={placement}
-        getPopupContainer={getPopupContainer}
-      >
-        <a onClick={e => e.stopPropagation()}>
-          {children}
-          {showDownIcon && (<Icon type="down" />)}
-          <VSBrowseDialog
-            visible={this.state.vsBrowserVisible}
-            onClose={this.closeVSBrowser}
-            onSelect={this.onSelectVS}
-            repositories={this.repositories}
-          />
-          <GitDiffModal
-            visible={!!gitDiff}
-            run={run?.id}
-            storage={gitDiff?.storage}
-            mergeInProgress={gitDiff?.mergeInProgress}
-            fileDiffs={gitDiff?.files}
-            onClose={this.closeGitDiffModal}
-          />
-          {gitCommit && (
-            <GitCommitDialog
-              visible={!!gitCommit}
-              run={run?.id}
-              mergeInProgress={gitCommit?.mergeInProgress}
-              onCommit={this.doCommit}
-              onCancel={this.closeCommitDialog}
-              storage={gitCommit?.storage}
-              files={gitCommit?.files}
+      <DropDownWrapper visible={dropDownVisible}>
+        <Dropdown
+          overlay={this.renderOverlay()}
+          visible={dropDownVisible}
+          onVisibleChange={this.onDropDownVisibilityChange}
+          trigger={trigger}
+          placement={placement}
+          getPopupContainer={getPopupContainer}
+        >
+          <a onClick={e => e.stopPropagation()}>
+            {children}
+            {showDownIcon && (<Icon type="down" />)}
+            <VSBrowseDialog
+              visible={this.state.vsBrowserVisible}
+              onClose={this.closeVSBrowser}
+              onSelect={this.onSelectVS}
+              repositories={this.repositories}
             />
-          )}
-          <ConflictsDialog
-            visible={!!conflicts}
-            disabled={conflicts?.pending}
-            conflicts={conflicts?.files}
-            conflictsInfo={conflicts?.filesInfo}
-            onAbort={this.onAbortChanges}
-            onClose={this.onCloseConflictsDialog}
-            onResolve={this.onResolveConflicts}
-            run={run?.id}
-            mergeInProgress={conflicts?.mergeInProgress}
-            storage={conflicts?.storage}
-          />
-          <CheckoutDialog
-            visible={!!gitCheckout}
-            repository={gitCheckout}
-            onClose={this.closeGitCheckoutModal}
-            onSelect={this.doCheckout}
-          />
-        </a>
-      </Dropdown>
+            <GitDiffModal
+              visible={!!gitDiff}
+              run={run?.id}
+              storage={gitDiff?.storage}
+              mergeInProgress={gitDiff?.mergeInProgress}
+              fileDiffs={gitDiff?.files}
+              onClose={this.closeGitDiffModal}
+            />
+            {gitCommit && (
+              <GitCommitDialog
+                visible={!!gitCommit}
+                run={run?.id}
+                mergeInProgress={gitCommit?.mergeInProgress}
+                onCommit={this.doCommit}
+                onCancel={this.closeCommitDialog}
+                storage={gitCommit?.storage}
+                files={gitCommit?.files}
+              />
+            )}
+            <ConflictsDialog
+              visible={!!conflicts}
+              disabled={conflicts?.pending}
+              conflicts={conflicts?.files}
+              conflictsInfo={conflicts?.filesInfo}
+              onAbort={this.onAbortChanges}
+              onClose={this.onCloseConflictsDialog}
+              onResolve={this.onResolveConflicts}
+              run={run?.id}
+              mergeInProgress={conflicts?.mergeInProgress}
+              storage={conflicts?.storage}
+            />
+            <CheckoutDialog
+              visible={!!gitCheckout}
+              repository={gitCheckout}
+              onClose={this.closeGitCheckoutModal}
+              onSelect={this.doCheckout}
+            />
+          </a>
+        </Dropdown>
+      </DropDownWrapper>
     );
   }
 }

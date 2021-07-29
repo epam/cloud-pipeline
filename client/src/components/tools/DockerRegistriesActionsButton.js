@@ -37,12 +37,14 @@ import EditRegistryForm from './forms/EditRegistryForm';
 import DockerConfiguration from './forms/DockerConfiguration';
 import registryName from './registryName';
 import deleteToolConfirmModal from './tool-deletion-warning';
+import DropDownWrapper from '../special/dropdown-wrapper';
 import styles from './Tools.css';
 
 @roleModel.authenticationInfo
 @observer
 export default class DockerRegistriesActionsButton extends React.Component {
   state = {
+    overlayVisible: false,
     addRegistryForm: false,
     editRegistryForm: false,
     createPrivateGroupInProgress: false,
@@ -79,8 +81,18 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _createRegistry = async (registryData) => {
-    const {path, description, userName, password, certificate, pipelineAuth, externalUrl, securityScanEnabled} = registryData;
-    const hide = message.loading(`Adding registry ${registryName({path, description, externalUrl})}...`, 0);
+    const {
+      path,
+      description,
+      userName,
+      password,
+      certificate,
+      pipelineAuth,
+      externalUrl,
+      securityScanEnabled
+    } = registryData;
+    const name = registryName({path, description, externalUrl});
+    const hide = message.loading(`Adding registry ${name}...`, 0);
     const request = new AddRegistry();
     await request.send({
       path,
@@ -115,7 +127,15 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _editRegistry = async (registryData) => {
-    const {description, userName, password, certificate, pipelineAuth, externalUrl, securityScanEnabled} = registryData;
+    const {
+      description,
+      userName,
+      password,
+      certificate,
+      pipelineAuth,
+      externalUrl,
+      securityScanEnabled
+    } = registryData;
     const hide = message.loading(`Updating registry ${registryName(this.props.registry)}...`, 0);
     const request = new UpdateRegistry();
     await request.send({
@@ -128,8 +148,13 @@ export default class DockerRegistriesActionsButton extends React.Component {
       hide();
       message.error(request.error);
     } else {
-      if ((userName && userName.length) || (password && password.length) || (certificate && certificate.length) ||
-        (pipelineAuth && pipelineAuth.length) || externalUrl !== undefined) {
+      if (
+        (userName && userName.length) ||
+        (password && password.length) ||
+        (certificate && certificate.length) ||
+        (pipelineAuth && pipelineAuth.length) ||
+        externalUrl !== undefined
+      ) {
         const updateCredentials = new UpdateCredentials();
         await updateCredentials.send({
           id: this.props.registry.id,
@@ -411,7 +436,8 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <SubMenu
           key="registry"
           title="Registry"
-          className={styles.actionsSubMenu}>
+          className={styles.actionsSubMenu}
+        >
           {registryActions}
         </SubMenu>
       );
@@ -450,8 +476,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
           mode="vertical"
           selectedKeys={[]}
           onClick={this._onMenuSelect}
-          onOpenDelay={0.2}
-          onCloseDelay={0.2}
           openAnimation="zoom"
           getPopupContainer={node => node.parentNode}
         >
@@ -462,57 +486,75 @@ export default class DockerRegistriesActionsButton extends React.Component {
     return null;
   };
 
+  handleOverlayVisibility = (visible) => {
+    this.setState({
+      overlayVisible: visible
+    });
+  }
+
   render () {
     const menu = this._renderActionsMenu();
+    const {overlayVisible} = this.state;
     if (menu) {
       return (
-        <Dropdown overlay={
-          <div
-            className={styles.menuContainer}>
-            {menu}
-          </div>}
-        >
-          <Button size="small">
-            <Icon type="setting" style={{
-              lineHeight: 'inherit',
-              verticalAlign: 'middle'
-            }} />
-            <EditRegistryForm
-              pending={this.state.registryOperationInProgress}
-              onCancel={() => this._closeCreateRegistryForm()}
-              visible={this.state.addRegistryForm}
-              onSubmit={this._registryOperationWrapper(this._createRegistry)} />
-            <EditRegistryForm
-              pending={this.state.registryOperationInProgress}
-              registry={this.props.registry}
-              onCancel={this._closeEditRegistryForm}
-              onSubmit={this._registryOperationWrapper(this._editRegistry)}
-              onDelete={this._confirmDeleteRegistry}
-              visible={this.state.editRegistryForm} />
-            <EditToolGroupForm
-              visible={this.state.editGroupFormVisible}
-              pending={this.state.registryOperationInProgress}
-              toolGroup={this.props.group}
-              onSubmit={this._registryOperationWrapper(this._editGroup)}
-              onCancel={this._closeEditGroupForm} />
-            <EditToolGroupForm
-              visible={this.state.createToolGroupFormVisible}
-              onSubmit={this._registryOperationWrapper(this._createToolGroup)}
-              onCancel={this._closeCreateToolGroupForm}
-              pending={this.state.registryOperationInProgress} />
-            <EnableToolForm
-              imagePrefix={this.props.registry && this.props.group ? `${this.props.registry.path}/${this.props.group.name}/` : null}
-              onCancel={this._closeEnableToolForm}
-              onSubmit={this._registryOperationWrapper(this._enableTool)}
-              visible={this.state.enableToolFormVisible}
-              pending={this.state.registryOperationInProgress} />
-            <DockerConfiguration
-              registry={this.props.registry}
-              group={this.props.group}
-              visible={this.state.configurationFormVisible}
-              onClose={this._closeDockerConfigurationForm} />
-          </Button>
-        </Dropdown>
+        <DropDownWrapper visible={overlayVisible}>
+          <Dropdown
+            trigger={['click']}
+            overlayStyle={{zIndex: 2}}
+            onVisibleChange={this.handleOverlayVisibility}
+            overlay={(
+              <div
+                className={styles.menuContainer}>
+                {menu}
+              </div>
+            )}
+          >
+            <Button size="small" style={{zIndex: 2}}>
+              <Icon type="setting" style={{
+                lineHeight: 'inherit',
+                verticalAlign: 'middle'
+              }} />
+              <EditRegistryForm
+                pending={this.state.registryOperationInProgress}
+                onCancel={() => this._closeCreateRegistryForm()}
+                visible={this.state.addRegistryForm}
+                onSubmit={this._registryOperationWrapper(this._createRegistry)} />
+              <EditRegistryForm
+                pending={this.state.registryOperationInProgress}
+                registry={this.props.registry}
+                onCancel={this._closeEditRegistryForm}
+                onSubmit={this._registryOperationWrapper(this._editRegistry)}
+                onDelete={this._confirmDeleteRegistry}
+                visible={this.state.editRegistryForm} />
+              <EditToolGroupForm
+                visible={this.state.editGroupFormVisible}
+                pending={this.state.registryOperationInProgress}
+                toolGroup={this.props.group}
+                onSubmit={this._registryOperationWrapper(this._editGroup)}
+                onCancel={this._closeEditGroupForm} />
+              <EditToolGroupForm
+                visible={this.state.createToolGroupFormVisible}
+                onSubmit={this._registryOperationWrapper(this._createToolGroup)}
+                onCancel={this._closeCreateToolGroupForm}
+                pending={this.state.registryOperationInProgress} />
+              <EnableToolForm
+                imagePrefix={
+                  this.props.registry && this.props.group
+                    ? `${this.props.registry.path}/${this.props.group.name}/`
+                    : null
+                }
+                onCancel={this._closeEnableToolForm}
+                onSubmit={this._registryOperationWrapper(this._enableTool)}
+                visible={this.state.enableToolFormVisible}
+                pending={this.state.registryOperationInProgress} />
+              <DockerConfiguration
+                registry={this.props.registry}
+                group={this.props.group}
+                visible={this.state.configurationFormVisible}
+                onClose={this._closeDockerConfigurationForm} />
+            </Button>
+          </Dropdown>
+        </DropDownWrapper>
       );
     }
     return null;
