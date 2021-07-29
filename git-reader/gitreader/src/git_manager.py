@@ -77,7 +77,7 @@ class GitManager(object):
         return GitDiffReportEntry(GitCommit(sha=commit), self.get_diff(repo, GitCommit(sha=commit), unified_lines, GitSearchFilter(path_masks=[path])))
 
     def get_commits(self, repo, filters, skip, batch_size):
-        args = ['--skip={}'.format(skip), '-{}'.format(batch_size + 1), '--format=%H||%P||%ai||%an||%ae||%ci||%cn||%ce||%s']
+        args = ['--skip={}'.format(skip), '--full-history', '--all', '-{}'.format(batch_size + 1), '--format=%H||%P||%ai||%an||%ae||%ci||%cn||%ce||%s']
         if filters.authors:
             for author in filters.authors:
                 args.append("--author={}".format(author))
