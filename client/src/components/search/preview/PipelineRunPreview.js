@@ -222,13 +222,13 @@ export default class PipelineRunPreview extends React.Component {
           const firstTask = this.props.runTasks.value[0];
           result.push({
             title: 'Finished:',
-            value: getTimingInfoString(firstTask.startDate, endDate)
+            value: getTimingInfoString(firstTask.started, endDate)
           });
         } else {
           const firstTask = this.props.runTasks.value[0];
           result.push({
             title: 'Stopped at:',
-            value: getTimingInfoString(firstTask.startDate, endDate)
+            value: getTimingInfoString(firstTask.started, endDate)
           });
         }
       } else {
