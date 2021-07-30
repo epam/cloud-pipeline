@@ -19,10 +19,21 @@ GIT_REPO="$2"
 USER_NAME="$3"
 USER_EMAIL="$4"
 
-cd "$TRANSFER_DIR"
+if [[ ! -d "$TRANSFER_DIR" ]];
+then
+    echo "Source directory $TRANSFER_DIR does not exist" 1>&2
+    exit 1
+fi
+
 if [[ -d "$TRANSFER_DIR/.git" ]]; then
     rm -rf "$TRANSFER_DIR/.git"
 fi
+
+if [[ "$(find "$TRANSFER_DIR" -maxdepth 0 -empty)" ]]; then
+    exit
+fi
+
+cd "$TRANSFER_DIR" || exit 1
 git init
 git config user.name "$USER_NAME"
 git config user.email "$USER_EMAIL"
