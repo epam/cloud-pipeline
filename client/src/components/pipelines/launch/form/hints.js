@@ -177,6 +177,12 @@ const hostedApplicationHint = (localizedStringFn) => (
   </Row>
 );
 
+const jobNotificationsHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    You can enable email notifications, based on the job parameters or user profile.
+  </Row>
+);
+
 const hints = {
   renderHint,
   pipelineHint,
@@ -197,7 +203,8 @@ const hints = {
   executionEnvironmentSummaryHint,
   endpointNameHint,
   stopAfterHint,
-  hostedApplicationHint
+  hostedApplicationHint,
+  jobNotificationsHint
 };
 
 export default hints;

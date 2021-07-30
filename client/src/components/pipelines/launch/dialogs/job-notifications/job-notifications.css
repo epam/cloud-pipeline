@@ -1,0 +1,116 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.link,
+.link:hover,
+.link:visited {
+  flex: 1;
+  margin: 7px 0 0;
+  color: #777;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  line-height: 16px;
+}
+
+.link span {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.buttons-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.buttons-group .button:not(:first-child) {
+  margin-left: 5px;
+}
+
+.notification {
+  padding: 5px 0;
+}
+
+.notification:not(:first-child) {
+  border-top: 1px solid #ccc;
+}
+
+.notification .row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0 0 5px;
+}
+
+.notification .row .labeled-group {
+  flex: 0;
+  display: flex;
+  align-items: center;
+  margin: 2px 5px 0 0;
+}
+
+.notification .row .labeled-group .label {
+  margin-right: 5px;
+  font-weight: bold;
+  min-width: 70px;
+}
+
+.notification .row .labeled-group.error .label {
+  color: red;
+}
+
+.notification .row .labeled-group .value {
+  min-width: 250px;
+  flex: 1;
+}
+
+.notification .row .labeled-group.error .value,
+.notification .row .labeled-group.error .value > div {
+  border-color: red;
+}
+
+.notification .row .labeled-group.error .value {
+  outline: none;
+}
+
+.status-icon {
+  font-size: small;
+}
+
+.no-notifications-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: larger;
+}

@@ -120,6 +120,7 @@ import {
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
+import JobNotifications from '../dialogs/job-notifications';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -318,7 +319,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     autoPause: true,
     showLaunchCommands: false,
     runCapabilities: [],
-    useResolvedParameters: false
+    useResolvedParameters: false,
+    notifications: []
   };
 
   formItemLayout = {
@@ -1211,7 +1213,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         : undefined,
       prettyUrl: this.prettyUrlEnabled
         ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
-        : undefined
+        : undefined,
+      notifications: (this.state.notifications || []).slice()
     };
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
@@ -4097,6 +4100,39 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  renderJobNotificationsItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'notifications')}
+        {...this.leftFormItemLayout}
+        label="Notifications"
+      >
+        <Col span={10}>
+          <FormItem
+            className={styles.formItemRow}
+          >
+            <JobNotifications
+              notifications={this.state.notifications}
+              onChange={notifications => this.setState({
+                notifications: (notifications || []).slice()
+              })}
+            />
+          </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
+        </Col>
+      </FormItem>
+    );
+  };
+
   renderCmdTemplateFormItem = () => {
     return (
       <FormItem
@@ -5009,6 +5045,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
               {this.renderHostedAppConfigurationItem()}
+              {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
               {this.renderEndpointNameFormItem()}
               {this.renderStopAfterFormItem()}
