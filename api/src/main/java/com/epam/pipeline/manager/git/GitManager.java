@@ -795,6 +795,17 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
+    public GitProject createEmptyRepository(final String pipelineName,
+                                            final String description) throws GitClientException {
+        return getDefaultGitlabClient().createEmptyRepository(
+                GitUtils.convertPipeNameToProject(pipelineName),
+                description,
+                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                false,
+                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+        );
+    }
+
     public GitProject createEmptyRepository(final String description, final String repository,
                                             final String token) throws GitClientException {
         return getGitlabClientForRepository(repository, token, true)

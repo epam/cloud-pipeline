@@ -110,10 +110,16 @@ task installDist() {
 
         // copy various scripts
         def scriptsFolder = "$distFolder/scripts"
+        def pipelineScriptsFolder = "$scriptsFolder/pipeline"
 
         copy {
             from "$rootDir/scripts/autoscaling"
             into scriptsFolder
+        }
+
+        copy {
+            from "$rootDir/scripts/pipeline-scripts"
+            into pipelineScriptsFolder
         }
 
         def distDirs = files(

@@ -4,12 +4,14 @@ import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestType;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.manager.SecuredEntityTransferManager;
 import com.epam.pipeline.manager.datastorage.transfer.DataStorageToPipelineTransferManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class DataStorageToVersionedStorageConvertManager implements DataStorageToSecuredEntityConvertManager {
 
@@ -47,12 +50,34 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
     @Transactional(propagation = Propagation.REQUIRED)
     public Pipeline convert(final AbstractDataStorage storage,
                             final DataStorageConvertRequest request) {
-        final DataStorageToPipelineTransferManager<AbstractDataStorage> storageTransferManager =
-                getStorageTransferManager(storage);
+        log.debug("Converting data storage #{} to versioned storage...", storage.getId());
         final Pipeline pipeline = createVersionedStorage(storage);
-        entityTransferManagers.forEach(commonTransferManager -> commonTransferManager.transfer(storage, pipeline));
-        storageTransferManager.transfer(storage, pipeline);
+        transfer(storage, pipeline);
         return pipeline;
+    }
+
+    private Pipeline createVersionedStorage(final AbstractDataStorage storage) {
+        return pipelineManager.createEmpty(toVersionedStorage(storage));
+    }
+
+    private void transfer(final AbstractDataStorage storage,
+                          final Pipeline pipeline) {
+        try {
+            unsafeTransfer(storage, pipeline);
+        } catch (Exception e) {
+            delete(pipeline);
+            // TODO: 29.07.2021 Extract message to messageHelper
+            throw new DataStorageException(String.format("Data storage #%s conversion to versioned storage has failed.",
+                    storage.getId()), e);
+        }
+    }
+
+    private void unsafeTransfer(final AbstractDataStorage storage,
+                                final Pipeline pipeline) {
+        for (SecuredEntityTransferManager entityTransferManager : entityTransferManagers) {
+            entityTransferManager.transfer(storage, pipeline);
+        }
+        getStorageTransferManager(storage).transfer(storage, pipeline);
     }
 
     private DataStorageToPipelineTransferManager<AbstractDataStorage> getStorageTransferManager(
@@ -65,10 +90,6 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
         return storageTransferManager;
     }
 
-    private Pipeline createVersionedStorage(final AbstractDataStorage storage) {
-        return pipelineManager.create(toVersionedStorage(storage));
-    }
-
     private PipelineVO toVersionedStorage(final AbstractDataStorage storage) {
         final PipelineVO pipelineVO = new PipelineVO();
         pipelineVO.setName(storage.getName());
@@ -77,4 +98,9 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
         pipelineVO.setParentFolderId(storage.getParentFolderId());
         return pipelineVO;
     }
+
+    private void delete(final Pipeline pipeline) {
+        pipelineManager.delete(pipeline.getId(), false);
+    }
+
 }

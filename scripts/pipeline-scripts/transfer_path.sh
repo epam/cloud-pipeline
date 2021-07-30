@@ -14,17 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-
 TRANSFER_DIR="$1"
 GIT_REPO="$2"
+USER_NAME="$3"
+USER_EMAIL="$4"
 
 cd "$TRANSFER_DIR"
-if [[ -d "$TRANSFER_DIR\.git" ]]; then
-    rm -rf "$TRANSFER_DIR\.git"
+if [[ -d "$TRANSFER_DIR/.git" ]]; then
+    rm -rf "$TRANSFER_DIR/.git"
 fi
 git init
-git remote add origin "$GIT_REPO"
-git add "$TRANSFER_DIR\*"
+git config user.name "$USER_NAME"
+git config user.email "$USER_EMAIL"
+git add "$TRANSFER_DIR/*"
 git commit -m "Initial commit"
-git push -u origin master
+git push "$GIT_REPO" master
+exit_code="$?"
+rm -rf "$TRANSFER_DIR/.git"
+exit "$exit_code"
