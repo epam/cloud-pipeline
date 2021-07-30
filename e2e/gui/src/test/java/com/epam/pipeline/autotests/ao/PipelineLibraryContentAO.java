@@ -143,7 +143,7 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public MetadataSectionAO showMetadata() {
-        hover(displayAttributes);
+        click(displayAttributes);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
                 page -> click(showAttributes),

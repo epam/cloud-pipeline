@@ -97,7 +97,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     private void showMetadata(final By attribute) {
-        hover(SHOW_METADATA);
+        click(SHOW_METADATA);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
                 page -> click(attribute),
