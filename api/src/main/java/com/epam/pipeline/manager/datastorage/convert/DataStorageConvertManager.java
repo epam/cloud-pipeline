@@ -1,5 +1,7 @@
 package com.epam.pipeline.manager.datastorage.convert;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
@@ -27,13 +29,16 @@ public class DataStorageConvertManager {
 
     private final DataStorageManager dataStorageManager;
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
     private final Map<DataStorageConvertRequestType, DataStorageToSecuredEntityConvertManager> managers;
 
     public DataStorageConvertManager(final DataStorageManager dataStorageManager,
                                      final PreferenceManager preferenceManager,
+                                     final MessageHelper messageHelper,
                                      final List<DataStorageToSecuredEntityConvertManager> managers) {
         this.dataStorageManager = dataStorageManager;
         this.preferenceManager = preferenceManager;
+        this.messageHelper = messageHelper;
         this.managers = managers.stream().collect(Collectors.toMap(
                 DataStorageToSecuredEntityConvertManager::getTargetType,
                 Function.identity()));
@@ -51,8 +56,8 @@ public class DataStorageConvertManager {
         final DataStorageConvertRequestType targetType = Optional.ofNullable(request.getTargetType())
                 .orElse(DataStorageConvertRequestType.VERSIONED_STORAGE);
         final DataStorageToSecuredEntityConvertManager manager = managers.get(targetType);
-        // TODO: 29.07.2021 Extract message to messageHelper
-        Assert.notNull(manager, String.format("Data storage conversion target type %s is not supported.", targetType));
+        Assert.notNull(manager, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID,
+                targetType));
         return manager;
     }
 

@@ -1,5 +1,7 @@
 package com.epam.pipeline.manager.datastorage.convert;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
@@ -15,10 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,15 +29,18 @@ import java.util.stream.Collectors;
 public class DataStorageToVersionedStorageConvertManager implements DataStorageToSecuredEntityConvertManager {
 
     private final PipelineManager pipelineManager;
+    private final MessageHelper messageHelper;
     private final List<SecuredEntityTransferManager> entityTransferManagers;
     private final Map<DataStorageType, DataStorageToPipelineTransferManager<AbstractDataStorage>>
             storageTransferManagers;
 
     public DataStorageToVersionedStorageConvertManager(
             final PipelineManager pipelineManager,
+            final MessageHelper messageHelper,
             final List<SecuredEntityTransferManager> entityTransferManagers,
             final List<DataStorageToPipelineTransferManager<AbstractDataStorage>> storageTransferManagers) {
         this.pipelineManager = pipelineManager;
+        this.messageHelper = messageHelper;
         this.entityTransferManagers = entityTransferManagers;
         this.storageTransferManagers = storageTransferManagers.stream()
                 .collect(Collectors.toMap(DataStorageToPipelineTransferManager::getType, Function.identity()));
@@ -66,8 +71,7 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
             unsafeTransfer(storage, pipeline);
         } catch (Exception e) {
             delete(pipeline);
-            // TODO: 29.07.2021 Extract message to messageHelper
-            throw new DataStorageException(String.format("Data storage #%s conversion to versioned storage has failed.",
+            throw new DataStorageException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_CONVERT_FAILED,
                     storage.getId()), e);
         }
     }
@@ -82,12 +86,9 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
 
     private DataStorageToPipelineTransferManager<AbstractDataStorage> getStorageTransferManager(
             final AbstractDataStorage storage) {
-        final DataStorageToPipelineTransferManager<AbstractDataStorage> storageTransferManager =
-                storageTransferManagers.get(storage.getType());
-        // TODO: 29.07.2021 Extract message to messageHelper
-        Assert.notNull(storageTransferManager, String.format("Data storage type %s conversion is not supported.",
-                storage.getType()));
-        return storageTransferManager;
+        return Optional.ofNullable(storageTransferManagers.get(storage.getType()))
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID, storage.getType())));
     }
 
     private PipelineVO toVersionedStorage(final AbstractDataStorage storage) {
