@@ -31,14 +31,14 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
     private final PipelineManager pipelineManager;
     private final MessageHelper messageHelper;
     private final List<SecuredEntityTransferManager> entityTransferManagers;
-    private final Map<DataStorageType, DataStorageToPipelineTransferManager<AbstractDataStorage>>
+    private final Map<DataStorageType, DataStorageToPipelineTransferManager>
             storageTransferManagers;
 
     public DataStorageToVersionedStorageConvertManager(
             final PipelineManager pipelineManager,
             final MessageHelper messageHelper,
             final List<SecuredEntityTransferManager> entityTransferManagers,
-            final List<DataStorageToPipelineTransferManager<AbstractDataStorage>> storageTransferManagers) {
+            final List<DataStorageToPipelineTransferManager> storageTransferManagers) {
         this.pipelineManager = pipelineManager;
         this.messageHelper = messageHelper;
         this.entityTransferManagers = entityTransferManagers;
@@ -84,8 +84,7 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
         getStorageTransferManager(storage).transfer(storage, pipeline);
     }
 
-    private DataStorageToPipelineTransferManager<AbstractDataStorage> getStorageTransferManager(
-            final AbstractDataStorage storage) {
+    private DataStorageToPipelineTransferManager getStorageTransferManager(final AbstractDataStorage storage) {
         return Optional.ofNullable(storageTransferManagers.get(storage.getType()))
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID, storage.getType())));
