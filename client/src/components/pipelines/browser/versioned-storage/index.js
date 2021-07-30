@@ -95,17 +95,29 @@ function checkForBlobErrors (blob) {
   });
 }
 
-const RESTRICTED_FILES = [
-  /.gitkeep$/i
-];
-
-function filterByRestrictedNames (content = {}) {
-  return !RESTRICTED_FILES.some(restriction => {
-    if (!content.git_object || !content.git_object.name) {
-      return false;
+function generateItemsFilter (preferences) {
+  const ignorePatterns = (preferences.versionStorageIgnoredFiles || [])
+    .map(pattern => pattern.startsWith('/')
+      ? new RegExp(`^${pattern}`, 'i')
+      : new RegExp(`${pattern}$`, 'i')
+    );
+  const getPath = (content) => {
+    if (content.git_object && content.git_object.path) {
+      const {path} = content.git_object;
+      if (path.startsWith('/')) {
+        return path;
+      }
+      return `/${path}`;
     }
-    return restriction.test(content.git_object.name);
-  });
+    return undefined;
+  };
+  return (content) => {
+    const path = getPath(content);
+    if (path) {
+      return !(ignorePatterns.some(pattern => pattern.test(path)));
+    }
+    return true;
+  };
 }
 
 @localization.localizedComponent
@@ -178,7 +190,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (!contents || !contents.length) {
       return [];
     }
-    return contents.filter(filterByRestrictedNames);
+    return contents.filter(generateItemsFilter(this.props.preferences));
   };
 
   get actions () {
@@ -973,7 +985,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       pipeline,
       pipelineId,
       readOnly,
-      path
+      path,
+      preferences
     } = this.props;
     const {
       error,
@@ -988,7 +1001,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       showHistoryPanel,
       pending
     } = this.state;
-    if (!pipeline.loaded && pipeline.pending) {
+    if (
+      (!pipeline.loaded && pipeline.pending) ||
+      (!preferences.loaded && preferences.pending)
+    ) {
       return (
         <LoadingView />
       );

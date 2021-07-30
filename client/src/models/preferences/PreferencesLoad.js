@@ -177,6 +177,15 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get versionStorageIgnoredFiles () {
+    const value = this.getPreferenceValue('storage.version.storage.ignored.files');
+    if (!value) {
+      return ['.gitkeep'];
+    }
+    return (value || '').split(',').map(o => o.trim());
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
