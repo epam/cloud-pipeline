@@ -49,7 +49,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(SETTINGS, $(byId("edit-folder-menu-button"))),
-            entry(EDIT_FOLDER, context().find(menuitem("ant-dropdown-menu-item", "Edit folder"))),
+            entry(EDIT_FOLDER, context().find(menuitem("rc-dropdown-menu-item", "Edit folder"))),
             entry(UPLOAD_METADATA,$(byId("upload-button")))
     );
 
