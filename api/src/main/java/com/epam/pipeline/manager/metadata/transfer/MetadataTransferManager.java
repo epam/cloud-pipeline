@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class MetadataTransferManager implements SecuredEntityTransferManager {
@@ -18,8 +20,9 @@ public class MetadataTransferManager implements SecuredEntityTransferManager {
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void transfer(final AbstractSecuredEntity source, final AbstractSecuredEntity target) {
-        final MetadataEntry sourceMetadata = metadataManager.loadMetadataItem(source.getId(), source.getAclClass());
-        metadataManager.updateEntityMetadata(sourceMetadata.getData(), target.getId(), target.getAclClass());
+        Optional.ofNullable(metadataManager.loadMetadataItem(source.getId(), source.getAclClass()))
+                .ifPresent(sourceMetadata -> metadataManager.updateEntityMetadata(sourceMetadata.getData(),
+                        target.getId(), target.getAclClass()));
     }
 
 }

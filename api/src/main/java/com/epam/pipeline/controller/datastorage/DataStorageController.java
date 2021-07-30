@@ -673,7 +673,8 @@ public class DataStorageController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractSecuredEntity> convert(@PathVariable(value = ID) final Long id,
-                                                 @RequestBody final DataStorageConvertRequest request) {
+                                                 @RequestBody(required = false)
+                                                 final DataStorageConvertRequest request) {
         return Result.success(dataStorageApiService.convert(id, request));
     }
 
