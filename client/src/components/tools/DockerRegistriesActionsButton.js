@@ -331,16 +331,20 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _onMenuSelect = ({key}) => {
-    switch (key) {
-      case 'add-registry': this._openCreateRegistryForm(); break;
-      case 'edit-registry': this._openEditRegistryForm(); break;
-      case 'configure-registry': this._openDockerConfigurationForm(); break;
-      case 'add-private-group': this._createPrivateGroup(); break;
-      case 'add-group': this._openCreateToolGroupForm(); break;
-      case 'edit-group': this._openEditGroupForm(); break;
-      case 'delete-group': this._confirmDeleteGroup(); break;
-      case 'enable-tool': this._openEnableToolForm(); break;
-    }
+    this.setState({
+      overlayVisible: false
+    }, () => {
+      switch (key) {
+        case 'add-registry': this._openCreateRegistryForm(); break;
+        case 'edit-registry': this._openEditRegistryForm(); break;
+        case 'configure-registry': this._openDockerConfigurationForm(); break;
+        case 'add-private-group': this._createPrivateGroup(); break;
+        case 'add-group': this._openCreateToolGroupForm(); break;
+        case 'edit-group': this._openEditGroupForm(); break;
+        case 'delete-group': this._confirmDeleteGroup(); break;
+        case 'enable-tool': this._openEnableToolForm(); break;
+      }
+    });
   };
 
   _renderActionsMenu = () => {
@@ -501,6 +505,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
           <Dropdown
             trigger={['click']}
             overlayStyle={{zIndex: 2}}
+            visible={overlayVisible}
             onVisibleChange={this.handleOverlayVisibility}
             overlay={(
               <div
