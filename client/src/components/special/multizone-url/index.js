@@ -36,6 +36,11 @@ export default class MultizoneUrl extends React.Component {
     }, () => visibilityChanged && visibilityChanged(visible));
   }
 
+  onUrlClicked = e => {
+    e.stopPropagation();
+    this.handleVisibilityChange(false);
+  }
+
   render () {
     const {
       className,
@@ -68,6 +73,7 @@ export default class MultizoneUrl extends React.Component {
                   className={styles.menuLink}
                   target="_blank"
                   href={url}
+                  onClick={this.onUrlClicked}
                 >
                   {region || (<i>Unknown region</i>)}
                   {
@@ -90,7 +96,7 @@ export default class MultizoneUrl extends React.Component {
           target="_blank"
           href={defaultRegion.url}
           className={styles.link}
-          onClick={e => e.stopPropagation()}
+          onClick={this.onUrlClicked}
         >
           {children || defaultRegion.url || '\u00A0'}
         </a>
