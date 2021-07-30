@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,23 @@ import {
   Checkbox,
   message,
   Modal,
-  Upload
+  Upload,
+  Dropdown,
+  Menu
 } from 'antd';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import displaySize from '../../../utils/displaySize';
 import importUsersUrl from '../../../models/user/Import';
 import styles from './import-users.css';
+import checkUsersIntegrity from '../utils/check-users-integrity';
 
+const DROPDOWN_KEYS = {
+  checkUsers: 'checkUsers'
+};
+
+@inject('systemDictionaries', 'users')
+@observer
 class ImportUsersButton extends React.Component {
   state = {
     attributes: [],
@@ -38,7 +47,8 @@ class ImportUsersButton extends React.Component {
     pending: false,
     dialogVisible: false,
     createUsers: false,
-    createGroups: false
+    createGroups: false,
+    fixUsers: []
   };
 
   onFileSelected = file => {
@@ -106,6 +116,48 @@ class ImportUsersButton extends React.Component {
       fileReader.readAsText(file);
     });
     return false;
+  };
+
+  checkUsers = async () => {
+    return new Promise((resolve) => {
+      const {
+        users: usersRequest,
+        systemDictionaries: systemDictionariesRequest
+      } = this.props;
+      Promise.all([
+        usersRequest.fetchIfNeededOrWait(),
+        systemDictionariesRequest.fetchIfNeededOrWait()
+      ])
+        .then(() => {
+          if (usersRequest.loaded && systemDictionariesRequest.loaded) {
+            const users = (usersRequest.value || []).slice();
+            const systemDictionaries = (systemDictionariesRequest.value || []).slice();
+            return checkUsersIntegrity(users, systemDictionaries);
+          } else {
+            return Promise.resolve();
+          }
+        })
+        .then(resolve)
+        .catch(() => resolve());
+    });
+  };
+
+  checkUsersIntegrityClick = () => {
+    const hide = message.loading('Checking users integrity...', 0);
+    this.checkUsers()
+      .then(checkResult => {
+        this.setState({
+          fixUsers: checkResult || []
+        });
+      })
+      .catch(() => {})
+      .then(() => hide());
+  };
+
+  onDropdownMenuClick = ({key}) => {
+    if (key === DROPDOWN_KEYS.checkUsers) {
+      this.checkUsersIntegrityClick();
+    }
   };
 
   onCreateUsersChanged = e => {
@@ -241,6 +293,15 @@ class ImportUsersButton extends React.Component {
       createUsers
     } = this.state;
     const disabled = d || (systemDictionaries.pending && !systemDictionaries.loaded);
+    const dropdownMenu = (
+      <Menu
+        onClick={this.onDropdownMenuClick}
+      >
+        <Menu.Item key={DROPDOWN_KEYS.checkUsers}>
+          Check users integrity
+        </Menu.Item>
+      </Menu>
+    );
     return (
       <div
         className={classNames(className)}
@@ -253,12 +314,19 @@ class ImportUsersButton extends React.Component {
           beforeUpload={this.onFileSelected}
           showUploadList={false}
         >
-          <Button
-            disabled={disabled || pending}
-            size={size}
-          >
-            Import users
-          </Button>
+          <div onClick={(event) => {
+            if (event?.target?.classList.contains('ant-dropdown-trigger')) {
+              event.stopPropagation();
+            }
+          }}>
+            <Dropdown.Button
+              disabled={disabled || pending}
+              size={size}
+              overlay={dropdownMenu}
+            >
+              Import users
+            </Dropdown.Button>
+          </div>
         </Upload>
         <Modal
           visible={dialogVisible && !!file}
@@ -364,4 +432,4 @@ ImportUsersButton.propTypes = {
   onImportDone: PropTypes.func
 };
 
-export default inject('systemDictionaries')(observer(ImportUsersButton));
+export default ImportUsersButton;
