@@ -280,7 +280,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeFolder(String folderName) {
         cd(folderName)
                 .resetMouse()
-                .hover(byId("edit-folder-menu-button"))
+                .click(byId("edit-folder-menu-button"))
                 .click(byText("Delete"))
                 .click(button("OK"));
         return this;
@@ -289,7 +289,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeNotEmptyFolder(String folderName) {
         cd(folderName)
                 .resetMouse()
-                .hover(byId("edit-folder-menu-button"))
+                .click(byId("edit-folder-menu-button"))
                 .click(byText("Delete"))
                 .click(byText("Delete sub-items"))
                 .click(button("OK"));
