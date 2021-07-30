@@ -145,6 +145,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
 
     public MetadataSamplesAO addInstance(String instanceID) {
         click(ADD_INSTANCE);
+        click(byText("Add instance"));
         setValue(context().find(byId("id")), instanceID);
         click(byId("add-instance-form-create-button"));
         return this;
@@ -152,6 +153,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
 
     public MetadataSamplesAO addInstanceWithValue(String metadata, String value) {
         click(ADD_INSTANCE);
+        click(byText("Add instance"));
         SelenideElement element = context().$(byId("add-instance-form"))
                 .$(byText(metadata)).parent().$(byXpath("following::input"));
         setValue(element, value);

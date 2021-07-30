@@ -271,7 +271,7 @@ public class RoleModelTest
                 .clickOnFolder(folderWithSeveralPipelines)
                 .assertPipelineIsNotEditable(firstOfTheSeveralPipelines)
                 .assertPipelineIsNotEditable(secondOfTheSeveralPipelines)
-                .hover(SETTINGS)
+                .click(SETTINGS)
                 .ensure(EDIT_FOLDER, not(visible));
     }
     @Test(priority = 9)
