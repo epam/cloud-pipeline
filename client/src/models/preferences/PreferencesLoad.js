@@ -120,7 +120,6 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
   }
 
-
   @computed
   get metadataSystemKeys () {
     const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
@@ -150,6 +149,19 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get metadataMandatoryKeys () {
+    const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.mandatory.keys" preference:', e);
+      }
+    }
+    return [];
   }
 
   toolScanningEnabledForRegistry (registry) {
