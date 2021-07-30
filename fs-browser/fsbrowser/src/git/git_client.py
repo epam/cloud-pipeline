@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import stat
 import pygit2
 
 from fsbrowser.src.git.git_diff_helper import GitDiffHelper
@@ -48,6 +49,7 @@ class GitClient:
         result_repository = pygit2.clone_repository(git_url, path, callbacks=callbacks)
         if revision and not self._revision_is_latest(result_repository, revision):
             self._checkout(result_repository, revision)
+        self._fix_permissions(result_repository.workdir)
         return result_repository.workdir
 
     def pull(self, path, remote_name=GitHelper.DEFAULT_REMOTE_NAME, branch=GitHelper.DEFAULT_BRANCH_NAME,
@@ -59,18 +61,18 @@ class GitClient:
         remote.fetch(callbacks=callbacks)
         remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
         merge_result, _ = repo.merge_analysis(remote_master_id)
-
+        result = []
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
             # Up to date, do nothing
             self.logger.log("Repository '%s' already up to date" % path)
-            return []
-        if merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
             self._fast_forward_pull(repo, path, remote_master_id, branch)
-            return []
-        if merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
-            return self._merge(repo, remote_master_id, commit_allowed)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
+            result = self._merge(repo, remote_master_id, commit_allowed)
         else:
             raise RuntimeError('Unknown merge analysis result')
+        self._fix_permissions(repo.workdir)
+        return result
 
     def ahead_behind(self, repo_path):
         repo = self._repository(repo_path)
@@ -221,6 +223,7 @@ class GitClient:
             repo.checkout('refs/heads/%s' % branch)
         else:
             self._checkout(repo, revision)
+        self._fix_permissions(repo.workdir)
 
     def checkout_path(self, repo_path, file_path, remote_flag):
         repo = self._repository(repo_path)
@@ -237,6 +240,7 @@ class GitClient:
             else:
                 ref_name = 'refs/stash'
         repo.checkout(ref_name, paths=[file_path], strategy=pygit2.GIT_CHECKOUT_FORCE)
+        self._fix_permissions(repo.workdir)
 
     def merge_abort(self, repo_path, branch=GitHelper.DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
@@ -300,6 +304,18 @@ class GitClient:
             return
         index.add(pygit2.IndexEntry(path_to_unstage, obj.oid, obj.filemode))
         self.logger.log("File '%s' removed from index" % path_to_unstage)
+
+    def _fix_permissions(self, folder):
+        group_rw = stat.S_IRGRP | stat.S_IWGRP
+        self._set_mode(folder, group_rw)
+        for dir_path, dir_names, file_names in os.walk(folder):
+            for d in dir_names:
+                self._set_mode(os.path.join(dir_path, d), group_rw)
+            for f in file_names:
+                self._set_mode(os.path.join(dir_path, f), group_rw)
+
+    def _set_mode(self, path, mode):
+        os.chmod(path, os.stat(path).st_mode | mode)
 
     @staticmethod
     def _get_author(repo):
