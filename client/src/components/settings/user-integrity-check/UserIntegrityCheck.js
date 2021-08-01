@@ -42,7 +42,7 @@ export class UserIntegrityCheck extends React.Component {
         const dictIndex = dictionaries.findIndex(d => d.key === attrName);
         const attrColumnIndex = tableColumns.findIndex((attr) => attr === attrName);
         if (dictIndex > -1) {
-          row[attrColumnIndex + 1] = {
+          row[attrColumnIndex+1] = {
             user: userName,
             colName: tableColumns[attrColumnIndex],
             value: dictionaries[dictIndex].values.filter(v => !!v)
