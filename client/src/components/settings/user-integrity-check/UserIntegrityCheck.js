@@ -101,7 +101,7 @@ export class UserIntegrityCheck extends React.Component {
           <tr key={rowIndex}>
             {row.map((data, index) => {
               if (index === 0) {
-                return (<td key={index}>{data}</td>);
+                return (<th key={index}>{data}</th>);
               } else if (data) {
                 const {value, user, colName} = data;
                 return (
@@ -153,6 +153,7 @@ export class UserIntegrityCheck extends React.Component {
     if (this.props.data && this.props.data.length > 0) {
       return (
         <Modal
+          className={styles.modal}
           title="Title"
           visible={visible}
           footer={null}
@@ -160,22 +161,24 @@ export class UserIntegrityCheck extends React.Component {
           bodyStyle={{padding: '10px', overflowX: 'scroll'}}
           width={'90vw'}
         >
-          <div className={styles.tableContainer}>
-            <table>
-              <thead>
-                {this.renderTableHead(mockedDataForTable)}
-              </thead>
-              <tbody>
-                {this.renderTableContent(this.state.tableContent)}
-              </tbody>
-            </table>
-            {paginationEnabled && <Pagination
-              current={this.state.currentPage}
-              pageSize={PAGE_SIZE}
-              total={this.getTableContent(mockedDataForTable).length}
-              onChange={this.onPageChange}
-              size="small"
-            />}
+          <div className={styles.scrollBox}>
+            <div className={styles.tableContainer}>
+              <table>
+                <thead>
+                  {this.renderTableHead(mockedDataForTable)}
+                </thead>
+                <tbody>
+                  {this.renderTableContent(this.state.tableContent)}
+                </tbody>
+              </table>
+              {paginationEnabled && <Pagination
+                current={this.state.currentPage}
+                pageSize={PAGE_SIZE}
+                total={this.getTableContent(mockedDataForTable).length}
+                onChange={this.onPageChange}
+                size="small"
+              />}
+            </div>
           </div>
         </Modal>
       );
