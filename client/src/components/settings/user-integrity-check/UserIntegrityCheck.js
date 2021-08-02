@@ -1,11 +1,12 @@
 import React from 'react';
-import {Modal, Input, AutoComplete} from 'antd';
+import {Modal, Input, AutoComplete, Pagination} from 'antd';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 
 import styles from './UserIntegrityCheck.css';
+const PAGE_SIZE = 10;
 const mockedDataForTable = [
-  {id: 1, userName: 'PIPE_ADMIN', attributes: [{id: 'Tissue', value: 'TissueValue'}, {id: 'billing-centre', value: 'billing-centre-value'}, {id: 'Staining', value: 'staining value1'},{id: 'billing-centre4', value: 'billing-centre-value4'}, {id: 'Staining5', value: 'staining value5'}, {id: 'billing-centre7', value: 'billing-centre-value7'}, {id: 'Staining6', value: 'staining value6'}]},
+  {id: 1, userName: 'PIPE_ADMIN', attributes: [{id: 'Tissue', value: 'TissueValue'}, {id: 'billing-centre', value: 'billing-centre-value'}, {id: 'Staining', value: 'staining value1'}, {id: 'billing-centre4', value: 'billing-centre-value4'}, {id: 'Staining5', value: 'staining value5'}, {id: 'billing-centre7', value: 'billing-centre-value7'}, {id: 'Staining6', value: 'staining value6'}]},
   {id: 1, userName: 'PEPE_ADMIN', attributes: [{id: 'billing-centre', value: 'billing-centre-value'}, {id: 'Staining', value: 'staining value1'}]},
   {id: 1, userName: 'P0PE_ADMIN', attributes: [{id: 'attr0', value: 'value0'}, {id: 'attr2', value: 'value2'}]},
   {id: 1, userName: 'PAPE_ADMIN', attributes: [{id: 'Library type', value: 'Library type value'}]},
@@ -18,19 +19,27 @@ const mockedDataForTable = [
 @inject(({systemDictionaries}) => ({systemDictionaries}))
 @observer
 export class UserIntegrityCheck extends React.Component {
-  state={
-    tableContent: []
+  state = {
+    tableContent: [],
+    currentPage: 1,
+    visible: this.props.visible
   }
-  componentDidUpdate (prevProps) {
-    if (prevProps.systemDictionaries !== this.props.systemDictionaries) {
-
-    }
+  componentDidMount () {
+    const content = this.getTableContent(mockedDataForTable);
+    this.setState({
+      tableContent: content.length > PAGE_SIZE
+        ? this.getPageContent(1)
+        : content
+    });
   }
   getTableAttributes = (data) => {
     return new Set(data.map(o => o.attributes.map((attr) => attr.id)).flat());
   }
   getDictionaries = () => this.props.systemDictionaries.value.filter(d => !!d);
-
+  getPageContent = (page) => {
+    const start = (page - 1) * PAGE_SIZE;
+    return this.getTableContent(mockedDataForTable).slice(start, start + PAGE_SIZE);
+  }
   getTableContent = (data) => {
     const tableColumns = Array.from(this.getTableAttributes(data));
     const dictionaries = this.getDictionaries();
@@ -42,7 +51,7 @@ export class UserIntegrityCheck extends React.Component {
         const dictIndex = dictionaries.findIndex(d => d.key === attrName);
         const attrColumnIndex = tableColumns.findIndex((attr) => attr === attrName);
         if (dictIndex > -1) {
-          row[attrColumnIndex+1] = {
+          row[attrColumnIndex + 1] = {
             user: userName,
             colName: tableColumns[attrColumnIndex],
             value: dictionaries[dictIndex].values.filter(v => !!v)
@@ -53,114 +62,126 @@ export class UserIntegrityCheck extends React.Component {
       return content;
     }, []);
   }
-    state = {visible: this.props.visible};
-    handleCancel = () => {
-      this.setState({
-        visible: false
+  onPageChange = (page) => {
+    this.setState({
+      currentPage: page,
+      tableContent: this.getPageContent(page)
+    });
+  }
+  handleCancel = () => {
+    this.setState({
+      visible: false
+    });
+  }
+  handleChange = (opts) => {
+    console.log(opts);
+  }
+  renderTableHead = (data) => {
+    if (data && data.length > 0) {
+      return (
+        <tr>
+          <th>USERNAME</th>
+          {
+            Array.from(this.getTableAttributes(mockedDataForTable)).map((attr, index) => (
+              <th key={index} style={{textOverflow: 'ellipsis', whiteSpace: 'normal'}}>
+                {attr}
+              </th>)
+            )}
+        </tr>
+
+      );
+    }
+    return null;
+  }
+
+  renderTableContent = (data) => {
+    if (data && data.length > 0) {
+      return data.map((row, rowIndex) => {
+        return (
+          <tr key={rowIndex}>
+            {row.map((data, index) => {
+              if (index === 0) {
+                return (<td key={index}>{data}</td>);
+              } else if (data) {
+                const {value, user, colName} = data;
+                return (
+                  <td key={index}>
+                    <AutoComplete
+                      mode="combobox"
+                      size="large"
+                      style={{width: '100%'}}
+                      allowClear
+                      autoFocus
+                      backfill
+                      onChange={(value) => this.handleChange({value, colName, row: rowIndex, user})}
+                      filterOption={
+                        (input, option) =>
+                          option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      defaultValue={value[0].value}
+                    >
+                      {value.map((v) => {
+                        return (
+                          <AutoComplete.Option
+                            key={v.id}
+                            value={v.value}
+                          >
+                            {v.value}
+                          </AutoComplete.Option>);
+                      })}
+                    </AutoComplete>
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index}>
+                    <Input size="large" style={{width: '100%'}} />
+                  </td>
+                );
+              }
+            })
+            }
+          </tr>
+        );
       });
     }
-    handleChange = (opts) => {
-      console.log(opts);
+    return null;
+  };
+  render () {
+    const paginationEnabled = this.getTableContent(mockedDataForTable).length > PAGE_SIZE;
+    const {visible} = this.state;
+    if (this.props.data && this.props.data.length > 0) {
+      return (
+        <Modal
+          title="Title"
+          visible={visible}
+          footer={null}
+          onCancel={this.handleCancel}
+          bodyStyle={{padding: '10px', overflowX: 'scroll'}}
+          width={'90vw'}
+        >
+          <div className={styles.tableContainer}>
+            <table>
+              <thead>
+                {this.renderTableHead(mockedDataForTable)}
+              </thead>
+              <tbody>
+                {this.renderTableContent(this.state.tableContent)}
+              </tbody>
+            </table>
+            {paginationEnabled && <Pagination
+              current={this.state.currentPage}
+              pageSize={PAGE_SIZE}
+              total={this.getTableContent(mockedDataForTable).length}
+              onChange={this.onPageChange}
+              size="small"
+            />}
+          </div>
+        </Modal>
+      );
     }
-    renderTableHead = (data) => {
-      if (data && data.length > 0) {
-        return (
-          <tr>
-            <th>USERNAME</th>
-            {
-              Array.from(this.getTableAttributes(mockedDataForTable)).map((attr, index) => (
-                <th key={index} style={{textOverflow: 'ellipsis', whiteSpace: 'normal'}}>
-                  {attr}
-                </th>)
-              )}
-          </tr>
-
-        );
-      }
-      return null;
-    }
-
-    renderTableContent = (data) => {
-      if (data && data.length > 0) {
-        return data.map((row, rowIndex) => {
-          return (
-            <tr key={rowIndex}>
-              {row.map((data, index) => {
-                if (index === 0) {
-                  return (<td key={index}>{data}</td>);
-                } else if (data) {
-                  const {value, user, colName} = data;
-                  return (
-                    <td key={index}>
-                      <AutoComplete
-                        mode="combobox"
-                        size="large"
-                        style={{width: '100%'}}
-                        allowClear
-                        autoFocus
-                        backfill
-                        onChange={(value) => this.handleChange({value, colName, row: rowIndex, user})}
-                        filterOption={
-                          (input, option) =>
-                            option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                        }
-                        defaultValue={value[0].value}
-                      >
-                        {value.map((v) => {
-                          return (
-                            <AutoComplete.Option
-                              key={v.id}
-                              value={v.value}
-                            >
-                              {v.value}
-                            </AutoComplete.Option>);
-                        })}
-                      </AutoComplete>
-                    </td>
-                  );
-                } else {
-                  return (
-                    <td key={index}>
-                      <Input size="large" style={{width: '100%'}} />
-                    </td>
-                  );
-                }
-              })
-              }
-            </tr>
-          );
-        });
-      }
-      return null;
-    };
-
-    render () {
-      const {visible} = this.state;
-      if (this.props.data && this.props.data.length > 0) {
-        return (
-          <Modal
-            title="Title"
-            visible={visible}
-            footer={null}
-            onCancel={this.handleCancel}
-            bodyStyle={{padding: '10px', overflowX: 'scroll'}}
-            width={'90vw'}
-          >
-            <div className={styles.tableContainer}>
-              <table>
-                <thead>
-                  {this.renderTableHead(mockedDataForTable)}
-                </thead>
-                <tbody>
-                  {this.renderTableContent(this.getTableContent(mockedDataForTable))}
-                </tbody>
-              </table>
-            </div>
-          </Modal>
-        );
-      }
-      return null;
-    }
+    return null;
+  }
 }
 UserIntegrityCheck.propTypes = {
   visible: PropTypes.bool,
