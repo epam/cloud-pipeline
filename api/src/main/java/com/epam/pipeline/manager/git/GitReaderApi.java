@@ -28,16 +28,16 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import retrofit2.Call;
 import retrofit2.http.Body;
-import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+
 
 public interface GitReaderApi {
 
     String REF = "ref";
     String PROJECT = "project";
-    String PATH = "path";
+    String PATH_GLOBS = "paths";
     String PAGE = "page";
     String PAGE_SIZE = "page_size";
     String INCLUDE_DIFF = "include_diff";
@@ -48,35 +48,35 @@ public interface GitReaderApi {
      * This command provides essentially the same functionality as the git ls-tree command.
      *
      * @param name  URL-encoded path of the project
-     * @param path      (optional) - The path inside repository. Used to get contend of subdirectories
      * @param reference (optional) - The name of a repository branch or tag or if not given the default branch
      * @param page (optional) - The number of page to return
      * @param pageSize (optional) - The size of the page to return
+     * @param paths      (optional) - The paths inside repository. Used to get contend of subdirectories
      */
-    @GET("git/{project}/ls_tree")
+    @POST("git/{project}/ls_tree")
     Call<Result<GitReaderEntryListing<GitReaderObject>>> getRepositoryTree(@Path(PROJECT) String name,
-                                                                           @Query(PATH) String path,
                                                                            @Query(REF) String reference,
                                                                            @Query(PAGE) Long page,
-                                                                           @Query(PAGE_SIZE) Integer pageSize);
+                                                                           @Query(PAGE_SIZE) Integer pageSize,
+                                                                           @Body GitReaderLogsPathFilter paths);
 
 
     /**
      * Get a list of repository files and directories in a project with additional information about last commit.
      *
      * @param name  URL-encoded path of the project
-     * @param path  Url encoded full path to new file. Ex. lib%2Fclass%2Erb
      * @param reference The name of branch, tag or commit
      * @param page (optional) - The number of page to return
      * @param pageSize (optional) - The size of the page to return
+     * @param paths  (optional) - The paths inside repository. Used to get contend of subdirectories
      */
-    @GET("git/{project}/logs_tree")
+    @POST("git/{project}/logs_tree")
     Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(
             @Path(PROJECT) String name,
-            @Query(PATH) String path,
             @Query(REF) String reference,
             @Query(PAGE) Long page,
-            @Query(PAGE_SIZE) Integer pageSize);
+            @Query(PAGE_SIZE) Integer pageSize,
+            @Body GitReaderLogsPathFilter paths);
 
     /**
      * Get a list of repository files and directories in a project with additional information about last commit.
@@ -120,11 +120,11 @@ public interface GitReaderApi {
      *
      * @param name  URL-encoded path of the project
      * @param commit - The commit sha
-     * @param path (optional) - path to filter diff output
+     * @param paths (optional) - path globs to filter diff output
      */
-    @GET("git/{project}/diff/{commit}")
+    @POST("git/{project}/diff/{commit}")
     Call<Result<GitReaderDiffEntry>> getCommitDiff(@Path(PROJECT) String name, @Path(COMMIT) String commit,
-                                                   @Query(PATH) String path);
+                                                   @Body GitReaderLogsPathFilter paths);
 
 
 }
