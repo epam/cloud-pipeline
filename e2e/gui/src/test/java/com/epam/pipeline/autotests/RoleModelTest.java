@@ -350,7 +350,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .historyTab()
-                .rerun()
+                .click(RERUN)
                 .messageShouldAppear("You have no permissions to launch " + pipelineName);
     }
 

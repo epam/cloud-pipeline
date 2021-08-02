@@ -195,7 +195,7 @@ public class SamplesMetadataTest
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
-                .showMetadata()
+                .showAttributes()
                 .addKeyWithValue("type", "project");
     }
 

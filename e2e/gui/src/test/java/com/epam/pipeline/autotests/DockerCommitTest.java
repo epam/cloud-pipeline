@@ -237,7 +237,6 @@ public class DockerCommitTest
                                 .sleep(5, SECONDS)
                                 .click(deleteRuntimeFiles())
                                 .ok()
-                                .also(confirmCommittingToExistingTool(registryIp, tool))
                 )
                 .assertCommittingFinishedSuccessfully();
     }
