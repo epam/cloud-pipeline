@@ -65,6 +65,15 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
         return pipelineManager.createEmpty(toVersionedStorage(storage));
     }
 
+    private PipelineVO toVersionedStorage(final AbstractDataStorage storage) {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(storage.getName());
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
+        pipelineVO.setDescription(storage.getDescription());
+        pipelineVO.setParentFolderId(storage.getParentFolderId());
+        return pipelineVO;
+    }
+
     private void transfer(final AbstractDataStorage storage,
                           final Pipeline pipeline) {
         try {
@@ -88,15 +97,6 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
         return Optional.ofNullable(storageTransferManagers.get(storage.getType()))
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID, storage.getType())));
-    }
-
-    private PipelineVO toVersionedStorage(final AbstractDataStorage storage) {
-        final PipelineVO pipelineVO = new PipelineVO();
-        pipelineVO.setName(storage.getName());
-        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
-        pipelineVO.setDescription(storage.getDescription());
-        pipelineVO.setParentFolderId(storage.getParentFolderId());
-        return pipelineVO;
     }
 
     private void delete(final Pipeline pipeline) {
