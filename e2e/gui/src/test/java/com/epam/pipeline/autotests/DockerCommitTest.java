@@ -42,6 +42,7 @@ import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+
 public class DockerCommitTest
         extends AbstractSeveralPipelineRunningTest
         implements Tools {
