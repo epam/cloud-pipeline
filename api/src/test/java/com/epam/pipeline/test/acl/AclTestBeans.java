@@ -56,6 +56,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
@@ -279,6 +280,9 @@ public class AclTestBeans {
 
     @MockBean
     protected DataStorageTagProviderManager mockDataStorageTagProviderManager;
+
+    @MockBean
+    protected DataStorageConvertManager mockDataStorageConvertManager;
 
     @MockBean
     protected ToolScanScheduler mockToolScanScheduler;

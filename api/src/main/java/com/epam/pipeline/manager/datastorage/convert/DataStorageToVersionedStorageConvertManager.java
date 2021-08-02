@@ -74,6 +74,7 @@ public class DataStorageToVersionedStorageConvertManager implements DataStorageT
         return pipelineVO;
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void transfer(final AbstractDataStorage storage,
                           final Pipeline pipeline) {
         try {

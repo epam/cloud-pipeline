@@ -1,7 +1,6 @@
 package com.epam.pipeline.manager.metadata.transfer;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.manager.SecuredEntityTransferManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import lombok.RequiredArgsConstructor;
