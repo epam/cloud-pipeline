@@ -171,11 +171,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return currentConfiguration && currentConfiguration.executionEnvironment === DTS_ENVIRONMENT;
   };
 
-  isAdmin = () => {
+  currentUserName = () => {
     if (!this.props.authenticatedUserInfo.loaded) {
-      return false;
+      return undefined;
     }
-    return this.props.authenticatedUserInfo.value.admin;
+    return this.props.authenticatedUserInfo.value.userName;
   };
 
   friendlyUrlAvailable = () => {
@@ -4308,6 +4308,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             id="run-configuration-button" type="primary" style={{marginRight: 10}}
             inputs={this.inputPaths}
             outputs={this.outputPaths}
+            skipCheck={
+              this.props.parameters.run_as &&
+              this.currentUserName() !== this.props.parameters.run_as
+            }
             dockerImage={this.dockerImage}>
             Run <Icon type="down" />
           </SubmitButton>
@@ -4321,6 +4325,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type="primary"
           inputs={this.inputPaths}
           outputs={this.outputPaths}
+          skipCheck={
+            this.props.parameters.run_as &&
+            this.currentUserName() !== this.props.parameters.run_as
+          }
           dockerImage={this.dockerImage}
           onClick={() => {
             if (this.validateFireCloudConnections()) {
@@ -4797,6 +4805,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 id="launch-pipeline-button"
                 inputs={this.inputPaths}
                 outputs={this.outputPaths}
+                skipCheck={
+                  this.props.parameters.run_as &&
+                  this.currentUserName() !== this.props.parameters.run_as
+                }
                 dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
