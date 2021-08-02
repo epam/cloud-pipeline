@@ -68,7 +68,8 @@ export function run (parent, callback) {
     title,
     warning,
     allowedInstanceTypesRequest,
-    hostedApplicationConfiguration
+    hostedApplicationConfiguration,
+    skipCheck = false
   ) {
     return runFn(
       payload,
@@ -78,7 +79,8 @@ export function run (parent, callback) {
       parent.props,
       callback,
       allowedInstanceTypesRequest,
-      hostedApplicationConfiguration
+      hostedApplicationConfiguration,
+      skipCheck
     );
   };
 }
@@ -150,7 +152,8 @@ function runFn (
   stores,
   callbackFn,
   allowedInstanceTypesRequest,
-  hostedApplicationConfiguration
+  hostedApplicationConfiguration,
+  skipCheck
 ) {
   return new Promise(async (resolve) => {
     let launchName;
@@ -268,7 +271,8 @@ function runFn (
         dataStorages: dataStorageAvailable,
         inputs,
         outputs,
-        dockerImage: payload.dockerImage
+        dockerImage: payload.dockerImage,
+        skipCheck
       });
       let dataStorages;
       if (dataStorageAvailable) {

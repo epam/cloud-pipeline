@@ -745,7 +745,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
-          const result = await this.props.onLaunch(payload, values[ADVANCED].hostedApplication);
+          const result = await this.props.onLaunch(
+            payload,
+            values[ADVANCED].hostedApplication,
+            this.props.parameters.run_as &&
+            this.currentUserName() !== this.props.parameters.run_as
+            );
           if (result) {
             this.reset();
             this.prepare();
