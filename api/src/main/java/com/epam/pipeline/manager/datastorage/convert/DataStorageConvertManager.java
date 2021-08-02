@@ -74,12 +74,15 @@ public class DataStorageConvertManager {
     }
 
     private DataStorageConvertRequestAction getSourceAction(final DataStorageConvertRequest request) {
-        return Optional.ofNullable(request.getSourceAction())
-                .map(Optional::of)
-                .orElseGet(() -> Optional.of(SystemPreferences.STORAGE_CONVERT_SOURCE_ACTION)
-                        .map(AbstractSystemPreference::getKey)
-                        .map(preferenceManager::getStringPreference)
-                        .flatMap(DataStorageConvertRequestAction::findByName))
+        return Optional.ofNullable(request.getSourceAction()).map(Optional::of)
+                .orElseGet(this::getSourceActionFromPreferences)
                 .orElse(FALLBACK_SOURCE_ACTION);
+    }
+
+    private Optional<DataStorageConvertRequestAction> getSourceActionFromPreferences() {
+        return Optional.of(SystemPreferences.STORAGE_CONVERT_SOURCE_ACTION)
+                .map(AbstractSystemPreference::getKey)
+                .map(preferenceManager::getStringPreference)
+                .flatMap(DataStorageConvertRequestAction::findByName);
     }
 }
