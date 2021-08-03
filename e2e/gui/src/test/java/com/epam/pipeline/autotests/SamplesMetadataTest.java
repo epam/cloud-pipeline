@@ -305,6 +305,8 @@ public class SamplesMetadataTest
     @TestCase({"EPMCMBIBPC-1415"})
     public void sortMetadataTable() {
         final By idHeader = columnHeader(idField);
+        System.out.println("Coordinates: X=" + $(columnHeader(idField)).getLocation().getX() +
+                " ; Y=" + $(columnHeader(idField)).getLocation().getY());
         library()
                 .cd(project)
                 .cd(metadataFolder)

@@ -122,7 +122,8 @@ public class LaunchLimitMountsTest
                 .removeStorage(storage1)
                 .removeStorage(storage2)
                 .removeStorage(storageSensitive)
-                .removeStorage(storage3);
+                .removeStorage(storage3)
+                .removeStorage(storage4);
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.settings()
@@ -336,6 +337,7 @@ public class LaunchLimitMountsTest
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(ADVANCED_PANEL)
                     .minNodeTypeRAM();
+            System.out.println("Min RAM: " + minRAM + "; storages = " + countObjectStorages);
             addStor = createStoragesIfNeeded(countObjectStorages, minRAM);
             final String warning = format(warningMessage, countObjectStorages);
             checkOOMwarningMessage("1", true, warning);
@@ -419,7 +421,8 @@ public class LaunchLimitMountsTest
         loginAs(admin);
         return IntStream.range(0, min - objStor)
                 .mapToObj(i -> {
-                    String storage = "launchLimitMountsStorage" + Utils.randomSuffix();
+                    String storage = "launchLimitMountsStorageForOOM" + Utils.randomSuffix();
+                    System.out.println("Create new storage " + storage);
                     library()
                             .createStorage(storage)
                             .selectStorage(storage)
