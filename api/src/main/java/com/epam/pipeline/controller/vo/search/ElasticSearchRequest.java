@@ -34,5 +34,6 @@ public class ElasticSearchRequest {
     private boolean aggregate = false;
     private boolean highlight = false;
     private List<SearchDocumentType> filterTypes;
+    private List<String> metadataFields;
     private ScrollingParameters scrollingParameters;
 }
