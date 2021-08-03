@@ -26,6 +26,7 @@ import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 import OpenInHaloAction from '../../special/file-actions/open-in-halo';
+import compareArrays from '../../../utils/compareArrays';
 import {SearchItemTypes} from '../../../models/search';
 
 const RESULT_ITEM_HEIGHT = 46;
@@ -85,6 +86,9 @@ class SearchResults extends React.Component {
         this.infiniteScroll.forceUpdate();
       }
     }
+    if (!compareArrays(prevProps.extraColumns, this.props.extraColumns)) {
+      this.updateExtraColumns();
+    }
   }
 
   componentDidMount () {
@@ -92,13 +96,24 @@ class SearchResults extends React.Component {
     window.addEventListener('mouseup', this.stopResizing);
     window.addEventListener('keydown', this.onKeyDown);
     this.updateDocumentTypes();
+    this.updateExtraColumns();
+  }
+
+  updateExtraColumns = () => {
+    const {extraColumns = []} = this.props;
     parseExtraColumns(this.props.preferences)
       .then(extra => {
+        const extraColumnsConfiguration = extraColumns.map(key => ({key, name: key}));
         if (extra && extra.length) {
-          this.setState({extraColumnsConfiguration: extra}, this.updateDocumentTypes);
+          extra.forEach(column => {
+            if (!extraColumnsConfiguration.find(c => c.key === column.key)) {
+              extraColumnsConfiguration.push(column);
+            }
+          });
         }
+        this.setState({extraColumnsConfiguration}, this.updateDocumentTypes);
       });
-  }
+  };
 
   componentWillUnmount () {
     if (this.animationFrame) {
@@ -140,6 +155,7 @@ class SearchResults extends React.Component {
 
   renderSearchResultItem = (resultItem) => {
     const {disabled} = this.props;
+    const {extraColumnsConfiguration} = this.state;
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
@@ -185,6 +201,7 @@ class SearchResults extends React.Component {
           <DocumentListPresentation
             className={styles.title}
             document={resultItem}
+            extraColumns={extraColumnsConfiguration}
           />
         </div>
       </a>
@@ -535,7 +552,8 @@ SearchResults.propTypes = {
   onChangeDocumentType: PropTypes.func,
   onChangeBottomOffset: PropTypes.func,
   mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table]),
-  documentTypes: PropTypes.array
+  documentTypes: PropTypes.array,
+  extraColumns: PropTypes.array
 };
 
 SearchResults.defaultProps = {

@@ -25,6 +25,40 @@ const ROLE_CLASS = 'ROLE';
 const UI_PAGES_ATTRIBUTE = 'ui-pages';
 const DASHBOARD_CONFIGURATION_ATTRIBUTE = 'ui-dashboard';
 const HOME_PAGE_ATTRIBUTE = 'ui-home-page';
+const SEARCH_PAGE_SECTIONS = 'ui-search-document-types';
+
+function parseAttributes (data, ignore = {}) {
+  const {
+    dashboard: ignoreDashboardSettings = false,
+    pages: ignorePagesSettings = false,
+    homePage: ignoreHomePageSettings = false,
+    searchDocumentTypes: ignoreSearchDocumentTypes = false
+  } = ignore;
+  let pages;
+  let dashboard;
+  let homePage;
+  let searchDocumentTypes;
+  if (!ignorePagesSettings && data.hasOwnProperty(UI_PAGES_ATTRIBUTE)) {
+    pages = (data[UI_PAGES_ATTRIBUTE].value || '').split(',').map(o => o.trim());
+  }
+  if (!ignoreDashboardSettings && data.hasOwnProperty(DASHBOARD_CONFIGURATION_ATTRIBUTE)) {
+    try {
+      dashboard = JSON.parse(data[DASHBOARD_CONFIGURATION_ATTRIBUTE].value);
+    } catch (e) {
+      console.warn(`Error parsing dashboard settings: ${e.message}`);
+    }
+  }
+  if (!ignoreHomePageSettings && data.hasOwnProperty(HOME_PAGE_ATTRIBUTE)) {
+    homePage = (data[HOME_PAGE_ATTRIBUTE].value || '');
+  }
+  if (!ignoreSearchDocumentTypes && data.hasOwnProperty(SEARCH_PAGE_SECTIONS)) {
+    searchDocumentTypes = (data[SEARCH_PAGE_SECTIONS].value || '').split(',').map(o => o.trim());
+  }
+  if (pages && pages.length === 0) {
+    pages = undefined;
+  }
+  return {pages, dashboard, homePage, searchDocumentTypes};
+}
 
 function fetchUserAttributes (userId) {
   return new Promise((resolve) => {
@@ -33,26 +67,7 @@ function fetchUserAttributes (userId) {
       .then(() => {
         if (request.loaded) {
           const {data} = (request.value || [])[0] || {};
-          let pages;
-          let dashboard;
-          let homePage;
-          if (data.hasOwnProperty(UI_PAGES_ATTRIBUTE)) {
-            pages = (data[UI_PAGES_ATTRIBUTE].value || '').split(',').map(o => o.trim());
-          }
-          if (data.hasOwnProperty(DASHBOARD_CONFIGURATION_ATTRIBUTE)) {
-            try {
-              dashboard = JSON.parse(data[DASHBOARD_CONFIGURATION_ATTRIBUTE].value);
-            } catch (e) {
-              console.warn(`Error parsing user dashboard settings: ${e.message}`);
-            }
-          }
-          if (data.hasOwnProperty(HOME_PAGE_ATTRIBUTE)) {
-            homePage = (data[HOME_PAGE_ATTRIBUTE].value || '');
-          }
-          if (pages && pages.length === 0) {
-            pages = undefined;
-          }
-          resolve({pages, dashboard, homePage});
+          resolve(parseAttributes(data));
         } else {
           resolve({});
         }
@@ -62,12 +77,7 @@ function fetchUserAttributes (userId) {
 }
 
 function fetchRolesAttributes (roles, options = {}) {
-  const {
-    dashboard: ignoreDashboardSettings,
-    pages: ignorePagesSettings,
-    homePage: ignoreHomePageSettings
-  } = options;
-  if (ignoreDashboardSettings && ignorePagesSettings && ignoreHomePageSettings) {
+  if (!Object.values(options || {}).some(o => !o)) {
     return Promise.resolve(options);
   }
   return new Promise((resolve) => {
@@ -77,46 +87,52 @@ function fetchRolesAttributes (roles, options = {}) {
     request.fetch()
       .then(() => {
         if (request.loaded) {
-          let pages = [];
-          let dashboard;
-          let homePage;
+          let {
+            pages = [],
+            dashboard,
+            homePage,
+            searchDocumentTypes
+          } = options || {};
           (request.value || [])
             .forEach(({data}) => {
-              if (!ignorePagesSettings && data.hasOwnProperty(UI_PAGES_ATTRIBUTE)) {
+              const {
+                pages: rolesPages,
+                dashboard: rolesDashboard,
+                homePage: rolesHomePage,
+                searchDocumentTypes: rolesSearchDocumentTypes
+              } = parseAttributes(
+                data,
+                options
+              );
+              if (rolesPages && rolesPages.length) {
                 const current = new Set(pages);
                 pages = [];
-                (data[UI_PAGES_ATTRIBUTE].value || '')
-                  .split(',')
-                  .map(o => o.trim())
+                rolesPages
                   .forEach(page => {
                     if (current.has(page)) {
                       pages.push(page);
                     }
                   });
               }
-              if (
-                !ignoreDashboardSettings &&
-                !dashboard &&
-                data.hasOwnProperty(DASHBOARD_CONFIGURATION_ATTRIBUTE)
-              ) {
-                try {
-                  dashboard = JSON.parse(data[DASHBOARD_CONFIGURATION_ATTRIBUTE].value);
-                } catch (e) {
-                  console.warn(`Error parsing user dashboard settings: ${e.message}`);
-                }
+              if (rolesDashboard && !dashboard) {
+                dashboard = rolesDashboard;
               }
-              if (
-                !ignoreHomePageSettings &&
-                !homePage &&
-                data.hasOwnProperty(HOME_PAGE_ATTRIBUTE)
-              ) {
-                homePage = (data[HOME_PAGE_ATTRIBUTE].value || '');
+              if (rolesHomePage && !homePage) {
+                homePage = rolesHomePage;
+              }
+              if (rolesSearchDocumentTypes && !searchDocumentTypes) {
+                searchDocumentTypes = rolesSearchDocumentTypes;
               }
             });
           if (pages && pages.length === 0) {
             pages = undefined;
           }
-          resolve({pages, dashboard, homePage});
+          resolve({
+            pages,
+            dashboard,
+            homePage,
+            searchDocumentTypes
+          });
         } else {
           resolve(options);
         }
@@ -128,12 +144,8 @@ function fetchRolesAttributes (roles, options = {}) {
 function fetchAttributes (user) {
   const {
     id,
-    admin,
     roles = []
   } = user;
-  if (admin) {
-    return Promise.resolve({});
-  }
   const fetchRolesAttributesFn = roles => o => fetchRolesAttributes(roles, o);
   return new Promise((resolve) => {
     fetchUserAttributes(id)
@@ -160,6 +172,7 @@ class UINavigation {
   @observable userPages;
   @observable dashboard;
   @observable homePage;
+  @observable searchDocumentTypes;
   @observable _loaded;
 
   constructor (authenticatedUserInfo) {
@@ -210,10 +223,14 @@ class UINavigation {
           }
           return Promise.resolve();
         })
-        .then(({pages, dashboard, homePage} = {}) => {
-          this.userPages = pages ? pages.slice() : undefined;
+        .then(({pages, dashboard, homePage, searchDocumentTypes} = {}) => {
+          const {
+            admin = false
+          } = this.user.loaded ? (this.user.value || {}) : {};
+          this.userPages = !admin && pages ? pages.slice() : undefined;
           this.dashboard = dashboard;
           this.homePage = homePage;
+          this.searchDocumentTypes = searchDocumentTypes;
           this._loaded = true;
         })
         .then(resolve);
@@ -226,6 +243,13 @@ class UINavigation {
         .then(() => resolve(this.dashboard));
     });
   }
+
+  fetchSearchDocumentTypes = () => {
+    return new Promise((resolve) => {
+      this.fetch()
+        .then(() => resolve(this.searchDocumentTypes));
+    });
+  };
 
   pageIsUnavailable (pageKey) {
     return !this.navigationItems.find(item => item.key === pageKey);
