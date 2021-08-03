@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -165,6 +166,11 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         return click(byId("add-instance-form-cancel-button"));
     }
 
+    public MetadataSamplesAO initializeSorting(String columnName) {
+        Selenide.actions().moveToElement($(columnHeader(columnName)), -1, 0).click().perform();
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return this.elements;
@@ -215,7 +221,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public void ensureCellContainsHyperlink() {
-            particularCell.shouldHave(hyperlink());
+            particularCell.find(byClassName("ant-row")).shouldHave(hyperlink());
         }
 
         public void ensureCellContains(String substring) {

@@ -210,11 +210,13 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
                                 .sleep(5, SECONDS)
                                 .click(stopPipeline())
                                 .ok()
+                                .also(confirmCommittingToExistingTool(registryIp, tool))
                 )
                 .assertCommittingFinishedSuccessfully()
                 .shouldHaveStatus(STOPPED);
@@ -231,6 +233,7 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
                                 .sleep(5, SECONDS)

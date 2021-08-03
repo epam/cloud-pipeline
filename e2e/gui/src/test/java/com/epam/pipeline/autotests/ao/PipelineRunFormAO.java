@@ -127,9 +127,13 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public PipelineRunFormAO checkWarningMessage(String message, boolean isVisible) {
         sleep(5, SECONDS);
         screenshot("check" + Utils.randomSuffix());
-        assertEquals(context().findAll(byClassName("ant-alert-warning"))
+        assertEquals(context().findAll(byClassName("ant-alert-message"))
                 .stream()
-                .map(SelenideElement::getText)
+                .map(selenideElement -> {
+                    String text = selenideElement.getText();
+                    System.out.println(text);
+                    return text;
+                })
                 .filter(e -> e.contains(message))
                 .count() == 1, isVisible, format("Message '%s' isn't [%s] visible", message, isVisible));
         return this;
