@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   Alert,
   AutoComplete,
@@ -8,11 +9,27 @@ import {
   Pagination
 } from 'antd';
 import {inject, observer} from 'mobx-react';
-import checkUsersIntegrity, {loadUsersMetadata} from './check';
+import checkUsersIntegrity, {loadUsersMetadata, extractLinks} from './check';
 import LoadingView from '../../special/LoadingView';
 import styles from './UserIntegrityCheck.css';
 
 const PAGE_SIZE = 10;
+
+const getLinkedValues = (key, value, dictionariesValues) => {
+  if (key && value && dictionariesValues?.length) {
+    let linkedValues = {};
+    const links = extractLinks(key, value, dictionariesValues);
+    if (links && links.length) {
+      linkedValues = (links || [])
+        .reduce((acc, link) => ({
+          ...acc,
+          ...{[link.key]: link.value}
+        }), {});
+    }
+    return linkedValues;
+  }
+  return {};
+};
 
 @inject('systemDictionaries')
 @observer
@@ -58,13 +75,19 @@ class UserIntegrityCheck extends React.Component {
     return [];
   }
 
+  get dictionariesValues () {
+    return this.dictionaries
+      .reduce((acc, current) => ([...acc, ...current.values]), []);
+  }
+
   getSystemDictionary (key) {
     return this.dictionaries.find(dictionary => dictionary.key === key);
   }
+
   isNewValue = (userId, dictionary) => {
     const {data} = this.state;
+    const {key, values} = dictionary;
     if (dictionary && data[userId] && data[userId][key]) {
-      const {key, values} = dictionary;
       return !values
         .filter(v => !!v)
         .map(v => v.value)
@@ -137,6 +160,28 @@ class UserIntegrityCheck extends React.Component {
     });
   }
 
+  onFieldChange = (opts) => {
+    const {
+      id,
+      key,
+      value
+    } = opts;
+    const {data: metadata = {}} = this.state;
+    const currentUser = metadata[id] || {};
+    const linkedValues = getLinkedValues(key, value, this.dictionariesValues);
+    const newUserData = {
+      ...currentUser,
+      [key]: value,
+      ...linkedValues
+    };
+    this.setState({
+      data: {
+        ...metadata,
+        [id]: newUserData
+      }
+    });
+  };
+
   renderTableHead = () => {
     const {columns = []} = this.state;
     return (
@@ -164,20 +209,6 @@ class UserIntegrityCheck extends React.Component {
     } = this.state;
     const data = users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     if (data.length > 0) {
-      const onChange = (opts) => {
-        const {
-          id,
-          key,
-          value
-        } = opts;
-        if (!metadata.hasOwnProperty(id)) {
-          metadata[id] = {};
-        }
-        metadata[id][key] = value;
-        this.setState({
-          data: {...metadata}
-        });
-      };
       return data.map((user) => {
         const userMetadata = metadata[user.id] || {};
         return (
@@ -190,14 +221,20 @@ class UserIntegrityCheck extends React.Component {
                   return (
                     <td key={column}>
                       <AutoComplete
+                        className={classNames({
+                          [styles.newDictionaryValue]: this.isNewValue(user.id, dictionary)
+                        })}
                         mode="combobox"
                         size="large"
                         style={{width: '100%'}}
                         allowClear
                         autoFocus
                         backfill
-                        className={this.isNewValue(user.id, dictionary) ? styles.newDictionaryValue : ''}
-                        onChange={(value) => onChange({id: user.id, value, key: column})}
+                        onChange={(value) => this.onFieldChange({
+                          id: user.id,
+                          value,
+                          key: column
+                        })}
                         filterOption={
                           (input, option) =>
                             option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -231,7 +268,11 @@ class UserIntegrityCheck extends React.Component {
                           ? userMetadata[column]
                           : undefined
                       }
-                      onChange={e => onChange({id: user.id, value: e.target.value, key: column})}
+                      onChange={e => this.onFieldChange({
+                        id: user.id,
+                        value: e.target.value,
+                        key: column
+                      })}
                     />
                   </td>
                 );

@@ -172,5 +172,5 @@ async function checkUsersIntegrity (users = [], dictionaries = [], fieldsToCheck
   return [];
 }
 
-export {loadUsersMetadata};
+export {loadUsersMetadata, extractLinks};
 export default checkUsersIntegrity;
