@@ -251,6 +251,11 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
     public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
     public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
+    public static final String ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID =
+            "error.datastorage.convert.target.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
+            "error.datastorage.convert.source.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";

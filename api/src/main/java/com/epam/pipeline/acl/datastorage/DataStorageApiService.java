@@ -21,11 +21,13 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -43,6 +45,7 @@ import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
+import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
@@ -68,6 +71,7 @@ import java.util.Set;
 public class DataStorageApiService {
 
     private final DataStorageManager dataStorageManager;
+    private final DataStorageConvertManager dataStorageConvertManager;
     private final DataStorageRuleManager dataStorageRuleManager;
     private final GrantPermissionManager grantPermissionManager;
     private final MessageHelper messageHelper;
@@ -315,6 +319,12 @@ public class DataStorageApiService {
     @AclMask
     public String getDataStorageSharedLink(Long id) {
         return dataStorageManager.generateSharedUrlForStorage(id);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @AclMask
+    public AbstractSecuredEntity convert(final Long id, final DataStorageConvertRequest request) {
+        return dataStorageConvertManager.convert(id, request);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
