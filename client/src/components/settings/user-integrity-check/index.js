@@ -251,28 +251,27 @@ class UserIntegrityCheck extends React.Component {
       return (<LoadingView />);
     }
     return (
-      <div className={styles.scrollBox}>
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              {this.renderTableHead()}
-            </thead>
-            <tbody>
-              {this.renderTableContent()}
-            </tbody>
-          </table>
-          {
-            pagesCount > 1 && (
-              <Pagination
-                current={currentPage}
-                pageSize={PAGE_SIZE}
-                total={users.length}
-                onChange={this.onPageChange}
-                size="small"
-              />
-            )
-          }
-        </div>
+      <div className={styles.tableContainer}>
+        <table className={styles.table}>
+          <thead>
+            {this.renderTableHead()}
+          </thead>
+          <tbody>
+            {this.renderTableContent()}
+          </tbody>
+        </table>
+        {
+          pagesCount > 1 && (
+            <Pagination
+              className={styles.pagination}
+              current={currentPage}
+              pageSize={PAGE_SIZE}
+              total={users.length}
+              onChange={this.onPageChange}
+              size="small"
+            />
+          )
+        }
       </div>
     );
   };

@@ -14,6 +14,7 @@
   white-space: nowrap;
   table-layout: fixed;
   border-collapse: collapse;
+  margin-bottom: 20px;
 }
 
 .table,
@@ -39,31 +40,36 @@
   padding: 10px 2px;
 }
 
-/*.table thead tr > th:first-child {*/
-/*  background: #ccc;*/
-/*  position: fixed;*/
-/*  padding: 10px;*/
-/*  margin: 0;*/
-/*  height: 53px;*/
-/*  width: 200px;*/
-/*  z-index: 3;*/
-/*  left: 0;*/
-/*  top: 100px;*/
-/*}*/
+.table thead tr > th:first-child {
+ background: #ccc;
+ text-align: center;
+ position: fixed;
+ padding: 10px;
+ margin: 0;
+ height: 53px;
+ width: 200px;
+ z-index: 3;
+ left: 0;
+}
 
-/*.table tbody tr > th:first-child {*/
-/*  display: flex;*/
-/*  align-items: center;*/
-/*  justify-content: center;*/
-/*  position: fixed;*/
-/*  padding: 10px;*/
-/*  margin: 0;*/
-/*  width: 200px;*/
-/*  height: 53px;*/
-/*  background-color: #ffff;*/
-/*  z-index: 3;*/
-/*  left: 0;*/
-/*}*/
+.table tbody tr > th:first-child {
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ position: fixed;
+ padding: 10px;
+ margin: 0;
+ width: 200px;
+ height: 53px;
+ background-color: #ffff;
+ z-index: 3;
+ left: 0;
+ overflow: hidden;
+ white-space: nowrap;
+}
+.table thead tr > th:nth-child(2),.table tbody tr > td:nth-child(2) {
+ padding-left: 140px;
+}
 
 .table tbody tr:nth-child(even) {
   background-color: rgba(244, 244, 244, 0.4);
@@ -71,4 +77,10 @@
 
 .table tbody tr:hover {
   background-color: rgba(16, 142, 233, 0.1);
+}
+.pagination {
+  position: fixed;
+  left: 0;
+  bottom: 50px;
+  z-index: 3;
 }
