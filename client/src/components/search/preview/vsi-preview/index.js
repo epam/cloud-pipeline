@@ -23,6 +23,8 @@ import {
   Icon
 } from 'antd';
 import classNames from 'classnames';
+import html2canvas from 'html2canvas';
+import FileSaver from 'file-saver';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
@@ -340,6 +342,27 @@ class VSIPreview extends React.Component {
     );
   };
 
+  saveImage = (data, opts) => {
+    const {x = 0, y = 0, z = 0} = opts || {};
+    const {file} = this.props;
+    const fileName = (file || '').split('/').pop().split('.').slice(0, -1);
+    const canvasElement = document.createElement('canvas');
+    document.body.style.overflowY = 'hidden';
+    document.body.appendChild(canvasElement);
+    const {width, height} = data;
+    canvasElement.width = width;
+    canvasElement.height = height;
+    const context = canvasElement.getContext('2d');
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = 'white';
+    context.putImageData(data, 0, 0);
+    canvasElement.toBlob((blob) => {
+      FileSaver.saveAs(blob, `${fileName}-${z}-${x}-${y}.png`);
+      document.body.removeChild(canvasElement);
+      document.body.style.overflowY = 'unset';
+    });
+  };
+
   renderTiles = () => {
     const {
       storageId
@@ -391,6 +414,31 @@ class VSIPreview extends React.Component {
         fullscreen: !fullscreen
       });
     };
+    const capture = () => {
+      const [x, y] = this.saViewer.TranslateTarget;
+      const z = this.saViewer.ZoomTarget;
+      const hideElements = this.saViewer.GetDiv()
+        .children('div:not(.sa-resize.sa-view-canvas-div)');
+      hideElements
+        .each(function () {
+          $(this).addClass(styles.vsiSaViewHidden);
+        });
+      html2canvas(this.saViewer.GetDiv()[0])
+        .then((canvas) => {
+          const ctx = canvas.getContext('2d');
+          const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          return this.saveImage(data, {x: Math.floor(x), y: Math.floor(y), z: Math.floor(z)});
+        })
+        .catch(e => {
+          console.warn(`Error creating screenshot: ${e.message}`);
+        })
+        .then(() => {
+          hideElements
+            .each(function () {
+              $(this).removeClass(styles.vsiSaViewHidden);
+            });
+        });
+    };
     return (
       <div
         className={
@@ -412,10 +460,17 @@ class VSIPreview extends React.Component {
         </div>
         <Button
           id="vsi-preview-fullscreen-button"
-          className={styles.vsiPreviewFullscreenButton}
+          className={classNames(styles.vsiPreviewButton, styles.vsiPreviewFullscreenButton)}
           onClick={goFullScreen}
         >
           <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
+        </Button>
+        <Button
+          id="vsi-preview-capture-button"
+          className={classNames(styles.vsiPreviewButton, styles.vsiPreviewCaptureButton)}
+          onClick={capture}
+        >
+          <Icon type="camera" />
         </Button>
       </div>
     );

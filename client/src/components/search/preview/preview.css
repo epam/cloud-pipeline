@@ -327,10 +327,7 @@
   font-weight: normal;
 }
 
-.vsi-preview-fullscreen-button {
-  position: absolute;
-  left: 3px;
-  top: 2px;
+.vsi-preview-button {
   z-index: 1002;
   padding: 0 5px;
   transition: none;
@@ -341,14 +338,30 @@
   border-color: rgba(187, 187, 187, 0.6);
 }
 
-.vsi-preview-fullscreen-button,
-.vsi-preview-fullscreen-button:hover,
-.vsi-preview-fullscreen-button:focus {
+.vsi-preview-button.vsi-preview-fullscreen-button {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+}
+
+.vsi-preview-button.vsi-preview-capture-button {
+  position: absolute;
+  left: 30px;
+  top: 2px;
+}
+
+.vsi-preview-button,
+.vsi-preview-button:hover,
+.vsi-preview-button:focus {
   outline: none;
   border-color: rgba(187, 187, 187, 0.8);
   color: #777;
 }
 
-.vsi-preview-fullscreen-button:hover {
+.vsi-preview-button:hover {
   background-color: #f4f4f4;
+}
+
+.vsi-sa-view-hidden {
+  display: none;
 }
