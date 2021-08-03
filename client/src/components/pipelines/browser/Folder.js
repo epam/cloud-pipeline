@@ -1716,7 +1716,12 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}} className={styles.menu}>
+        <Menu
+          onClick={onSelectDisplayOption}
+          style={{width: 125}}
+          className={styles.menu}
+          selectedKeys={[]}
+        >
           {displayOptionsMenuItems}
         </Menu>
       );
@@ -1753,14 +1758,12 @@ export default class Folder extends localization.LocalizedReactComponent {
             key="edit"
             className={styles.menuItem}
           >
-            <Icon type="edit"/>
-            <span style={{marginLeft: 5}}>
-              {
-                roleModel.writeAllowed(this.props.folder.value)
-                  ? 'Edit folder'
-                  : 'Permissions'
-              }
-            </span>
+            <Icon type="edit" style={{marginRight: 5}} />
+            {
+              roleModel.writeAllowed(this.props.folder.value)
+                ? 'Edit folder'
+                : 'Permissions'
+            }
           </MenuItem>
         );
       }
