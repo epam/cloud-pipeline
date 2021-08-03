@@ -14,16 +14,8 @@
  *  limitations under the License.
  */
 
-export default {
-  dashboard: 'dashboard',
-  library: 'library',
-  cluster: 'cluster',
-  tools: 'tools',
-  runs: 'runs',
-  run: 'run',
-  settings: 'settings',
-  search: 'search',
-  billing: 'billing',
-  miew: 'miew',
-  wsi: 'wsi'
-};
+.container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}

@@ -31,8 +31,12 @@ import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
 import styles from '../preview.css';
 import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
+import LoadingView from '../../../special/LoadingView';
 
 const {SA, SAM, $} = window;
+
+const SA_CAMERA_CALLBACK_TIMEOUT = 1000;
+const SA_CAMERA_CALLBACK_START_TIMEOUT = 2500;
 
 function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
@@ -133,6 +137,10 @@ class VSIPreview extends React.Component {
     this.fetchPreviewItems();
   }
 
+  componentWillUnmount () {
+    this.resetSAViewerCameraUpdate();
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.storageId !== this.props.storageId || prevProps.file !== this.props.file) {
       this.fetchPreviewItems();
@@ -193,6 +201,7 @@ class VSIPreview extends React.Component {
     const {file, storageId, dataStorageCache} = this.props;
     if (this.saViewer) {
       this.saViewer = undefined;
+      this.resetSAViewerCameraUpdate();
     }
     if (!file || !storageId || !dataStorageCache) {
       this.setState({
@@ -309,6 +318,7 @@ class VSIPreview extends React.Component {
     const {
       active,
       preview,
+      pending,
       items,
       tiles
     } = this.state;
@@ -316,12 +326,12 @@ class VSIPreview extends React.Component {
       return null;
     }
     const {
-      pending,
+      pending: previewPending,
       error,
       url
     } = preview;
     let content;
-    if (pending) {
+    if (pending || previewPending) {
       content = (<i style={{color: '#999'}}>Loading...</i>);
     } else if (error) {
       content = (<span style={{color: '#999'}}>{error}</span>);
@@ -363,9 +373,84 @@ class VSIPreview extends React.Component {
     });
   };
 
+  resetSAViewerCameraUpdate = () => {
+    if (this.saViewerCameraCallbackTimer) {
+      clearInterval(this.saViewerCameraCallbackTimer);
+      this.saViewerCameraCallbackTimer = undefined;
+    }
+  };
+
+  startSAViewerCameraUpdate = () => {
+    this.resetSAViewerCameraUpdate();
+    const {onCameraChanged} = this.props;
+    if (!onCameraChanged) {
+      return;
+    }
+    let previous = {};
+    const callback = () => {
+      if (!this.saViewer) {
+        this.resetSAViewerCameraUpdate();
+      }
+      const {
+        RollTarget: roll,
+        ZoomTarget: zoom
+      } = this.saViewer;
+      const [x, y] = this.saViewer.MainView.Camera.GetWorldFocalPoint();
+      if (
+        previous.roll !== roll ||
+        previous.zoom !== zoom ||
+        previous.x !== x ||
+        previous.y !== y
+      ) {
+        previous = {
+          zoom,
+          roll,
+          x,
+          y
+        };
+        onCameraChanged({...previous});
+      }
+    };
+    this.saViewerCameraCallbackTimer = setInterval(
+      callback,
+      SA_CAMERA_CALLBACK_TIMEOUT
+    );
+  };
+
+  shareButtonClicked = () => {
+    if (!this.saViewer) {
+      return;
+    }
+    const {
+      RollTarget: roll,
+      ZoomTarget: zoom
+    } = this.saViewer;
+    const [x, y] = this.saViewer.MainView.Camera.GetWorldFocalPoint();
+    const {
+      storageId,
+      file
+    } = this.props;
+    const query = [
+      `storage=${storageId}`,
+      `file=${file}`,
+      `zoom=${zoom}`,
+      `roll=${roll}`,
+      `x=${x}`,
+      `y=${y}`
+    ];
+    const url = `${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`;
+    window.open(url, '_blank');
+  };
+
   renderTiles = () => {
     const {
-      storageId
+      storageId,
+      fullScreenAvailable,
+      shareAvailable,
+      x,
+      y,
+      zoom,
+      roll
     } = this.props;
     const {
       tiles,
@@ -405,6 +490,20 @@ class VSIPreview extends React.Component {
         this.saViewer.ShareTab.hide();
         // eslint-disable-next-line
         const panel = new SAM.LayerPanel(this.saViewer, `${storageId}/${tiles.folder}`);
+        if (zoom || roll || x || y) {
+          const zoomTarget = zoom || this.saViewer.ZoomTarget;
+          const rollTarget = roll || this.saViewer.RollTarget;
+          const current = this.saViewer.MainView.Camera.GetWorldFocalPoint();
+          const center = [
+            x || current[0] || 0,
+            y || current[1] || 0
+          ];
+          this.saViewer.AnimateCamera(center, rollTarget, zoomTarget);
+        }
+        setTimeout(
+          () => this.startSAViewerCameraUpdate(),
+          SA_CAMERA_CALLBACK_START_TIMEOUT
+        );
       } else if (this.saViewer) {
         $(window).trigger('resize');
       }
@@ -415,7 +514,7 @@ class VSIPreview extends React.Component {
       });
     };
     const capture = () => {
-      const [x, y] = this.saViewer.TranslateTarget;
+      const [x, y] = this.saViewer.MainView.Camera.GetWorldFocalPoint();
       const z = this.saViewer.ZoomTarget;
       const hideElements = this.saViewer.GetDiv()
         .children('div:not(.sa-resize.sa-view-canvas-div)');
@@ -458,20 +557,39 @@ class VSIPreview extends React.Component {
           }}
         >
         </div>
-        <Button
-          id="vsi-preview-fullscreen-button"
-          className={classNames(styles.vsiPreviewButton, styles.vsiPreviewFullscreenButton)}
-          onClick={goFullScreen}
+        <div
+          className={styles.vsiPreviewButtonContainer}
         >
-          <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
-        </Button>
-        <Button
-          id="vsi-preview-capture-button"
-          className={classNames(styles.vsiPreviewButton, styles.vsiPreviewCaptureButton)}
-          onClick={capture}
-        >
-          <Icon type="camera" />
-        </Button>
+          {
+            fullScreenAvailable && (
+              <Button
+                id="vsi-preview-fullscreen-button"
+                className={styles.vsiPreviewButton}
+                onClick={goFullScreen}
+              >
+                <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
+              </Button>
+            )
+          }
+          <Button
+            id="vsi-preview-capture-button"
+            className={styles.vsiPreviewButton}
+            onClick={capture}
+          >
+            <Icon type="camera" />
+          </Button>
+          {
+            shareAvailable && (
+              <Button
+                id="vsi-preview-share-button"
+                className={styles.vsiPreviewButton}
+                onClick={this.shareButtonClicked}
+              >
+                <Icon type="export" />
+              </Button>
+            )
+          }
+        </div>
       </div>
     );
   };
@@ -480,13 +598,15 @@ class VSIPreview extends React.Component {
     const {
       className
     } = this.props;
+    const {pending} = this.state;
     return (
       <div
         className={className}
       >
-        {this.renderSlides()}
-        {this.renderPreview()}
-        {this.renderTiles()}
+        {pending && (<LoadingView />)}
+        {!pending && this.renderSlides()}
+        {!pending && this.renderPreview()}
+        {!pending && this.renderTiles()}
       </div>
     );
   }
@@ -495,7 +615,19 @@ class VSIPreview extends React.Component {
 VSIPreview.propTypes = {
   className: PropTypes.string,
   file: PropTypes.string,
-  storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  fullScreenAvailable: PropTypes.bool,
+  shareAvailable: PropTypes.bool,
+  x: PropTypes.number,
+  y: PropTypes.number,
+  zoom: PropTypes.number,
+  roll: PropTypes.number,
+  onCameraChanged: PropTypes.func
+};
+
+VSIPreview.defaultProps = {
+  fullScreenAvailable: true,
+  shareAvailable: true
 };
 
 export default VSIPreview;

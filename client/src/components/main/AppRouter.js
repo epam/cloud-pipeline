@@ -64,6 +64,7 @@ import Billing, {
   // BillingQuotas,
   BillingReports} from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
+import VSIPreviewPage from '../applications/vsi-preview';
 import Log from '../runs/logs/Log';
 import App from './App';
 import ToolVersion from '../tools/tool-version';
@@ -157,6 +158,7 @@ export default class AppRouter extends React.Component {
             </Route>
           </Route>
           <Route path="/miew" component={MiewPage} />
+          <Route path="/wsi" component={VSIPreviewPage} />
           <Route path="/library" component={PipelinesLibrary}>
             <IndexRoute component={FolderBrowser} />
           </Route>

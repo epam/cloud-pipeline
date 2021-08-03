@@ -301,9 +301,17 @@
   overflow: hidden;
 }
 
+.wsi-page .vsi-content-preview {
+  width: 100vw;
+}
+
 .vsi-content-preview.tiles {
   height: 50vh;
   position: relative;
+}
+
+.wsi-page .vsi-content-preview.tiles {
+  height: 100vh;
 }
 
 .vsi-content-preview.fullscreen {
@@ -327,6 +335,12 @@
   font-weight: normal;
 }
 
+.vsi-preview-button-container {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+}
+
 .vsi-preview-button {
   z-index: 1002;
   padding: 0 5px;
@@ -338,16 +352,8 @@
   border-color: rgba(187, 187, 187, 0.6);
 }
 
-.vsi-preview-button.vsi-preview-fullscreen-button {
-  position: absolute;
-  left: 3px;
-  top: 2px;
-}
-
-.vsi-preview-button.vsi-preview-capture-button {
-  position: absolute;
-  left: 30px;
-  top: 2px;
+.vsi-preview-button:not(:first-child) {
+  margin-left: 5px;
 }
 
 .vsi-preview-button,

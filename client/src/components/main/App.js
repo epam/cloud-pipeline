@@ -97,10 +97,10 @@ export default class App extends Component {
     const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
       roleModel.isManager.billing(this);
     const activeTabPath = uiNavigation.getActivePage(this.props.router);
-    const isMiewApp = activeTabPath === Pages.miew;
+    const isExternalApp = [Pages.miew, Pages.wsi].indexOf(activeTabPath) >= 0;
     const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
-    if (isMiewApp) {
+    if (isExternalApp) {
       content = this.props.children;
     } else {
       const searchStyle = [searchStyles.searchBlur];
@@ -145,7 +145,7 @@ export default class App extends Component {
       <LocaleProvider locale={enUS}>
         <div id="root-container" className={styles.appContainer}>
           {
-            this.props.uiNavigation.searchEnabled() && (
+            this.props.uiNavigation.searchEnabled() && !isExternalApp && (
               <SearchDialog
                 onInitialized={this.onSearchDialogInitialized}
                 router={this.props.router}

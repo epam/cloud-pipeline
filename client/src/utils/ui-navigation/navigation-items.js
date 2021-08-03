@@ -133,6 +133,12 @@ export default [
     hidden: true
   },
   {
+    key: Pages.wsi,
+    keys: ['wsi'],
+    static: true,
+    hidden: true
+  },
+  {
     key: Pages.run,
     keys: ['run'],
     static: true,
