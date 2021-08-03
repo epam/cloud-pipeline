@@ -30,7 +30,7 @@ import classNames from 'classnames';
 import displaySize from '../../../utils/displaySize';
 import importUsersUrl from '../../../models/user/Import';
 import styles from './import-users.css';
-import checkUsersIntegrity from '../utils/check-users-integrity';
+import UserIntegrityCheck from '../user-integrity-check';
 
 const DROPDOWN_KEYS = {
   checkUsers: 'checkUsers'
@@ -132,7 +132,7 @@ class ImportUsersButton extends React.Component {
           if (usersRequest.loaded && systemDictionariesRequest.loaded) {
             const users = (usersRequest.value || []).slice();
             const systemDictionaries = (systemDictionariesRequest.value || []).slice();
-            return checkUsersIntegrity(users, systemDictionaries);
+            return UserIntegrityCheck.check(users, systemDictionaries);
           } else {
             return Promise.resolve();
           }
@@ -152,6 +152,12 @@ class ImportUsersButton extends React.Component {
       })
       .catch(() => {})
       .then(() => hide());
+  };
+
+  closeUsersIntegrityModal = () => {
+    this.setState({
+      fixUsers: []
+    });
   };
 
   onDropdownMenuClick = ({key}) => {
@@ -290,7 +296,8 @@ class ImportUsersButton extends React.Component {
       users,
       metadata,
       createGroups,
-      createUsers
+      createUsers,
+      fixUsers
     } = this.state;
     const disabled = d || (systemDictionaries.pending && !systemDictionaries.loaded);
     const dropdownMenu = (
@@ -419,6 +426,11 @@ class ImportUsersButton extends React.Component {
             ))
           }
         </Modal>
+        <UserIntegrityCheck
+          visible={(fixUsers || []).length > 0}
+          users={fixUsers}
+          onClose={this.closeUsersIntegrityModal}
+        />
       </div>
     );
   }

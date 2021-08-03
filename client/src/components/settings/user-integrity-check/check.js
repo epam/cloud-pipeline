@@ -77,8 +77,7 @@ function checkIndividualUser ({
     fieldsToCheck
   });
   const userWithConflicts = {
-    userId: user.id,
-    userName: user.userName,
+    ...user,
     conflicts: []
   };
   for (let key in userMetadata) {
@@ -173,4 +172,5 @@ async function checkUsersIntegrity (users = [], dictionaries = [], fieldsToCheck
   return [];
 }
 
+export {loadUsersMetadata};
 export default checkUsersIntegrity;
