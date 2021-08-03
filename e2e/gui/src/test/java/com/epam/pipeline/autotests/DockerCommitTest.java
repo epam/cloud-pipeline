@@ -215,7 +215,6 @@ public class DockerCommitTest
                                 .sleep(5, SECONDS)
                                 .click(stopPipeline())
                                 .ok()
-                                .also(confirmCommittingToExistingTool(registryIp, tool))
                 )
                 .assertCommittingFinishedSuccessfully()
                 .shouldHaveStatus(STOPPED);
@@ -237,6 +236,7 @@ public class DockerCommitTest
                                 .sleep(5, SECONDS)
                                 .click(deleteRuntimeFiles())
                                 .ok()
+                                .also(confirmCommittingToExistingTool(registryIp, tool))
                 )
                 .assertCommittingFinishedSuccessfully();
     }
