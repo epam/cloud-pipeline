@@ -91,7 +91,7 @@ class ConvertToVersionedStorage extends React.Component {
         )}
       >
         <div className={styles.accent}>
-          All the data will be moved under the versioned control.
+          All the data will be moved under the version control.
         </div>
         <div className={styles.info}>
           This operation cannot be undone.
