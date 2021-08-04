@@ -99,6 +99,17 @@ class UserIntegrityCheck extends React.Component {
   getSystemDictionary (key) {
     return this.dictionaries.find(dictionary => dictionary.key === key);
   }
+  isNewValue = (userId, dictionary) => {
+    const {data} = this.state;
+    if (dictionary && data[userId] && data[userId][key]) {
+      const {key, values} = dictionary;
+      return !values
+        .filter(v => !!v)
+        .map(v => v.value)
+        .includes(data[userId][key]);
+    }
+    return false;
+  }
 
   isNewValue = (userId, dictionary) => {
     const {data} = this.state;
