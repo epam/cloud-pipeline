@@ -700,7 +700,9 @@ public class RoleModelTest
                 .typeInField(userGroup)
                 .ok()
                 .validateGroupHasPermissions(userGroup)
-                .validateDeleteButtonIsDisplayedOppositeTo(userGroup);
+                .validateDeleteButtonIsDisplayedOppositeTo(userGroup)
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 28)
@@ -734,6 +736,14 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .assertEditButtonIsDisplayed()
                 .assertRunButtonIsDisplayed();
+        logout();
+        loginAs(admin)
+                .library()
+                .clickOnPipeline(pipelineName)
+                .clickEditButton()
+                .clickOnPermissionsTab()
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 29)
@@ -744,6 +754,7 @@ public class RoleModelTest
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
+                                .deleteIfPresent(userGroup)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );

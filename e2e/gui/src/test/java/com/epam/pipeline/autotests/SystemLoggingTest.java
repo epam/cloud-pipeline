@@ -41,6 +41,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation, Tools {
@@ -77,7 +78,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         sleep(30, SECONDS);
         logout();
         loginAs(admin);
-        sleep(30, SECONDS);
+        sleep(1, MINUTES);
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemLogs();
