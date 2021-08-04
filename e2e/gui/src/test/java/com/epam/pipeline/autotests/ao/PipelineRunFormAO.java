@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -402,6 +403,17 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .map(e -> e.split(" ")[1])
                 .mapToInt(Integer::parseInt)
                 .min().getAsInt();
+    }
+
+    public String getNodeType(final int minRAM) {
+        sleep(1, SECONDS);
+        get(INSTANCE_TYPE).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).texts()
+                .stream()
+                .filter(n -> n.contains("RAM: " + minRAM))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchWindowException(String.format(
+                        "No such node type with RAM {%s}.", minRAM)));
     }
 
     public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {

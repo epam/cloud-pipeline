@@ -82,7 +82,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String secondConfiguration = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String configurationName = "customConfig";
-    private final String testRole = "ROLE_USER";
+    private final String testRole = C.ROLE_USER;
     private final String instanceTypesMask = "Allowed instance types mask";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String onDemandPrice = "On demand";

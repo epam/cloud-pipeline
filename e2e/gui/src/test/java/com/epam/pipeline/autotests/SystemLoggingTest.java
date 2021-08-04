@@ -175,7 +175,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
                 .edit()
                 .sleep(1, SECONDS)
-                .deleteRoleOrGroup("ROLE_USER")
+                .deleteRoleOrGroup(C.ROLE_USER)
                 .ok();
         navigationMenu()
                 .settings()
@@ -183,7 +183,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToUsers()
                 .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
                 .edit()
-                .addRoleOrGroup("ROLE_USER")
+                .addRoleOrGroup(C.ROLE_USER)
                 .sleep(2, SECONDS)
                 .ok();
         navigationMenu()

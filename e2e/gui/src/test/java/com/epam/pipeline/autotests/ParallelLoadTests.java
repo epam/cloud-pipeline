@@ -82,7 +82,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         loginAs(admin);
         Arrays.stream(userList)
             .forEach(this::addUser);
-        final String userRoleGroup = "ROLE_USER";
+        final String userRoleGroup = C.ROLE_USER;
         library()
                 .createFolder(PARALLEL_TEST_FOLDER)
                 .clickOnFolder(PARALLEL_TEST_FOLDER)

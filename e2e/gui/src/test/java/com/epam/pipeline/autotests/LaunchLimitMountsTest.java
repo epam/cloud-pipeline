@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -44,18 +45,7 @@ import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
-import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
-import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
-import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
-import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
-import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
-import static com.epam.pipeline.autotests.ao.Primitive.OK;
-import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
-import static com.epam.pipeline.autotests.ao.Primitive.SEARCH_INPUT;
-import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
-import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
-import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -337,11 +327,11 @@ public class LaunchLimitMountsTest
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(ADVANCED_PANEL)
                     .minNodeTypeRAM();
+            final String minNodeType = new PipelineRunFormAO().getNodeType(minRAM);
             System.out.println("Min RAM: " + minRAM + "; storages = " + countObjectStorages);
             addStor = createStoragesIfNeeded(countObjectStorages, minRAM);
-            final String warning = format(warningMessage, countObjectStorages);
-            checkOOMwarningMessage("1", true, warning);
-            checkOOMwarningMessage("100", false, warning);
+            checkOOMwarningMessage("1", true, countObjectStorages, minNodeType);
+            checkOOMwarningMessage("100", false, countObjectStorages, minNodeType);
         } finally {
             if(countObjectStorages < minRAM) {
                 logoutIfNeeded();
@@ -396,7 +386,11 @@ public class LaunchLimitMountsTest
         return format("%s mounted to /cloud-data/%s", storage.toLowerCase(), storage.toLowerCase());
     }
 
-    private void checkOOMwarningMessage(String storageMountsPerGBratio, boolean messageIsVisible, String warning) {
+    private void checkOOMwarningMessage(String storageMountsPerGBratio,
+                                        boolean messageIsVisible,
+                                        int countObjectStorages,
+                                        String minNodeType) {
+        final String warning = format(warningMessage, countObjectStorages);
         logout();
         loginAs(admin);
         navigationMenu()
@@ -408,6 +402,8 @@ public class LaunchLimitMountsTest
         loginAs(user);
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .setTypeValue(minNodeType)
                 .expandTab(ADVANCED_PANEL)
                 .checkWarningMessage(warning, messageIsVisible)
                 .checkLaunchWarningMessage(warning, messageIsVisible);

@@ -46,7 +46,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
     private String endpointsLink = "";
     private String endpointsName = "";
-    private String userGroup = "ROLE_USER";
+    private String userGroup = C.ROLE_USER;
     private int timeout = C.SHARING_TIMEOUT;
 
     @BeforeMethod

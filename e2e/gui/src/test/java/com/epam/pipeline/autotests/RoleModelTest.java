@@ -47,7 +47,7 @@ public class RoleModelTest
         implements Authorization, Tools {
 
     private final String userGroup = "DOMAIN USERS";
-    private final String userRoleGroup = "ROLE_USER";
+    private final String userRoleGroup = C.ROLE_USER;
 
     private final String pipelineName = "role-model-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
