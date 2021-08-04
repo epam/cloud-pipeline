@@ -59,6 +59,10 @@ if [ -z "$CP_FSBROWSER_VS_WD" ]; then
     fi
 fi
 
+# Expand any env variable in the CP_FSBROWSER_VS_WD path
+CP_FSBROWSER_VS_WD=$(eval echo $CP_FSBROWSER_VS_WD)
+CP_FSBROWSER_VS_WD=${CP_FSBROWSER_VS_WD:-/git-workdir}
+
 mkdir -p ${CP_FSBROWSER_VS_WD}
 
 _SSL_CERT_DIR="${SSL_CERT_DIR:-/etc/ssl/certs/}"
