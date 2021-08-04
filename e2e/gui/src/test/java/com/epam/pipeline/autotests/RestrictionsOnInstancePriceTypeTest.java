@@ -328,7 +328,6 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2644"})
     public void validationOfInstanceTypesRestrictionsSystemSettings() {
-        try {
             loginAs(admin);
             library()
                     .cd(folder)
@@ -384,11 +383,6 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
                     )
                     .exitFromConfigurationWithoutSaved();
-        } finally {
-            logout();
-            loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
-        }
     }
 
     @Test

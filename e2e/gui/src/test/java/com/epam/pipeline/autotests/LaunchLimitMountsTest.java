@@ -328,7 +328,6 @@ public class LaunchLimitMountsTest
                     .expandTab(ADVANCED_PANEL)
                     .minNodeTypeRAM();
             final String minNodeType = new PipelineRunFormAO().getNodeType(minRAM);
-            System.out.println("Min RAM: " + minRAM + "; storages = " + countObjectStorages);
             addStor = createStoragesIfNeeded(countObjectStorages, minRAM);
             checkOOMwarningMessage("1", true, countObjectStorages, minNodeType);
             checkOOMwarningMessage("100", false, countObjectStorages, minNodeType);
