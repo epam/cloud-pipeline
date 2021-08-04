@@ -178,7 +178,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (
       pipeline &&
       pipeline.value &&
-      pipeline.loaded
+      pipeline.loaded &&
+      pipeline.value.currentVersion
     ) {
       return pipeline.value.currentVersion.commitId;
     }
