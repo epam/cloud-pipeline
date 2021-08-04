@@ -74,13 +74,12 @@
 .table tbody tr:nth-child(even) {
   background-color: rgba(244, 244, 244, 0.4);
 }
-
-.table tbody tr:hover {
-  background-color: rgba(16, 142, 233, 0.1);
-}
 .pagination {
   position: fixed;
-  left: 0;
+  right: 0;
   bottom: 50px;
   z-index: 3;
+}
+.new-dictionary-value > div > div > ul > li> div > input[type='text']{
+  background-color:rgba(16, 142, 233, 0.1) !important;
 }
