@@ -167,7 +167,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     }
 
     public MetadataSamplesAO initializeSorting(String columnName) {
-        Selenide.actions().moveToElement($(columnHeader(columnName)), -10, 1).click().build().perform();
+        Selenide.actions().moveToElement($(columnHeader(columnName)), 0, 0).click().build().perform();
         return this;
     }
 
