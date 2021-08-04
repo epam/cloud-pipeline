@@ -60,9 +60,22 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
   };
 
   renderService = (service) => {
-    let name = service.name || service.url;
+    let name = service.name;
     if (!name && service.sshAccess) {
       name = 'SSH Access';
+    }
+    if (!name && service.url) {
+      const {multiZoneManager} = this.props;
+      const defaultURLRegion = multiZoneManager.getDefaultURLRegion(service.url);
+      if (defaultURLRegion && service.url[defaultURLRegion]) {
+        name = service.url[defaultURLRegion];
+        if (name) {
+          name = name.split('/').pop() || name;
+        }
+      }
+    }
+    if (!name) {
+      name = 'Endpoint';
     }
     const [imageRegistry, , tool] = this.getTool(service.run.dockerImage);
     const [reg, group, dockerImage] = service.run.dockerImage.split('/');
