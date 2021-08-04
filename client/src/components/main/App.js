@@ -149,7 +149,7 @@ export default class App extends Component {
               <SearchDialog
                 onInitialized={this.onSearchDialogInitialized}
                 router={this.props.router}
-                blockInput={activeTabPath === Pages.runs || isSearch}
+                blockInput={activeTabPath === Pages.run || isSearch}
                 onVisibilityChanged={this.onSearchControlVisibilityChanged}
               />
             )
