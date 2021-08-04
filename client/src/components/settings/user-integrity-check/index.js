@@ -176,7 +176,7 @@ class UserIntegrityCheck extends React.Component {
     });
   }
 
-  onFieldChange = async (opts) => {
+  onFieldChange = (opts) => {
     const {
       id,
       key,
