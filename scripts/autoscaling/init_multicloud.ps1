@@ -37,6 +37,14 @@ function InstallNoMachineIfRequired {
         Write-Host "Installing NoMachine..."
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
+        @"
+
+VirtualDesktopAuthorization 0
+PhysicalDesktopAuthorization 0
+AutomaticDisconnection 0
+ConnectionsLimit 1
+ConnectionsUserLimit 1
+"@ | Out-File -FilePath "C:\Program Files (x86)\NoMachine\etc\server.cfg" -Encoding ascii -Force -Append
         $restartRequired=$true
     }
     return $restartRequired
