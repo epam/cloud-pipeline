@@ -63,6 +63,8 @@ public class LaunchLimitMountsTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
+    private final String anotherGroup = C.ANOTHER_GROUP;
+    private final String testSensitiveTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private final String mountDataStoragesTask = "MountDataStorages";
     private String storageID = "";
     private String sensitiveStorageID = "";
@@ -215,13 +217,13 @@ public class LaunchLimitMountsTest
     @TestCase(value = {"EPMCMBIBPC-3177"})
     public void prepareSensitiveLimitMounts() {
         tools()
-                .performWithin(registry, group, tool, tool ->
+                .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .enableAllowSensitiveStorage()
                                 .performIf(SAVE, enabled, ToolSettings::save)
                 );
         tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .perform(registry, anotherGroup, testSensitiveTool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                 .selectDataStoragesToLimitMounts()
@@ -256,7 +258,7 @@ public class LaunchLimitMountsTest
     @TestCase(value = {"EPMCMBIBPC-3178"})
     public void runPipelineWithSensitiveLimitMounts() {
         tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .perform(registry, anotherGroup, testSensitiveTool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
                 .selectDataStoragesToLimitMounts()
                 .clearSelection()
