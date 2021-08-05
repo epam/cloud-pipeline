@@ -68,6 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class DockerContainerOperationManagerTest {
 
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
@@ -115,7 +116,6 @@ public class DockerContainerOperationManagerTest {
     private PipelineConfigurationManager pipelineConfigurationManager;
 
     @Mock
-    @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
     @Mock
