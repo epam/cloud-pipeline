@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -127,6 +128,9 @@ public class DockerContainerOperationManager {
 
     @Autowired
     private RunLogManager runLogManager;
+
+    @Autowired
+    private PipelineRunServiceUrlManager serviceUrlManager;
 
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
@@ -427,9 +431,9 @@ public class DockerContainerOperationManager {
                 TaskStatus.PAUSED.name());
 
         run.setPodIP(null);
-        run.setServiceUrl(null);
         removeUtilizationLevelTags(run);
         runManager.updateRunInfo(run);
+        serviceUrlManager.clear(run.getId());
 
         final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
 

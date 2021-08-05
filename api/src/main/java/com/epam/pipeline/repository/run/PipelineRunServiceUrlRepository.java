@@ -29,4 +29,6 @@ public interface PipelineRunServiceUrlRepository extends CrudRepository<Pipeline
     Optional<PipelineRunServiceUrl> findByPipelineRunIdAndRegion(Long pipelineRunId, String region);
 
     Iterable<PipelineRunServiceUrl> findByPipelineRunIdIn(List<Long> pipelineRunIds);
+
+    void deleteByPipelineRunId(Long pipelineRunId);
 }

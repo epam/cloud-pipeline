@@ -56,6 +56,11 @@ public class PipelineRunServiceUrlManager {
         return pipelineRunServiceUrl;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void clear(final Long runId) {
+        pipelineRunServiceUrlRepository.deleteByPipelineRunId(runId);
+    }
+
     public Map<String, String> loadByRunId(final Long runId) {
         return StreamSupport.stream(pipelineRunServiceUrlRepository.findByPipelineRunId(runId).spliterator(), false)
                 .collect(Collectors.toMap(PipelineRunServiceUrl::getRegion, PipelineRunServiceUrl::getServiceUrl));
