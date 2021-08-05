@@ -22,11 +22,13 @@ import {
   AutoComplete,
   Modal,
   Input,
-  Pagination
+  Pagination,
+  message
 } from 'antd';
 import {inject, observer} from 'mobx-react';
-import checkUsersIntegrity, {loadUsersMetadata, extractLinks} from './check';
 import LoadingView from '../../special/LoadingView';
+import checkUsersIntegrity, {loadUsersMetadata, extractLinks} from './check';
+import addValueToSystemDictionary from './add-value-to-system-dictionary';
 import styles from './UserIntegrityCheck.css';
 
 const PAGE_SIZE = 10;
@@ -91,6 +93,21 @@ class UserIntegrityCheck extends React.Component {
       });
     }
   }
+  addNewValueToDictionary = async (e, dictionary, userId) => {
+    const value = this.isNewValue(userId, dictionary);
+    if (e.key === 'Enter' && value) {
+      const hideLoadingState = message.loading(`Saving value to ${dictionary.key}`, 0);
+      const request = await addValueToSystemDictionary(dictionary, value);
+      if (request.loaded) {
+        hideLoadingState();
+        await this.props.systemDictionaries.fetch();
+      }
+      if (request.error) {
+        hideLoadingState();
+        message.error(request.error, 5);
+      }
+    }
+  }
 
   updateState = () => {
     const {users = []} = this.props;
@@ -120,23 +137,12 @@ class UserIntegrityCheck extends React.Component {
   isNewValue = (userId, dictionary) => {
     const {data} = this.state;
     const {key, values} = dictionary;
-    if (dictionary && data[userId] && data[userId][key]) {
+    const enteredValue = dictionary && data[userId] ? data[userId][key] : undefined;
+    if (enteredValue) {
       return !values
         .filter(v => !!v)
         .map(v => v.value)
-        .includes(data[userId][key]);
-    }
-    return false;
-  }
-
-  isNewValue = (userId, dictionary) => {
-    const {data} = this.state;
-    const {key, values} = dictionary;
-    if (dictionary && data[userId] && data[userId][key]) {
-      return !values
-        .filter(v => !!v)
-        .map(v => v.value)
-        .includes(data[userId][key]);
+        .includes(enteredValue) ? enteredValue : false;
     }
     return false;
   }
@@ -264,7 +270,9 @@ class UserIntegrityCheck extends React.Component {
                 const dictionary = this.getSystemDictionary(column);
                 if (dictionary) {
                   return (
-                    <td key={column}>
+                    <td
+                      key={column}
+                      onKeyPress={(e) => this.addNewValueToDictionary(e, dictionary, user.id)}>
                       <AutoComplete
                         className={classNames({
                           [styles.newDictionaryValue]: this.isNewValue(user.id, dictionary),
@@ -353,7 +361,10 @@ class UserIntegrityCheck extends React.Component {
       return (<LoadingView />);
     }
     return (
-      <div className={styles.tableContainer} onScroll={() => this.handleScroll()}>
+      <div
+        className={styles.tableContainer}
+        onScroll={this.handleScroll}
+      >
         <table className={styles.table}>
           <thead>
             {this.renderTableHead()}
@@ -379,7 +390,6 @@ class UserIntegrityCheck extends React.Component {
   };
 
   render () {
-    console.log('scrolling', this.state.scrolling);
     const {
       visible,
       onClose
