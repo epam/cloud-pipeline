@@ -93,7 +93,7 @@ public class LaunchLimitMountsTest
 
         sensitiveStorageID = Utils.entityIDfromURL();
         tools()
-                .performWithin(registry, group, tool, tool ->
+                .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .disableAllowSensitiveStorage()
                                 .performIf(SAVE, enabled, ToolSettings::save)
@@ -117,7 +117,7 @@ public class LaunchLimitMountsTest
                 .removeStorage(storage3)
                 .removeStorage(storage4);
         tools()
-                .performWithin(registry, group, tool, tool ->
+                .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .disableAllowSensitiveStorage()
                                 .performIf(SAVE, enabled, ToolSettings::save)

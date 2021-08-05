@@ -174,13 +174,14 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             Utils.restartBrowser(C.ROOT_ADDRESS);
             sleep(timeout, SECONDS);
             loginAs(user);
+            final String[] name = endpointsName.split("/");
             home()
                     .configureDashboardPopUpOpen()
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkEndpointsLinkOnServicesPanel(endpointsName)
-                    .checkServiceToolPath(endpointsName, registry, group, Utils.nameWithoutGroup(tool), runID)
+                    .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
+                    .checkServiceToolPath(name[name.length - 1], registry, group, Utils.nameWithoutGroup(tool), runID)
                     .openEndpointLink(endpointsLink, runID)
                     .validateEndpointPage(user.login)
                     .assertURLEndsWith(friendlyURL)
@@ -210,7 +211,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-3179"})
-    public void shareSSHsession() {
+    public void shareSSHSession() {
         try {
             navigationMenu()
                     .settings()
@@ -231,12 +232,13 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             Utils.restartBrowser(C.ROOT_ADDRESS);
             sleep(timeout, SECONDS);
             loginAs(user);
+            final String[] name = endpointsName.split("/");
             home()
                     .configureDashboardPopUpOpen()
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsDisplayedOnServicesPanel(runID)
                     .openSSHLink(runID)
                     .execute("cat test.file")
@@ -257,7 +259,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsNotDisplayedOnServicesPanel(runID);
         } finally {
             open(C.ROOT_ADDRESS);
