@@ -58,19 +58,37 @@ class UserIntegrityCheck extends React.Component {
     columns: [],
     data: {},
     error: undefined,
-    visible: this.props.visible
+    visible: this.props.visible,
+    scrolling: false
   };
 
   componentDidMount () {
     this.updateState();
+    window.addEventListener('mouseup', this.handleStopScrolling);
   }
-
+  componentWillUnmount () {
+    window.removeEventListener('mouseup', this.handleStopScrolling);
+  }
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (
       prevProps.users !== this.props.users ||
       (prevProps.visible !== this.props.visible && this.props.visible)
     ) {
       this.updateState();
+    }
+  }
+  handleScroll = () => {
+    if (!this.state.scrolling) {
+      this.setState({
+        scrolling: true
+      });
+    }
+  }
+  handleStopScrolling = () => {
+    if (this.state.scrolling) {
+      this.setState({
+        scrolling: false
+      });
     }
   }
 
@@ -101,8 +119,8 @@ class UserIntegrityCheck extends React.Component {
   }
   isNewValue = (userId, dictionary) => {
     const {data} = this.state;
+    const {key, values} = dictionary;
     if (dictionary && data[userId] && data[userId][key]) {
-      const {key, values} = dictionary;
       return !values
         .filter(v => !!v)
         .map(v => v.value)
@@ -249,11 +267,15 @@ class UserIntegrityCheck extends React.Component {
                     <td key={column}>
                       <AutoComplete
                         className={classNames({
-                          [styles.newDictionaryValue]: this.isNewValue(user.id, dictionary)
+                          [styles.newDictionaryValue]: this.isNewValue(user.id, dictionary),
+                          [styles.autocomplete]: true
                         })}
+                        dropdownClassName={
+                          classNames({
+                            [styles.dropdownHidden]: this.state.scrolling
+                          })}
                         mode="combobox"
                         size="large"
-                        style={{width: '100%'}}
                         allowClear
                         autoFocus
                         backfill
@@ -331,7 +353,7 @@ class UserIntegrityCheck extends React.Component {
       return (<LoadingView />);
     }
     return (
-      <div className={styles.tableContainer}>
+      <div className={styles.tableContainer} onScroll={() => this.handleScroll()}>
         <table className={styles.table}>
           <thead>
             {this.renderTableHead()}
@@ -357,6 +379,7 @@ class UserIntegrityCheck extends React.Component {
   };
 
   render () {
+    console.log('scrolling', this.state.scrolling);
     const {
       visible,
       onClose
@@ -368,7 +391,7 @@ class UserIntegrityCheck extends React.Component {
         visible={visible}
         footer={null}
         onCancel={onClose}
-        bodyStyle={{padding: '10px', overflowX: 'scroll'}}
+        bodyStyle={{padding: '10px'}}
         width={'90vw'}
       >
         {this.renderContent()}

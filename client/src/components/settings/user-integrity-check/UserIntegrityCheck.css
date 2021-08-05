@@ -1,5 +1,6 @@
 .modal {
   perspective: 20px;
+  overflow: hidden;
 }
 
 .table-container {
@@ -8,6 +9,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow-x: scroll;
 }
 
 .table {
@@ -41,12 +43,12 @@
 }
 
 .table thead tr > th:first-child {
- background: #ccc;
+ background-color: rgba(238, 238, 238, 1);
  text-align: center;
  position: fixed;
  padding: 10px;
  margin: 0;
- height: 53px;
+ height: 38px;
  width: 200px;
  z-index: 3;
  left: 0;
@@ -82,4 +84,10 @@
 }
 .new-dictionary-value > div > div > ul > li> div > input[type='text']{
   background-color:rgba(16, 142, 233, 0.1) !important;
+}
+.autocomplete {
+  width: 100%;
+}
+.dropdown-hidden {
+ visibility: hidden;
 }
