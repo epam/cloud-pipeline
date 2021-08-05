@@ -161,6 +161,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .editConfiguration("default", profile ->
                         instanceTypesCount = profile
                                 .expandTab(EXEC_ENVIRONMENT)
+                                .sleep(2, SECONDS)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .sleep(1, SECONDS)

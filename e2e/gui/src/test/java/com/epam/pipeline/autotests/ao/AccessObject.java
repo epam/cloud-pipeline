@@ -523,6 +523,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {
+        sleep(2, SECONDS);
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs("You have unsaved changes. Continue?")
                 .ok();
