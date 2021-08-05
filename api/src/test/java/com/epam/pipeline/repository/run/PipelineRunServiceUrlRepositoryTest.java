@@ -62,6 +62,8 @@ public class PipelineRunServiceUrlRepositoryTest extends AbstractJdbcTest {
     private TestEntityManager entityManager;
 
     private PipelineRun pipelineRun;
+    private PipelineRunServiceUrl pipelineRunServiceUrl1;
+    private PipelineRunServiceUrl pipelineRunServiceUrl2;
 
     @Before
     public void setup() {
@@ -79,17 +81,18 @@ public class PipelineRunServiceUrlRepositoryTest extends AbstractJdbcTest {
                 null, null, true, null, null,
                 "pod-id", cloudRegion.getId());
         pipelineRunDao.createPipelineRun(pipelineRun);
-    }
 
-    @Test
-    public void shouldUpdateServiceUrl() {
-        final PipelineRunServiceUrl pipelineRunServiceUrl1 = pipelineRunServiceUrl(TEST_REGION_1);
-        final PipelineRunServiceUrl pipelineRunServiceUrl2 = pipelineRunServiceUrl(TEST_REGION_2);
+        pipelineRunServiceUrl1 = pipelineRunServiceUrl(TEST_REGION_1);
+        pipelineRunServiceUrl2 = pipelineRunServiceUrl(TEST_REGION_2);
+
         pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl1);
         pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl2);
 
         entityManager.flush();
+    }
 
+    @Test
+    public void shouldUpdateServiceUrl() {
         final PipelineRunServiceUrl loadedServiceUrl = pipelineRunServiceUrlRepository
                 .findByPipelineRunIdAndRegion(pipelineRun.getId(), TEST_REGION_1)
                 .orElseThrow(() -> new IllegalStateException("Service url is not exists"));
@@ -111,18 +114,20 @@ public class PipelineRunServiceUrlRepositoryTest extends AbstractJdbcTest {
 
     @Test
     public void shouldFindByRunId() {
-        final PipelineRunServiceUrl pipelineRunServiceUrl1 = pipelineRunServiceUrl(TEST_REGION_1);
-        final PipelineRunServiceUrl pipelineRunServiceUrl2 = pipelineRunServiceUrl(TEST_REGION_2);
-        pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl1);
-        pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl2);
-
-        entityManager.flush();
-
         final List<PipelineRunServiceUrl> result = StreamSupport.stream(pipelineRunServiceUrlRepository
                 .findByPipelineRunId(pipelineRun.getId()).spliterator(), false).collect(Collectors.toList());
         assertThat(result).hasSize(2)
                 .contains(pipelineRunServiceUrl1)
                 .contains(pipelineRunServiceUrl2);
+    }
+
+    @Test
+    public void shouldDeleteByRunId() {
+        pipelineRunServiceUrlRepository.deleteByPipelineRunId(pipelineRun.getId());
+        final List<PipelineRunServiceUrl> empty = StreamSupport.stream(pipelineRunServiceUrlRepository
+                .findByPipelineRunId(pipelineRun.getId()).spliterator(), false).collect(Collectors.toList());
+
+        assertThat(empty).isEmpty();
     }
 
     private void assertServiceUrlExists(final String region) {
