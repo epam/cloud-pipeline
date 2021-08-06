@@ -1137,11 +1137,18 @@ class Logs extends localization.LocalizedReactComponent {
 
   @computed
   get sshEnabled () {
-    if (this.props.run.loaded && this.props.runSSH.loaded && this.initializeEnvironmentFinished &&
-      !this.isDtsEnvironment) {
-      const {status, podIP} = this.props.run.value;
+    if (
+      this.props.run.loaded &&
+      this.props.runSSH.loaded &&
+      this.initializeEnvironmentFinished &&
+      !this.isDtsEnvironment
+    ) {
+      const {status, podIP, sshPassword} = this.props.run.value;
       return status.toLowerCase() === 'running' &&
-        roleModel.executeAllowed(this.props.run.value) &&
+        (
+          roleModel.executeAllowed(this.props.run.value) ||
+          sshPassword
+        ) &&
         podIP;
     }
     return false;
@@ -1687,55 +1694,68 @@ class Logs extends localization.LocalizedReactComponent {
             </ul>
           </Collapse.Panel>
         </Collapse>;
-      if (roleModel.executeAllowed(this.props.run.value)) {
-        switch (status.toLowerCase()) {
-          case 'paused':
-            if (roleModel.isOwner(this.props.run.value)) {
-              ActionButton = <a style={{color: 'red'}} onClick={() => this.terminatePipeline()}>TERMINATE</a>;
-            }
-            break;
-          case 'running':
-          case 'pausing':
-          case 'resuming':
-            if (
-              (
-                roleModel.isOwner(this.props.run.value) ||
-                this.props.run.value.sshPassword
-              ) &&
-              canStopRun(this.props.run.value)
-            ) {
-              ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
-            }
-            break;
-          case 'stopped':
-          case 'failure':
-          case 'success':
-            if (!isRemovedPipeline) {
-              ActionButton = <a onClick={() => this.reRunPipeline()}>RERUN</a>;
-            }
-            break;
-        }
-        if (roleModel.isOwner(this.props.run.value) &&
-          this.props.run.value.initialized && !(this.props.run.value.nodeCount > 0) &&
-          !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) &&
-          this.props.run.value.instance && this.props.run.value.instance.spot !== undefined &&
-          !this.props.run.value.instance.spot) {
-          switch (status.toLowerCase()) {
-            case 'running':
-              if (canPauseRun(this.props.run.value)) {
-                PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
-              }
-              break;
-            case 'paused':
-              PauseResumeButton = <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
-              break;
-            case 'pausing':
-              PauseResumeButton = <span>PAUSING</span>;
-              break;
-            case 'resuming':
-              PauseResumeButton = <span>RESUMING</span>;
-              break;
+      switch (status.toLowerCase()) {
+        case 'paused':
+          if (
+            roleModel.executeAllowed(this.props.run.value) &&
+            roleModel.isOwner(this.props.run.value)
+          ) {
+            ActionButton = (
+              <a
+                style={{color: 'red'}}
+                onClick={() => this.terminatePipeline()}
+              >
+                TERMINATE
+              </a>
+            );
           }
+          break;
+        case 'running':
+        case 'pausing':
+        case 'resuming':
+          if (
+            (
+              roleModel.isOwner(this.props.run.value) ||
+              roleModel.executeAllowed(this.props.run.value) ||
+              this.props.run.value.sshPassword
+            ) &&
+            canStopRun(this.props.run.value)
+          ) {
+            ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
+          }
+          break;
+        case 'stopped':
+        case 'failure':
+        case 'success':
+          if (
+            roleModel.executeAllowed(this.props.run.value) &&
+            !isRemovedPipeline
+          ) {
+            ActionButton = <a onClick={() => this.reRunPipeline()}>RERUN</a>;
+          }
+          break;
+      }
+      if (roleModel.executeAllowed(this.props.run.value) &&
+        roleModel.isOwner(this.props.run.value) &&
+        this.props.run.value.initialized && !(this.props.run.value.nodeCount > 0) &&
+        !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) &&
+        this.props.run.value.instance && this.props.run.value.instance.spot !== undefined &&
+        !this.props.run.value.instance.spot) {
+        switch (status.toLowerCase()) {
+          case 'running':
+            if (canPauseRun(this.props.run.value)) {
+              PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
+            }
+            break;
+          case 'paused':
+            PauseResumeButton = <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
+            break;
+          case 'pausing':
+            PauseResumeButton = <span>PAUSING</span>;
+            break;
+          case 'resuming':
+            PauseResumeButton = <span>RESUMING</span>;
+            break;
         }
       }
 
