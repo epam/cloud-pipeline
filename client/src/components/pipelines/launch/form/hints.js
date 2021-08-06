@@ -179,7 +179,10 @@ const hostedApplicationHint = (localizedStringFn) => (
 
 const jobNotificationsHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
-    You can enable email notifications, based on the job parameters or user profile.
+    Allows to enable job status notifications over the email.<br />
+    If enabled - job owner will get email, once the job succeeds or fails.<br />
+    It is also possible to override the default statuses, recipients
+    and email body using "Configure" hyperlink.
   </Row>
 );
 
