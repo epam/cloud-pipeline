@@ -53,7 +53,6 @@ const getLinkedValues = (key, value, dictionariesValues) => {
 @observer
 class UserIntegrityCheck extends React.Component {
   state = {
-    tableContent: [],
     currentPage: 1,
     pagesCount: 0,
     pending: false,
@@ -93,20 +92,22 @@ class UserIntegrityCheck extends React.Component {
       });
     }
   }
-  addNewValueToDictionary = async (e, dictionary, userId) => {
-    const value = this.isNewValue(userId, dictionary);
-    if (e.key === 'Enter' && value) {
-      const hideLoadingState = message.loading(`Saving value to ${dictionary.key}`, 0);
-      const request = await addValueToSystemDictionary(dictionary, value);
-      if (request.loaded) {
-        hideLoadingState();
-        await this.props.systemDictionaries.fetch();
-      }
-      if (request.error) {
-        hideLoadingState();
-        message.error(request.error, 5);
-      }
-    }
+  saveNewValuesToDictionaries = () => {
+    const {data} = this.state;
+    const users = Object.keys(data);
+    const newValues = users.reduce((dataToUpdate, user) => {
+      Object.entries(data[user])
+        .forEach(([key, value]) => {
+          const dictionary = this.getSystemDictionary(key);
+          if (dictionary && this.isNewValue(user, dictionary)) {
+            dataToUpdate[user] = {...dataToUpdate[user], [key]: value};
+          };
+        });
+      return dataToUpdate;
+    }, {});
+    users.forEach((user) => Object.entries(newValues[user]).forEach(([dictKey, value]) => {
+      addValueToSystemDictionary(this.getSystemDictionary(dictKey), value);
+    }));
   }
 
   updateState = () => {
@@ -270,9 +271,7 @@ class UserIntegrityCheck extends React.Component {
                 const dictionary = this.getSystemDictionary(column);
                 if (dictionary) {
                   return (
-                    <td
-                      key={column}
-                      onKeyPress={(e) => this.addNewValueToDictionary(e, dictionary, user.id)}>
+                    <td key={column}>
                       <AutoComplete
                         className={classNames({
                           [styles.newDictionaryValue]: this.isNewValue(user.id, dictionary),
