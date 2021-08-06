@@ -772,43 +772,48 @@ export default class RunTable extends localization.LocalizedReactComponent {
   };
 
   renderStatusAction = (record) => {
-    if (roleModel.executeAllowed(record)) {
-      const isRemovedPipeline = !!record.version && !record.pipelineId;
-      switch (record.status.toLowerCase()) {
-        case 'paused':
-          if (roleModel.isOwner(record)) {
-            return <a
-              id={`run-${record.id}-terminate-button`}
-              style={{color: 'red'}}
-              onClick={(e) => this.showTerminateConfirmDialog(e, record)}>TERMINATE</a>;
-          }
-          break;
-        case 'running':
-        case 'pausing':
-        case 'resuming':
-          if (roleModel.isOwner(record) && canStopRun(record)) {
-            return <a
-              id={`run-${record.id}-stop-button`}
-              style={{color: 'red'}}
-              onClick={(e) => this.showStopConfirmDialog(e, record)}>STOP</a>;
-          } else if (record.commitStatus && record.commitStatus.toLowerCase() === 'committing') {
-            return <span style={{fontStyle: 'italic'}}>COMMITTING</span>;
-          }
-          break;
-        case 'stopped':
-        case 'failure':
-        case 'success':
-          if (!isRemovedPipeline) {
-            return (
-              <a
-                id={`run-${record.id}-rerun-button`}
-                onClick={(e) => this.reRunPipeline(e, record)}
-              >
-                RERUN
-              </a>
-            );
-          }
-      }
+    const isRemovedPipeline = !!record.version && !record.pipelineId;
+    switch (record.status.toLowerCase()) {
+      case 'paused':
+        if (roleModel.executeAllowed(record) && roleModel.isOwner(record)) {
+          return <a
+            id={`run-${record.id}-terminate-button`}
+            style={{color: 'red'}}
+            onClick={(e) => this.showTerminateConfirmDialog(e, record)}>TERMINATE</a>;
+        }
+        break;
+      case 'running':
+      case 'pausing':
+      case 'resuming':
+        if (
+          (
+            roleModel.executeAllowed(record) ||
+            record.sshPassword
+          ) &&
+          roleModel.isOwner(record) &&
+          canStopRun(record)
+        ) {
+          return <a
+            id={`run-${record.id}-stop-button`}
+            style={{color: 'red'}}
+            onClick={(e) => this.showStopConfirmDialog(e, record)}>STOP</a>;
+        } else if (record.commitStatus && record.commitStatus.toLowerCase() === 'committing') {
+          return <span style={{fontStyle: 'italic'}}>COMMITTING</span>;
+        }
+        break;
+      case 'stopped':
+      case 'failure':
+      case 'success':
+        if (roleModel.executeAllowed(record) && !isRemovedPipeline) {
+          return (
+            <a
+              id={`run-${record.id}-rerun-button`}
+              onClick={(e) => this.reRunPipeline(e, record)}
+            >
+              RERUN
+            </a>
+          );
+        }
     }
     return <div />;
   };
