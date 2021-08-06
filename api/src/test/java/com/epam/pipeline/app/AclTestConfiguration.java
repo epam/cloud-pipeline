@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -51,6 +52,7 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -205,6 +207,12 @@ public class AclTestConfiguration {
 
     @MockBean
     protected CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
+
+    @MockBean
+    protected ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    protected PreferenceManager preferenceManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

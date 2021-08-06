@@ -27,7 +27,6 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManag
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
-import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;

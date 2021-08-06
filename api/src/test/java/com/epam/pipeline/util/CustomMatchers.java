@@ -16,13 +16,14 @@
 
 package com.epam.pipeline.util;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyMapOf;
@@ -42,6 +43,22 @@ public final class CustomMatchers {
             @Override
             public void describeTo(final Description description) {
                 description.appendText("collection is empty");
+            }
+        };
+    }
+
+    public static <T> BaseMatcher<T> matches(final Predicate<T> test) {
+        return new BaseMatcher<T>() {
+
+            @Override
+            public void describeTo(final Description description) {
+                description.appendText("custom matcher");
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public boolean matches(final Object item) {
+                return test.test((T) item);
             }
         };
     }

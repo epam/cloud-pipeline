@@ -667,7 +667,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
                                        final String instanceType, final Long parentRunId) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
-                parentRunId, null, null, null);
+                parentRunId, null, null, null, null);
     }
 
     private AwsRegion defaultRegion(final long id) {

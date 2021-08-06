@@ -199,9 +199,6 @@ public class PipelineRunManager {
     private DockerRegistryManager dockerRegistryManager;
 
     @Autowired
-    private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
-
-    @Autowired
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 
     /**

@@ -25,6 +25,7 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -89,7 +90,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
         notificationTemplateDao.createNotificationTemplate(statusTemplate);
 
         NotificationSettings settings = new NotificationSettings();
-        settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
+        settings.setType(NotificationType.PIPELINE_RUN_STATUS);
         settings.setKeepInformedAdmins(true);
         settings.setInformedUserIds(Collections.emptyList());
         settings.setTemplateId(statusTemplate.getId());
@@ -145,7 +146,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyRunStatusChangedActiveIfSettingsDoesntHaveStatusesConfigured() {
         NotificationSettings toUpdate = notificationSettingsDao
-                .loadNotificationSettings(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS.getId());
+                .loadNotificationSettings(NotificationType.PIPELINE_RUN_STATUS.getId());
         toUpdate.setStatusesToInform(Collections.emptyList());
         notificationSettingsDao.updateNotificationSettings(toUpdate);
         PipelineRun run = new PipelineRun();
