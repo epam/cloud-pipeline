@@ -177,5 +177,23 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteDatastorageToolVersionQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    WHERE
+                        dtv.tool_id = :TOOL_ID AND dtv.tool_version = :VERSION
+                ]]>
+            </value>
+        </property>
+        <property name="deleteDatastorageToolVersionsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    WHERE
+                        dtv.tool_id = :TOOL_ID
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

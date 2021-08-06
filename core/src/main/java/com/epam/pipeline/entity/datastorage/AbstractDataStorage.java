@@ -18,11 +18,14 @@ package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
 
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
@@ -62,6 +65,11 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * Defines if 'data-leak' rules applied
      */
     private boolean sensitive;
+
+    /**
+     * List of the tools with its versions to which datastorage should only be mounted
+     * */
+    private List<ToolFingerprint> toolsToMount;
 
     public AbstractDataStorage(final Long id, final String name,
             final String path, final DataStorageType type) {

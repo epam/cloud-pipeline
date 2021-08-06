@@ -174,10 +174,14 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadAllDataStorages();
     }
 
+    public List<AbstractDataStorage> getDataStoragesWithToolsToMount() {
+        return dataStorageDao.loadAllDataStoragesWithToolsToMount();
+    }
+
     public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
-        return getDataStorages().stream()
+        return getDataStoragesWithToolsToMount().stream()
                 .filter(dataStorage -> !dataStorage.isSensitive())
                 .map(storage -> {
                     if (storage.getFileShareMountId() != null) {
@@ -915,6 +919,9 @@ public class DataStorageManager implements SecuredEntityManager {
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
         }
 
+        if (dataStorageVO.getToolsToMount() != null) {
+            dataStorage.setToolsToMount(dataStorageVO.getToolsToMount());
+        }
         return dataStorage;
     }
 
