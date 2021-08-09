@@ -190,7 +190,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2638"})
     public void validationOfInstanceTypesRestrictionsExistingObjects() {
         try {
@@ -205,7 +205,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2639"})
     public void validationOfInstanceTypesRestrictionsCreatingObjects() {
         try {
@@ -241,7 +241,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2640"})
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         try {
@@ -256,7 +256,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2641"})
     public void validationOfToolsInstanceTypesRestrictionsOverUserManagement() {
         try {
@@ -275,7 +275,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2643"})
     public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
         try {
@@ -294,7 +294,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2642"})
     public void validationOfToolsInstanceTypesRestrictionsOverInstanceManagement() {
         try {
@@ -384,18 +384,23 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .ensure(DISK, value(customDisk))
                                     .ensure(INSTANCE_TYPE, empty)
                                     .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
-                    ).exitFromConfigurationWithoutSaved();
+                    )
+                    .sleep(5, SECONDS)
+                    .exitFromConfigurationWithoutSaved();
         } catch (Exception e) {
-            new Configuration()
-                    .resetChanges();
+            new Configuration().resetChanges();
             logout();
             loginAs(admin);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
             throw new RuntimeException(e);
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
         }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2645"})
     public void validationOfToolsInstanceTypesRestrictionsSystemSettings() {
         try {
@@ -415,7 +420,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2646"})
     public void validationOfInstanceTypesRestrictionsHierarchy() {
         try {
@@ -465,7 +470,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2647"})
     public void validationOfToolsInstanceTypesRestrictionsHierarchy() {
         try {
@@ -508,7 +513,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2648"})
     public void validationOfPriceTypesRestrictionsOverUserManagement() {
         try {
@@ -529,7 +534,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2649"})
     public void validationOfPriceTypesRestrictionsForUserGroup() {
         try {
@@ -558,7 +563,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2650"})
     public void validationOfPriceTypesRestrictionsOverInstanceManagement() {
         try {
@@ -596,7 +601,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2651"})
     public void validationOfPriceTypesRestrictionsSystemSettings() {
         try {
@@ -613,7 +618,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"}, enabled = false)
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2652"})
     public void validationOfPriceTypesRestrictionsHierarchy() {
         try {

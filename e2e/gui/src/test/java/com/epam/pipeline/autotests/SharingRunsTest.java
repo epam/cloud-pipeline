@@ -241,6 +241,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsDisplayedOnServicesPanel(runID)
                     .openSSHLink(runID)
+                    .sleep(2, SECONDS)
                     .execute("cat test.file")
                     .assertOutputContains("123")
                     .closeTab();
