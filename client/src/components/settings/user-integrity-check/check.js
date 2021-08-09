@@ -120,9 +120,7 @@ function getUserAttributeErrors (
 }
 
 function checkUser (user, userData, dictionaries, fieldsToCheck) {
-  const dictionariesToCheck = fieldsToCheck && fieldsToCheck.length > 0
-    ? dictionaries.filter(dictionary => fieldsToCheck.includes(dictionary.key))
-    : dictionaries.filter(dictionary => dictionary.linksFrom.length === 0);
+  const dictionariesToCheck = dictionaries.filter(dictionary => dictionary.linksFrom.length === 0);
   const errors = [];
   for (let d = 0; d < dictionariesToCheck.length; d++) {
     const check = dictionariesToCheck[d];

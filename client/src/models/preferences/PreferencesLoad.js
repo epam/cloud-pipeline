@@ -186,6 +186,19 @@ class PreferencesLoad extends Remote {
     return (value || '').split(',').map(o => o.trim());
   }
 
+  @computed
+  get metadataMandatoryKeys () {
+    const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.mandatory.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

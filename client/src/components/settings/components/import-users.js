@@ -37,7 +37,7 @@ const DROPDOWN_KEYS = {
   checkUsers: 'checkUsers'
 };
 
-@inject('systemDictionaries', 'users')
+@inject('systemDictionaries', 'users', 'preferences')
 @observer
 class ImportUsersButton extends React.Component {
   state = {
@@ -130,9 +130,11 @@ class ImportUsersButton extends React.Component {
     return new Promise((resolve) => {
       const {
         users: usersRequest,
-        systemDictionaries: systemDictionariesRequest
+        systemDictionaries: systemDictionariesRequest,
+        preferences: preferencesRequest
       } = this.props;
       Promise.all([
+        preferencesRequest.fetchIfNeededOrWait(),
         usersRequest.fetchIfNeededOrWait(),
         systemDictionariesRequest.fetchIfNeededOrWait()
       ])
@@ -142,7 +144,8 @@ class ImportUsersButton extends React.Component {
             const systemDictionaries = (systemDictionariesRequest.value || []).slice();
             return UserIntegrityCheck.check(
               users,
-              systemDictionaries
+              systemDictionaries,
+              preferencesRequest.metadataMandatoryKeys
             );
           } else {
             return Promise.resolve();
