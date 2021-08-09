@@ -17,18 +17,17 @@
 package com.epam.pipeline.entity.pipeline;
 
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 
 import java.util.List;
 
-@Value
+@Data
 @Builder
 public class ToolFingerprint {
 
-    Long id;
-    String image;
-    String registry;
-    boolean allVersions;
-    List<ToolVersionFingerprint> versions;
+    private Long id;
+    private String image;
+    private String registry;
+    private List<ToolVersionFingerprint> versions;
 
 }

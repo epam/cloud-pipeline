@@ -1046,23 +1046,21 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private void assertToolsToMount(final DataStorageVO dataStorageVO) {
-        if (!CollectionUtils.emptyIfNull(dataStorageVO.getToolsToMount()).isEmpty()) {
+        if (!CollectionUtils.isEmpty(dataStorageVO.getToolsToMount())) {
             for (ToolFingerprint tool : dataStorageVO.getToolsToMount()) {
                 Assert.notNull(tool.getId(),
                         "Tool id is not provided when specifying to which tools storage should be mounted");
                 Assert.notNull(toolManager.load(tool.getId()),
                         messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, tool.getId()));
-                if (!tool.isAllVersions()) {
-                    Assert.isTrue(CollectionUtils.isNotEmpty(tool.getVersions()),
-                            "Tool version is not specified but isAllVersion is false");
+                if (CollectionUtils.isNotEmpty(tool.getVersions())) {
+                    Assert.isTrue(tool.getVersions().stream().allMatch(tv -> StringUtils.isNotBlank(tv.getVersion())),
+                            "Version could not be empty when configure tools to mount");
                     final Map<String, ToolVersion> stringToolVersionMap = toolVersionManager
                             .loadToolVersions(tool.getId(), tool.getVersions().stream()
                                     .map(ToolVersionFingerprint::getVersion)
                                     .filter(StringUtils::isNotBlank)
                                     .collect(Collectors.toList()));
                     for (ToolVersionFingerprint version : tool.getVersions()) {
-                        Assert.isTrue(StringUtils.isNotBlank(version.getVersion()),
-                                "Version could not be empty when configure tools to mount");
                         Assert.isTrue(stringToolVersionMap.containsKey(version.getVersion()),
                                 "There is no version: " + version.getVersion());
                     }

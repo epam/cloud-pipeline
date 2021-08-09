@@ -176,7 +176,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
         storageVO.setId(loaded.getId());
         storageVO.setToolsToMount(
-                Collections.singletonList(ToolFingerprint.builder().id(tool.getId()).allVersions(true).build())
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId()).build())
         );
 
         storageManager.update(storageVO);
@@ -209,19 +209,6 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                         .build())
                         ).build()
                 )
-        );
-        storageManager.create(storageVO, false, false, false);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testCantAddRelationForDataStorageAndToolIfIsAllVersionFalse() {
-        final Tool tool = createTool();
-        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
-        );
-        storageVO.setToolsToMount(
-                Collections.singletonList(ToolFingerprint.builder().id(tool.getId()).build())
         );
         storageManager.create(storageVO, false, false, false);
     }

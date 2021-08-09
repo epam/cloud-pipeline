@@ -63,7 +63,7 @@ class PermissionHelper:
     # or there is no configured restriction for this storage
     @classmethod
     def is_storage_available_for_mount(cls, storage, run):
-        if storage.tools_to_mount is None or len(storage.tools_to_mount) == 0:
+        if storage.tools_to_mount:
             return True
         if run is None:
             Logger.info('Run info is not present, storage will not be available for mount', task_name=self.task_name)
@@ -74,7 +74,7 @@ class PermissionHelper:
         registry, image, version = re_result.groups()
         for tool_to_mount in storage.tools_to_mount:
             if registry == tool_to_mount["registry"] and image == tool_to_mount["image"]:
-                if tool_to_mount["allVersions"]:
+                if not v["version"]:
                     return True
                 else if tool_to_mount["versions"]:
                     return version and version in [v["version"] for v in tool_to_mount["versions"]]
@@ -167,9 +167,11 @@ class MountStorageTask:
                 return
             initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
-                if not PermissionHelper.is_storage_readable(storage_and_mount.storage)
-                    or not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
-                    Logger.info('Storage is not readable or it is not allowed to be mount to this image', task_name=self.task_name)
+                if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
+                    Logger.info('Storage is not readable', task_name=self.task_name)
+                    continue
+                if not not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
+                    Logger.info('Storage is not allowed to be mount to this image', task_name=self.task_name)
                     continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,

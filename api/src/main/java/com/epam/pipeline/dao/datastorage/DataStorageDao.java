@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.utils.DateUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +84,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStorageRootQuery;
     private String createDataStorageRootQuery;
     private String loadToolsToMountQuery;
+    private String loadToolsToMountsForAllStoragesQuery;
     private String deleteToolsToMountQuery;
     private String addToolVersionToMountQuery;
 
@@ -124,7 +126,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             removeToolsToMountForDataStorage(dataStorage.getId());
             final MapSqlParameterSource[] params = ListUtils.emptyIfNull(dataStorage.getToolsToMount()).stream()
                     .flatMap(toolFingerprint -> {
-                        if (toolFingerprint.isAllVersions()) {
+                        if (CollectionUtils.isEmpty(toolFingerprint.getVersions())) {
                             return Stream.of(Pair.of(toolFingerprint, ToolVersionFingerprint.builder().build()));
                         } else {
                             return toolFingerprint.getVersions().stream().map(tv -> Pair.of(toolFingerprint, tv));
@@ -133,18 +135,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                         final MapSqlParameterSource p = new MapSqlParameterSource();
                         p.addValue(DataStorageParameters.TOOL_ID.name(), toolAndVersion.getFirst().getId());
                         p.addValue(DataStorageParameters.DATASTORAGE_ID.name(), dataStorage.getId());
-                        p.addValue(
-                                DataStorageParameters.ALL_TOOL_VERSIONS.name(),
-                                toolAndVersion.getFirst().isAllVersions()
-                        );
-                        if (!toolAndVersion.getFirst().isAllVersions()) {
+                        if (CollectionUtils.isNotEmpty(toolAndVersion.getFirst().getVersions())) {
                             p.addValue(DataStorageParameters.TOOL_VERSION_ID.name(),
                                     toolAndVersion.getSecond().getId());
-                            p.addValue(DataStorageParameters.TOOL_VERSION.name(),
-                                    toolAndVersion.getSecond().getVersion());
                         } else {
                             p.addValue(DataStorageParameters.TOOL_VERSION_ID.name(), null);
-                            p.addValue(DataStorageParameters.TOOL_VERSION.name(), null);
                         }
                         return p;
                     })
@@ -171,12 +166,18 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     public List<AbstractDataStorage> loadAllDataStoragesWithToolsToMount() {
         final List<AbstractDataStorage> storages = getNamedParameterJdbcTemplate().query(loadAllDataStoragesQuery,
                 DataStorageParameters.getRowMapper());
-        storages.forEach(storage -> storage.setToolsToMount(loadToolsToMountForStorage(storage.getId())));
+        final Map<Long, List<ToolFingerprint>> toolsToMountForStorages = loadToolsToMountForStorages();
+        storages.forEach(storage -> storage.setToolsToMount(toolsToMountForStorages.get(storage.getId())));
         return storages;
     }
 
     public List<ToolFingerprint> loadToolsToMountForStorage(Long id) {
         return getJdbcTemplate().query(loadToolsToMountQuery, DataStorageParameters.getToolsToMountRowMapper(), id);
+    }
+
+    public Map<Long, List<ToolFingerprint>> loadToolsToMountForStorages() {
+        return getJdbcTemplate().query(loadToolsToMountsForAllStoragesQuery,
+                DataStorageParameters.getToolsToMountForAllStorageRowMapper());
     }
 
     public List<AbstractDataStorage> loadDataStoragesByIds(final List<Long> ids) {
@@ -378,6 +379,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.addToolVersionToMountQuery = addToolVersionToMountQuery;
     }
 
+    public void setLoadToolsToMountsForAllStoragesQuery(String loadToolsToMountsForAllStoragesQuery) {
+        this.loadToolsToMountsForAllStoragesQuery = loadToolsToMountsForAllStoragesQuery;
+    }
+
     public enum DataStorageParameters {
         DATASTORAGE_ID,
         DATASTORAGE_NAME,
@@ -556,6 +561,39 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             return (rs, rowNum) -> parseDataStorage(rs);
         }
 
+        public static ResultSetExtractor<Map<Long, List<ToolFingerprint>>> getToolsToMountForAllStorageRowMapper() {
+            return (rs) -> {
+                final Map<Long, Map<Long, ToolFingerprint>> toolsToStorage = new HashMap<>();
+                while (rs.next()) {
+                    final Long datastorageId = rs.getLong(DATASTORAGE_ID.name());
+                    final Map<Long, ToolFingerprint> tools = toolsToStorage.computeIfAbsent(
+                            datastorageId, id -> new HashMap<>());
+                    final Long toolId = rs.getLong(TOOL_ID.name());
+                    ToolFingerprint toolFingerprint = tools.get(toolId);
+                    if (toolFingerprint == null) {
+                        toolFingerprint = ToolFingerprint.builder()
+                                .id(toolId)
+                                .image(rs.getString(TOOL_IMAGE.name()))
+                                .registry(rs.getString(TOOL_REGISTRY.name()))
+                                .versions(new ArrayList<>())
+                                .build();
+                        tools.put(toolId, toolFingerprint);
+                    }
+                    final Long toolVersionId = rs.getLong(TOOL_VERSION_ID.name());
+                    if (!rs.wasNull()) {
+                        toolFingerprint.getVersions()
+                                .add(ToolVersionFingerprint.builder()
+                                        .id(toolVersionId)
+                                        .version(rs.getString(TOOL_VERSION.name()))
+                                        .build());
+                    }
+                }
+                return toolsToStorage.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> new ArrayList<>(e.getValue().values())));
+
+            };
+        }
+
         public static ResultSetExtractor<List<ToolFingerprint>> getToolsToMountRowMapper() {
             return (rs) -> {
                 final Map<Long, ToolFingerprint> tools = new HashMap<>();
@@ -563,13 +601,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     final Long toolId = rs.getLong(TOOL_ID.name());
                     ToolFingerprint toolFingerprint = tools.get(toolId);
                     if (toolFingerprint == null) {
-                        boolean allVersions = rs.getBoolean(ALL_TOOL_VERSIONS.name());
                         toolFingerprint = ToolFingerprint.builder()
                                 .id(toolId)
                                 .image(rs.getString(TOOL_IMAGE.name()))
                                 .registry(rs.getString(TOOL_REGISTRY.name()))
-                                .allVersions(allVersions)
-                                .versions(allVersions ? null : new ArrayList<>()).build();
+                                .versions(new ArrayList<>())
+                                .build();
                         tools.put(toolId, toolFingerprint);
                     }
                     final Long toolVersionId = rs.getLong(TOOL_VERSION_ID.name());
