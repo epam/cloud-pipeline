@@ -52,8 +52,6 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
     private String loadToolVersionListSettingsQuery;
     private String createToolVersionWithSettingsQuery;
     private String updateToolVersionWithSettingsQuery;
-    private String deleteDatastorageToolVersionQuery;
-    private String deleteDatastorageToolVersionsQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -73,13 +71,11 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteToolVersion(Long toolId, String version) {
-        getJdbcTemplate().update(deleteDatastorageToolVersionQuery, toolId, version);
         getJdbcTemplate().update(deleteToolVersionQuery, toolId, version);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteToolVersions(Long toolId) {
-        getJdbcTemplate().update(deleteDatastorageToolVersionsQuery, toolId);
         getJdbcTemplate().update(deleteToolVersionsQuery, toolId);
     }
 
@@ -123,14 +119,6 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
                 .query(loadToolVersionListSettingsQuery, params, ToolVersionParameters.getRowMapper())
                 .stream()
                 .collect(Collectors.toMap(ToolVersion::getVersion, Function.identity()));
-    }
-
-    public void setDeleteDatastorageToolVersionQuery(String deleteDatastorageToolVersionQuery) {
-        this.deleteDatastorageToolVersionQuery = deleteDatastorageToolVersionQuery;
-    }
-
-    public void setDeleteDatastorageToolVersionsQuery(String deleteDatastorageToolVersionsQuery) {
-        this.deleteDatastorageToolVersionsQuery = deleteDatastorageToolVersionsQuery;
     }
 
     enum ToolVersionParameters {

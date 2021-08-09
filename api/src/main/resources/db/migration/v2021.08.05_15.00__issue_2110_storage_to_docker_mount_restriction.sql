@@ -16,7 +16,7 @@
 CREATE TABLE IF NOT EXISTS pipeline.datastorage_tool_version (
     datastorage_id INT NOT NULL REFERENCES pipeline.DATASTORAGE (DATASTORAGE_ID) ON DELETE CASCADE,
     tool_id INT NOT NULL REFERENCES pipeline.TOOL (ID) ON DELETE CASCADE,
-    tool_version_id INT DEFAULT NULL,
+    tool_version_id INT DEFAULT NULL REFERENCES pipeline.TOOL_VERSION (ID) ON DELETE CASCADE,
     tool_version TEXT DEFAULT NULL,
     all_tool_versions BOOLEAN DEFAULT TRUE NOT NULL,
     CONSTRAINT unique_datastorage_tool_version UNIQUE(datastorage_id, tool_id, tool_version_id)

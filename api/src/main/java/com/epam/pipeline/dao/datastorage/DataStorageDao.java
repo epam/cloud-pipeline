@@ -119,7 +119,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         updateToolsToMountForDataStorage(dataStorage);
     }
 
-    private void updateToolsToMountForDataStorage(AbstractDataStorage dataStorage) {
+    private void updateToolsToMountForDataStorage(final AbstractDataStorage dataStorage) {
         if (dataStorage.getToolsToMount() != null) {
             removeToolsToMountForDataStorage(dataStorage.getId());
             final MapSqlParameterSource[] params = ListUtils.emptyIfNull(dataStorage.getToolsToMount()).stream()
@@ -560,7 +560,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             return (rs) -> {
                 final Map<Long, ToolFingerprint> tools = new HashMap<>();
                 while (rs.next()) {
-                    Long toolId = rs.getLong(TOOL_ID.name());
+                    final Long toolId = rs.getLong(TOOL_ID.name());
                     ToolFingerprint toolFingerprint = tools.get(toolId);
                     if (toolFingerprint == null) {
                         boolean allVersions = rs.getBoolean(ALL_TOOL_VERSIONS.name());

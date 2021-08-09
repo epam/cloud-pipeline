@@ -1045,7 +1045,7 @@ public class DataStorageManager implements SecuredEntityManager {
                         path, dataStorage.getRoot()));
     }
 
-    private void assertToolsToMount(DataStorageVO dataStorageVO) {
+    private void assertToolsToMount(final DataStorageVO dataStorageVO) {
         if (!CollectionUtils.emptyIfNull(dataStorageVO.getToolsToMount()).isEmpty()) {
             for (ToolFingerprint tool : dataStorageVO.getToolsToMount()) {
                 Assert.notNull(tool.getId(),
@@ -1055,7 +1055,7 @@ public class DataStorageManager implements SecuredEntityManager {
                 if (!tool.isAllVersions()) {
                     Assert.isTrue(CollectionUtils.isNotEmpty(tool.getVersions()),
                             "Tool version is not specified but isAllVersion is false");
-                    Map<String, ToolVersion> stringToolVersionMap = toolVersionManager
+                    final Map<String, ToolVersion> stringToolVersionMap = toolVersionManager
                             .loadToolVersions(tool.getId(), tool.getVersions().stream()
                                     .map(ToolVersionFingerprint::getVersion)
                                     .filter(StringUtils::isNotBlank)

@@ -213,9 +213,22 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageManager.create(storageVO, false, false, false);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testCantAddRelationForDataStorageAndToolIfIsAllVersionFalse() {
+        final Tool tool = createTool();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageVO.setToolsToMount(
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId()).build())
+        );
+        storageManager.create(storageVO, false, false, false);
+    }
+
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersion() {
+    public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersions() {
         final Tool tool = createTool();
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
@@ -238,12 +251,28 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         loaded = storageManager.load(saved.getId());
         Assert.assertTrue(loaded.getToolsToMount().isEmpty());
 
-        toolVersionManager.updateOrCreateToolVersion(
-                tool.getId(), TEST_VERSION, tool.getImage(), dockerRegistry, dockerClient
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersion() {
+        final Tool tool = createTool();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
-        storageVO.setId(loaded.getId());
-        storageManager.update(storageVO);
-        loaded = storageManager.load(saved.getId());
+        storageVO.setToolsToMount(
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
+                        .versions(
+                                Collections.singletonList(ToolVersionFingerprint.builder()
+                                        .id(toolVersionManager.loadToolVersion(tool.getId(), TEST_VERSION).getId())
+                                        .version(TEST_VERSION)
+                                        .build())
+                        ).build()
+                )
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false,
+                false, false).getEntity();
+        AbstractDataStorage loaded = storageManager.load(saved.getId());
         Assert.assertFalse(loaded.getToolsToMount().isEmpty());
         toolVersionManager.deleteToolVersion(tool.getId(), TEST_VERSION);
         loaded = storageManager.load(saved.getId());
