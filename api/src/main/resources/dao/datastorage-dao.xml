@@ -600,8 +600,8 @@
         <property name="addToolVersionToMountQuery">
             <value>
                 <![CDATA[
-                    INSERT INTO pipeline.datastorage_tool_version(datastorage_id, tool_id, all_tool_versions, tool_version_id)
-                    VALUES (:DATASTORAGE_ID, :TOOL_ID, :ALL_TOOL_VERSIONS, :TOOL_VERSION_ID);
+                    INSERT INTO pipeline.datastorage_tool_version(datastorage_id, tool_id, all_tool_versions, tool_version_id, tool_version)
+                    VALUES (:DATASTORAGE_ID, :TOOL_ID, :ALL_TOOL_VERSIONS, :TOOL_VERSION_ID, :TOOL_VERSION);
                 ]]>
             </value>
         </property>

@@ -73,14 +73,14 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteToolVersion(Long toolId, String version) {
-        getJdbcTemplate().update(deleteToolVersionQuery, toolId, version);
         getJdbcTemplate().update(deleteDatastorageToolVersionQuery, toolId, version);
+        getJdbcTemplate().update(deleteToolVersionQuery, toolId, version);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteToolVersions(Long toolId) {
-        getJdbcTemplate().update(deleteToolVersionsQuery, toolId);
         getJdbcTemplate().update(deleteDatastorageToolVersionsQuery, toolId);
+        getJdbcTemplate().update(deleteToolVersionsQuery, toolId);
     }
 
     public Optional<ToolVersion> loadToolVersion(Long toolId, String version) {

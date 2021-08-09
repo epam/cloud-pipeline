@@ -138,9 +138,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                                 toolAndVersion.getFirst().isAllVersions()
                         );
                         if (!toolAndVersion.getFirst().isAllVersions()) {
-                            p.addValue(DataStorageParameters.TOOL_VERSION_ID.name(), toolAndVersion.getSecond().getId());
+                            p.addValue(DataStorageParameters.TOOL_VERSION_ID.name(),
+                                    toolAndVersion.getSecond().getId());
+                            p.addValue(DataStorageParameters.TOOL_VERSION.name(),
+                                    toolAndVersion.getSecond().getVersion());
                         } else {
                             p.addValue(DataStorageParameters.TOOL_VERSION_ID.name(), null);
+                            p.addValue(DataStorageParameters.TOOL_VERSION.name(), null);
                         }
                         return p;
                     })

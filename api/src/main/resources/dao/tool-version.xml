@@ -180,18 +180,18 @@
         <property name="deleteDatastorageToolVersionQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    DELETE FROM pipeline.datastorage_tool_version dtv
                     WHERE
-                        dtv.tool_id = :TOOL_ID AND dtv.tool_version = :VERSION
+                        dtv.tool_id = ? AND dtv.tool_version = ?
                 ]]>
             </value>
         </property>
         <property name="deleteDatastorageToolVersionsQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    DELETE FROM pipeline.datastorage_tool_version dtv
                     WHERE
-                        dtv.tool_id = :TOOL_ID
+                        dtv.tool_id = ?
                 ]]>
             </value>
         </property>
