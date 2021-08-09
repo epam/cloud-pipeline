@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
-import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
@@ -106,7 +105,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     public ShellAO openSSHLink(String runId) {
-        serviceCardByRunId(runId).hover().parent().find(byText("SSH")).shouldBe(visible).click();
+        serviceSshLink(runId).hover().closest("a").shouldBe(visible).click();
         switchTo().window(1);
         return new ShellAO();
     }
