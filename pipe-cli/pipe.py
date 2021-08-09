@@ -149,7 +149,11 @@ def cli():
 @click.option('-c', '--codec',
               help='Encoding that shall be used',
               default=None)
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
+@click.option('-cs', '--config-store',
+              help='CLI configuration mode(home-dir/install-dir)',
+              default='home-dir')
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec,
+              config_store):
     """Configures CLI parameters
     """
     if proxy_ntlm and not proxy_ntlm_user:
@@ -167,7 +171,8 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
                  proxy_ntlm_user,
                  proxy_ntlm_domain,
                  proxy_ntlm_pass,
-                 codec)
+                 codec,
+                 config_store)
 
 
 def echo_title(title, line=True):
