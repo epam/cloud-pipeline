@@ -63,7 +63,10 @@ _debug_logging_level = _allowed_logging_level_names[logging.DEBUG]
 _info_logging_level = _allowed_logging_level_names[logging.INFO]
 
 
-def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
+def start(mountpoint, webdav, bucket,
+          read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
+          write_buffer_size, trunc_buffer_size, chunk_size,
+          cache_ttl, cache_size, default_mode,
           mount_options=None, threads=False, monitoring_delay=600, recording=False):
     if mount_options is None:
         mount_options = {}
@@ -75,7 +78,11 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
 
     api = os.environ.get('API', '')
     bearer = os.environ.get('API_TOKEN', '')
-    chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
+    chunk_size = int(os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size))
+    read_ahead_min_size = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_MIN_SIZE', read_ahead_min_size))
+    read_ahead_max_size = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
+    read_ahead_size_multiplier = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
+                                                    read_ahead_size_multiplier))
     bucket_type = None
     root_path = None
     if not bearer:
@@ -111,8 +118,13 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         client = CachingFileSystemClient(client, cache)
     else:
         logging.info('Caching is disabled.')
-    if buffer_size > 0:
-        client = BufferedFileSystemClient(client, capacity=buffer_size)
+    if write_buffer_size > 0 and read_buffer_size > 0:
+        client = BufferedFileSystemClient(client,
+                                          read_ahead_min_size=read_ahead_min_size,
+                                          read_ahead_max_size=read_ahead_max_size,
+                                          read_ahead_size_multiplier=read_ahead_size_multiplier,
+                                          read_capacity=read_buffer_size,
+                                          capacity=write_buffer_size)
     else:
         logging.info('Buffering is disabled.')
     if trunc_buffer_size > 0:
@@ -193,8 +205,19 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--mountpoint", type=str, required=True, help="Mount folder")
     parser.add_argument("-w", "--webdav", type=str, required=False, help="Webdav link")
     parser.add_argument("-b", "--bucket", type=str, required=False, help="Bucket name")
-    parser.add_argument("-f", "--buffer-size", type=int, required=False, default=512 * MB,
-                        help="Writing buffer size for a single file")
+    parser.add_argument("-rb", "--read-buffer-size", type=int, required=False, default=40 * MB,
+                        help="Read buffer size for a single file")
+    parser.add_argument("--read-ahead-min-size", type=int, required=False, default=1 * MB,
+                        help="Min amount of bytes that will be read on each read ahead call. "
+                             "Can be configured via CP_PIPE_FUSE_READ_AHEAD_MIN_SIZE environment variable.")
+    parser.add_argument("--read-ahead-max-size", type=int, required=False, default=20 * MB,
+                        help="Max amount of bytes that will be read on each read ahead call. "
+                             "Can be configured via CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE environment variable.")
+    parser.add_argument("--read-ahead-size-multiplier", type=int, required=False, default=2,
+                        help="Sequential read ahead size multiplier. "
+                             "Can be configured via CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER environment variable.")
+    parser.add_argument("-wb", "--write-buffer-size", type=int, required=False, default=512 * MB,
+                        help="Write buffer size for a single file")
     parser.add_argument("-r", "--trunc-buffer-size", type=int, required=False, default=512 * MB,
                         help="Truncating buffer size for a single file")
     parser.add_argument("-c", "--chunk-size", type=int, required=False, default=10 * MB,
@@ -232,9 +255,14 @@ if __name__ == '__main__':
         logging.info('Packaged installation found. Either packaged or host libfuse will be used.')
 
     try:
-        start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
-              trunc_buffer_size=args.trunc_buffer_size, chunk_size=args.chunk_size, cache_ttl=args.cache_ttl,
-              cache_size=args.cache_size, default_mode=args.mode, mount_options=parse_mount_options(args.options),
+        start(args.mountpoint, webdav=args.webdav, bucket=args.bucket,
+              read_buffer_size=args.read_buffer_size,
+              read_ahead_min_size=args.read_ahead_min_size, read_ahead_max_size=args.read_ahead_max_size,
+              read_ahead_size_multiplier=args.read_ahead_size_multiplier,
+              write_buffer_size=args.write_buffer_size, trunc_buffer_size=args.trunc_buffer_size,
+              chunk_size=args.chunk_size,
+              cache_ttl=args.cache_ttl, cache_size=args.cache_size,
+              default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
         logging.error('Unhandled error: %s' % str(e))

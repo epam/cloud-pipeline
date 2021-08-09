@@ -14,6 +14,7 @@
 
 import io
 import logging
+import os
 
 from fsclient import FileSystemClientDecorator
 from fuseutils import MB
@@ -67,45 +68,96 @@ class _WriteBuffer(_FileBuffer):
         return self._buf, self._offset
 
 
-class _ReadBuffer(_FileBuffer):
+class _NewReadBuffer:
 
-    def __init__(self, offset, capacity, shrink_size):
-        super(_ReadBuffer, self).__init__(offset, capacity)
-        self._shrink_size = shrink_size
+    def __init__(self, offset, file_size, capacity):
+        self._offset = offset
+        self._file_size = file_size
+        self._capacity = capacity
 
-    def shrink(self):
-        if self.size > self._shrink_size:
-            self._buf = self._buf[self._shrink_size:]
-            self._offset += self._shrink_size
+        self._current_offset = self._offset
+        self._buf = bytearray()
+        self._bytes_read = 0
+        self._last_append_length = 0
+
+    @property
+    def size(self):
+        return self._current_offset - self._offset
+
+    @property
+    def start(self):
+        return self._offset
+
+    @property
+    def end(self):
+        return self._current_offset
+
+    @property
+    def bytes_read(self):
+        return self._bytes_read
+
+    @property
+    def file_size(self):
+        return self._file_size
+
+    @property
+    def capacity(self):
+        return self.capacity
+
+    @property
+    def last_append_length(self):
+        return self._last_append_length
+
+    def append(self, buf):
+        self._buf += buf
+        self._current_offset += len(buf)
+        self._last_append_length = len(buf)
 
     def suits(self, offset, length):
-        return self._offset <= offset <= self._current_offset and \
-               (offset + length <= self._current_offset or self._current_offset == self._capacity)
+        return self._offset <= offset <= self._current_offset \
+               and (offset + length <= self._current_offset
+                    or self._current_offset == self._file_size)
 
     def view(self, offset, length):
-        start = offset
-        end = min(start + length, self._capacity)
-        relative_start = start - self._offset
-        relative_end = end - self._offset
+        relative_start = offset - self._offset
+        relative_end = min(offset + length, self._file_size) - self._offset
+        self._bytes_read += relative_end - relative_start
         return self._buf[relative_start:relative_end]
+
+    def shrink(self):
+        size = self.size
+        if size > self._capacity:
+            shrink_size = size - self._capacity
+            self._buf = self._buf[shrink_size:]
+            self._offset += shrink_size
 
 
 class BufferedFileSystemClient(FileSystemClientDecorator):
 
-    _READ_AHEAD_SIZE = 20 * MB
     _READ_AHEAD_MULTIPLIER = 1.1
 
-    def __init__(self, inner, capacity):
+    def __init__(self, inner, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
+                 read_capacity, capacity):
         """
         Buffering file system client decorator.
 
         It merges multiple writes to temporary buffers to reduce number of calls to an inner file system client.
 
+        It performs read ahead buffering.
+
         :param inner: Decorating file system client.
-        :param capacity: Capacity of single file buffer in bytes.
+        :param read_ahead_min_size: Min amount of bytes that will be read ahead.
+        :param read_ahead_max_size: Max amount of bytes that will be read ahead.
+        :param read_ahead_size_multiplier: Next read ahead size multiplier.
+        :param read_capacity: Single file read buffer capacity in bytes.
+        :param capacity: Single file write buffer capacity in bytes.
         """
         super(BufferedFileSystemClient, self).__init__(inner)
         self._inner = inner
+        self._read_ahead_min_size = read_ahead_min_size
+        self._read_ahead_max_size = read_ahead_max_size
+        self._read_ahead_size_multiplier = read_ahead_size_multiplier
+        self._read_capacity = read_capacity
         self._capacity = capacity
         self._write_file_buffs = {}
         self._read_file_buffs = {}
@@ -128,11 +180,13 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
                 file_buf = self._new_read_buf(fh, path, file_size, offset, length)
                 self._read_file_buffs[buf_key] = file_buf
             if not file_buf.suits(offset, length):
-                if file_buf.offset < file_buf.capacity:
-                    file_buf.append(self._read_ahead(fh, path, file_buf.offset, length))
+                read_length = max(min(file_buf.last_append_length * self._read_ahead_size_multiplier,
+                                      self._read_ahead_max_size), length)
+                if offset >= file_buf.start and offset + length <= file_buf.end + read_length:
+                    file_buf.append(self._read_ahead(fh, path, file_buf.end, length=read_length))
                     file_buf.shrink()
-                if not file_buf.suits(offset, length) and offset < file_buf.capacity:
-                    file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
+                else:
+                    file_buf = self._new_read_buf(fh, path, file_buf.file_size, offset, length)
                     self._read_file_buffs[buf_key] = file_buf
             buf.write(file_buf.view(offset, length))
         except _ANY_ERROR:
@@ -142,15 +196,14 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
             raise
 
     def _new_read_buf(self, fh, path, file_size, offset, length):
-        file_buf = _ReadBuffer(offset, file_size, self._READ_AHEAD_SIZE * 2)
-        file_buf.append(self._read_ahead(fh, path, offset, length))
+        file_buf = _NewReadBuffer(offset, file_size, self._read_capacity)
+        file_buf.append(self._read_ahead(fh, path, offset, length=max(self._read_ahead_min_size, length)))
         return file_buf
 
     def _read_ahead(self, fh, path, offset, length):
-        size = max(self._READ_AHEAD_SIZE, int(length * self._READ_AHEAD_MULTIPLIER))
         with io.BytesIO() as read_ahead_buf:
-            logging.info('Downloading buffer range %d-%d for %d:%s' % (offset, offset + size, fh, path))
-            self._inner.download_range(fh, read_ahead_buf, path, offset, length=size)
+            logging.info('Downloading buffer range %d-%d for %d:%s' % (offset, offset + length, fh, path))
+            self._inner.download_range(fh, read_ahead_buf, path, offset, length=length)
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
