@@ -37,7 +37,8 @@ if os.path.exists(libfuse_path):
 
 from pipefuse.fuseutils import MB, GB
 from pipefuse.cache import CachingFileSystemClient, ListingCache, ThreadSafeListingCache
-from pipefuse.buff import BufferedFileSystemClient
+from pipefuse.buffread import BufferingReadAheadFileSystemClient
+from pipefuse.buffwrite import BufferingWriteFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
@@ -118,15 +119,18 @@ def start(mountpoint, webdav, bucket,
         client = CachingFileSystemClient(client, cache)
     else:
         logging.info('Caching is disabled.')
-    if write_buffer_size > 0 and read_buffer_size > 0:
-        client = BufferedFileSystemClient(client,
-                                          read_ahead_min_size=read_ahead_min_size,
-                                          read_ahead_max_size=read_ahead_max_size,
-                                          read_ahead_size_multiplier=read_ahead_size_multiplier,
-                                          read_capacity=read_buffer_size,
-                                          capacity=write_buffer_size)
+    if write_buffer_size > 0:
+        client = BufferingWriteFileSystemClient(client, capacity=write_buffer_size)
     else:
-        logging.info('Buffering is disabled.')
+        logging.info('Write buffering is disabled.')
+    if read_buffer_size > 0:
+        client = BufferingReadAheadFileSystemClient(client,
+                                                    read_ahead_min_size=read_ahead_min_size,
+                                                    read_ahead_max_size=read_ahead_max_size,
+                                                    read_ahead_size_multiplier=read_ahead_size_multiplier,
+                                                    capacity=read_buffer_size)
+    else:
+        logging.info('Read buffering is disabled.')
     if trunc_buffer_size > 0:
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
