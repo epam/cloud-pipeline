@@ -208,9 +208,13 @@ class Config(object):
         config_store_mode = config_store.lower()
         install_dir_config = cls.get_install_dir_config_path()
         if 'install-dir' == config_store_mode:
+            if not install_dir_config:
+                click.echo('`install-dir` configuration mode is not available for SOURCE distribution'
+                           ' and interactive mode'.format(config_store), err=True)
+                sys.exit(1)
             config_file = install_dir_config
         elif 'home-dir' == config_store_mode:
-            if os.path.exists(install_dir_config):
+            if install_dir_config and os.path.exists(install_dir_config):
                 try:
                     os.remove(install_dir_config)
                 except OSError:
@@ -245,17 +249,21 @@ class Config(object):
     @classmethod
     def config_path(cls):
         config_path = cls.get_install_dir_config_path()
-        if not os.path.isfile(config_path):
-            config_path = cls.get_home_dir_config_path()
-        return config_path
+        if config_path and os.path.isfile(config_path):
+            return config_path
+        return cls.get_home_dir_config_path()
 
     @classmethod
     def get_install_dir_config_path(cls):
         pipe_binary_path = sys.argv[0]
+        if not pipe_binary_path:
+            return None
         if not os.path.isabs(pipe_binary_path):
             pipe_binary_path = os.path.join(os.getcwd(), pipe_binary_path)
-        config_file = os.path.join(os.path.dirname(pipe_binary_path), 'config.json')
-        return config_file
+        if not os.path.samefile(sys.executable, pipe_binary_path):
+            return None
+        else:
+            return os.path.join(os.path.dirname(pipe_binary_path), 'config.json')
 
     @classmethod
     def get_home_dir_config_path(cls):
