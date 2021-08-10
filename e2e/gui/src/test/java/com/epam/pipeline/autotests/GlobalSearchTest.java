@@ -176,7 +176,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
                                 .sleep(3, SECONDS)
                                 .click(SAVE)
-                                .sleep(2, SECONDS)
+                                .waitUntilSaveEnding(configurationName)
                 );
         draftVersionName = library()
                 .cd(folder)
