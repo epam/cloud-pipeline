@@ -76,7 +76,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                 });
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"}, enabled = false)
     @TestCase({"EPMCMBIBPC-2677"})
     public void validationOfFriendlyURLNegative() {
         tools()
@@ -87,7 +87,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                         friendlyURL, format("%,d", Integer.parseInt(runID))));
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"}, enabled = false)
     @TestCase({"EPMCMBIBPC-2678"})
     public void shareToolRunWithUser() {
         try {
@@ -162,7 +162,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
         }
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"}, enabled = false)
     @TestCase({"EPMCMBIBPC-2680"})
     public void displayingSharingToolAtServicesPanel() {
         try {
@@ -241,9 +241,10 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsDisplayedOnServicesPanel(runID)
                     .openSSHLink(runID)
-                    .sleep(2, SECONDS)
+                    .waitUntilTextAppears(runID)
                     .execute("cat test.file")
-                    .assertOutputContains("123")
+                    .sleep(3, SECONDS)
+                    .assertPageContains("123")
                     .closeTab();
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);

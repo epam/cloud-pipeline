@@ -347,7 +347,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                     .also(confirmConfigurationChange())
                                     )
                                     .setValue(DISK, customDisk)
-                                    .click(SAVE));
+                                    .sleep(3, SECONDS)
+                                    .click(SAVE))
+                                    .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);

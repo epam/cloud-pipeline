@@ -167,7 +167,7 @@ public class Profile implements AccessObject<Profile> {
     }
 
     public Profile waitUntilSaveEnding(final String name) {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
                 sleep(3, SECONDS);
                 break;
