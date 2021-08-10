@@ -206,10 +206,10 @@ class Config(object):
                   'codec': codec
                   }
         config_store_mode = config_store.lower()
+        install_dir_config = cls.get_install_dir_config_path()
         if 'install-dir' == config_store_mode:
-            config_file = cls.get_install_dir_config_path()
+            config_file = install_dir_config
         elif 'home-dir' == config_store_mode:
-            install_dir_config = cls.get_install_dir_config_path()
             if os.path.exists(install_dir_config):
                 try:
                     os.remove(install_dir_config)
@@ -218,7 +218,7 @@ class Config(object):
                     sys.exit(1)
             config_file = cls.get_home_dir_config_path()
         else:
-            click.echo('Unknown storing mode for CLI config: `{}`, valid types are [install-dir, home-dir].'
+            click.echo('Unknown storing mode for CLI config: `{}`, valid types are [home-dir, install-dir].'
                        .format(config_store),
                        err=True)
             sys.exit(1)
