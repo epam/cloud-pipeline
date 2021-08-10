@@ -711,6 +711,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
             "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> MISC_METADATA_MANDATORY_KEYS = new ObjectPreference<>(
+            "misc.metadata.mandatory.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
