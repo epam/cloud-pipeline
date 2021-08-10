@@ -329,6 +329,12 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFolder(path, folder);
     }
 
+    private void setUmask(File file) throws IOException {
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
+        }
+    }
+
     @Override
     public void deleteFile(NFSDataStorage dataStorage, String path, String version, Boolean totally)
         throws DataStorageException {
@@ -362,10 +368,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFile(newPath, newFile);
     }
 
-    private void setUmask(File file) throws IOException {
-        if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
-        }
+    @Override
+    public DataStorageFolder moveFolder(NFSDataStorage dataStorage, String oldPath, String newPath)
+            throws DataStorageException {
+        File newFolder = move(dataStorage, oldPath, newPath);
+        return new DataStorageFolder(newPath, newFolder);
     }
 
     private File move(NFSDataStorage dataStorage, String oldPath, String newPath) {
@@ -387,10 +394,35 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageFolder moveFolder(NFSDataStorage dataStorage, String oldPath, String newPath)
-        throws DataStorageException {
-        File newFolder = move(dataStorage, oldPath, newPath);
+    public DataStorageFile copyFile(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        File newFile = copy(dataStorage, oldPath, newPath);
+        return new DataStorageFile(newPath, newFile);
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        File newFolder = copy(dataStorage, oldPath, newPath);
         return new DataStorageFolder(newPath, newFolder);
+    }
+
+    private File copy(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        final File dataStorageDir = nfsStorageMounter.mount(dataStorage);
+        final File oldFile = new File(dataStorageDir, oldPath);
+        final File newFile = new File(dataStorageDir, newPath);
+        copy(oldFile, newFile);
+        return newFile;
+    }
+
+    private void copy(final File oldFile, final File newFile) {
+        try {
+            if (oldFile.isDirectory()) {
+                FileUtils.copyDirectory(oldFile, newFile);
+            } else {
+                FileUtils.copyFile(oldFile, newFile);
+            }
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
     }
 
     @Override
