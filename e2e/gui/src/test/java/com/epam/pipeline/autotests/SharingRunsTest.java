@@ -136,7 +136,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
-            sleep(timeout, SECONDS);
+            sleep(timeout * 6L, SECONDS);
             open(endpointsLink);
             new ToolPageAO(endpointsLink)
                     .validateEndpointPage(user.login)
@@ -243,7 +243,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .openSSHLink(runID)
                     .waitUntilTextAppears(runID)
                     .execute("cat test.file")
-                    .sleep(3, SECONDS)
+                    .sleep(10, SECONDS)
                     .assertPageContains("123")
                     .closeTab();
             logout();

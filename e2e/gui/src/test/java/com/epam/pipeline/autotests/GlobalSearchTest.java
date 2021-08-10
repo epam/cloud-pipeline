@@ -223,7 +223,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .moveToSearchResultItem(configVar, () -> new PipelineCodeTabAO(pipeline))
-                .sleep(2, SECONDS)
+                .sleep(30, SECONDS)
                 .ensure(byText(configVar), visible);
     }
 
