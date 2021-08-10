@@ -87,7 +87,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                         friendlyURL, format("%,d", Integer.parseInt(runID))));
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"}, enabled = false)
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2678"})
     public void shareToolRunWithUser() {
         try {
