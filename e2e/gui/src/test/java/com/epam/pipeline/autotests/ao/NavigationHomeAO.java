@@ -107,6 +107,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     public ShellAO openSSHLink(String runId) {
         serviceSshLink(runId).hover().closest("a").shouldBe(visible).click();
         switchTo().window(1);
+        switchTo().frame(0);
         return new ShellAO();
     }
 
