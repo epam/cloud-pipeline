@@ -790,7 +790,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
             roleModel.executeAllowed(record) ||
             record.sshPassword
           ) &&
-          roleModel.isOwner(record) &&
+          (
+            roleModel.isOwner(record) ||
+            record.sshPassword
+          ) &&
           canStopRun(record)
         ) {
           return <a
