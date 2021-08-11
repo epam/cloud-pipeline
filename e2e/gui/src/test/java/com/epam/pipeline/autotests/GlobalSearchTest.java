@@ -44,7 +44,6 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -223,8 +222,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .moveToSearchResultItem(configVar, () -> new PipelineCodeTabAO(pipeline))
-                .sleep(1, MINUTES)
-                .ensure(byText(configVar), visible);
+                .sleep(5, SECONDS)
+                .shouldContainFile(configVar);
     }
 
     @Test(dependsOnMethods = {"searchForPipeline"})
