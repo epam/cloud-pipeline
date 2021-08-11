@@ -79,7 +79,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForSshLink() {
-        get(SSH_LINK).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        get(SSH_LINK).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
     }
 

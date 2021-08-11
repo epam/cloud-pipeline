@@ -41,6 +41,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation, Tools {
@@ -77,7 +78,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         sleep(30, SECONDS);
         logout();
         loginAs(admin);
-        sleep(30, SECONDS);
+        sleep(1, MINUTES);
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemLogs();
@@ -175,7 +176,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
                 .edit()
                 .sleep(1, SECONDS)
-                .deleteRoleOrGroup("ROLE_USER")
+                .deleteRoleOrGroup(C.ROLE_USER)
                 .ok();
         navigationMenu()
                 .settings()
@@ -183,7 +184,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToUsers()
                 .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
                 .edit()
-                .addRoleOrGroup("ROLE_USER")
+                .addRoleOrGroup(C.ROLE_USER)
                 .sleep(2, SECONDS)
                 .ok();
         navigationMenu()
@@ -232,6 +233,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         loginAs(user);
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .sleep(2, SECONDS)
                 .setDefaultLaunchOptions()
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())

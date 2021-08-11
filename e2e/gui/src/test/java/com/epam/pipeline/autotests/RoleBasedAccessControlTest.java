@@ -143,7 +143,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .switchToUserManagement()
                 .switchToUsers()
                 .checkUserExist(testUser)
-                .checkUserRoles(testUser, "ROLE_USER", "ROLE_PIPELINE_MANAGER",
+                .checkUserRoles(testUser, C.ROLE_USER, "ROLE_PIPELINE_MANAGER",
                         "ROLE_FOLDER_MANAGER", "ROLE_CONFIGURATION_MANAGER");
     }
 
@@ -312,7 +312,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             return;
         }
         validateErrorPage(Arrays.asList(
-                "Please contact Support team to request the access",
+                "Please contact", "Support team", "to request the access",
                 format("login back to the %s", C.PLATFORM_NAME),
                 "if you already own an account")
         );

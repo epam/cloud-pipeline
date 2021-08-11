@@ -188,7 +188,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public CreateStoragePopupAO clickOnCreateStorageButton() {
-        resetMouse().hover(CREATE).click(CREATE_STORAGE);
+        resetMouse().click(CREATE).click(CREATE_STORAGE);
         return new CreateStoragePopupAO();
     }
 
@@ -211,12 +211,12 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
 
     public CreateNfsMountPopupAO clickOnCreateNfsMountButton() {
-        resetMouse().hover(CREATE).hover(CREATE_STORAGE).click(CREATE_NFS_MOUNT);
+        resetMouse().click(CREATE).hover(CREATE_STORAGE).click(CREATE_NFS_MOUNT);
         return new CreateNfsMountPopupAO();
     }
 
     public CreateStoragePopupAO clickOnCreateExistingStorageButton() {
-        resetMouse().hover(CREATE).hover(CREATE_STORAGE).click(ADD_EXISTING_STORAGE);
+        resetMouse().click(CREATE).hover(CREATE_STORAGE).click(ADD_EXISTING_STORAGE);
         return new CreateStoragePopupAO();
     }
 
@@ -280,7 +280,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeFolder(String folderName) {
         cd(folderName)
                 .resetMouse()
-                .hover(byId("edit-folder-menu-button"))
+                .click(byId("edit-folder-menu-button"))
                 .click(byText("Delete"))
                 .click(button("OK"));
         return this;
@@ -289,7 +289,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeNotEmptyFolder(String folderName) {
         cd(folderName)
                 .resetMouse()
-                .hover(byId("edit-folder-menu-button"))
+                .click(byId("edit-folder-menu-button"))
                 .click(byText("Delete"))
                 .click(byText("Delete sub-items"))
                 .click(button("OK"));
@@ -339,7 +339,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO createFolder(String folderName) {
-        resetMouse().hover(CREATE).click(CREATE_FOLDER);
+        resetMouse().click(CREATE).click(CREATE_FOLDER);
         Utils.getPopupByTitle("Create folder")
                 .find(byId("name")).shouldBe(visible).setValue(folderName);
         $(byId("folder-edit-form-ok-button")).shouldBe(visible).click();
@@ -370,7 +370,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public CreatePipelinePopupAO clickCreatePipelineButton() {
         sleep(2, SECONDS);
-        hover(CREATE).hover(CREATE_PIPELINE).click(CREATE_PIPELINE);
+        click(CREATE).hover(CREATE_PIPELINE).click(CREATE_PIPELINE);
         return new CreatePipelinePopupAO();
     }
 
@@ -396,7 +396,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO createConfiguration(final Consumer<DetachedConfigurationCreationPopup> configuration) {
-        resetMouse().hover(CREATE).click(CREATE_CONFIGURATION);
+        resetMouse().click(CREATE).click(CREATE_CONFIGURATION);
         configuration.accept(new DetachedConfigurationCreationPopup(new Configuration()));
         return this;
     }

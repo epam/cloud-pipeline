@@ -40,6 +40,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttribu
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.Utils.getPopupByTitle;
+import static com.epam.pipeline.autotests.utils.Utils.resetClick;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
@@ -143,10 +144,13 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public MetadataSectionAO showMetadata() {
-        hover(displayAttributes);
+        click(displayAttributes);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
-                page -> click(showAttributes),
+                page -> {
+                    click(showAttributes);
+                    resetClick();
+                },
                 page -> resetMouse()
         );
         return new MetadataSectionAO(this);

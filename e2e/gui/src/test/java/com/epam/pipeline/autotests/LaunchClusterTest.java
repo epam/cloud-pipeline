@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -289,6 +289,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .execute("qstat")
                         .execute("qsub -b y -t 1:10 sleep 10m")
                         .assertOutputContains("Your job-array 1.1-10:1 (\"sleep\") has been submitted")
+                        .sleep(2, SECONDS)
                         .execute("qstat")
                         .assertOutputContains(String.format("main.q@%s", getPipelineName().toLowerCase()).substring(0, 30))
                         .close());

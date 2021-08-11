@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -145,6 +146,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
 
     public MetadataSamplesAO addInstance(String instanceID) {
         click(ADD_INSTANCE);
+        click(byText("Add instance"));
         setValue(context().find(byId("id")), instanceID);
         click(byId("add-instance-form-create-button"));
         return this;
@@ -152,6 +154,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
 
     public MetadataSamplesAO addInstanceWithValue(String metadata, String value) {
         click(ADD_INSTANCE);
+        click(byText("Add instance"));
         SelenideElement element = context().$(byId("add-instance-form"))
                 .$(byText(metadata)).parent().$(byXpath("following::input"));
         setValue(element, value);
@@ -161,6 +164,11 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
 
     public MetadataSamplesAO cancelAddInstance() {
         return click(byId("add-instance-form-cancel-button"));
+    }
+
+    public MetadataSamplesAO initializeSorting(String columnName) {
+        Selenide.actions().moveToElement($(columnHeader(columnName)), 0, 0).click().build().perform();
+        return this;
     }
 
     @Override
@@ -213,7 +221,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public void ensureCellContainsHyperlink() {
-            particularCell.shouldHave(hyperlink());
+            particularCell.find(byClassName("ant-row")).shouldHave(hyperlink());
         }
 
         public void ensureCellContains(String substring) {
