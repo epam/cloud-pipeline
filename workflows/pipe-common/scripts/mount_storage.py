@@ -74,10 +74,8 @@ class PermissionHelper:
         registry, image, version = re_result.groups()
         for tool_to_mount in storage.tools_to_mount:
             if registry == tool_to_mount["registry"] and image == tool_to_mount["image"]:
-                if not v["version"]:
-                    return True
-                else if tool_to_mount["versions"]:
-                    return version and version in [v["version"] for v in tool_to_mount["versions"]]
+                tool_versions_to_mount = tool_to_mount.get('versions', [])
+                return not tool_versions_to_mount or version in [v["version"] for v in tool_versions_to_mount]
         return False
 
     @classmethod

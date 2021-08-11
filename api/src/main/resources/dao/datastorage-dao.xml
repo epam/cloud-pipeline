@@ -625,9 +625,7 @@
                     FROM pipeline.datastorage_tool_version AS dtv
                     INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
                     INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
-                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
                     WHERE dtv.datastorage_id = ?
                 ]]>
             </value>
@@ -645,9 +643,7 @@
                     FROM pipeline.datastorage_tool_version AS dtv
                     INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
                     INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
-                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
                 ]]>
             </value>
         </property>
