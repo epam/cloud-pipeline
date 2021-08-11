@@ -78,8 +78,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
     private static final Set<PosixFilePermission> PERMISSIONS = Arrays.stream(PosixFilePermission.values())
-            .filter(p -> !p.name().startsWith("OTHERS"))
-            .collect(Collectors.toSet());
+                                                                      .filter(p -> !p.name().startsWith("OTHERS"))
+                                                                      .collect(Collectors.toSet());
 
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -107,7 +107,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                 nfsStorageMounter.unmountNFSIfEmpty(storage);
 
                 throw new DataStorageException(messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, storage.getPath()));
+                    MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, storage.getPath()));
             }
         }
 
@@ -149,7 +149,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public void restoreFileVersion(NFSDataStorage dataStorage, String path, String version)
-            throws DataStorageException {
+        throws DataStorageException {
         throw new UnsupportedOperationException();
     }
 
@@ -162,30 +162,30 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
         try (Stream<Path> dirStream = Files.walk(dir.toPath(), 1)) {
             List<AbstractDataStorageItem> dataStorageItems = dirStream
-                    .sorted()
-                    .skip(offset) // First element is a directory itself
-                    .limit(pageSize)
-                    .map(p -> {
-                        File file = p.toFile();
+                .sorted()
+                .skip(offset) // First element is a directory itself
+                .limit(pageSize)
+                .map(p -> {
+                    File file = p.toFile();
 
-                        AbstractDataStorageItem item;
-                        if (file.isDirectory()) {
-                            item = new DataStorageFolder();
-                        } else {
-                            //set size if it's a file
-                            DataStorageFile dataStorageFile = new DataStorageFile();
-                            dataStorageFile.setSize(file.length());
-                            dataStorageFile.setChanged(S3Constants.getAwsDateFormat()
-                                    .format(new Date(file.lastModified())));
-                            item = dataStorageFile;
-                        }
+                    AbstractDataStorageItem item;
+                    if (file.isDirectory()) {
+                        item = new DataStorageFolder();
+                    } else {
+                        //set size if it's a file
+                        DataStorageFile dataStorageFile = new DataStorageFile();
+                        dataStorageFile.setSize(file.length());
+                        dataStorageFile.setChanged(S3Constants.getAwsDateFormat()
+                                .format(new Date(file.lastModified())));
+                        item = dataStorageFile;
+                    }
 
-                        item.setName(file.getName());
-                        item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+                    item.setName(file.getName());
+                    item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
 
-                        return item;
-                    })
-                    .collect(Collectors.toList());
+                    return item;
+                })
+                .collect(Collectors.toList());
 
             DataStorageListing listing = new DataStorageListing();
             listing.setResults(dataStorageItems);
@@ -209,11 +209,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
         String baseApiHostExternal = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST_EXTERNAL);
         String baseApiHost = StringUtils.isNotBlank(baseApiHostExternal) ? baseApiHostExternal :
-                preferenceManager.getPreference(SystemPreferences.BASE_API_HOST);
+                             preferenceManager.getPreference(SystemPreferences.BASE_API_HOST);
         if (StringUtils.isBlank(baseApiHost)) {
             throw new IllegalArgumentException(String.format("Cannot generate URL: preference %s or %s is not set",
-                    SystemPreferences.BASE_API_HOST.getKey(),
-                    SystemPreferences.BASE_API_HOST_EXTERNAL.getKey()));
+                                                             SystemPreferences.BASE_API_HOST.getKey(),
+                                                             SystemPreferences.BASE_API_HOST_EXTERNAL.getKey()));
         }
 
         DataStorageDownloadFileUrl url = new DataStorageDownloadFileUrl();
@@ -228,7 +228,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageFile createFile(NFSDataStorage dataStorage, String path, byte[] contents)
-            throws DataStorageException {
+        throws DataStorageException {
         try (ByteArrayInputStream dataStream = new ByteArrayInputStream(contents)) {
             return createFile(dataStorage, path, dataStream);
         } catch (IOException e) {
@@ -238,7 +238,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageFile createFile(NFSDataStorage dataStorage, String path, InputStream dataStream)
-            throws DataStorageException {
+        throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);
 
@@ -258,7 +258,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         File folder = new File(dataStorageDir, path);
         if (!folder.mkdirs()) {
             throw new DataStorageException(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, dataStorage.getPath()));
+                MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, dataStorage.getPath()));
         }
         try {
             setUmask(folder);
@@ -269,9 +269,15 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFolder(path, folder);
     }
 
+    private void setUmask(File file) throws IOException {
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
+        }
+    }
+
     @Override
     public void deleteFile(NFSDataStorage dataStorage, String path, String version, Boolean totally)
-            throws DataStorageException {
+        throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);
 
@@ -302,10 +308,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFile(newPath, newFile);
     }
 
-    private void setUmask(File file) throws IOException {
-        if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
-        }
+    @Override
+    public DataStorageFolder moveFolder(NFSDataStorage dataStorage, String oldPath, String newPath)
+            throws DataStorageException {
+        File newFolder = move(dataStorage, oldPath, newPath);
+        return new DataStorageFolder(newPath, newFolder);
     }
 
     private File move(NFSDataStorage dataStorage, String oldPath, String newPath) {
@@ -327,10 +334,35 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageFolder moveFolder(NFSDataStorage dataStorage, String oldPath, String newPath)
-            throws DataStorageException {
-        File newFolder = move(dataStorage, oldPath, newPath);
+    public DataStorageFile copyFile(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        File newFile = copy(dataStorage, oldPath, newPath);
+        return new DataStorageFile(newPath, newFile);
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        File newFolder = copy(dataStorage, oldPath, newPath);
         return new DataStorageFolder(newPath, newFolder);
+    }
+
+    private File copy(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        final File dataStorageDir = nfsStorageMounter.mount(dataStorage);
+        final File oldFile = new File(dataStorageDir, oldPath);
+        final File newFile = new File(dataStorageDir, newPath);
+        copy(oldFile, newFile);
+        return newFile;
+    }
+
+    private void copy(final File oldFile, final File newFile) {
+        try {
+            if (oldFile.isDirectory()) {
+                FileUtils.copyDirectory(oldFile, newFile);
+            } else {
+                FileUtils.copyFile(oldFile, newFile);
+            }
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
     }
 
     @Override

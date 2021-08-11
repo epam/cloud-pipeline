@@ -42,6 +42,9 @@ public final class CommonCreatorConstants {
     public static final int WRITE_PERMISSION = 2;
     public static final int EXECUTE_PERMISSION = 4;
     public static final String TEST_STRING = "TEST";
+    public static final byte[] TEST_BYTES = TEST_STRING.getBytes();
+    public static final String TEST_NAME = "TEST_NAME";
+    public static final String TEST_NAME_2 = "TEST_NAME_2";
     public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
     public static final byte[] TEST_ARRAY = {1, 1, 1};
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);

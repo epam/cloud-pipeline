@@ -836,6 +836,20 @@ public class DataStorageManager implements SecuredEntityManager {
         return storageProviderManager.moveFile(dataStorage, oldPath, newPath);
     }
 
+    private DataStorageFolder copyDataStorageFolder(final AbstractDataStorage dataStorage,
+                                                    final String oldPath,
+                                                    final String newPath) {
+        final DataStorageFolder folder = storageProviderManager.copyFolder(dataStorage, oldPath, newPath);
+        return folder;
+    }
+
+    private DataStorageFile copyDataStorageFile(final AbstractDataStorage dataStorage,
+                                                final String oldPath,
+                                                final String newPath) {
+        final DataStorageFile file = storageProviderManager.copyFile(dataStorage, oldPath, newPath);
+        return file;
+    }
+
     private void deleteDataStorageFolder(final AbstractDataStorage dataStorage, final String path,
             Boolean totally)
             throws DataStorageException {
@@ -949,39 +963,30 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,
-            UpdateDataStorageItemVO item)
-            throws DataStorageException{
-        AbstractDataStorageItem result = null;
+                                                          final UpdateDataStorageItemVO item) {
         switch (item.getType()) {
-            case Folder: result = updateFolderItem(storage, item); break;
-            case File: result = updateFileItem(storage, item); break;
-            default: break;
+            case Folder: return updateFolderItem(storage, item);
+            case File: return updateFileItem(storage, item);
+            default: return null;
         }
-        return result;
     }
 
-    private DataStorageFolder updateFolderItem(final AbstractDataStorage storage,
-            UpdateDataStorageItemVO item)
-            throws DataStorageException{
-        DataStorageFolder folder = null;
+    private DataStorageFolder updateFolderItem(final AbstractDataStorage storage, final UpdateDataStorageItemVO item) {
         switch (item.getAction()) {
-            case Create: folder = createDataStorageFolder(storage, item.getPath()); break;
-            case Move: folder = moveDataStorageFolder(storage, item.getOldPath(), item.getPath()); break;
-            default: break;
+            case Create: return createDataStorageFolder(storage, item.getPath());
+            case Move: return moveDataStorageFolder(storage, item.getOldPath(), item.getPath());
+            case Copy: return copyDataStorageFolder(storage, item.getOldPath(), item.getPath());
+            default: return null;
         }
-        return folder;
     }
 
-    private DataStorageFile updateFileItem(final AbstractDataStorage storage,
-            UpdateDataStorageItemVO item)
-            throws DataStorageException{
-        DataStorageFile file = null;
+    private DataStorageFile updateFileItem(final AbstractDataStorage storage, final UpdateDataStorageItemVO item) {
         switch (item.getAction()) {
-            case Create: file = createDataStorageFile(storage, item.getPath(), item.getContents()); break;
-            case Move: file = moveDataStorageFile(storage, item.getOldPath(), item.getPath()); break;
-            default: break;
+            case Create: return createDataStorageFile(storage, item.getPath(), item.getContents());
+            case Move: return moveDataStorageFile(storage, item.getOldPath(), item.getPath());
+            case Copy: return copyDataStorageFile(storage, item.getOldPath(), item.getPath());
+            default: return null;
         }
-        return file;
     }
 
     private void checkDataStorageVersioning(AbstractDataStorage dataStorage, String version) {

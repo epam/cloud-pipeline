@@ -245,6 +245,17 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                 ProviderUtils.buildPath(dataStorage, newPath));
     }
 
+    @Override
+    public DataStorageFile copyFile(final S3bucketDataStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final S3bucketDataStorage dataStorage, final String oldPath,
+                                        final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override public boolean checkStorage(S3bucketDataStorage dataStorage) {
         if (dataStorage.getRegionId() == null) {
             final AwsRegion awsRegion = cloudRegionManager.getAwsRegion(dataStorage);

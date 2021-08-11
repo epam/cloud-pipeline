@@ -157,6 +157,16 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).moveFolder(dataStorage, oldPath, newPath);
     }
 
+    @StorageWriteOperation
+    public DataStorageFile copyFile(AbstractDataStorage dataStorage, String oldPath, String newPath) {
+        return getStorageProvider(dataStorage).copyFile(dataStorage, oldPath, newPath);
+    }
+
+    @StorageWriteOperation
+    public DataStorageFolder copyFolder(AbstractDataStorage dataStorage, String oldPath, String newPath) {
+        return getStorageProvider(dataStorage).copyFolder(dataStorage, oldPath, newPath);
+    }
+
     public boolean checkStorage(AbstractDataStorage dataStorage) {
         return getStorageProvider(dataStorage).checkStorage(dataStorage);
     }

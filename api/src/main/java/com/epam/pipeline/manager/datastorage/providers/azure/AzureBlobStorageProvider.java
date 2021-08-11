@@ -151,6 +151,17 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
+    public DataStorageFile copyFile(final AzureBlobStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final AzureBlobStorage dataStorage, final String oldPath,
+                                        final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean checkStorage(final AzureBlobStorage dataStorage) {
         return getAzureStorageHelper(dataStorage).checkStorage(dataStorage);
     }
