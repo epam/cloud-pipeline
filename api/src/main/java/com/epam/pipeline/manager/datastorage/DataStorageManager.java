@@ -47,9 +47,12 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.ToolFingerprint;
+import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -58,9 +61,11 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -167,6 +172,12 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private DataStorageTagProviderManager tagProviderManager;
 
+    @Autowired
+    private ToolVersionManager toolVersionManager;
+
+    @Autowired
+    private ToolManager toolManager;
+
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -174,10 +185,14 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadAllDataStorages();
     }
 
+    public List<AbstractDataStorage> getDataStoragesWithToolsToMount() {
+        return dataStorageDao.loadAllDataStoragesWithToolsToMount();
+    }
+
     public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
-        return getDataStorages().stream()
+        return getDataStoragesWithToolsToMount().stream()
                 .filter(dataStorage -> !dataStorage.isSensitive())
                 .map(storage -> {
                     if (storage.getFileShareMountId() != null) {
@@ -269,6 +284,7 @@ public class DataStorageManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public AbstractDataStorage update(DataStorageVO dataStorageVO) {
         assertDataStorageMountPoint(dataStorageVO);
+        assertToolsToMount(dataStorageVO);
         AbstractDataStorage dataStorage = load(dataStorageVO.getId());
         AbstractDataStorage updated = updateDataStorageObject(dataStorage, dataStorageVO);
         dataStorageDao.updateDataStorage(updated);
@@ -309,6 +325,7 @@ public class DataStorageManager implements SecuredEntityManager {
         }
 
         assertDataStorageMountPoint(dataStorageVO);
+        assertToolsToMount(dataStorageVO);
 
         dataStorageVO.setName(dataStorageVO.getName().trim());
 
@@ -931,6 +948,9 @@ public class DataStorageManager implements SecuredEntityManager {
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
         }
 
+        if (dataStorageVO.getToolsToMount() != null) {
+            dataStorage.setToolsToMount(dataStorageVO.getToolsToMount());
+        }
         return dataStorage;
     }
 
@@ -1030,6 +1050,30 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(storageProviderManager.findFile(dataStorage, path, version).isPresent(),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
                         path, dataStorage.getRoot()));
+    }
+
+    private void assertToolsToMount(final DataStorageVO dataStorageVO) {
+        if (!CollectionUtils.isEmpty(dataStorageVO.getToolsToMount())) {
+            for (ToolFingerprint tool : dataStorageVO.getToolsToMount()) {
+                Assert.notNull(tool.getId(),
+                        "Tool id is not provided when specifying to which tools storage should be mounted");
+                Assert.notNull(toolManager.load(tool.getId()),
+                        messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, tool.getId()));
+                if (CollectionUtils.isNotEmpty(tool.getVersions())) {
+                    Assert.isTrue(tool.getVersions().stream().allMatch(tv -> StringUtils.isNotBlank(tv.getVersion())),
+                            "Version could not be empty when configure tools to mount");
+                    final Map<String, ToolVersion> stringToolVersionMap = toolVersionManager
+                            .loadToolVersions(tool.getId(), tool.getVersions().stream()
+                                    .map(ToolVersionFingerprint::getVersion)
+                                    .filter(StringUtils::isNotBlank)
+                                    .collect(Collectors.toList()));
+                    for (ToolVersionFingerprint version : tool.getVersions()) {
+                        Assert.isTrue(stringToolVersionMap.containsKey(version.getVersion()),
+                                "There is no version: " + version.getVersion());
+                    }
+                }
+            }
+        }
     }
 
     private List<DataStorageLink> getLinks(AbstractDataStorage dataStorage, String paramValue) {
