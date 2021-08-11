@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
@@ -56,8 +57,10 @@ public class PipelineRunAsManagerTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final CheckPermissionHelper permissionHelper = mock(CheckPermissionHelper.class);
     private final Executor runAsExecutor = Executors.newSingleThreadExecutor();
+    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final PipelineRunAsManager manager = new PipelineRunAsManager(pipelineRunManager, userRunnersManager,
-            userManager, authManager, configurationManager, messageHelper, permissionHelper, runAsExecutor);
+            userManager, authManager, configurationManager, messageHelper, permissionHelper, runAsExecutor,
+            preferenceManager);
 
     @Test
     @WithMockUser
