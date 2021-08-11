@@ -166,7 +166,6 @@ class SearchResults extends React.Component {
         <Icon
           type="info-circle-o"
           className={styles.previewBtn}
-          style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -184,7 +183,6 @@ class SearchResults extends React.Component {
               file={resultItem.path}
               storageId={resultItem.parentId}
               className={classNames(styles.previewBtn, styles.action)}
-              style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
             />
           )
         }
@@ -196,7 +194,6 @@ class SearchResults extends React.Component {
               {[styles.disabled]: disabled}
             )
           }
-          style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
         >
           <DocumentListPresentation
             className={styles.title}

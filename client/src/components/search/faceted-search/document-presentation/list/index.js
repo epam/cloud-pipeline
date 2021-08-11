@@ -65,24 +65,24 @@ export default function DocumentListPresentation ({className, document, extraCol
     default:
       break;
   }
-  extra.push(
-    ...(extraColumns || [])
-      .map(column => (
-        <KeyValue
-          key={column.key}
-          field={column.key}
-          name={column.name}
-          document={document}
-        />
-      ))
-  );
   return (
     <GeneralPresentation
       className={className}
       document={document}
       showDescription={document?.name !== document?.description}
+      extra={extra}
     >
-      {extra}
+      {
+        extraColumns && extraColumns.length && (extraColumns || [])
+          .map(column => (
+            <KeyValue
+              key={column.key}
+              field={column.key}
+              name={column.name}
+              document={document}
+            />
+          ))
+      }
     </GeneralPresentation>
   );
 }

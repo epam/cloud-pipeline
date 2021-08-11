@@ -21,9 +21,18 @@ import styles from './document-list-presentation.css';
 export default function KeyValue ({document, field, name}) {
   if (document && document.hasOwnProperty(field) && document[field]) {
     return (
-      <span className={classNames(styles.attribute, styles.ellipsis)}>
-        {name || field}: {document[field]}
-      </span>
+      <div
+        className={
+          classNames(
+            styles.attribute,
+            styles.ellipsis,
+            styles.keyValue
+          )
+        }
+      >
+        <span className={styles.key}>{name || field}</span>
+        <span className={styles.value}>{document[field]}</span>
+      </div>
     );
   }
   return null;

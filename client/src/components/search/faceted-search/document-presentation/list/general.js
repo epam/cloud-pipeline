@@ -27,7 +27,8 @@ export default function GeneralPresentation (
     className,
     children,
     document,
-    showDescription = true
+    showDescription = true,
+    extra
   }
 ) {
   const renderIcon = () => {
@@ -64,6 +65,13 @@ export default function GeneralPresentation (
               </span>
             )
           }
+          {extra}
+        </div>
+        <div
+          className={
+            classNames(styles.tags)
+          }
+        >
           {children}
         </div>
       </div>
