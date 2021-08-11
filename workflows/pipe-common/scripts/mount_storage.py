@@ -63,9 +63,9 @@ class PermissionHelper:
     # or there is no configured restriction for this storage
     @classmethod
     def is_storage_available_for_mount(cls, storage, run):
-        if storage.tools_to_mount:
+        if not storage.tools_to_mount:
             return True
-        if run is None:
+        if run is None or not run["actualDockerImage"]:
             Logger.info('Run info is not present, storage will not be available for mount', task_name=self.task_name)
             return False
 
