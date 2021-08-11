@@ -1715,8 +1715,11 @@ class Logs extends localization.LocalizedReactComponent {
         case 'resuming':
           if (
             (
-              roleModel.isOwner(this.props.run.value) ||
               roleModel.executeAllowed(this.props.run.value) ||
+              this.props.run.value.sshPassword
+            ) &&
+            (
+              roleModel.isOwner(this.props.run.value) ||
               this.props.run.value.sshPassword
             ) &&
             canStopRun(this.props.run.value)
