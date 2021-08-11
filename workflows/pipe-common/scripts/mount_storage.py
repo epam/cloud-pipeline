@@ -168,7 +168,7 @@ class MountStorageTask:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
                     Logger.info('Storage is not readable', task_name=self.task_name)
                     continue
-                if not not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
+                if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
                     Logger.info('Storage is not allowed to be mount to this image', task_name=self.task_name)
                     continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,

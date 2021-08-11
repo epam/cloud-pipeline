@@ -1062,14 +1062,17 @@ public class DataStorageManager implements SecuredEntityManager {
                 if (CollectionUtils.isNotEmpty(tool.getVersions())) {
                     Assert.isTrue(tool.getVersions().stream().allMatch(tv -> StringUtils.isNotBlank(tv.getVersion())),
                             "Version could not be empty when configure tools to mount");
-                    final Map<String, ToolVersion> stringToolVersionMap = toolVersionManager
+                    final Map<String, ToolVersion> tagsToToolVersions = toolVersionManager
                             .loadToolVersions(tool.getId(), tool.getVersions().stream()
                                     .map(ToolVersionFingerprint::getVersion)
                                     .filter(StringUtils::isNotBlank)
                                     .collect(Collectors.toList()));
                     for (ToolVersionFingerprint version : tool.getVersions()) {
-                        Assert.isTrue(stringToolVersionMap.containsKey(version.getVersion()),
+                        Assert.isTrue(tagsToToolVersions.containsKey(version.getVersion()),
                                 "There is no version: " + version.getVersion());
+                        if (version.getId() == null) {
+                            version.setId(tagsToToolVersions.get(version.getVersion()).getId());
+                        }
                     }
                 }
             }
