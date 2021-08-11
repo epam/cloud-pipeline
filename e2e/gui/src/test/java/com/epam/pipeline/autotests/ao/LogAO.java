@@ -579,7 +579,7 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue($(byClassName("ant-select-search__field")), groupName + " ").enter();
+            setValue($(byClassName("ant-select-search__field")), groupName).enter();
             click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
                     ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
             click(OK);

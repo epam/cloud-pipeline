@@ -143,7 +143,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         getWebDriver().navigate().refresh();
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2657"})
     public void searchResultCancel() {
         search()
@@ -304,7 +304,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2660"})
     public void searchForStorage() {
         search()
@@ -337,7 +337,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .validateHeader(storage);
     }
 
-    @Test(dependsOnMethods = {"searchForStorage"}, enabled = false)
+    @Test(dependsOnMethods = {"searchForStorage"})
     @TestCase(value = {"EPMCMBIBPC-2661"})
     public void searchForStorageWithChangedName() {
         home();
@@ -370,7 +370,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(dependsOnMethods = {"searchForStorageWithChangedName"}, enabled = false)
+    @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
     @TestCase(value = {"EPMCMBIBPC-2664"})
     public void searchForPipelineRunOverStoragePath() {
         home();
@@ -396,7 +396,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         text(storage.toLowerCase() + " mounted to"));
     }
 
-    @Test(dependsOnMethods = {"searchForStorageWithChangedName"}, enabled = false)
+    @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
     @TestCase(value = {"EPMCMBIBPC-2666"})
     public void searchForFilesAndFoldersInStorage() {
         home();
@@ -435,7 +435,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("Preview not available"));
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2667"})
     public void searchForTool() {
         final ToolDescription tool = tools().perform(defaultRegistry, defaultGroup, testingTool, Function.identity());
@@ -460,7 +460,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(TITLE, text(testingTool));
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2668"})
     public void searchForToolRun() {
         tools()
@@ -512,7 +512,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .closeTab();
     }
 
-    @Test(dependsOnMethods = {"searchForToolRun"}, enabled = false)
+    @Test(dependsOnMethods = {"searchForToolRun"})
     @TestCase(value = {"EPMCMBIBPC-2669"})
     public void searchForCompletedToolRun() {
         ToolPageAO endpointPage = null;
@@ -553,7 +553,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2670"})
     public void issueSearch() {
         library()
@@ -589,7 +589,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(dependsOnMethods = {"issueSearch"}, enabled = false)
+    @Test(dependsOnMethods = {"issueSearch"})
     @TestCase(value = {"EPMCMBIBPC-2671"})
     public void identicalNamesSearch() {
         library()
@@ -631,7 +631,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2654"})
     public void folderSearch() {
         search()
@@ -648,7 +648,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2655"})
     public void folderSearchByEnterKey() {
         search()
@@ -664,7 +664,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2656"})
     public void negativeFolderSearch() {
         search()
@@ -680,7 +680,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2675"})
     public void searchWithSpecialExpressions() {
         String folderWithExpression = innerFolder1 + "suffix";
@@ -701,7 +701,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2672"})
     public void searchForDetachConfigByName() {
         home();
@@ -724,7 +724,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         home();
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2673"})
     public void searchForDetachConfigByConfiguration() {
         home();
@@ -748,7 +748,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         home();
     }
 
-    @Test(priority = 100, enabled = false)
+    @Test(priority = 100)
     @TestCase(value = {"EPMCMBIBPC-2676"})
     public void searchAfterDeleting() {
         library()

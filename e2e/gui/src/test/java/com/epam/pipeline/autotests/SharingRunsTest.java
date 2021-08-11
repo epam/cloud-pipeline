@@ -76,7 +76,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                 });
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"}, enabled = false)
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2677"})
     public void validationOfFriendlyURLNegative() {
         tools()
@@ -136,7 +136,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
-            sleep(timeout * 6L, SECONDS);
+            sleep(timeout, SECONDS);
             open(endpointsLink);
             new ToolPageAO(endpointsLink)
                     .validateEndpointPage(user.login)
@@ -162,7 +162,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
         }
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"}, enabled = false)
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2680"})
     public void displayingSharingToolAtServicesPanel() {
         try {
@@ -243,7 +243,6 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .openSSHLink(runID)
                     .waitUntilTextLoads(runID)
                     .execute("cat test.file")
-                    .sleep(10, SECONDS)
                     .assertPageContains("123")
                     .closeTab();
             logout();
