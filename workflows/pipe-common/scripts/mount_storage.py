@@ -18,6 +18,7 @@
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
 
 import argparse
+import re
 import os
 from abc import ABCMeta, abstractmethod
 
@@ -58,6 +59,25 @@ class PermissionHelper:
     def is_storage_readable(cls, storage):
         return cls.is_permission_set(storage, READ_MASK)
 
+    # Checks that tool with its version for the current run is allowed to mount this storage
+    # or there is no configured restriction for this storage
+    @classmethod
+    def is_storage_available_for_mount(cls, storage, run):
+        if not storage.tools_to_mount:
+            return True
+        if run is None or not run["actualDockerImage"]:
+            Logger.info('Run info is not present, storage will not be available for mount', task_name=self.task_name)
+            return False
+
+        tool = run["actualDockerImage"]
+        re_result = re.search(r"([^/]+)/([^:]+):?(:?.*)", tool)
+        registry, image, version = re_result.groups()
+        for tool_to_mount in storage.tools_to_mount:
+            if registry == tool_to_mount["registry"] and image == tool_to_mount["image"]:
+                tool_versions_to_mount = tool_to_mount.get('versions', [])
+                return not tool_versions_to_mount or version in [v["version"] for v in tool_versions_to_mount]
+        return False
+
     @classmethod
     def is_storage_writable(cls, storage):
         write_permission_granted = cls.is_permission_set(storage, WRITE_MASK)
@@ -95,6 +115,15 @@ class MountStorageTask:
             if cloud_region_id == -1:
                 Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
                  and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
+
+            run_id = int(os.getenv('RUN_ID', -1))
+
+            run = None
+            if run_id != -1:
+                Logger.info('Fetching run info...', task_name=self.task_name)
+                run = self.api.load_run(run_id)
+            else:
+                Logger.warn('Cannot load run info, run id is not specified.', task_name=self.task_name)
 
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
@@ -134,6 +163,10 @@ class MountStorageTask:
             initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
+                    Logger.info('Storage is not readable', task_name=self.task_name)
+                    continue
+                if not not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
+                    Logger.info('Storage is not allowed to be mount to this image', task_name=self.task_name)
                     continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,
