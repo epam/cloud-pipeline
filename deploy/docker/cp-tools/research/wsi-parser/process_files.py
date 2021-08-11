@@ -74,7 +74,7 @@ class WsiParsingUtils:
     def get_service_directory(file_path):
         name_without_extension = WsiParsingUtils.get_basename_without_extension(file_path)
         parent_dir = os.path.dirname(file_path)
-        return os.path.join(parent_dir, '.{}-wsiparser'.format(name_without_extension))
+        return os.path.join(parent_dir, '.wsiparser', name_without_extension)
 
     @staticmethod
     def create_service_dir_if_not_exist(file_path):
