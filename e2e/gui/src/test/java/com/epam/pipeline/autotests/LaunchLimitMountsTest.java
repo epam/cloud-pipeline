@@ -419,7 +419,6 @@ public class LaunchLimitMountsTest
         return IntStream.range(0, min - objStor)
                 .mapToObj(i -> {
                     String storage = "launchLimitMountsStorageForOOM" + Utils.randomSuffix();
-                    System.out.println("Create new storage " + storage);
                     library()
                             .createStorage(storage)
                             .selectStorage(storage)

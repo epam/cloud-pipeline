@@ -389,12 +389,6 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     )
                     .sleep(5, SECONDS)
                     .exitFromConfigurationWithoutSaved();
-        } catch (Exception e) {
-            new Configuration().resetChanges();
-            logout();
-            loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
-            throw new RuntimeException(e);
         } finally {
             logout();
             loginAs(admin);
