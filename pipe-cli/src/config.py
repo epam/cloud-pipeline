@@ -255,15 +255,10 @@ class Config(object):
 
     @classmethod
     def get_install_dir_config_path(cls):
-        pipe_binary_path = sys.argv[0]
-        if not pipe_binary_path:
+        pipe_binary_path = sys.executable
+        if not pipe_binary_path or 'python' in os.path.basename(pipe_binary_path):
             return None
-        if pipe_binary_path != 'pipe':
-            if not os.path.isabs(pipe_binary_path):
-                pipe_binary_path = os.path.join(os.getcwd(), pipe_binary_path)
-            if not os.path.samefile(sys.executable, pipe_binary_path):
-                return None
-        return os.path.join(os.path.dirname(sys.executable), 'config.json')
+        return os.path.join(os.path.dirname(pipe_binary_path), 'config.json')
 
     @classmethod
     def get_home_dir_config_path(cls):
