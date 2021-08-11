@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
@@ -25,6 +26,8 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
@@ -32,14 +35,18 @@ import com.epam.pipeline.manager.user.UserRunnersManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -50,6 +57,9 @@ import java.util.concurrent.Executor;
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PipelineRunAsManager {
+
+    private static final String FALLBACK_ORIGINAL_OWNER_PARAMETER = "ORIGINAL_OWNER";
+
     private final PipelineRunManager pipelineRunManager;
     private final UserRunnersManager userRunnersManager;
     private final UserManager userManager;
@@ -58,6 +68,7 @@ public class PipelineRunAsManager {
     private final MessageHelper messageHelper;
     private final CheckPermissionHelper permissionHelper;
     private final Executor runAsExecutor;
+    private final PreferenceManager preferenceManager;
 
     public boolean runAsAnotherUser(final PipelineStart runVO) {
         return !StringUtils.isEmpty(getRunAsUserName(runVO));
@@ -86,7 +97,31 @@ public class PipelineRunAsManager {
     private PipelineRun run(final PipelineStart runVO, final Callable<PipelineRun> runCallable) {
         final String runAsUser = getRunAsUserName(runVO);
         configureRunnerSids(runVO, runAsUser);
+        configureOriginalOwner(runVO);
         return supplyRunAsync(runAsUser, runCallable);
+    }
+
+    private void configureOriginalOwner(final PipelineStart runVO) {
+        runVO.setParams(withOriginalOwnerParam(runVO.getParams()));
+    }
+
+    private Map<String, PipeConfValueVO> withOriginalOwnerParam(final Map<String, PipeConfValueVO> params) {
+        return Optional.ofNullable(authManager.getAuthorizedUser())
+                .map(owner -> withOriginalOwnerParam(params, owner))
+                .orElse(params);
+    }
+
+    private Map<String, PipeConfValueVO> withOriginalOwnerParam(final Map<String, PipeConfValueVO> params,
+                                                                final String owner) {
+        final Map<String, PipeConfValueVO> updatedParams = new HashMap<>(MapUtils.emptyIfNull(params));
+        updatedParams.put(getOriginalOwnerParamName(), new PipeConfValueVO(owner));
+        return updatedParams;
+    }
+
+    private String getOriginalOwnerParamName() {
+        return Optional.of(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_ORIGINAL_OWNER_PARAMETER);
     }
 
     private PipelineRun supplyRunAsync(final String runAsUser, final Callable<PipelineRun> runCallable) {
