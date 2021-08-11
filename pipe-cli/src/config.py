@@ -258,12 +258,12 @@ class Config(object):
         pipe_binary_path = sys.argv[0]
         if not pipe_binary_path:
             return None
-        if not os.path.isabs(pipe_binary_path):
-            pipe_binary_path = os.path.join(os.getcwd(), pipe_binary_path)
-        if not os.path.samefile(sys.executable, pipe_binary_path):
-            return None
-        else:
-            return os.path.join(os.path.dirname(pipe_binary_path), 'config.json')
+        if pipe_binary_path != 'pipe':
+            if not os.path.isabs(pipe_binary_path):
+                pipe_binary_path = os.path.join(os.getcwd(), pipe_binary_path)
+            if not os.path.samefile(sys.executable, pipe_binary_path):
+                return None
+        return os.path.join(os.path.dirname(sys.executable), 'config.json')
 
     @classmethod
     def get_home_dir_config_path(cls):
