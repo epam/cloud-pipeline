@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -24,7 +25,18 @@ import MetadataEntityFilter from '../../../models/folderMetadata/MetadataEntityF
 import MetadataEntityKeys from '../../../models/folderMetadata/MetadataEntityKeys';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataEntityLoadExternal';
-import {Button, Checkbox, Col, Icon, Input, message, Modal, Pagination, Row} from 'antd';
+import {
+  Button,
+  Checkbox,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Pagination,
+  Row
+} from 'antd';
+import Menu, {MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -59,6 +71,13 @@ import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
+import parseSearchQuery from './metadata-controls/parse-search-query';
+import getDefaultColumns from './metadata-controls/get-default-columns';
+import getPathParameters from './metadata-controls/get-path-parameters';
+import * as autoFillEntities from './metadata-controls/auto-fill-entities';
+
+const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
+const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -66,7 +85,7 @@ const ASCEND = 'ascend';
 const DESCEND = 'descend';
 
 function filterColumns (column) {
-  return !column.predefined || ['externalId', 'createdDate'].indexOf(column.name) >= 0;
+  return !column.predefined || ['externalId', 'createdDate'].includes(column.name);
 }
 
 function mapColumnName (column) {
@@ -83,23 +102,44 @@ function unmapColumnName (name) {
   return name;
 }
 
+function isPredefined (name) {
+  return ['externalId', 'createdDate'].includes(name);
+}
+
+function getDefaultColumnName (displayName) {
+  if (/^created date$/i.test(displayName)) {
+    return 'createdDate';
+  }
+  return unmapColumnName(displayName);
+}
+
 function getColumnTitle (key) {
   if (key === 'createdDate') {
     return 'Created Date';
   }
   return key;
 }
-function getFromDate (key) {
-  return '';
+
+function makeIndexOf (array) {
+  return column => {
+    const index = (array || []).findIndex(o => o.key === column.key);
+    if (index === -1) {
+      return Infinity;
+    }
+    return index;
+  };
 }
-function getToDate (key) {
-  return '';
+
+function makeCurrentOrderSort (array) {
+  const indexOf = makeIndexOf(array);
+  return (a, b) => indexOf(a) - indexOf(b);
 }
 
 @connect({
   folders,
   pipelinesLibrary
 })
+@roleModel.authenticationInfo
 @inject('preferences', 'dataStorages')
 @HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
 @HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
@@ -118,7 +158,8 @@ function getToDate (key) {
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
-    dataStorages
+    dataStorages,
+    pipelinesLibrary
   };
 })
 @observer
@@ -130,13 +171,7 @@ export default class Metadata extends React.Component {
     readOnly: PropTypes.bool
   };
 
-  _currentMetadata = [];
-  _totalCount = 0;
-
-  columns = [];
-  defaultColumns = [];
   @observable keys;
-  dateKeys = [];
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -147,14 +182,20 @@ export default class Metadata extends React.Component {
   state = {
     loading: false,
     metadata: false,
+    searchQuery: undefined,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
-    selectedColumns: [],
+    cellsActions: undefined,
+    cellsSelection: undefined,
+    hoveredCell: undefined,
+    defaultColumnsNames: [],
+    columns: [],
+    totalCount: 0,
     filterModel: {
-      startDateFrom: '',
-      endDateTo: '',
+      startDateFrom: undefined,
+      endDateTo: undefined,
       filters: [],
       folderId: parseInt(this.props.folderId),
       metadataClass: this.props.metadataClass,
@@ -163,29 +204,36 @@ export default class Metadata extends React.Component {
       pageSize: PAGE_SIZE,
       searchQueries: []
     },
+    filterComponentVisible: false,
     addInstanceFormVisible: false,
     operationInProgress: false,
     configurationBrowserVisible: false,
     currentProjectId: null,
     currentMetadataEntityForCurrentProject: [],
     uploadToBucketVisible: false,
-    copyEntitiesDialogVisible: false
+    copyEntitiesDialogVisible: false,
+    currentMetadata: [],
+    defaultColumnsFetched: false,
+    defaultColumnsFetching: false
   };
+
+  uploadButton;
 
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
-      const entityFields = (this.props.entityFields.value || [])
+    const {entityFields, metadataClasses} = this.props;
+    if (entityFields.loaded && metadataClasses.loaded) {
+      const mappedEntityFields = (entityFields.value || [])
         .map(e => e);
-      const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
-      const otherClasses = (this.props.metadataClasses.value || [])
+      const ignoreClasses = new Set(mappedEntityFields.map(f => f.metadataClass.id));
+      const otherClasses = (metadataClasses.value || [])
         .filter(({id}) => !ignoreClasses.has(id))
         .map(metadataClass => ({
           fields: [],
           metadataClass: {...metadataClass, outOfProject: true}
         }));
       return [
-        ...entityFields,
+        ...mappedEntityFields,
         ...otherClasses
       ];
     }
@@ -194,16 +242,18 @@ export default class Metadata extends React.Component {
 
   @computed
   get transferJobId () {
-    if (this.props.preferences.loaded) {
-      return +this.props.preferences.getPreferenceValue('storage.transfer.pipeline.id');
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return +preferences.getPreferenceValue('storage.transfer.pipeline.id');
     }
     return null;
   }
 
   @computed
   get transferJobVersion () {
-    if (this.props.preferences.loaded) {
-      return this.props.preferences.getPreferenceValue('storage.transfer.pipeline.version');
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return preferences.getPreferenceValue('storage.transfer.pipeline.version');
     }
     return null;
   }
@@ -214,8 +264,9 @@ export default class Metadata extends React.Component {
       return [];
     }
     const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
+    const metadataClass = (this.props.metadataClass || '').toLowerCase();
     const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+      .filter(e => e.metadataClass.name.toLowerCase() === metadataClass);
     if (metadata) {
       return (metadata.fields || [])
         .filter(f => ownKeys.indexOf(f.name) >= 0)
@@ -230,8 +281,9 @@ export default class Metadata extends React.Component {
       return [];
     }
     const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
+    const metadataClass = (this.props.metadataClass || '').toLowerCase();
     const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+      .filter(e => e.metadataClass.name.toLowerCase() === metadataClass);
     if (metadata) {
       return (metadata.fields || [])
         .filter(f => f.type.toLowerCase() === 'path' && ownKeys.indexOf(f.name) >= 0)
@@ -268,19 +320,21 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onDateRangeChanged = async (range) => {
+  onDateRangeChanged = (range) => {
     let filterModel = {...this.state.filterModel};
-    if (range) {
-      const {from, to} = range;
-      filterModel.startDateFrom = from;
-      filterModel.endDateTo = to;
-    } else {
-      filterModel.startDateFrom = '';
-      filterModel.endDateTo = '';
-    }
-    await this.setState({filterModel});
-    this.loadData(this.state.filterModel);
-    this.forceUpdate();
+    const {
+      from,
+      to
+    } = range || {};
+    filterModel.startDateFrom = from;
+    filterModel.endDateTo = to;
+    this.setState(
+      {filterModel},
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
   };
 
   closeAddInstanceForm = () => {
@@ -307,9 +361,10 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        this.clearSelection();
         await this.props.entityFields.fetch();
-        await this.loadColumns(this.props.folderId, this.props.metadataClass);
-        await this.loadData(this.state.filterModel);
+        await this.loadColumns({append: true});
+        await this.loadData();
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.folder.value.parentId);
@@ -321,7 +376,7 @@ export default class Metadata extends React.Component {
     }
   };
 
-  handleFilterApplied = async (key, dataArray) => {
+  handleFilterApplied = (key, dataArray) => {
     const filterModel = {...this.state.filterModel};
     if (key && dataArray && dataArray.length) {
       const filterObj = {key: unmapColumnName(key), values: dataArray};
@@ -335,42 +390,58 @@ export default class Metadata extends React.Component {
     } else {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
-    await this.setState({filterModel});
-    this.loadData(this.state.filterModel);
+    filterModel.page = FIRST_PAGE;
+    this.setState(
+      {filterModel},
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
   }
 
-  loadData = async (filterModel) => {
+  loadData = async () => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
+    const {filterModel, selectedItemsAreShowing, selectedItems} = this.state;
     let orderBy, filters;
+    let currentMetadata = [];
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
-        .map(o => ({...o, field: unmapColumnName(o.field)}));
+        .map(o => ({
+          ...o,
+          field: unmapColumnName(o.field),
+          predefined: isPredefined(unmapColumnName(o.field))
+        }));
       filters = (filterModel.filters || [])
-        .map(o => ({...o, field: unmapColumnName(o.field)}));
+        .map(o => ({
+          key: unmapColumnName(o.key),
+          values: o.values || [],
+          predefined: isPredefined(unmapColumnName(o.key))
+        }));
     }
-    if (!this.state.selectedItemsAreShowing) {
-      await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}, {filters}));
+    if (!selectedItemsAreShowing) {
+      await this.metadataRequest.send(
+        {
+          ...filterModel,
+          orderBy,
+          filters
+        }
+      );
       if (this.metadataRequest.error) {
         message.error(this.metadataRequest.error, 5);
-        this._currentMetadata = [];
+        currentMetadata = [];
       } else {
-        if (this.metadataRequest.value) {
-          this._totalCount = this.metadataRequest.value.totalCount;
-          //           if (!this.state.filterModel.searchQueries.length) {
-          //             const parentFolderId = this.props.folderId;
-          //             if (this._totalCount <= 0) {
-          //               this.props.router.push(`/folder/${parentFolderId}`);
-          //               return;
-          //             }
-          //           }
-          if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
+        const {value} = this.metadataRequest;
+        if (value) {
+          this.setState({totalCount: value.totalCount});
+          if (value.elements && value.elements.length) {
             this._classEntity = {
-              id: this.metadataRequest.value.elements[0].classEntity.id,
-              name: this.metadataRequest.value.elements[0].classEntity.name
+              id: value.elements[0].classEntity.id,
+              name: value.elements[0].classEntity.name
             };
           }
-          this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+          currentMetadata = (value.elements || []).map(v => {
             v.data = v.data || {};
             v.data.rowKey = {
               value: v.id,
@@ -389,30 +460,53 @@ export default class Metadata extends React.Component {
         }
       }
     } else {
-      const {page, pageSize} = this.state.filterModel;
-      const selectedItems = [...this.state.selectedItems];
-      this._totalCount = selectedItems.length;
+      const {page, pageSize} = filterModel;
+      this.setState({totalCount: selectedItems.length});
 
       const firstRow = Math.max((page - 1) * pageSize, 0);
       const lastRow = Math.min(page * pageSize, selectedItems.length);
 
       if (orderBy && orderBy.length) {
-        const field = orderBy[0].field === 'externalId' ? 'ID' : orderBy[0].field;
-        const desc = orderBy[0].desc;
-        selectedItems.sort((a, b) => {
-          if (!desc) {
-            return a[field].value >= b[field].value ? 1 : -1;
-          } else {
-            return a[field].value < b[field].value ? 1 : -1;
-          }
-        });
-        this._currentMetadata = selectedItems.slice(firstRow, lastRow);
+        const sortedSelectedItems = this.sortSelectedItems();
+
+        currentMetadata = sortedSelectedItems.slice(firstRow, lastRow);
       } else {
-        this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
+        currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
-    this.setState({loading: false});
+    this.setState({loading: false, currentMetadata});
   };
+
+  sortSelectedItems = () => {
+    let selectedItems = [...this.state.selectedItems];
+    const orderBy = [...this.state.filterModel.orderBy];
+
+    selectedItems.sort((a, b) => {
+      function valuesAreEqual (item1, item2) {
+        if (!item1 && !item2) {
+          return true;
+        }
+        return item1 === item2;
+      }
+
+      for (let i in orderBy) {
+        const [field, desc] = Object.values(orderBy[i]);
+        const item1 = a[field] ? a[field].value : null;
+        const item2 = b[field] ? b[field].value : null;
+        if (!valuesAreEqual(item1, item2)) {
+          if (item1 < item2 || item2 === null) {
+            return desc ? 1 : -1;
+          }
+          if (item1 > item2 || item1 === null) {
+            return desc ? -1 : 1;
+          }
+        }
+      }
+      return 0;
+    });
+
+    return selectedItems;
+  }
 
   filterApplied = (key) => {
     const {filters, startDateFrom, endDateTo} = this.state.filterModel;
@@ -428,8 +522,17 @@ export default class Metadata extends React.Component {
     if (this.state.selectedItemsAreShowing) {
       return null;
     }
+    const handleControlVisibility = (visible) => {
+      this.setState({
+        filterComponentVisible: visible
+      });
+    };
     const {filterModel = {}} = this.state;
-    const {filters = []} = filterModel;
+    const {
+      filters = [],
+      startDateFrom,
+      endDateTo
+    } = filterModel;
     const filter = filters.find(filter => filter.key === unmapColumnName(key));
     const values = filter ? (filter.values || []) : [];
     const button = (
@@ -451,17 +554,24 @@ export default class Metadata extends React.Component {
     if (key === 'createdDate') {
       return (
         <RangeDatePicker
-          from={getFromDate(key)}
-          to={getToDate(key)}
+          from={startDateFrom}
+          to={endDateTo}
           onChange={(e) => this.onDateRangeChanged(e, key)}
-        >{button}</RangeDatePicker>);
+          visibilityChanged={handleControlVisibility}
+        >
+          {button}
+        </RangeDatePicker>
+      );
     }
     return (
       <FilterControl
         columnName={key}
         onSearch={(tags) => this.handleFilterApplied(key, tags)}
         value={values}
-      >{button}</FilterControl>
+        visibilityChanged={handleControlVisibility}
+      >
+        {button}
+      </FilterControl>
     );
   }
 
@@ -495,6 +605,7 @@ export default class Metadata extends React.Component {
     }
     return <span title={data.value}>{data.value}</span>;
   };
+
   onDeleteSelectedItems = () => {
     const removeConfiguration = async () => {
       const selectedIds = this.state.selectedItems.map(item => item.rowKey.value);
@@ -503,8 +614,10 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       }
-      this.setState({selectedItems: [], selectedItem: null, metadata: false});
-      await this.loadData(this.state.filterModel);
+      this.setState({selectedItems: [], selectedItem: null, metadata: false}, () => {
+        this.clearSelection();
+      });
+      await this.loadData();
       await this.props.folder.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(true);
@@ -523,45 +636,135 @@ export default class Metadata extends React.Component {
     });
   };
 
-  loadColumns = async (folderId, metadataClass) => {
-    this.columns = [];
-    this.setState({loading: true});
+  resetColumns = (columns) => {
+    return new Promise((resolve) => {
+      const {
+        defaultColumnsNames
+      } = this.state;
+      if ((defaultColumnsNames || []).length > 0) {
+        const defaultColumns = defaultColumnsNames.map(name => ({
+          key: mapColumnName({name})
+        }));
+        const newColumns = columns
+          .sort(makeCurrentOrderSort(defaultColumns))
+          .map(column => ({
+            ...column,
+            selected: defaultColumns.findIndex(c => c.key === column.key) >= 0
+          }));
+        resolve(newColumns);
+      } else {
+        const externalIdSort = (a, b) => {
+          if (a.name === b.name) {
+            return 0;
+          }
+          if (a.name === 'externalId') {
+            return -1;
+          }
+          if (b.name === 'externalId') {
+            return 1;
+          }
+          if ((a.name || '').toLowerCase() > (b.name || '').toLowerCase()) {
+            return 1;
+          }
+          if ((a.name || '').toLowerCase() < (b.name || '').toLowerCase()) {
+            return -1;
+          }
+          return 0;
+        };
+        const predefinedSort = (a, b) => b.predefined - a.predefined;
+        const newColumns = columns
+          .sort(externalIdSort)
+          .sort(predefinedSort)
+          .map(column => ({
+            ...column,
+            selected: true
+          }));
+        resolve(newColumns);
+      }
+    });
+  };
+
+  loadColumns = (options) => {
+    const {
+      reset = false,
+      append = false
+    } = options || {};
+    const {folderId, metadataClass} = this.props;
     const metadataEntityKeysRequest =
       new MetadataEntityKeys(folderId, metadataClass);
-    await metadataEntityKeysRequest.fetch();
-    if (metadataEntityKeysRequest.error) {
-      message.error(metadataEntityKeysRequest.error, 5);
-    } else {
-      this.keys = (metadataEntityKeysRequest.value || []).map(k => k);
-      const externalIdSort = (a, b) => {
-        if (a.name === b.name) {
-          return 0;
-        }
-        if (a.name === 'externalId') {
-          return -1;
-        }
-        if (b.name === 'externalId') {
-          return 1;
-        }
-        return 0;
-      };
-      const predefinedSort = (a, b) => b.predefined - a.predefined;
-      const newColumns = (metadataEntityKeysRequest.value || [])
-        .sort(externalIdSort)
-        .sort(predefinedSort)
-        .filter(filterColumns)
-        .map(mapColumnName);
-
-      if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
-        const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.setState({selectedColumns: [...this.state.selectedColumns, ...addedColumns]});
-      }
-      if (this.defaultColumns && this.defaultColumns.length === newColumns.length) {
-        this.setState({selectedColumns: [...newColumns]});
-      }
-
-      this.defaultColumns = this.columns = newColumns;
-    }
+    return new Promise((resolve) => {
+      const {
+        columns: currentColumns = []
+      } = this.state;
+      const columnIsSelected = columnKey => currentColumns.length === 0 ||
+        !!currentColumns.find(c => c.selected && c.key === columnKey);
+      this.setState({loading: true}, () => {
+        metadataEntityKeysRequest
+          .fetch()
+          .then(() => {
+            if (metadataEntityKeysRequest.error) {
+              throw new Error(metadataEntityKeysRequest.error);
+            }
+            this.keys = (metadataEntityKeysRequest.value || []).map(k => k);
+            const externalIdSort = (a, b) => {
+              if (a.name === b.name) {
+                return 0;
+              }
+              if (a.name === 'externalId') {
+                return -1;
+              }
+              if (b.name === 'externalId') {
+                return 1;
+              }
+              return 0;
+            };
+            const predefinedSort = (a, b) => b.predefined - a.predefined;
+            const columns = (metadataEntityKeysRequest.value || [])
+              .sort(externalIdSort)
+              .sort(predefinedSort)
+              .filter(filterColumns)
+              .map(column => ({
+                ...column,
+                key: mapColumnName(column),
+                selected: columnIsSelected(mapColumnName(column))
+              }));
+            return Promise.resolve(columns);
+          })
+          .then(columns => {
+            if (reset) {
+              return this.resetColumns(columns);
+            }
+            return Promise.resolve(columns);
+          })
+          .then(columns => {
+            if (Array.isArray(columns) && append) {
+              columns
+                .sort(makeCurrentOrderSort(currentColumns))
+                .forEach(column => {
+                  column.selected = column.selected ||
+                    currentColumns.findIndex(o => o.key === column.key) === -1;
+                });
+            }
+            return Promise.resolve(columns);
+          })
+          .then(columns => {
+            if (!columns.some(column => column.selected)) {
+              columns.forEach(column => {
+                column.selected = true;
+              });
+            }
+            return Promise.resolve(columns);
+          })
+          .catch((e) => {
+            message.error(e.message, 5);
+            return Promise.resolve([]);
+          })
+          .then((columns) => this.setState({
+            loading: false,
+            columns
+          }, () => resolve()));
+      });
+    });
   };
 
   onArrayReferencesClick = (event, key, data) => {
@@ -594,30 +797,62 @@ export default class Metadata extends React.Component {
         value: metadataEntityLoadExternalRequest.value.createdDate,
         type: 'date'
       };
-      this.setState({metadata: true, selectedItem: selectedItem});
+      this.setState({metadata: true, selectedItem});
     }
   };
 
   onSearchQueriesChanged = async () => {
-    this.setState(
-      {selectedItemsAreShowing: false},
-      () => this.paginationOnChange(FIRST_PAGE)
-    );
-    await this.loadData(this.state.filterModel);
+    const {filterModel, searchQuery} = this.state;
+    const {
+      folderId,
+      metadataClass
+    } = this.props;
+    const {filters, searchQueries} = parseSearchQuery(searchQuery);
+    const {orderBy = []} = filterModel || {};
+    const newFilterModel = {
+      startDateFrom: undefined,
+      endDateTo: undefined,
+      filters: filters.map(filter => ({
+        ...filter,
+        key: unmapColumnName(filter.key)
+      })),
+      folderId: parseInt(folderId),
+      metadataClass: metadataClass,
+      orderBy,
+      page: 1,
+      pageSize: PAGE_SIZE,
+      searchQueries
+    };
+    this.setState({
+      filterModel: newFilterModel,
+      selectedItemsAreShowing: false
+    }, () => {
+      this.clearSelection();
+      this.loadData();
+    });
   };
 
   onOrderByChanged = async (key, value) => {
     if (key) {
-      const filterModel = this.state.filterModel;
+      const filterModel = {...this.state.filterModel};
       const [currentOrderBy] = filterModel.orderBy.filter(f => f.field === key);
       if (currentOrderBy) {
         const index = filterModel.orderBy.indexOf(currentOrderBy);
-        filterModel.orderBy.splice(index, 1);
+        const desc = currentOrderBy.desc;
+        if (desc) {
+          const updatedcurrentOrderBy = {field: key, desc: !desc};
+          filterModel.orderBy.splice(index, 1, updatedcurrentOrderBy);
+        } else {
+          filterModel.orderBy.splice(index, 1);
+        }
       }
-      if (value) {
-        filterModel.orderBy = [{field: key, desc: value === DESCEND}];
+      if (!currentOrderBy && value) {
+        filterModel.orderBy.push({field: key, desc: value === DESCEND});
       }
-      await this.loadData(this.state.filterModel);
+      this.setState({filterModel}, () => {
+        this.clearSelection();
+        this.loadData();
+      });
     }
   };
 
@@ -648,52 +883,106 @@ export default class Metadata extends React.Component {
   };
 
   onColumnSelect = (item) => {
-    const selectedColumns = this.state.selectedColumns;
-    const index = selectedColumns.indexOf(item);
-    if (index !== -1) {
-      selectedColumns.splice(index, 1);
-    } else {
-      selectedColumns.push(item);
+    const currentColumns = [...this.state.columns];
+    const column = currentColumns.find(obj => obj.key === item);
+    if (column) {
+      column.selected = !column.selected;
+      this.setState(
+        {columns: [...currentColumns]},
+        this.resetColumnsFiltersAndSorting
+      );
     }
-    this.setState({selectedColumns});
   };
 
-  onResetColums = () => {
-    this.columns = [...this.defaultColumns];
-    this.setState({selectedColumns: [...this.defaultColumns]});
+  resetColumnsFiltersAndSorting = () => {
+    const {
+      columns,
+      filterModel: oldFilters = {}
+    } = this.state;
+    const {
+      orderBy,
+      filters,
+      startDateFrom,
+      endDateTo,
+      ...filterModelRest
+    } = oldFilters;
+    const selectedColumnsKeys = new Set(
+      columns
+        .filter(column => column.selected)
+        .map(column => column.key)
+    );
+    const filterModel = {
+      orderBy: orderBy.filter(col => selectedColumnsKeys.has(col.field)),
+      filters: filters.filter(filter => selectedColumnsKeys.has(filter.key)),
+      startDateFrom: selectedColumnsKeys.has('createdDate') ? startDateFrom : undefined,
+      endDateTo: selectedColumnsKeys.has('createdDate') ? endDateTo : undefined,
+      ...filterModelRest
+    };
+    this.setState({
+      filterModel
+    }, () => {
+      this.clearSelection();
+      this.loadData();
+    });
+  };
+
+  onResetColumns = () => {
+    this.resetColumns(this.state.columns)
+      .then(columns => this.setState({columns}, this.resetColumnsFiltersAndSorting));
   };
 
   onSetOrder = (order) => {
-    this.columns = order;
-    this.forceUpdate();
+    this.setState({columns: order}, this.clearSelection);
   };
 
   onRowClick = (item) => {
     const [selectedItem] =
-      this._currentMetadata.filter(column => column.rowKey === item.rowKey);
+      this.state.currentMetadata.filter(column => column.rowKey === item.rowKey);
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
-      this.setState({selectedItem: selectedItem, metadata: true});
+      this.setState({selectedItem, metadata: true});
     }
   };
+
+  onClearFilters = () => {
+    const {filterModel} = this.state;
+    filterModel.filters = [];
+    filterModel.startDateFrom = undefined;
+    filterModel.endDateTo = undefined;
+    filterModel.page = 1;
+    filterModel.searchQueries = [];
+    this.setState(
+      {
+        filterModel,
+        searchQuery: undefined
+      },
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
+  };
+
   onClearSelectionItems = () => {
     this.setState({
       selectedItems: [],
       selectedItemsAreShowing: false
     }, () => this.paginationOnChange(FIRST_PAGE));
   };
+
   onCopySelectionItems = () => {
     this.setState({
       copyEntitiesDialogVisible: true
     });
   };
+
   onCloseCopySelectionItemsDialog = (destinationFolder) => {
     this.setState({
       copyEntitiesDialogVisible: false
     }, () => {
       if (destinationFolder) {
-        this.loadData(this.state.filterModel);
+        this.loadData();
       }
       this.props.folders.invalidateFolder(this.props.folderId);
       this.props.folders.invalidateFolder(destinationFolder);
@@ -702,12 +991,14 @@ export default class Metadata extends React.Component {
       }
     });
   };
+
   onSelectConfigurationConfirm = async (selectedConfiguration, expansionExpression) => {
     this.selectedConfiguration = selectedConfiguration;
     this.expansionExpression = expansionExpression;
 
     await this.runConfiguration(false);
   };
+
   onCloseConfigurationBrowser = () => {
     this.selectedConfiguration = null;
     this.expansionExpression = '';
@@ -769,7 +1060,9 @@ export default class Metadata extends React.Component {
         FILE_NAME_FORMAT_COLUMN: getParam(values.nameField, 'string', false),
         CREATE_FOLDERS_FOR_COLUMNS: getParam(values.createFolders, 'boolean', false),
         UPDATE_PATH_VALUES: getParam(values.updatePathValues, 'boolean', false),
-        MAX_THREADS_COUNT: values.threadsCount ? getParam(values.threadsCount, 'string', false) : undefined
+        MAX_THREADS_COUNT: values.threadsCount
+          ? getParam(values.threadsCount, 'string', false)
+          : undefined
       }
     };
     await PipelineRunner.send({...payload, force: true});
@@ -805,14 +1098,30 @@ export default class Metadata extends React.Component {
       }
     }
   };
+
   runConfiguration = async (isCluster) => {
     const hide = message.loading('Launching...', 0);
+
+    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
+    const mapParameters = (entry) => ({
+      ...entry,
+      configuration: {
+        ...(entry.configuration || {}),
+        parameters: {
+          ...parameters,
+          ...((entry.configuration || {}).parameters || {})
+        }
+      }
+    });
+
     const request = new ConfigurationRun(this.expansionExpression);
     await request.send({
       id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
       entries: isCluster
-        ? this.selectedConfiguration.entries
-        : this.selectedConfiguration.entries.filter(entry => entry.default),
+        ? (this.selectedConfiguration.entries || []).map(mapParameters)
+        : (this.selectedConfiguration.entries || []).slice()
+          .filter(entry => entry.default)
+          .map(mapParameters),
       entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
       metadataClass: this.props.metadataClass,
       folderId: parseInt(this.props.folderId)
@@ -824,10 +1133,391 @@ export default class Metadata extends React.Component {
     if (request.error) {
       message.error(request.error);
     } else {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      this.setState({
+        selectedItemsCanBeSkipped: true
+      }, () => {
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      });
     }
   };
+  cellIsSpreading = (row, column) => {
+    const spreadSelection = this.getSpreadSelection();
+    if (spreadSelection) {
+      const {start, end} = spreadSelection;
+      return (
+        start.column <= column &&
+        start.row <= row &&
+        end.column >= column &&
+        end.row >= row
+      );
+    }
+  };
+  getCurrentSelection = () => {
+    const {cellsSelection} = this.state;
+    if (cellsSelection) {
+      const {
+        start,
+        end,
+        ...rest
+      } = cellsSelection;
+      return {
+        start: {
+          column: Math.min(start.column, end.column),
+          row: Math.min(start.row, end.row)
+        },
+        end: {
+          column: Math.max(start.column, end.column),
+          row: Math.max(start.row, end.row)
+        },
+        ...rest
+      };
+    }
+    return undefined;
+  }
+  getSpreadSelection = () => {
+    const selection = this.getCurrentSelection();
+    if (selection && selection.spread) {
+      const {
+        column: spreadColumn,
+        row: spreadRow
+      } = selection.spread;
+      const start = {
+        column: spreadColumn > selection.start.column ? selection.start.column : spreadColumn,
+        row: spreadRow > selection.start.row ? selection.start.row : spreadRow
+      };
+      const end = {
+        column: spreadColumn >= selection.start.column ? spreadColumn : selection.end.column,
+        row: spreadRow >= selection.start.row ? spreadRow : selection.end.row
+      };
+      return {
+        start,
+        end
+      };
+    }
+    return undefined;
+  }
+  handleStartSelection = (opts) => {
+    if (this.props.readOnly || this.state.filterComponentVisible) {
+      return;
+    }
+    const {e, rowInfo, column: columnInfo} = opts;
+    if (columnInfo.index === undefined) {
+      // selection cell, ignore it
+      return;
+    }
+    e.stopPropagation();
+    const selection = this.getCurrentSelection();
+    const spreadSelection = this.getSpreadSelection();
+    const row = rowInfo.index;
+    const column = columnInfo.index;
+    const isSpreading = autoFillEntities.isAutoFillEntitiesMarker(e.target);
+    if (!isSpreading) {
+      this.setState({
+        cellsSelection: {
+          start: {column, row},
+          end: {column, row},
+          selecting: true,
+          spreading: false
+        },
+        cellsActions: []
+      });
+    } else if (
+      !selection ||
+      (
+        !autoFillEntities.cellIsSelected(spreadSelection, column, row) &&
+        !autoFillEntities.cellIsSelected(selection, column, row)
+      )
+    ) {
+      // spreading && no current selection
+      this.setState({
+        cellsSelection: {
+          start: {column, row},
+          end: {column, row},
+          spread: {
+            column,
+            row,
+            start: {
+              column,
+              row
+            }
+          },
+          selecting: false,
+          spreading: true
+        },
+        cellsActions: []
+      });
+    } else {
+      // spreading current selection
+      this.setState({
+        cellsSelection: {
+          start: {...selection.start},
+          end: {...selection.end},
+          spread: {
+            column,
+            row,
+            start: {
+              column,
+              row
+            }
+          },
+          selecting: false,
+          spreading: true
+        },
+        cellsActions: []
+      });
+    }
+  }
+
+  applySelectionAction = (action, revert = true) => {
+    const {loadingMessage, action: fn, revert: revertFn} = action;
+    const hide = message.loading(loadingMessage || 'Processing...', 0);
+    const revertToInitialValues = revert && revertFn
+      ? revertFn
+      : () => Promise.resolve();
+    revertToInitialValues()
+      .then(fn)
+      .then((result) => {
+        const {currentMetadata} = this.state;
+        result.forEach(item => {
+          const index = (currentMetadata || [])
+            .findIndex(o => o.rowKey && item.rowKey && o.rowKey.value === item.rowKey.value);
+          if (index >= 0) {
+            currentMetadata.splice(index, 1, item);
+          }
+        });
+        this.setState({currentMetadata});
+        return Promise.resolve();
+      })
+      .catch(e => message.error(e.message, 5))
+      .then(() => hide());
+  };
+
+  handleFinishSelection = () => {
+    const {cellsSelection} = this.state;
+    if (!cellsSelection) {
+      return;
+    }
+    const spreadSelection = this.getSpreadSelection();
+    const selection = this.getCurrentSelection();
+    if (
+      cellsSelection.spreading &&
+      cellsSelection.spread &&
+      cellsSelection.spread.apply &&
+      spreadSelection
+    ) {
+      const dataItemFrom = Math.min(
+        spreadSelection.start.row,
+        selection.start.row
+      );
+      const dataItemTo = Math.max(
+        spreadSelection.end.row,
+        selection.end.row
+      );
+      const {
+        currentMetadata,
+        columns: tableColumns
+      } = this.state;
+      const backup = (currentMetadata || [])
+        .slice(dataItemFrom, dataItemTo + 1);
+      const elements = backup.map((item, index) => ({
+        item,
+        row: index + dataItemFrom
+      }));
+      const columns = tableColumns
+        .filter(column => column.selected)
+        .map((column, index) => ({key: mapColumnName(column), column: index}));
+      const actions = autoFillEntities.buildAutoFillActions(
+        elements,
+        columns,
+        selection,
+        spreadSelection,
+        backup,
+        {
+          classId: this.currentMetadataClassId,
+          className: this.props.metadataClass,
+          parentId: this.props.folderId
+        }
+      );
+      if (actions && actions.length > 0) {
+        this.applySelectionAction(
+          actions[0],
+          false
+        );
+      }
+      this.setState({
+        cellsActions: actions,
+        cellsSelection: {
+          start: {...spreadSelection.start},
+          end: {...spreadSelection.end},
+          selecting: false,
+          spreading: false
+        }
+      });
+    } else if (cellsSelection.selecting) {
+      this.setState({
+        cellsSelection: {
+          ...cellsSelection,
+          selecting: false,
+          spreading: false
+        }
+      });
+    }
+  }
+  isHoveredCell = (row, column) => {
+    const {hoveredCell} = this.state;
+    return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
+  }
+  handleCellSelection = (opts) => {
+    if (this.props.readOnly || this.state.filterComponentVisible) {
+      return;
+    }
+    const {e, rowInfo, column: columnInfo} = opts;
+    e.stopPropagation();
+    const {cellsSelection: selection, hoveredCell} = this.state;
+    const row = rowInfo.index;
+    const column = columnInfo.index;
+    if (!selection) {
+      if (
+        column !== undefined && (
+          !hoveredCell ||
+          hoveredCell.column !== column ||
+          hoveredCell.row !== row
+        )
+      ) {
+        this.setState({
+          hoveredCell: {column, row}
+        });
+      }
+      return;
+    }
+    if ((!selection.selecting && !selection.spreading)) {
+      const cellSelected = autoFillEntities.cellIsSelected(selection, column, row);
+      if (cellSelected && !!hoveredCell) {
+        this.setState({
+          hoveredCell: undefined
+        });
+      } else if (
+        !cellSelected &&
+        (
+          !hoveredCell ||
+          hoveredCell.column !== column ||
+          hoveredCell.row !== row
+        )
+      ) {
+        this.setState({
+          hoveredCell: {column, row}
+        });
+      }
+      return;
+    }
+    if (
+      selection.selecting &&
+      (
+        selection.end.row !== row || selection.end.column !== column
+      )
+    ) {
+      this.setState({
+        cellsSelection: {
+          ...selection,
+          end: {row, column}
+        },
+        hoveredCell: undefined
+      });
+      return;
+    }
+    if (!selection.selecting && selection.spreading) {
+      const {spread} = selection;
+      if (spread.column === column && spread.row === row) {
+        return;
+      }
+      const dy = Math.abs(row - spread.start.row);
+      const dx = Math.abs(column - spread.start.column);
+      if (dy > dx) {
+        this.setState({
+          cellsSelection: {
+            ...selection,
+            spread: {
+              row,
+              column: spread.start.column,
+              start: spread.start,
+              apply: true
+            }
+          },
+          hoveredCell: undefined
+        });
+      } else {
+        this.setState({
+          cellsSelection: {
+            ...selection,
+            spread: {
+              column,
+              row: spread.start.row,
+              start: spread.start,
+              apply: true
+            }
+          },
+          hoveredCell: undefined
+        });
+      }
+    }
+  }
+  resetSelection = (e) => {
+    if (e.key === 'Escape') {
+      this.setState({
+        cellsSelection: undefined,
+        selecting: false,
+        cellsActions: undefined
+      });
+    }
+  }
+  clearHovering = () => {
+    this.setState({hoveredCell: undefined});
+  }
+  clearSelection = () => {
+    this.setState({
+      cellsSelection: undefined,
+      cellsActions: undefined
+    });
+  };
+
   renderContent = () => {
+    const getCellStyle = (column, row) => {
+      const selectionArea = this.getCurrentSelection();
+      const spreadingArea = this.getSpreadSelection();
+      const selected = autoFillEntities.cellIsSelected(selectionArea, column, row);
+      const spreadSelected = autoFillEntities.cellIsSelected(spreadingArea, column, row);
+      const hovered = !selected && !spreadSelected && this.isHoveredCell(row, column);
+
+      const top = hovered ||
+        autoFillEntities.isTopSideCell(selectionArea, column, row) ||
+        autoFillEntities.isTopSideCell(spreadingArea, column, row);
+      const right = hovered ||
+        autoFillEntities.isRightSideCell(selectionArea, column, row) ||
+        autoFillEntities.isRightSideCell(spreadingArea, column, row);
+      const bottom = hovered ||
+        autoFillEntities.isBottomSideCell(selectionArea, column, row) ||
+        autoFillEntities.isBottomSideCell(spreadingArea, column, row);
+      const left = hovered ||
+        autoFillEntities.isLeftSideCell(selectionArea, column, row) ||
+        autoFillEntities.isLeftSideCell(spreadingArea, column, row);
+
+      let backgroundColor = 'initial';
+      if (spreadSelected) {
+        backgroundColor = 'rgba(16, 142, 233, 0.2)';
+      } else if (selected || hovered) {
+        backgroundColor = 'rgba(16, 142, 233, 0.1)';
+      }
+
+      return {
+        border: '1px solid transparent',
+        position: 'relative',
+        borderTopColor: top ? '#108ee9' : 'transparent',
+        borderBottomColor: bottom ? '#108ee9' : 'transparent',
+        borderLeftColor: left ? '#108ee9' : 'transparent',
+        borderRightColor: right ? '#108ee9' : 'rgba(0, 0, 0, 0.1)',
+        backgroundColor
+      };
+    };
     const renderTable = () => {
       return [
         <ReactTable
@@ -836,10 +1526,20 @@ export default class Metadata extends React.Component {
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
-          data={this._currentMetadata}
-          getTableProps={() => ({style: {overflowY: 'hidden'}})}
+          data={this.state.currentMetadata}
+          getTableProps={() => ({
+            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'},
+            onMouseOut: this.clearHovering
+          })}
+          getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
+            onMouseDown: (e) => this.handleStartSelection({e, rowInfo, column}),
+            onMouseMove: (e) => this.handleCellSelection({e, rowInfo, column}),
+            onKeyPress: (e) => this.resetSelection(e),
             onClick: (e) => {
+              if (autoFillEntities.isAutoFillEntitiesMarker(e.target)) {
+                return;
+              }
               if (e) {
                 e.stopPropagation();
               }
@@ -848,7 +1548,9 @@ export default class Metadata extends React.Component {
               } else {
                 this.onRowClick(rowInfo.row._original);
               }
-            }
+              this.clearSelection();
+            },
+            style: getCellStyle(column.index, rowInfo.index)
           })}
           getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
           PadRowComponent={
@@ -864,7 +1566,7 @@ export default class Metadata extends React.Component {
             size="small"
             pageSize={PAGE_SIZE}
             current={this.state.filterModel.page}
-            total={this._totalCount}
+            total={this.state.totalCount}
             onChange={async (page) => this.paginationOnChange(page)} />
         </Row>
       ];
@@ -941,6 +1643,7 @@ export default class Metadata extends React.Component {
         style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
+          {this.renderTableActions()}
           {renderTable()}
           {renderConfigurationBrowser()}
           {renderCopyEntitiesDialog()}
@@ -950,7 +1653,7 @@ export default class Metadata extends React.Component {
           <MetadataPanel
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
-            this.props.folderId !== undefined)}
+              this.props.folderId !== undefined)}
             readOnlyKeys={['ID', 'createdDate']}
             columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
@@ -962,10 +1665,10 @@ export default class Metadata extends React.Component {
             currentItem={this.state.selectedItem}
             onUpdateMetadata={async () => {
               await this.props.entityFields.fetch();
-              await this.loadColumns(this.props.folderId, this.props.metadataClass);
-              await this.loadData(this.state.filterModel);
+              await this.loadColumns({append: true});
+              await this.loadData();
               const [selectedItem] =
-                this._currentMetadata
+                this.state.currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
               if (this.state.selectedItems && this.state.selectedItems.length) {
                 const selectedItems = this.state.selectedItems.map(item => {
@@ -973,7 +1676,7 @@ export default class Metadata extends React.Component {
                 });
                 this.setState({selectedItems: [...selectedItems]});
               }
-              this.setState({selectedItem: selectedItem});
+              this.setState({selectedItem}, () => this.clearSelection());
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -988,7 +1691,10 @@ export default class Metadata extends React.Component {
   deleteMetadataClassConfirm = () => {
     const onDeleteMetadataClass = async () => {
       const hide = message.loading(`Removing class '${this.props.metadataClass}'...`, -1);
-      const request = new MetadataEntityDeleteFromProject(this.props.folderId, this.props.metadataClass);
+      const request = new MetadataEntityDeleteFromProject(
+        this.props.folderId,
+        this.props.metadataClass
+      );
       await request.fetch();
       if (request.error) {
         hide();
@@ -1009,59 +1715,149 @@ export default class Metadata extends React.Component {
   };
 
   renderActions = () => {
-    const actions = [];
-    if (roleModel.writeAllowed(this.props.folder.value) &&
-      this.props.folderId !== undefined && !this.props.hideUploadMetadataBtn) {
-      actions.push(
-        roleModel.manager.entities(
+    if (this.props.folder.pending && !this.props.folder.loaded) {
+      return null;
+    }
+    const metadataManager = roleModel.writeAllowed(this.props.folder.value) &&
+      this.props.folderId !== undefined &&
+      roleModel.isManager.entities(this);
+    if (
+      metadataManager &&
+      !this.props.hideUploadMetadataBtn && !this.props.readOnly
+    ) {
+      const Actions = {
+        addMetadata: 'add-metadata',
+        upload: 'upload',
+        deleteClass: 'delete',
+        showAttributes: 'show-attributes',
+        transfer: 'transfer'
+      };
+      const triggerMenuItem = ({key}) => {
+        switch (key) {
+          case Actions.addMetadata:
+            this.openAddInstanceForm();
+            break;
+          case Actions.upload:
+            if (this.uploadButton) {
+              this.uploadButton.triggerClick();
+            }
+            break;
+          case Actions.deleteClass:
+            this.deleteMetadataClassConfirm();
+            break;
+          case Actions.showAttributes:
+            this.setState({metadata: !this.state.metadata});
+            break;
+          case Actions.transfer:
+            this.onOpenUploadToBucketDialog();
+            break;
+        }
+      };
+      const menuItems = [];
+      menuItems.push((
+        <MenuItem
+          key={Actions.addMetadata}
+          className={classNames(styles.menuItem, Actions.addMetadata)}
+        >
+          <Icon
+            type="plus"
+            style={{marginRight: 5}}
+          />
+          Add instance
+        </MenuItem>
+      ));
+      menuItems.push((
+        <MenuItem
+          key={Actions.upload}
+          className={classNames(styles.menuItem, Actions.upload)}
+        >
+          <Icon
+            type="upload"
+            style={{marginRight: 5}}
+          />
+          Upload metadata
+        </MenuItem>
+      ));
+      if (
+        this.transferJobId &&
+        this.transferJobVersion &&
+        this.currentClassEntityPathFields.length > 0
+      ) {
+        menuItems.push((
+          <MenuItem
+            key={Actions.transfer}
+            className={classNames(styles.menuItem, Actions.transfer)}
+          >
+            <Icon
+              type="cloud-upload-o"
+              style={{marginRight: 5}}
+            />
+            Transfer to the cloud
+          </MenuItem>
+        ));
+        menuItems.push((
+          <Divider key="divider-1" />
+        ));
+      }
+      menuItems.push((
+        <MenuItem
+          key={Actions.deleteClass}
+          className={classNames(styles.menuItem, Actions.deleteClass)}
+          style={{color: 'red'}}
+        >
+          <Icon
+            type="delete"
+            style={{marginRight: 5}}
+          />
+          Delete class
+        </MenuItem>
+      ));
+      menuItems.push((
+        <Divider key="divider-2" />
+      ));
+      menuItems.push((
+        <MenuItem
+          key={Actions.showAttributes}
+          className={classNames(styles.menuItem, Actions.showAttributes)}
+        >
+          {
+            this.state.metadata ? 'Hide attributes' : 'Show attributes'
+          }
+        </MenuItem>
+      ));
+      const menu = (
+        <Menu
+          onClick={triggerMenuItem}
+          selectedKeys={[]}
+        >
+          {menuItems}
+        </Menu>
+      );
+      return (
+        <Dropdown
+          overlay={menu}
+          trigger={['click']}
+        >
           <Button
-            disabled={this.entityTypes.length === 0}
+            id="metadata-actions-button"
             size="small"
-            onClick={this.openAddInstanceForm}
-            key="add-metadata">
-            <Icon type="plus" />Add instance
-          </Button>,
-          'add-metadata'
-        )
-      );
-      actions.push(
-        roleModel.manager.entities(
-          <UploadButton
-            key="upload-metadata"
-            multiple={false}
-            synchronous
-            onRefresh={async () => {
-              await this.props.entityFields.fetch();
-              await this.props.folder.fetch();
-              if (this.props.onReloadTree) {
-                this.props.onReloadTree(true);
-              }
-            }}
-            title={'Upload metadata'}
-            action={MetadataEntityUpload.uploadUrl(this.props.folderId)} />,
-          'upload-metadata'
-        )
-      );
-      actions.push(
-        roleModel.manager.entities(
-          <Button
-            key="delete-metadata"
-            type="danger"
-            style={{lineHeight: 1}}
-            onClick={this.deleteMetadataClassConfirm}
-            size="small">
-            <Icon type="delete" />
-            Delete class
-          </Button>,
-          'delete-metadata'
-        )
+            style={{lineHeight: 1, margin: '0 0 0 5px'}}
+          >
+            <Icon
+              type="setting"
+            />
+          </Button>
+        </Dropdown>
       );
     }
-    actions.push(
+    return (
       <Button
         key="metadata"
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
-        style={{marginRight: 10}}
+        style={{
+          lineHeight: 1,
+          marginLeft: 5
+        }}
         size="small"
         onClick={() => this.setState({metadata: !this.state.metadata})}>
         {
@@ -1069,7 +1865,6 @@ export default class Metadata extends React.Component {
         }
       </Button>
     );
-    return actions.filter(action => !!action);
   };
 
   get tableColumns () {
@@ -1088,19 +1883,25 @@ export default class Metadata extends React.Component {
     };
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
-      let icon;
+      let icon, orderNumber;
       if (orderBy) {
+        let iconStyle = {fontSize: 10, marginRight: 5};
+        if (this.state.filterModel.orderBy.length > 1) {
+          const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
+          iconStyle = {fontSize: 10, marginRight: 0};
+          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>;
+        }
         if (orderBy.desc) {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-down" />;
+          icon = <Icon style={iconStyle} type="caret-down" />;
         } else {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-up" />;
+          icon = <Icon style={iconStyle} type="caret-up" />;
         }
       }
       return (
         <span
           onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
-          {icon}{getColumnTitle(key)}
+          {icon}{orderNumber}{getColumnTitle(key)}
           {this.renderFilterButton(key)}
         </span>
       );
@@ -1117,96 +1918,50 @@ export default class Metadata extends React.Component {
       }
       return defaultClass;
     };
+    const selection = this.getCurrentSelection();
+    const spreadSelection = this.getSpreadSelection();
+    const isSpreadCell = (column, row) => (
+      !autoFillEntities.cellIsSelected(selection, column, row) &&
+      !autoFillEntities.cellIsSelected(spreadSelection, column, row) &&
+      this.isHoveredCell(row, column)
+    ) || (
+      selection &&
+      !selection.spreading &&
+      autoFillEntities.isRightCornerCell(selection, column, row)
+    );
+    const isActionsCell = (column, row) => this.state.cellsActions &&
+      this.state.cellsActions.length > 0 &&
+      selection &&
+      autoFillEntities.isRightCornerCell(selection, column, row);
     const cellWrapper = (props, reactElementFn) => {
+      const {column, index} = props;
       const item = props.original;
       const className = getCellClassName(item, styles.metadataColumnCell);
       return (
-        <div className={className} style={{overflow: 'hidden', textOverflow: 'ellipsis'}} >
-          {reactElementFn()}
+        <div
+          className={className}
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
+          <AutoFillEntitiesMarker
+            visible={isSpreadCell(column.index, index)}
+          />
+          {
+            isActionsCell(column.index, index) && (
+              <AutoFillEntitiesActions
+                actions={this.state.cellsActions}
+                callback={this.applySelectionAction}
+              />
+            )
+          }
+          {reactElementFn() || '\u00A0'}
         </div>
       );
     };
-    const renderAdditionalActions = () => {
-      if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly &&
-        roleModel.isManager.entities(this)) {
-        return (
-          <Row type="flex" justify="space-between">
-            <Col style={{padding: 3, textAlign: 'left'}}>
-              {
-                this.state.selectedItems &&
-                this.state.selectedItems.length > 0 &&
-                <div>
-                  {
-                    this.state.selectedItemsAreShowing
-                      ? `Currently viewing
-                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}. `
-                      : null
-                  }
-                  <a onClick={() => this.handleClickShowSelectedItems()}>{
-                    this.state.selectedItemsAreShowing
-                      ? 'Show all metadata items'
-                      : `Show
-                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}`}
-                  </a>
-                </div>
-              }
-            </Col>
-            <Col>
-              <Row style={{paddingRight: 5}} className={styles.currentFolderActions}>
-                <Button
-                  key="delete"
-                  size="small"
-                  type="danger"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onDeleteSelectedItems}>
-                  DELETE
-                </Button>
-                <Button
-                  key="clear_selection"
-                  size="small"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onClearSelectionItems}>
-                  CLEAR SELECTION
-                </Button>
-                <Button
-                  key="copy_selection"
-                  size="small"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onCopySelectionItems}
-                >
-                  COPY
-                </Button>
-                {
-                  this.transferJobId && this.transferJobVersion &&
-                  this.currentClassEntityPathFields.length > 0 &&
-                  <Button
-                    key="download_selection"
-                    size="small"
-                    type="primary"
-                    onClick={this.onOpenUploadToBucketDialog}>
-                    TRANSFER TO THE CLOUD
-                  </Button>
-                }
-                <Button
-                  key="run"
-                  size="small"
-                  type="primary"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={() => this.setState({configurationBrowserVisible: true})}>
-                  RUN
-                </Button>
-              </Row>
-            </Col>
-          </Row>
-        );
-      } else {
-        return null;
-      }
-    };
 
-    const allColumns = [
+    return [
       {
         id: 'selection',
         accessor: item => item,
@@ -1229,11 +1984,12 @@ export default class Metadata extends React.Component {
           );
         })
       },
-      ...this.columns.filter(c => this.state.selectedColumns.indexOf(c) >= 0).map(key => {
+      ...this.state.columns.filter(c => c.selected).map(({key}, index) => {
         return {
           accessor: key,
+          index,
           style: {
-            cursor: 'pointer',
+            cursor: this.props.readOnly ? 'default' : 'cell',
             padding: 0,
             borderRight: '1px solid rgba(0, 0, 0, 0.1)'
           },
@@ -1251,7 +2007,7 @@ export default class Metadata extends React.Component {
                 let count = 0;
                 try {
                   count = JSON.parse(data.value).length;
-                } catch (___) {}
+                } catch (___) { }
                 let value = `${count} ${referenceType}(s)`;
                 return <a
                   title={value}
@@ -1282,19 +2038,191 @@ export default class Metadata extends React.Component {
                 );
               }
             }
-          })};
+          })
+        };
       })];
+  };
 
-    if (this.props.readOnly) {
-      return allColumns;
-    } else {
-      return [{
-        id: 'title',
-        headerClassName: styles.metadataAdditionalActions,
-        Header: () => renderAdditionalActions(),
-        columns: allColumns
-      }];
-    }
+  renderTableActions = () => {
+    const {
+      filterModel = {},
+      selectedItems = [],
+      selectedItemsAreShowing
+    } = this.state;
+    const selectedItemsString =
+      `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
+    const renderClearFiltersButton = () => {
+      const {
+        filters = [],
+        startDateFrom,
+        endDateTo,
+        searchQueries = []
+      } = filterModel;
+      const filtersEnabled = filters.length > 0 ||
+        !!startDateFrom ||
+        !!endDateTo ||
+        searchQueries.length > 0;
+      if (!selectedItemsAreShowing && filtersEnabled) {
+        return (
+          <Button
+            key="clear_filters"
+            size="small"
+            onClick={this.onClearFilters}
+            style={{marginLeft: 5, marginRight: 5}}
+          >
+            <Icon
+              type="close"
+            />
+            Clear filters
+          </Button>
+        );
+      }
+      return null;
+    };
+    const renderSelectionInfo = () => {
+      if (selectedItems.length === 0) {
+        return null;
+      }
+      if (selectedItemsAreShowing && selectedItems.length > 0) {
+        return (
+          <span
+            style={{marginLeft: 5}}
+            key="info"
+          > Currently viewing {selectedItemsString}
+          </span>
+        );
+      }
+      return null;
+    };
+    const renderSelectionControl = () => {
+      if (selectedItems.length === 0) {
+        return null;
+      }
+      const Actions = {
+        delete: 'delete-selected-items',
+        clearSelection: 'clear-selection',
+        copySelection: 'copy-selection'
+      };
+      const triggerMenuItem = ({key}) => {
+        switch (key) {
+          case Actions.delete:
+            this.onDeleteSelectedItems();
+            break;
+          case Actions.clearSelection:
+            this.onClearSelectionItems();
+            break;
+          case Actions.copySelection:
+            this.onCopySelectionItems();
+            break;
+        }
+      };
+      const menuItems = [(
+        <MenuItem
+          key={Actions.clearSelection}
+          className={classNames(styles.menuItem, Actions.clearSelection)}
+        >
+          Clear selection
+        </MenuItem>
+      )];
+      if (
+        roleModel.writeAllowed(this.props.folder.value) &&
+        !this.props.readOnly &&
+        roleModel.isManager.entities(this)
+      ) {
+        menuItems.push((
+          <MenuItem
+            key={Actions.copySelection}
+            className={classNames(styles.menuItem, Actions.copySelection)}
+          >
+            Copy
+          </MenuItem>
+        ));
+        menuItems.push((<Divider key="divider" />));
+        menuItems.push((
+          <MenuItem
+            key={Actions.delete}
+            style={{color: 'red'}}
+            className={classNames(styles.menuItem, Actions.delete)}
+          >
+            Delete
+          </MenuItem>
+        ));
+      }
+      const menu = (
+        <Menu
+          onClick={triggerMenuItem}
+          style={{width: 150}}
+          selectedKeys={[]}
+        >
+          {menuItems}
+        </Menu>
+      );
+      return (
+        <Button.Group>
+          <Button
+            size="small"
+            onClick={this.handleClickShowSelectedItems}
+          >
+            {
+              selectedItemsAreShowing
+                ? 'Show all metadata items'
+                : `Show ${selectedItemsString}`
+            }
+          </Button>
+          <Dropdown
+            overlay={menu}
+            trigger={['click']}
+          >
+            <Button
+              size="small"
+            >
+              <Icon type="down" />
+            </Button>
+          </Dropdown>
+        </Button.Group>
+      );
+    };
+    const renderRunButton = () => {
+      if (
+        this.state.currentProjectId &&
+        roleModel.writeAllowed(this.props.folder.value) &&
+        !this.props.readOnly &&
+        roleModel.isManager.entities(this)
+      ) {
+        return (
+          <Button
+            key="run"
+            size="small"
+            type="primary"
+            disabled={selectedItems.length === 0}
+            onClick={() => this.setState({configurationBrowserVisible: true})}>
+            RUN
+          </Button>
+        );
+      }
+      return null;
+    };
+    return (
+      <Row
+        className={styles.metadataAdditionalActions}
+        type="flex"
+        justify="space-between"
+        align="middle"
+      >
+        <div
+          style={{
+            display: 'inline-flex',
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+        >
+          {renderSelectionControl()}
+          {renderClearFiltersButton()}
+          {renderSelectionInfo()}
+        </div>
+        {renderRunButton()}
+      </Row>
+    );
   };
 
   handleClickShowSelectedItems = () => {
@@ -1308,8 +2236,13 @@ export default class Metadata extends React.Component {
   paginationOnChange = async (page) => {
     const {filterModel} = this.state;
     filterModel.page = page;
-    await this.loadData(filterModel);
-    this.setState({filterModel});
+    this.setState(
+      {filterModel},
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
   }
 
   render () {
@@ -1317,46 +2250,71 @@ export default class Metadata extends React.Component {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row
           type="flex"
-          justify="space-between"
+          justify="end"
           align="middle"
-          style={{minHeight: 41, marginBottom: 6}}>
-          <Col>
-            <span className={styles.itemHeader}>
-              <Breadcrumbs
-                id={parseInt(this.props.folderId)}
-                type={ItemTypes.metadata}
-                textEditableField={this.props.metadataClass}
-                readOnlyEditableField
-                icon="appstore-o"
-                iconClassName={styles.editableControl}
-                subject={this.props.folder.value}
-              />
-            </span>
-            <span className={styles.searchControl}>
-              <Input.Search
-                id="search-metadata-input"
-                placeholder="Search"
-                value={this.state.filterModel.searchQueries[0]}
-                onPressEnter={this.onSearchQueriesChanged}
-                onChange={(e) => {
-                  const {filterModel} = this.state;
-                  filterModel.searchQueries = [e.target.value.trim()];
-                  this.setState({filterModel});
-                }}
-              />
-              <DropdownWithMultiselect
-                onColumnSelect={this.onColumnSelect}
-                onSetOrder={this.onSetOrder}
-                selectedColumns={this.state.selectedColumns}
-                columns={this.columns}
-                onResetColums={this.onResetColums}
-                columnNameFn={getColumnTitle}
-              />
-            </span>
-          </Col>
-          <Col className={styles.currentFolderActions}>
-            {this.renderActions()}
-          </Col>
+          style={{
+            minHeight: 41,
+            marginBottom: 6,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div
+            className={styles.itemHeader}
+            style={{flex: 'initial', marginRight: 'auto'}}
+          >
+            <Breadcrumbs
+              id={parseInt(this.props.folderId)}
+              type={ItemTypes.metadata}
+              textEditableField={this.props.metadataClass}
+              readOnlyEditableField
+              icon="appstore-o"
+              iconClassName={styles.editableControl}
+              subject={this.props.folder.value}
+            />
+          </div>
+          <Input.Search
+            style={{
+              minWidth: 200,
+              marginLeft: 5,
+              flex: 1
+            }}
+            id="search-metadata-input"
+            placeholder="Search"
+            value={this.state.searchQuery}
+            onPressEnter={this.onSearchQueriesChanged}
+            onChange={(e) => {
+              this.setState({searchQuery: e.target.value});
+            }}
+            size="small"
+          />
+          <DropdownWithMultiselect
+            onColumnSelect={this.onColumnSelect}
+            onSetOrder={this.onSetOrder}
+            columns={this.state.columns}
+            onResetColumns={this.onResetColumns}
+            columnNameFn={getColumnTitle}
+            size="small"
+            style={{marginLeft: 5}}
+          />
+          {this.renderActions()}
+          <UploadButton
+            key="upload-metadata"
+            multiple={false}
+            synchronous
+            onRefresh={async () => {
+              await this.props.entityFields.fetch();
+              await this.props.folder.fetch();
+              if (this.props.onReloadTree) {
+                this.props.onReloadTree(true);
+              }
+            }}
+            style={{display: 'none'}}
+            title={'Upload metadata'}
+            action={MetadataEntityUpload.uploadUrl(this.props.folderId)}
+            onInitialized={component => {
+              this.uploadButton = component;
+            }}
+          />
         </Row>
         {this.renderContent()}
         <AddInstanceForm
@@ -1370,7 +2328,10 @@ export default class Metadata extends React.Component {
         />
         <UploadToDatastorageForm
           visible={this.state.uploadToBucketVisible}
-          fields={this.currentClassEntityFields.filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)}
+          fields={
+            this.currentClassEntityFields
+              .filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)
+          }
           pathFields={this.currentClassEntityPathFields.map(f => f.name)}
           onTransfer={this.onStartUploadToBucket}
           onClose={this.onCloseUploadToBucketDialog}
@@ -1379,17 +2340,138 @@ export default class Metadata extends React.Component {
     );
   };
 
+  getParents = async () => {
+    const {folderId, pipelinesLibrary} = this.props;
+    const parents = [];
+    let pNumber = 0;
+
+    function checkFolder (folder) {
+      if (folder.id === Number(folderId)) {
+        pNumber = 1;
+        parents.push({
+          key: `p${pNumber}`,
+          value: folder.name
+        });
+        return true;
+      } else {
+        if (folder.childFolders) {
+          for (let subfolder of folder.childFolders) {
+            const targetFolder = checkFolder(subfolder);
+            if (targetFolder) {
+              if (folder.name) {
+                pNumber += 1;
+                parents.push({
+                  key: `p${pNumber}`,
+                  value: folder.name
+                });
+              }
+              return targetFolder;
+            }
+          }
+        }
+        return false;
+      }
+    }
+
+    await pipelinesLibrary.fetch();
+    const pipelinesLibraryValue = pipelinesLibrary.value;
+    if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
+      checkFolder(pipelinesLibraryValue);
+    }
+    return parents;
+  };
+
   componentDidMount () {
-    const {route, router} = this.props;
+    const {
+      authenticatedUserInfo,
+      route,
+      router
+    } = this.props;
     if (route && router) {
       router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
+    }
+    this.onFolderChanged();
+    authenticatedUserInfo
+      .fetchIfNeededOrWait()
+      .then(() => this.fetchDefaultColumnsIfRequested());
+    document.addEventListener('keydown', this.resetSelection);
+    window.addEventListener('mouseup', this.handleFinishSelection);
+  };
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
+    const folderChanged = prevProps.folderId !== this.props.folderId;
+    if (metadataClassChanged || folderChanged) {
+      this.onFolderChanged(folderChanged);
+    } else {
+      this.fetchDefaultColumnsIfRequested();
+    }
+    if (prevProps.initialSelection !== this.props.initialSelection) {
+      this.updateInitialSelection();
+    }
+  }
+
+  updateInitialSelection = () => {
+    this.setState({selectedItems: (this.props.initialSelection || []).slice()});
+  };
+
+  onFolderChanged = (folderChanged = true) => {
+    if (this.props.onSelectItems) {
+      this.props.onSelectItems([]);
+    }
+    const newState = {
+      currentMetadata: [],
+      columns: [],
+      searchQuery: undefined,
+      selectedItem: null,
+      selectedItems: [],
+      selectedItemsAreShowing: false,
+      filterModel: {
+        filters: [],
+        folderId: parseInt(this.props.folderId),
+        metadataClass: this.props.metadataClass,
+        orderBy: [],
+        page: 1,
+        pageSize: PAGE_SIZE,
+        searchQueries: []
+      },
+      totalCount: 0
     };
-    (async () => {
-      await this.loadColumns(this.props.folderId, this.props.metadataClass);
-      this.setState({selectedColumns: [...this.columns]});
-      await this.loadData(this.state.filterModel);
-      await this.loadCurrentProject();
-    })();
+    if (folderChanged) {
+      newState.defaultColumnsFetched = false;
+      newState.defaultColumnsFetching = false;
+      newState.defaultColumnsNames = [];
+    }
+    this.setState(newState, () => {
+      this.clearSelection();
+      return Promise.all([
+        folderChanged
+          ? this.fetchDefaultColumnsIfRequested()
+          : this.loadColumns({reset: true}),
+        folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
+        this.loadData(),
+        this.loadCurrentProject()
+      ]);
+    });
+  };
+
+  fetchDefaultColumnsIfRequested = () => {
+    const {defaultColumnsFetched, defaultColumnsFetching} = this.state;
+    const {authenticatedUserInfo, folderId} = this.props;
+    if (authenticatedUserInfo.loaded && !defaultColumnsFetched && !defaultColumnsFetching) {
+      this.setState({
+        defaultColumnsFetching: true
+      }, () => {
+        getDefaultColumns(folderId, authenticatedUserInfo.value)
+          .then(defaultColumns => {
+            this.setState({
+              defaultColumnsNames: (defaultColumns || []).map(getDefaultColumnName),
+              defaultColumnsFetching: false,
+              defaultColumnsFetched: true
+            }, () => this.loadColumns({reset: true}));
+          });
+      });
+    }
   };
 
   leavePageWithSelectedItems (nextLocation) {
@@ -1429,39 +2511,7 @@ export default class Metadata extends React.Component {
 
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+    document.removeEventListener('keydown', this.resetSelection);
+    window.removeEventListener('mouseup', this.handleFinishSelection);
   }
-
-  async componentWillReceiveProps (nextProps) {
-    if (nextProps.initialSelection) {
-      this.setState({selectedItems: nextProps.initialSelection});
-    }
-    if (nextProps.folderId !== this.props.folderId ||
-      nextProps.metadataClass !== this.props.metadataClass) {
-      this.setState({
-        selectedItem: null,
-        selectedItems: [],
-        selectedItemsAreShowing: false,
-        filterModel: {
-          filters: [],
-          folderId: parseInt(nextProps.folderId),
-          metadataClass: nextProps.metadataClass,
-          orderBy: [],
-          page: 1,
-          pageSize: PAGE_SIZE,
-          searchQueries: []
-        }
-      });
-      if (nextProps.onSelectItems) {
-        nextProps.onSelectItems(this.state.selectedItems);
-      }
-      this._totalCount = 0;
-      await this.props.entityFields.fetch();
-      await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-      this.setState({selectedColumns: [...this.columns]});
-      await this.loadData(this.state.filterModel);
-    }
-    if (nextProps.folderId !== this.props.folderId) {
-      await this.loadCurrentProject();
-    }
-  };
 }

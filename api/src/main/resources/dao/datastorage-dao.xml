@@ -597,6 +597,56 @@
                 ]]>
             </value>
         </property>
+        <property name="addToolVersionToMountQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_tool_version(datastorage_id, tool_id, tool_version_id)
+                    VALUES (:DATASTORAGE_ID, :TOOL_ID, :TOOL_VERSION_ID);
+                ]]>
+            </value>
+        </property>
+        <property name="deleteToolsToMountQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    WHERE dtv.datastorage_id = ?;
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsToMountQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                    WHERE dtv.datastorage_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsToMountsForAllStoragesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                ]]>
+            </value>
+        </property>
         <property name="createDataStorageRootQuery">
             <value>
                 <![CDATA[

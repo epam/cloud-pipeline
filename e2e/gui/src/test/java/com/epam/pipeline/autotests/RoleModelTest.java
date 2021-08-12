@@ -47,7 +47,7 @@ public class RoleModelTest
         implements Authorization, Tools {
 
     private final String userGroup = "DOMAIN USERS";
-    private final String userRoleGroup = "ROLE_USER";
+    private final String userRoleGroup = C.ROLE_USER;
 
     private final String pipelineName = "role-model-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
@@ -271,7 +271,7 @@ public class RoleModelTest
                 .clickOnFolder(folderWithSeveralPipelines)
                 .assertPipelineIsNotEditable(firstOfTheSeveralPipelines)
                 .assertPipelineIsNotEditable(secondOfTheSeveralPipelines)
-                .hover(SETTINGS)
+                .click(SETTINGS)
                 .ensure(EDIT_FOLDER, not(visible));
     }
     @Test(priority = 9)
@@ -350,7 +350,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .historyTab()
-                .rerun()
+                .click(RERUN)
                 .messageShouldAppear("You have no permissions to launch " + pipelineName);
     }
 
@@ -700,7 +700,9 @@ public class RoleModelTest
                 .typeInField(userGroup)
                 .ok()
                 .validateGroupHasPermissions(userGroup)
-                .validateDeleteButtonIsDisplayedOppositeTo(userGroup);
+                .validateDeleteButtonIsDisplayedOppositeTo(userGroup)
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 28)
@@ -734,6 +736,14 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .assertEditButtonIsDisplayed()
                 .assertRunButtonIsDisplayed();
+        logout();
+        loginAs(admin)
+                .library()
+                .clickOnPipeline(pipelineName)
+                .clickEditButton()
+                .clickOnPermissionsTab()
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 29)
@@ -744,6 +754,7 @@ public class RoleModelTest
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
+                                .deleteIfPresent(userGroup)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );

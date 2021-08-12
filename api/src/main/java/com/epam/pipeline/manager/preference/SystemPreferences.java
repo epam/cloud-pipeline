@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -81,6 +82,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLes
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -111,6 +113,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
+    private static final String FACETED_FILTER_GROUP = "Faceted Filter";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -145,6 +148,15 @@ public class SystemPreferences {
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
     public static final IntPreference DATA_STORAGE_OPERATIONS_BULK_SIZE = new IntPreference(
             "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
+            "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+    public static final StringPreference VERSION_STORAGE_BINARY_FILE_EXTS = new StringPreference(
+            "storage.version.storage.report.binary.file.exts",
+            "pdf", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference VERSION_STORAGE_IGNORED_FILES = new StringPreference(
+            "storage.version.storage.ignored.files",
+            ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
+
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -186,6 +198,11 @@ public class SystemPreferences {
     public static final IntPreference STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS =
             new IntPreference("storage.incomplete.upload.clean.days", 5, DATA_STORAGE_GROUP,
                     isNullOrGreaterThan(0));
+    public static final BooleanPreference STORAGE_ALLOW_SIGNED_URLS =
+            new BooleanPreference("storage.allow.signed.urls", true, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_CONVERT_SOURCE_ACTION =
+            new StringPreference("storage.convert.source.action", DataStorageConvertRequestAction.LEAVE.name(),
+                    DATA_STORAGE_GROUP, (v, ignored) -> DataStorageConvertRequestAction.isValid(v));
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
@@ -362,6 +379,9 @@ public class SystemPreferences {
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
+    public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
+            5, CLUSTER_GROUP, isGreaterThan(0));
+
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
      * otherwise - the lowest
@@ -401,6 +421,10 @@ public class SystemPreferences {
             CLUSTER_GROUP, isGreaterThan(0L));
     public static final IntPreference CLUSTER_KUBE_MASTER_PORT =
             new IntPreference("cluster.kube.master.port", 6443, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_KUBE_WINDOWS_SERVICE_PORT =
+            new IntPreference("cluster.kube.windows.service.port", 22, CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_WINDOWS_NODE_LOOPBACK_ROUTE =
+            new BooleanPreference("cluster.windows.node.loopback.route", false, CLUSTER_GROUP, pass);
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
@@ -408,6 +432,8 @@ public class SystemPreferences {
             "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
             "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+    public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
+            "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
 
 
     //LAUNCH_GROUP
@@ -471,6 +497,8 @@ public class SystemPreferences {
             "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
+    public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
+            "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
 
@@ -490,6 +518,10 @@ public class SystemPreferences {
             "", DTS_GROUP, pass);
     public static final StringPreference DTS_DISTRIBUTION_URL = new StringPreference("dts.dist.url",
             "", DTS_GROUP, pass);
+    public static final IntPreference DTS_MONITORING_PERIOD_SECONDS = new IntPreference("dts.monitoring.period.seconds",
+            (int) TimeUnit.MINUTES.toSeconds(1), DTS_GROUP, isGreaterThan(10));
+    public static final IntPreference DTS_OFFLINE_TIMEOUT_SECONDS = new IntPreference("dts.offline.timeout.seconds",
+            (int) TimeUnit.MINUTES.toSeconds(5), DTS_GROUP, isGreaterThan(0));
 
     /**
      * Controls maximum number of scheduled at once runs
@@ -546,6 +578,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    // Facet Filters
+    public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
+            "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
+            FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -676,6 +713,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
             "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> MISC_METADATA_MANDATORY_KEYS = new ObjectPreference<>(
+            "misc.metadata.mandatory.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
@@ -710,10 +750,6 @@ public class SystemPreferences {
 
     public static final StringPreference SEARCH_ELASTIC_DENIED_GROUPS_FIELD = new StringPreference(
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
-
-    public static final ObjectPreference<Set<String>> SEARCH_ELASTIC_INDEX_METADATA_FIELDS = new ObjectPreference<>(
-            "search.elastic.index.metadata.fields", null, new TypeReference<Set<String>>() {},
-            SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
 

@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.ontology;
 
 import com.epam.pipeline.dto.ontology.OntologyType;
+import com.epam.pipeline.entity.utils.TimestampConverter;
 import com.epam.pipeline.hibernate.JsonDataUserType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

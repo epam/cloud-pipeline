@@ -54,9 +54,13 @@ public final class PipelineRunMapper {
 
         return params;
     }
-    
+
     public static Map<String, Object> map(PipelineRun run, Long threshold) {
         return map(run, threshold, overallDurationOf(run));
+    }
+
+    public static Map<String, Object> map(PipelineRun run) {
+        return map(run, null, overallDurationOf(run));
     }
 
     private static long overallDurationOf(PipelineRun run) {

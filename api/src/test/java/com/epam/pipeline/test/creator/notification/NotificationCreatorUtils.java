@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
@@ -62,11 +63,16 @@ public final class NotificationCreatorUtils {
     }
 
     public static NotificationMessage getNotificationMessage() {
+        return getNotificationMessage(ID, LONG_LIST);
+    }
+
+    public static NotificationMessage getNotificationMessage(final long recipient, final List<Long> copyRecipients) {
         final NotificationMessage notificationMessage = new NotificationMessage();
         notificationMessage.setBody(TEST_STRING);
         notificationMessage.setId(ID);
         notificationMessage.setSubject(TEST_STRING);
-        notificationMessage.setCopyUserIds(LONG_LIST);
+        notificationMessage.setToUserId(recipient);
+        notificationMessage.setCopyUserIds(copyRecipients);
         return notificationMessage;
     }
 
@@ -77,19 +83,20 @@ public final class NotificationCreatorUtils {
     public static NotificationSettings getNotificationSettings() {
         final NotificationSettings notificationSettings = new NotificationSettings();
         notificationSettings.setId(ID);
+        notificationSettings.setTemplateId(ID);
         notificationSettings.setEnabled(true);
         notificationSettings.setInformedUserIds(LONG_LIST);
         notificationSettings.setResendDelay(ID);
-        notificationSettings.setType(NotificationSettings.NotificationType.HIGH_CONSUMED_RESOURCES);
+        notificationSettings.setType(NotificationType.HIGH_CONSUMED_RESOURCES);
         notificationSettings.setStatusesToInform(Collections.singletonList(TaskStatus.RUNNING));
         return notificationSettings;
     }
 
     public static NotificationSettings getNotificationSettings(final Long id,
-                                                              final List<TaskStatus> taskStatuses) {
+                                                               final List<TaskStatus> taskStatuses) {
         final NotificationSettings settings = new NotificationSettings();
         settings.setId(id);
-        settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
+        settings.setType(NotificationType.PIPELINE_RUN_STATUS);
         settings.setKeepInformedAdmins(true);
         settings.setInformedUserIds(Collections.emptyList());
         settings.setTemplateId(ID);
@@ -102,11 +109,15 @@ public final class NotificationCreatorUtils {
     }
 
     public static NotificationTemplate getNotificationTemplate() {
+        return getNotificationTemplate(TEST_STRING, TEST_STRING);
+    }
+
+    public static NotificationTemplate getNotificationTemplate(final String subject, final String body) {
         final NotificationTemplate notificationTemplate = new NotificationTemplate();
-        notificationTemplate.setBody(TEST_STRING);
+        notificationTemplate.setBody(body);
         notificationTemplate.setId(ID);
         notificationTemplate.setName(TEST_STRING);
-        notificationTemplate.setSubject(TEST_STRING);
+        notificationTemplate.setSubject(subject);
         return notificationTemplate;
     }
 

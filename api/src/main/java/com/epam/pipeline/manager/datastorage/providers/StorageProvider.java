@@ -88,6 +88,10 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageFolder moveFolder(T dataStorage, String oldPath, String newPath)
             throws DataStorageException;
 
+    DataStorageFile copyFile(T dataStorage, String oldPath, String newPath);
+
+    DataStorageFolder copyFolder(T dataStorage, String oldPath, String newPath);
+
     boolean checkStorage(T dataStorage);
 
     Map<String, String> updateObjectTags(T dataStorage, String path, Map<String, String> tags,

@@ -18,6 +18,7 @@
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
 
 import argparse
+import re
 import os
 from abc import ABCMeta, abstractmethod
 
@@ -58,6 +59,24 @@ class PermissionHelper:
     def is_storage_readable(cls, storage):
         return cls.is_permission_set(storage, READ_MASK)
 
+    # Checks that tool with its version for the current run is allowed to mount this storage
+    # or there is no configured restriction for this storage
+    @classmethod
+    def is_storage_available_for_mount(cls, storage, run):
+        if not storage.tools_to_mount:
+            return True
+        if run is None or not run["actualDockerImage"]:
+            return False
+
+        tool = run["actualDockerImage"]
+        re_result = re.search(r"([^/]+)/([^:]+):?(:?.*)", tool)
+        registry, image, version = re_result.groups()
+        for tool_to_mount in storage.tools_to_mount:
+            if registry == tool_to_mount["registry"] and image == tool_to_mount["image"]:
+                tool_versions_to_mount = tool_to_mount.get('versions', [])
+                return not tool_versions_to_mount or version in [v["version"] for v in tool_versions_to_mount]
+        return False
+
     @classmethod
     def is_storage_writable(cls, storage):
         write_permission_granted = cls.is_permission_set(storage, WRITE_MASK)
@@ -96,6 +115,15 @@ class MountStorageTask:
                 Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
                  and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
 
+            run_id = int(os.getenv('RUN_ID', -1))
+
+            run = None
+            if run_id != -1:
+                Logger.info('Fetching run info...', task_name=self.task_name)
+                run = self.api.load_run(run_id)
+            else:
+                Logger.warn('Cannot load run info, run id is not specified.', task_name=self.task_name)
+
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
             # filtering nfs storages in order to fetch only nfs from the same region
@@ -121,7 +149,10 @@ class MountStorageTask:
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
-            sensitive_policy = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)['value']
+            sensitive_policy = None
+            sensitive_policy_preference = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)
+            if sensitive_policy_preference and 'value' in sensitive_policy_preference:
+                sensitive_policy = sensitive_policy_preference['value']
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
                 if storage_count_by_type > 0:
@@ -134,6 +165,13 @@ class MountStorageTask:
             initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
+                    Logger.info('Storage is not readable', task_name=self.task_name)
+                    continue
+                if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
+                    Logger.info(
+                        'Storage {} is not allowed to be mount to {} image'.format(storage_and_mount.storage.name,
+                            run.get("actualDockerImage", "")),
+                        task_name=self.task_name)
                     continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,

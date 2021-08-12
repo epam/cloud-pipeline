@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,9 +59,7 @@ public class UsersFileImportManager {
         final List<PipelineUserEvent> events = new ArrayList<>();
         final List<PipelineUserWithStoragePath> users =
                 new UserImporter(categoricalAttributes, attributesToCreate, events).importUsers(file);
-        if (CollectionUtils.isNotEmpty(categoricalAttributes)) {
-            categoricalAttributeManager.updateCategoricalAttributes(categoricalAttributes);
-        }
+        categoricalAttributes.forEach(categoricalAttributeManager::update);
 
         events.addAll(users.stream()
                 .flatMap(user -> {

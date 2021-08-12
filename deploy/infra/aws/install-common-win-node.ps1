@@ -41,7 +41,29 @@ function InstallNoMachineIfRequired {
         Write-Host "Installing NoMachine..."
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
+        @"
+
+VirtualDesktopAuthorization 0
+PhysicalDesktopAuthorization 0
+AutomaticDisconnection 0
+ConnectionsLimit 1
+ConnectionsUserLimit 1
+"@ | Out-File -FilePath "C:\Program Files (x86)\NoMachine\etc\server.cfg" -Encoding ascii -Force -Append
         $restartRequired=$true
+    }
+    return $restartRequired
+}
+
+function InstallOpenSshServerIfRequired {
+    $restartRequired=$false
+    $openSshServerInstalled = Get-WindowsCapability -Online `
+        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
+        | ForEach-Object { $_.State -eq "Installed" }
+    if (-not($openSshServerInstalled)) {
+        Write-Host "Installing OpenSSH server..."
+        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
+        $restartRequired=$false
     }
     return $restartRequired
 }
@@ -80,6 +102,20 @@ function InstallPGinaIfRequired {
     return $restartRequired
 }
 
+function InstallDockerIfRequired {
+    $restartRequired=$false
+    $dockerInstalled = Get-Service -Name docker `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($dockerInstalled)) {
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+        Install-Package -Name docker -ProviderName DockerMsftProvider -Force -RequiredVersion 19.03.14
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
 function WaitForProcess($ProcessName) {
     while ($True) {
         $Process = Get-Process | Where-Object {$_.Name -contains $ProcessName}
@@ -106,19 +142,6 @@ function InstallChromeIfRequired {
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile $workingDir\ChromeSetup.exe
         & $workingDir\ChromeSetup.exe /silent /install
         WaitForProcess -ProcessName "ChromeSetup"
-    }
-}
-
-function InstallOpenSshServerIfRequired {
-    $openSshServerInstalled = Get-WindowsCapability -Online `
-        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
-        | ForEach-Object { $_.State -eq "Installed" }
-    if (-not($openSshServerInstalled)) {
-        Write-Host "Installing OpenSSH server..."
-        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-        Start-Service sshd
-        Set-Service -Name sshd -StartupType 'Automatic'
-        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
     }
 }
 
@@ -197,6 +220,9 @@ function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
     }
 }
 
+$interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
+
+$homeDir = "$env:USERPROFILE"
 $workingDir="c:\init"
 $kubeDir="c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
@@ -221,11 +247,26 @@ Set-Location -Path "$workingDir"
 Write-Host "Installing nomachine if required..."
 InstallNoMachineIfRequired
 
+Write-Host "Installing OpenSSH server if required..."
+InstallOpenSshServerIfRequired
+
 Write-Host "Installing WebDAV if required..."
 InstallWebDAVIfRequired
 
 Write-Host "Installing pGina if required..."
 InstallPGinaIfRequired
+
+Write-Host "Installing docker if required..."
+$restartRequired = (InstallDockerIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
+Write-Host "Restarting computer if required..."
+if ($restartRequired) {
+    Write-Host "Restarting computer..."
+    Stop-Transcript
+    Restart-Computer -Force
+    Exit
+}
 
 Write-Host "Installing python if required..."
 InstallPythonIfRequired -PythonDir $pythonDir
@@ -237,9 +278,6 @@ Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
 
-Write-Host "Installing OpenSSH server if required..."
-InstallOpenSshServerIfRequired
-
 Write-Host "Generating temporary SSH keys..."
 GenerateSshKeys -Path $homeDir
 
@@ -247,13 +285,18 @@ Write-Host "Downloading Sig Windows Tools if required..."
 DownloadSigWindowsToolsIfRequired
 
 Write-Host "Generating Sig Windows Tools dummy config file..."
-InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "Ethernet 3"
+InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "$interface"
 
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
 InstallKubeUsingSigWindowsToolsIfRequired -KubeDir "$kubeDir"
 
 Write-Host "Removing temporary SSH keys..."
 Remove-Item -Recurse -Force "$homeDir\.ssh"
+
+# todo: Remove once kubelet pulling issue is resolved.
+#  See https://github.com/epam/cloud-pipeline/issues/1832#issuecomment-832841950
+Write-Host "Prepulling Windows tool base docker image..."
+docker pull python:3.8.9-windowsservercore
 
 Write-Host "Scheduling instance initialization on next launch..."
 C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -Schedule

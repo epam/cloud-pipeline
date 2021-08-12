@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import traceback
+from functools import update_wrapper
+
 import click
 import requests
 import sys
@@ -42,6 +44,7 @@ from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_t
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
+from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -51,6 +54,10 @@ RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline
 TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
 SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
                         ' until the expected status of the operation won\'t be returned'
+STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination path check: if destination already ' \
+                                                'exists an error will be occurred. Cannot be used in combination' \
+                                                ' with --force (-f) option: if --force (-f) specified ' \
+                                                '--verify-destination (-vd) will be ignored.'
 
 
 def silent_print_api_version():
@@ -76,6 +83,22 @@ def print_version(ctx, param, value):
 def set_user_token(ctx, param, value):
     if value:
         UserTokenOperations().set_user_token(value)
+
+
+def stacktracing(func):
+    def _stacktracing_decorator(f):
+        @click.pass_context
+        def _stacktracing_wrapper(ctx, *args, **kwargs):
+            trace = ctx.params.get('trace') or False
+            try:
+                return ctx.invoke(f, *args, **kwargs)
+            except Exception as runtime_error:
+                click.echo('Error: {}'.format(str(runtime_error)), err=True)
+                if trace:
+                    traceback.print_exc()
+                sys.exit(1)
+        return update_wrapper(_stacktracing_wrapper, f)
+    return _stacktracing_decorator(func)
 
 
 @click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
@@ -126,7 +149,11 @@ def cli():
 @click.option('-c', '--codec',
               help='Encoding that shall be used',
               default=None)
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
+@click.option('-cs', '--config-store',
+              help='CLI configuration mode(home-dir/install-dir)',
+              default='home-dir')
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec,
+              config_store):
     """Configures CLI parameters
     """
     if proxy_ntlm and not proxy_ntlm_user:
@@ -144,7 +171,8 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
                  proxy_ntlm_user,
                  proxy_ntlm_domain,
                  proxy_ntlm_pass,
-                 codec)
+                 codec,
+                 config_store)
 
 
 def echo_title(title, line=True):
@@ -667,6 +695,27 @@ def view_cluster_for_node(node_name):
               is_flag=True)
 @click.option('-fu', '--friendly-url', help='A friendly URL. The URL should have the following formats: '
                                             '<domain>/<path> or <path>', type=str, required=False)
+@click.option('-sn', '--status-notifications', help='Enables run status change notifications.',
+              is_flag=True, required=False)
+@click.option('-sn-status', '--status-notifications-status', multiple=True, type=str, required=False,
+              help='Specifies run status to send run status change notifications. '
+                   'The option can be specified several times. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Supported values are: SUCCESS, FAILURE, RUNNING, STOPPED, PAUSING, PAUSED and RESUMING. '
+                   'Defaults to SUCCESS, FAILURE and STOPPED run statuses.')
+@click.option('-sn-recipient', '--status-notifications-recipient', multiple=True, type=str, required=False,
+              help='Specifies run status change notification recipient user id or user name. '
+                   'The option can be specified several times. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Defaults to run owner.')
+@click.option('-sn-subject', '--status-notifications-subject', type=str, required=False,
+              help='Specifies run status change notification subject. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Defaults to global run status change notification subject.')
+@click.option('-sn-body', '--status-notifications-body', type=str, required=False,
+              help='Specifies run status change notification body file path. '
+                   'The option will be ignored if -sn (--status-notifications) option was not specified. '
+                   'Defaults to global run status change notification body.')
 @click.option('-u', '--user', required=False, type=str, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
@@ -688,15 +737,48 @@ def run(pipeline,
         parent_node,
         non_pause,
         friendly_url,
+        status_notifications,
+        status_notifications_status,
+        status_notifications_recipient,
+        status_notifications_subject,
+        status_notifications_body,
         user):
-    """Schedules a pipeline execution
+    """
+    Launches a new run.
+
+    Optional run status change notifications can be enabled.
+    Check the examples below to find out how to enable notifications.
+
+    Examples:
+
+    I.  Launches pipeline (mypipeline) run with default run status change notifications enabled.
+
+        pipe run -n mypipeline -y -sn
+
+    II. Launches pipeline (mypipeline) run with custom run status change notifications enabled.
+    In this case notifications will only be sent if run reaches
+    one of the statuses (SUCCESS or FAILURE)
+    to some users (USER1 and USER2)
+    with the specified subject (Run has changed its status)
+    and body from some local file (/path/to/email/body/template/file).
+
+        pipe run -n mypipeline -y -sn
+        -sn-status SUCCESS -sn-status FAILURE
+        -sn-recipient USER1 -sn-recipient USER2
+        -sn-subject "Run status has changed"
+        -sn-body /path/to/email/body/template/file
+
     """
     if user and not pipeline and not docker_image:
         UserTokenOperations().set_user_token(user)
         user = None
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
-                              region_id, parent_node, non_pause, friendly_url, user)
+                              region_id, parent_node, non_pause, friendly_url,
+                              status_notifications,
+                              status_notifications_status, status_notifications_recipient,
+                              status_notifications_subject, status_notifications_body,
+                              user)
 
 
 @cli.command(name='stop')
@@ -927,15 +1009,18 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to move a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
+@click.option('-vd', '--verify-destination', is_flag=True, required=False,
+              help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads):
+                      symlinks, threads, verify_destination):
     """ Moves a file or a folder from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, clean=True, skip_existing=skip_existing)
+                             symlinks, threads, clean=True, skip_existing=skip_existing,
+                             verify_destination=verify_destination)
 
 
 @storage.command('cp')
@@ -966,15 +1051,18 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
+@click.option('-vd', '--verify-destination', is_flag=True, required=False,
+              help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads):
+                      symlinks, threads, verify_destination):
     """ Copies files from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing)
+                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing,
+                             verify_destination=verify_destination)
 
 
 @storage.command('du')
@@ -1245,9 +1333,12 @@ def chown(user_name, entity_class, entity_name):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @click.pass_context
 @Config.validate_access_token
-def ssh(ctx, run_id, retries, trace):
+@stacktracing
+def ssh(ctx, run_id, retries, trace, region):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
@@ -1266,14 +1357,8 @@ def ssh(ctx, run_id, retries, trace):
 
         pipe ssh 12345 echo \$HOSTNAME
     """
-    try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
-        sys.exit(ssh_exit_code)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
+    sys.exit(ssh_exit_code)
 
 
 @cli.command(name='scp')
@@ -1285,8 +1370,11 @@ def ssh(ctx, run_id, retries, trace):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @Config.validate_access_token
-def scp(source, destination, recursive, quiet, retries, trace):
+@stacktracing
+def scp(source, destination, recursive, quiet, retries, trace, region):
     """
     Transfers files or directories between local workstation and run instance.
 
@@ -1319,13 +1407,7 @@ def scp(source, destination, recursive, quiet, retries, trace):
 
         pipe scp -r 12345:/common/workdir/dir dir
     """
-    try:
-        run_scp(source, destination, recursive, quiet, retries)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    run_scp(source, destination, recursive, quiet, retries, region)
 
 
 @cli.group()
@@ -1347,6 +1429,7 @@ def tunnel():
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@stacktracing
 def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
     """
     Stops background tunnel processes.
@@ -1374,13 +1457,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
         pipe tunnel stop -lp 4567 12345
 
     """
-    try:
-        kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
 
 
 @tunnel.command(name='start')
@@ -1409,10 +1486,13 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @Config.validate_access_token
+@stacktracing
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                 timeout, foreground, retries, trace):
+                 timeout, foreground, retries, trace, region):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1482,15 +1562,9 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
-    try:
-        create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                      ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                      timeout, foreground, retries)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    create_tunnel(host_id, local_port, remote_port, connection_timeout,
+                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                  timeout, foreground, retries, region)
 
 
 @cli.command(name='update')
@@ -1718,6 +1792,164 @@ def import_users(file_path, create_user, create_group, create_metadata):
     Registers a new users, roles and metadata specified in input file
     """
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
+
+
+@cli.group()
+def dts():
+    """
+    Data transfer service commands
+    """
+    pass
+
+
+@dts.command(name='create')
+@click.option('--url', '-u', required=True, type=str)
+@click.option('--name', '-n', required=True, type=str)
+@click.option('--schedulable', '-s', required=False, is_flag=True)
+@click.option('--prefix', required=True, type=str, multiple=True,
+              help='String, describing URL prefix for a DTS. Multiple options supported')
+@click.option('--preference', required=False, type=str, multiple=True,
+              help='String, describing preference''s key and value: key=value. Multiple options supported')
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def create_dts(url, name, schedulable, prefix, preference, json_out, trace):
+    """
+    Registers new data transfer service.
+
+    Examples:
+
+    I.  Registers data transfer service which can be used for input / output data transferring in runs.
+
+        pipe dts create -n "dtsname" -u "https://exampledtsurl/restapi" -p "/path/prefix/to/example/dts/local/paths"
+
+    II. Registers data transfer service which can be used for autonomous local data synchronisation.
+
+        pipe dts create -n "autonomousdtshostname" -u "autonomousdtshostname" -p "autonomousdtshostname"
+
+    """
+    DtsOperationsManager().create(url, name, schedulable, prefix, preference, json_out)
+
+
+@dts.command(name='list')
+@click.argument('registry-name-or-id', required=False, type=str)
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def list_dts(registry_name_or_id, json_out, trace):
+    """
+    Either shows details of a data transfer service or lists all data transfer services.
+
+    Examples:
+
+    I.   List all data transfer services.
+
+        pipe dts list
+
+    II.  Show details of a single data transfer service with some name (dtsname).
+
+        pipe dts list dtsname
+
+    III. Show details of a single data transfer service with some id (123).
+
+        pipe dts list 123
+
+    """
+    DtsOperationsManager().list(registry_name_or_id, json_out)
+
+
+@dts.command(name='delete')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def delete_dts(registry_name_or_id, json_out, trace):
+    """
+    Deletes data transfer service.
+
+    Examples:
+
+    I.  Deletes data transfer service with some name (dtsname).
+
+        pipe dts delete dtsname
+
+    II. Deletes data transfer service with some id (123).
+
+        pipe dts delete 123
+
+    """
+    DtsOperationsManager().delete(registry_name_or_id, json_out)
+
+
+@dts.group()
+def preferences():
+    """
+    Commands for data transfer service preferences management
+    """
+    pass
+
+
+@preferences.command(name='update')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--preference', '-p', multiple=True, type=str,
+              help='String, describing preference''s key and value: key=value. Multiple options supported')
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def update_dts_preferences(registry_name_or_id, preference, json_out, trace):
+    """
+    Updates existing preferences or adds new preferences for the given data transfer service.
+
+    Examples:
+
+    I.   Adds single preference for a data transfer service with some name (dtsname).
+
+        pipe dts preferences update dtsname -p key=value
+
+    II.  Adds multiple preferences for a data transfer service with some name (dtsname).
+
+        pipe dts preferences update dtsname -p key1=value1 -p key2=value2
+
+    III. Adds a single preference for a data transfer service with some id (123).
+
+        pipe dts preferences update 123 -p key=value
+
+    """
+    DtsOperationsManager().upsert_preferences(registry_name_or_id, preference, json_out)
+
+
+@preferences.command(name='delete')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--preference', '-p', multiple=True, type=str,
+              help="Key of the preference, that should be removed. Multiple options supported")
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+@stacktracing
+def delete_dts_preferences(registry_name_or_id, preference, json_out, trace):
+    """
+    Deletes preferences for the given data transfer service.
+
+    Examples:
+
+    I.   Deletes a single preference (key) from a data transfer service with some name (dtsname).
+
+        pipe dts preferences delete dtsname -p key
+
+    II.  Deletes multiple preferences (key1, key2) from a data transfer service with some name (dtsname).
+
+        pipe dts preferences delete dtsname -p key1 -p key2
+
+    III. Deletes a single preference (key) from a data transfer service with some id (123).
+
+        pipe dts preferences delete 123 -p key
+
+    """
+    DtsOperationsManager().delete_preferences(registry_name_or_id, preference, json_out)
 
 
 # Used to run a PyInstaller "freezed" version

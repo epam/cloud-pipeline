@@ -84,6 +84,17 @@ class GitDiffHelper:
         git_file_diff.old_name = self._get_delta_path(delta.old_file)
         return git_file_diff
 
+    def build_status_diff(self, diff_patch, git_file):
+        if not diff_patch:
+            self.logger.log("Diff not found")
+            return None
+        delta = diff_patch.delta
+
+        git_file.binary = delta.is_binary
+        git_file.new_size = self._get_delta_size(delta.new_file)
+        git_file.old_size = self._get_delta_size(delta.old_file)
+        return git_file
+
     def _get_repo_diff(self, file_status, file_path):
         if self._is_created(file_status):
             # build in-memory index

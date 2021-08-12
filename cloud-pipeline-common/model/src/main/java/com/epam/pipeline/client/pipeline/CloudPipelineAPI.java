@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
+import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -52,11 +53,13 @@ import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
+import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.HTTP;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
@@ -240,4 +243,14 @@ public interface CloudPipelineAPI {
 
     @GET("/cluster/pool")
     Call<Result<List<NodePool>>> loadNodePools();
+
+    @GET("dts/{id}")
+    Call<Result<DtsRegistry>> loadDts(@Path(ID) String dtsNameOrId);
+
+    @HTTP(method = "DELETE", path = "dts/{id}/preferences", hasBody = true)
+    Call<Result<DtsRegistry>> deleteDtsPreferences(@Path(ID) String dtsNameOrId,
+                                                   @Body DtsRegistryPreferencesRemovalVO removalVO);
+
+    @PUT("dts/{id}/heartbeat")
+    Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) String dtsId);
 }

@@ -27,6 +27,7 @@ import pipelines from '../../models/pipelines/Pipelines';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
+import {openReRunForm} from './actions';
 import moment from 'moment-timezone';
 
 const getStatusForServer = status => (status === 'active'
@@ -198,16 +199,8 @@ class AllRuns extends Component {
       this.runTable = control;
     }
   };
-  launchPipeline = ({pipelineId, version, id, configName}) => {
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+  launchPipeline = (run) => {
+    return openReRunForm(run, this.props);
   };
   onSelectRun = ({id}) => {
     this.props.router.push(`/run/${id}`);

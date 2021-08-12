@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ class FrozenMount(AbstractMount):
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         mount_bin = self.get_mount_executable(config)
-        mount_script = self.create_mount_script(os.path.dirname(Config.config_path()), mount_bin,
+        mount_script = self.create_mount_script(os.path.dirname(Config.get_home_dir_config_path()), mount_bin,
                                                 mountpoint, options, additional_arguments, mode)
         return ['bash', mount_script]
 
@@ -97,7 +97,7 @@ class FrozenMount(AbstractMount):
     # Otherwise (i.e. "one-folder") - packed binary is used directly
     def get_mount_executable(self, config):
         mount_packed = config.build_inner_module_path('mount')
-        config_folder = os.path.dirname(Config.config_path())
+        config_folder = os.path.dirname(Config.get_home_dir_config_path())
         mount_bin = os.path.join(mount_packed, 'pipe-fuse')
 
         if self._needs_pipe_fuse_copy():

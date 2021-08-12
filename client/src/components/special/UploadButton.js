@@ -48,7 +48,9 @@ class UploadButton extends React.Component {
     path: PropTypes.string,
     storageInfo: PropTypes.object,
     region: PropTypes.string,
-    owner: PropTypes.string
+    owner: PropTypes.string,
+    onInitialized: PropTypes.func,
+    style: PropTypes.object
   };
 
   state = {
@@ -60,9 +62,12 @@ class UploadButton extends React.Component {
 
   @observable s3Storage;
   @observable s3StorageError;
+  uploadButton;
 
   componentDidMount () {
     this.createS3Storage();
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this);
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -76,6 +81,19 @@ class UploadButton extends React.Component {
       this.createS3Storage();
     }
   }
+
+  triggerClick = () => {
+    if (
+      this.uploadButton &&
+      this.uploadButton.refs &&
+      this.uploadButton.refs.upload &&
+      this.uploadButton.refs.upload.uploader &&
+      this.uploadButton.refs.upload.uploader.fileInput &&
+      this.uploadButton.refs.upload.uploader.fileInput.click
+    ) {
+      this.uploadButton.refs.upload.uploader.fileInput.click();
+    }
+  };
 
   createS3Storage = () => {
     const {storageId, uploadToS3, path: prefix, storageInfo, region} = this.props;
@@ -560,7 +578,14 @@ class UploadButton extends React.Component {
 
     return (
       <div style={{display: 'inline'}}>
-        <Upload {...uploadProps} disabled={this.props.uploadToS3 && !!this.s3StorageError}>
+        <Upload
+          {...uploadProps}
+          disabled={this.props.uploadToS3 && !!this.s3StorageError}
+          ref={component => {
+            this.uploadButton = component;
+          }}
+          style={this.props.style}
+        >
           {
             this.props.uploadToS3 && this.s3StorageError && !this.props.uploadToNFS &&
             <Tooltip

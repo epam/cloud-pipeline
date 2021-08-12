@@ -40,6 +40,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS= \    # 
                 -env CP_PREF_CLUSTER_INSTANCE_IMAGE \               # Which VM image to use as a default for CPU-only workloads (if a VM manifest  for a current cloud provider exists - this is optional)
                 -env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU \           # Which VM image to use as a default for GPU workloads (if a VM manifest for a current cloud provider exists - this is optional)
+                -env CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN \           # Which VM image to use as a default for Windows workloads (if a VM manifest for a current cloud provider exists - this is optional)
 
                 # Cloud Provider credentials
                 ## Common

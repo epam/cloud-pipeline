@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
@@ -42,6 +43,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -815,5 +817,22 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = COMMIT) final String commit,
             @RequestParam(value = PATH, required = false) final String path) throws GitClientException {
         return Result.success(pipelineApiService.getRepositoryCommitDiff(id, commit, path));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/report", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Generate Version Storage Report",
+            notes = "Generate Version Storage Report, based on provided filters",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public void generateFileByTemplate(
+            @PathVariable(value = ID) final Long id,
+            @RequestBody final GitDiffReportFilter filter,
+            final HttpServletResponse response) throws IOException {
+        final VersionStorageReportFile report = pipelineApiService.generateReportForVersionedStorage(id, filter);
+        writeFileToResponse(response, report.getContent(), report.getName());
     }
 }

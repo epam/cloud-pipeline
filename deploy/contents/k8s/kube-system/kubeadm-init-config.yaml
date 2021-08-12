@@ -5,14 +5,14 @@ etcd:
     dataDir: /var/lib/etcd
 dns:
   type: kube-dns
-
 kubernetesVersion: v1.15.4
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
   podSubnet: ${CP_KUBE_FLANNEL_CIDR}
-controllerManagerExtraArgs:
-  node-cidr-mask-size: "${CP_KUBE_NODE_CIDR_MASK}"
+controllerManager:
+  extraArgs:
+    node-cidr-mask-size: "${CP_KUBE_NODE_CIDR_MASK}"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration

@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
+import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -67,7 +68,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private static final String AND = " AND ";
     private static final String OR = " OR ";
     private static final int BATCH_SIZE = 1000;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -322,7 +323,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 } else {
                     clause.append(" ORDER BY ");
                 }
-                clause.append(getFieldName(orderBy.getField()));
+                clause.append(getFieldName(orderBy));
                 if (orderBy.isDesc()) {
                     clause.append(" DESC");
                 }
@@ -334,7 +335,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private String makeWhereClause(MetadataFilter filter) {
         StringBuilder clause = new StringBuilder();
         addFilterConditions(clause, filter.getFilters());
-        addSearchConditions(clause, filter.getSearchQueries());
+        addSearchConditions(clause, filter.getSearchQueries(), filter.getLogicalSearchOperator());
         addExternalIdsConditions(clause, filter.getExternalIdQueries());
         addDateConditions(clause, filter);
         return clause.toString();
@@ -351,15 +352,14 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         });
     }
 
-    private void addSearchConditions(StringBuilder clause, List<String> searchQueries) {
+    private void addSearchConditions(StringBuilder clause, List<String> searchQueries, LogicalSearchOperator operator) {
         if (CollectionUtils.isEmpty(searchQueries)) {
             return;
         }
-        searchQueries.forEach(query -> {
-            String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
-            clause.append(AND);
-            clause.append(searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery));
-        });
+        String clauses = searchQueries.stream()
+                .map(this::applySearchClause)
+                .collect(Collectors.joining(format(" %s ", operator.getOperator())));
+        clause.append(AND).append(format("( %s )", clauses));
     }
 
     private void addFilterConditions(StringBuilder clause, List<MetadataFilter.FilterQuery> filters) {
@@ -368,13 +368,19 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         filters.forEach(filter -> {
             clause.append(AND);
-            MetadataField field = MetadataEntityParameters.getFieldNames().get(filter.getKey().toUpperCase());
-            if (field != null) {
-                clause.append(addFilterClause(filter, "%s::text LIKE '%%%s%%'", field.getDbName()));
-            } else {
-                clause.append(addFilterClause(filter, "e.data #>> '{%s,value}' LIKE '%%%s%%'", filter.getKey()));
-            }
+            final String filterClause = filter.isPredefined()
+                    ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
+                    : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey());
+            clause.append(filterClause);
         });
+    }
+
+    private String getDBName(final String filterKey) {
+        MetadataField field = MetadataEntityParameters.getFieldNames().get(filterKey.toUpperCase());
+        if (field == null) {
+            throw new IllegalArgumentException(format("Predefined field name '%s' isn't supported!", filterKey));
+        }
+        return field.getDbName();
     }
 
     private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
@@ -406,12 +412,15 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    private String getFieldName(String field) {
-        MetadataField fieldValue = MetadataEntityParameters.getFieldNames().get(field.toUpperCase());
-        if (fieldValue != null) {
-            return fieldValue.getDbName();
-        }
-        return format("e.data ->> '%s'", field);
+    private String getFieldName(MetadataFilter.OrderBy orderBy) {
+        return orderBy.isPredefined()
+                ? getDBName(orderBy.getField())
+                : format("e.data ->> '%s'", orderBy.getField());
+    }
+
+    private String applySearchClause(String query) {
+        String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
+        return searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery);
     }
 
     enum MetadataEntityParameters {

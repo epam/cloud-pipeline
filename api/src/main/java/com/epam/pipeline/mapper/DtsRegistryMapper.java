@@ -26,5 +26,6 @@ public interface DtsRegistryMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "status", ignore = true)
     DtsRegistry toDtsRegistry(DtsRegistryVO dtsRegistryVO);
 }

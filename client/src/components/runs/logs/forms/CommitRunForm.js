@@ -184,6 +184,12 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
             ? selectedRegistry.groups[0].name : '';
           tool = '';
         }
+        if (selectedRegistry) {
+          const personalGroup = (selectedRegistry.groups || []).find(group => group.privateGroup);
+          if (personalGroup) {
+            group = personalGroup.name;
+          }
+        }
         if (selectedRegistry && group) {
           const [registryGroup] = (selectedRegistry.groups || []).filter(g => g.name === group);
           if (registryGroup) {

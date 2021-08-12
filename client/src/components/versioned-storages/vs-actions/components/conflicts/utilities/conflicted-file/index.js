@@ -709,6 +709,11 @@ class BinaryConflictedFile extends ConflictedFile {
   @observable acceptedBranch;
   binary = true;
 
+  constructor (info) {
+    super();
+    this.info = info;
+  }
+
   @computed
   get resolved () {
     return !!this.acceptedBranch && this.acceptedBranch !== Merged;
@@ -724,7 +729,7 @@ class BinaryConflictedFile extends ConflictedFile {
   getMergedText () {
     return {
       binary: true,
-      branch: this.acceptedBranch
+      remote: this.acceptedBranch === RemoteBranch
     };
   }
 }

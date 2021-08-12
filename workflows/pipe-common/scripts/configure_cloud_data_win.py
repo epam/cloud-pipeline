@@ -15,9 +15,11 @@
 import json
 import pathlib
 import os
-import platform
+from distutils.dir_util import copy_tree
+from pipeline.utils.scheduler import schedule_python_command_on_logon
 from win32com.client import Dispatch
 
+_PIPE_WEB_DAV_CONFIG_DIR = '.pipe-webdav-client'
 _PUBLIC_CLOUD_DATA_SHORTCUT_PATH = 'C:\\Users\\Public\\Desktop\\Cloud-Data.lnk'
 
 
@@ -46,10 +48,19 @@ def _create_cloud_data_config(cloud_data_parent_dir, edge_url, username, token):
 
 
 def configure_cloud_data_win(cloud_data_parent_dir, edge_url, dav_user, token):
-    current_platform = platform.system()
-    if current_platform == 'Windows':
-        _create_cloud_data_config(cloud_data_parent_dir, edge_url, dav_user, token)
-        _create_cloud_data_shortcut(cloud_data_parent_dir)
-    else:
-        raise RuntimeError('Cloud-Data installation is not supported on {platform} platform.'
-                           .format(platform=current_platform))
+    _create_cloud_data_config(cloud_data_parent_dir, edge_url, dav_user, token)
+    _create_cloud_data_shortcut(cloud_data_parent_dir)
+
+
+def move_configuration(cloud_data_config_parent_dir, user_default_home_dir):
+    user_home_dir = os.getenv('HOME', user_default_home_dir)
+    web_dav_config_dir = os.path.join(user_home_dir, _PIPE_WEB_DAV_CONFIG_DIR)
+    cloud_data_config_dir = os.path.join(cloud_data_config_parent_dir, _PIPE_WEB_DAV_CONFIG_DIR)
+    copy_tree(cloud_data_config_dir, web_dav_config_dir)
+
+
+def schedule_finalization(username, cloud_data_config_parent_dir):
+    user_default_home_dir = 'C:\\\\Users\\\\{}'.format(username.lower())
+    command = f'from scripts.configure_cloud_data_win import move_configuration;'\
+              f'move_configuration(\'{cloud_data_config_parent_dir}\', \'{user_default_home_dir}\')'
+    schedule_python_command_on_logon(username, 'CloudDataInstallationFinalizer', command)

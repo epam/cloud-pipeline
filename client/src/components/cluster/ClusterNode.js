@@ -23,6 +23,7 @@ import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
@@ -40,6 +41,22 @@ import roleModel from '../../utils/roleModel';
 })
 @observer
 class ClusterNode extends Component {
+  @computed
+  get windowsOS () {
+    const {node} = this.props;
+    if (node.loaded) {
+      const {
+        labels = {},
+        systemInfo = {}
+      } = node.value || {};
+      if (systemInfo.operatingSystem) {
+        return /^windows$/i.test(systemInfo.operatingSystem);
+      }
+      return /^windows$/i.test(labels['kubernetes.io.host']);
+    }
+    return false;
+  }
+
   refreshNodeInstance = () => {
     if (!this.props.node.pending) {
       this.props.node.fetch();
@@ -75,7 +92,10 @@ class ClusterNode extends Component {
     if (this.props.node.pending || this.props.node.error) {
       return null;
     }
-    const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+    let activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+    if (activeTab === 'monitor' && this.windowsOS) {
+      activeTab = 'info';
+    }
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
         <Menu
@@ -94,12 +114,16 @@ class ClusterNode extends Component {
               to={`/cluster/${this.props.name}/jobs`}
               location={this.props.router.location}>Jobs</AdaptedLink>
           </Menu.Item>
-          <Menu.Item key="monitor">
-            <AdaptedLink
-              id="cluster-node-tab-monitor"
-              to={`/cluster/${this.props.name}/monitor`}
-              location={this.props.router.location}>Monitor</AdaptedLink>
-          </Menu.Item>
+          {
+            !this.windowsOS && (
+              <Menu.Item key="monitor">
+                <AdaptedLink
+                  id="cluster-node-tab-monitor"
+                  to={`/cluster/${this.props.name}/monitor`}
+                  location={this.props.router.location}>Monitor</AdaptedLink>
+              </Menu.Item>
+            )
+          }
         </Menu>
       </Row>
     );

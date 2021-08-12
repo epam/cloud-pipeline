@@ -39,7 +39,9 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
   };
 
   onGenerateReportClick = (event) => {
-    event && event.stopPropagation();
+    const {actions = {}} = this.props;
+    const {openGenerateReportDialog} = actions;
+    openGenerateReportDialog && openGenerateReportDialog();
   };
 
   onHistoryBtnClick = () => {
@@ -125,9 +127,8 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               <Button
                 size="small"
                 type="primary"
-                onClick={(event) => this.onGenerateReportClick(event)}
+                onClick={this.onGenerateReportClick}
                 className={styles.controlBtn}
-                disabled
               >
                 Generate report
               </Button>
@@ -166,11 +167,10 @@ VersionedStorageHeader.propTypes = {
     openHistoryPanel: PropTypes.func,
     closeHistoryPanel: PropTypes.func,
     openEditStorageDialog: PropTypes.func,
-    runVersionedStorage: PropTypes.func
+    runVersionedStorage: PropTypes.func,
+    openGenerateReportDialog: PropTypes.func
   }),
   readOnly: PropTypes.bool,
-  issuesPanelOpen: PropTypes.bool,
-  metadataPanelOpen: PropTypes.bool,
   controlsEnabled: PropTypes.bool,
   historyPanelOpen: PropTypes.bool
 };

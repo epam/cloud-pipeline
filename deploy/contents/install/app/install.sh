@@ -222,6 +222,7 @@ CP_EDGE_KUBE_NODE_NAME=${CP_EDGE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-edge to $CP_EDGE_KUBE_NODE_NAME"
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/cp-edge="true" --overwrite
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/role="EDGE" --overwrite
+kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/region="$CP_CLOUD_REGION_ID" --overwrite
 
 # Allow to schedule notifier to the master
 CP_NOTIFIER_KUBE_NODE_NAME=${CP_NOTIFIER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}

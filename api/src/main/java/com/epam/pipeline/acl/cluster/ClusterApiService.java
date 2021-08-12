@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,13 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
-import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,7 +54,7 @@ public class ClusterApiService {
     private final NodeDiskManager nodeDiskManager;
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
-    private final UtilsManager utilsManager;
+    private final EdgeServiceManager edgeServiceManager;
 
     @PostFilter(NODE_READ_FILTER)
     public List<NodeInstance> getNodes() {
@@ -122,7 +122,7 @@ public class ClusterApiService {
         return nodeDiskManager.loadByNodeId(name);
     }
 
-    public String buildEdgeExternalUrl() {
-        return utilsManager.buildEdgeExternalUrl();
+    public String buildEdgeExternalUrl(final String region) {
+        return edgeServiceManager.buildEdgeExternalUrl(region);
     }
 }

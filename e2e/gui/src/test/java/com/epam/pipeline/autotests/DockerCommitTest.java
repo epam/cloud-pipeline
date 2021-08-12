@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ public class DockerCommitTest
     @TestCase({"EPMCMBIBPC-1350"})
     public void listOfGroupInRegistry() {
         logAO().commit(commit ->
-                commit.hover(GROUP).ensure(byText(group), visible)
+                commit.click(GROUP).ensure(byText(group), visible)
                         .cancel()
         );
     }
@@ -210,6 +210,7 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
                                 .sleep(5, SECONDS)
@@ -232,6 +233,7 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
                                 .sleep(5, SECONDS)

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
@@ -31,15 +31,18 @@ import getRunActions from './components/getRunActions';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
-import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
+import {openReRunForm, runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
+import VSActions from '../../../versioned-storages/vs-actions';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
+@inject('pipelines', 'multiZoneManager')
+@VSActions.check
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -133,7 +136,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   reRun = (run) => {
-    this.props.router.push(`/launch/${run.id}`);
+    return openReRunForm(run, this.props);
   };
 
   renderContent = () => {
@@ -152,41 +155,43 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
             onClick={this.navigateToRun}
             emptyMessage="There are no active runs"
             actions={
-              getRunActions({
-                pause: run => this.confirmPause(
-                  run,
-                  `Are you sure you want to pause run ${run.podId}?`,
-                  'PAUSE',
-                  () => this.pauseRun(run)
-                ),
-                resume: run => this.confirm(
-                  `Are you sure you want to resume run ${run.podId}?`,
-                  'RESUME',
-                  () => this.resumeRun(run)
-                ),
-                stop: stopRun(this, this.props.refresh),
-                terminate: terminateRun(this, this.props.refresh),
-                run: this.reRun,
-                openUrl: url => {
-                  window.open(url, '_blank').focus();
-                },
-                ssh: async run => {
-                  const runSSH = pipelineRunSSHCache.getPipelineRunSSH(run.id);
-                  await runSSH.fetchIfNeededOrWait();
+              getRunActions(
+                this.props,
+                {
+                  pause: run => this.confirmPause(
+                    run,
+                    `Are you sure you want to pause run ${run.podId}?`,
+                    'PAUSE',
+                    () => this.pauseRun(run)
+                  ),
+                  resume: run => this.confirm(
+                    `Are you sure you want to resume run ${run.podId}?`,
+                    'RESUME',
+                    () => this.resumeRun(run)
+                  ),
+                  stop: stopRun(this, this.props.refresh),
+                  terminate: terminateRun(this, this.props.refresh),
+                  run: this.reRun,
+                  openUrl: url => {
+                    window.open(url, '_blank').focus();
+                  },
+                  ssh: async run => {
+                    const runSSH = pipelineRunSSHCache.getPipelineRunSSH(run.id);
+                    await runSSH.fetchIfNeededOrWait();
 
-                  if (runSSH.loaded) {
-                    window.open(runSSH.value, '_blank').focus();
+                    if (runSSH.loaded) {
+                      window.open(runSSH.value, '_blank').focus();
+                    }
+                    if (runSSH.error) {
+                      message.error(runSSH.error);
+                    }
+                  },
+                  vsActionsMenu: (run, visible) => {
+                    this.setState({
+                      hovered: visible ? run : undefined
+                    });
                   }
-                  if (runSSH.error) {
-                    message.error(runSSH.error);
-                  }
-                },
-                vsActionsMenu: (run, visible) => {
-                  this.setState({
-                    hovered: visible ? run : undefined
-                  });
-                }
-              })
+                })
             }
             cardClassName={run => classNames({
               [styles.runServiceCard]: run.initialized && run.serviceUrl

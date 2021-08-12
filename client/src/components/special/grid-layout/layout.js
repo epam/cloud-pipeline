@@ -168,7 +168,13 @@ function rebuildLayout (layout, gridStyles, rebuildHeights = true, composing = f
       h: Math.floor(item.h * heightItem)
     }));
   } else {
-    return layout;
+    return (layout || []).map(item => ({
+      i: item.i,
+      x: item.x,
+      y: item.y,
+      w: item.w,
+      h: item.h
+    }));
   }
 }
 

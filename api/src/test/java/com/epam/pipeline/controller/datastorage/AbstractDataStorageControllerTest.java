@@ -24,7 +24,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -73,6 +75,7 @@ public abstract class AbstractDataStorageControllerTest extends AbstractControll
     protected static final String TAGS_URL = BY_ID_URL + "/tags";
     protected static final String TAGS_LIST_URL = TAGS_URL + "/list";
     protected static final String SHARED_LINK_URL = BY_ID_URL + "/sharedLink";
+    protected static final String CONVERT_URL = BY_ID_URL + "/convert";
     protected static final String PERMISSION_URL = DATASTORAGE_URL + "/permission";
     protected static final String PATH_URL = DATASTORAGE_URL + "/path";
     protected static final String PATH_SIZE_URL = PATH_URL + "/size";
@@ -117,6 +120,7 @@ public abstract class AbstractDataStorageControllerTest extends AbstractControll
     protected static final Map<String, String> TAGS = Collections.singletonMap(TEST, TEST);
     protected final DataStorageRule dataStorageRule = DatastorageCreatorUtils.getDataStorageRule();
     protected final S3bucketDataStorage s3Bucket = DatastorageCreatorUtils.getS3bucketDataStorage();
+    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline();
     protected final DataStorageFile file = DatastorageCreatorUtils.getDataStorageFile();
     protected final DataStorageFolder folder = DatastorageCreatorUtils.getDataStorageFolder();
     protected final UpdateDataStorageItemVO update = DatastorageCreatorUtils.getUpdateDataStorageItemVO();

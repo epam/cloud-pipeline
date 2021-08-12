@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
-import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;

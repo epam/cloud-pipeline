@@ -22,10 +22,9 @@ import {
   Button,
   Card,
   Col,
-  Dropdown,
   Icon,
   Input,
-  Menu,
+  Menu as MenuHorizontal,
   message,
   Modal,
   Popover,
@@ -34,6 +33,8 @@ import {
   Tooltip,
   Upload
 } from 'antd';
+import Menu, {MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -78,6 +79,7 @@ import InstanceTypesManagementForm
 import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
+import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 
 const MarkdownRenderer = new Remarkable('full', {
@@ -128,7 +130,6 @@ const DEFAULT_FILE_SIZE_KB = 50;
 })
 @observer
 export default class Tool extends localization.LocalizedReactComponent {
-
   state = {
     metadata: false,
     editDescriptionMode: false,
@@ -176,6 +177,16 @@ export default class Tool extends localization.LocalizedReactComponent {
       };
     }
     return null;
+  }
+
+  @computed
+  get defaultVersionPlatform () {
+    if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
+      if ((this.defaultVersionSettings.value || []).length > 0) {
+        return this.defaultVersionSettings.value[0].platform;
+      }
+    }
+    return undefined;
   }
 
   @computed
@@ -682,12 +693,15 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   getVersionScanningInfo = (item) => {
+    if (/^windows$/i.test(item.platform)) {
+      return null;
+    }
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && item.status) {
       let scanningInfo;
       switch (item.status.toUpperCase()) {
         case ScanStatuses.completed:
           if (item.successScanDate) {
-            scanningInfo = <span>Successfully scanned at {displayDate(item.successScanDate)}</span>
+            scanningInfo = <span>Successfully scanned at {displayDate(item.successScanDate)}</span>;
           } else {
             scanningInfo = <span>Successfully scanned</span>;
           }
@@ -702,8 +716,8 @@ export default class Tool extends localization.LocalizedReactComponent {
         case ScanStatuses.failed:
           if (item.successScanDate) {
             scanningInfo = <span>
-            Scanning <span
-              className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
+              Scanning <span
+                className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
           } else {
             scanningInfo = <span>Scanning <span
               className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}</span>;
@@ -765,6 +779,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           key: keyIndex,
           name: currentVersion.version,
           digest: versionAttributes && versionAttributes.digest ? versionAttributes.digest : '',
+          platform: versionAttributes ? versionAttributes.platform : undefined,
           digestAliases,
           fromWhiteList: scanResult.fromWhiteList,
           size: versionAttributes && versionAttributes.size ? versionAttributes.size : '',
@@ -860,7 +875,9 @@ export default class Tool extends localization.LocalizedReactComponent {
           <table className={styles.versionNameTable}>
             <tbody>
               <tr>
-                <th className={styles.versionName}>{name}</th>
+                <th className={styles.versionName}>
+                  {name}
+                </th>
                 <td className={styles.versionScanningInfoGraph}>
                   {
                     this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
@@ -886,7 +903,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       key: 'tool os version',
       title: 'OS',
       className: styles.osColumn,
-      render: (toolOSVersion) => {
+      render: (toolOSVersion, item) => {
         if (toolOSVersion) {
           const {distribution, version} = toolOSVersion;
           if (distribution) {
@@ -935,6 +952,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         return (
           <Row type="flex" justify="end" className={styles.toolVersionActions}>
             {
+              !/^windows$/i.test(version.platform) &&
               this.isAdmin() &&
               !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
@@ -947,6 +965,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               )
             }
             {
+              !/^windows$/i.test(version.platform) &&
               this.isAdmin() &&
               !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
@@ -1056,12 +1075,12 @@ export default class Tool extends localization.LocalizedReactComponent {
     const warningForLatestVersion = this.getWarningForLatestVersion();
     return (
       <div>
-          { warningForLatestVersion &&
+        { warningForLatestVersion &&
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="warning"
             message={warningForLatestVersion} />
-          }
+        }
         {
           !this.defaultTag && this.props.versions.loaded &&
           <Alert
@@ -1098,6 +1117,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           onInitialized={this.onToolSettingsFormInitialized}
           readOnly={!roleModel.writeAllowed(this.props.tool.value) || this.link}
           configuration={this.defaultVersionSettingsConfiguration}
+          platform={this.defaultVersionPlatform}
           tool={this.props.tool.value}
           toolId={this.props.toolId}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
@@ -1255,21 +1275,21 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     return (
       <Row type="flex" justify="center">
-        <Menu
+        <MenuHorizontal
           className={styles.toolMenu}
           onClick={onChangeSection}
           mode="horizontal"
           selectedKeys={[this.props.section]}>
-          <Menu.Item key="description">
+          <MenuHorizontal.Item key="description">
             DESCRIPTION
-          </Menu.Item>
-          <Menu.Item key="versions">
+          </MenuHorizontal.Item>
+          <MenuHorizontal.Item key="versions">
             VERSIONS
-          </Menu.Item>
-          <Menu.Item key="settings">
+          </MenuHorizontal.Item>
+          <MenuHorizontal.Item key="settings">
             SETTINGS
-          </Menu.Item>
-        </Menu>
+          </MenuHorizontal.Item>
+        </MenuHorizontal>
       </Row>
     );
   };
@@ -1375,12 +1395,15 @@ export default class Tool extends localization.LocalizedReactComponent {
       ? `Are you sure you want to launch tool (version ${version}) with default settings?`
       : 'Are you sure you want to launch tool with default settings?';
     const info = this.getVersionRunningInformation(version || this.defaultTag);
+    const platform = this.defaultVersionPlatform;
     if (await run(this)(
       payload,
       true,
       title,
       info.launchTooltip,
-      allowedInstanceTypesRequest
+      allowedInstanceTypesRequest,
+      undefined,
+      platform
     )) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }
@@ -1429,7 +1452,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   get versionsScanResObject () {
     const versions = {};
     this.props.versions.value.versions.forEach(version => {
-      versions[version.version] = version.scanResult;
+      versions[version.version] = version;
     });
     return versions;
   };
@@ -1577,35 +1600,39 @@ export default class Tool extends localization.LocalizedReactComponent {
         }
       };
       const runMenu = (
-        <Menu selectedKeys={[]} onClick={onSelect}>
-          <Menu.Item id="run-default-button" key={runDefaultKey}>
+        <Menu
+          selectedKeys={[]}
+          onClick={onSelect}
+          style={{cursor: 'pointer'}}
+        >
+          <MenuItem id="run-default-button" key={runDefaultKey}>
             {
               tooltip && !notLoaded
                 ? (
-                <Tooltip
-                  placement="left"
-                  title={tooltip}
-                  trigger="hover">
-                  Default settings
-                </Tooltip>
-              )
+                  <Tooltip
+                    placement="left"
+                    title={tooltip}
+                    trigger="hover">
+                    Default settings
+                  </Tooltip>
+                )
                 : 'Default settings'
             }
-          </Menu.Item>
-          <Menu.Item id="run-custom-button" key={runCustomKey}>
+          </MenuItem>
+          <MenuItem id="run-custom-button" key={runCustomKey}>
             {
               tooltip && !notLoaded
                 ? (
-                <Tooltip
-                  placement="left"
-                  title={tooltip}
-                  trigger="hover">
-                  Custom settings
-                </Tooltip>
-              )
+                  <Tooltip
+                    placement="left"
+                    title={tooltip}
+                    trigger="hover">
+                    Custom settings
+                  </Tooltip>
+                )
                 : 'Custom settings'
             }
-          </Menu.Item>
+          </MenuItem>
         </Menu>
       );
       return (
@@ -1645,7 +1672,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                 }}
                 size="small"
                 type="primary">
-                <Icon type="down" style={{verticalAlign: 'middle', lineHeight: 'inherit'}}/>
+                <Icon type="down" style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
               </Button>
             </Dropdown>
           </Button.Group>
@@ -1664,28 +1691,28 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     const displayOptionsMenuItems = [];
     displayOptionsMenuItems.push(
-      <Menu.Item
+      <MenuItem
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
         key="metadata">
         <Row type="flex" justify="space-between" align="middle">
           <span>Attributes</span>
           <Icon type="check-circle" style={{display: this.state.metadata ? 'inherit' : 'none'}} />
         </Row>
-      </Menu.Item>
+      </MenuItem>
     );
     displayOptionsMenuItems.push(
-      <Menu.Item
+      <MenuItem
         id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
         key="issues">
         <Row type="flex" justify="space-between" align="middle">
           <span>{this.localizedString('Issue')}s</span>
           <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
         </Row>
-      </Menu.Item>
+      </MenuItem>
     );
     if (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={
             this.state.instanceTypesManagementPanel
               ? 'hide-instance-types-management-panel-button'
@@ -1696,13 +1723,17 @@ export default class Tool extends localization.LocalizedReactComponent {
             <span>Instance management</span>
             <Icon
               type="check-circle"
-              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}}/>
+              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     const displayOptionsMenu = (
-      <Menu onClick={onSelectDisplayOption} style={{width: 150}}>
+      <Menu
+        onClick={onSelectDisplayOption}
+        style={{width: 150, cursor: 'pointer'}}
+        selectedKeys={[]}
+      >
         {displayOptionsMenuItems}
       </Menu>
     );
@@ -1800,14 +1831,18 @@ export default class Tool extends localization.LocalizedReactComponent {
       }
     };
     const menu = (
-      <Menu onClick={onClick}>
-        <Menu.Item key={permissionsKey}>
+      <Menu
+        onClick={onClick}
+        style={{cursor: 'pointer'}}
+        selectedKeys={[]}
+      >
+        <MenuItem key={permissionsKey}>
           <Icon type="setting" /> Permissions
-        </Menu.Item>
-        <Menu.Divider />
-        <Menu.Item key={deleteKey} style={{color: 'red'}}>
+        </MenuItem>
+        <Divider />
+        <MenuItem key={deleteKey} style={{color: 'red'}}>
           <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
-        </Menu.Item>
+        </MenuItem>
       </Menu>
     );
     return (
@@ -1859,6 +1894,10 @@ export default class Tool extends localization.LocalizedReactComponent {
                 </Button>
                 <ToolLink link={this.link} style={{marginLeft: 5}} />
                 <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
+                <PlatformIcon
+                  platform={this.defaultVersionPlatform}
+                  style={{verticalAlign: 'middle', marginLeft: 5}}
+                />
                 <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
               </td>
               <td style={{width: '33%', verticalAlign: 'bottom'}}>

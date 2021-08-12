@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -55,6 +56,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
@@ -278,6 +280,9 @@ public class AclTestBeans {
 
     @MockBean
     protected DataStorageTagProviderManager mockDataStorageTagProviderManager;
+
+    @MockBean
+    protected DataStorageConvertManager mockDataStorageConvertManager;
 
     @MockBean
     protected ToolScanScheduler mockToolScanScheduler;
@@ -517,6 +522,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunAsManager mockPipelineRunAsManager;
+
+    @MockBean
+    protected EdgeServiceManager mockEdgeServiceManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

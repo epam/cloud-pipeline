@@ -209,6 +209,7 @@ public final class MessageConstants {
     public static final String ERROR_NODE_DOWN_TIMEOUT = "error.kube.node.down.timeout";
     public static final String LOG_WAS_TRUNCATED = "log.truncated";
     public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
+    public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
     public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
 
     // Data storage messages
@@ -250,6 +251,11 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
     public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
     public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
+    public static final String ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID =
+            "error.datastorage.convert.target.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
+            "error.datastorage.convert.source.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -387,6 +393,20 @@ public final class MessageConstants {
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
     public static final String ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED = "error.notification.receiver.not.specified";
 
+    //Contextual notifications
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TYPE_MISSING =
+            "error.contextual.notification.type.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TRIGGER_ID_MISSING =
+            "error.contextual.notification.trigger.id.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_RECIPIENTS_MISSING =
+            "error.contextual.notification.recipients.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_GLOBAL_TEMPLATE_NOT_FOUND =
+            "error.contextual.notification.global.template.not.found";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_SUBJECT_MISSING =
+            "error.contextual.notification.subject.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_BODY_MISSING =
+            "error.contextual.notification.body.missing";
+
     //Parameters mapping
     public static final String ERROR_PARAMETER_MISSING_REFERENCE = "error.parameter.missing.reference";
     public static final String ERROR_PARAMETER_MISSING_VALUE = "error.parameter.missing.value";
@@ -449,13 +469,22 @@ public final class MessageConstants {
     public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
 
     //DTS
-    public static final String ERROR_DTS_REGISTRY_DOES_NOT_EXIST = "error.dts.registry.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_IS_EMPTY = "error.dts.registry.is.empty";
     public static final String ERROR_DTS_REGISTRY_URL_IS_EMPTY = "error.dts.registry.url.is.empty";
     public static final String ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY = "error.dts.registry.prefixes.are.empty";
     public static final String ERROR_DTS_REGISTRY_ID_IS_EMPTY = "error.dts.registry.id.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_IS_EMPTY = "error.dts.registry.name.is.empty";
+    public static final String ERROR_DTS_REGISTRY_NAME_CONSIST_OF_NUMBERS = "error.dts.registry.name.numbers.only";
+    public static final String ERROR_DTS_REGISTRY_NAME_ALREADY_EXISTS = "error.dts.registry.name.already.exists";
     public static final String ERROR_DTS_NOT_SCHEDULABLE = "error.dts.registry.not.schedulable";
+    public static final String ERROR_DTS_PREFERENCES_DOESNT_EXIST = "error.dts.preferences.not.exist";
+    public static final String ERROR_DTS_PREFERENCES_UPDATE_EMPTY = "error.dts.preferences.update.empty";
+    public static final String ERROR_DTS_PREFERENCES_DELETE_EMPTY = "error.dts.preferences.delete.empty";
+    public static final String INFO_DTS_MONITORING_STATUS = "info.dts.monitoring.status";
+    public static final String INFO_DTS_MONITORING_STATUS_MISSING_HEARTBEAT =
+            "info.dts.monitoring.status.missing.heartbeat";
 
     //Cloud region
     public static final String ERROR_REGION_NOT_FOUND = "error.region.not.found";
@@ -544,8 +573,11 @@ public final class MessageConstants {
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //System dictionaries
-    public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_KEY_DOESNT_EXIST = "categorical.attribute.key.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_ID_DOESNT_EXIST = "categorical.attribute.id.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY = "categorical.attribute.exists.already";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME = "categorical.attribute.null.name.key";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";

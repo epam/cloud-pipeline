@@ -87,7 +87,9 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        return getInstanceService(region).scaleUpNode(region, runId, instance);
+        final RunInstance scaledUpInstance = getInstanceService(region).scaleUpNode(region, runId, instance);
+        kubernetesManager.createNodeService(scaledUpInstance);
+        return scaledUpInstance;
     }
 
     @Override
@@ -99,6 +101,13 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
+        try {
+            final PipelineRun run = runCRUDService.loadRunById(runId);
+            final RunInstance instance = run.getInstance();
+            kubernetesManager.deleteNodeService(instance);
+        } catch (IllegalArgumentException e) {
+            log.debug(e.getMessage(), e);
+        }
         getInstanceService(region).scaleDownNode(region, runId);
     }
 
@@ -110,6 +119,10 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public void terminateNode(final AbstractCloudRegion region, final String internalIp, final String nodeName) {
+        runCRUDService.loadRunsForNodeName(nodeName).stream()
+                .map(PipelineRun::getInstance)
+                .findFirst()
+                .ifPresent(kubernetesManager::deleteNodeService);
         getInstanceService(region).terminateNode(region, internalIp, nodeName);
     }
 

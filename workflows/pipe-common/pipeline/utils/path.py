@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform
 import errno
 import os
+from pipeline.utils.platform import assert_windows
 
 
 def _mkdir(path):
@@ -51,12 +51,8 @@ def _add_to_batch_profile(path, profile_path):
 def add_to_path(path,
                 powershell_profile_path='c:\\windows\\system32\\windowspowershell\\v1.0\\profile.ps1',
                 batch_profile_path='c:\\init\\profile.cmd'):
-    current_platform = platform.system()
-    if current_platform == 'Windows':
-        if powershell_profile_path:
-            _add_to_powershell_profile(path, profile_path=powershell_profile_path)
-        if batch_profile_path:
-            _add_to_batch_profile(path, profile_path=batch_profile_path)
-    else:
-        raise RuntimeError('Adding to path is not supported on {platform} platform.'
-                           .format(platform=current_platform))
+    assert_windows('Adding to path')
+    if powershell_profile_path:
+        _add_to_powershell_profile(path, profile_path=powershell_profile_path)
+    if batch_profile_path:
+        _add_to_batch_profile(path, profile_path=batch_profile_path)

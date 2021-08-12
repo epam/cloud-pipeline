@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import datetime
+import json
+
 from .pipeline_run_parameter_model import PipelineRunParameterModel
 from ..utilities import date_utilities
 
@@ -54,43 +56,43 @@ class PipelineRunModel(object):
                     if t.name == 'InitializeEnvironment' and t.status == 'SUCCESS' ), False)
 
     @classmethod
-    def load(cls, json):
+    def load(cls, result):
         instance = cls()
-        instance.identifier = json['id']
-        if 'pipelineId' in json:
-            instance.pipeline_id = json['pipelineId']
-        if 'pipelineName' in json:
-            instance.pipeline = json['pipelineName']
-        elif 'dockerImage' in json:
-            parts = json['dockerImage'].split('/')
+        instance.identifier = result['id']
+        if 'pipelineId' in result:
+            instance.pipeline_id = result['pipelineId']
+        if 'pipelineName' in result:
+            instance.pipeline = result['pipelineName']
+        elif 'dockerImage' in result:
+            parts = result['dockerImage'].split('/')
             instance.pipeline = parts[len(parts) - 1]
         else:
             instance.pipeline = 'CMD'
-        if 'version' in json:
-            instance.version = json['version']
-        instance.status = json['status']
-        if 'startDate' in json:
-            instance.scheduled_date = date_utilities.server_date_representation(json['startDate'])
-        if 'endDate' in json:
-            instance.end_date = date_utilities.server_date_representation(json['endDate'])
-        if 'owner' in json:
-            instance.owner = json['owner']
-        if 'serviceUrl' in json:
-            instance.endpoints = json['serviceUrl'].split(';')
-        if 'pipelineRunParameters' in json:
-            for parameter in json['pipelineRunParameters']:
+        if 'version' in result:
+            instance.version = result['version']
+        instance.status = result['status']
+        if 'startDate' in result:
+            instance.scheduled_date = date_utilities.server_date_representation(result['startDate'])
+        if 'endDate' in result:
+            instance.end_date = date_utilities.server_date_representation(result['endDate'])
+        if 'owner' in result:
+            instance.owner = result['owner']
+        if 'serviceUrl' in result:
+            instance.endpoints = cls.parse_service_urls(result['serviceUrl'].items())
+        if 'pipelineRunParameters' in result:
+            for parameter in result['pipelineRunParameters']:
                 if 'value' in parameter and 'name' in parameter:
                     instance.parameters.append(PipelineRunParameterModel(parameter['name'], parameter['value'], None, False))
                     if parameter['name'] == 'parent-id' and parameter['value'] != 0:
                         instance.parent_id = parameter['value']
                 elif 'name' in parameter:
                     instance.parameters.append(PipelineRunParameterModel(parameter['name'], None, None, False))
-        if 'instance' in json:
-            instance.instance = json['instance'].items()
-        if 'podIP' in json:
-            instance.pod_ip = json['podIP']
-        if 'sshPassword' in json:
-            instance.ssh_pass = json['sshPassword']
+        if 'instance' in result:
+            instance.instance = result['instance'].items()
+        if 'podIP' in result:
+            instance.pod_ip = result['podIP']
+        if 'sshPassword' in result:
+            instance.ssh_pass = result['sshPassword']
         node_ip_exists = False
         for (key, value) in instance.instance:
             if key == 'nodeIP':
@@ -99,15 +101,24 @@ class PipelineRunModel(object):
                 (instance.instance is None or not node_ip_exists):
             instance.status = 'SCHEDULED'
 
-        if 'runSids' in json and json['runSids'] is not None and len(json['runSids']) > 0:
-            for item in json['runSids']:
+        if 'runSids' in result and result['runSids'] is not None and len(result['runSids']) > 0:
+            for item in result['runSids']:
                 instance.run_sids.append(RunSid(item.get('name', None), item.get('isPrincipal', None),
                                                 item.get('accessType', 'ENDPOINT')))
 
-        if 'sensitive' in json:
-            instance.sensitive = json['sensitive']
+        if 'sensitive' in result:
+            instance.sensitive = result['sensitive']
 
         return instance
+
+    @staticmethod
+    def parse_service_urls(items):
+        endpoints = []
+        for region, service_urls_string in items:
+            service_urls = {record["name"]: record['url'] for record in json.loads(service_urls_string) if 'url' in record}
+            for name, service_url in service_urls.items():
+                endpoints.append("%s : %s : %s" % (name, region, service_url))
+        return endpoints
 
 
 class PriceType:

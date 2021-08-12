@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,6 +165,19 @@ public class ShellAO implements AccessObject<ShellAO> {
             close();
             sleep(5, SECONDS);
             new NavigationMenuAO().runs().showLog(runId).clickOnSshLink();
+        }
+        return this;
+    }
+
+    public ShellAO waitUntilTextLoads(final String runId) {
+        for (int i = 0; i < 3; i++) {
+            sleep(10, SECONDS);
+            if ($(withText(format("pipeline-%s", runId))).exists()) {
+                break;
+            }
+            sleep(1, MINUTES);
+            refresh();
+            sleep(5, SECONDS);
         }
         return this;
     }

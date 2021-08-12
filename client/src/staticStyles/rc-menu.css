@@ -1,0 +1,42 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.rc-menu-item.rc-menu-item-disabled,
+.rc-menu-submenu-title.rc-menu-item-disabled,
+.rc-menu-item.rc-menu-submenu-disabled,
+.rc-menu-submenu-title.rc-menu-submenu-disabled {
+  color: #aaa !important;
+}
+
+.rc-menu-submenu-title {
+  z-index: 1;
+}
+
+.rc-dropdown-menu {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rc-menu-vertical .rc-menu-submenu-arrow,
+.rc-menu-vertical-left .rc-menu-submenu-arrow,
+.rc-menu-vertical-right .rc-menu-submenu-arrow,
+.rc-menu-inline .rc-menu-submenu-arrow {
+  font-family: "anticon" !important;
+}
+
+.rc-menu-submenu-arrow::before {
+  content: "\E61F" !important;
+  font-family: anticon;
+}

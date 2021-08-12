@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 @Slf4j
 @Service
@@ -51,6 +52,9 @@ public class Route53Helper {
     private static final int DELAY_IN_SECONDS = 1;
 
     public InstanceDNSRecord createDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
+        Assert.notNull(hostedZoneId, "hostedZoneId cannot be null");
+        Assert.isTrue(dnsRecord.getDnsRecord() != null && dnsRecord.getTarget() != null,
+                "DNS Record and DNS Record target cannot be null");
         log.info("Creating DNS record for hostedZoneId: {} record: {} and target: {}",
                 hostedZoneId, dnsRecord.getDnsRecord(), dnsRecord.getTarget());
         final AmazonRoute53 client = getRoute53Client();

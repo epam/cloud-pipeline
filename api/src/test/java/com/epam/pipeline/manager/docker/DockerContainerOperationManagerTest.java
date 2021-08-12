@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitorin
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class DockerContainerOperationManagerTest {
 
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
@@ -108,10 +110,12 @@ public class DockerContainerOperationManagerTest {
     private PipelineLauncher pipelineLauncher;
 
     @Mock
+    private PipelineRunServiceUrlManager serviceUrlManager;
+
+    @Mock
     private PipelineConfigurationManager pipelineConfigurationManager;
 
     @Mock
-    @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
     @Mock

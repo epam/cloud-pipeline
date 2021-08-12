@@ -170,8 +170,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
+        final ToolVersion toolVersion = ToolVersion.builder().size(1L).platform("linux").build();
         when(toolVersionManager.loadToolVersion(anyLong(), anyString()))
-                .thenReturn(ToolVersion.builder().size(1L).build());
+                .thenReturn(toolVersion);
+        when(toolVersionManager.findToolVersion(anyLong(), anyString()))
+                .thenReturn(Optional.of(toolVersion));
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
         doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());

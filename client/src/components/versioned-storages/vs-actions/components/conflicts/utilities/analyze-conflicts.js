@@ -208,9 +208,12 @@ function processDiffs (contents, head, remote, mergeInProgress) {
   return list;
 }
 
-export default function analyzeConflicts (run, storage, mergeInProgress, file) {
+export default function analyzeConflicts (run, storage, mergeInProgress, file, fileInfo) {
   if (!run || !storage || !file) {
     return Promise.resolve({});
+  }
+  if (fileInfo && fileInfo.binary) {
+    return Promise.resolve(new BinaryConflictedFile(fileInfo));
   }
   return new Promise((resolve) => {
     const request = new VSFileContent(run, storage.id, file);

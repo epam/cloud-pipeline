@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import shutil
-import traceback
 import uuid
 
 from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
@@ -22,7 +21,7 @@ from fsbrowser.src.git.git_task import GitTask
 from fsbrowser.src.model.git_repo_status import GitRepositoryStatus
 from fsbrowser.src.model.versioned_storage import VersionedStorage
 
-VERSION_STORAGE_IDENTIFIER = 'id'
+VERSION_STORAGE_IDENTIFIER = 'name'
 GIT_CREDENTIALS_DURATION_DAYS = 30
 
 
@@ -72,8 +71,6 @@ class GitManager:
             full_item_path = os.path.join(self.root_folder, item_name)
             if os.path.isfile(full_item_path):
                 continue
-            if not item_name.isdigit():
-                continue
             try:
                 versioned_storage = self.api_client.get_pipeline(item_name)
             except Exception as e:
@@ -86,7 +83,7 @@ class GitManager:
             versioned_storage_name = versioned_storage.get('name')
             repo_path = os.path.join(self.root_folder, item_name)
             repo = self.git_client.get_repo(repo_path)
-            items.append(VersionedStorage(item_name, versioned_storage_name, repo_path,
+            items.append(VersionedStorage(versioned_storage.get('id'), versioned_storage_name, repo_path,
                                           repo.get('revision'), repo.get('detached'))
                          .to_json())
         return items
@@ -94,6 +91,11 @@ class GitManager:
     def status(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         items = self.git_client.status(full_repo_path)
+        git_files = []
+        for item in items:
+            git_file = self.git_client.diff_status(full_repo_path, item)
+            if git_file:
+                git_files.append(git_file)
         local_commits_count, _ = self.git_client.ahead_behind(full_repo_path)
         repo_status = GitRepositoryStatus()
         repo_status.files = [item.to_json() for item in items]
@@ -148,8 +150,6 @@ class GitManager:
         return task_id
 
     def save_file(self, versioned_storage_id, path, content):
-        if self.is_head_detached(versioned_storage_id):
-            raise RuntimeError('HEAD detached')
         if not path:
             raise RuntimeError('File path shall be specified')
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
@@ -182,15 +182,24 @@ class GitManager:
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         self.git_client.checkout(full_repo_path, revision)
 
-    def add(self, versioned_storage_id, file_path):
+    def checkout_path(self, versioned_storage_id, file_path, remote_flag):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         if not file_path:
             raise RuntimeError('File path shall be specified')
+        self.git_client.checkout_path(full_repo_path, file_path, remote_flag)
+
+    def add(self, versioned_storage_id, file_path=None):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
         git_files = self.git_client.status(full_repo_path)
-        git_file = [git_file for git_file in git_files if git_file.path == file_path and git_file.is_conflicted()]
-        if not git_file:
-            raise RuntimeError("Path '%s' did not match any conflicted files" % file_path)
-        self.git_client.add(full_repo_path, git_file[0])
+        if file_path:
+            self.git_client.add(full_repo_path, self.git_client.find_conflicted_file_by_path(git_files, file_path))
+            return
+        if not self.is_head_detached(versioned_storage_id):
+            return
+        conflicted_files = [git_file for git_file in git_files if git_file.is_conflicted()]
+        if conflicted_files:
+            raise RuntimeError("Not all conflicts are resolved")
+        self.git_client.set_head(full_repo_path)
 
     def merge_abort(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
@@ -226,7 +235,7 @@ class GitManager:
     @staticmethod
     def _is_latest_version(pipeline, revision):
         current_version = pipeline.get('currentVersion')
-        return revision and current_version and current_version.get('commitId') == revision
+        return revision and current_version and current_version.get('commitId').startswith(revision)
 
     @staticmethod
     def _build_version_storage_error(item_name, item_path, error_message):

@@ -194,4 +194,15 @@ else
     pipe_log_warn "One of the environment variables OWNER, API, API_TOKEN is not set, can't configure the certificates for the internal registry" "$SNGLRT_SETUP_TASK"
 fi
 
+motd_setup add "This job was launched with 'Singularity' enabled
+It is configured with the credentials for the internal docker registry
+To pull/push from the external docker registry please configure variables:
+
+# 1. For the public registries (e.g. DockerHub):
+$ unset SINGULARITY_DOCKER_USERNAME SINGULARITY_DOCKER_PASSWORD
+
+# 2. For the private registries:
+$ export SINGULARITY_DOCKER_USERNAME=<username>
+$ export SINGULARITY_DOCKER_PASSWORD=<password>"
+
 pipe_log_success "Singularity successfully installed (version: $CP_SNGLRT_VERSION)" "$SNGLRT_SETUP_TASK"
