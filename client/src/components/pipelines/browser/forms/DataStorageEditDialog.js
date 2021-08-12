@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import {
   Tabs
 } from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
+import RestrictDockerImages from './restrict-docker-images';
 import roleModel from '../../../../utils/roleModel';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {
@@ -65,6 +66,7 @@ export class DataStorageEditDialog extends React.Component {
 
   state = {
     deleteDialogVisible: false,
+    toolsToMount: undefined,
     activeTab: 'info',
     versioningEnabled: false,
     sharingEnabled: false,
@@ -97,7 +99,7 @@ export class DataStorageEditDialog extends React.Component {
     }
   };
   handleSubmit = (e) => {
-    e.preventDefault();
+    e && e.preventDefault();
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         values.serviceType = this.isNfsMount
@@ -165,6 +167,21 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get isStoragePathValid () {
     return this.state.nfsStoragePathValid || false;
+  }
+
+  @computed
+  get toolsToMount () {
+    const {dataStorage} = this.props;
+    if (dataStorage) {
+      return (dataStorage.toolsToMount || [])
+        .map((tool) => ({
+          id: tool.id,
+          toolId: tool.id,
+          image: `${tool.registry}/${tool.image}`,
+          versions: (tool.versions || []).map(v => v.version)
+        }));
+    }
+    return [];
   }
 
   onNfsPathValidation = (valid) => {
@@ -372,9 +389,23 @@ export class DataStorageEditDialog extends React.Component {
                   {...this.formItemLayout}
                   label="Description">
                   {getFieldDecorator('description', {
-                    initialValue: this.props.dataStorage ? this.props.dataStorage.description : undefined
+                    initialValue: this.props.dataStorage
+                      ? this.props.dataStorage.description
+                      : undefined
                   })(
                     <Input type="textarea" disabled={this.props.pending || isReadOnly} />
+                  )}
+                </Form.Item>
+                <Form.Item
+                  className={styles.dataStorageFormItem}
+                  {...this.formItemLayout}
+                  label="Allow mount to">
+                  {getFieldDecorator('toolsToMount', {
+                    initialValue: this.props.dataStorage
+                      ? this.props.dataStorage.toolsToMount
+                      : undefined
+                  })(
+                    <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 {

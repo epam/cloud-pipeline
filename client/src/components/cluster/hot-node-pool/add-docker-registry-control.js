@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
+import MultiSelect from '../../special/multiSelect';
 import LoadToolTags from '../../../models/tools/LoadToolAttributes';
 import styles from './add-docker-registry-control.css';
 
@@ -35,8 +36,11 @@ class AddDockerRegistryControl extends React.Component {
   state = {
     docker: undefined,
     version: undefined,
+    versionsSelected: [],
+    versionsPending: false,
     pending: false,
     versions: [],
+    versionsWithIdentifiers: [],
     versionsHash: undefined
   }
 
@@ -51,8 +55,13 @@ class AddDockerRegistryControl extends React.Component {
   }
 
   updateFromProps = () => {
-    const {docker} = this.props;
-    if (docker) {
+    const {docker, multipleMode, versionsSelected} = this.props;
+    if (multipleMode && docker) {
+      this.setState({
+        docker: docker,
+        versionsSelected: versionsSelected || []
+      }, this.fetchVersions);
+    } else if (!multipleMode && docker) {
       const [r, g, iv] = docker.split('/');
       const [i, v] = iv.split(':');
       this.setState({
@@ -64,7 +73,9 @@ class AddDockerRegistryControl extends React.Component {
         docker: undefined,
         version: undefined,
         versions: [],
-        versionsHash: undefined
+        versionsWithIdentifiers: [],
+        versionsHash: undefined,
+        versionsSelected: []
       });
     }
   };
@@ -142,6 +153,17 @@ class AddDockerRegistryControl extends React.Component {
     }
   };
 
+  getToolId = (docker) => {
+    const [r, g] = docker.split('/');
+    const currentTool = this.tools.find(tool => tool.key === `${r}/${g}`);
+    if (currentTool) {
+      const currentImage = (currentTool.tools || [])
+        .find(image => image.dockerImage === docker);
+      return (currentImage || {}).id;
+    }
+    return undefined;
+  };
+
   fetchVersions = () => {
     const {
       docker,
@@ -152,11 +174,15 @@ class AddDockerRegistryControl extends React.Component {
       const wrapper = fn => () => {
         this.setState({
           versionsHash: docker,
-          versions: []
+          versions: [],
+          versionsWithIdentifiers: [],
+          versionsPending: true
         }, () => {
           fn()
-            .then(versions => {
-              const versionsArray = (versions || []).slice();
+            .then((versions) => {
+              const versionsArray = (versions || [])
+                .slice()
+                .map(v => v.version);
               let v = currentVersion;
               if (versionsArray.indexOf(v) === -1) {
                 if (versionsArray.indexOf('latest') >= 0) {
@@ -167,8 +193,10 @@ class AddDockerRegistryControl extends React.Component {
               }
               this.setState({
                 pending: false,
-                versions: (versions || []).slice(),
-                version: v
+                versions: versionsArray,
+                versionsWithIdentifiers: versions.slice(),
+                version: v,
+                versionsPending: false
               }, () => {
                 this.handleChange();
               });
@@ -190,7 +218,7 @@ class AddDockerRegistryControl extends React.Component {
                     const {versions = []} = versionsRequest.value || {};
                     const nonWindowsVersions = versions
                       .filter(v => !v.attributes || !/^windows$/i.test(v.attributes.platform))
-                      .map(v => v.version);
+                      .map(v => ({id: v.attributes.id, version: v.version}));
                     resolve(nonWindowsVersions);
                   } else {
                     resolve([]);
@@ -209,7 +237,8 @@ class AddDockerRegistryControl extends React.Component {
     if (this.state.docker !== image) {
       this.setState({
         docker: image,
-        version: 'latest'
+        version: 'latest',
+        versionsSelected: []
       }, this.fetchVersions);
     }
   };
@@ -222,11 +251,31 @@ class AddDockerRegistryControl extends React.Component {
     }
   };
 
-  handleChange = () => {
+  onChangeMultipleVersions = (versions) => {
     const {onChange} = this.props;
-    const {docker, version} = this.state;
+    const {docker, versionsWithIdentifiers = []} = this.state;
+    const versionsSelected = (versions || [])
+      .map(name => versionsWithIdentifiers.find(v => v.version === name))
+      .filter(Boolean);
+    const currentToolId = this.getToolId(docker);
+    return this.setState({versionsSelected}, () => {
+      onChange && onChange(docker, versionsSelected, currentToolId);
+    });
+  };
+
+  handleChange = () => {
+    const {onChange, multipleMode} = this.props;
+    const {
+      docker,
+      version,
+      versionsSelected
+    } = this.state;
+    if (docker && multipleMode) {
+      const currentToolId = this.getToolId(docker);
+      return onChange(docker, versionsSelected, currentToolId);
+    }
     if (onChange && docker && version) {
-      onChange(`${docker}:${version}`);
+      return onChange(`${docker}:${version}`);
     }
   };
 
@@ -262,6 +311,67 @@ class AddDockerRegistryControl extends React.Component {
     return null;
   };
 
+  renderMultipleVersionsSelector = () => {
+    const {
+      pending,
+      versions,
+      versionsSelected,
+      versionsPending
+    } = this.state;
+    if (versions.length > 0) {
+      return (
+        <div style={{
+          marginLeft: 'auto',
+          display: 'flex',
+          flexWrap: 'nowrap',
+          alignItems: 'center'
+        }}>
+          <span
+            key="label"
+            style={{
+              marginLeft: 5,
+              fontWeight: 'bold',
+              verticalAlign: 'center'
+            }}
+          >
+            Versions:
+          </span>
+          <MultiSelect
+            onChange={this.onChangeMultipleVersions}
+            values={(versionsSelected || []).map(v => v.version)}
+            options={versions}
+            pending={pending || versionsPending}
+          />
+        </div>
+      );
+    }
+  };
+
+  renderSelectGroup = (group) => {
+    const {imagesToExclude} = this.props;
+    const isDisabled = (tool) => {
+      return imagesToExclude &&
+      imagesToExclude.length &&
+      imagesToExclude.includes(tool.dockerImage);
+    };
+    return (
+      group.tools.map(tool => (
+        <Select.Option
+          key={tool.id}
+          value={tool.dockerImage}
+          style={{
+            background: isDisabled(tool)
+              ? '#dfdfdf'
+              : 'none'
+          }}
+          disabled={isDisabled(tool)}
+        >
+          <DockerImageDetails docker={tool.dockerImage} />
+        </Select.Option>
+      ))
+    );
+  };
+
   render () {
     const {
       disabled,
@@ -271,7 +381,9 @@ class AddDockerRegistryControl extends React.Component {
       showError,
       showDelete,
       style,
-      onRemove
+      containerStyle,
+      onRemove,
+      multipleMode
     } = this.props;
     const {pending, docker} = this.state;
     if (dockerRegistries.error) {
@@ -296,6 +408,7 @@ class AddDockerRegistryControl extends React.Component {
               }
             )
           }
+          style={containerStyle}
         >
           <Select
             className={styles.select}
@@ -313,21 +426,15 @@ class AddDockerRegistryControl extends React.Component {
             {
               this.tools.map(group => (
                 <Select.OptGroup key={group.key} label={group.label}>
-                  {
-                    group.tools.map(tool => (
-                      <Select.Option
-                        key={tool.dockerImage}
-                        value={tool.dockerImage}
-                      >
-                        <DockerImageDetails docker={tool.dockerImage} />
-                      </Select.Option>
-                    ))
-                  }
+                  {this.renderSelectGroup(group)}
                 </Select.OptGroup>
               ))
             }
           </Select>
-          {this.renderVersionsSelector()}
+          {multipleMode
+            ? this.renderMultipleVersionsSelector()
+            : this.renderVersionsSelector()
+          }
           {
             showDelete && (
               <Button
@@ -356,7 +463,11 @@ AddDockerRegistryControl.propTypes = {
   showDelete: PropTypes.bool,
   style: PropTypes.object,
   onChange: PropTypes.func,
-  onRemove: PropTypes.func
+  onRemove: PropTypes.func,
+  multipleMode: PropTypes.bool,
+  versionsSelected: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  containerStyle: PropTypes.object,
+  imagesToExclude: PropTypes.arrayOf(PropTypes.string)
 };
 
 AddDockerRegistryControl.defaultProps = {

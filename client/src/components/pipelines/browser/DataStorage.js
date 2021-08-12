@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,8 @@ export default class DataStorage extends React.Component {
       path: storage.path,
       mountPoint: storage.mountPoint,
       mountOptions: storage.mountOptions,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      toolsToMount: storage.toolsToMount
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
