@@ -66,7 +66,6 @@ class PermissionHelper:
         if not storage.tools_to_mount:
             return True
         if run is None or not run["actualDockerImage"]:
-            Logger.info('Run info is not present, storage will not be available for mount', task_name=self.task_name)
             return False
 
         tool = run["actualDockerImage"]
@@ -169,7 +168,10 @@ class MountStorageTask:
                     Logger.info('Storage is not readable', task_name=self.task_name)
                     continue
                 if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
-                    Logger.info('Storage is not allowed to be mount to this image', task_name=self.task_name)
+                    Logger.info(
+                        'Storage {} is not allowed to be mount to {} image'.format(storage_and_mount.storage.name,
+                            run.get("actualDockerImage", "")),
+                        task_name=self.task_name)
                     continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,
