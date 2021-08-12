@@ -208,10 +208,12 @@ class WsiFileTagProcessor:
                 continue
             value = list(values_to_push)[0]
             existing_values = existing_attributes_dictionary[attribute_name]
+            existing_attribute_id = existing_values[0]['attributeId']
             existing_values_names = [existing_value['value'] for existing_value in existing_values]
             if value not in existing_values_names:
                 existing_values.append({'key': attribute_name, 'value': value})
-                attribute_updates.append({'key': attribute_name, 'values': existing_values})
+                attribute_updates.append({'id': int(existing_attribute_id),
+                                          'key': attribute_name, 'values': existing_values})
             pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value))
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
@@ -220,7 +222,8 @@ class WsiFileTagProcessor:
         return pipe_tags
 
     def update_categorical_attributes(self, attribute_updates):
-        self.api.execute_request(self.system_dictionaries_url, method='post', data=json.dumps(attribute_updates))
+        for attribute in attribute_updates:
+            self.api.execute_request(self.system_dictionaries_url, method='post', data=json.dumps(attribute))
 
     def extract_matching_tags_from_metadata(self, metadata_entries, tags_mapping):
         tags_to_push = dict()
