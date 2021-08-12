@@ -23,7 +23,7 @@ export default function DatePresentation ({document, field, label}) {
     return (
       <span className={styles.attribute}>
         {label ? `${label}: ` : false}
-        {displayDate(document[field], 'MMM d, yyyy, HH:mm')}
+        {displayDate(document[field], 'MMM D, yyyy, HH:mm')}
       </span>
     );
   }

@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.vo;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
+import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -52,6 +53,8 @@ public class DataStorageVO {
     private Long regionId;
     private Long fileShareMountId;
     private boolean sensitive;
+    private List<ToolFingerprint> toolsToMount;
+
     // S3 specific fields
     private String tempCredentialsRole;
     private String kmsKeyArn;

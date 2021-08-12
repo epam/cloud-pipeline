@@ -117,9 +117,36 @@ def view_runs(run_id, *args):
         __fill_record(line, pipe_info, "nodeDisk")
         __fill_record(line, pipe_info, "nodeType")
         __fill_record(line, pipe_info, "nodeId")
-        __fill_record(line, pipe_info, "Endpoints", structured=True)
         line = process.stdout.readline()
     return pipe_info
+
+
+def get_endpoint_urls(run_id, *args):
+    endpoints_info = []
+    command = ['pipe', 'view-runs', run_id]
+    for arg in args:
+        command.append(arg)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    line = process.stdout.readline()
+    collecting = False
+    while line != '':
+        endpoint = ""
+
+        if line.strip().startswith("Scheduled"):
+            break
+
+        if line.startswith("Endpoints"):
+            collecting = True
+            endpoint = line.strip().split(":", 1)[1]
+        elif collecting:
+            endpoint = line.strip()
+
+        if collecting and endpoint.rstrip() != "":
+            region_endpoint = endpoint.split(" : ")
+            endpoints_info.append({"name": region_endpoint[0].strip(), "region": region_endpoint[1].strip(), "url": region_endpoint[2].strip()})
+
+        line = process.stdout.readline()
+    return endpoints_info
 
 
 def task_in_status(run_id, task, status):
@@ -304,8 +331,8 @@ def wait_for_service_urls(run_id, max_rep_count):
     urls = get_endpoint_urls(run_id)
     rep = 0
     while rep < max_rep_count:
-        if urls and urls != "":
-            return urls
+        if urls and len(urls) > 0:
+            return
         sleep(5)
         rep = rep + 1
         urls = get_endpoint_urls(run_id)
@@ -319,17 +346,6 @@ def get_node_name(run_id):
         return None
     if "Name" in cluster_state[0]:
         return cluster_state[0]["Name"]
-
-
-def get_endpoint_urls(run_id):
-    pipe_info = view_runs(run_id)
-    result = {}
-    if "Endpoints" in pipe_info:
-        service_urls = json.loads(pipe_info["Endpoints"])
-        if service_urls:
-            for service_url in service_urls:
-                result[service_url['name']] = service_url['url']
-    return result
 
 
 def get_runid_label(node_name):

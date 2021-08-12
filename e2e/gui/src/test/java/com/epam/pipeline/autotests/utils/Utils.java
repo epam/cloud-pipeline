@@ -407,4 +407,8 @@ public class Utils {
     public static String getCurrentURL() {
         return WebDriverRunner.getWebDriver().getCurrentUrl();
     }
+
+    public static void resetClick() {
+        Selenide.actions().moveByOffset(-50, -50).click().perform();
+    }
 }

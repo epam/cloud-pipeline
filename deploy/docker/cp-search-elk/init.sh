@@ -23,8 +23,12 @@ elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
     ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_KEY" | bin/elasticsearch-keystore add azure.client.default.key -f
 fi
 
+# Configure ES Java heap size
+_HEAP_SIZE="${CP_SEARCH_ELK_HEAP_SIZE:-4g}"
+sed -i "s/Xms1g/Xms$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
+sed -i "s/Xmx1g/Xmx$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
 
-ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
+ulimit -n ${CP_SEARCH_ELK_ULIMIT:-65536} && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
 
 not_initialized=true
 try_count=0
@@ -36,10 +40,17 @@ while [ $not_initialized ] && [ $try_count -lt 60 ]; do
     else
       echo "...Success."
     fi
-    try_count=$(( $try_count + 1 ))
+    # increment attempts only if java is not running
+    if [ ! "$(ps -A | grep 'java')" ]; then
+      try_count=$(( $try_count + 1 ))
+    fi
     sleep 1
 done
 
+if [ $not_initialized ]; then
+    echo "Failed to start up Elasticsearch server. Exiting..."
+    exit 1
+fi
 
 ILM_POLICY="{
   \"policy\": {

@@ -25,6 +25,8 @@ import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
+// Some strange PMD behaviour
+@SuppressWarnings("PMD.UnusedPrivateMethod")
 public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecutor {
 
     private static final int DEFAULT_RETRY_ATTEMPTS = 3;
@@ -47,6 +49,7 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
     }
 
     @SneakyThrows
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private <T, R> R execute(final Call<T> call,
                              final Caller<T, R> caller) {
         if (attempts < 1) {
@@ -120,14 +123,14 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
         }
     }
 
-    private static void validateResponseStatus(final Response<byte[]> response) throws IOException {
+    private void validateResponseStatus(final Response<byte[]> response) throws IOException {
         if (!response.isSuccessful()) {
             throw new PipelineResponseException(String.format("Unexpected status code: %d, %s", response.code(),
                     response.errorBody() != null ? response.errorBody().string() : ""));
         }
     }
 
-    private static String getFileContent(final Response<byte[]> response) throws IOException {
+    private String getFileContent(final Response<byte[]> response) throws IOException {
         final InputStream in = new ByteArrayInputStream(Objects.requireNonNull(response.body()));
         try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             return IOUtils.toString(br);

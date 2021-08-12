@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
     private String endpointsLink = "";
     private String endpointsName = "";
-    private String userGroup = "ROLE_USER";
+    private String userGroup = C.ROLE_USER;
     private int timeout = C.SHARING_TIMEOUT;
 
     @BeforeMethod
@@ -174,13 +174,14 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             Utils.restartBrowser(C.ROOT_ADDRESS);
             sleep(timeout, SECONDS);
             loginAs(user);
+            final String[] name = endpointsName.split("/");
             home()
                     .configureDashboardPopUpOpen()
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkEndpointsLinkOnServicesPanel(endpointsName)
-                    .checkServiceToolPath(endpointsName, registry, group, Utils.nameWithoutGroup(tool), runID)
+                    .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
+                    .checkServiceToolPath(name[name.length - 1], registry, group, Utils.nameWithoutGroup(tool), runID)
                     .openEndpointLink(endpointsLink, runID)
                     .validateEndpointPage(user.login)
                     .assertURLEndsWith(friendlyURL)
@@ -210,7 +211,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-3179"})
-    public void shareSSHsession() {
+    public void shareSSHSession() {
         try {
             navigationMenu()
                     .settings()
@@ -231,16 +232,18 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             Utils.restartBrowser(C.ROOT_ADDRESS);
             sleep(timeout, SECONDS);
             loginAs(user);
+            final String[] name = endpointsName.split("/");
             home()
                     .configureDashboardPopUpOpen()
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsDisplayedOnServicesPanel(runID)
                     .openSSHLink(runID)
+                    .waitUntilTextLoads(runID)
                     .execute("cat test.file")
-                    .assertOutputContains("123")
+                    .assertPageContains("123")
                     .closeTab();
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
@@ -257,7 +260,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsNotDisplayedOnServicesPanel(runID);
         } finally {
             open(C.ROOT_ADDRESS);

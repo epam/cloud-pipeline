@@ -79,6 +79,7 @@ class ConflictsDialog extends React.Component {
   render () {
     const {
       conflicts,
+      conflictsInfo,
       disabled,
       run,
       storage,
@@ -131,6 +132,7 @@ class ConflictsDialog extends React.Component {
         <Conflicts
           disabled={disabled}
           conflicts={conflicts}
+          conflictsInfo={conflictsInfo}
           run={run}
           storage={storage}
           mergeInProgress={mergeInProgress}
@@ -143,6 +145,7 @@ class ConflictsDialog extends React.Component {
 
 ConflictsDialog.propTypes = {
   conflicts: PropTypes.arrayOf(PropTypes.string),
+  conflictsInfo: PropTypes.array,
   disabled: PropTypes.bool,
   onAbort: PropTypes.func,
   onClose: PropTypes.func,

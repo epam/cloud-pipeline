@@ -30,7 +30,8 @@ export default function facetsSearch (
     facets = [],
     facetsToken: currentFacetsToken,
     facetsCount,
-    stores
+    stores,
+    metadataFields = []
   } = options;
   const facetsToken = getFacetFilterToken(
     query,
@@ -40,7 +41,14 @@ export default function facetsSearch (
   const doFetchFacets = currentFacetsToken !== facetsToken;
   return new Promise((resolve) => {
     const promises = [
-      doSearch(query, filters, pageSize, facets, scrollingParameters)
+      doSearch(
+        query,
+        filters,
+        metadataFields,
+        pageSize,
+        facets,
+        scrollingParameters
+      )
     ];
     if (doFetchFacets && Object.keys(filters || {}).length > 0) {
       // if {filters} is empty (Object.keys.length === 0)

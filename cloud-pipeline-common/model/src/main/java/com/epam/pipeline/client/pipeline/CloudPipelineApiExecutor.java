@@ -5,9 +5,9 @@ import retrofit2.Call;
 
 public interface CloudPipelineApiExecutor {
     
-    <T> T execute(final Call<Result<T>> call);
+    <T> T execute(Call<Result<T>> call);
 
-    String getStringResponse(final Call<byte[]> call);
+    String getStringResponse(Call<byte[]> call);
 
-    byte[] getByteResponse(final Call<byte[]> call);
+    byte[] getByteResponse(Call<byte[]> call);
 }

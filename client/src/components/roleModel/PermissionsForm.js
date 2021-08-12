@@ -325,6 +325,7 @@ export default class PermissionsForm extends React.Component {
       item.sid.name,
       item.sid.principal
     );
+    this.setState({operationInProgress: true});
     await request.fetch();
     if (request.error) {
       message.error(request.error);
@@ -337,6 +338,7 @@ export default class PermissionsForm extends React.Component {
         }
       }
     }
+    this.setState({operationInProgress: false});
   };
 
   onAllowDenyValueChanged = (permissionMask, allowDenyMask, allowRead = false) => async (event) => {
@@ -350,6 +352,7 @@ export default class PermissionsForm extends React.Component {
     if (allowRead && event.target.checked) {
       selectedPermission.mask = (selectedPermission.mask & (1 << 2 | 1 << 3 | 1 << 4 | 1 << 5)) | 1;
     }
+    this.setState({operationInProgress: true});
     const request = new GrantPermission();
     await request.send({
       aclClass: this.props.objectType.toUpperCase(),
@@ -359,10 +362,14 @@ export default class PermissionsForm extends React.Component {
       userName: selectedPermission.sid.name
     });
     if (request.error) {
+      this.setState({operationInProgress: false});
       message.error(request.error);
     } else {
       await this.props.grant.fetch();
-      this.setState({selectedPermission});
+      this.setState({
+        selectedPermission,
+        operationInProgress: false
+      });
     }
   };
 
@@ -540,7 +547,11 @@ export default class PermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={this.props.readonly || ((item.allowMask & this.props.enabledMask) === 0)}
+              disabled={
+                this.state.operationInProgress ||
+                this.props.readonly ||
+                ((item.allowMask & this.props.enabledMask) === 0)
+              }
               checked={item.allowed}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.allowMask, !item.isRead)} />
           )
@@ -551,7 +562,11 @@ export default class PermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={this.props.readonly || ((item.denyMask & this.props.enabledMask) === 0)}
+              disabled={
+                this.state.operationInProgress ||
+                this.props.readonly ||
+                ((item.denyMask & this.props.enabledMask) === 0)
+              }
               checked={item.denied}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.denyMask)} />
           )
@@ -639,7 +654,7 @@ export default class PermissionsForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
-              disabled={this.props.readonly}
+              disabled={this.state.operationInProgress || this.props.readonly}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
               <Icon type="delete" />
@@ -780,7 +795,24 @@ export default class PermissionsForm extends React.Component {
         <Modal
           title="Select user"
           onCancel={this.closeFindUserDialog}
-          onOk={this.onSelectUser}
+          onOk={this.operationWrapper(this.onSelectUser)}
+          footer={(
+            <Row type="flex" justify="end">
+              <Button
+                onClick={this.closeFindUserDialog}
+                style={{marginRight: 5}}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                disabled={this.state.operationInProgress}
+                onClick={this.operationWrapper(this.onSelectUser)}
+              >
+                OK
+              </Button>
+            </Row>
+          )}
           visible={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
@@ -803,6 +835,23 @@ export default class PermissionsForm extends React.Component {
           title="Select group"
           onCancel={this.closeFindGroupDialog}
           onOk={this.onSelectGroup}
+          footer={(
+            <Row type="flex" justify="end">
+              <Button
+                onClick={this.closeFindGroupDialog}
+                style={{marginRight: 5}}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                disabled={this.state.operationInProgress}
+                onClick={this.operationWrapper(this.onSelectGroup)}
+              >
+                OK
+              </Button>
+            </Row>
+          )}
           visible={this.state.findGroupVisible}>
           <AutoComplete
             value={this.selectedGroup}

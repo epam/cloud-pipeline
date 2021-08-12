@@ -18,6 +18,16 @@ function NewDirIfRequired($Path) {
     }
 }
 
+function InitializeDisks {
+    Get-Disk `
+        | Where-Object { $_.PartitionStyle -eq "raw" } `
+        | Initialize-Disk -PartitionStyle MBR -PassThru `
+        | New-Partition -AssignDriveLetter -UseMaximumSize `
+        | Format-Volume -FileSystem NTFS -Confirm:$false `
+        | ForEach-Object { $_.DriveLetter + ":" } `
+        | ForEach-Object { AllowRegularUsersAccess -Path $_ }
+}
+
 function InstallNoMachineIfRequired {
     $restartRequired=$false
     $nomachineInstalled = Get-Service -Name nxservice `
@@ -27,7 +37,29 @@ function InstallNoMachineIfRequired {
         Write-Host "Installing NoMachine..."
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
+        @"
+
+VirtualDesktopAuthorization 0
+PhysicalDesktopAuthorization 0
+AutomaticDisconnection 0
+ConnectionsLimit 1
+ConnectionsUserLimit 1
+"@ | Out-File -FilePath "C:\Program Files (x86)\NoMachine\etc\server.cfg" -Encoding ascii -Force -Append
         $restartRequired=$true
+    }
+    return $restartRequired
+}
+
+function InstallOpenSshServerIfRequired {
+    $restartRequired=$false
+    $openSshServerInstalled = Get-WindowsCapability -Online `
+        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
+        | ForEach-Object { $_.State -eq "Installed" }
+    if (-not($openSshServerInstalled)) {
+        Write-Host "Installing OpenSSH server..."
+        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
+        $restartRequired=$false
     }
     return $restartRequired
 }
@@ -66,6 +98,25 @@ function InstallPGinaIfRequired {
     return $restartRequired
 }
 
+function InstallDockerIfRequired {
+    $restartRequired=$false
+    $dockerInstalled = Get-Service -Name docker `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($dockerInstalled)) {
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+        Install-Package -Name docker -ProviderName DockerMsftProvider -Force -RequiredVersion 19.03.14
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
+function StartOpenSSHServices {
+    Set-Service -Name sshd -StartupType Automatic
+    Start-Service sshd
+}
+
 function StartWebDAVServices {
     Set-Service WebClient -StartupType Automatic
     Set-Service MRxDAV -StartupType Automatic
@@ -102,19 +153,6 @@ function InstallChromeIfRequired {
     }
 }
 
-function InstallOpenSshServerIfRequired {
-    $openSshServerInstalled = Get-WindowsCapability -Online `
-        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
-        | ForEach-Object { $_.State -eq "Installed" }
-    if (-not($openSshServerInstalled)) {
-        Write-Host "Installing OpenSSH server..."
-        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-        Set-Service -Name sshd -StartupType Automatic
-        Start-Service sshd
-        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
-    }
-}
-
 function GenerateSshKeys($Path) {
     NewDirIfRequired -Path "$Path\.ssh"
     if (!(Test-Path "$Path\.ssh\id_rsa")) {
@@ -131,6 +169,13 @@ function AddPublicKeyToAuthorizedKeys($SourcePath, $DestinationPath) {
 function CopyPrivateKey($SourcePath, $DestinationPath) {
     Copy-Item -Path (Split-Path -Path $SourcePath) -Destination (Split-Path -Path $DestinationPath) -Recurse
     RestrictRegularUsersAccess -Path $DestinationPath
+}
+
+function AllowRegularUsersAccess($Path) {
+    $acl = Get-Acl $Path
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\Users", "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
+    $acl.AddAccessRule($rule)
+    $acl | Set-Acl $Path
 }
 
 function RestrictRegularUsersAccess($Path) {
@@ -305,6 +350,39 @@ function ConfigureAwsRoutes($Addrs, $Interface) {
     w32tm /resync /rediscover /nowait
 }
 
+function ConfigureLoopbackRouteIfEnabled($Preferences, $Interface) {
+    $loopbackRouteEnabled = $Preferences `
+        | Where-Object { $_.Name -eq "cluster.windows.node.loopback.route" } `
+        | ForEach-Object { $_.Value -eq "true" }
+    if ($loopbackRouteEnabled) {
+        Write-Host "Configuring loopback route..."
+        $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
+        $interfaceIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $interfaceIndex | Select-Object -ExpandProperty IPAddress
+        $Addrs = @("$interfaceIp/32")
+        ConfigureAwsRoutes -Addrs $Addrs -Interface $Interface
+    }
+}
+
+function LoadPreferences($ApiUrl, $ApiToken) {
+    return RequestApi -ApiUrl $ApiUrl -ApiToken $ApiToken -HttpMethod "GET" -ApiMethod "preferences"
+}
+
+function RequestApi($ApiUrl, $ApiToken, $HttpMethod, $ApiMethod, $Body = $null) {
+    Write-Host "Requesting ${ApiUrl}${ApiMethod}..."
+    $Response = Invoke-RestMethod -Method $HttpMethod `
+                                  -Uri "${ApiUrl}${ApiMethod}" `
+                                  -Body $Body `
+                                  -Headers @{
+                                      "Authorization" = "Bearer $ApiToken"
+                                      "Content-Type" = "application/json"
+                                  }
+    if ($Response.status -ne "OK") {
+        Write-Error $Response.message
+        return $null
+    }
+    return $Response.payload
+}
+
 function ListenForConnection($Port) {
     $endpoint = New-Object System.Net.IPEndPoint ([System.Net.IPAddress]::Any, $Port)
     $listener = New-Object System.Net.Sockets.TcpListener $endpoint
@@ -322,6 +400,8 @@ function ListenForConnection($Port) {
     $listener.Stop()
 }
 
+$apiUrl = "@API_URL@"
+$apiToken = "@API_TOKEN@"
 $kubeAddress = "@KUBE_IP@"
 $kubeHost, $kubePort = $kubeAddress.split(":",2)
 $kubeToken = "@KUBE_TOKEN@"
@@ -329,8 +409,8 @@ $kubeCertHash = "@KUBE_CERT_HASH@"
 $kubeNodeToken = "@KUBE_NODE_TOKEN@"
 $dnsProxyPost = "@dns_proxy_post@"
 
-$interface = "Ethernet 3"
-$interfacePost = "vEthernet (Ethernet 3)"
+$interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
+$interfacePost = "vEthernet ($interface)"
 $awsAddrs = @("169.254.169.254/32", "169.254.169.250/32", "169.254.169.251/32", "169.254.169.249/32", "169.254.169.123/32", "169.254.169.253/32")
 
 $homeDir = "$env:USERPROFILE"
@@ -353,10 +433,17 @@ Start-Transcript -path $initLog -append
 Write-Host "Changing working directory..."
 Set-Location -Path "$workingDir"
 
+Write-Host "Initializing disks..."
+InitializeDisks
+
 $restartRequired = $false
 
 Write-Host "Installing nomachine if required..."
 $restartRequired = (InstallNoMachineIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
+Write-Host "Installing OpenSSH server if required..."
+$restartRequired = (InstallOpenSshServerIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Installing WebDAV if required..."
@@ -367,6 +454,10 @@ Write-Host "Installing pGina if required..."
 $restartRequired = (InstallPGinaIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
+Write-Host "Installing docker if required..."
+$restartRequired = (InstallDockerIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
 Write-Host "Restarting computer if required..."
 if ($restartRequired) {
     Write-Host "Restarting computer..."
@@ -374,6 +465,9 @@ if ($restartRequired) {
     Restart-Computer -Force
     Exit
 }
+
+Write-Host "Starting OpenSSH services..."
+StartOpenSSHServices
 
 Write-Host "Starting WebDAV services..."
 StartWebDAVServices
@@ -387,9 +481,6 @@ InstallChromeIfRequired
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
-
-Write-Host "Installing OpenSSH server if required..."
-InstallOpenSshServerIfRequired
 
 Write-Host "Generating SSH keys..."
 GenerateSshKeys -Path $homeDir
@@ -422,11 +513,17 @@ WriteKubeConfig -KubeHost $kubeHost -KubePort $kubePort -KubeNodeToken $kubeNode
 Write-Host "Joining kubernetes cluster using Sig Windows Tools..."
 JoinKubeClusterUsingSigWindowsTools
 
+Write-Host "Configuring AWS routes..."
+ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
+
 Write-Host "Waiting for dns to be accessible if required..."
 WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
 
-Write-Host "Configuring AWS routes..."
-ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
+Write-Host "Loading preferences..."
+$preferences = LoadPreferences -ApiUrl $apiUrl -ApiToken $apiToken
+
+Write-Host "Configuring loopback route if it is enabled in preferences..."
+ConfigureLoopbackRouteIfEnabled -Preferences $preferences -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888

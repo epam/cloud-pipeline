@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,15 +87,15 @@ public class ClusterController extends AbstractRestController {
         return Result.success(clusterApiService.getMasterNodes());
     }
 
-    @RequestMapping(value = "/cluster/edge/externalUrl", method = RequestMethod.GET)
+    @GetMapping("/cluster/edge/externalUrl")
     @ResponseBody
     @ApiOperation(
             value = "Return EDGE external URL.",
             notes = "Return EDGE external URL.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<String> buildEdgeExternalUrl() {
-        return Result.success(clusterApiService.buildEdgeExternalUrl());
+    public Result<String> buildEdgeExternalUrl(@RequestParam(required = false) final String region) {
+        return Result.success(clusterApiService.buildEdgeExternalUrl(region));
     }
 
     @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)

@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.metadata;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -57,9 +57,12 @@ public class MetadataFilter {
     @ApiModelProperty(notes = "list string to perform substring insensitive search in external ids")
     private List<String> externalIdQueries;
     @ApiModelProperty(notes = "Start created date to filter for metadata")
-    private LocalDate startDateFrom;
+    private LocalDateTime startDateFrom;
     @ApiModelProperty(notes = "End created date to filter for metadata")
-    private LocalDate endDateTo;
+    private LocalDateTime endDateTo;
+    @ApiModelProperty(notes = "Logical operator for search queries. Default: OR", allowableValues = "AND, OR")
+    private LogicalSearchOperator logicalSearchOperator = LogicalSearchOperator.OR;
+
 
     @Getter
     @Setter
@@ -68,6 +71,7 @@ public class MetadataFilter {
     public static class FilterQuery {
         private String key;
         private List<String> values;
+        private boolean predefined = false;
     }
 
     @Getter
@@ -77,5 +81,6 @@ public class MetadataFilter {
     public static class OrderBy {
         private String field;
         private boolean desc = false;
+        private boolean predefined = false;
     }
 }

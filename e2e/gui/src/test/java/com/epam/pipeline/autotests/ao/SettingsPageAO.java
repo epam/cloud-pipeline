@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +35,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -42,6 +45,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.lang.String.format;
@@ -634,7 +638,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
                             entry(DELETE, context().$(byId("delete-user-button"))),
                             entry(PRICE_TYPE, context().find(byXpath(
-                                    format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                                    format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                            entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -671,7 +676,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public EditUserPopup addRoleOrGroup(final String value) {
                         click(SEARCH);
-                        $$(byClassName("ant-select-dropdown-menu-item")).findBy(text(value)).click();
+                        $$(byClassName("ant-select-dropdown-menu-item")).findBy(exactText(value)).click();
                         click(ADD_KEY);
                         return this;
                     }
@@ -729,6 +734,27 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             type.click();
                             sleep(1, SECONDS);
                         }
+                        return this;
+                    }
+
+                    public EditUserPopup configureRunAs(final String name, final boolean sshConnection) {
+                        click(CONFIGURE);
+                        new LogAO.ShareWith().addUserToShare(name, sshConnection);
+                        return this;
+                    }
+
+                    public EditUserPopup resetConfigureRunAs(final String name) {
+                        click(CONFIGURE);
+                        SelenideElement shareWithContext = Utils.getPopupByTitle("Share with users and groups");
+                        shareWithContext
+                                .$(byClassName("ant-table-tbody"))
+                                .find(byXpath(
+                                        format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
+                                                name)))
+                                .find(buttonByIconClass("anticon-delete"))
+                                .shouldBe(visible)
+                                .click();
+                        new LogAO.ShareWith().click(OK);
                         return this;
                     }
                 }
@@ -860,7 +886,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     super.elements(),
                     entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
                             .find(byClassName("ant-table-content"))),
-                    entry(SEARCH, context().find(byClassName("ant-input-search")))
+                    entry(SEARCH, context().find(byId("search-roles-input")))
             );
 
             public RolesTabAO(PipelinesLibraryAO parentAO) {
@@ -880,6 +906,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public EditRolePopup editRole(final String role) {
                 sleep(1, SECONDS);
+                searchRoleBySubstring(role);
                 context().$$(byText(role))
                         .filterBy(visible)
                         .first()
@@ -891,6 +918,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public RolesTabAO clickSearch() {
                 click(SEARCH);
+                return this;
+            }
+
+            public RolesTabAO searchRoleBySubstring(final String part) {
+                setValue(SEARCH, part);
                 return this;
             }
 
@@ -1412,7 +1444,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public String getUserId(final SelenideElement element) {
             final String message = getMessage(element);
-            return message.split("id=")[1].substring(0, 1);
+            final Pattern pattern = Pattern.compile("\\d+");
+            final Matcher matcher = pattern.matcher(getMessage(element));
+            if (!matcher.find()) {
+                final String screenName = format("SystemLogsGetUserId_%s", Utils.randomSuffix());
+                screenshot(screenName);
+                throw new ElementNotFound(format("Could not get user id from message: %s. Screenshot: %s.png", message,
+                        screenName), exist);
+            }
+            return matcher.group();
         }
 
         @Override

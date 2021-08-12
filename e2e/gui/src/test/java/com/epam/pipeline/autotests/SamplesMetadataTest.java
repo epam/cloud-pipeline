@@ -195,7 +195,7 @@ public class SamplesMetadataTest
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
-                .showMetadata()
+                .showAttributes()
                 .addKeyWithValue("type", "project");
     }
 
@@ -309,7 +309,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
-                .click(idHeader)
+                .initializeSorting(idField)
                 .ensure(idHeader, contains(decreaseOrderIcon))
                 .validateSortedByDecrease(idField)
                 .click(idHeader)
@@ -717,8 +717,8 @@ public class SamplesMetadataTest
                 .ensureParameterIsPresent(panel, path(dataStorage, human, bed))
                 .ensureParameterIsPresent(referenceGenomePath, path(dataStorage, reference, bwa))
                 .ensureOnOfManyParametersIsPresent(sampleName, samples)
-                .ensureOnOfManyParametersIsPresent(fastqR1,fastqR1FilesList)
-                .ensureOnOfManyParametersIsPresent(fastqR2,fastqR2FilesList);
+                .ensureOnOfManyParametersIsPresent(fastqR1, fastqR1FilesList)
+                .ensureOnOfManyParametersIsPresent(fastqR2, fastqR2FilesList);
         runsMenu()
                 .stopRun(getLastRunId());
     }

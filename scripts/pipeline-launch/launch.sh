@@ -676,6 +676,16 @@ else
   echo "CP_TZ variable is not set, or that file doesn't exist, time zone will not be changed."
 fi
 
+######################################################
+# Setup DNS options
+######################################################
+# Check for ndots options
+if [ "$CP_DNS_NDOTS" ]; then
+    \cp /etc/resolv.conf /tmp/resolv.conf
+    sed -i "s/ndots:[[:digit:]]/ndots:$CP_DNS_NDOTS/g" /tmp/resolv.conf
+    \cp /tmp/resolv.conf /etc/resolv.conf
+fi
+
 
 ######################################################
 # Install runtime dependencies
@@ -1223,7 +1233,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
       fi
 
-      fsbrowser_setup "$GIT_REPO" "$REPO_REVISION" "$RESUMED_RUN" "$BRANCH"
+      fsbrowser_setup "$REPO_REVISION" "$RESUMED_RUN"
       echo "------"
       echo
 fi

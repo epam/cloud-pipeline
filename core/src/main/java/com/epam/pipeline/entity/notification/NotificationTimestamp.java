@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.notification;
 
-import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.Data;
 

@@ -88,6 +88,27 @@ public class DataStorageTagProviderManager {
                              final String oldPath,
                              final String newPath,
                              final String newVersion) {
+        copyFileTags(storage, oldPath, newPath, newVersion);
+        if (!storage.isVersioningEnabled()) {
+            final String oldAbsolutePath = storage.resolveAbsolutePath(oldPath);
+            tagManager.delete(storage.getRootId(), new DataStorageObject(oldAbsolutePath));
+        }
+    }
+
+    public void moveFolderTags(final AbstractDataStorage storage,
+                               final String oldPath,
+                               final String newPath) {
+        copyFolderTags(storage, oldPath, newPath);
+        if (!storage.isVersioningEnabled()) {
+            final String oldAbsolutePath = storage.resolveAbsolutePath(oldPath);
+            tagManager.deleteAllInFolder(storage.getRootId(), oldAbsolutePath);
+        }
+    }
+
+    public void copyFileTags(final AbstractDataStorage storage,
+                             final String oldPath,
+                             final String newPath,
+                             final String newVersion) {
         final String oldAbsolutePath = storage.resolveAbsolutePath(oldPath);
         final String newAbsolutePath = storage.resolveAbsolutePath(newPath);
         final Map<String, String> tagMap = mapFrom(tagManager.load(storage.getRootId(),
@@ -95,12 +116,10 @@ public class DataStorageTagProviderManager {
         tagManager.upsert(storage.getRootId(), new DataStorageObject(newAbsolutePath), tagMap);
         if (storage.isVersioningEnabled()) {
             tagManager.upsert(storage.getRootId(), new DataStorageObject(newAbsolutePath, newVersion), tagMap);
-        } else {
-            tagManager.delete(storage.getRootId(), new DataStorageObject(oldAbsolutePath));
         }
     }
 
-    public void moveFolderTags(final AbstractDataStorage storage,
+    public void copyFolderTags(final AbstractDataStorage storage,
                                final String oldPath,
                                final String newPath) {
         final String oldAbsolutePath = storage.resolveAbsolutePath(oldPath);
@@ -115,8 +134,6 @@ public class DataStorageTagProviderManager {
                                             DataStorageTagCopyRequest.object(file.getPath(), null),
                                             DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
                                     .collect(Collectors.toList()))));
-        } else {
-            tagManager.deleteAllInFolder(storage.getRootId(), oldAbsolutePath);
         }
     }
 

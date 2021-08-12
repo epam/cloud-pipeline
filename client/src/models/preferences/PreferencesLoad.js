@@ -134,6 +134,24 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get metadataSystemKeys () {
+    const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.sensitive.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get storageAllowSignedUrls () {
+    return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
+  }
+
+  @computed
   get hiddenObjects () {
     const value = this.getPreferenceValue('ui.hidden.objects');
     if (value) {
@@ -157,6 +175,28 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get versionStorageIgnoredFiles () {
+    const value = this.getPreferenceValue('storage.version.storage.ignored.files');
+    if (!value) {
+      return ['.gitkeep'];
+    }
+    return (value || '').split(',').map(o => o.trim());
+  }
+
+  @computed
+  get metadataMandatoryKeys () {
+    const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.mandatory.keys" preference:', e);
+      }
+    }
+    return [];
   }
 
   toolScanningEnabledForRegistry (registry) {

@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
@@ -62,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -92,6 +95,9 @@ public class MetadataManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private CategoricalAttributeManager categoricalAttributeManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -291,6 +297,24 @@ public class MetadataManager {
                                                            final String value) {
         Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
         return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void syncWithCategoricalAttributes() {
+        final List<CategoricalAttribute> fullMetadataDict = buildFullMetadataDict();
+        final Map<String, CategoricalAttribute> existingAttributes = categoricalAttributeManager.loadAll().stream()
+            .collect(Collectors.toMap(BaseEntity::getName, Function.identity()));
+        fullMetadataDict.forEach(attributeFromMetadata -> {
+            final String name = attributeFromMetadata.getName();
+            if (existingAttributes.containsKey(name)) {
+                final CategoricalAttribute existingAttribute = existingAttributes.get(name);
+                attributeFromMetadata.setId(existingAttribute.getId());
+                attributeFromMetadata.setOwner(existingAttribute.getOwner());
+                categoricalAttributeManager.update(attributeFromMetadata);
+            } else {
+                categoricalAttributeManager.create(attributeFromMetadata);
+            }
+        });
     }
 
     public List<CategoricalAttribute> buildFullMetadataDict() {

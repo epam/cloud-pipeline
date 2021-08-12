@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static org.openqa.selenium.By.className;
 public interface PipelineSelectors {
 
     By displayAttributes = byId("display-attributes");
-    By attributesMenu = visible(byClassName("ant-dropdown-menu"));
+    By attributesMenu = visible(byClassName("rc-dropdown-menu"));
     By showAttributes = confine(byText("Attributes"), attributesMenu,"show attributes");
     By hideAttributes = confine(byText("Hide attributes"), attributesMenu, "hide attributes");
     By showIssues = confine(byText("Issue"), attributesMenu,"show issues");

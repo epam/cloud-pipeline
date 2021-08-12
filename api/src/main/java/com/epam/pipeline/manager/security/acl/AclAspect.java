@@ -88,6 +88,13 @@ public class AclAspect {
         createEntity(pipeline);
     }
 
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.createEmpty(..))",
+            returning = "pipeline")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void createEmptyPipeline(JoinPoint joinPoint, Pipeline pipeline) {
+        createEntity(pipeline);
+    }
+
     @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.update(..))", returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateAclIdentity(JoinPoint joinPoint, AbstractSecuredEntity entity) {

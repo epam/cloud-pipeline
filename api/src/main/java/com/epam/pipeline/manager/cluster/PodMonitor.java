@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -71,8 +72,6 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
-
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 /**
  * A service class, that monitors running tasks and adjust their statuses

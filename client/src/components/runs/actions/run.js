@@ -68,7 +68,9 @@ export function run (parent, callback) {
     title,
     warning,
     allowedInstanceTypesRequest,
-    hostedApplicationConfiguration
+    hostedApplicationConfiguration,
+    platform,
+    skipCheck = false
   ) {
     return runFn(
       payload,
@@ -78,9 +80,88 @@ export function run (parent, callback) {
       parent.props,
       callback,
       allowedInstanceTypesRequest,
-      hostedApplicationConfiguration
+      hostedApplicationConfiguration,
+      platform,
+      skipCheck
     );
   };
+}
+
+export function openReRunForm (run, props) {
+  const {
+    router,
+    pipelines
+  } = props;
+  if (!run || !router) {
+    return Promise.resolve();
+  }
+  const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
+    pipelineRequest
+      .fetch()
+      .then(() => {
+        if (pipelineRequest.error || !pipelineRequest.loaded) {
+          throw new Error();
+        }
+        resolve(pipelineRequest.value);
+      })
+      .catch(reject)
+      .then(() => callback && callback());
+  });
+  return new Promise((resolve) => {
+    const {
+      pipelineId,
+      version: runVersion,
+      id,
+      configName,
+      dockerImage
+    } = run;
+    Promise.resolve()
+      .then(() => {
+        if (pipelines && pipelineId) {
+          const hide = message.loading('Fetching pipeline info...', 0);
+          return wrapPipelineInfoPromise(
+            pipelines.getPipeline(pipelineId),
+            hide
+          );
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then((pipelineInfo) => {
+        if (pipelineInfo) {
+          return Promise.resolve({
+            pipelineInfo,
+            versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
+          });
+        }
+        return Promise.resolve();
+      })
+      .catch(() => Promise.resolve())
+      .then((options) => {
+        const {
+          versionedStorage = false,
+          pipelineInfo
+        } = options || {};
+        let link;
+        const version = versionedStorage && pipelineInfo?.currentVersion?.name
+          ? pipelineInfo.currentVersion.name
+          : runVersion;
+        const query = versionedStorage ? `?vs=true` : '';
+        if (pipelineId && version && id) {
+          link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;
+        } else if (pipelineId && version && configName) {
+          link = `/launch/${pipelineId}/${version}/${configName}${query}`;
+        } else if (pipelineId && version) {
+          link = `/launch/${pipelineId}/${version}/default${query}`;
+        } else if (id) {
+          link = `/launch/${id}${query}`;
+        }
+        if (link) {
+          router.push(link);
+        }
+        resolve(link);
+      });
+  });
 }
 
 export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTypesRequest) {
@@ -150,7 +231,9 @@ function runFn (
   stores,
   callbackFn,
   allowedInstanceTypesRequest,
-  hostedApplicationConfiguration
+  hostedApplicationConfiguration,
+  platform,
+  skipCheck
 ) {
   return new Promise(async (resolve) => {
     let launchName;
@@ -268,7 +351,8 @@ function runFn (
         dataStorages: dataStorageAvailable,
         inputs,
         outputs,
-        dockerImage: payload.dockerImage
+        dockerImage: payload.dockerImage,
+        skipCheck
       });
       let dataStorages;
       if (dataStorageAvailable) {
@@ -287,6 +371,7 @@ function runFn (
         content: (
           <RunSpotConfirmationWithPrice
             ref={ref}
+            platform={platform}
             warning={warning}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
@@ -385,6 +470,7 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -828,6 +914,7 @@ export class RunConfirmation extends React.Component {
           dataStorages={this.props.dataStorages}
           preferences={this.props.preferences}
           instance={this.currentInstanceType}
+          platform={this.props.platform}
         />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
@@ -890,6 +977,7 @@ export class RunConfirmation extends React.Component {
 export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
@@ -978,6 +1066,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}

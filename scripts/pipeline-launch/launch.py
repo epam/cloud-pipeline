@@ -65,13 +65,13 @@ def _escape_backslashes(string):
     return string.replace('\\', '\\\\')
 
 
-def _extract_parameter(name, default=''):
-    parameter = os.environ[name] = os.environ.get(name, default)
+def _extract_parameter(name, default='', default_provider=lambda: ''):
+    parameter = os.environ[name] = os.getenv(name, default) or default_provider() or default
     return parameter
 
 
-def _extract_boolean_parameter(name, default='false'):
-    parameter = _extract_parameter(name, default=default)
+def _extract_boolean_parameter(name, default='false', default_provider=lambda: 'false'):
+    parameter = _extract_parameter(name, default=default, default_provider=default_provider)
     return parameter.lower() == 'true'
 
 
@@ -109,23 +109,35 @@ if __name__ == '__main__':
     edge_host, edge_port = _parse_host_and_port(edge_url, _default_edge_host, _default_edge_port)
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = _extract_parameter('OWNER', 'USER')
+    owner = owner.split('@')[0]
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
     owner_groups = _extract_parameter('OWNER_GROUPS', default='Administrators')
     logon_title = _extract_parameter('CP_LOGON_TITLE', default='Login as ' + owner)
-    logon_image_url = _extract_parameter('CP_LOGON_IMAGE_URL',
-                                         default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
+    logon_image_url = _extract_parameter(
+        'CP_LOGON_IMAGE_URL',
+        default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
     logon_image_path = _extract_parameter('CP_LOGON_IMAGE_PATH', default=os.path.join(resources_dir, 'logon.bmp'))
     task_path = _extract_parameter('CP_TASK_PATH', '.\\task.ps1')
     python_dir = _extract_parameter('CP_PYTHON_DIR', 'c:\\python')
-    requires_repo = _extract_boolean_parameter('CP_REPO_ENABLED')
-    repo_pypi_base_url = _extract_parameter('CP_REPO_PYPI_BASE_URL_DEFAULT',
-                                            default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
+    # todo: Enable support for custom repo usage once launch with default parameters issue is fixed in GUI
+    requires_repo = False
+    repo_pypi_base_url = _extract_parameter(
+        'CP_REPO_PYPI_BASE_URL_DEFAULT',
+        default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
                                                 default='cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com')
     requires_cloud_data = _extract_boolean_parameter('CP_CAP_WIN_INSTALL_CLOUD_DATA')
-    cloud_data_distribution_url = _extract_parameter('CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
-                                                     default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
+    cloud_data_distribution_url = _extract_parameter(
+        'CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
+        default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')
+
+    # Allows to apply multiple parameters to nomachine server configuration.
+    # For example: ConnectionsLimit=1,ConnectionsUserLimit=1
+    nomachine_server_parameters = _extract_parameter('CP_CAP_DESKTOP_NM_SERVER_PARAMETERS')
+
+    # Enables the usage of nomachine specific user connection files rather than run owner connection files.
+    _extract_boolean_parameter('CP_CAP_DESKTOP_NM_USER_CONNECTION_FILES', default='true')
     desktop_layout_url = _extract_parameter('CP_CLOUD_DATA_WIN_DESKTOP_LAYOUT_URL',
                                             default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/default_layout.xml')
     requires_popup_notifications = _extract_boolean_parameter('CP_CAP_WIN_CONFIGURATION_NOTIFICATIONS')
@@ -190,8 +202,9 @@ if __name__ == '__main__':
                           f'                                        --proxy pac"')
 
     logger.info('Preparing for SSH connections to the node...')
-    node_ip = _extract_parameter('NODE_IP',
-                                 default=api.load_run_efficiently(run_id).get('instance', {}).get('nodeIP', ''))
+    node_ip = _extract_parameter(
+        'NODE_IP',
+        default_provider=lambda: api.load_run_efficiently(run_id).get('instance', {}).get('nodeIP', ''))
     node_ssh = HostSSH(host=node_ip, private_key_path=node_private_key_path)
     node_ssh = LogSSH(logger=logger, inner=node_ssh)
     node_ssh = UserSSH(user=node_owner, inner=node_ssh)
@@ -206,10 +219,22 @@ if __name__ == '__main__':
                      f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"')
 
+    logger.info('Configuring system settings on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
+                     f'configure_system_settings_win()\\"')
+    node_ssh.execute(f'ConfigureSystemSettings')
+
     logger.info('Configuring owner account on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.account import create_user; '
                      f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"')
+
+    if nomachine_server_parameters:
+        logger.info('Configuring and restarting nomachine server...')
+        node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                         f'from scripts.configure_nomachine_win import configure_nomachine_win; '
+                         f'configure_nomachine_win(\'{nomachine_server_parameters}\')\\"')
 
     logger.info('Downloading seamless logon image...')
     _download_file(logon_image_url, logon_image_path)
@@ -219,11 +244,6 @@ if __name__ == '__main__':
                      f'from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
                      f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\', '
                      f'                             \'{logon_title}\', \'{_escape_backslashes(logon_image_path)}\')\\"')
-
-    logger.info('Configuring system settings on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
-                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
-                     f'configure_system_settings_win()\\"')
 
     logger.info('Restarting logon processes on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'

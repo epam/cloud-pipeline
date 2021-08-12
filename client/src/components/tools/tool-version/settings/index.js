@@ -72,6 +72,16 @@ export default class ToolSetttings extends React.Component {
     return null;
   }
 
+  @computed
+  get platform () {
+    if (this.props.settings.loaded) {
+      if ((this.props.settings.value || []).length > 0) {
+        return this.props.settings.value[0].platform;
+      }
+    }
+    return undefined;
+  }
+
   updateTool = async (tool, configuration) => {
     const hide = message.loading('Updating version settings...', 0);
     const updateRequest = new UpdateToolVersionSettings(this.props.toolId, this.props.version);
@@ -123,7 +133,9 @@ export default class ToolSetttings extends React.Component {
         }
         defaultPriceTypeIsSpot={this.props.preferences.useSpot}
         configuration={this.settings}
-        onSubmit={this.operationWrapper(this.updateTool)} />
+        platform={this.platform}
+        onSubmit={this.operationWrapper(this.updateTool)}
+      />
     );
   }
 }

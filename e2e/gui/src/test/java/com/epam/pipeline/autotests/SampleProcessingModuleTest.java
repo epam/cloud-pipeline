@@ -88,7 +88,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
                 .clickOnRow()
                 .addKeyWithValue(key1, value1);
         new MetadataSamplesAO()
-                .validateFields("ID", createDateField, key1, "SampleName")
+                .validateFields("ID", createDateField, "SampleName", key1)
                 .getRowByCellValue(instanceID)
                 .getCell(createDateField)
                 .ensureCellContains(instanceDate);

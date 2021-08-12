@@ -15,27 +15,44 @@
 import platform
 from pipeline.utils.platform import assert_windows
 
+_USER_ALREADY_EXISTS_WIN_ERROR = 2224
+_USER_ALREADY_IN_GROUP_WIN_ERROR = 1378
 
-def _create_win_user(username, password):
+
+def _create_win_user(username, password, skip_existing=False):
     import win32net
     import win32netcon
-    win32net.NetUserAdd(None, 1, {
-        'name': username,
-        'password': password,
-        'priv': win32netcon.USER_PRIV_USER,
-        'flags': win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT | win32netcon.UF_DONT_EXPIRE_PASSWD
-    })
+    import pywintypes
+    try:
+        win32net.NetUserAdd(None, 1, {
+            'name': username,
+            'password': password,
+            'priv': win32netcon.USER_PRIV_USER,
+            'flags': win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT | win32netcon.UF_DONT_EXPIRE_PASSWD
+        })
+    except pywintypes.error as e:
+        if e.winerror == _USER_ALREADY_EXISTS_WIN_ERROR and skip_existing:
+            pass
+        else:
+            raise
 
 
-def _add_win_user_to_group(username, domain, group):
+def _add_win_user_to_group(username, domain, group, skip_existing=False):
     import win32net
-    win32net.NetLocalGroupAddMembers(None, group, 3, [{
-        'domainandname': domain + '\\' + username
-    }])
+    import pywintypes
+    try:
+        win32net.NetLocalGroupAddMembers(None, group, 3, [{
+            'domainandname': domain + '\\' + username
+        }])
+    except pywintypes.error as e:
+        if e.winerror == _USER_ALREADY_IN_GROUP_WIN_ERROR and skip_existing:
+            pass
+        else:
+            raise
 
 
-def create_user(username, password, groups):
+def create_user(username, password, groups, skip_existing=False):
     assert_windows('Creating user')
-    _create_win_user(username, password)
+    _create_win_user(username, password, skip_existing=skip_existing)
     for group in groups.split(','):
-        _add_win_user_to_group(username, platform.node(), group)
+        _add_win_user_to_group(username, platform.node(), group, skip_existing=skip_existing)

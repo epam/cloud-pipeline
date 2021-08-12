@@ -226,6 +226,15 @@ if [ -f "$win_code_sign_cert_path" ]; then
         "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
 
+echo "Copying DTS jar file to static resources"
+cp "$CP_API_HOME/data-transfer-service.jar" "$CP_API_SRV_STATIC_DIR"
+echo "Calculating signature for DTS jar"
+openssl dgst -sha256 -hex -r -sign "$CP_API_SRV_CERT_DIR/ssl-private-key.pem" \
+        "$CP_API_SRV_STATIC_DIR/data-transfer-service.jar" | awk '{print $1}' > "$CP_API_SRV_STATIC_DIR/data-transfer-service.sign"
+
+echo "Copying DTS windows bundle to static resources"
+cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
+
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 

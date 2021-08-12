@@ -69,6 +69,9 @@ import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.notification.ContextualNotificationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -89,6 +92,7 @@ import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRep
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -361,4 +365,16 @@ public class AspectTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected PipelineRunServiceUrlRepository mockPipelineRunServiceUrlRepository;
+
+    @MockBean
+    protected ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    protected ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+
+    @MockBean
+    protected ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 }

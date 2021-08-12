@@ -59,7 +59,7 @@ class CloudPipelineAPI:
         }
 
     def find_pipeline(self, id):
-        result = self._get('/pipeline/%s/load' % str(id))
+        result = self._get('/pipeline/find?id=%s' % str(id))
         return result or {}
 
     def find_storage(self, storage_id_or_name):

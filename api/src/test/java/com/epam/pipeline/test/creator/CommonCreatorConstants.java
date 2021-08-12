@@ -56,6 +56,7 @@ public final class CommonCreatorConstants {
     public static final int EXECUTE_PERMISSION = 4;
     public static final int ALL_PERMISSIONS = 15;
     public static final String TEST_STRING = "TEST";
+    public static final byte[] TEST_BYTES = TEST_STRING.getBytes();
     public static final String TEST_NAME = "TEST_NAME";
     public static final String TEST_NAME_2 = "TEST_NAME_2";
     public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);

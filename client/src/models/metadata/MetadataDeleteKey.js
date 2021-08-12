@@ -17,7 +17,6 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class MetadataDeleteKey extends RemotePost {
-
   constructor (key) {
     super();
     this.constructor.fetchOptions = {

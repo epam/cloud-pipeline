@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType.*;
+import com.epam.pipeline.entity.notification.NotificationType;
+import static com.epam.pipeline.entity.notification.NotificationType.*;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

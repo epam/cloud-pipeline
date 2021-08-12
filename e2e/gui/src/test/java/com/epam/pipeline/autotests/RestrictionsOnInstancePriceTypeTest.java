@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.Configuration;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -82,7 +83,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String secondConfiguration = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String configurationName = "customConfig";
-    private final String testRole = "ROLE_USER";
+    private final String testRole = C.ROLE_USER;
     private final String instanceTypesMask = "Allowed instance types mask";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String onDemandPrice = "On demand";
@@ -161,6 +162,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .editConfiguration("default", profile ->
                         instanceTypesCount = profile
                                 .expandTab(EXEC_ENVIRONMENT)
+                                .sleep(2, SECONDS)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .sleep(1, SECONDS)
@@ -345,7 +347,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                     .also(confirmConfigurationChange())
                                     )
                                     .setValue(DISK, customDisk)
-                                    .click(SAVE));
+                                    .sleep(3, SECONDS)
+                                    .click(SAVE))
+                                    .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);
@@ -383,6 +387,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .ensure(INSTANCE_TYPE, empty)
                                     .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
                     )
+                    .sleep(5, SECONDS)
                     .exitFromConfigurationWithoutSaved();
         } finally {
             logout();

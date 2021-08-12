@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.epam.pipeline.dts.configuration.RestConfiguration;
 import com.epam.pipeline.dts.listing.ListingConfiguration;
 import com.epam.pipeline.dts.security.JWTSecurityConfiguration;
 import com.epam.pipeline.dts.submission.SubmissionConfiguration;
+import com.epam.pipeline.dts.sync.SyncConfiguration;
 import com.epam.pipeline.dts.transfer.TransferConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -37,7 +38,8 @@ import org.springframework.context.annotation.Import;
         JWTSecurityConfiguration.class,
         ListingConfiguration.class,
         TransferConfiguration.class,
-        SubmissionConfiguration.class})
+        SubmissionConfiguration.class,
+        SyncConfiguration.class})
 @ComponentScan(basePackages = "com.epam.pipeline.dts.configuration")
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class DTSApplication {

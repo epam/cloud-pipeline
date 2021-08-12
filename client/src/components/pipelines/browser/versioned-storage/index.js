@@ -39,6 +39,7 @@ import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDel
 import VersionedStorageListWithInfo
   from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
+import PipelineGenerateReport from '../../../../models/pipelines/PipelineGenerateReport';
 import InfoPanel from './info-panel';
 import LaunchVSForm from './forms/launch-vs-form';
 import getToolLaunchingOptions from '../../launch/utilities/get-tool-launching-options';
@@ -48,11 +49,13 @@ import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import PipelineFileInfo from '../../../../models/pipelines/PipelineFileInfo';
 import CreateItemForm from './forms/create-item-form';
 import EditPipelineForm from '../../version/forms/EditPipelineForm';
+import GenerateReportDialog from './dialogs/generate-report';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
 import DOCUMENT_TYPES from './document-types';
 import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
+const ID_PREFIX = 'vs';
 
 function getDocumentType (document) {
   if (!document || !document.type) {
@@ -74,24 +77,47 @@ function checkForBlobErrors (blob) {
   return new Promise(resolve => {
     const fr = new FileReader();
     fr.onload = function () {
-      const status = JSON.parse(this.result)?.status?.toLowerCase();
-      resolve(status === 'error');
+      try {
+        const json = JSON.parse(this.result);
+        console.log(json);
+        const {
+          status,
+          message
+        } = json || {};
+        if (/^error$/i.test(status)) {
+          resolve(message || `Error downloading file`);
+          return;
+        }
+      } catch (e) {}
+      resolve(false);
     };
     fr.readAsText(blob);
   });
 }
 
-const RESTRICTED_FILES = [
-  /.gitkeep$/i
-];
-
-function filterByRestrictedNames (content = {}) {
-  return !RESTRICTED_FILES.some(restriction => {
-    if (!content.git_object || !content.git_object.name) {
-      return false;
+function generateItemsFilter (preferences) {
+  const ignorePatterns = (preferences.versionStorageIgnoredFiles || [])
+    .map(pattern => pattern.startsWith('/')
+      ? new RegExp(`^${pattern}`, 'i')
+      : new RegExp(`${pattern}$`, 'i')
+    );
+  const getPath = (content) => {
+    if (content.git_object && content.git_object.path) {
+      const {path} = content.git_object;
+      if (path.startsWith('/')) {
+        return path;
+      }
+      return `/${path}`;
     }
-    return restriction.test(content.git_object.name);
-  });
+    return undefined;
+  };
+  return (content) => {
+    const path = getPath(content);
+    if (path) {
+      return !(ignorePatterns.some(pattern => pattern.test(path)));
+    }
+    return true;
+  };
 }
 
 @localization.localizedComponent
@@ -119,6 +145,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   state = {
     contents: [],
     editStorageDialog: false,
+    generateReportDialog: false,
     error: undefined,
     lastPage: 0,
     page: 0,
@@ -151,7 +178,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (
       pipeline &&
       pipeline.value &&
-      pipeline.loaded
+      pipeline.loaded &&
+      pipeline.value.currentVersion
     ) {
       return pipeline.value.currentVersion.commitId;
     }
@@ -163,7 +191,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (!contents || !contents.length) {
       return [];
     }
-    return contents.filter(filterByRestrictedNames);
+    return contents.filter(generateItemsFilter(this.props.preferences));
   };
 
   get actions () {
@@ -171,7 +199,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       openHistoryPanel: this.openHistoryPanel,
       closeHistoryPanel: this.closeHistoryPanel,
       openEditStorageDialog: this.openEditStorageDialog,
-      runVersionedStorage: this.runVersionedStorage
+      runVersionedStorage: this.runVersionedStorage,
+      openGenerateReportDialog: this.openGenerateReportDialog
     };
   };
 
@@ -387,6 +416,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({editStorageDialog: false}, () => pipeline.fetch());
   };
 
+  openGenerateReportDialog = () => {
+    this.setState({generateReportDialog: true});
+  };
+
+  closeGenerateReportDialog = () => {
+    this.setState({generateReportDialog: false});
+  };
+
   openCreateDocumentDialog = (type) => {
     if (type) {
       this.setState({createDocument: type});
@@ -561,6 +598,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   onDeleteDocument = async (document, comment) => {
     if (this.lastCommitId) {
+      const {selectedFile} = this.state;
       const {
         pipeline,
         pipelineId,
@@ -592,6 +630,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
         await pipeline.fetch();
+        if (selectedFile && selectedFile.path === document.path) {
+          this.clearSelectedFile();
+        }
       }
       this.pathWasChanged();
     }
@@ -728,7 +769,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (res.type?.includes('application/json') && res instanceof Blob) {
       checkForBlobErrors(res)
         .then(error => error
-          ? message.error('Error downloading file', 5)
+          ? message.error(error, 5)
           : FileSaver.saveAs(res, document.name)
         );
     } else if (res) {
@@ -760,6 +801,55 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
     this.pathWasChanged();
     hide();
+  };
+
+  generateReport = async (settings = {}) => {
+    const {
+      pipeline,
+      pipelineId
+    } = this.props;
+    const {
+      authors,
+      extensions,
+      dateFrom,
+      dateTo,
+      includeDiff,
+      splitDiffsBy,
+      downloadAsArchive
+    } = settings;
+    const hide = message.loading(`Generating report...`, 0);
+    const request = new PipelineGenerateReport(pipelineId);
+    await request.send({
+      commitsFilter: {
+        authors,
+        extensions,
+        dateFrom,
+        dateTo
+      },
+      includeDiff,
+      groupType: splitDiffsBy,
+      archive: downloadAsArchive,
+      userTimeOffsetInMin: -(new Date()).getTimezoneOffset()
+    });
+    hide();
+    if (request.error) {
+      message.error(request.error || 'Error downloading file', 5);
+    } else if (request.value instanceof Blob) {
+      const fileName = `${pipeline.value.name}-report`;
+      const extension = downloadAsArchive ? 'zip' : 'docx';
+      if (request.value.type?.includes('application/json')) {
+        checkForBlobErrors(request.value)
+          .then(error => error
+            ? message.error(error, 5)
+            : FileSaver.saveAs(request.value, `${fileName}.${extension}`)
+          );
+      } else {
+        FileSaver.saveAs(request.value, `${fileName}.${extension}`);
+      }
+    } else {
+      message.error('Error downloading file', 5);
+    }
+    this.closeGenerateReportDialog();
   };
 
   navigate = (path) => {
@@ -896,13 +986,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       pipeline,
       pipelineId,
       readOnly,
-      path
+      path,
+      preferences
     } = this.props;
     const {
       error,
       lastPage,
       page,
       selectedFile,
+      generateReportDialog,
       launchVSFormVisible
     } = this.state;
     const {
@@ -910,7 +1002,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       showHistoryPanel,
       pending
     } = this.state;
-    if (!pipeline.loaded && pipeline.pending) {
+    if (
+      (!pipeline.loaded && pipeline.pending) ||
+      (!preferences.loaded && preferences.pending)
+    ) {
       return (
         <LoadingView />
       );
@@ -1044,6 +1139,12 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           visible={editStorageDialog}
           pending={pending}
           pipeline={pipeline.value}
+        />
+        <GenerateReportDialog
+          visible={generateReportDialog}
+          onCancel={this.closeGenerateReportDialog}
+          onOk={this.generateReport}
+          idPrefix={ID_PREFIX}
         />
         {this.renderEditItemForm()}
         <LaunchVSForm

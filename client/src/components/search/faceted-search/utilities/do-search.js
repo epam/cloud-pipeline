@@ -19,6 +19,7 @@ import {FacetedSearch} from '../../../../models/search';
 function doSearch (
   query,
   filters,
+  metadataFields,
   pageSize,
   facets,
   scrollingParameters
@@ -26,6 +27,7 @@ function doSearch (
   const payload = {
     query: query || '*',
     filters: {...filters},
+    metadataFields,
     facets,
     pageSize,
     highlight: false,

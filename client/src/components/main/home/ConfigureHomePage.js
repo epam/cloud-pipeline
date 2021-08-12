@@ -22,16 +22,16 @@ import {
   PanelIcons,
   PanelTitles,
   PanelInfos,
-  Layout
+  AsyncLayout
 } from './layout';
 import {Button, Checkbox, Col, Icon, Modal, Row, Tooltip} from 'antd';
 import {getDisplayOnlyFavourites, setDisplayOnlyFavourites} from './utils/favourites';
 import localization from '../../../utils/localization';
 
 @localization.localizedComponent
+@AsyncLayout.use
 @observer
 export default class ConfigureHomePage extends localization.LocalizedReactComponent {
-
   static propTypes = {
     visible: PropTypes.bool,
     onCancel: PropTypes.func,
@@ -45,17 +45,19 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
 
   onSave = () => {
     const visibleKeys = this.state.panels.filter(panel => panel.visible).map(panel => panel.key);
-    const panels = Layout.getPanelsLayout();
-    const removedPanels = panels.filter(item => visibleKeys.indexOf(item.i) === -1).map(item => item.i);
-    const addedPanels = visibleKeys.filter(key => panels.filter(item => item.i === key).length === 0);
-    removedPanels.forEach(panel => Layout.removePanel(panel));
-    Layout.addPanels(addedPanels);
+    const panels = this.props.layout.getPanelsLayout();
+    const removedPanels = panels
+      .filter(item => visibleKeys.indexOf(item.i) === -1).map(item => item.i);
+    const addedPanels = visibleKeys
+      .filter(key => panels.filter(item => item.i === key).length === 0);
+    removedPanels.forEach(panel => this.props.layout.removePanel(panel));
+    this.props.layout.addPanels(addedPanels);
     setDisplayOnlyFavourites(this.state.displayOnlyFavourites);
     this.props.onSave && this.props.onSave();
   };
 
   restoreDefaultLayoutClicked = () => {
-    Layout.restoreDefaultLayout();
+    this.props.layout.restoreDefaultLayout();
     this.props.onSave && this.props.onSave();
   };
 
@@ -92,40 +94,40 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         }>
         <table style={{borderCollapse: 'collapse', width: '100%'}}>
           <tbody>
-          {
-            this.state.panels.map((panel, index) => {
-              return (
-                <tr
-                  key={panel.key}
-                  style={
-                    index % 2 === 0
-                      ? {height: 22}
-                      : {height: 22, backgroundColor: '#f4f4f4'}
-                  }>
-                  <td style={{borderCollapse: 'separate'}}>
-                    <Checkbox
-                      disabled={
-                        panel.visible &&
-                        this.state.panels.filter(i => i.visible).length === 1
+            {
+              this.state.panels.map((panel, index) => {
+                return (
+                  <tr
+                    key={panel.key}
+                    style={
+                      index % 2 === 0
+                        ? {height: 22}
+                        : {height: 22, backgroundColor: '#f4f4f4'}
+                    }>
+                    <td style={{borderCollapse: 'separate'}}>
+                      <Checkbox
+                        disabled={
+                          panel.visible &&
+                          this.state.panels.filter(i => i.visible).length === 1
+                        }
+                        checked={panel.visible}
+                        onChange={this.onChangeVisibility(panel.key)}>
+                        {panel.icon}
+                        {panel.title}
+                      </Checkbox>
+                    </td>
+                    <td style={{textAlign: 'right'}}>
+                      {
+                        panel.info &&
+                        <Tooltip title={panel.info} placement="left">
+                          <Icon type="question-circle" />
+                        </Tooltip>
                       }
-                      checked={panel.visible}
-                      onChange={this.onChangeVisibility(panel.key)}>
-                      {panel.icon}
-                      {panel.title}
-                    </Checkbox>
-                  </td>
-                  <td style={{textAlign: 'right'}}>
-                  {
-                    panel.info &&
-                    <Tooltip title={panel.info} placement="left">
-                      <Icon type="question-circle" />
-                    </Tooltip>
-                  }
-                  </td>
-                </tr>
-              );
-            })
-          }
+                    </td>
+                  </tr>
+                );
+              })
+            }
           </tbody>
         </table>
         <Row type="flex" style={{marginTop: 10}}>
@@ -147,7 +149,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
 
   updatePanelsState = () => {
     const panels = [];
-    const layout = Layout.getPanelsLayout();
+    const layout = this.props.layout.getPanelsLayout();
     for (let key in Panels) {
       if (Panels.hasOwnProperty(key)) {
         let title = PanelTitles[Panels[key]];

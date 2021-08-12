@@ -23,11 +23,13 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class PlainCmdExecutor implements CmdExecutor {
 
     private static final String DEFAULT_SHELL = "bash";
+    private static final String WIN_CMD = "cmd.exe";
 
     @Override
     public String executeCommand(final String command,
@@ -63,7 +65,7 @@ public class PlainCmdExecutor implements CmdExecutor {
     public Process launchCommand(final String command, final Map<String, String> environmentVariables,
                                  final File workDir, final String username) {
         try {
-            final String[] cmd = {DEFAULT_SHELL, "-c", command};
+            final String[] cmd = buildCommand(command);
             final Map<String, String> mergedEnvVars = new HashMap<>(System.getenv());
             if (!environmentVariables.isEmpty()) {
                 mergedEnvVars.putAll(environmentVariables);
@@ -75,6 +77,12 @@ public class PlainCmdExecutor implements CmdExecutor {
         } catch (IOException e) {
             throw new CmdExecutionException(String.format("Command '%s' launching has failed", command), e);
         }
+    }
+
+    private String[] buildCommand(final String command) {
+        return SystemUtils.IS_OS_WINDOWS
+               ? new String[]{WIN_CMD, "/c", command.replace("'", "\"")}
+               : new String[]{DEFAULT_SHELL, "-c", command};
     }
 
     private void readOutputStream(String command, StringBuilder content, InputStreamReader in) {

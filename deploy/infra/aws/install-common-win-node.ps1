@@ -41,6 +41,14 @@ function InstallNoMachineIfRequired {
         Write-Host "Installing NoMachine..."
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
+        @"
+
+VirtualDesktopAuthorization 0
+PhysicalDesktopAuthorization 0
+AutomaticDisconnection 0
+ConnectionsLimit 1
+ConnectionsUserLimit 1
+"@ | Out-File -FilePath "C:\Program Files (x86)\NoMachine\etc\server.cfg" -Encoding ascii -Force -Append
         $restartRequired=$true
     }
     return $restartRequired
@@ -89,6 +97,20 @@ function InstallPGinaIfRequired {
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina.Plugin.AuthenticateAllPlugin.dll" -OutFile "C:\Program Files\pGina\Plugins\Contrib\pGina.Plugin.AuthenticateAllPlugin.dll"
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
         Set-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
+function InstallDockerIfRequired {
+    $restartRequired=$false
+    $dockerInstalled = Get-Service -Name docker `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($dockerInstalled)) {
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+        Install-Package -Name docker -ProviderName DockerMsftProvider -Force -RequiredVersion 19.03.14
         $restartRequired=$true
     }
     return $restartRequired
@@ -198,13 +220,6 @@ function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
     }
 }
 
-function ConfigureInstanceInitialization {
-    $Ec2UtilityConfigFile = 'C:\ProgramData\Amazon\EC2-Windows\Launch\Config\LaunchConfig.json'
-    $Ec2UtilityConfig = Get-Content $Ec2UtilityConfigFile | ConvertFrom-Json
-    $Ec2UtilityConfig.setWallpaper = $False
-    $Ec2UtilityConfig | ConvertTo-Json | Out-File $Ec2UtilityConfigFile
-}
-
 $interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
 
 $homeDir = "$env:USERPROFILE"
@@ -241,6 +256,18 @@ InstallWebDAVIfRequired
 Write-Host "Installing pGina if required..."
 InstallPGinaIfRequired
 
+Write-Host "Installing docker if required..."
+$restartRequired = (InstallDockerIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
+Write-Host "Restarting computer if required..."
+if ($restartRequired) {
+    Write-Host "Restarting computer..."
+    Stop-Transcript
+    Restart-Computer -Force
+    Exit
+}
+
 Write-Host "Installing python if required..."
 InstallPythonIfRequired -PythonDir $pythonDir
 
@@ -270,9 +297,6 @@ Remove-Item -Recurse -Force "$homeDir\.ssh"
 #  See https://github.com/epam/cloud-pipeline/issues/1832#issuecomment-832841950
 Write-Host "Prepulling Windows tool base docker image..."
 docker pull python:3.8.9-windowsservercore
-
-Write-Host "Configuring instance initialization..."
-ConfigureInstanceInitialization
 
 Write-Host "Scheduling instance initialization on next launch..."
 C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -Schedule

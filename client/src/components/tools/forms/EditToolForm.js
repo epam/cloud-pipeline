@@ -66,18 +66,16 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM,
-  CP_DISABLE_HYPER_THREADING
+  CP_CAP_DESKTOP_NM
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
-  dinDEnabled,
-  noMachineEnabled,
-  singularityEnabled,
-  systemDEnabled,
-  moduleEnabled,
-  disableHyperThreadingEnabled,
-  RUN_CAPABILITIES
+  RUN_CAPABILITIES,
+  getEnabledCapabilities,
+  applyCapabilities,
+  checkRunCapabilitiesModified,
+  addCapability,
+  hasPlatformSpecificCapabilities
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
 const Panels = {
@@ -114,6 +112,7 @@ export default class EditToolForm extends React.Component {
     allowSensitive: PropTypes.bool,
     mode: PropTypes.oneOf(['tool', 'version']),
     configuration: PropTypes.object,
+    platform: PropTypes.string,
     onSubmit: PropTypes.func,
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
@@ -155,12 +154,7 @@ export default class EditToolForm extends React.Component {
     slurmEnabled: false,
     kubeEnabled: false,
     launchCluster: false,
-    dinD: false,
-    singularity: false,
-    systemD: false,
-    noMachine: false,
-    module: false,
-    disableHyperThreading: false
+    runCapabilities: []
   };
 
   @observable defaultLimitMounts;
@@ -176,6 +170,15 @@ export default class EditToolForm extends React.Component {
       return (this.props.awsRegions.value || []).map(r => r);
     }
     return [];
+  }
+
+  get isWindowsPlatform () {
+    return /^windows$/i.test(this.props.platform);
+  }
+
+  get hyperThreadingDisabled () {
+    return (this.state.runCapabilities || [])
+      .indexOf(RUN_CAPABILITIES.disableHyperThreading) >= 0;
   }
 
   showLabelInput = () => {
@@ -290,49 +293,7 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          if (this.state.dinD) {
-            params.push({
-              name: CP_CAP_DIND_CONTAINER,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.systemD) {
-            params.push({
-              name: CP_CAP_SYSTEMD_CONTAINER,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.singularity) {
-            params.push({
-              name: CP_CAP_SINGULARITY,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.noMachine) {
-            params.push({
-              name: CP_CAP_DESKTOP_NM,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.module) {
-            params.push({
-              name: CP_CAP_MODULES,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.disableHyperThreading) {
-            params.push({
-              name: CP_DISABLE_HYPER_THREADING,
-              type: 'boolean',
-              value: true
-            });
-          }
-
+          applyCapabilities(this.props.platform, parameters, this.state.runCapabilities);
           for (let i = 0; i < params.length; i++) {
             parameters[params[i].name] = {
               type: params[i].type,
@@ -360,6 +321,7 @@ export default class EditToolForm extends React.Component {
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
+          instance_image: values.instanceImage,
           is_spot: `${values.is_spot}` === 'true'
         };
         this.setState({pending: true}, async () => {
@@ -384,6 +346,7 @@ export default class EditToolForm extends React.Component {
     switch (field) {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
+      case 'instance_image': return this.getInstanceImageInitialValue;
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
@@ -425,6 +388,12 @@ export default class EditToolForm extends React.Component {
   getDiskInitialValue = () => {
     return (this.props.configuration && this.props.configuration.instance_disk) ||
       (this.props.tool && this.props.tool.disk) ||
+      undefined;
+  };
+
+  getInstanceImageInitialValue = () => {
+    return (this.props.configuration && this.props.configuration.instance_image) ||
+      (this.props.tool && this.props.tool.instanceImage) ||
       undefined;
   };
 
@@ -479,12 +448,7 @@ export default class EditToolForm extends React.Component {
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
-        state.dinD = dinDEnabled(props.configuration.parameters);
-        state.singularity = singularityEnabled(props.configuration.parameters);
-        state.systemD = systemDEnabled(props.configuration.parameters);
-        state.noMachine = noMachineEnabled(props.configuration.parameters);
-        state.module = moduleEnabled(props.configuration.parameters);
-        state.disableHyperThreading = disableHyperThreadingEnabled(props.configuration.parameters);
+        state.runCapabilities = getEnabledCapabilities(props.configuration.parameters);
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
@@ -719,27 +683,6 @@ export default class EditToolForm extends React.Component {
     }
   }
 
-  @computed
-  get selectedRunCapabilities () {
-    const {
-      dinD,
-      singularity,
-      systemD,
-      noMachine,
-      module,
-      disableHyperThreading
-    } = this.state;
-
-    return [
-      dinD ? RUN_CAPABILITIES.dinD : false,
-      singularity ? RUN_CAPABILITIES.singularity : false,
-      systemD ? RUN_CAPABILITIES.systemD : false,
-      noMachine ? RUN_CAPABILITIES.noMachine : false,
-      module ? RUN_CAPABILITIES.module : false,
-      disableHyperThreading ? RUN_CAPABILITIES.disableHyperThreading : false
-    ].filter(Boolean);
-  };
-
   modified = () => {
     const arrayIsNullOrEmpty = (array) => {
       return !array || !array.length;
@@ -817,24 +760,15 @@ export default class EditToolForm extends React.Component {
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
     const additionalCapabilitiesChanged = () => {
-      const dinD = dinDEnabled(this.props.configuration.parameters);
-      const singularity = singularityEnabled(this.props.configuration.parameters);
-      const systemD = systemDEnabled(this.props.configuration.parameters);
-      const noMachine = noMachineEnabled(this.props.configuration.parameters);
-      const module = moduleEnabled(this.props.configuration.parameters);
-      const disableHyperThreading = disableHyperThreadingEnabled(
-        this.props.configuration.parameters
+      return checkRunCapabilitiesModified(
+        this.state.runCapabilities,
+        getEnabledCapabilities(this.props.configuration.parameters)
       );
-      return dinD !== this.state.dinD ||
-        singularity !== this.state.singularity ||
-        systemD !== this.state.systemD ||
-        noMachine !== this.state.noMachine ||
-        module !== this.state.module ||
-        disableHyperThreading !== this.state.disableHyperThreading;
     };
 
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
+      configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
       configurationFormFieldChanged('allowSensitive') ||
       commandChanged() ||
@@ -900,10 +834,13 @@ export default class EditToolForm extends React.Component {
       kubeEnabled,
       autoScaledPriceType
     } = configuration;
-    let {dinD, systemD} = this.state;
+    let {runCapabilities} = this.state;
     if (kubeEnabled) {
-      dinD = true;
-      systemD = true;
+      runCapabilities = addCapability(
+        runCapabilities,
+        RUN_CAPABILITIES.dinD,
+        RUN_CAPABILITIES.systemD
+      );
     }
     this.setState({
       launchCluster,
@@ -916,8 +853,7 @@ export default class EditToolForm extends React.Component {
       slurmEnabled,
       kubeEnabled,
       autoScaledPriceType,
-      dinD,
-      systemD
+      runCapabilities
     }, () => {
       this.closeConfigureClusterDialog();
       const priceType = this.props.form.getFieldValue('is_spot') || this.getPriceTypeInitialValue();
@@ -926,6 +862,10 @@ export default class EditToolForm extends React.Component {
       });
     });
   };
+
+  cpuMapper = cpu => this.hyperThreadingDisabled && !Number.isNaN(Number(cpu))
+    ? (cpu / 2.0)
+    : cpu;
 
   renderExecutionEnvironmentSummary = () => {
     const instanceTypeValue = this.props.form.getFieldValue('instanceType');
@@ -962,8 +902,8 @@ export default class EditToolForm extends React.Component {
     const lines = [];
     if (cpu) {
       maxCPU && maxCPU > cpu
-        ? lines.push(<span>{cpu} - {maxCPU} <b>CPU</b></span>)
-        : lines.push(<span>{cpu} <b>CPU</b></span>);
+        ? lines.push(<span>{this.cpuMapper(cpu)} - {this.cpuMapper(maxCPU)} <b>CPU</b></span>)
+        : lines.push(<span>{this.cpuMapper(cpu)} <b>CPU</b></span>);
     }
     if (ram) {
       maxRAM && maxRAM > ram
@@ -1095,12 +1035,7 @@ export default class EditToolForm extends React.Component {
 
   onRunCapabilitiesSelect = (capabilities) => {
     this.setState({
-      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
-      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
-      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
-      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
-      module: capabilities.includes(RUN_CAPABILITIES.module),
-      disableHyperThreading: capabilities.includes(RUN_CAPABILITIES.disableHyperThreading)
+      runCapabilities: (capabilities || []).slice()
     });
   };
 
@@ -1167,10 +1102,10 @@ export default class EditToolForm extends React.Component {
                                   .filter(t => t.instanceFamily === instanceFamily)
                                   .map(t =>
                                     <Select.Option
-                                      title={`${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
+                                      title={`${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
                                       key={t.sku}
                                       value={t.name}>
-                                      {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
+                                      {t.name} (CPU: {this.cpuMapper(t.vcpu)}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
                                     </Select.Option>
                                   )
                               }
@@ -1179,6 +1114,20 @@ export default class EditToolForm extends React.Component {
                         })
                     }
                   </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Instance image"
+                style={{marginBottom: 10}}
+              >
+                {getFieldDecorator('instanceImage',
+                  {
+                    initialValue: this.getInstanceImageInitialValue()
+                  })(
+                    <Input
+                      disabled={this.state.pending || this.props.readOnly}
+                    />
                 )}
               </Form.Item>
               <Form.Item {...this.formItemLayout} label="Price type" style={{marginTop: 10, marginBottom: 10}}>
@@ -1226,64 +1175,84 @@ export default class EditToolForm extends React.Component {
                   <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
-              <Form.Item
-                {...this.formItemLayout}
-                label="Limit mounts"
-                style={{marginTop: 10, marginBottom: 10}}
-              >
-                <div>
-                  <Row type="flex" align="middle">
-                    <Checkbox
-                      checked={/^none$/i.test(limitMountsValue)}
-                      onChange={this.toggleDoNotMountStorages}
-                    >
-                      Do not mount storages
-                    </Checkbox>
-                  </Row>
-                  <Row
-                    type="flex"
-                    align="middle"
-                    style={{display: /^none$/i.test(limitMountsValue) ? 'none' : undefined}}
+              {
+                !this.isWindowsPlatform && (
+                  <Form.Item
+                    {...this.formItemLayout}
+                    label="Limit mounts"
+                    style={{marginTop: 10, marginBottom: 10}}
                   >
-                    <Form.Item
-                      style={{marginBottom: 0, flex: 1}}
-                    >
-                      {getFieldDecorator('limitMounts',
-                        {
-                          initialValue: this.defaultLimitMounts
-                        })(
-                        <LimitMountsInput
-                          allowSensitive={allowSensitive}
-                          disabled={this.state.pending || this.props.readOnly}
-                        />
-                      )}
-                    </Form.Item>
+                    <div>
+                      <Row type="flex" align="middle">
+                        <Checkbox
+                          checked={/^none$/i.test(limitMountsValue)}
+                          onChange={this.toggleDoNotMountStorages}
+                        >
+                          Do not mount storages
+                        </Checkbox>
+                      </Row>
+                      <Row
+                        type="flex"
+                        align="middle"
+                        style={{display: /^none$/i.test(limitMountsValue) ? 'none' : undefined}}
+                      >
+                        <Form.Item
+                          style={{marginBottom: 0, flex: 1}}
+                        >
+                          {getFieldDecorator('limitMounts',
+                            {
+                              initialValue: this.defaultLimitMounts
+                            })(
+                            <LimitMountsInput
+                              allowSensitive={allowSensitive}
+                              disabled={this.state.pending || this.props.readOnly}
+                            />
+                          )}
+                        </Form.Item>
+                      </Row>
+                    </div>
+                  </Form.Item>
+                )
+              }
+              {
+                !this.isWindowsPlatform && (
+                  <Form.Item
+                    {...this.formItemLayout}
+                    label="Allow sensitive storages"
+                    style={{marginTop: 10, marginBottom: 10}}
+                  >
+                    {getFieldDecorator('allowSensitive',
+                      {
+                        initialValue: this.getAllowSensitiveInitialValue(),
+                        valuePropName: 'checked'
+                      })(
+                      <Checkbox
+                        disabled={
+                          this.state.pending ||
+                          this.props.readOnly ||
+                          this.props.mode === 'version'
+                        }
+                        onChange={this.correctSensitiveMounts}
+                      />
+                    )}
+                  </Form.Item>
+                )
+              }
+              {
+                !this.isWindowsPlatform && (
+                  <Row type="flex" align="middle" style={{marginBottom: 10}}>
+                    <Col xs={24} sm={{span: 12, offset: 6}}>
+                      <Row type="flex" justify="end">
+                        <a
+                          onClick={this.openConfigureClusterDialog}
+                          style={{color: '#777', textDecoration: 'underline'}}>
+                          <Icon type="setting" /> {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
+                        </a>
+                      </Row>
+                    </Col>
                   </Row>
-                </div>
-              </Form.Item>
-              <Form.Item {...this.formItemLayout} label="Allow sensitive storages" style={{marginTop: 10, marginBottom: 10}}>
-                {getFieldDecorator('allowSensitive',
-                  {
-                    initialValue: this.getAllowSensitiveInitialValue(),
-                    valuePropName: 'checked'
-                  })(
-                  <Checkbox
-                    disabled={this.state.pending || this.props.readOnly || this.props.mode === 'version'}
-                    onChange={this.correctSensitiveMounts}
-                  />
-                )}
-              </Form.Item>
-              <Row type="flex" align="middle" style={{marginBottom: 10}}>
-                <Col xs={24} sm={{span: 12, offset: 6}}>
-                  <Row type="flex" justify="end">
-                    <a
-                      onClick={this.openConfigureClusterDialog}
-                      style={{color: '#777', textDecoration: 'underline'}}>
-                      <Icon type="setting" /> {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
-                    </a>
-                  </Row>
-                </Col>
-              </Row>
+                )
+              }
               <Form.Item
                 {...this.formItemLayout}
                 label="Cloud Region"
@@ -1352,16 +1321,22 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
-              <Form.Item
-                {...this.formItemLayout}
-                label="Run capabilities"
-                style={{marginTop: 10, marginBottom: 10}}
-              >
-                <RunCapabilities
-                  values={this.selectedRunCapabilities}
-                  onChange={this.onRunCapabilitiesSelect}
-                />
-              </Form.Item>
+              {
+                hasPlatformSpecificCapabilities(this.props.platform) && (
+                  <Form.Item
+                    {...this.formItemLayout}
+                    label="Run capabilities"
+                    style={{marginTop: 10, marginBottom: 10}}
+                  >
+                    <RunCapabilities
+                      disabled={this.state.pending || this.props.readOnly}
+                      values={this.state.runCapabilities}
+                      onChange={this.onRunCapabilitiesSelect}
+                      platform={this.props.platform}
+                    />
+                  </Form.Item>
+                )
+              }
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}

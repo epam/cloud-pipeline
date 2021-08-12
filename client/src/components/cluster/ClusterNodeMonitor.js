@@ -22,12 +22,12 @@ import {
   Button,
   Checkbox,
   DatePicker,
-  Dropdown,
   Icon,
-  Menu,
   message,
   Row
 } from 'antd';
+import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
 import LoadingView from '../special/LoadingView';
@@ -126,6 +126,22 @@ class ClusterNodeMonitor extends React.Component {
   liveUpdateTimer;
 
   @computed
+  get windowsOS () {
+    const {node} = this.props;
+    if (node.loaded) {
+      const {
+        labels = {},
+        systemInfo = {}
+      } = node.value || {};
+      if (systemInfo.operatingSystem) {
+        return /^windows$/i.test(systemInfo.operatingSystem);
+      }
+      return /^windows$/i.test(labels['kubernetes.io.host']);
+    }
+    return false;
+  }
+
+  @computed
   get wholeRangeEnabled() {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
@@ -181,16 +197,30 @@ class ClusterNodeMonitor extends React.Component {
     return false;
   }
 
-  componentDidMount() {
+  componentDidMount () {
     this.liveUpdateTimer = setInterval(
       this.invokeLiveUpdate,
       LIVE_UPDATE_INTERVAL
     );
     this.initializeRange();
+    this.checkWindowsBasedNode();
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
+  componentDidUpdate (prevProps, prevState, snapshot) {
     this.initializeRange();
+    this.checkWindowsBasedNode();
+  }
+
+  checkWindowsBasedNode = () => {
+    if (this.windowsOS) {
+      const {
+        router,
+        node
+      } = this.props;
+      if (node && node.loaded && router) {
+        router.push(`/cluster/${node.value.name}/info`);
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -475,6 +505,9 @@ class ClusterNodeMonitor extends React.Component {
   };
 
   render () {
+    if (this.windowsOS || (!this.props.node.loaded && this.props.node.pending)) {
+      return null;
+    }
     const {
       chartsData
     } = this.props;
@@ -517,7 +550,7 @@ class ClusterNodeMonitor extends React.Component {
           >
             Common range for all charts
           </Checkbox>
-          <Divider/>
+          <Divider />
           <Checkbox
             checked={liveUpdate}
             disabled={chartsData.rangeEndIsFixed}
@@ -525,41 +558,45 @@ class ClusterNodeMonitor extends React.Component {
           >
             Live update
           </Checkbox>
-          <Divider/>
+          <Divider />
           <Dropdown
             overlay={(
-              <Menu onClick={this.setRange}>
-                <Menu.Item
+              <Menu
+                onClick={this.setRange}
+                style={{cursor: 'pointer'}}
+                selectedKeys={[]}
+              >
+                <MenuItem
                   key={Range.full}
                   disabled={!this.wholeRangeEnabled}
                 >
                   Whole range
-                </Menu.Item>
-                <Menu.Item
+                </MenuItem>
+                <MenuItem
                   key={Range.week}
                   disabled={!this.lastWeekEnabled}
                 >
                   Last week
-                </Menu.Item>
-                <Menu.Item
+                </MenuItem>
+                <MenuItem
                   key={Range.day}
                   disabled={!this.lastDayEnabled}
                 >
                   Last day
-                </Menu.Item>
-                <Menu.Item
+                </MenuItem>
+                <MenuItem
                   key={Range.hour}
                   disabled={!this.lastHourEnabled}
                 >
                   Last hour
-                </Menu.Item>
+                </MenuItem>
               </Menu>
             )}>
             <Button>
-              Set range <Icon type="down"/>
+              Set range <Icon type="down" />
             </Button>
           </Dropdown>
-          <Divider/>
+          <Divider />
           <DatePicker
             format="YYYY-MM-DD HH:mm"
             placeholder="Start"
@@ -577,27 +614,31 @@ class ClusterNodeMonitor extends React.Component {
             disabledDate={this.disabledDate}
           />
           {
-            !this.retentionPeriodExceeded && <Divider/>
+            !this.retentionPeriodExceeded && <Divider />
           }
           {
             !this.retentionPeriodExceeded && (
               <Dropdown
                 overlay={(
-                  <Menu onClick={this.onExportClicked}>
-                    <Menu.Item key="XLS" value="XLS">
+                  <Menu
+                    onClick={this.onExportClicked}
+                    style={{cursor: 'pointer'}}
+                    selectedKeys={[]}
+                  >
+                    <MenuItem key="XLS" value="XLS">
                       Excel
-                    </Menu.Item>
-                    <Menu.Item key="CSV" value="CSV">
+                    </MenuItem>
+                    <MenuItem key="CSV" value="CSV">
                       CSV
-                    </Menu.Item>
+                    </MenuItem>
                     {
-                      availableExportIntervals.length > 1 && (<Menu.Divider/>)
+                      availableExportIntervals.length > 1 && (<MenuDivider />)
                     }
                     {
                       availableExportIntervals.length > 1 && (
-                        <Menu.Item key="custom" value="custom">
+                        <MenuItem key="custom" value="custom">
                           Configure export
-                        </Menu.Item>
+                        </MenuItem>
                       )
                     }
                   </Menu>

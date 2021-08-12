@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import GridLayout from 'react-grid-layout';
 import HomePagePanel from './HomePagePanel';
 import ConfigureHomePage from './ConfigureHomePage';
-import {GridStyles, Layout} from './layout';
+import {AsyncLayout, GridStyles, userLayout} from './layout';
 import {Button, Icon, Row} from 'antd';
 import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 import PipelineRunServices from '../../../models/pipelines/PipelineRunServices';
@@ -37,6 +37,8 @@ const UPDATE_TIMEOUT = 15000;
 
 @roleModel.authenticationInfo
 @inject('myIssues', 'preferences')
+@userLayout
+@AsyncLayout.use
 @inject((stores, parameters) => {
   const myRunsSubFilter = {};
   if (parameters.authenticatedUserInfo.loaded) {
@@ -69,7 +71,6 @@ const UPDATE_TIMEOUT = 15000;
 })
 @observer
 export default class HomePage extends React.Component {
-
   state = {
     container: null,
     containerWidth: null,
@@ -93,7 +94,7 @@ export default class HomePage extends React.Component {
   };
 
   onLayoutChanged = (layout, update = false) => {
-    Layout.setPanelsLayout(layout, false);
+    this.props.layout.setPanelsLayout(layout, false);
     if (update) {
       this.forceUpdate();
     }
@@ -121,7 +122,7 @@ export default class HomePage extends React.Component {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
-    const panelsLayout = Layout.getPanelsLayout();
+    const panelsLayout = this.props.layout.getPanelsLayout();
     return (
       <div
         ref={this.initializeContainer}

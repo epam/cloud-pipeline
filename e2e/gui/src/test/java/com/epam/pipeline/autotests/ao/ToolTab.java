@@ -45,7 +45,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         this.toolGroup = toolGroup;
         final SelenideElement toolsActions = $(byClassName("tools__tool-actions"));
         final SelenideElement toolMenu = $(byClassName("tools__tool-menu"));
-        final SelenideElement settingMenu = $(PipelineSelectors.visible(byClassName("ant-dropdown-menu")));
+        final SelenideElement settingMenu = $(PipelineSelectors.visible(byClassName("rc-dropdown-menu")));
         this.elements = initialiseElements(
                 entry(RUN, toolsActions.find(PipelineSelectors.button("Run"))),
                 entry(RUN_DROPDOWN, toolsActions.find(byId("run-latest-menu-button"))),

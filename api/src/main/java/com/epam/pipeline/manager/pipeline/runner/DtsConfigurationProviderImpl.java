@@ -58,7 +58,7 @@ public class DtsConfigurationProviderImpl implements ConfigurationProvider<DtsRu
 
     @Override
     public void validateEntry(DtsRunConfigurationEntry entry) {
-        DtsRegistry dts = dtsRegistryManager.load(entry.getDtsId());
+        DtsRegistry dts = dtsRegistryManager.loadById(entry.getDtsId());
         Assert.isTrue(dts.isSchedulable(),
                 messageHelper.getMessage(MessageConstants.ERROR_DTS_NOT_SCHEDULABLE, dts.getName()));
         if (entry.getPipelineId() != null) {
@@ -73,7 +73,7 @@ public class DtsConfigurationProviderImpl implements ConfigurationProvider<DtsRu
 
     @Override
     public boolean stop(Long runId, DtsExecutionPreferences executionPreferences) {
-        DtsRegistry dts = dtsRegistryManager.load(executionPreferences.getDtsId());
+        DtsRegistry dts = dtsRegistryManager.loadById(executionPreferences.getDtsId());
         Assert.isTrue(dts.isSchedulable(),
                 messageHelper.getMessage(MessageConstants.ERROR_DTS_NOT_SCHEDULABLE, dts.getName()));
         try {

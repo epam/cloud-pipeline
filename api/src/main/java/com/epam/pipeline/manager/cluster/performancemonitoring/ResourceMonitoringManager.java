@@ -57,7 +57,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;

@@ -17,3 +17,22 @@
 .menu {
   min-width: 200px;
 }
+
+.menu-container > .menu > .actions-sub-menu > div,
+.menu-container > .menu > .menu-item,
+.menu-container > .menu .actions-sub-menu .menu-item {
+  padding: 7px 8px;
+}
+
+.menu-container > .menu {
+  padding-top: 0;
+  padding-bottom: 0;
+  cursor: pointer;
+  background-color: #ffff;
+  text-align: left;
+}
+
+.actions-sub-menu {
+  min-width: 200px;
+  text-align: left;
+}

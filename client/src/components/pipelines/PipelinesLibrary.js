@@ -514,7 +514,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           location={this.props.path}
           query={this.props.query}
           onReloadTree={
-            (reloadRoot) => this.reloadTree(reloadRoot === undefined ? true : reloadRoot)
+            (reloadRoot, folder) => this.reloadTree(
+              reloadRoot === undefined ? true : reloadRoot,
+              folder
+            )
           }
           style={{overflow: 'auto'}}
         >
@@ -550,7 +553,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             <PipelinesLibraryContent
               location={this.props.path}
               query={this.props.query}
-              onReloadTree={(reloadRoot) => this.reloadTree(reloadRoot === undefined ? true : reloadRoot)}
+              onReloadTree={
+                (reloadRoot, folder) => this.reloadTree(
+                  reloadRoot === undefined ? true : reloadRoot,
+                  folder
+                )
+              }
             >
               {this.props.children}
             </PipelinesLibraryContent>
@@ -688,7 +696,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     }
   }
 
-  async reloadTree (reload) {
+  async reloadTree (reload, folderToReload) {
     const parts = this.props.path.split('/');
     let currentPath, placeholderOrPipelineId, idOrVersionName, metadataClass, selectedKey, history;
     for (let i = 0; i < parts.length; i++) {
@@ -797,6 +805,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       }
     }
     await this.reloadItem(selectedKey, undefined, rootItems, false);
+    if (folderToReload) {
+      await this.reloadItem(`${ItemTypes.folder}_${folderToReload}`, undefined, rootItems, false);
+    }
     if ((placeholderOrPipelineId || '').toLowerCase() === 'folder' && idOrVersionName && history) {
       selectedKey = `${ItemTypes.projectHistory}_${idOrVersionName}`;
     }

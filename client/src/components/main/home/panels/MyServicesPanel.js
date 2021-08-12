@@ -20,17 +20,17 @@ import {inject, observer} from 'mobx-react';
 import ToolImage from '../../../../models/tools/ToolImage';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
-import parseRunServiceUrl from '../../../../utils/parseRunServiceUrl';
 import {Alert, Icon, Row} from 'antd';
 import CardsPanel from './components/CardsPanel';
 import getServiceActions from './components/getServiceActions';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
+import {parseRunServiceUrlConfiguration} from '../../../../utils/multizone';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('dockerRegistries')
+@inject('dockerRegistries', 'multiZoneManager')
 @observer
 export default class MyServicesPanel extends localization.LocalizedReactComponent {
 
@@ -60,9 +60,22 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
   };
 
   renderService = (service) => {
-    let name = service.name || service.url;
+    let name = service.name;
     if (!name && service.sshAccess) {
       name = 'SSH Access';
+    }
+    if (!name && service.url) {
+      const {multiZoneManager} = this.props;
+      const defaultURLRegion = multiZoneManager.getDefaultURLRegion(service.url);
+      if (defaultURLRegion && service.url[defaultURLRegion]) {
+        name = service.url[defaultURLRegion];
+        if (name) {
+          name = name.split('/').pop() || name;
+        }
+      }
+    }
+    if (!name) {
+      name = 'Endpoint';
     }
     const [imageRegistry, , tool] = this.getTool(service.run.dockerImage);
     const [reg, group, dockerImage] = service.run.dockerImage.split('/');
@@ -139,7 +152,9 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           return {
             run: r,
             sshAccess: accessType === AccessTypes.ssh || roleModel.isOwner(r),
-            urls: r.serviceUrl ? (parseRunServiceUrl(r.serviceUrl) || []) : []
+            urls: r.serviceUrl
+              ? (parseRunServiceUrlConfiguration(r.serviceUrl) || [])
+              : []
           };
         })
         .reduce((array, obj) => {
@@ -152,8 +167,14 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           return array;
         }, []);
       const navigate = ({url}) => {
-        if (url) {
+        if (typeof url === 'string') {
           window.open(url, '_blank').focus();
+        }
+        if (typeof url === 'object') {
+          const defaultRegion = this.props.multiZoneManager.getDefaultURLRegion(url);
+          if (defaultRegion && url.hasOwnProperty(defaultRegion)) {
+            window.open(url[defaultRegion], '_blank').focus();
+          }
         }
       };
       content = (
@@ -164,7 +185,9 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           cardStyle={{width: '100%'}}
           actions={
             getServiceActions(
-              this.props.authenticatedUserInfo,{
+              this.props.authenticatedUserInfo,
+              this.props.multiZoneManager,
+              {
                 ssh: (url) => window.open(url, '_blank').focus()
               })
           }
