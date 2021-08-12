@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">6m23.48s</div>
+<div class="counter">5m42.45s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">77%</div>
+<div class="percent">75%</div>
 <p>successful</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>Element not found {By.id: userName}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1627556868127.159.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1627556868127.159.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1628762100189.121.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1628762100189.121.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -114,10 +114,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'f5e076949f78', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'cb5fd7224e4d', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 1a4ab5eba36de30886a1266c52d86917
+Session ID: c6dd99cc45bbecd9bf291d67a8a3b8b4
 *** Element info: {Using=id, value=userName}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -142,22 +142,28 @@ Session ID: 1a4ab5eba36de30886a1266c52d86917
 </span>
 </div>
 <div class="test">
-<a name="generateListOfUsers - EPMCMBIBPC-3168"></a>
-<h3 class="failures">generateListOfUsers - EPMCMBIBPC-3168</h3>
+<a name="provideAdminRightsToTheUser - EPMCMBIBPC-3017"></a>
+<h3 class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</h3>
 <span class="code">
-<pre>java.nio.file.NoSuchFileException: /headless/Downloads/export.csv
-	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:86)
-	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:102)
-	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:107)
-	at sun.nio.fs.UnixFileSystemProvider.newByteChannel(UnixFileSystemProvider.java:214)
-	at java.nio.file.Files.newByteChannel(Files.java:361)
-	at java.nio.file.Files.newByteChannel(Files.java:407)
-	at java.nio.file.spi.FileSystemProvider.newInputStream(FileSystemProvider.java:384)
-	at java.nio.file.Files.newInputStream(Files.java:152)
-	at java.nio.file.Files.newBufferedReader(Files.java:2784)
-	at java.nio.file.Files.readAllLines(Files.java:3202)
-	at java.nio.file.Files.readAllLines(Files.java:3242)
-	at com.epam.pipeline.autotests.RoleBasedAccessControlTest.generateListOfUsers(RoleBasedAccessControlTest.java:262)
+<pre>Element should not visible {By.xpath: //*[contains(@class, 'ant-menu-item') and contains(., 'User management')]}
+Element: '&lt;li aria-selected=&quot;false&quot; class=&quot;ant-menu-item&quot; role=&quot;menuitem&quot; value=&quot;0&quot;&gt;USER MANAGEMENT&lt;/li&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1628762336624.123.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1628762336624.123.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
+	at com.epam.pipeline.autotests.ao.AccessObject.lambda$ensureNotVisible$4(AccessObject.java:237)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:647)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensureNotVisible(AccessObject.java:237)
+	at com.epam.pipeline.autotests.RoleBasedAccessControlTest.provideAdminRightsToTheUser(RoleBasedAccessControlTest.java:169)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -187,17 +193,17 @@ Session ID: 1a4ab5eba36de30886a1266c52d86917
 </thead>
 <tr>
 <td class="success">addTheUser - EPMCMBIBPC-3019</td>
-<td>20.305s</td>
+<td>21.607s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">authenticationInPlatform - EPMCMBIBPC-3014</td>
-<td>7.346s</td>
+<td>8.007s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">blockUnblockUser - EPMCMBIBPC-3016</td>
-<td>3m42.74s</td>
+<td>2m58.02s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -207,27 +213,27 @@ Session ID: 1a4ab5eba36de30886a1266c52d86917
 </tr>
 <tr>
 <td class="success">failedAuthentication - EPMCMBIBPC-3015</td>
-<td>15.231s</td>
+<td>15.381s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">generateListOfUsers - EPMCMBIBPC-3168</td>
-<td>20.076s</td>
+<td class="success">generateListOfUsers - EPMCMBIBPC-3168</td>
+<td>15.754s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
+<td>1m28.88s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
-<td>54.797s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="success">removeAdminRightsFromTheUser - EPMCMBIBPC-3018</td>
-<td>29.208s</td>
-<td class="success">passed</td>
+<td class="skipped">removeAdminRightsFromTheUser</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">removeTheUser - EPMCMBIBPC-3020</td>
-<td>13.775s</td>
+<td>14.810s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -235,24 +241,24 @@ Session ID: 1a4ab5eba36de30886a1266c52d86917
 <div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 724 -&gt; ChromeDriver: chrome on LINUX (1a4ab5eba36de30886a1266c52d86917)
-Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Aug 12, 2021 9:56:36 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 790 -&gt; ChromeDriver: chrome on LINUX (c6dd99cc45bbecd9bf291d67a8a3b8b4)
+Aug 12, 2021 9:56:36 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 89 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 3596
+Aug 12, 2021 9:56:36 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 81 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 15813
 Only local connections are allowed.
-Jul 29, 2021 11:12:41 AM org.openqa.selenium.remote.ProtocolHandshake createSession
+Aug 12, 2021 9:56:37 AM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Jul 29, 2021 11:12:41 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Aug 12, 2021 9:56:37 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Jul 29, 2021 11:12:41 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Aug 12, 2021 9:56:37 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Jul 29, 2021 11:12:41 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Aug 12, 2021 9:56:37 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Jul 29, 2021 11:12:41 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 724: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (dd1040605e5397780d1835d6a2e31641)
+Aug 12, 2021 9:56:37 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 790: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (014ce185288b0911a1aa265552192721)
 </pre>
 </span>
 </div>
@@ -264,7 +270,7 @@ INFO: Create webdriver in current thread 724: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 29, 2021 12:12:47 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 12, 2021 12:18:34 PM</p>
 </div>
 </div>
 </body>
