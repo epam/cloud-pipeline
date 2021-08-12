@@ -57,7 +57,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
         reloadPageAndWait();
-        Stream.of(deletableStorage, storage, mountPointStorage, NfsMountNameSpaces)
+        Stream.of(deletableStorage, storage, NfsMountNameSpaces)
                 .forEach(s -> navigationMenu()
                         .library()
                         .selectStorage(s)
@@ -65,6 +65,9 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                         .editForNfsMount()
                         .clickDeleteStorageButton()
                         .clickDelete());
+        navigationMenu()
+                .library()
+                .removeStorageIfExists(mountPointStorage);
     }
 
     @Test(priority = 1)
@@ -100,6 +103,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
+                .editForNfsMount()
                 .setAlias(tempAlias)
                 .clickSaveButton()
                 .validateStorage(tempAlias);
@@ -107,6 +111,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(tempAlias)
                 .clickEditStorageButton()
+                .editForNfsMount()
                 .setAlias(storage)
                 .clickSaveButton()
                 .validateStorage(storage);
@@ -329,6 +334,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .createNfsMountWithDescription("/" + NfsMountNameSpaces, NfsMountNameSpaces,
                         nfsMountDescription)
+                .sleep(2, SECONDS)
                 .selectStorage(NfsMountNameSpaces)
                 .validateHeader(NfsMountNameSpaces)
                 .createFolder(folder)
