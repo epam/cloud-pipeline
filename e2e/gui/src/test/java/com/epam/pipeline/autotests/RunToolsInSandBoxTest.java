@@ -239,6 +239,7 @@ public class RunToolsInSandBoxTest
                         .execute("singularity help version")
                         .assertOutputContains("Show the version for Singularity")
                         .execute(format("singularity build %s.sif library://%s", testDockerImage, testDockerImage))
+                        .waitForLog("Build complete")
                         .assertOutputContains(format("Build complete: %s.sif", testDockerImage))
                         .execute(format("singularity instance start %s.sif instance1", testDockerImage))
                         .assertOutputContains("instance started successfully")

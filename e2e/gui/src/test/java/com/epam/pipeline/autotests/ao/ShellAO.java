@@ -33,6 +33,7 @@ import com.google.common.collect.Comparators;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
 
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byXpath;
@@ -185,6 +186,16 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO checkVersionsListIsSorted(String command) {
         List<String> vers = versionsCreationData(command);
         assertTrue(Comparators.isInOrder(vers, Comparator.reverseOrder()));
+        return this;
+    }
+
+    public ShellAO waitForLog(final String message) {
+        for (int i = 0; i < 15; i++) {
+            if ($(withText(message)).is(matchText(message))) {
+                break;
+            }
+            sleep(20, SECONDS);
+        }
         return this;
     }
 
