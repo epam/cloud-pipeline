@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -769,6 +769,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                     .ensure(SAVE, visible)
                     .ensure(DELETE, visible)
                     .ensure(CANCEL, visible);
+        }
+
+        public EditStoragePopUpAO editForNfsMount() {
+            $(byClassName("edit-storage-button")).shouldBe(enabled).click();
+            return this;
         }
 
         @Override
