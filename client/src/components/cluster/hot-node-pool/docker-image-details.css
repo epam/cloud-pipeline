@@ -15,7 +15,7 @@
  */
 
 .container {
-  display: inline-flex;
+  display: flex;
   flex-direction: row;
   align-items: center;
 }
@@ -31,6 +31,10 @@
 
 .main {
   color: #666;
+}
+
+.main.aligned {
+  margin-left: 22px;
 }
 
 .version {
