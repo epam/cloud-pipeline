@@ -68,7 +68,7 @@ function RestrictedImagesInfo ({
     <div className={styles.container}>
       <Popover
         content={renderContent()}
-        title="Allowed mount to docker images:"
+        title="Storage is automatically mounted to:"
         overlayClassName={styles.overlay}
       >
         <Icon
