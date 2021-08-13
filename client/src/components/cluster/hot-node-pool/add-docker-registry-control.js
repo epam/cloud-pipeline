@@ -318,6 +318,7 @@ class AddDockerRegistryControl extends React.Component {
       versionsSelected,
       versionsPending
     } = this.state;
+    const {disabled} = this.props;
     if (versions.length > 0) {
       return (
         <div style={{
@@ -340,6 +341,7 @@ class AddDockerRegistryControl extends React.Component {
             onChange={this.onChangeMultipleVersions}
             values={(versionsSelected || []).map(v => v.version)}
             options={versions}
+            disabled={disabled}
             pending={pending || versionsPending}
           />
         </div>
