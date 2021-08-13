@@ -64,7 +64,8 @@ import ConfigurationUpdate from '../../../models/configuration/ConfigurationUpda
 import ConfigurationDelete from '../../../models/configuration/ConfigurationDelete';
 import CreateDataStorage from '../../../models/dataStorage/DataStorageSave';
 import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageUpdateStoragePolicy
+  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import Metadata from '../../special/metadata/Metadata';
 import Issues from '../../special/issues/Issues';
@@ -683,7 +684,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
         ? storage.regionId
         : undefined,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      toolsToMount: storage.toolsToMount
     });
     hide();
     if (request.error) {
@@ -714,7 +716,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      toolsToMount: storage.toolsToMount
     };
     if (storage.mountPoint) {
       payload.mountPoint = storage.mountPoint;
@@ -794,7 +797,22 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   openEditStorageDialog = (storage, event) => {
     event.stopPropagation();
-    this.setState({editableStorage: storage});
+    if (storage) {
+      const request = this.props.dataStorages.load(storage.id);
+      request
+        .fetch()
+        .then(() => {
+          if (request.loaded) {
+            const {toolsToMount = []} = request.value || {};
+            return Promise.resolve(toolsToMount);
+          }
+          return Promise.resolve([]);
+        })
+        .catch(() => {})
+        .then((toolsToMount) => {
+          this.setState({editableStorage: {toolsToMount, ...storage}});
+        });
+    }
   };
 
   closeEditStorageDialog = () => {

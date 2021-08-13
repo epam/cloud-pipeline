@@ -21,7 +21,13 @@ import classNames from 'classnames';
 import ToolImage from '../../../models/tools/ToolImage';
 import styles from './docker-image-details.css';
 
-function DockerImageDetails ({className, docker, dockerRegistries, onlyImage = false}) {
+function DockerImageDetails ({
+  className,
+  docker,
+  dockerRegistries,
+  onlyImage = false,
+  alignImages = false
+}) {
   if (!docker) {
     return null;
   }
@@ -74,7 +80,10 @@ function DockerImageDetails ({className, docker, dockerRegistries, onlyImage = f
         )
       }
       <span
-        className={styles.main}
+        className={classNames(
+          styles.main,
+          {[styles.aligned]: (!id || !iconId) && alignImages}
+        )}
       >
         {i}
       </span>

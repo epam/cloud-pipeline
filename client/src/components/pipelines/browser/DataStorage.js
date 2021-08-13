@@ -42,7 +42,8 @@ import dataStorages from '../../../models/dataStorage/DataStorages';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageUpdateStoragePolicy
+  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
@@ -53,6 +54,7 @@ import GenerateDownloadUrlsRequest from '../../../models/dataStorage/GenerateDow
 import EditItemForm from './forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import DataStorageNavigation from './forms/DataStorageNavigation';
+import RestrictedImagesInfo from './forms/restrict-docker-images/restricted-images-info';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -117,7 +119,6 @@ const PAGE_SIZE = 40;
 })
 @observer
 export default class DataStorage extends React.Component {
-
   state = {
     editDialogVisible: false,
     downloadUrlModalVisible: false,
@@ -184,6 +185,15 @@ export default class DataStorage extends React.Component {
       return code;
     }
     return null;
+  }
+
+  @computed
+  get toolsToMount () {
+    const {info = {}} = this.props;
+    if (info.loaded && info.value.toolsToMount) {
+      return (info.value.toolsToMount || []).map(t => t);
+    }
+    return undefined;
   }
 
   onDataStorageEdit = async (storage) => {
@@ -1475,7 +1485,14 @@ export default class DataStorage extends React.Component {
             />
           </Col>
           <Col>
-            <Row type="flex" justify="end" className={styles.currentFolderActions}>
+            <Row
+              type="flex"
+              justify="end"
+              className={styles.currentFolderActions}
+            >
+              <RestrictedImagesInfo
+                toolsToMount={this.toolsToMount}
+              />
               <Button
                 id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
                 size="small"
