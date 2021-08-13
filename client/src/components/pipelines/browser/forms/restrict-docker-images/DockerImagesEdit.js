@@ -18,30 +18,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
-  Input
+  Icon
 } from 'antd';
-// eslint-disable-next-line max-len
-import AddDockerRegistryControl from '../../../../../components/cluster/hot-node-pool/add-docker-registry-control';
+import AddDockerRegistryControl
+  from '../../../../../components/cluster/hot-node-pool/add-docker-registry-control';
 import styles from './RestrictDockerDialog.css';
 
 const getImageName = tool => tool.registry && tool.image ? `${tool.registry}/${tool.image}` : '';
 
 class DockerImagesEdit extends React.Component {
-  state = {
-    searchString: ''
-  }
-
-  get filteredTools () {
-    const {toolsToMount = []} = this.props;
-    const {searchString} = this.state;
-    if (!searchString) {
-      return toolsToMount;
-    }
-    return toolsToMount
-      .filter(tool => getImageName(tool).includes(searchString));
-  }
-
   get toolsToMountImages () {
     const {toolsToMount} = this.props;
     return (toolsToMount || [])
@@ -87,24 +72,6 @@ class DockerImagesEdit extends React.Component {
     onChange && onChange(payload);
   };
 
-  onSearch = (value) => {
-    this.setState({searchString: value});
-  };
-
-  renderSearchPanel = () => {
-    const {disabled} = this.props;
-    return (
-      <div className={styles.searchContainer}>
-        <Input.Search
-          disabled={disabled}
-          placeholder="Search for a docker image"
-          className={styles.search}
-          onSearch={this.onSearch}
-        />
-      </div>
-    );
-  };
-
   renderDockerImage = (tool) => {
     const {toolsToMount, disabled} = this.props;
     const isDuplicate = toolsToMount.filter(t => t.id === tool.id).length > 1;
@@ -135,11 +102,13 @@ class DockerImagesEdit extends React.Component {
   };
 
   render () {
-    const {disabled} = this.props;
+    const {
+      disabled,
+      toolsToMount = []
+    } = this.props;
     return (
       <div className={styles.container}>
-        {this.renderSearchPanel()}
-        {this.filteredTools.map(this.renderDockerImage)}
+        {toolsToMount.map(this.renderDockerImage)}
         <div>
           <Button
             onClick={this.onAddDockerImage}
