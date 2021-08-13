@@ -20,6 +20,12 @@
   align-items: center;
 }
 
+.overlay  div[class~="ant-popover-inner-content"] {
+  max-height: 50vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .popover-container {
   display: flex;
   flex-direction: column;

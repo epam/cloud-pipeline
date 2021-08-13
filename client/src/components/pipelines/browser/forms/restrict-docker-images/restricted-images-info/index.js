@@ -69,6 +69,7 @@ function RestrictedImagesInfo ({
       <Popover
         content={renderContent()}
         title="Allowed mount to docker images:"
+        overlayClassName={styles.overlay}
       >
         <Icon
           type="exclamation-circle-o"
