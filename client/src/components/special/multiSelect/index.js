@@ -20,7 +20,6 @@ import classNames from 'classnames';
 import {
   Icon,
   Input,
-  Menu,
   Dropdown,
   Checkbox,
   Tag,
@@ -63,7 +62,7 @@ class MultiSelect extends React.Component {
 
   onVisibleChange = (visible) => {
     this.setState({dropdownVisible: visible});
-  }
+  };
 
   removeValue = (key) => {
     const {onChange, values} = this.props;
@@ -96,7 +95,7 @@ class MultiSelect extends React.Component {
 
   onSearch = (e) => {
     this.setState({searchString: e.target.value});
-  }
+  };
 
   renderDropdown = () => {
     const {disabled, pending} = this.props;
@@ -128,47 +127,6 @@ class MultiSelect extends React.Component {
           ))
         }
       </div>
-    );
-    return (
-      <Menu
-        onClick={this.onClick}
-        className={styles.dropdownOverlay}
-      >
-        <Menu.Item
-          style={{
-            margin: '1px',
-            width: '100%',
-            height: '32px',
-            lineHeight: '32px'
-          }}
-          key="search-input"
-        >
-          <Input.Search
-            disabled={disabled || pending}
-            placeholder="Search for a versions"
-            className={styles.search}
-            onChange={this.onSearch}
-          />
-        </Menu.Item>
-        {this.filteredOptions.map((option) => (
-          <Menu.Item
-            key={option}
-            value={option}
-            className={styles.menuItem}
-            style={{
-              height: '32px',
-              lineHeight: '32px'
-            }}
-          >
-            <Checkbox
-              checked={this.selectedValues.includes(option)}
-              style={{pointerEvents: 'none'}}
-            >
-              {option}
-            </Checkbox>
-          </Menu.Item>
-        ))}
-      </Menu>
     );
   };
 

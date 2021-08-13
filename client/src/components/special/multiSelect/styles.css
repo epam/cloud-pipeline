@@ -25,7 +25,7 @@
   cursor: pointer;
 }
 
-.input:hover {
+.input:not(.disabled):hover {
   border: 1px solid #40a9ff;
 }
 
