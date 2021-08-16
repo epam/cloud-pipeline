@@ -11,6 +11,10 @@ public final class StreamUtils {
 
     private StreamUtils() {}
 
+    public static <T> Stream<T> from(final Iterable<T> iterable) {
+        return from(iterable.iterator());
+    }
+
     public static <T> Stream<T> from(final Iterator<T> iterator) {
         final Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(iterator, 0);
         return StreamSupport.stream(spliterator, false);

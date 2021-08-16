@@ -65,7 +65,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {

@@ -50,7 +50,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorage> {
 

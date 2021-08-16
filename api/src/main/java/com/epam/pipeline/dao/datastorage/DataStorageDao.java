@@ -277,6 +277,22 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .getRowMapper(), fileShareId);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void createDataStorageRoot(final String rootPath) {
+        getNamedParameterJdbcTemplate().update(createDataStorageRootQuery, new MapSqlParameterSource()
+                .addValue(DataStorageParameters.DATASTORAGE_ROOT_PATH.name(), rootPath));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<DataStorageRoot> loadDataStorageRoot(final String rootPath) {
+        return getNamedParameterJdbcTemplate()
+                .query(loadDataStorageRootQuery, new MapSqlParameterSource()
+                                .addValue(DataStorageParameters.DATASTORAGE_ROOT_PATH.name(), rootPath),
+                        DataStorageParameters.getRootRowMapper())
+                .stream()
+                .findFirst();
+    }
+
     @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
@@ -651,19 +667,5 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             }
             return policy;
         }
-    }
-
-    private void createDataStorageRoot(final String rootPath) {
-        getNamedParameterJdbcTemplate().update(createDataStorageRootQuery, new MapSqlParameterSource()
-                .addValue(DataStorageParameters.DATASTORAGE_ROOT_PATH.name(), rootPath));
-    }
-
-    private Optional<DataStorageRoot> loadDataStorageRoot(final String rootPath) {
-        return getNamedParameterJdbcTemplate()
-                .query(loadDataStorageRootQuery, new MapSqlParameterSource()
-                                .addValue(DataStorageParameters.DATASTORAGE_ROOT_PATH.name(), rootPath),
-                        DataStorageParameters.getRootRowMapper())
-                .stream()
-                .findFirst();
     }
 }
