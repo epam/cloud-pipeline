@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// TODO: 16.08.2021 Filter permissions mask by storage entity mask
 @Service
 @RequiredArgsConstructor
 public class StoragePermissionProviderManager {

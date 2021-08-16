@@ -104,7 +104,7 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     }
 
     private List<StoragePermissionEntity> find(final DataStorageRoot root) {
-        return repository.findPermissions(root.getId(), PATH, TYPE.name().toUpperCase());
+        return repository.findExactOrParentPermissions(root.getId(), PATH, TYPE.name().toUpperCase());
     }
 
     private DataStorageRoot createRoot() {
