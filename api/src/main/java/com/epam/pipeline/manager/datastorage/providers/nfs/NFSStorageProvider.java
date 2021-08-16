@@ -74,7 +74,6 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
  * A {@link StorageProvider}, that integrates with NFS file systems. For browsing the filesystem, mounts it to the host
  * filesystem using {@link NFSStorageMounter}.
  */
-@Service
 @RequiredArgsConstructor
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 

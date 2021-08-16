@@ -20,6 +20,7 @@ import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.mapper.datastorage.security.StoragePermissionMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
@@ -124,5 +125,10 @@ public class MappersConfiguration {
     @Bean
     public OnlineUsersMapper onlineUsersMapper() {
         return Mappers.getMapper(OnlineUsersMapper.class);
+    }
+
+    @Bean
+    public StoragePermissionMapper dataStoragePermissionMapper() {
+        return Mappers.getMapper(StoragePermissionMapper.class);
     }
 }

@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -33,7 +34,7 @@ import java.util.Set;
  */
 @Getter
 @Setter
-public abstract class AbstractDataStorage extends AbstractSecuredEntity {
+public abstract class AbstractDataStorage extends AbstractSecuredEntity implements SecuredStorageEntity {
 
     private String description;
     private String path;
