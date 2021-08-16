@@ -7,5 +7,7 @@ import java.util.List;
 @Value
 public class StoragePermissionDeleteBatchRequest {
 
+    Long id;
+    StoragePermissionType type;
     List<StoragePermissionDeleteRequest> requests;
 }

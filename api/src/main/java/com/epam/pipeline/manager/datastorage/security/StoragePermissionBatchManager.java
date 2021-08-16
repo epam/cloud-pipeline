@@ -30,8 +30,8 @@ public class StoragePermissionBatchManager {
     private final StoragePermissionMapper mapper;
     private final DataStorageDao storageDao;
 
-    public List<StoragePermission> upsert(final Long storageId, final StoragePermissionInsertBatchRequest request) {
-        return getRoot(storageId)
+    public List<StoragePermission> upsert(final StoragePermissionInsertBatchRequest request) {
+        return getRoot(request.getId())
                 .map(root -> request.getRequests().stream()
                         .map(r -> permissionEntityFrom(r, root))
                         .collect(Collectors.toList()))
@@ -47,8 +47,8 @@ public class StoragePermissionBatchManager {
         return mapper.toEntity(request).toBuilder().datastorageRootId(root).created(DateUtils.nowUTC()).build();
     }
 
-    public void delete(final Long storageId, final StoragePermissionDeleteBatchRequest request) {
-        getRoot(storageId)
+    public void delete(final StoragePermissionDeleteBatchRequest request) {
+        getRoot(request.getId())
                 .map(root -> request.getRequests().stream()
                         .map(r -> permissionEntityIdFrom(r, root)))
                 .orElseGet(Stream::empty)
@@ -60,8 +60,8 @@ public class StoragePermissionBatchManager {
         return mapper.toEntityId(request).toBuilder().datastorageRootId(root).build();
     }
 
-    public List<StoragePermission> load(final Long storageId, final StoragePermissionLoadBatchRequest request) {
-        return getRoot(storageId)
+    public List<StoragePermission> load(final StoragePermissionLoadBatchRequest request) {
+        return getRoot(request.getId())
                 .map(root -> request.getRequests().stream()
                         .map(r -> repository.findByDatastorageRootIdAndDatastoragePathAndDatastorageType(root,
                                 r.getPath(), r.getType())))
