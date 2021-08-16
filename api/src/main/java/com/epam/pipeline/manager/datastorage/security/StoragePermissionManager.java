@@ -20,8 +20,9 @@ public class StoragePermissionManager {
     public List<StoragePermission> load(final Long rootId,
                                         final String path,
                                         final StoragePermissionPathType type) {
-        return repository.findPermissions(rootId, path, type.name().toUpperCase()).stream()
+        return repository.findExactOrParentPermissions(rootId, path, type.name().toUpperCase()).stream()
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
     }
+
 }

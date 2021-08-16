@@ -1,0 +1,36 @@
+package com.epam.pipeline.acl.datastorage.security;
+
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteBatchRequest;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionInsertBatchRequest;
+import com.epam.pipeline.dto.datastorage.security.StoragePermission;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadBatchRequest;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionBatchManager;
+import com.epam.pipeline.security.acl.AclExpressions;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class StoragePermissionBatchApiService {
+
+    private final StoragePermissionBatchManager manager;
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public List<StoragePermission> upsert(final Long id, final StoragePermissionInsertBatchRequest request) {
+        return manager.upsert(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public void delete(final Long id, final StoragePermissionDeleteBatchRequest request) {
+        manager.delete(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public List<StoragePermission> load(final Long id, final StoragePermissionLoadBatchRequest request) {
+        return manager.load(id, request);
+    }
+
+}

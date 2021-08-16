@@ -1,5 +1,6 @@
 package com.epam.pipeline.repository.datastorage.security;
 
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntity;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntityId;
 import org.springframework.data.jpa.repository.Query;
@@ -36,8 +37,14 @@ public interface StoragePermissionRepository
             "AND datastorage_path = :datastorage_path\n" +
             "ORDER BY 1 DESC",
             nativeQuery = true)
-    List<StoragePermissionEntity> findPermissions(
+    List<StoragePermissionEntity> findExactOrParentPermissions(
             @Param("datastorage_root_id") final Long rootId,
             @Param("datastorage_path") final String path,
             @Param("datastorage_type") final String type);
+
+    List<StoragePermissionEntity> findByDatastorageRootIdAndDatastoragePathAndDatastorageType(
+            final Long datastorageRootId,
+            final String datastoragePath,
+            final StoragePermissionPathType datastorageType
+    );
 }
