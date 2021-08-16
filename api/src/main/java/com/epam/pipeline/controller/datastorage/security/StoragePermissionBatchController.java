@@ -27,42 +27,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StoragePermissionBatchController extends AbstractRestController {
 
-    private static final String ID = "id";
-
     private final StoragePermissionBatchApiService service;
 
-    @RequestMapping(value = "/datastorage/{id}/permission/batch/upsert", method = RequestMethod.PUT)
+    @RequestMapping(value = "/storage/permission/batch/upsert", method = RequestMethod.PUT)
     @ResponseBody
     @ApiOperation(value = "Upserts storage object permissions overriding already existing ones.",
             notes = "Upserts storage object permissions overriding already existing ones.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result upsert(@PathVariable(value = ID) final Long id,
-                         @RequestBody final StoragePermissionInsertBatchRequest request) {
-        service.upsert(id, request);
+    public Result upsert(@RequestBody final StoragePermissionInsertBatchRequest request) {
+        service.upsert(request);
         return Result.success();
     }
 
-    @RequestMapping(value = "/datastorage/{id}/permission/batch/delete", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/storage/permission/batch/delete", method = RequestMethod.DELETE)
     @ResponseBody
     @ApiOperation(value = "Deletes storage object permissions.",
             notes = "Deletes storage object permissions.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result delete(@PathVariable(value = ID) final Long id,
-                         @RequestBody final StoragePermissionDeleteBatchRequest request) {
-        service.delete(id, request);
+    public Result delete(@RequestBody final StoragePermissionDeleteBatchRequest request) {
+        service.delete(request);
         return Result.success();
     }
 
-    @RequestMapping(value = "/datastorage/{id}/permission/batch/load", method = RequestMethod.POST)
+    @RequestMapping(value = "/storage/permission/batch/load", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(value = "Loads storage object permissions.",
             notes = "Loads storage object permissions.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<StoragePermission>> load(@PathVariable(value = ID) final Long id,
-                                                @RequestBody final StoragePermissionLoadBatchRequest request) {
-        return Result.success(service.load(id, request));
+    public Result<List<StoragePermission>> load(@RequestBody final StoragePermissionLoadBatchRequest request) {
+        return Result.success(service.load(request));
     }
 }

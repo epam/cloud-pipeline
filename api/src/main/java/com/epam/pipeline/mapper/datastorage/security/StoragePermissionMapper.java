@@ -15,7 +15,7 @@ public interface StoragePermissionMapper {
         return new StoragePermissionEntity(null, dto.getPath(),
                 dto.getType(),
                 dto.getSid().getName(),
-                dto.getSid().getType(), dto.getMask(), dto.getCreatedDate());
+                dto.getSid().getType(), dto.getMask(), dto.getCreated());
     }
 
     default StoragePermissionEntity toEntity(final StoragePermissionInsertRequest request) {

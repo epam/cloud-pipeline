@@ -7,5 +7,7 @@ import java.util.List;
 @Value
 public class StoragePermissionInsertBatchRequest {
 
+    Long id;
+    StoragePermissionType type;
     List<StoragePermissionInsertRequest> requests;
 }
