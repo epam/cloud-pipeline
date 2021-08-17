@@ -50,8 +50,6 @@ function RestrictedImagesInfo ({
           >
             <span className={styles.toolName}>
               <DockerImageDetails
-                onlyImage
-                alignImages
                 docker={getDockerImage(tool)}
               />
             </span>

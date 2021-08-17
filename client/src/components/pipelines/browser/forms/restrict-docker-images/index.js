@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
+  Button,
   Input,
   Modal,
   Radio
@@ -155,9 +156,31 @@ class RestrictDockerDialog extends React.Component {
       <Modal
         title="Select docker images to limit mounts"
         visible={visible}
-        onOk={this.onOk}
         onCancel={this.onCancel}
         width="60%"
+        footer={(
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end'
+            }}
+          >
+            <Button
+              onClick={this.onCancel}
+              style={{marginRight: 5}}
+            >
+              CANCEL
+            </Button>
+            <Button
+              type="primary"
+              onClick={this.onOk}
+              disabled={limitMounts && toolsToMount.length === 0}
+            >
+              OK
+            </Button>
+          </div>
+        )}
       >
         {this.renderRadioBlock()}
         <DockerImagesEdit
