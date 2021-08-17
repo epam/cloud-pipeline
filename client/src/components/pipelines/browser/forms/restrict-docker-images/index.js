@@ -175,7 +175,12 @@ class RestrictDockerDialog extends React.Component {
             <Button
               type="primary"
               onClick={this.onOk}
-              disabled={limitMounts && toolsToMount.length === 0}
+              disabled={
+                limitMounts &&
+                (toolsToMount || [])
+                  .filter(tool => tool.id && tool.image && tool.registry)
+                  .length === 0
+              }
             >
               OK
             </Button>
