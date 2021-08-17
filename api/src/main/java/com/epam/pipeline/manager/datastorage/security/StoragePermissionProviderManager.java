@@ -117,9 +117,22 @@ public class StoragePermissionProviderManager {
     private int getExtendedMask(final SecuredStorageEntity storage,
                                 final String path,
                                 final StoragePermissionPathType type) {
-        // TODO: 16.08.2021 Return full permissions mask for owner or admins
+        final PipelineUser user = authManager.getCurrentUser();
+        if (user == null) {
+            return AbstractSecuredEntity.NO_PERMISSIONS_MASK;
+        }
+        if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
+            return AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
+        }
+        return getExtendedMask(storage, path, type, user);
+    }
+
+    private int getExtendedMask(final SecuredStorageEntity storage,
+                                final String path,
+                                final StoragePermissionPathType type,
+                                final PipelineUser user) {
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
-        final List<StoragePermissionSid> sids = getSids();
+        final List<StoragePermissionSid> sids = getSids(user);
         final List<StoragePermission> permissions = storagePermissionManager.load(storage.getRootId(), absolutePath,
                 type);
         final List<StoragePermission> applicablePermissions = permissions.stream()
@@ -153,10 +166,8 @@ public class StoragePermissionProviderManager {
                 .reduce(0, (x, y) -> x | y);
     }
 
-    private List<StoragePermissionSid> getSids() {
-        return Optional.ofNullable(authManager.getCurrentUser())
-                .map(user -> Stream.concat(userSids(user), groupSids(user)).collect(Collectors.toList()))
-                .orElseGet(Collections::emptyList);
+    private List<StoragePermissionSid> getSids(final PipelineUser user) {
+        return Stream.concat(userSids(user), groupSids(user)).collect(Collectors.toList());
     }
 
     private Stream<StoragePermissionSid> groupSids(final PipelineUser user) {
