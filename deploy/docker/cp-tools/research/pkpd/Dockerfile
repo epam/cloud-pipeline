@@ -33,3 +33,52 @@ RUN wget -q $R_STUDIO_URL -O rstudio-desktop.rpm && \
 
 ADD create_rstudio_launcher.sh /caps/create_rstudio_launcher.sh
 RUN echo "bash /caps/create_rstudio_launcher.sh" >> /caps.sh
+
+RUN yum install -y \
+            centos-release-scl \
+            epel-release
+
+RUN yum install -y \
+                cmake \
+                devtoolset-9 \
+                fontconfig-devel \
+                gmp-devel \
+                libcurl-devel \
+                libffi-devel \
+                libgit2-devel \
+                libidn-devel \
+                libjpeg-turbo-devel \
+                libpng-devel \
+                libssh2-devel \
+                libssh-devel \
+                libxml2-devel \
+                mpfr-devel \
+                openldap-devel \
+                openssl-devel \
+                postgresql-devel \
+                udunits2-devel \
+                v8-devel \
+                wget && \
+    mkdir -p ~/.R && \
+    echo $'CXX11=/opt/rh/devtoolset-9/root/usr/bin/g++ -std=c++11 \n\
+           CXX14=/opt/rh/devtoolset-9/root/usr/bin/g++ -std=c++14 \n\
+           CXX14FLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function -fPIC \n\
+           CXX14FLAGS+=-flto -Wno-unused-local-typedefs ' >> ~/.R/Makevars && \
+    sed -i 's/^ *//'  ~/.R/Makevars && \
+    R -e "install.packages(c('stringi','rpart','lbfgs','rpart.plot','caTools','listenv','chron', \
+                             'data.table', 'lme4','classInt','sas7bdat','colorspace', \
+                             'mlxR','SASxport','coveffectsplot','assertthat','Hmisc', \
+                             'rmarkdown','brew','kableExtra','Rmisc','bitops','knitr', \
+                             'nonmemica','scales','cowplot','mrgsolve','shiny','devtools', \
+                             'mvnfast','shinyBS','doBy','n1qn1','shinyjs','doParallel', \
+                             'NHANES','sn','DoseFinding','nlmeODE','spData','evaluate', \
+                             'StanHeaders','fastGHQuad','nls2','feather','spData','nonmem2R', \
+                             'foreach','openxlsx','survMisc','forestplot','pander','table1','future', \
+                             'tableone','GGally','PKNCA','tibble','ggforce','remotes', \
+                             'tidymodels','ggpmisc','plot3D', 'tidyverse','ggPMX','plotly', \
+                             'tinytex','ggpubr','plyr','tweenr','ggquickeda','PopED','units', \
+                             'ggrepel','pracma','vpc','ggthemes','PreciseSums','xfun','globals', \
+                             'qwraps2','XML','gpairs','Rcpp','xpose4','gridExtra','RcppArmadillo', \
+                             'haven','gtable','rio','foreign','RxODE','nlmixr','rstan', 'bookdown'), \
+                             repos='http://cran.rstudio.com/'); \
+                             remotes::install_github(c('benjaminrich/PCSmisc', 'metrumresearchgroup/PKPDmisc'))"
