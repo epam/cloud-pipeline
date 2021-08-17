@@ -31,5 +31,12 @@ import java.util.List;
 @EqualsAndHashCode
 public class DataStorageListing {
     private String nextPageMarker;
+    private int mask = 0;
     private List<AbstractDataStorageItem> results;
+
+    public DataStorageListing(final String nextPageMarker, final List<AbstractDataStorageItem> results) {
+        this.nextPageMarker = nextPageMarker;
+        this.mask = 0;
+        this.results = results;
+    }
 }
