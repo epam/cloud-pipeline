@@ -295,7 +295,7 @@ class WsiFileParser:
 
     def generate_xml_info_file(self):
         WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
-        os.system('showinf -nopix -omexml-only {} > {}'.format(self.file_path, self.xml_info_file))
+        os.system('showinf -nopix -omexml-only "{}" > "{}"'.format(self.file_path, self.xml_info_file))
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
@@ -378,11 +378,13 @@ class WsiFileParser:
             self.log_processing_info('Unable to determine target series, skipping DZ creation ')
             return 1
         self.log_processing_info('Series #{} selected for DZ creation'.format(target_series))
-        conversion_result = os.system('bash {} {} {} {} {} {}'.format(self._DEEP_ZOOM_CREATION_SCRIPT, self.file_path,
-                                                                      self.xml_info_file, target_series,
-                                                                      os.path.dirname(self.file_path),
-                                                                      WsiParsingUtils.get_service_directory(
-                                                                          self.file_path)))
+        conversion_result = os.system('bash "{}" "{}" "{}" "{}" "{}" "{}"'
+                                      .format(self._DEEP_ZOOM_CREATION_SCRIPT,
+                                              self.file_path,
+                                              self.xml_info_file,
+                                              target_series,
+                                              os.path.dirname(self.file_path),
+                                              WsiParsingUtils.get_service_directory(self.file_path)))
         if conversion_result == 0:
             self.update_stat_file()
             self.log_processing_info('File processing is finished')
