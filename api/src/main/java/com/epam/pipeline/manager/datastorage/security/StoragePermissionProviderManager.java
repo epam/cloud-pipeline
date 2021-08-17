@@ -77,7 +77,7 @@ public class StoragePermissionProviderManager {
                               final StoragePermissionPathType type,
                               final Permission permission) {
         final String absolutePath = storage.resolveAbsolutePath(path);
-        final int mask = getMask(storage, absolutePath, type);
+        final int mask = getExtendedMask(storage, absolutePath, type);
         return permission instanceof AclPermission
                 && (permission.getMask() & mask) == permission.getMask()
                 && (((AclPermission) permission).getDenyPermission().getMask() & mask) == 0;
@@ -102,8 +102,7 @@ public class StoragePermissionProviderManager {
     }
 
     private AbstractDataStorageItem withMask(final SecuredStorageEntity storage, final AbstractDataStorageItem item) {
-        final int mask = getMask(storage, item);
-        item.setMask(permissionsService.mergeMask(mask));
+        item.setMask(getMask(storage, item));
         return item;
     }
 
@@ -111,9 +110,13 @@ public class StoragePermissionProviderManager {
         return getMask(storage, item.getPath(), StoragePermissionPathType.from(item.getType()));
     }
 
-    private int getMask(final SecuredStorageEntity storage,
-                        final String path,
-                        final StoragePermissionPathType type) {
+    public int getMask(final SecuredStorageEntity storage, final String path, final StoragePermissionPathType type) {
+        return permissionsService.mergeMask(getExtendedMask(storage, path, type));
+    }
+
+    private int getExtendedMask(final SecuredStorageEntity storage,
+                                final String path,
+                                final StoragePermissionPathType type) {
         // TODO: 16.08.2021 Return full permissions mask for owner or admins
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         final List<StoragePermissionSid> sids = getSids();
@@ -126,11 +129,11 @@ public class StoragePermissionProviderManager {
                 .filter(it -> Objects.equals(it.getPath(), absolutePath))
                 .collect(Collectors.toList());
         return directPermissions.isEmpty()
-                ? getMask(applicablePermissions)
-                : getMask(directPermissions);
+                ? getExtendedMask(applicablePermissions)
+                : getExtendedMask(directPermissions);
     }
 
-    private int getMask(final List<StoragePermission> permissions) {
+    private int getExtendedMask(final List<StoragePermission> permissions) {
         return permissions.isEmpty()
                 ? AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL
                 : getMergedUserPrioritisedMask(permissions);
