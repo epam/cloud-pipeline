@@ -11,8 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# docker build -t pkpd:latest --build-arg BASE_IMAGE=<CentOS-based NoMachine image> \
+#                             --build-arg NONMEM_ZIP_PASSWORD=<password to open NONMEM zip archive> .
+#
 
-# BASE_IMAGE - CentOS-based NoMachine image
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
@@ -82,3 +85,42 @@ RUN yum install -y \
                              'haven','gtable','rio','foreign','RxODE','nlmixr','rstan', 'bookdown'), \
                              repos='http://cran.rstudio.com/'); \
                              remotes::install_github(c('benjaminrich/PCSmisc', 'metrumresearchgroup/PKPDmisc'))"
+
+ARG NONMEM_ZIP_PASSWORD
+ARG NONMEM_VERSION=7.5.0
+ENV NONMEM_HOME=/opt/nonmem
+ENV PATH="/opt/rh/devtoolset-9/root/usr/bin:$PATH"
+
+ADD nonmem.lic /opt/nonmem/license/nonmem.lic
+
+RUN yum install -y devtoolset-9-gcc-gfortran \
+                   glibc-static \
+                   libstdc++-static \
+                   mpich \
+                   mpich-devel && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nonmem/nonmem-$NONMEM_VERSION.zip" -O nonmem.zip && \
+    unzip -P "$NONMEM_ZIP_PASSWORD" nonmem.zip && \
+    rm -rf nonmem.zip && \
+    NONMEM_VERSION_FLAT=$(echo "$NONMEM_VERSION" | tr -d .) && \
+    NONMEM_VERSION_FLAT_MAJOR=$(echo $NONMEM_VERSION_FLAT | cut -c1-2) && \
+    NONMEM_INSTALL_SRC_DIR="$(pwd)/nm${NONMEM_VERSION_FLAT}CD" && \
+    bash $NONMEM_INSTALL_SRC_DIR/SETUP75 \
+        "$NONMEM_INSTALL_SRC_DIR" \
+        "$NONMEM_HOME" \
+        gfortran \
+        y \
+        /usr/bin/ar \
+        same \
+        rec \
+        q \
+        unzip \
+        nonmem"$NONMEM_VERSION_FLAT_MAJOR"e.zip \
+        nonmem"$NONMEM_VERSION_FLAT_MAJOR"r.zip && \
+    rm -rf $NONMEM_INSTALL_SRC_DIR && \
+    ln -s $NONMEM_HOME/run/nmfe$NONMEM_VERSION_FLAT_MAJOR /usr/bin/nmfe && \
+    NONMEM_LOCATION_FILE=$NONMEM_HOME/nmloc && \
+    echo $'compilerpath=/opt/rh/devtoolset-9/root/usr/bin \n\
+           mpibinpath=/usr/lib64/mpich/bin \n\
+           mpilibpath=/usr/lib64/mpich/lib \n\
+           mpilibname=libmpich.so' > $NONMEM_LOCATION_FILE && \
+    sed -i 's/^ *//' $NONMEM_LOCATION_FILE
