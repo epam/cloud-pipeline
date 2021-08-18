@@ -38,12 +38,16 @@ RUN yum install -y \
                 gettext
 
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
-ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
-ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
-RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
-    wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
-    yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
-    rm -f *lustre-client.rpm
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+RUN cd /tmp && \
+    yum install nfs-utils cifs-utils -y && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    package-cleanup --cleandupes -y && \
+    rm -rf lustre-client*
 
 # Prebuild version of openssl v1.1.x which is required by osslsigncode.
 # As long as its compatibility is proven for osslsigncode tool only
