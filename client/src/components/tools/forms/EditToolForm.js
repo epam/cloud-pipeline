@@ -346,7 +346,7 @@ export default class EditToolForm extends React.Component {
     switch (field) {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
-      case 'instance_image': return this.getInstanceImageInitialValue;
+      case 'instance_image': return this.getInstanceImageInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
@@ -1419,7 +1419,6 @@ export default class EditToolForm extends React.Component {
   render () {
     const {getFieldDecorator} = this.props.form;
     const isTool = this.props.mode === 'tool';
-
     return (
       <Form>
         {
