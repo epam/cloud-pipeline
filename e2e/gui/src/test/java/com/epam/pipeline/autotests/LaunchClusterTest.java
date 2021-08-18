@@ -438,13 +438,15 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .close());
-        navigationMenu()
+        final String nestedRunID = navigationMenu()
                 .runs()
                 .activeRuns()
                 .showLog(getRunId())
                 .waitForNestedRunsLink()
+                .getNestedRunID(1);
+        new LogAO()
                 .clickOnNestedRunLink()
-                .ensure(STATUS, text(String.valueOf(Integer.parseInt(getRunId()) + 1)));
+                .ensure(STATUS, text(nestedRunID));
     }
 
     @Test(enabled = false)
