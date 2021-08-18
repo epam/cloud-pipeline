@@ -28,7 +28,7 @@ public class StoragePermissionBatchApiService {
         manager.delete(request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<StoragePermission> load(final StoragePermissionLoadBatchRequest request) {
         return manager.load(request);
     }
