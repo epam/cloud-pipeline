@@ -100,6 +100,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     @Autowired
     private AuthManager authManager;
 
+    @Autowired
+    private NFSStorageMounter nfsStorageMounter;
+
     @MockBean
     CloudRegionAspect cloudRegionAspect;
 
@@ -122,9 +125,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     public void setUp() throws Exception {
 
         MockitoAnnotations.initMocks(this);
-        Whitebox.setInternalState(nfsProvider, "dataStorageDao", dataStorageDao);
-        Whitebox.setInternalState(nfsProvider, "rootMountPoint", testMountPoint.getAbsolutePath());
-        Whitebox.setInternalState(nfsProvider, "cmdExecutor", mockCmdExecutor);
+        Whitebox.setInternalState(nfsStorageMounter, "dataStorageDao", dataStorageDao);
+        Whitebox.setInternalState(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
+        Whitebox.setInternalState(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
