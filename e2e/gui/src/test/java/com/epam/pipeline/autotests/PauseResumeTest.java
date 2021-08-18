@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.tabWithName;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -109,7 +110,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
@@ -117,7 +118,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                 String.format("echo '%s' > %s", testFileContent, testFileName)))
                                 )
                                 .waitForPauseButton()
-                                .pause(getToolName())
+                                .pause(nameWithoutGroup(tool))
                                 .assertPausingFinishedSuccessfully()
                                 .instanceParameters(parameters -> {
                                     final String ipHyperlink = getParameterValueLink(ipField);
@@ -128,7 +129,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                     , ipHyperlink)
                                     );
                                 })
-                                .resume(getToolName())
+                                .resume(nameWithoutGroup(tool))
                                 .assertResumingFinishedSuccessfully()
                                 .waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
@@ -161,7 +162,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                     .setLaunchOptions("15", instanceType, null)
                     .setPriceType(priceType)
                     .click(START_IDLE)
-                    .launchTool(this, Utils.nameWithoutGroup(tool));
+                    .launchTool(this, nameWithoutGroup(tool));
             loginAsAdminAndPerform(() ->
                     navigationMenu()
                             .settings()
@@ -195,16 +196,16 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .activeRuns()
                 .waitUntilPauseButtonAppear(getLastRunId())
-                .pause(getLastRunId(), getToolName())
+                .pause(getLastRunId(), nameWithoutGroup(tool))
                 .waitUntilResumeButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
                 .ensure(ENDPOINT, hidden)
                 .ensure(SSH_LINK, hidden);
         runsMenu()
-                .resume(getLastRunId(), getToolName())
+                .resume(getLastRunId(), nameWithoutGroup(tool))
                 .waitUntilPauseButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
                 .ensure(ENDPOINT, visible)
@@ -227,7 +228,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .setLaunchOptions("15", instanceType, null)
                 .setPriceType(priceType)
                 .click(START_IDLE)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
@@ -238,7 +239,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 )
                                 .sleep(30, SECONDS)
                                 .waitForPauseButton()
-                                .pause(getToolName())
+                                .pause(nameWithoutGroup(tool))
                                 .assertPausingFinishedSuccessfully()
                                 .ensure(taskWithName(pauseTask), visible)
                                 .click(taskWithName(pauseTask))
@@ -246,7 +247,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .ensure(log(), matchText("Temporary container was successfully committed"))
                                 .ensure(log(), matchText("Docker container logs were successfully retrieved."))
                                 .ensure(log(), matchText("Docker service was successfully stopped"))
-                                .resume(getToolName())
+                                .resume(nameWithoutGroup(tool))
                                 .assertResumingFinishedSuccessfully()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
@@ -264,7 +265,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         endpoint = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .show(getLastRunId())
                 .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
@@ -275,7 +276,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
                 .log(getLastRunId(), log -> log
                         .waitForPauseButton()
-                        .pause(getToolName())
+                        .pause(nameWithoutGroup(tool))
                         .assertPausingFinishedSuccessfully()
                         .sleep(2, MINUTES)
                         .inAnotherTab(nodeTab ->
@@ -284,7 +285,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                         .assertPageTitleIs("404 Not Found"),
                                         endpoint)
                         )
-                        .resume(getToolName())
+                        .resume(nameWithoutGroup(tool))
                         .waitForEndpointLink()
                         .sleep(C.ENDPOINT_INITIALIZATION_TIMEOUT, MILLISECONDS)
                         .inAnotherTab(nodeTab ->
@@ -298,10 +299,5 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         sleep(5, SECONDS);
         refresh();
         nodePage.get();
-    }
-
-    private String getToolName() {
-        final String[] toolAndGroup = tool.split("/");
-        return toolAndGroup[toolAndGroup.length - 1];
     }
 }

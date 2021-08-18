@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
-import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolGroup;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.support.Colors;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -55,9 +54,9 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
             "The latest version shall be scanned for vulnerabilities. You can try an older one.";
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
-    private final String tool = "shell";
     private final String version = "latest";
-    private final String fullToolName = String.format("%s/%s", group, tool);
+    private final String fullToolName = C.TOOL_WITHOUT_DEFAULT_SETTINGS;
+    private final String tool = Utils.nameWithoutGroup(fullToolName);
 
     private String graceHours;
     private boolean policyDenyNotScanned;
@@ -159,7 +158,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                                 .selectVersion(version)
                                 .validateVersionPage("VULNERABILITIES REPORT")
                                 .validateReportTableColumns()
-                                .selectComponent("kernel-headers")
+                                .selectComponent("bash")
                                 .click(versionTab("PACKAGES"))
                                 .selectEcosystem("Python.Dist")
                                 .validatePackageList(Arrays.asList("pip", "py"), true)
@@ -313,9 +312,5 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                 .delete()
                 .messageShouldAppear("Are you sure you want to delete the tool?")
                 .delete());
-    }
-
-    private void ok() {
-        new SettingsPageAO(new PipelinesLibraryAO()).ok();
     }
 }

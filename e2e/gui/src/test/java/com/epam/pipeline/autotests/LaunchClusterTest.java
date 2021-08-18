@@ -435,14 +435,18 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         "requested resources and therefore they will be rejected: 1 (150 cpu)"))
                 .ssh(shell -> shell
                         .execute("qsub -b y -pe local 50 sleep 5m")
+                        .sleep(20, SECONDS)
+                        .execute("qstat")
                         .close());
-        navigationMenu()
+        final String nestedRunID = navigationMenu()
                 .runs()
                 .activeRuns()
                 .showLog(getRunId())
                 .waitForNestedRunsLink()
+                .getNestedRunID(1);
+        new LogAO()
                 .clickOnNestedRunLink()
-                .ensure(STATUS, text(String.valueOf(Integer.parseInt(getRunId()) + 1)));
+                .ensure(STATUS, text(nestedRunID));
     }
 
     @Test
