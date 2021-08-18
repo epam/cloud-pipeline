@@ -921,6 +921,7 @@ function api_setup_base_preferences {
 
     ## Metadata
     api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"
+    api_set_preference "misc.groups.ui.preferences" "{}" "true"
 
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
