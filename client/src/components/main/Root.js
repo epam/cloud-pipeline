@@ -93,7 +93,7 @@ const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
 
-const uiNavigation = new UINavigation(authenticatedUserInfo);
+const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
 
 const vsActions = new VsActionsAvailable(pipelines);
 
