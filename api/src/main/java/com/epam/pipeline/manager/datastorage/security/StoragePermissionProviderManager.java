@@ -17,7 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,9 +36,7 @@ public class StoragePermissionProviderManager {
     public boolean isReadAllowed(final SecuredStorageEntity storage,
                                  final String path,
                                  final StoragePermissionPathType type) {
-        // TODO: 16.08.2021 Allow owner or admins
-        return isOverallAllowed(storage, path, type)
-                && isAllowed(storage, path, type, AclPermission.READ);
+        return isAllowed(storage, path, type, AclPermission.READ);
     }
 
     public boolean isReadNotAllowed(final SecuredStorageEntity storage,
@@ -49,9 +47,7 @@ public class StoragePermissionProviderManager {
 
     public boolean isWriteAllowed(final SecuredStorageEntity storage, final String path,
                                   final StoragePermissionPathType type) {
-        // TODO: 16.08.2021 Allow owner or admins
-        return isOverallAllowed(storage, path, type)
-                && isAllowed(storage, path, type, AclPermission.WRITE);
+        return isAllowed(storage, path, type, AclPermission.WRITE);
     }
 
     public boolean isWriteNotAllowed(final SecuredStorageEntity storage,
@@ -60,29 +56,66 @@ public class StoragePermissionProviderManager {
         return !isWriteAllowed(storage, path, type);
     }
 
-    private boolean isOverallAllowed(final SecuredStorageEntity storage, final AbstractDataStorageItem item) {
-        return isOverallAllowed(storage, item.getPath(), StoragePermissionPathType.from(item.getType()));
-    }
-
-    private boolean isOverallAllowed(final SecuredStorageEntity storage,
-                                     final String path,
-                                     final StoragePermissionPathType type) {
-        // TODO: 11.08.2021 Think out which items should not be allowed to even process permissions.
-        //  Probably ones which lies in folders without read access and has no explicit permissions set.
-        return true;
-    }
-
     private boolean isAllowed(final SecuredStorageEntity storage,
                               final String path,
                               final StoragePermissionPathType type,
-                              final Permission permission) {
+                              final Permission... permissions) {
         final String absolutePath = storage.resolveAbsolutePath(path);
         final int mask = getExtendedMask(storage, absolutePath, type);
+        return isAllowed(mask, permissions);
+    }
+
+    private boolean isAllowed(final int mask, final Permission... permissions) {
+        return Arrays.stream(permissions).allMatch(permission -> isAllowed(mask, permission));
+    }
+
+    private boolean isAllowed(final int mask, final Permission permission) {
         return permission instanceof AclPermission
                 && (permission.getMask() & mask) == permission.getMask()
                 && (((AclPermission) permission).getDenyPermission().getMask() & mask) == 0;
     }
 
+    public boolean isRecursiveReadAllowed(final SecuredStorageEntity storage, final String path) {
+        return isRecursiveAllowed(storage, path, AclPermission.READ);
+    }
+
+    public boolean isRecursiveReadNotAllowed(final SecuredStorageEntity storage, final String path) {
+        return !isRecursiveReadAllowed(storage, path);
+    }
+
+    public boolean isRecursiveWriteAllowed(final SecuredStorageEntity storage, final String path) {
+        return isRecursiveAllowed(storage, path, AclPermission.WRITE);
+    }
+
+    public boolean isRecursiveWriteNotAllowed(final SecuredStorageEntity storage, final String path) {
+        return !isRecursiveWriteAllowed(storage, path);
+    }
+
+    public boolean isRecursiveReadWriteAllowed(final SecuredStorageEntity storage, final String path) {
+        return isRecursiveAllowed(storage, path, AclPermission.READ, AclPermission.WRITE);
+    }
+
+    public boolean isRecursiveReadWriteNotAllowed(final SecuredStorageEntity storage, final String path) {
+        return !isRecursiveReadWriteAllowed(storage, path);
+    }
+
+    private boolean isRecursiveAllowed(final SecuredStorageEntity storage,
+                                       final String path,
+                                       final Permission... permissions) {
+        final PipelineUser user = authManager.getCurrentUser();
+        if (user == null) {
+            return false;
+        }
+        if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
+            return true;
+        }
+        final List<String> groups = groupSids(user)
+                .map(StoragePermissionSid::getName)
+                .collect(Collectors.toList());
+        return storagePermissionManager.loadAggregatedMask(storage.getRootId(), path, user.getUserName(), groups)
+                .map(mask -> isAllowed(mask, permissions))
+                .orElseGet(() -> isAllowed(storage, path, StoragePermissionPathType.FOLDER, permissions));
+    }
 
     public List<AbstractDataStorageItem> process(final SecuredStorageEntity storage,
                                                  final List<AbstractDataStorageItem> items) {
@@ -96,9 +129,7 @@ public class StoragePermissionProviderManager {
 
     public Optional<AbstractDataStorageItem> process(final SecuredStorageEntity storage,
                                                      final AbstractDataStorageItem item) {
-        return Optional.of(item)
-                .filter(i -> isOverallAllowed(storage, i))
-                .map(i -> withMask(storage, i));
+        return Optional.of(item).map(i -> withMask(storage, i));
     }
 
     private AbstractDataStorageItem withMask(final SecuredStorageEntity storage, final AbstractDataStorageItem item) {
@@ -131,6 +162,7 @@ public class StoragePermissionProviderManager {
                                 final String path,
                                 final StoragePermissionPathType type,
                                 final PipelineUser user) {
+        // TODO: 17.08.2021 User permissions should override group permissions
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         final List<StoragePermissionSid> sids = getSids(user);
         final List<StoragePermission> permissions = storagePermissionManager.load(storage.getRootId(), absolutePath,
@@ -186,5 +218,36 @@ public class StoragePermissionProviderManager {
                 .map(StoragePermissionSid::user)
                 .map(Stream::of)
                 .orElseGet(Stream::empty);
+    }
+
+    public void deleteFilePermissions(final SecuredStorageEntity storage,
+                                      final String path,
+                                      final String version,
+                                      final boolean totally) {
+        if (!storage.isVersioningEnabled() || version == null || totally) {
+            storagePermissionManager.delete(storage.getRootId(), path, StoragePermissionPathType.FILE);
+        }
+    }
+
+    public void deleteFolderPermissions(final SecuredStorageEntity storage, final String path) {
+        storagePermissionManager.delete(storage.getRootId(), path, StoragePermissionPathType.FOLDER);
+    }
+
+    public void moveFilePermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
+        storagePermissionManager.copy(storage.getRootId(), oldPath, newPath, StoragePermissionPathType.FILE);
+        storagePermissionManager.delete(storage.getRootId(), oldPath, StoragePermissionPathType.FILE);
+    }
+
+    public void moveFolderPermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
+        storagePermissionManager.copy(storage.getRootId(), oldPath, newPath, StoragePermissionPathType.FOLDER);
+        storagePermissionManager.delete(storage.getRootId(), oldPath, StoragePermissionPathType.FOLDER);
+    }
+
+    public void copyFilePermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
+        storagePermissionManager.copy(storage.getRootId(), oldPath, newPath, StoragePermissionPathType.FILE);
+    }
+
+    public void copyFolderPermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
+        storagePermissionManager.copy(storage.getRootId(), oldPath, newPath, StoragePermissionPathType.FOLDER);
     }
 }

@@ -111,48 +111,48 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
     }
 
     public void deleteFile(T storage, String path, String version, Boolean totally) {
-        // TODO: 12.08.2021 Delete permissions
         assertFileWriteAccess(storage, path);
         provider.deleteFile(storage, path, version, totally);
+        permissionProviderManager.deleteFilePermissions(storage, path, version, totally);
     }
 
     public void deleteFolder(T storage, String path, Boolean totally) {
-        // TODO: 12.08.2021 Assert all child item permissions
-        // TODO: 12.08.2021 Delete permissions
-        assertFolderWriteAccess(storage, path);
+        assertFolderRecursiveWriteAccess(storage, path);
         provider.deleteFolder(storage, path, totally);
+        permissionProviderManager.deleteFolderPermissions(storage, path);
     }
 
     public DataStorageFile moveFile(T storage, String oldPath, String newPath) {
-        // TODO: 12.08.2021 Move permissions
         assertFileReadAccess(storage, oldPath);
         assertFileWriteAccess(storage, oldPath);
         assertFileWriteAccess(storage, newPath);
-        return provider.moveFile(storage, oldPath, newPath);
+        final DataStorageFile file = provider.moveFile(storage, oldPath, newPath);
+        permissionProviderManager.moveFilePermissions(storage, oldPath, newPath);
+        return file;
     }
 
     public DataStorageFolder moveFolder(T storage, String oldPath, String newPath) {
-        // TODO: 12.08.2021 Assert all child item permissions
-        // TODO: 12.08.2021 Move permissions
-        assertFolderReadAccess(storage, oldPath);
-        assertFolderWriteAccess(storage, oldPath);
+        assertFolderRecursiveReadWriteAccess(storage, oldPath);
         assertFolderWriteAccess(storage, newPath);
-        return provider.moveFolder(storage, oldPath, newPath);
+        final DataStorageFolder folder = provider.moveFolder(storage, oldPath, newPath);
+        permissionProviderManager.moveFolderPermissions(storage, oldPath, newPath);
+        return folder;
     }
 
     public DataStorageFile copyFile(T storage, String oldPath, String newPath) {
-        // TODO: 12.08.2021 Copy permissions
         assertFileReadAccess(storage, oldPath);
         assertFileWriteAccess(storage, newPath);
-        return provider.copyFile(storage, oldPath, newPath);
+        final DataStorageFile file = provider.copyFile(storage, oldPath, newPath);
+        permissionProviderManager.copyFilePermissions(storage, oldPath, newPath);
+        return file;
     }
 
     public DataStorageFolder copyFolder(T storage, String oldPath, String newPath) {
-        // TODO: 12.08.2021 Assert all child item permissions
-        // TODO: 12.08.2021 Copy permissions
-        assertFolderReadAccess(storage, oldPath);
+        assertFolderRecursiveReadAccess(storage, oldPath);
         assertFolderWriteAccess(storage, newPath);
-        return provider.copyFolder(storage, oldPath, newPath);
+        final DataStorageFolder folder = provider.copyFolder(storage, oldPath, newPath);
+        permissionProviderManager.copyFolderPermissions(storage, oldPath, newPath);
+        return folder;
     }
 
     public boolean checkStorage(T storage) {
@@ -200,8 +200,7 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
     }
 
     public PathDescription getDataSize(T storage, String path, PathDescription pathDescription) {
-        // TODO: 12.08.2021 Assert all child item permissions
-        assertFolderReadAccess(storage, path);
+        assertFolderRecursiveReadAccess(storage, path);
         return provider.getDataSize(storage, path, pathDescription);
     }
 
@@ -234,6 +233,27 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
                                    DataStorageItemType type) {
         if (permissionProviderManager.isWriteNotAllowed(storage, path, StoragePermissionPathType.from(type))) {
             throw new AccessDeniedException(String.format("Data storage path %s write is not allowed.", path));
+        }
+    }
+
+    private void assertFolderRecursiveReadAccess(T storage, String path) {
+        if (permissionProviderManager.isRecursiveReadNotAllowed(storage, path)) {
+            throw new AccessDeniedException(String.format("Data storage path %s recursive write is not allowed.",
+                    path));
+        }
+    }
+
+    private void assertFolderRecursiveWriteAccess(T storage, String path) {
+        if (permissionProviderManager.isRecursiveWriteNotAllowed(storage, path)) {
+            throw new AccessDeniedException(String.format("Data storage path %s recursive write is not allowed.",
+                    path));
+        }
+    }
+
+    private void assertFolderRecursiveReadWriteAccess(T storage, String path) {
+        if (permissionProviderManager.isRecursiveReadWriteNotAllowed(storage, path)) {
+            throw new AccessDeniedException(String.format("Data storage path %s recursive read/write is not allowed.",
+                    path));
         }
     }
 
