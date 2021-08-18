@@ -94,7 +94,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         getWebDriver().navigate().refresh();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-975"})
     public void launchPipelineWithLaunchFlag() {
         library()
@@ -122,7 +122,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRunsWithParentRun(2, getRunId());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2618"})
     public void launchAutoScaledClusterTest() {
         library()
@@ -151,7 +151,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .stopRunIfPresent(getRunId());
     }
 
-    @Test(priority = 1)
+    @Test(priority = 1, enabled = false)
     @TestCase({"EPMCMBIBPC-2620"})
     public void invalidValuesOnConfigureClusterPopUp() {
         library()
@@ -188,7 +188,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .messageShouldAppear("Enter positive number");
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2628"})
     public void autoScaledClusterWithDefaultChildNodesValidationTest() {
         String childRunID1 = library()
@@ -246,7 +246,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .validateStatus(childRunID2, LogAO.Status.STOPPED);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3150"})
     public void validationOfGECluster() {
         String childRunID = library()
@@ -295,7 +295,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .close());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3151"})
     public void validationOfSlurmCluster() {
         String childRunID = library()
@@ -338,7 +338,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .close());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3152"})
     public void validationOfApacheSparkCluster() {
         tools()
@@ -373,7 +373,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .closeTab();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3155"})
     public void hybridAutoScaledClusterInstanceTypeFamily() {
         library()
@@ -435,6 +435,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         "requested resources and therefore they will be rejected: 1 (150 cpu)"))
                 .ssh(shell -> shell
                         .execute("qsub -b y -pe local 50 sleep 5m")
+                        .sleep(20, SECONDS)
+                        .execute("qstat")
                         .close());
         navigationMenu()
                 .runs()
@@ -445,7 +447,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(STATUS, text(String.valueOf(Integer.parseInt(getRunId()) + 1)));
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3153"})
     public void hybridAutoScaledCluster() {
         String cpu = library()
@@ -506,7 +508,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .close());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3159"})
     public void hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions() {
         final String systemParam = "CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE";
@@ -545,7 +547,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         "requested resources and therefore they will be rejected: 1 (50 cpu)"));
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3156"})
     public void autoScaledClusterWorkersPriceTypeSpot() {
         library()
@@ -572,7 +574,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         instance.ensure(PRICE_TYPE, text(spotPrice)));
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3160"})
     public void autoScaledClusterWorkersPriceTypeOnDemand() {
         library()
@@ -599,7 +601,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         instance.ensure(PRICE_TYPE, text(onDemandPrice)));
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3161"})
     public void autoScaledClusterWorkersPriceTypeMastersConfig() {
         library()
