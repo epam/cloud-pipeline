@@ -1193,6 +1193,12 @@ export default class DataStorage extends React.Component {
       selectedItemsLength === editableSelectedItemsLength;
   }
 
+  get sharingEnabled () {
+    const {selectedItems} = this.state;
+    return selectedItems.length > 0 &&
+      selectedItems.every(item => item.type.toLowerCase() === 'folder');
+  }
+
   get selectAllAvailable () {
     if (this.props.storage.loaded &&
       this.props.storage.value &&
@@ -1279,6 +1285,11 @@ export default class DataStorage extends React.Component {
       .filter(file => file.name === this.state.selectedFile.name);
 
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
+  };
+
+  openShareDialog = (event) => {
+    event && event.stopPropagation();
+    // todo: consider using bulk sharing dialog, or one folder at once
   };
 
   openConvertToVersionedStorageDialog = (callback) => {
@@ -1524,6 +1535,16 @@ export default class DataStorage extends React.Component {
                   onClick={(e) => this.removeSelectedItemsConfirm(e)}
                   type="danger">
                   Remove all selected
+                </Button>
+              }
+              {
+                this.sharingEnabled &&
+                <Button
+                  id="share-selected-button"
+                  size="small"
+                  onClick={(e) => this.openShareDialog(e)}
+                >
+                  Share
                 </Button>
               }
               {
@@ -1963,6 +1984,8 @@ export default class DataStorage extends React.Component {
           onCancel={this.closeCreateFileDialog}
           onSubmit={this.createFile} />
         <EditItemForm
+          item={this.state.renameItem}
+          storageId={this.props.storageId}
           pending={false}
           title={this.state.renameItem
             ? (

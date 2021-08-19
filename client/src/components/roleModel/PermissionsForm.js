@@ -50,6 +50,18 @@ function plural (count, noun) {
 
 const MAX_SUB_OBJECTS_WARNINGS_TO_SHOW = 5;
 
+const OBJECT_TYPES = {
+  categoricalAttribute: 'CATEGORICAL_ATTRIBUTE',
+  configuration: 'CONFIGURATION',
+  dataStorage: 'DATA_STORAGE',
+  dataStorageItem: 'DATA_STORAGE_ITEM',
+  dockerRegistry: 'DOCKER_REGISTRY',
+  folder: 'FOLDER',
+  pipeline: 'PIPELINE',
+  tool: 'TOOL',
+  toolGroup: 'TOOL_GROUP'
+};
+
 @inject('usersInfo')
 @inject(({routing, authenticatedUserInfo}, params) => ({
   authenticatedUserInfo,
@@ -57,7 +69,7 @@ const MAX_SUB_OBJECTS_WARNINGS_TO_SHOW = 5;
   roles: new Roles()
 }))
 @observer
-export default class PermissionsForm extends React.Component {
+class PermissionsForm extends React.Component {
   state = {
     findUserVisible: false,
     findGroupVisible: false,
@@ -152,6 +164,9 @@ export default class PermissionsForm extends React.Component {
   changeOwner = async () => {
     const userName = this.state.owner;
     const hide = message.loading(`Granting ${userName} owner permission...`, -1);
+    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+      return;
+    }
     const request = new GrantOwner(this.props.objectIdentifier, this.props.objectType, userName);
     await request.send({});
     if (request.error) {
@@ -294,6 +309,9 @@ export default class PermissionsForm extends React.Component {
   };
 
   grantPermission = async (name, principal, mask) => {
+    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+      return;
+    }
     const request = new GrantPermission();
     await request.send({
       aclClass: this.props.objectType.toUpperCase(),
@@ -319,6 +337,9 @@ export default class PermissionsForm extends React.Component {
 
   removeUserOrGroupClicked = (item) => async (event) => {
     event.stopPropagation();
+    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+      return;
+    }
     const request = new GrantRemove(
       this.props.objectIdentifier,
       this.props.objectType,
@@ -351,6 +372,9 @@ export default class PermissionsForm extends React.Component {
     selectedPermission.mask = (selectedPermission.mask & mask) | newValue;
     if (allowRead && event.target.checked) {
       selectedPermission.mask = (selectedPermission.mask & (1 << 2 | 1 << 3 | 1 << 4 | 1 << 5)) | 1;
+    }
+    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+      return;
     }
     this.setState({operationInProgress: true});
     const request = new GrantPermission();
@@ -925,3 +949,6 @@ export default class PermissionsForm extends React.Component {
     }
   }
 }
+
+export {OBJECT_TYPES};
+export default PermissionsForm;
