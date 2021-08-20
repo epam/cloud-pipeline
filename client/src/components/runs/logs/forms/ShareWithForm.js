@@ -139,7 +139,7 @@ export default class ShareWithForm extends React.Component {
 
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      return (this.userFind.value || []).map(user => user);
+      return (this.userFind.value || []).map(user => user).sort();
     }
     return [];
   };
@@ -155,10 +155,10 @@ export default class ShareWithForm extends React.Component {
     const roles = this.state.groupSearchString
       ? (
         this.props.roles
-          .filter(r => r.name.toLowerCase()
-            .indexOf(this.state.groupSearchString.toLowerCase()) >= 0
-          )
           .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
+          .filter(name => name.toLowerCase()
+            .indexOf(this.state.groupSearchString.toLowerCase()) >= 0
+          ).sort()
       )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
@@ -168,7 +168,7 @@ export default class ShareWithForm extends React.Component {
             ...roles,
             ...(this.groupFind.value || []).map(g => g)]
         )
-      ];
+      ].sort();
     }
     return [...roles];
   };
