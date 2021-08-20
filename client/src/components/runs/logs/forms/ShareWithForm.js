@@ -96,21 +96,27 @@ export default class ShareWithForm extends React.Component {
       </span>
     );
   };
-
+ sortByOverlap = (str1, str2, query) => {
+   if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
+     return 1;
+   }
+   if (str2.toLowerCase().indexOf(query) > str1.toLowerCase().indexOf(query)) {
+     return -1;
+   }
+   if (
+     str2.toLowerCase().indexOf(query) === str1.toLowerCase().indexOf(query) &&
+     str1.toLowerCase().indexOf(query) >= 0
+   ) {
+     return str1.toLowerCase() > str2.toLowerCase() ? 1 : -1;
+   }
+   return 0;
+ }
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
       return (this.userFind.value || []).map(user => user)
         .sort((u1, u2) => {
-          const userName1 = u1.userName.toLowerCase();
-          const userName2 = u2.userName.toLowerCase();
-          const searchStr = this.state.userSearchString?.toLowerCase().trim();
-          if (userName1.indexOf(searchStr) > userName2.indexOf(searchStr)) {
-            return 1;
-          }
-          if (userName2.indexOf(searchStr) > userName1.indexOf(searchStr)) {
-            return -1;
-          }
-          return 0;
+          const query = this.state.userSearchString?.toLowerCase().trim();
+          return this.sortByOverlap(u1.userName, u2.userName, query);
         });
     }
     return [];
@@ -124,13 +130,14 @@ export default class ShareWithForm extends React.Component {
   };
 
   findGroupDataSource = () => {
+    const query = this.state.groupSearchString?.toLowerCase().trim();
     const roles = this.state.groupSearchString
       ? (
         this.props.roles
-          .filter(r => r.name.toLowerCase()
+          .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
+          .filter(name => name.toLowerCase()
             .indexOf(this.state.groupSearchString.toLowerCase()) >= 0
           )
-          .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
       )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
@@ -140,9 +147,9 @@ export default class ShareWithForm extends React.Component {
             ...roles,
             ...(this.groupFind.value || []).map(g => g)]
         )
-      ];
+      ].sort((u1, u2) => this.sortByOverlap(u1, u2, query));
     }
-    return [...roles];
+    return [...roles].sort((u1, u2) => this.sortByOverlap(u1, u2, query));
   };
 
   openFindUserDialog = () => {
