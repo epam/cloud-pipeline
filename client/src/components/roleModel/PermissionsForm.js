@@ -117,7 +117,8 @@ class PermissionsForm extends React.Component {
       name: PropTypes.node,
       description: PropTypes.node
     })),
-    subObjectsPermissionsErrorTitle: PropTypes.node
+    subObjectsPermissionsErrorTitle: PropTypes.node,
+    executeDisabled: PropTypes.bool
   };
 
   static defaultProps = {
@@ -553,6 +554,7 @@ class PermissionsForm extends React.Component {
   };
 
   renderUserPermission = () => {
+    const {executeDisabled} = this.props;
     if (this.state.selectedPermission) {
       const columns = [
         {
@@ -612,14 +614,14 @@ class PermissionsForm extends React.Component {
           allowed: roleModel.writeAllowed(this.state.selectedPermission, true),
           denied: roleModel.writeDenied(this.state.selectedPermission, true)
         },
-        {
+        executeDisabled ? undefined : {
           permission: 'Execute',
           allowMask: 1 << 4,
           denyMask: 1 << 5,
           allowed: roleModel.executeAllowed(this.state.selectedPermission, true),
           denied: roleModel.executeDenied(this.state.selectedPermission, true)
         }
-      ];
+      ].filter(Boolean);
       return (
         <Table
           style={{marginTop: 10}}

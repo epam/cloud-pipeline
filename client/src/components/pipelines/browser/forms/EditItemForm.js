@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,16 @@ import PermissionsForm, {OBJECT_TYPES} from '../../../roleModel/PermissionsForm'
 const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
 
 const TABS = {
-  info: 'Info',
-  permissions: 'Permissions'
+  info: 'info',
+  permissions: 'permissions'
+};
+
+const capitalizeString = (string = '') => {
+  return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 };
 
 @Form.create()
-export default class EditItemForm extends React.Component {
+class EditItemForm extends React.Component {
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -46,7 +50,8 @@ export default class EditItemForm extends React.Component {
     title: PropTypes.string,
     includeFileContentField: PropTypes.bool,
     storageId: PropTypes.string,
-    item: PropTypes.object
+    item: PropTypes.object,
+    tabs: PropTypes.arrayOf(PropTypes.string)
   };
 
   state = {
@@ -65,10 +70,11 @@ export default class EditItemForm extends React.Component {
   };
 
   handleSubmit = (e) => {
+    const {item} = this.props;
     e.preventDefault();
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        this.props.onSubmit(values);
+        this.props.onSubmit(values, item);
       }
     });
   };
@@ -124,25 +130,47 @@ export default class EditItemForm extends React.Component {
     );
   };
 
+  renderPermissionsForm = () => {
+    const {storageId} = this.props;
+    if (!storageId) {
+      return null;
+    }
+    return (
+      <PermissionsForm
+        objectIdentifier={storageId}
+        executeDisabled
+        // todo: change objectType to dataStorageItem when item permissions API will be ready
+        objectType={OBJECT_TYPES.dataStorage}
+      />
+    );
+  };
+
   renderModalContent = () => {
-    const {item, storageId} = this.props;
-    if (storageId && item && (item.type || '').toLowerCase() === 'folder') {
+    const {tabs} = this.props;
+    const renderers = {
+      info: this.renderInfoForm,
+      permissions: this.renderPermissionsForm
+    };
+    if (tabs && tabs.length) {
+      if (tabs && tabs.length === 1) {
+        const renderFn = renderers[tabs[0]];
+        return renderFn ? renderFn() : null;
+      }
       return (
         <Tabs
           size="small"
           activeKey={this.state.activeTab}
           onChange={this.onChangeTab}
         >
-          <Tabs.TabPane key={TABS.info} tab={TABS.info}>
-            {this.renderInfoForm()}
-          </Tabs.TabPane>
-          <Tabs.TabPane key={TABS.permissions} tab={TABS.permissions}>
-            <PermissionsForm
-              objectIdentifier={storageId}
-              // todo: change objectType to dataStorageItem when item permissions API will be ready
-              objectType={OBJECT_TYPES.dataStorage}
-            />
-          </Tabs.TabPane>
+          {tabs.map(tab => {
+            const renderFn = renderers[tab];
+            return renderFn
+              ? (
+                <Tabs.TabPane key={tab} tab={capitalizeString(tab)}>
+                  {renderFn()}
+                </Tabs.TabPane>
+              ) : null;
+          })}
         </Tabs>
       );
     }
@@ -217,3 +245,6 @@ export default class EditItemForm extends React.Component {
     }
   }
 }
+
+export {TABS};
+export default EditItemForm;
