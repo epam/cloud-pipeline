@@ -61,8 +61,6 @@ export default class ShareWithForm extends React.Component {
     });
   };
 
-  showWarningMessage = (msg) => message.warning(msg);
-
   @observable userFind;
   @observable groupFind;
 
@@ -101,7 +99,19 @@ export default class ShareWithForm extends React.Component {
 
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      return (this.userFind.value || []).map(user => user);
+      return (this.userFind.value || []).map(user => user)
+        .sort((u1, u2) => {
+          const userName1 = u1.userName.toLowerCase();
+          const userName2 = u2.userName.toLowerCase();
+          const searchStr = this.state.userSearchString?.toLowerCase().trim();
+          if (userName1.indexOf(searchStr) > userName2.indexOf(searchStr)) {
+            return 1;
+          }
+          if (userName2.indexOf(searchStr) > userName1.indexOf(searchStr)) {
+            return -1;
+          }
+          return 0;
+        });
     }
     return [];
   };
@@ -180,7 +190,7 @@ export default class ShareWithForm extends React.Component {
         this.setState({sids});
       }
     } else {
-      this.showWarningMessage('Please provide non empty string!');
+      this.message.warning('Please provide non empty string!');
     }
   };
 
