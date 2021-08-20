@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox} from 'antd';
+import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox, message} from 'antd';
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
@@ -43,9 +43,7 @@ export default class ShareWithForm extends React.Component {
     findGroupVisible: false,
     selectedPermission: null,
     groupSearchString: null,
-    selectedUser: null,
-    owner: null,
-    ownerInput: null,
+    userSearchString: null,
     fetching: false,
     fetchedUsers: [],
     roleName: null,
@@ -63,66 +61,67 @@ export default class ShareWithForm extends React.Component {
     });
   };
 
-  @observable
-  userFind;
-  @observable
-  groupFind;
+  showWarningMessage = (msg) => message.warning(msg);
 
-  lastFetchId = 0;
+  @observable userFind;
+  @observable groupFind;
 
-  findUser = (value) => {
-    this.lastFetchId += 1;
-    const fetchId = this.lastFetchId;
-    this.setState({
-      ownerInput: value,
-      owner: null,
-      fetching: true,
-      selectedUser: null
-    }, async () => {
-      const request = new UserFind(value);
-      await request.fetch();
-      if (fetchId === this.lastFetchId) {
-        let fetchedUsers = [];
-        if (!request.error) {
-          fetchedUsers = (request.value || []).map(u => u);
-        }
-        this.setState({
-          fetching: false,
-          fetchedUsers
-        });
-      }
-    });
-  };
+  // lastFetchId = 0;
 
-  onUserSelect = (key) => {
-    const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
-    if (user) {
-      this.setState({
-        ownerInput: user.userName,
-        owner: user.userName
-      });
-    }
-  };
+  // findUser = (value) => {
+  //   this.lastFetchId += 1;
+  //   const fetchId = this.lastFetchId;
+  //   this.setState({
+  //     ownerInput: value,
+  //     owner: null,
+  //     fetching: true,
+  //     selectedUser: null
+  //   }, async () => {
+  //     const request = new UserFind(value);
+  //     await request.fetch();
+  //     if (fetchId === this.lastFetchId) {
+  //       let fetchedUsers = [];
+  //       if (!request.error) {
+  //         fetchedUsers = (request.value || []).map(u => u);
+  //       }
+  //       this.setState({
+  //         fetching: false,
+  //         fetchedUsers
+  //       });
+  //     }
+  //   });
+  // };
+
+  // onUserSelect = (key) => {
+  //   const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
+  //   if (user) {
+  //     this.setState({
+  //       ownerInput: user.userName,
+  //       owner: user.userName
+  //     });
+  //   }
+  // };
 
   onUserFindInputChanged = (value) => {
-    this.selectedUser = value;
-    if (value && value.length) {
-      this.userFind = new UserFind(value);
+    const trimmedValue = value ? value.trim() : null;
+    if (trimmedValue) {
+      this.userFind = new UserFind(trimmedValue);
       this.userFind.fetch();
     } else {
       this.userFind = null;
     }
+    this.setState({userSearchString: trimmedValue});
   };
 
   onGroupFindInputChanged = (value) => {
-    this.selectedGroup = value;
-    if (value && value.length) {
-      this.groupFind = new GroupFind(value);
+    const trimmedValue = value ? value.trim() : null;
+    if (trimmedValue) {
+      this.groupFind = new GroupFind(trimmedValue);
       this.groupFind.fetch();
     } else {
       this.groupFind = null;
     }
-    this.setState({groupSearchString: value});
+    this.setState({groupSearchString: trimmedValue});
   };
 
   renderGroupAndUsersActions = () => {
@@ -174,25 +173,20 @@ export default class ShareWithForm extends React.Component {
     return [...roles];
   };
 
-  selectedUser = null;
-  selectedGroup = null;
-
   openFindUserDialog = () => {
-    this.selectedUser = null;
-    this.setState({findUserVisible: true});
+    this.setState({findUserVisible: true, userSearchString: null});
   };
 
   closeFindUserDialog = () => {
-    this.setState({findUserVisible: false});
+    this.setState({findUserVisible: false, userSearchString: null});
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.selectedUser, true);
+    await this.grantPermission(this.state.userSearchString, true);
     this.closeFindUserDialog();
   };
 
   openFindGroupDialog = () => {
-    this.selectedGroup = null;
     this.setState({findGroupVisible: true, groupSearchString: null});
   };
 
@@ -201,25 +195,30 @@ export default class ShareWithForm extends React.Component {
   };
 
   onSelectGroup = async () => {
+    const {groupSearchString} = this.state;
     const [role] = this.props.roles
-      .filter(r => !r.predefined && this.splitRoleName(r.name) === this.selectedGroup);
-    const roleName = role ? role.name : this.selectedGroup;
+      .filter(r => !r.predefined && this.splitRoleName(r.name) === groupSearchString);
+    const roleName = role ? role.name : groupSearchString;
     await this.grantPermission(roleName, false);
     this.closeFindGroupDialog();
   };
 
   grantPermission = async (name, isPrincipal) => {
-    const sids = this.state.sids;
-    const [sidItem] = sids.filter(s => {
-      return s.isPrincipal === isPrincipal && s.name.toLowerCase() === name.toLowerCase();
-    });
-    if (!sidItem) {
-      sids.push({
-        accessType: this.props.endpointsAvailable ? AccessTypes.endpoint : AccessTypes.ssh,
-        name,
-        isPrincipal
+    if (name) {
+      const sids = this.state.sids;
+      const [sidItem] = sids.filter(s => {
+        return s.isPrincipal === isPrincipal && s.name.toLowerCase() === name.toLowerCase();
       });
-      this.setState({sids});
+      if (!sidItem) {
+        sids.push({
+          accessType: this.props.endpointsAvailable ? AccessTypes.endpoint : AccessTypes.ssh,
+          name,
+          isPrincipal
+        });
+        this.setState({sids});
+      }
+    } else {
+      this.showWarningMessage('Please provide non empty string!');
     }
   };
 
@@ -387,7 +386,7 @@ export default class ShareWithForm extends React.Component {
             onOk={this.onSelectUser}
             visible={this.state.findUserVisible}>
             <AutoComplete
-              value={this.selectedUser}
+              value={this.state.userSearchString}
               optionLabelProp="text"
               style={{width: '100%'}}
               onChange={this.onUserFindInputChanged}
@@ -409,7 +408,7 @@ export default class ShareWithForm extends React.Component {
             onOk={this.onSelectGroup}
             visible={this.state.findGroupVisible}>
             <AutoComplete
-              value={this.selectedGroup}
+              value={this.state.groupSearchString}
               style={{width: '100%'}}
               dataSource={this.findGroupDataSource()}
               onChange={this.onGroupFindInputChanged}
