@@ -38,10 +38,3 @@
   align-items: center;
   justify-content: center;
 }
-
-.url {
-  line-height: 26px;
-  padding: 0 10px;
-  border: 1px solid #dfdfdf;
-  border-radius: 5px;
-}

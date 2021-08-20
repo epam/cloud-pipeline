@@ -202,6 +202,9 @@ class EditItemForm extends React.Component {
       this.setState({activeTab: TABS.info});
       resetFields();
     };
+    if (!this.props.visible) {
+      return null;
+    }
     return (
       <Modal
         maskClosable={!this.props.pending}

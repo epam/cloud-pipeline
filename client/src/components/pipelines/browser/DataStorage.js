@@ -1561,6 +1561,19 @@ export default class DataStorage extends React.Component {
             </div>
             <div style={{paddingRight: 8}}>
               {
+                this.sharingEnabled &&
+                <Button
+                  id="share-selected-button"
+                  size="small"
+                  onClick={(e) => this.openShareItemDialog(e, this.state.selectedItems[0])
+                  }
+                >
+                  {`Share ${this.state.selectedItems[0]
+                    ? this.state.selectedItems[0].type.toLowerCase()
+                    : ''}`}
+                </Button>
+              }
+              {
                 this.bulkDownloadEnabled &&
                 this.storageAllowSignedUrls &&
                 <Button
@@ -1579,17 +1592,6 @@ export default class DataStorage extends React.Component {
                   onClick={(e) => this.removeSelectedItemsConfirm(e)}
                   type="danger">
                   Remove all selected
-                </Button>
-              }
-              {
-                this.sharingEnabled &&
-                <Button
-                  id="share-selected-button"
-                  size="small"
-                  onClick={(e) => this.openShareItemDialog(e, this.state.selectedItems[0])
-                  }
-                >
-                  Share
                 </Button>
               }
               {
@@ -2054,11 +2056,7 @@ export default class DataStorage extends React.Component {
           pending={false}
           tabs={[TABS.permissions]}
           title={this.state.shareItem
-            ? (
-              this.state.shareItem.type.toLowerCase() === 'file'
-                ? 'Share file'
-                : 'Share folder'
-            )
+            ? `Select users/groups to share ${this.state.shareItem.name}`
             : null
           }
           name={this.state.shareItem ? this.state.shareItem.name : null}
@@ -2068,7 +2066,7 @@ export default class DataStorage extends React.Component {
         />
         <ShareItemInfoDialog
           title={false}
-          visible={!!this.state.shareItemInfoDialog}
+          visible={this.state.shareItemInfoDialog}
           sharedUrl={this.sharedItemUrl}
           file={this.state.shareItem}
           onOk={this.closeShareItemInfoDialog}

@@ -86,7 +86,7 @@ class ShareItemInfoDialog extends React.Component {
             {`Link ${this.itemName ? `to ${this.itemName}` : ''} created.`}
           </span>
           <span className={styles.hint}>
-            Make sure you copy the link below
+            Make sure you copy the link below.
           </span>
           <div className={styles.urlSection}>
             <Input
