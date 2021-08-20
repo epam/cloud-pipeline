@@ -66,62 +66,24 @@ export default class ShareWithForm extends React.Component {
   @observable userFind;
   @observable groupFind;
 
-  // lastFetchId = 0;
-
-  // findUser = (value) => {
-  //   this.lastFetchId += 1;
-  //   const fetchId = this.lastFetchId;
-  //   this.setState({
-  //     ownerInput: value,
-  //     owner: null,
-  //     fetching: true,
-  //     selectedUser: null
-  //   }, async () => {
-  //     const request = new UserFind(value);
-  //     await request.fetch();
-  //     if (fetchId === this.lastFetchId) {
-  //       let fetchedUsers = [];
-  //       if (!request.error) {
-  //         fetchedUsers = (request.value || []).map(u => u);
-  //       }
-  //       this.setState({
-  //         fetching: false,
-  //         fetchedUsers
-  //       });
-  //     }
-  //   });
-  // };
-
-  // onUserSelect = (key) => {
-  //   const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
-  //   if (user) {
-  //     this.setState({
-  //       ownerInput: user.userName,
-  //       owner: user.userName
-  //     });
-  //   }
-  // };
-
   onUserFindInputChanged = (value) => {
-    const trimmedValue = value ? value.trim() : null;
-    if (trimmedValue) {
-      this.userFind = new UserFind(trimmedValue);
+    if (value) {
+      this.userFind = new UserFind(value);
       this.userFind.fetch();
     } else {
       this.userFind = null;
     }
-    this.setState({userSearchString: trimmedValue});
+    this.setState({userSearchString: value});
   };
 
   onGroupFindInputChanged = (value) => {
-    const trimmedValue = value ? value.trim() : null;
-    if (trimmedValue) {
-      this.groupFind = new GroupFind(trimmedValue);
+    if (value) {
+      this.groupFind = new GroupFind(value);
       this.groupFind.fetch();
     } else {
       this.groupFind = null;
     }
-    this.setState({groupSearchString: trimmedValue});
+    this.setState({groupSearchString: value});
   };
 
   renderGroupAndUsersActions = () => {
@@ -182,7 +144,7 @@ export default class ShareWithForm extends React.Component {
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.state.userSearchString, true);
+    await this.grantPermission(this.state.userSearchString.trim(), true);
     this.closeFindUserDialog();
   };
 
@@ -197,8 +159,8 @@ export default class ShareWithForm extends React.Component {
   onSelectGroup = async () => {
     const {groupSearchString} = this.state;
     const [role] = this.props.roles
-      .filter(r => !r.predefined && this.splitRoleName(r.name) === groupSearchString);
-    const roleName = role ? role.name : groupSearchString;
+      .filter(r => !r.predefined && this.splitRoleName(r.name) === groupSearchString.trim());
+    const roleName = role ? role.name : groupSearchString.trim();
     await this.grantPermission(roleName, false);
     this.closeFindGroupDialog();
   };
