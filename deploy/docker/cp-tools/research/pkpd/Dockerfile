@@ -124,3 +124,10 @@ RUN yum install -y devtoolset-9-gcc-gfortran \
            mpilibpath=/usr/lib64/mpich/lib \n\
            mpilibname=libmpich.so' > $NONMEM_LOCATION_FILE && \
     sed -i 's/^ *//' $NONMEM_LOCATION_FILE
+
+
+ADD nonmem_run_sge.sh /opt/nonmem/
+
+RUN chmod +x $NONMEM_HOME/nonmem_run_sge.sh && \
+    chmod -R 777 $NONMEM_HOME && \
+    ln -s $NONMEM_HOME/nonmem_run_sge.sh /usr/bin/nonmem_run_sge
