@@ -25,7 +25,7 @@ import {observable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
 
-function  sortByOverlap(str1, str2, query) {
+function sortByOverlap (str1, str2, query) {
   if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
     return 1;
   }
@@ -96,7 +96,7 @@ export default class ShareWithForm extends React.Component {
     } else {
       this.groupFind = null;
     }
-    this.setState({groupSearchString: trimmedValue});
+    this.setState({groupSearchString: value});
   };
 
   renderGroupAndUsersActions = () => {
@@ -201,7 +201,7 @@ export default class ShareWithForm extends React.Component {
         this.setState({sids});
       }
     } else {
-      this.message.warning('Please provide non empty string!');
+      message.warning('Please provide non empty string!');
     }
   };
 
