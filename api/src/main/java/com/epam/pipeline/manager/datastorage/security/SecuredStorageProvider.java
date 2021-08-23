@@ -66,10 +66,9 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
 
     public DataStorageListing getItems(T storage, String path, Boolean showVersion,
                                        Integer pageSize, String marker) {
-        assertFolderReadAccess(storage, path);
         final DataStorageListing listing = provider.getItems(storage, path, showVersion, pageSize, marker);
         listing.setMask(permissionProviderManager.getMask(storage, path, StoragePermissionPathType.FOLDER));
-        listing.setResults(permissionProviderManager.process(storage, ListUtils.emptyIfNull(listing.getResults())));
+        listing.setResults(permissionProviderManager.process(storage, path, ListUtils.emptyIfNull(listing.getResults())));
         return listing;
     }
 

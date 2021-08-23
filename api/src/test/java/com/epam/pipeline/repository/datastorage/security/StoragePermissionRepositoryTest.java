@@ -1,16 +1,22 @@
 package com.epam.pipeline.repository.datastorage.security;
 
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.dto.datastorage.security.StorageKind;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageRoot;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntity;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionSidType;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +37,7 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     private static final String SID_NAME = "SID_NAME";
     private static final String ANOTHER_SID_NAME = "ANOTHER_SID_NAME";
     private static final StoragePermissionSidType SID_TYPE = StoragePermissionSidType.USER;
-    private static final int MASK = 1;
+    private static final int MASK = AclPermission.READ.getMask();
     private static final LocalDateTime CREATED = LocalDateTime.now();
 
     @Autowired
@@ -93,7 +99,7 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     public void loadAggregatedMaskShouldReturnEmptyOptionalIfPermissionsDoNotExist() {
         final DataStorageRoot root = createRoot();
 
-        final Optional<Integer> mask = repository.findAggregatedMask(root.getId(), PARENT_PATH, SID_NAME);
+        final Optional<Integer> mask = repository.findAggregatedMaskForUserWithoutGroups(root.getId(), PARENT_PATH, SID_NAME);
 
         assertFalse(mask.isPresent());
     }
@@ -103,7 +109,7 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
         final DataStorageRoot root = createRoot();
         create(permission(root));
 
-        final Optional<Integer> mask = repository.findAggregatedMask(root.getId(), PARENT_PATH, SID_NAME);
+        final Optional<Integer> mask = repository.findAggregatedMaskForUserWithoutGroups(root.getId(), PARENT_PATH, SID_NAME);
 
         assertTrue(mask.isPresent());
         assertThat(mask.get(), is(MASK));
@@ -114,10 +120,38 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
         final DataStorageRoot root = createRoot();
         create(permission(root).toBuilder().datastoragePath(PATH).build());
 
-        final Optional<Integer> mask = repository.findAggregatedMask(root.getId(), PARENT_PATH, SID_NAME);
+        final Optional<Integer> mask = repository.findAggregatedMaskForUserWithoutGroups(root.getId(), PARENT_PATH, SID_NAME);
 
         assertTrue(mask.isPresent());
         assertThat(mask.get(), is(MASK));
+    }
+
+    @Test
+    public void findReadAllowedStoragesShouldReturnReturnStorageWithChildPathReadPermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(PATH).build());
+
+        final List<StoragePermissionRepository.Storage> storages =
+                repository.findReadAllowedStorages(SID_NAME, Collections.singletonList(ANOTHER_SID_NAME));
+
+        assertThat(storages.size(), is(1));
+        assertThat(storages.get(0).getStorageId(), is(storage.getId()));
+        assertThat(storages.get(0).getStorageType(), is(StorageKind.DATA_STORAGE));
+    }
+
+    @Test
+    public void findReadAllowedDirectChildItemsShouldReturnReturnChildFolderWithChildPathReadPermission() {
+        final DataStorageRoot root = createRoot();
+        create(permission(root).toBuilder().datastoragePath(PATH).build());
+
+        final List<StoragePermissionRepository.StorageItem> items =
+                repository.findReadAllowedDirectChildItems(root.getId(), ROOT_PATH, SID_NAME,
+                        Collections.singletonList(ANOTHER_SID_NAME));
+
+        assertThat(items.size(), is(1));
+        assertThat(items.get(0).getStoragePath(), is(PARENT_PATH));
+        assertThat(items.get(0).getStoragePathType(), is(StoragePermissionPathType.FOLDER));
     }
 
     private void assertPermission(final DataStorageRoot root, final StoragePermissionEntity permission) {
@@ -142,9 +176,19 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     }
 
     private DataStorageRoot createRoot() {
-        dataStorageDao.createDataStorageRoot(PATH);
-        return dataStorageDao.loadDataStorageRoot(PATH)
+        dataStorageDao.createDataStorageRoot(ROOT_PATH);
+        return dataStorageDao.loadDataStorageRoot(ROOT_PATH)
                 .orElseThrow(() -> new IllegalArgumentException("Data storage root id was not found"));
+    }
+
+    private AbstractDataStorage createDataStorage() {
+        final S3bucketDataStorage storage = new S3bucketDataStorage();
+        storage.setName(ROOT_PATH);
+        storage.setPath(ROOT_PATH);
+        storage.setOwner(SID_NAME);
+        storage.setType(DataStorageType.S3);
+        dataStorageDao.createDataStorage(storage);
+        return storage;
     }
 
     private void create(final StoragePermissionEntity... entities) {
