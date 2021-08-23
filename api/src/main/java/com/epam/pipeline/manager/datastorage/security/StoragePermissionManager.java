@@ -5,10 +5,12 @@ import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.mapper.datastorage.security.StoragePermissionMapper;
 import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,12 +47,52 @@ public class StoragePermissionManager {
         }
     }
 
-    public Optional<Integer> loadAggregatedMask(final Long rootId,
+    public Optional<Integer> loadAggregatedMask(final Long root,
                                                 final String path,
                                                 final String user,
                                                 final List<String> groups) {
         return groups.isEmpty()
-                ? repository.findAggregatedMask(rootId, path, user)
-                : repository.findAggregatedMask(rootId, path, user, groups);
+                ? repository.findAggregatedMaskForUserWithoutGroups(root, path, user)
+                : repository.findAggregatedMask(root, path, user, groups);
+    }
+
+    public Set<StoragePermissionRepository.Storage> loadReadAllowedStorages(final String user,
+                                                                            final List<String> groups) {
+        return repository.findReadAllowedStorages(user, groups)
+                .stream()
+                .map(allowedStorage -> new StoragePermissionRepository.StorageImpl(
+                        allowedStorage.getStorageId(),
+                        allowedStorage.getStorageType()))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<StoragePermissionRepository.StorageItem> loadReadAllowedDirectChildItems(final Long root,
+                                                                                        final String path,
+                                                                                        final String user,
+                                                                                        final List<String> groups) {
+        if (StringUtils.isEmpty(path)) {
+            return repository.findReadAllowedRootDirectChildItems(root, user, groups)
+                    .stream()
+                    .map(allowedItem -> new StoragePermissionRepository.StorageItemImpl(
+                            allowedItem.getStoragePath(), allowedItem.getStoragePathType()))
+                    .collect(Collectors.toSet());
+        } else {
+            return repository.findReadAllowedDirectChildItems(root, path, user, groups)
+                    .stream()
+                    .map(allowedItem -> new StoragePermissionRepository.StorageItemImpl(
+                            allowedItem.getStoragePath(), allowedItem.getStoragePathType()))
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    public List<StoragePermissionRepository.StorageItemWithMask> loadDirectChildPermissions(final Long root,
+                                                                                            final String path,
+                                                                                            final String user,
+                                                                                            final List<String> groups) {
+        if (StringUtils.isEmpty(path)) {
+            return repository.findRootDirectChildPermissions(root, user, groups);
+        } else {
+            return repository.findDirectChildPermissions(root, path, user, groups);
+        }
     }
 }

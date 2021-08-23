@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import com.epam.pipeline.dto.datastorage.security.StorageKind;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -38,6 +39,7 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity implemen
     private String description;
     private String path;
     private DataStorageType type;
+    private StorageKind kind = StorageKind.DATA_STORAGE;
     private Long parentFolderId;
     private Folder parent;
     private StoragePolicy storagePolicy;

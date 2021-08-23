@@ -10,27 +10,34 @@ import com.epam.pipeline.dto.datastorage.security.StoragePermissionSidType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
+import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// TODO: 16.08.2021 Filter permissions mask by storage entity mask
 @Service
 @RequiredArgsConstructor
 public class StoragePermissionProviderManager {
 
     private final StoragePermissionManager storagePermissionManager;
     private final PermissionsService permissionsService;
+    private final GrantPermissionManager grantPermissionManager;
     private final AuthManager authManager;
 
     public boolean isReadAllowed(final SecuredStorageEntity storage,
@@ -118,22 +125,53 @@ public class StoragePermissionProviderManager {
     }
 
     public List<AbstractDataStorageItem> process(final SecuredStorageEntity storage,
+                                                 final String path,
                                                  final List<AbstractDataStorageItem> items) {
-        // TODO: 12.08.2021 Optimize multiple files processing
-        return items.stream()
-                .map(item -> process(storage, item))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
+        final PipelineUser user = authManager.getCurrentUser();
+        if (user == null) {
+            return Collections.emptyList();
+        }
+        if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
+            return items.stream()
+                    .map(item -> withMask(item, AbstractSecuredEntity.ALL_PERMISSIONS_MASK))
+                    .collect(Collectors.toList());
+        }
+        final List<String> groups = groupSids(user)
+                .map(StoragePermissionSid::getName)
                 .collect(Collectors.toList());
+        final Map<StoragePermissionRepository.StorageItemImpl, Integer> masksmap = storagePermissionManager
+                .loadDirectChildPermissions(storage.getRootId(), path, user.getUserName(), groups)
+                .stream()
+                .collect(Collectors.toMap(item -> new StoragePermissionRepository.StorageItemImpl(
+                        item.getDatastoragePath(), item.getDatastorageType()),
+                        StoragePermissionRepository.StorageItemWithMask::getMask));
+        final int mask = getExtendedMask(storage, path, StoragePermissionPathType.FOLDER);
+        if (isAllowed(mask, AclPermission.READ)) {
+            return items.stream()
+                    .map(item -> withMask(item, masksmap.getOrDefault(new StoragePermissionRepository.StorageItemImpl(
+                            item.getPath(), StoragePermissionPathType.from(item.getType())), mask)))
+                    .collect(Collectors.toList());
+        } else {
+            final Set<StoragePermissionRepository.StorageItem> readAllowedItems =
+                    storagePermissionManager.loadReadAllowedDirectChildItems(storage.getRootId(), absolutePath, user.getUserName(), groups);
+            if (readAllowedItems.isEmpty()) {
+                // TODO: 23.08.2021 Move this check to SecuredStorageProvider
+                throw new AccessDeniedException(String.format("No recursive read permissions for %s", path));
+            }
+            return items.stream()
+                    .filter(item -> readAllowedItems.contains(new StoragePermissionRepository.StorageItemImpl(item.getPath(),
+                            StoragePermissionPathType.from(item.getType()))))
+                    .map(item -> withMask(item, masksmap.getOrDefault(
+                            new StoragePermissionRepository.StorageItemImpl(
+                                    item.getPath(), StoragePermissionPathType.from(item.getType())), mask)
+                            | AclPermission.READ.getMask()))
+                    .collect(Collectors.toList());
+        }
     }
 
-    public Optional<AbstractDataStorageItem> process(final SecuredStorageEntity storage,
-                                                     final AbstractDataStorageItem item) {
-        return Optional.of(item).map(i -> withMask(storage, i));
-    }
-
-    private AbstractDataStorageItem withMask(final SecuredStorageEntity storage, final AbstractDataStorageItem item) {
-        item.setMask(getMask(storage, item));
+    private AbstractDataStorageItem withMask(final AbstractDataStorageItem item, final int mask) {
+        item.setMask(mask);
         return item;
     }
 
@@ -174,13 +212,13 @@ public class StoragePermissionProviderManager {
                 .filter(it -> Objects.equals(it.getPath(), absolutePath))
                 .collect(Collectors.toList());
         return directPermissions.isEmpty()
-                ? getExtendedMask(applicablePermissions)
-                : getExtendedMask(directPermissions);
+                ? getExtendedMask(storage, applicablePermissions)
+                : getExtendedMask(storage, directPermissions);
     }
 
-    private int getExtendedMask(final List<StoragePermission> permissions) {
+    private int getExtendedMask(final SecuredStorageEntity storage, final List<StoragePermission> permissions) {
         return permissions.isEmpty()
-                ? AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL
+                ? grantPermissionManager.getPermissionsMask((AbstractSecuredEntity) storage, false, true)
                 : getMergedUserPrioritisedMask(permissions);
     }
 

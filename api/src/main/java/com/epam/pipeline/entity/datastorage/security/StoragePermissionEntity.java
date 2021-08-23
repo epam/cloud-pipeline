@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
         @TypeDef(name = "StoragePermissionSidTypeUserType",
                 typeClass = StoragePermissionSidTypeUserType.class),
 })
+// TODO: 19.08.2021 Rename fields to from datastorageSomething to storageSomething
 public class StoragePermissionEntity {
 
     @Id
@@ -43,6 +44,7 @@ public class StoragePermissionEntity {
 
     @Id
     @Type(type = "StoragePermissionPathTypeUserType")
+    // TODO: 19.08.2021 Rename to storage path type
     private StoragePermissionPathType datastorageType;
 
     @Id

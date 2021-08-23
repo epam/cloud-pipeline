@@ -24,9 +24,12 @@ import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.dto.datastorage.security.StorageKind;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionSid;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -52,10 +55,12 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.issue.IssueManager;
@@ -70,6 +75,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
+import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -190,6 +196,8 @@ public class GrantPermissionManager {
     @Autowired private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
 
     @Autowired private MetadataPermissionManager metadataPermissionManager;
+
+    @Autowired private StoragePermissionManager storagePermissionManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -424,7 +432,23 @@ public class GrantPermissionManager {
         if (isAdmin(sids)) {
             return;
         }
-        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids);
+        final PipelineUser user = authManager.getCurrentUser();
+        final List<String> groups = groupSids(user)
+                .map(StoragePermissionSid::getName)
+                .collect(toList());
+        final Set<StoragePermissionRepository.Storage> readAllowedStorages = storagePermissionManager
+                .loadReadAllowedStorages(user.getUserName(), groups);
+        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids, readAllowedStorages);
+    }
+
+    private Stream<StoragePermissionSid> groupSids(final PipelineUser user) {
+        return Optional.of(user)
+                .map(PipelineUser::getRoles)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .map(Role::getName)
+                .filter(Objects::nonNull)
+                .map(StoragePermissionSid::group);
     }
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
@@ -445,7 +469,22 @@ public class GrantPermissionManager {
         if (permissionName.equals(OWNER)) {
             return isOwnerOrAdmin(storage.getOwner());
         } else {
-            return permissionsHelper.isAllowed(permissionName, storage);
+            if (permissionsHelper.isAllowed(permissionName, storage)) {
+                return true;
+            } else {
+                if (!permissionName.equals(AclPermission.READ_NAME)) {
+                    return false;
+                }
+                // TODO: 20.08.2021 Use single storage request here
+                final PipelineUser user = authManager.getCurrentUser();
+                final List<String> groups = groupSids(user)
+                        .map(StoragePermissionSid::getName)
+                        .collect(toList());
+                final Set<StoragePermissionRepository.Storage> readAllowedStorages = storagePermissionManager
+                        .loadReadAllowedStorages(user.getUserName(), groups);
+                return readAllowedStorages.contains(new StoragePermissionRepository.StorageImpl(
+                        storageId, StorageKind.DATA_STORAGE));
+            }
         }
     }
 
@@ -944,16 +983,17 @@ public class GrantPermissionManager {
     }
 
     private void processHierarchicalEntity(int parentMask, AbstractHierarchicalEntity entity,
-            Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, boolean root,
-            List<Sid> sids) {
+                                           Map<AclClass, Set<Long>> entitiesToRemove, Permission permission,
+                                           boolean root, List<Sid> sids,
+                                           final Set<StoragePermissionRepository.Storage> readAllowedStorages) {
         int defaultMask = 0;
         int currentMask = entity.getId() != null ?
                 permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids),
                         parentMask) : defaultMask;
         entity.getChildren().forEach(
             leaf -> processHierarchicalEntity(currentMask, leaf, entitiesToRemove, permission,
-                        false, sids));
-        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids);
+                        false, sids, readAllowedStorages));
+        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids, readAllowedStorages);
         entity.filterLeaves(entitiesToRemove);
         entity.filterChildren(entitiesToRemove);
         boolean permissionGranted = permissionsService.isPermissionGranted(currentMask, permission);
@@ -972,11 +1012,23 @@ public class GrantPermissionManager {
     }
 
     private void filterChildren(int parentMask, List<? extends AbstractSecuredEntity> children,
-            Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids) {
+                                Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids,
+                                final Set<StoragePermissionRepository.Storage> readAllowedStorages) {
         ListUtils.emptyIfNull(children).forEach(child -> {
             int mask = permissionsService
                     .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
+                if (permission == AclPermission.READ && child instanceof SecuredStorageEntity) {
+                    mask |= readAllowedStorages.contains(
+                            new StoragePermissionRepository.StorageImpl(child.getId(),
+                                    ((SecuredStorageEntity) child).getKind()))
+                            ? AclPermission.READ.getMask()
+                            : 0;
+                    if (permissionsService.isPermissionGranted(mask, permission)) {
+                        child.setMask(permissionsService.mergeMask(mask));
+                        return;
+                    }
+                }
                 entitiesToRemove.putIfAbsent(child.getAclClass(), new HashSet<>());
                 entitiesToRemove.get(child.getAclClass()).add(child.getId());
             }
