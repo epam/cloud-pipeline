@@ -142,8 +142,9 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
         wait_for_run_initialized(run_id, MAX_REPETITIONS)
         wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
         logging.info("Pipeline %s has initialized successfully." % run_id)
-    except RuntimeError as e:
+    except BaseException as e:
         stop_pipe_with_retry(run_id)
+        raise e
     return run_id, node_name
 
 
