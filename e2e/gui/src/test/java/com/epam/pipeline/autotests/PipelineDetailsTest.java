@@ -296,6 +296,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     private void runPipeline(String pipelineName, PipelineDetailsTest pipelineDetailsTest) {
         library()
                 .clickOnPipeline(pipelineName)
+                .sleep(2, SECONDS)
                 .firstVersion()
                 .runPipeline()
                 .launch(pipelineDetailsTest);

@@ -199,6 +199,19 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  @computed
+  get groupsUIPreferences () {
+    const value = this.getPreferenceValue('misc.groups.ui.preferences');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.groups.ui.preferences" preference:', e);
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

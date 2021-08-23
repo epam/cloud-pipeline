@@ -96,7 +96,7 @@ export default class ShareWithForm extends React.Component {
     } else {
       this.groupFind = null;
     }
-    this.setState({groupSearchString: value});
+    this.setState({groupSearchString: trimmedValue});
   };
 
   renderGroupAndUsersActions = () => {

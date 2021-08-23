@@ -110,7 +110,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .closest(".launch-pipeline-form__form-item")
                 .find(className("ant-select-selection"))
                 .shouldBe(visible)
-                .doubleClick();
+                .click();
 
         $(byClassName("ant-select-dropdown-menu"))
                 .findAll(byClassName("ant-select-dropdown-menu-item"))

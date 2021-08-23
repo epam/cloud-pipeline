@@ -196,6 +196,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO createAndEditFile(String fileName, String fileText) {
         return createFile(fileName)
+                .sleep(1, SECONDS)
                 .fileMetadata(fileName)
                 .fullScreen()
                 .editFileWithText(fileText);
