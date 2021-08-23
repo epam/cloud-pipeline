@@ -897,9 +897,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> MISC_METADATA_MANDATORY_KEYS = new ObjectPreference<>(
             "misc.metadata.mandatory.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
-    public static final ObjectPreference<List<String>> MISC_GROUPS_UI_PREF = new ObjectPreference<>(
-            "misc.groups.ui.preferences", null, new TypeReference<List<String>>() {}, MISC_GROUP,
-            isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<Map<String, Object>> MISC_GROUPS_UI_PREF = new ObjectPreference<>(
+            "misc.groups.ui.preferences", null, new TypeReference<Map<String, Object>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
