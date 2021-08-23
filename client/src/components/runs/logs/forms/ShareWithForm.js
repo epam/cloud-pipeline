@@ -25,6 +25,21 @@ import {observable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
 
+function  sortByOverlap(str1, str2, query) {
+  if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
+    return 1;
+  }
+  if (str2.toLowerCase().indexOf(query) > str1.toLowerCase().indexOf(query)) {
+    return -1;
+  }
+  if (
+    str2.toLowerCase().indexOf(query) === str1.toLowerCase().indexOf(query) &&
+    str1.toLowerCase().indexOf(query) >= 0
+  ) {
+    return str1.toLowerCase() > str2.toLowerCase() ? 1 : -1;
+  }
+  return 0;
+}
 @observer
 export default class ShareWithForm extends React.Component {
   static propTypes = {
@@ -61,62 +76,22 @@ export default class ShareWithForm extends React.Component {
     });
   };
 
-  showWarningMessage = (msg) => message.warning(msg);
-
   @observable userFind;
   @observable groupFind;
 
-  // lastFetchId = 0;
-
-  // findUser = (value) => {
-  //   this.lastFetchId += 1;
-  //   const fetchId = this.lastFetchId;
-  //   this.setState({
-  //     ownerInput: value,
-  //     owner: null,
-  //     fetching: true,
-  //     selectedUser: null
-  //   }, async () => {
-  //     const request = new UserFind(value);
-  //     await request.fetch();
-  //     if (fetchId === this.lastFetchId) {
-  //       let fetchedUsers = [];
-  //       if (!request.error) {
-  //         fetchedUsers = (request.value || []).map(u => u);
-  //       }
-  //       this.setState({
-  //         fetching: false,
-  //         fetchedUsers
-  //       });
-  //     }
-  //   });
-  // };
-
-  // onUserSelect = (key) => {
-  //   const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
-  //   if (user) {
-  //     this.setState({
-  //       ownerInput: user.userName,
-  //       owner: user.userName
-  //     });
-  //   }
-  // };
-
   onUserFindInputChanged = (value) => {
-    const trimmedValue = value ? value.trim() : null;
-    if (trimmedValue) {
-      this.userFind = new UserFind(trimmedValue);
+    if (value) {
+      this.userFind = new UserFind(value);
       this.userFind.fetch();
     } else {
       this.userFind = null;
     }
-    this.setState({userSearchString: trimmedValue});
+    this.setState({userSearchString: value});
   };
 
   onGroupFindInputChanged = (value) => {
-    const trimmedValue = value ? value.trim() : null;
-    if (trimmedValue) {
-      this.groupFind = new GroupFind(trimmedValue);
+    if (value) {
+      this.groupFind = new GroupFind(value);
       this.groupFind.fetch();
     } else {
       this.groupFind = null;
@@ -139,7 +114,11 @@ export default class ShareWithForm extends React.Component {
 
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      return (this.userFind.value || []).map(user => user).sort();
+      return (this.userFind.value || []).map(user => user)
+        .sort((u1, u2) => {
+          const query = this.state.userSearchString?.toLowerCase().trim();
+          return sortByOverlap(u1.userName, u2.userName, query);
+        });
     }
     return [];
   };
@@ -152,13 +131,14 @@ export default class ShareWithForm extends React.Component {
   };
 
   findGroupDataSource = () => {
+    const query = this.state.groupSearchString?.toLowerCase().trim();
     const roles = this.state.groupSearchString
       ? (
         this.props.roles
           .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
           .filter(name => name.toLowerCase()
             .indexOf(this.state.groupSearchString.toLowerCase()) >= 0
-          ).sort()
+          )
       )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
@@ -168,9 +148,9 @@ export default class ShareWithForm extends React.Component {
             ...roles,
             ...(this.groupFind.value || []).map(g => g)]
         )
-      ].sort();
+      ].sort((u1, u2) => sortByOverlap(u1, u2, query));
     }
-    return [...roles];
+    return [...roles].sort((u1, u2) => sortByOverlap(u1, u2, query));
   };
 
   openFindUserDialog = () => {
@@ -182,7 +162,9 @@ export default class ShareWithForm extends React.Component {
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.state.userSearchString, true);
+    const {userSearchString} = this.state;
+    const selectedUser = userSearchString ? userSearchString.trim() : null;
+    await this.grantPermission(selectedUser, true);
     this.closeFindUserDialog();
   };
 
@@ -196,9 +178,10 @@ export default class ShareWithForm extends React.Component {
 
   onSelectGroup = async () => {
     const {groupSearchString} = this.state;
+    const selectedGroup = groupSearchString ? groupSearchString.trim() : null;
     const [role] = this.props.roles
-      .filter(r => !r.predefined && this.splitRoleName(r.name) === groupSearchString);
-    const roleName = role ? role.name : groupSearchString;
+      .filter(r => !r.predefined && this.splitRoleName(r.name) === selectedGroup);
+    const roleName = role ? role.name : selectedGroup;
     await this.grantPermission(roleName, false);
     this.closeFindGroupDialog();
   };
@@ -218,7 +201,7 @@ export default class ShareWithForm extends React.Component {
         this.setState({sids});
       }
     } else {
-      this.showWarningMessage('Please provide non empty string!');
+      this.message.warning('Please provide non empty string!');
     }
   };
 
