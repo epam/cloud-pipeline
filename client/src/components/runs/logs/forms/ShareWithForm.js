@@ -25,6 +25,21 @@ import {observable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
 
+function  sortByOverlap(str1, str2, query) {
+  if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
+    return 1;
+  }
+  if (str2.toLowerCase().indexOf(query) > str1.toLowerCase().indexOf(query)) {
+    return -1;
+  }
+  if (
+    str2.toLowerCase().indexOf(query) === str1.toLowerCase().indexOf(query) &&
+    str1.toLowerCase().indexOf(query) >= 0
+  ) {
+    return str1.toLowerCase() > str2.toLowerCase() ? 1 : -1;
+  }
+  return 0;
+}
 @observer
 export default class ShareWithForm extends React.Component {
   static propTypes = {
@@ -96,27 +111,13 @@ export default class ShareWithForm extends React.Component {
       </span>
     );
   };
- sortByOverlap = (str1, str2, query) => {
-   if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
-     return 1;
-   }
-   if (str2.toLowerCase().indexOf(query) > str1.toLowerCase().indexOf(query)) {
-     return -1;
-   }
-   if (
-     str2.toLowerCase().indexOf(query) === str1.toLowerCase().indexOf(query) &&
-     str1.toLowerCase().indexOf(query) >= 0
-   ) {
-     return str1.toLowerCase() > str2.toLowerCase() ? 1 : -1;
-   }
-   return 0;
- }
+
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
       return (this.userFind.value || []).map(user => user)
         .sort((u1, u2) => {
           const query = this.state.userSearchString?.toLowerCase().trim();
-          return this.sortByOverlap(u1.userName, u2.userName, query);
+          return sortByOverlap(u1.userName, u2.userName, query);
         });
     }
     return [];
@@ -147,9 +148,9 @@ export default class ShareWithForm extends React.Component {
             ...roles,
             ...(this.groupFind.value || []).map(g => g)]
         )
-      ].sort((u1, u2) => this.sortByOverlap(u1, u2, query));
+      ].sort((u1, u2) => sortByOverlap(u1, u2, query));
     }
-    return [...roles].sort((u1, u2) => this.sortByOverlap(u1, u2, query));
+    return [...roles].sort((u1, u2) => sortByOverlap(u1, u2, query));
   };
 
   openFindUserDialog = () => {
@@ -161,7 +162,9 @@ export default class ShareWithForm extends React.Component {
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.state.userSearchString.trim(), true);
+    const {userSearchString} = this.state;
+    const selectedUser = userSearchString ? userSearchString.trim() : null;
+    await this.grantPermission(selectedUser, true);
     this.closeFindUserDialog();
   };
 
@@ -175,9 +178,10 @@ export default class ShareWithForm extends React.Component {
 
   onSelectGroup = async () => {
     const {groupSearchString} = this.state;
+    const selectedGroup = groupSearchString ? groupSearchString.trim() : null;
     const [role] = this.props.roles
-      .filter(r => !r.predefined && this.splitRoleName(r.name) === groupSearchString.trim());
-    const roleName = role ? role.name : groupSearchString.trim();
+      .filter(r => !r.predefined && this.splitRoleName(r.name) === selectedGroup);
+    const roleName = role ? role.name : selectedGroup;
     await this.grantPermission(roleName, false);
     this.closeFindGroupDialog();
   };
