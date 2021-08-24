@@ -1,0 +1,126 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  cursor: pointer;
+}
+
+.container:hover {
+  text-decoration: underline;
+}
+
+.notification {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  padding: 2px;
+}
+
+.notification:nth-child(4n+3),
+.notification:nth-child(4n) {
+  background-color: #fafafa;
+}
+
+.notification .label,
+.notification .input,
+.notification .select {
+  margin-right: 5px;
+}
+
+.notification .input {
+  width: 100px;
+}
+
+.notification .select {
+  min-width: 80px;
+}
+
+.notification.error .label.error {
+  color: red;
+}
+
+.notification.error .input.error,
+.notification.error .select.error > div {
+  border-color: red;
+}
+
+.notification-error {
+  color: red;
+  display: none;
+  line-height: 1em;
+  margin: -5px 0 5px;
+}
+
+.notification-error.visible {
+  display: flex;
+  align-items: center;
+}
+
+.notification-error .error-description {
+  font-size: 0.85em;
+}
+
+.notification-error.visible .error-description:not(:last-child)::after {
+  content: ',';
+  margin-right: 5px;
+}
+
+.actions,
+.footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.actions {
+  margin-top: 5px;
+}
+
+.users-roles-select {
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #fafafa;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.users-roles-select .label {
+  margin-right: 5px;
+}
+
+.users-roles-select .selector.error > div {
+  border-color: red;
+}
+
+.users-roles-select.error {
+  padding-bottom: 15px;
+  margin-bottom: 0;
+}
+
+.users-roles-select-error {
+  color: red;
+  display: none;
+  line-height: 1em;
+  font-size: 0.85em;
+  margin: -15px 0 10px;
+  padding-left: 65px;
+}
+
+.users-roles-select-error.visible {
+  display: flex;
+}
