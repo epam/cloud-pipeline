@@ -473,6 +473,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+    public static final StringPreference WINDOWS_USER_GROUPS = new StringPreference(
+        "launch.win.user.groups", "Users", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
      * from run container.
