@@ -104,7 +104,8 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     public void loadAggregatedMaskShouldReturnEmptyOptionalIfPermissionsDoNotExist() {
         final DataStorageRoot root = createRoot();
 
-        final Optional<Integer> mask = repository.findAggregatedMaskForUserWithoutGroups(root.getId(), PARENT_PATH, SID_NAME);
+        final Optional<Integer> mask = repository.findAggregatedMask(root.getId(), PARENT_PATH, SID_NAME,
+                Collections.singletonList(ANOTHER_SID_NAME));
 
         assertFalse(mask.isPresent());
     }
@@ -114,7 +115,8 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
         final DataStorageRoot root = createRoot();
         create(permission(root));
 
-        final Optional<Integer> mask = repository.findAggregatedMaskForUserWithoutGroups(root.getId(), PARENT_PATH, SID_NAME);
+        final Optional<Integer> mask = repository.findAggregatedMask(root.getId(), PARENT_PATH, SID_NAME,
+                Collections.singletonList(ANOTHER_SID_NAME));
 
         assertTrue(mask.isPresent());
         assertThat(mask.get(), is(MASK));
@@ -125,7 +127,8 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
         final DataStorageRoot root = createRoot();
         create(permission(root).toBuilder().datastoragePath(PATH).build());
 
-        final Optional<Integer> mask = repository.findAggregatedMaskForUserWithoutGroups(root.getId(), PARENT_PATH, SID_NAME);
+        final Optional<Integer> mask = repository.findAggregatedMask(root.getId(), PARENT_PATH, SID_NAME,
+                Collections.singletonList(ANOTHER_SID_NAME));
 
         assertTrue(mask.isPresent());
         assertThat(mask.get(), is(MASK));

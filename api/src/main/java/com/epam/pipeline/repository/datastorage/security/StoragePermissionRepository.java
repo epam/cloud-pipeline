@@ -1,7 +1,7 @@
 package com.epam.pipeline.repository.datastorage.security;
 
-import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.dto.datastorage.security.StorageKind;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntity;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntityId;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionPathTypeUserType;
@@ -69,11 +69,6 @@ public interface StoragePermissionRepository
                                          @Param("user_sid_name") String user,
                                          @Param("group_sid_names") List<String> groups);
 
-    @Query(name = "StoragePermissionRepository.findAggregatedMaskForUserWithoutGroups", nativeQuery = true)
-    Optional<Integer> findAggregatedMaskForUserWithoutGroups(@Param("datastorage_root_id") Long root,
-                                                             @Param("datastorage_path") String path,
-                                                             @Param("user_sid_name") String user);
-
     // returns storage_id, storage_type for with at least single storage path read permission
     // which can be used later on to filter storages in library tree listings.
     @Query(name = "StoragePermissionRepository.findReadAllowedStorages", nativeQuery = true)
@@ -115,24 +110,6 @@ public interface StoragePermissionRepository
     class StorageItemImpl implements StorageItem {
         String storagePath;
         StoragePermissionPathType storagePathType;
-    }
-
-    @TypeDef(name = "StoragePermissionPathTypeUserType", typeClass = StoragePermissionPathTypeUserType.class)
-    interface StorageItemWithMask {
-
-        String getDatastoragePath();
-
-        @Type(type = "StoragePermissionPathTypeUserType")
-        StoragePermissionPathType getDatastorageType();
-
-        int getMask();
-    }
-
-    @Value
-    class StorageItemWithMaskImpl implements StorageItemWithMask {
-        String datastoragePath;
-        StoragePermissionPathType datastorageType;
-        int mask;
     }
 
 }
