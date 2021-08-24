@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -51,7 +52,7 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
         final DataStorageRoot root = createRoot();
         create(permission(root));
 
-        final List<StoragePermissionEntity> permissions = findExactOrParentPermissions(root);
+        final List<StoragePermissionEntity> permissions = findPermissions(root);
 
         assertThat(permissions.size(), is(1));
         assertPermission(root, permissions.get(0));
@@ -61,9 +62,10 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     public void findPermissionsShouldReturnExactPermissionsForAllSids() {
         final DataStorageRoot root = createRoot();
         create(permission(root).toBuilder().sidName(SID_NAME).build(),
-                permission(root).toBuilder().sidName(ANOTHER_SID_NAME).build());
+                permission(root).toBuilder().sidName(ANOTHER_SID_NAME)
+                        .sidType(StoragePermissionSidType.GROUP).build());
 
-        final List<StoragePermissionEntity> permissions = sortedBySid(findExactOrParentPermissions(root));
+        final List<StoragePermissionEntity> permissions = sortedBySid(findPermissions(root));
 
         assertThat(permissions.size(), is(2));
         assertThat(permissions.get(0).getSidName(), is(ANOTHER_SID_NAME));
@@ -71,23 +73,26 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     }
 
     @Test
-    public void findPermissionsShouldReturnParentPermissionsIfExactPermissionsDoNotExist() {
+    public void findPermissionsShouldReturnParentPermissions() {
         final DataStorageRoot root = createRoot();
         create(permission(root).toBuilder().datastoragePath(PARENT_PATH).build());
 
-        final List<StoragePermissionEntity> permissions = findExactOrParentPermissions(root);
+        final List<StoragePermissionEntity> permissions = findPermissions(root);
 
         assertThat(permissions.size(), is(1));
         assertThat(permissions.get(0).getDatastoragePath(), is(PARENT_PATH));
     }
 
     @Test
-    public void findPermissionsShouldReturnParentPermissionsForAllSidsIfExactPermissionsDoNotExist() {
+    public void findPermissionsShouldReturnParentPermissionsForAllSids() {
         final DataStorageRoot root = createRoot();
-        create(permission(root).toBuilder().datastoragePath(PARENT_PATH).sidName(SID_NAME).build(),
-                permission(root).toBuilder().datastoragePath(PARENT_PATH).sidName(ANOTHER_SID_NAME).build());
+        create(permission(root).toBuilder().datastoragePath(PARENT_PATH)
+                        .sidName(SID_NAME).build(),
+                permission(root).toBuilder().datastoragePath(PARENT_PATH)
+                        .sidName(ANOTHER_SID_NAME)
+                        .sidType(StoragePermissionSidType.GROUP).build());
 
-        final List<StoragePermissionEntity> dataStoragePermissionEntities = findExactOrParentPermissions(root);
+        final List<StoragePermissionEntity> dataStoragePermissionEntities = findPermissions(root);
         final List<StoragePermissionEntity> permissions = sortedBySid(dataStoragePermissionEntities);
 
         assertThat(permissions.size(), is(2));
@@ -171,8 +176,9 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
                 .collect(Collectors.toList());
     }
 
-    private List<StoragePermissionEntity> findExactOrParentPermissions(final DataStorageRoot root) {
-        return repository.findExactOrParentPermissions(root.getId(), PATH, TYPE.name().toUpperCase());
+    private List<StoragePermissionEntity> findPermissions(final DataStorageRoot root) {
+        return repository.findPermissions(root.getId(), PATH, TYPE.name().toUpperCase(),
+                Arrays.asList(ROOT_PATH, PARENT_PATH), SID_NAME, Collections.singletonList(ANOTHER_SID_NAME));
     }
 
     private DataStorageRoot createRoot() {

@@ -18,25 +18,20 @@ import javax.persistence.Enumerated;
 import java.util.List;
 import java.util.Optional;
 
-// TODO: 18.08.2021 Extract sql queries to resources
 public interface StoragePermissionRepository
         extends CrudRepository<StoragePermissionEntity, StoragePermissionEntityId> {
 
-    // TODO: 16.08.2021 Filter by target sids
-    @Query(name = "StoragePermissionRepository.findExactOrParentPermissions", nativeQuery = true)
-    List<StoragePermissionEntity> findExactOrParentPermissions(
-            @Param("datastorage_root_id") Long root,
-            @Param("datastorage_path") String path,
-            @Param("datastorage_type") String type);
+    @Query(name = "StoragePermissionRepository.findPermissions", nativeQuery = true)
+    List<StoragePermissionEntity> findPermissions(@Param("datastorage_root_id") Long root,
+                                                  @Param("datastorage_path") String path,
+                                                  @Param("datastorage_type") String type,
+                                                  @Param("datastorage_parent_paths") List<String> parentPaths,
+                                                  @Param("user_sid_name") String user,
+                                                  @Param("group_sid_names") List<String> groups);
 
     @Query(name = "StoragePermissionRepository.findDirectChildPermissions", nativeQuery = true)
-    List<StorageItemWithMask> findDirectChildPermissions(@Param("datastorage_root_id") Long root,
-                                                         @Param("datastorage_path") String path,
-                                                         @Param("user_sid_name") String user,
-                                                         @Param("group_sid_names") List<String> groups);
-
-    @Query(name = "StoragePermissionRepository.findRootDirectChildPermissions", nativeQuery = true)
-    List<StorageItemWithMask> findRootDirectChildPermissions(@Param("datastorage_root_id") Long root,
+    List<StoragePermissionEntity> findDirectChildPermissions(@Param("datastorage_root_id") Long root,
+                                                             @Param("datastorage_path") String path,
                                                              @Param("user_sid_name") String user,
                                                              @Param("group_sid_names") List<String> groups);
 
@@ -82,25 +77,16 @@ public interface StoragePermissionRepository
     // returns storage_id, storage_type for with at least single storage path read permission
     // which can be used later on to filter storages in library tree listings.
     @Query(name = "StoragePermissionRepository.findReadAllowedStorages", nativeQuery = true)
-    List<Storage> findReadAllowedStorages(
-            @Param("user_sid_name") String user,
-            @Param("group_sid_names") List<String> groups);
+    List<Storage> findReadAllowedStorages(@Param("user_sid_name") String user,
+                                          @Param("group_sid_names") List<String> groups);
 
     // returns storage_path, storage_path_type for storage paths with at least single read permission under the given path
     // which can be used later on to filter items in storage path listings.
     @Query(name = "StoragePermissionRepository.findReadAllowedDirectChildItems", nativeQuery = true)
-    List<StorageItem> findReadAllowedDirectChildItems(
-            @Param("datastorage_root_id") Long root,
-            @Param("datastorage_path") String path,
-            @Param("user_sid_name") String user,
-            @Param("group_sid_names") List<String> groups);
-
-    @Query(name = "StoragePermissionRepository.findReadAllowedRootDirectChildItems", nativeQuery = true)
-    List<StorageItem> findReadAllowedRootDirectChildItems(
-            @Param("datastorage_root_id") Long root,
-            @Param("user_sid_name") String user,
-            @Param("group_sid_names") List<String> groups
-    );
+    List<StorageItem> findReadAllowedDirectChildItems(@Param("datastorage_root_id") Long root,
+                                                      @Param("datastorage_path") String path,
+                                                      @Param("user_sid_name") String user,
+                                                      @Param("group_sid_names") List<String> groups);
 
     interface Storage {
 

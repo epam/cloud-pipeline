@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+// TODO: 24.08.2021 Require only read permissions for data storage content operations
 @Service
 @RequiredArgsConstructor
 public class DataStorageApiService {
