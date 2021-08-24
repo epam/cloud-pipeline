@@ -18,21 +18,24 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Row, Tooltip} from 'antd';
+import {Icon, Row, Tooltip} from 'antd';
 
-@inject('users')
+@inject('usersInfo')
 @observer
 export default class UserName extends React.Component {
 
   static propTypes = {
-    userName: PropTypes.string
+    className: PropTypes.string,
+    userName: PropTypes.string,
+    style: PropTypes.object,
+    showIcon: PropTypes.bool
   };
 
   @computed
   get user () {
-    if (this.props.users.loaded && this.props.userName) {
-      const [user] = (this.props.users.value || [])
-        .filter(u => u.userName.toLowerCase() === this.props.userName.toLowerCase());
+    if (this.props.usersInfo.loaded && this.props.userName) {
+      const [user] = (this.props.usersInfo.value || [])
+        .filter(u => u.name.toLowerCase() === this.props.userName.toLowerCase());
       return user;
     }
     return null;
@@ -52,12 +55,12 @@ export default class UserName extends React.Component {
       const attributesString = getAttributesValues().join(', ');
       return (
         <Row type="flex" style={{flexDirection: 'column'}}>
-          <Row>{(user.userName || '').toLowerCase()}</Row>
+          <Row>{(user.name || '').toLowerCase()}</Row>
           <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
         </Row>
       );
     } else {
-      return (user.userName || '').toLowerCase();
+      return (user.name || '').toLowerCase();
     }
   };
 
@@ -65,21 +68,38 @@ export default class UserName extends React.Component {
     if (user.attributes && user.attributes.Name) {
       return <span>{user.attributes.Name}</span>;
     } else {
-      return <span>{(user.userName || '').toLowerCase()}</span>;
+      return <span>{(user.name || '').toLowerCase()}</span>;
     }
   };
 
   render () {
+    const {
+      className,
+      showIcon,
+      style = {}
+    } = this.props;
     if (this.user) {
       return (
         <Tooltip overlay={this.renderUserAttributes(this.user)}>
-          <span style={{cursor: 'default'}}>
+          <span
+            className={className}
+            style={{cursor: 'default'}}
+          >
+            {showIcon && <Icon type="user" />}
             {this.renderUserName(this.user)}
           </span>
         </Tooltip>
       );
     }
-    return <span>{(this.props.userName || '').toLowerCase()}</span>;
+    return (
+      <span
+        className={className}
+        style={Object.assign({cursor: 'default'}, style)}
+      >
+        {showIcon && <Icon type="user" />}
+        {(this.props.userName || '').toLowerCase()}
+      </span>
+    );
   }
 
 }

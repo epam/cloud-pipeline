@@ -77,6 +77,8 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
+import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
+  from '../../special/metadata/special/fs-notifications';
 
 const PAGE_SIZE = 40;
 
@@ -1609,6 +1611,11 @@ export default class DataStorage extends React.Component {
                   : undefined
               }
               fileIsEmpty={this.isFileSelectedEmpty}
+              extraKeys={
+                this.props.info.value.type === 'NFS'
+                  ? [FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE]
+                  : []
+              }
             />
           }
         </ContentMetadataPanel>
