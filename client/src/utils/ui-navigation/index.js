@@ -87,32 +87,32 @@ function joinAttributes (values, options) {
   (values || [])
     .forEach((data) => {
       const {
-        pages: rolesPages,
-        dashboard: rolesDashboard,
-        homePage: rolesHomePage,
-        searchDocumentTypes: rolesSearchDocumentTypes
+        pages: parsedPages,
+        dashboard: parsedDashboard,
+        homePage: parsedHomePage,
+        searchDocumentTypes: parsedSearchDocumentTypes
       } = parseAttributes(
         data,
         options
       );
-      if (rolesPages && rolesPages.length) {
+      if (parsedPages && parsedPages.length) {
         const current = new Set(pages);
         pages = [];
-        rolesPages
+        parsedPages
           .forEach(page => {
-            if (current.length === 0 || current.has(page)) {
+            if (current.size === 0 || current.has(page)) {
               pages.push(page);
             }
           });
       }
-      if (rolesDashboard && !dashboard) {
-        dashboard = rolesDashboard;
+      if (parsedDashboard && !dashboard) {
+        dashboard = parsedDashboard;
       }
-      if (rolesHomePage && !homePage) {
-        homePage = rolesHomePage;
+      if (parsedHomePage && !homePage) {
+        homePage = parsedHomePage;
       }
-      if (rolesSearchDocumentTypes && !searchDocumentTypes) {
-        searchDocumentTypes = rolesSearchDocumentTypes;
+      if (parsedSearchDocumentTypes && !searchDocumentTypes) {
+        searchDocumentTypes = parsedSearchDocumentTypes;
       }
     });
   if (pages && pages.length === 0) {
@@ -127,9 +127,6 @@ function joinAttributes (values, options) {
 }
 
 function fetchRolesAttributes (roles, options = {}) {
-  if (!Object.values(options || {}).some(o => !o)) {
-    return Promise.resolve(options);
-  }
   return new Promise((resolve) => {
     const request = new MetadataMultiLoad(
       roles.map(role => ({entityId: role.id, entityClass: ROLE_CLASS}))
@@ -152,9 +149,6 @@ function fetchRolesAttributes (roles, options = {}) {
 }
 
 function fetchGroupsAttributes (preferences, groups, options = {}) {
-  if (!Object.values(options || {}).some(o => !o)) {
-    return Promise.resolve(options);
-  }
   return new Promise((resolve) => {
     preferences.fetchIfNeededOrWait()
       .then(() => {
