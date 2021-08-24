@@ -170,6 +170,19 @@ public class PermissionsService {
         return resultMask;
     }
 
+    public int mergeItemMask(int currentMask, int mergingMask) {
+        int resultMask = currentMask;
+        for (AclPermission p: AclPermission.getBasicPermissions()) {
+            if (!isPermissionSet(resultMask, p)) {
+                resultMask |= mergingMask & p.getMask();
+                if (!isPermissionSet(resultMask, p)) {
+                    resultMask |= mergingMask & p.getDenyPermission().getMask();
+                }
+            }
+        }
+        return resultMask;
+    }
+
     public boolean isPermissionGranted(int mask, Permission permission) {
         return isMaskBitSet(mask, permission.getMask());
     }
