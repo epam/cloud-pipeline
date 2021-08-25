@@ -484,12 +484,17 @@ public class GrantPermissionManager {
         return accessGranted;
     }
 
-    public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
-        return storagePermission((AbstractSecuredEntity)storage, permissionName);
+    public boolean storagePermission(final Long storageId, final String permissionName) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
+        return storagePermission(storage, permissionName);
     }
 
-    public boolean storagePermission(Long storageId, String permissionName) {
-        AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
+    public boolean storagePermission(final String identifier, final String permissionName) {
+        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
+        return storagePermission(storage, permissionName);
+    }
+
+    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
         if (forbiddenByMountStatus(storage, permissionName)) {
             return false;
         }
@@ -510,7 +515,7 @@ public class GrantPermissionManager {
                 final Set<StoragePermissionRepository.Storage> readAllowedStorages = storagePermissionManager
                         .loadReadAllowedStorages(user.getUserName(), groups);
                 return readAllowedStorages.contains(new StoragePermissionRepository.StorageImpl(
-                        storageId, StorageKind.DATA_STORAGE));
+                        storage.getId(), StorageKind.DATA_STORAGE));
             }
         }
     }
@@ -523,33 +528,17 @@ public class GrantPermissionManager {
                 .allMatch(permissionName -> storagePermission(storageId, permissionName));
     }
 
-    public boolean storagePermissionByName(final String identifier, final String permissionName) {
-        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
-        return storagePermission(storage, permissionName);
-    }
-
-    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
-        if (forbiddenByMountStatus(storage, permissionName)) {
-            return false;
-        }
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(storage.getOwner());
-        } else {
-            return permissionsHelper.isAllowed(permissionName, storage);
-        }
-    }
-
     public boolean listedStoragePermissions(List<DataStorageAction> actions) {
         for (DataStorageAction action : actions) {
             AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, action.getId());
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !permissionsHelper.isAllowed(READ, storage)
+            if (action.isRead() && !storagePermission(storage, READ)
                 && !forbiddenByMountStatus(storage, READ)) {
                 return false;
             }
-            if (action.isWrite() && !permissionsHelper.isAllowed(WRITE, storage)
+            if (action.isWrite() && !storagePermission(storage, WRITE)
                 && !forbiddenByMountStatus(storage, WRITE)) {
                 return false;
             }
@@ -559,8 +548,7 @@ public class GrantPermissionManager {
 
     public boolean hasDataStoragePathsPermission(final List<PathDescription> paths, final String permissionName) {
         return ListUtils.emptyIfNull(paths).stream()
-                .allMatch(path -> permissionsHelper.isAllowed(permissionName,
-                        entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId())));
+                .allMatch(path -> storagePermission(path.getDataStorageId(), permissionName));
     }
 
     public boolean checkStorageShared(Long storageId) {
