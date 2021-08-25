@@ -68,7 +68,8 @@ RUN yum install -y \
            CXX14FLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function -fPIC \n\
            CXX14FLAGS+=-flto -Wno-unused-local-typedefs ' >> ~/.R/Makevars && \
     sed -i 's/^ *//'  ~/.R/Makevars && \
-    R -e "install.packages(c('stringi','rpart','lbfgs','rpart.plot','caTools','listenv','chron', \
+    R -e "install.packages(c('stringi','stringr'), repos='http://cran.rstudio.com/');\
+          install.packages(c('rpart','lbfgs','rpart.plot','caTools','listenv','chron', \
                              'data.table', 'lme4','classInt','sas7bdat','colorspace', \
                              'mlxR','SASxport','coveffectsplot','assertthat','Hmisc', \
                              'rmarkdown','brew','kableExtra','Rmisc','bitops','knitr', \
@@ -84,7 +85,7 @@ RUN yum install -y \
                              'qwraps2','XML','gpairs','Rcpp','xpose4','gridExtra','RcppArmadillo', \
                              'haven','gtable','rio','foreign','RxODE','nlmixr','rstan', 'bookdown'), \
                              repos='http://cran.rstudio.com/'); \
-                             remotes::install_github(c('benjaminrich/PCSmisc', 'metrumresearchgroup/PKPDmisc'))"
+          remotes::install_github(c('benjaminrich/PCSmisc', 'metrumresearchgroup/PKPDmisc'))"
 
 ARG NONMEM_ZIP_PASSWORD
 ARG NONMEM_VERSION=7.5.0
@@ -125,9 +126,13 @@ RUN yum install -y devtoolset-9-gcc-gfortran \
            mpilibname=libmpich.so' > $NONMEM_LOCATION_FILE && \
     sed -i 's/^ *//' $NONMEM_LOCATION_FILE
 
+ADD clusterNONMEM /opt/clusterNONMEM
 
-ADD nonmem_run_sge.sh /opt/nonmem/
-
-RUN chmod +x $NONMEM_HOME/nonmem_run_sge.sh && \
-    chmod -R 777 $NONMEM_HOME && \
-    ln -s $NONMEM_HOME/nonmem_run_sge.sh /usr/bin/nonmem_run_sge
+RUN cp /opt/clusterNONMEM/inst/shell/nonmem_run_sge.sh $NONMEM_HOME && \
+    chmod +x $NONMEM_HOME/nonmem_run_sge.sh && \
+    ln -s $NONMEM_HOME/nonmem_run_sge.sh /usr/bin/nonmem_run_sge && \
+    R CMD build /opt/clusterNONMEM && \
+    mv clusterNONMEM_*.tar.gz /opt/clusterNONMEM/clusterNONMEM.tar.gz && \
+    R -e "install.packages('/opt/clusterNONMEM/clusterNONMEM.tar.gz', repos = NULL, type='source')" && \
+    rm -rf /opt/clusterNONMEM && \
+    chmod -R 777 /opt/R/$R_VERSION/lib/R/library/clusterNONMEM $NONMEM_HOME

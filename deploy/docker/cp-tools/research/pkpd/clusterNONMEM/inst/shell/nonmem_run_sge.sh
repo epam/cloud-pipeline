@@ -28,6 +28,10 @@ if [ -z "$INPUT_FILE" ]; then
     echo "No input file specified, exiting..."
     exit 1
 fi
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Input file [$INPUT_FILE] doesn't exist, exiting..."
+    exit 1
+fi
 
 if [ -z "$NUM_CORES" ]; then
     NUM_CORES=${PKPD_DEFAULT_NONMEM_JOB_CORES:-1}
@@ -81,8 +85,10 @@ ${job_script_text/<<PARAFILE_OPTIONS>>/$job_parafile_options}
 echo "End time: \$(date)" >> $job_summary
 EOF
 
-echo "Processing [$INPUT_FILE] with a NONMEM on a cluster using [$NUM_CORES] slots
+echo "Processing [$INPUT_FILE] with a NONMEM on a cluster
+Using [$NUM_CORES] slots
 Service dir: [$job_service_dir]
+Workdir: [$rundir]
 Results will be stored in [$OUTPUT_FILE]"
 
 qsub -N $(basename $job_service_dir) -pe mpi $NUM_CORES $job_script

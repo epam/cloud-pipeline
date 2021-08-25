@@ -1,0 +1,8 @@
+Package: clusterNONMEM
+Type: Package
+Title: NONMEM wrapper for R to run within local SGE cluster
+Version: 0.1.0
+Author: EPAM Systems
+Maintainer: Andrey Georgitsa <Andrey_Georgitsa@epam.com>
+Description: Package provides R interface for launching NONMEM model processing in SGE
+License: Apache-2.0
