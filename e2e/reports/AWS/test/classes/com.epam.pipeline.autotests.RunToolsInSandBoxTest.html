@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">55m1.11s</div>
+<div class="counter">57m43.90s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">90%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,16 +61,111 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
 </li>
 <li>
-<a href="#tab2">Standard error</a>
+<a href="#tab2">Standard output</a>
+</li>
+<li>
+<a href="#tab3">Standard error</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateEndpointLink - EPMCMBIBPC-495"></a>
+<h3 class="failures">validateEndpointLink - EPMCMBIBPC-495</h3>
+<span class="code">
+<pre>Element not found {with text: Endpoint}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1629844702758.20.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1629844702758.20.html
+Timeout: 800 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.waitEndpoint(RunsMenuAO.java:172)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.clickEndpoint(RunsMenuAO.java:176)
+	at com.epam.pipeline.autotests.RunToolsInSandBoxTest.validateEndpointLink(RunToolsInSandBoxTest.java:111)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;Endpoint&quot;)]/parent::*&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '38889b8961e1', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: afe140a43749e53f648a83390af1e278
+*** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;Endpoint&quot;)]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 41 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -82,101 +177,101 @@
 </thead>
 <tr>
 <td class="success">checkToolAccessibilityForAnotherUser - EPMCMBIBPC-500</td>
-<td>48.386s</td>
+<td>1m53.50s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareForToolInSandbox - EPMCMBIBPC-526</td>
-<td>23.146s</td>
+<td>22.123s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateEndpointLink - EPMCMBIBPC-495</td>
-<td>16m1.67s</td>
-<td class="success">passed</td>
+<td class="failures">validateEndpointLink - EPMCMBIBPC-495</td>
+<td>13m27.60s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateNodeReusage - EPMCMBIBPC-503</td>
-<td>45.305s</td>
+<td>46.127s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePipelineIsLaunchedForToolInSandbox - EPMCMBIBPC-494</td>
-<td>15.964s</td>
+<td>17.549s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRunParameters - EPMCMBIBPC-493</td>
-<td>6.547s</td>
+<td>6.324s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopToolInSandbox - EPMCMBIBPC-501</td>
-<td>3m12.16s</td>
+<td>3m17.28s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopToolInSandboxWithTimeout - EPMCMBIBPC-504</td>
-<td>15m41.56s</td>
+<td>17m31.28s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateUsernameOnPipelinePage - EPMCMBIBPC-496</td>
-<td>3.677s</td>
+<td>4.018s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfDinDLaunchAndFunctionality - EPMCMBIBPC-3173</td>
-<td>2m28.23s</td>
+<td>2m41.95s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfSingularityLaunchAndFunctionality - EPMCMBIBPC-3175</td>
-<td>15m14.47s</td>
+<td>17m16.15s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 5199 from [5199]
-Returns latest run with runId 5200 from [5199, 5200]
-Returns latest run with runId 5201 from [5199, 5200, 5201]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5202 from [5199, 5200, 5201, 5202]
-Returns latest run with runId 5204 from [5199, 5200, 5201, 5202, 5204]
-Returns latest run with runId 5204 from [5199, 5200, 5201, 5202, 5204]
+<pre>Returns latest run with runId 5345 from [5345]
+Returns latest run with runId 5346 from [5345, 5346]
+Returns latest run with runId 5347 from [5345, 5346, 5347]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5348 from [5345, 5346, 5347, 5348]
+Returns latest run with runId 5351 from [5345, 5346, 5347, 5348, 5351]
+Returns latest run with runId 5351 from [5345, 5346, 5347, 5348, 5351]
 </pre>
 </span>
 </div>
-<div id="tab2" class="tab">
+<div id="tab3" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Aug 23, 2021 10:37:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (0e1804c14513786bf421e1c8729930d9)
-Aug 23, 2021 10:37:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Aug 24, 2021 10:39:43 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (afe140a43749e53f648a83390af1e278)
+Aug 24, 2021 10:39:43 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Aug 23, 2021 10:37:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 135 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 19603
+Aug 24, 2021 10:39:43 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 86 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 25932
 Only local connections are allowed.
-Aug 23, 2021 10:37:14 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Aug 24, 2021 10:39:44 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Aug 23, 2021 10:37:14 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Aug 24, 2021 10:39:44 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Aug 23, 2021 10:37:14 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Aug 24, 2021 10:39:44 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Aug 23, 2021 10:37:14 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Aug 24, 2021 10:39:44 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Aug 23, 2021 10:37:14 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (d71ac56947c1b4db25911ec3ccecb649)
+Aug 24, 2021 10:39:44 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (2a34bbedf79ab2cf7501794e9da726e7)
 </pre>
 </span>
 </div>
@@ -188,7 +283,7 @@ INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: ch
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 24, 2021 6:06:13 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 25, 2021 6:07:31 PM</p>
 </div>
 </div>
 </body>
