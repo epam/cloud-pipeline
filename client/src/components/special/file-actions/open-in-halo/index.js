@@ -83,6 +83,7 @@ class OpenInHaloAction extends React.Component {
     }, () => {
       fetchActiveJobs()
         .then(jobs => {
+          console.log(jobs);
           const dockerImage = this.haloTool
             ? new RegExp(`^${this.haloTool.registry}/${this.haloTool.image}(:|$)`, 'i')
             : undefined;
@@ -90,7 +91,7 @@ class OpenInHaloAction extends React.Component {
           if (job) {
             this.setState({
               activeJobsFetching: false,
-              activeJob: job.id
+              activeJob: job
             });
           } else {
             this.setState({
@@ -154,17 +155,17 @@ class OpenInHaloAction extends React.Component {
           if (request.error) {
             throw new Error(request.error);
           } else if (request.loaded) {
-            const {id} = request.value;
-            return Promise.resolve(+id);
+            const run = request.value;
+            return Promise.resolve(run);
           }
         })
         .catch(e => {
           message.error(e.message, 5);
           return Promise.resolve();
         })
-        .then((runId) => {
+        .then((run) => {
           hide();
-          this.setState({activeJob: runId});
+          this.setState({activeJob: run, activeJobIsService: false});
         });
     }
   };
@@ -226,7 +227,7 @@ class OpenInHaloAction extends React.Component {
           {
             !activeJobsFetching && modalVisible && !!activeJob && (
               <HaloJobLink
-                jobId={activeJob}
+                job={activeJob}
               />
             )
           }

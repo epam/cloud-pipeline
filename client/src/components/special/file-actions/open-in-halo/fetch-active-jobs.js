@@ -18,12 +18,12 @@ import PipelineRunFilter from '../../../../models/pipelines/PipelineRunSingleFil
 import PipelineRunServices from '../../../../models/pipelines/PipelineRunServices';
 import wrapRequest from './wrap-request';
 
-function runsRequest (request, method) {
+function runsRequest (request, method, mapper = (o => o)) {
   return new Promise((resolve) => {
     wrapRequest(request, method)
       .then(request => {
         if (request.loaded) {
-          resolve((request.value || []).slice());
+          resolve((request.value || []).map(mapper));
         } else {
           resolve([]);
         }
@@ -42,7 +42,8 @@ export default function fetchActiveJobs () {
           userModified: false,
           statuses: ['RUNNING']
         }, false),
-        'filter'
+        'filter',
+        o => ({...o, isService: true})
       ),
       runsRequest(
         new PipelineRunFilter({

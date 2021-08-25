@@ -30,8 +30,9 @@ class HaloJobLink extends React.Component {
   };
 
   get url () {
+    const {job} = this.props;
     const {jobInfo} = this.state;
-    if (jobInfo && jobInfo.initialized) {
+    if (job && jobInfo && (job.isService || jobInfo.initialized)) {
       const {serviceUrl} = jobInfo;
       if (serviceUrl) {
         const urls = parseRunServiceUrlConfiguration(serviceUrl);
@@ -47,11 +48,11 @@ class HaloJobLink extends React.Component {
         jobInfo
       }, () => cb && cb());
     };
-    this.fetchJobStatus();
+    this.resetJobInfo();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.jobId !== this.props.jobId) {
+    if (prevProps.job !== this.props.job) {
       this.resetJobInfo();
     }
   }
@@ -63,7 +64,7 @@ class HaloJobLink extends React.Component {
 
   resetJobInfo = () => {
     this.setState({
-      jobInfo: undefined
+      jobInfo: this.props.job ? {...this.props.job} : undefined
     }, this.fetchJobStatus);
   };
 
@@ -76,16 +77,16 @@ class HaloJobLink extends React.Component {
 
   fetchJobStatus = () => {
     this.clearJobStatusTimer();
-    const {jobId} = this.props;
+    const {job} = this.props;
     const {jobInfo} = this.state;
-    if (jobId && (!jobInfo || !jobInfo.initialized)) {
+    if (job && (!jobInfo || (!job.isService && !jobInfo.initialized))) {
       const timer = () => {
         this.fetchJobStatusTimer = setTimeout(
           this.fetchJobStatus.bind(this),
           FETCH_INFO_SEC * 1000
         );
       };
-      const request = new PipelineRunInfo(jobId);
+      const request = new PipelineRunInfo(job.id);
       request
         .fetch()
         .then(() => {
@@ -111,15 +112,15 @@ class HaloJobLink extends React.Component {
   };
 
   render () {
-    const {jobId} = this.props;
+    const {job} = this.props;
     const {jobInfo} = this.state;
-    if (!jobId || !jobInfo) {
+    if (!job || !jobInfo) {
       return (<Icon type="loading" />);
     }
-    if (!jobInfo || !jobInfo.initialized || !this.url) {
+    if ((!job.isService && !jobInfo.initialized) || !this.url) {
       return (
         <span>
-          Wait for HALO instance <Link to={`run/${jobId}`}>#{jobId}</Link> to initialize
+          Wait for HALO instance <Link to={`run/${job.id}`}>#{job.id}</Link> to initialize
         </span>
       );
     }
@@ -142,7 +143,7 @@ class HaloJobLink extends React.Component {
 }
 
 HaloJobLink.propTypes = {
-  jobId: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  job: PropTypes.object
 };
 
 export default HaloJobLink;
