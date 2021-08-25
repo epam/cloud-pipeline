@@ -21,19 +21,19 @@ public class DataStorageTagBatchApiService {
 
     private final DataStorageTagBatchManager dataStorageTagBatchManager;
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<DataStorageTag> insert(final Long id,
                                        final DataStorageTagInsertBatchRequest request) {
         return dataStorageTagBatchManager.insert(id, request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<DataStorageTag> upsert(final Long id, final DataStorageTagUpsertBatchRequest request) {
         return dataStorageTagBatchManager.upsert(id, request);
 
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<DataStorageTag> copy(final Long id,
                                      final DataStorageTagCopyBatchRequest request) {
         return dataStorageTagBatchManager.copy(id, request);
@@ -45,13 +45,13 @@ public class DataStorageTagBatchApiService {
         return dataStorageTagBatchManager.load(id, request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public void delete(final Long id,
                        final DataStorageTagDeleteBatchRequest request) {
         dataStorageTagBatchManager.delete(id, request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public void deleteAll(final Long id,
                           final DataStorageTagDeleteAllBatchRequest request) {
         dataStorageTagBatchManager.deleteAll(id, request);

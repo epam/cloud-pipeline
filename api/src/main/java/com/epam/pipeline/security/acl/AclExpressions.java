@@ -70,6 +70,10 @@ public final class AclExpressions {
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
             + AND + STORAGE_SHARED;
 
+    public static final String STORAGE_READ_ON_RETURN_OBJECT_ID =
+            "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#returnObject.id, 'READ')) "
+            + AND + STORAGE_SHARED;
+
     public static final String STORAGE_ID_PERMISSIONS =
             "(" 
                 + "hasRole('ADMIN') "

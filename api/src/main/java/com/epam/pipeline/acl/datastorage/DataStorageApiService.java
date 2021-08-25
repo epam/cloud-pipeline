@@ -79,12 +79,14 @@ public class DataStorageApiService {
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
 
+    // TODO: 24.08.2021 Support data storages without explicit read permissions
     @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageManager.getDataStorages();
     }
 
+    // TODO: 24.08.2021 Support data storages without explicit read permissions
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') AND "
             + "hasPermission(filterObject, 'WRITE'))")
     @AclMaskList
@@ -92,6 +94,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorages();
     }
 
+    // TODO: 24.08.2021 Support data storages without explicit read permissions
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
             + "hasPermission(filterObject.storage, 'WRITE'))")
     @AclMaskDelegateList
@@ -112,13 +115,13 @@ public class DataStorageApiService {
         return dataStorageManager.load(id);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT_ID)
     @AclMask
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         return dataStorageManager.loadByNameOrId(identifier);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT_ID)
     @AclMask
     public AbstractDataStorage loadByPathOrId(final String identifier) {
         return dataStorageManager.loadByPathOrId(identifier);
@@ -136,31 +139,31 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<AbstractDataStorageItem> updateDataStorageItems(final Long id,
             List<UpdateDataStorageItemVO> list) throws DataStorageException {
         return dataStorageManager.updateDataStorageItems(id, list);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageFile createDataStorageFile(final Long id,
             String folder, final String name, byte[] contents) throws DataStorageException {
         return dataStorageManager.createDataStorageFile(id, folder, name, contents);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageFile createDataStorageFile(final Long id, String folder, final String name,
                                                  InputStream inputStream) throws DataStorageException {
         return dataStorageManager.createDataStorageFile(id, folder, name, inputStream);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageFile createDataStorageFile(final Long id, String path, byte[] contents)
             throws DataStorageException {
         return dataStorageManager.createDataStorageFile(id, path, contents);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public int deleteDataStorageItems(final Long id, List<UpdateDataStorageItemVO> list,
                                       Boolean totally)
             throws DataStorageException {
@@ -194,12 +197,12 @@ public class DataStorageApiService {
         return dataStorageManager.generateDataStorageItemUrl(id, paths, permissions, hours);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(Long id, String path) {
         return dataStorageManager.generateDataStorageItemUploadUrl(id, path);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUploadUrl(Long id, List<String> paths) {
         return dataStorageManager.generateDataStorageItemUploadUrl(id, paths);
     }
@@ -341,7 +344,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataSizes(paths);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermissionByName(#id, 'READ')")
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public StorageUsage getStorageUsage(final String id, final String path) {
         return dataStorageManager.getStorageUsage(id, path);
     }
