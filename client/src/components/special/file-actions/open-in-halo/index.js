@@ -29,7 +29,6 @@ import {
 import styles from './open-in-halo.css';
 import ToolImage from '../../../../models/tools/ToolImage';
 import fetchActiveJobs from './fetch-active-jobs';
-import roleModel from '../../../../utils/roleModel';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import getToolLaunchingOptions
   from '../../../pipelines/launch/utilities/get-tool-launching-options';
@@ -47,7 +46,6 @@ const ButtonTitle = ({toolId, iconId, titleStyle}) => iconId && toolId
   )
   : (<span style={titleStyle}>Open in HALO</span>);
 
-@roleModel.authenticationInfo
 @inject('awsRegions', 'preferences', 'dataStorages')
 @inject(() => ({
   haloTool: haloToolRequest
@@ -83,7 +81,7 @@ class OpenInHaloAction extends React.Component {
       activeJobsFetching: true,
       activeJob: undefined
     }, () => {
-      fetchActiveJobs(this.props.authenticatedUserInfo)
+      fetchActiveJobs()
         .then(jobs => {
           const dockerImage = this.haloTool
             ? new RegExp(`^${this.haloTool.registry}/${this.haloTool.image}(:|$)`, 'i')

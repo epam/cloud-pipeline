@@ -15,34 +15,51 @@
  */
 
 import PipelineRunFilter from '../../../../models/pipelines/PipelineRunSingleFilter';
+import PipelineRunServices from '../../../../models/pipelines/PipelineRunServices';
 import wrapRequest from './wrap-request';
 
-export default function fetchActiveJobs (authenticatedUserInfo) {
+function runsRequest (request, method) {
   return new Promise((resolve) => {
-    authenticatedUserInfo
-      .fetchIfNeededOrWait()
-      .then(() => {
-        if (authenticatedUserInfo.loaded) {
-          return wrapRequest(
-            new PipelineRunFilter({
-              page: 1,
-              pageSize: 10,
-              userModified: false,
-              statuses: ['RUNNING'],
-              owners: [authenticatedUserInfo.value.userName]
-            }, true, false),
-            'filter'
-          );
-        } else {
-          throw new Error('Error fetching user info');
-        }
-      })
-      .then(runsRequest => {
-        if (runsRequest.loaded) {
-          resolve((runsRequest.value || []).slice());
+    wrapRequest(request, method)
+      .then(request => {
+        if (request.loaded) {
+          resolve((request.value || []).slice());
         } else {
           resolve([]);
         }
+      })
+      .catch(() => resolve([]));
+  });
+}
+
+export default function fetchActiveJobs () {
+  return new Promise((resolve) => {
+    Promise.all([
+      runsRequest(
+        new PipelineRunServices({
+          page: 1,
+          pageSize: 100,
+          userModified: false,
+          statuses: ['RUNNING']
+        }),
+        'filter'
+      ),
+      runsRequest(
+        new PipelineRunFilter({
+          page: 1,
+          pageSize: 100,
+          userModified: false,
+          statuses: ['RUNNING']
+        }, true, false),
+        'filter'
+      )
+    ])
+      .then(payloads => {
+        resolve(
+          payloads
+            .reduce((r, c) => ([...r, ...c]), [])
+            .sort((a, b) => a.id - b.id)
+        );
       })
       .catch(() => resolve([]));
   });
