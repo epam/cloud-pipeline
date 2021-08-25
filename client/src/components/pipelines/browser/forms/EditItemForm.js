@@ -86,7 +86,10 @@ class EditItemForm extends React.Component {
     const {onCancel} = this.props;
     const {showSharedItemInfo} = this.state;
     if (showSharedItemInfo) {
-      this.setState({showSharedItemInfo: false});
+      this.setState({
+        showSharedItemInfo: false,
+        usersToShare: []
+      });
     }
     onCancel && onCancel();
   };
@@ -237,7 +240,6 @@ class EditItemForm extends React.Component {
       visible,
       pending,
       title,
-      onCancel,
       form
     } = this.props;
     const {resetFields} = form;
@@ -273,7 +275,7 @@ class EditItemForm extends React.Component {
         closable={!pending}
         visible={visible}
         title={title}
-        onCancel={onCancel}
+        onCancel={this.onCancel}
         footer={modalFooter}
       >
         <Spin spinning={pending}>

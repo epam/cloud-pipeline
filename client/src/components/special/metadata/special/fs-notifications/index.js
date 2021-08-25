@@ -271,7 +271,6 @@ class FSNotificationsDialog extends React.Component {
       notifications = [],
       recipients = []
     } = this.state;
-    console.log(recipients)
     const emptyRecipients = recipients.length === 0 && notifications.length > 0;
     return (
       <Modal

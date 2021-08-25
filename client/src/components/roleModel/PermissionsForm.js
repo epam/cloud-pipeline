@@ -682,11 +682,18 @@ class PermissionsForm extends React.Component {
     if (this.currentMode === MODES.share) {
       return (
         <div>
-          <UsersRolesSelect
-            value={this.props.usersToShare}
-            onChange={this.props.onChangeUsersToShare}
-            style={{flex: 1, marginRight: 5, width: '100%'}}
-          />
+          <div
+            style={{
+              width: '100%',
+              position: 'relative'
+            }}
+          >
+            <UsersRolesSelect
+              value={this.props.usersToShare}
+              onChange={this.props.onChangeUsersToShare}
+              style={{flex: 1, width: '100%'}}
+            />
+          </div>
           {this.renderUserPermission()}
         </div>
       );
@@ -788,6 +795,9 @@ class PermissionsForm extends React.Component {
   };
 
   renderOwner = () => {
+    if (this.props.grant.pending) {
+      return <div style={{height: '32px'}} />;
+    }
     if (this.props.authenticatedUserInfo.loaded &&
       this.props.grant.loaded &&
       this.props.grant.value.entity &&
