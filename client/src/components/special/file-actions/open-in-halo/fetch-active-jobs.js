@@ -41,7 +41,7 @@ export default function fetchActiveJobs () {
           pageSize: 100,
           userModified: false,
           statuses: ['RUNNING']
-        }),
+        }, false),
         'filter'
       ),
       runsRequest(
