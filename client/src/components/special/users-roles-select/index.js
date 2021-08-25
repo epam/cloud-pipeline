@@ -171,7 +171,7 @@ class UsersRolesSelect extends React.Component {
             : 'Specify user or group name'
         }
       >
-        <Select.OptGroup label="Users">
+        <Select.OptGroup label="UsersDSGFGHFDBHTDEFGBHETRDFH">
           {
             this.items
               .filter(item => item.principal)
@@ -190,7 +190,7 @@ class UsersRolesSelect extends React.Component {
               ))
           }
         </Select.OptGroup>
-        <Select.OptGroup label="Groups and roles">
+        <Select.OptGroup label="Groups and roleSADASFASDFs">
           {
             this.items
               .filter(item => !item.principal)

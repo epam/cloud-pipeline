@@ -53,8 +53,7 @@ import GenerateDownloadUrlRequest from '../../../models/dataStorage/GenerateDown
 import GenerateDownloadUrlsRequest from '../../../models/dataStorage/GenerateDownloadUrls';
 import GenerateFolderDownloadUrl from '../../../models/dataStorage/GenerateFolderDownloadUrl';
 import DataStorageConvert from '../../../models/dataStorage/DataStorageConvert';
-import EditItemForm, {TABS} from './forms/EditItemForm';
-import ShareItemInfoDialog from './forms/ShareItemInfoDialog';
+import EditItemForm, {TABS, MODES} from './forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import DataStorageNavigation from './forms/DataStorageNavigation';
 import RestrictedImagesInfo from './forms/restrict-docker-images/restricted-images-info';
@@ -136,7 +135,6 @@ export default class DataStorage extends React.Component {
     selectedItems: [],
     renameItem: null,
     shareItem: null,
-    shareItemInfoDialog: null,
     createFolder: false,
     createFile: false,
     currentPage: 0,
@@ -226,20 +224,6 @@ export default class DataStorage extends React.Component {
   get sharingEnabled () {
     const {selectedItems} = this.state;
     return selectedItems.length === 1;
-  }
-
-  get sharedItemUrl () {
-    const {shareItem} = this.state;
-    const urlMock = 'https://example.com/library';
-    let url;
-    if (shareItem && shareItem.type.toLowerCase() === 'file') {
-      const path = shareItem.path.split('/').slice(0, -1).join('/');
-      url = `${urlMock}/${path}`;
-    } else if (shareItem && shareItem.type.toLowerCase() === 'folder') {
-      const path = shareItem.path;
-      url = `${urlMock}/${path}`;
-    }
-    return url;
   }
 
   onDataStorageEdit = async (storage) => {
@@ -587,19 +571,8 @@ export default class DataStorage extends React.Component {
     return this.setState({shareItem: null});
   };
 
-  openShareItemInfoDialog = () => {
-    this.setState({shareItemInfoDialog: true});
-  };
-
-  closeShareItemInfoDialog = () => {
-    this.setState({
-      shareItemInfoDialog: false,
-      shareItem: null
-    });
-  };
-
   shareItem = (values, file) => {
-    this.openShareItemInfoDialog();
+    this.closeShareItemDialog();
   };
 
   openCreateFolderDialog = () => {
@@ -2037,6 +2010,7 @@ export default class DataStorage extends React.Component {
           storageId={this.props.storageId}
           pending={false}
           tabs={[TABS.info, TABS.permissions]}
+          mode={MODES.editPathPermissions}
           title={this.state.renameItem
             ? (
               this.state.renameItem.type.toLowerCase() === 'file'
@@ -2052,6 +2026,7 @@ export default class DataStorage extends React.Component {
         />
         <EditItemForm
           item={this.state.shareItem}
+          mode={MODES.share}
           storageId={this.props.storageId}
           pending={false}
           tabs={[TABS.permissions]}
@@ -2063,13 +2038,6 @@ export default class DataStorage extends React.Component {
           visible={!!this.state.shareItem}
           onCancel={this.closeShareItemDialog}
           onSubmit={this.shareItem}
-        />
-        <ShareItemInfoDialog
-          title={false}
-          visible={this.state.shareItemInfoDialog}
-          sharedUrl={this.sharedItemUrl}
-          file={this.state.shareItem}
-          onOk={this.closeShareItemInfoDialog}
         />
         <Modal
           visible={!!this.state.itemsToDelete}

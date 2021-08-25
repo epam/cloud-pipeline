@@ -25,7 +25,8 @@ import {
   Tabs
 } from 'antd';
 import PropTypes from 'prop-types';
-import PermissionsForm, {OBJECT_TYPES} from '../../../roleModel/PermissionsForm';
+import SharedItemInfo from './SharedItemInfo';
+import PermissionsForm, {OBJECT_TYPES, MODES} from '../../../roleModel/PermissionsForm';
 
 // eslint-disable-next-line
 const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
@@ -51,11 +52,14 @@ class EditItemForm extends React.Component {
     includeFileContentField: PropTypes.bool,
     storageId: PropTypes.string,
     item: PropTypes.object,
-    tabs: PropTypes.arrayOf(PropTypes.string)
+    tabs: PropTypes.arrayOf(PropTypes.string),
+    mode: PropTypes.string
   };
 
   state = {
-    activeTab: TABS.info
+    activeTab: TABS.info,
+    showSharedItemInfo: false,
+    usersToShare: []
   }
 
   formItemLayout = {
@@ -69,18 +73,46 @@ class EditItemForm extends React.Component {
     }
   };
 
+  onOk = (event) => {
+    const {mode} = this.props;
+    const {showSharedItemInfo} = this.state;
+    if (mode === MODES.share && !showSharedItemInfo) {
+      return this.setState({showSharedItemInfo: true});
+    }
+    return this.handleSubmit(event);
+  };
+
+  onCancel = () => {
+    const {onCancel} = this.props;
+    const {showSharedItemInfo} = this.state;
+    if (showSharedItemInfo) {
+      this.setState({showSharedItemInfo: false});
+    }
+    onCancel && onCancel();
+  };
+
   handleSubmit = (e) => {
-    const {item} = this.props;
+    const {mode, item, onSubmit} = this.props;
     e.preventDefault();
+    if (mode === MODES.share) {
+      onSubmit && onSubmit();
+      return;
+    }
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        this.props.onSubmit(values, item);
+        onSubmit && onSubmit(values, item);
       }
     });
   };
 
   onChangeTab = (key) => {
     this.setState({activeTab: key});
+  };
+
+  onChangeUsersToShare = (users) => {
+    this.setState({
+      usersToShare: (users || []).slice()
+    });
   };
 
   renderInfoForm = () => {
@@ -130,8 +162,22 @@ class EditItemForm extends React.Component {
     );
   };
 
+  renderSharedItemInfo = () => {
+    const {
+      storageId,
+      item
+    } = this.props;
+    return (
+      <SharedItemInfo
+        storageId={storageId}
+        item={item}
+      />
+    );
+  };
+
   renderPermissionsForm = () => {
-    const {storageId} = this.props;
+    const {storageId, mode} = this.props;
+    const {usersToShare} = this.state;
     if (!storageId) {
       return null;
     }
@@ -139,6 +185,9 @@ class EditItemForm extends React.Component {
       <PermissionsForm
         objectIdentifier={storageId}
         executeDisabled
+        mode={mode}
+        usersToShare={usersToShare}
+        onChangeUsersToShare={this.onChangeUsersToShare}
         // todo: change objectType to dataStorageItem when item permissions API will be ready
         objectType={OBJECT_TYPES.dataStorage}
       />
@@ -178,45 +227,60 @@ class EditItemForm extends React.Component {
   };
 
   render () {
-    const {activeTab} = this.state;
-    const {resetFields} = this.props.form;
-    const modalFooter = this.props.pending || activeTab === TABS.permissions
+    const {
+      activeTab,
+      showSharedItemInfo,
+      usersToShare
+    } = this.state;
+    const {
+      mode,
+      visible,
+      pending,
+      title,
+      onCancel,
+      form
+    } = this.props;
+    const {resetFields} = form;
+    const modalFooter = pending || activeTab === TABS.permissions
       ? false
       : (
         <Row>
           <Button
-            onClick={this.props.onCancel}
+            onClick={this.onCancel}
           >
             Cancel
           </Button>
           <Button
             type="primary"
             htmlType="submit"
-            onClick={this.handleSubmit}
+            disabled={!showSharedItemInfo && usersToShare.length === 0}
+            onClick={this.onOk}
           >
-            OK
+            {mode === MODES.share && showSharedItemInfo ? 'SHARE' : 'OK'}
           </Button>
         </Row>
       );
     const onClose = () => {
-      this.setState({activeTab: TABS.info});
       resetFields();
     };
-    if (!this.props.visible) {
+    if (!visible) {
       return null;
     }
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        maskClosable={!pending}
         afterClose={() => onClose()}
-        closable={!this.props.pending}
-        visible={this.props.visible}
-        title={this.props.title}
-        onCancel={this.props.onCancel}
+        closable={!pending}
+        visible={visible}
+        title={title}
+        onCancel={onCancel}
         footer={modalFooter}
       >
-        <Spin spinning={this.props.pending}>
-          {this.renderModalContent()}
+        <Spin spinning={pending}>
+          {mode === MODES.share && showSharedItemInfo
+            ? this.renderSharedItemInfo()
+            : this.renderModalContent()
+          }
         </Spin>
       </Modal>
     );
@@ -244,10 +308,11 @@ class EditItemForm extends React.Component {
 
   componentDidUpdate (prevProps) {
     if (prevProps.visible !== this.props.visible) {
+      this.onChangeTab(TABS.info);
       this.focusNameInput();
     }
   }
 }
 
-export {TABS};
+export {TABS, MODES};
 export default EditItemForm;

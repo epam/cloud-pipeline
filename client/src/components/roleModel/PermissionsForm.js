@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import {observable} from 'mobx';
 import styles from './PermissionsForm.css';
 import roleModel from '../../utils/roleModel';
 import UserName from '../special/UserName';
+import UsersRolesSelect from '../special/users-roles-select';
 import compareSubObjects from './utilities/compare-sub-objects';
 
 function plural (count, noun) {
@@ -60,6 +61,12 @@ const OBJECT_TYPES = {
   pipeline: 'PIPELINE',
   tool: 'TOOL',
   toolGroup: 'TOOL_GROUP'
+};
+
+const MODES = {
+  share: 'share',
+  editPathPermissions: 'editPathPermissions',
+  editPermissions: 'editPermissions'
 };
 
 @inject('usersInfo')
@@ -118,15 +125,30 @@ class PermissionsForm extends React.Component {
       description: PropTypes.node
     })),
     subObjectsPermissionsErrorTitle: PropTypes.node,
-    executeDisabled: PropTypes.bool
+    executeDisabled: PropTypes.bool,
+    mode: PropTypes.string,
+    usersToShare: PropTypes.arrayOf(PropTypes.shape({
+      name: PropTypes.string,
+      principal: PropTypes.bool
+    })),
+    onChangeUsersToShare: PropTypes.func
   };
 
   static defaultProps = {
     enabledMask: roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1),
-    subObjectsPermissionsMaskToCheck: 0
+    subObjectsPermissionsMaskToCheck: 0,
+    mode: MODES.editPermissions
   }
 
   lastFetchId = 0;
+
+  get currentMode () {
+    const {mode} = this.props;
+    if (mode && MODES[mode]) {
+      return MODES[mode];
+    }
+    return MODES.editPermissions;
+  }
 
   findUser = (value) => {
     this.lastFetchId += 1;
@@ -165,7 +187,9 @@ class PermissionsForm extends React.Component {
   changeOwner = async () => {
     const userName = this.state.owner;
     const hide = message.loading(`Granting ${userName} owner permission...`, -1);
-    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+    if (this.currentMode === MODES.share ||
+      this.currentMode === MODES.editPathPermissions
+    ) {
       return;
     }
     const request = new GrantOwner(this.props.objectIdentifier, this.props.objectType, userName);
@@ -310,7 +334,9 @@ class PermissionsForm extends React.Component {
   };
 
   grantPermission = async (name, principal, mask) => {
-    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+    if (this.currentMode === MODES.share ||
+      this.currentMode === MODES.editPathPermissions
+    ) {
       return;
     }
     const request = new GrantPermission();
@@ -338,7 +364,9 @@ class PermissionsForm extends React.Component {
 
   removeUserOrGroupClicked = (item) => async (event) => {
     event.stopPropagation();
-    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+    if (this.currentMode === MODES.share ||
+      this.currentMode === MODES.editPathPermissions
+    ) {
       return;
     }
     const request = new GrantRemove(
@@ -374,7 +402,14 @@ class PermissionsForm extends React.Component {
     if (allowRead && event.target.checked) {
       selectedPermission.mask = (selectedPermission.mask & (1 << 2 | 1 << 3 | 1 << 4 | 1 << 5)) | 1;
     }
-    if (this.props.objectType === OBJECT_TYPES.dataStorageItem) {
+    if (this.currentMode === MODES.share) {
+      this.setState({selectedPermission});
+      // todo: wait for path permissions/share API will be ready
+      return;
+    }
+    if (this.currentMode === MODES.editPathPermissions) {
+      this.setState({selectedPermission});
+      // todo: wait for path permissions/share API will be ready
       return;
     }
     this.setState({operationInProgress: true});
@@ -574,6 +609,7 @@ class PermissionsForm extends React.Component {
           render: (item) => (
             <Checkbox
               disabled={
+                (this.currentMode === MODES.share && this.props.usersToShare?.length === 0) ||
                 this.state.operationInProgress ||
                 this.props.readonly ||
                 ((item.allowMask & this.props.enabledMask) === 0)
@@ -589,6 +625,7 @@ class PermissionsForm extends React.Component {
           render: (item) => (
             <Checkbox
               disabled={
+                (this.currentMode === MODES.share && this.props.usersToShare?.length === 0) ||
                 this.state.operationInProgress ||
                 this.props.readonly ||
                 ((item.denyMask & this.props.enabledMask) === 0)
@@ -641,6 +678,18 @@ class PermissionsForm extends React.Component {
   renderUsers = () => {
     if (this.props.grant.error) {
       return <Alert type="warning" message={this.props.grant.error} />;
+    }
+    if (this.currentMode === MODES.share) {
+      return (
+        <div>
+          <UsersRolesSelect
+            value={this.props.usersToShare}
+            onChange={this.props.onChangeUsersToShare}
+            style={{flex: 1, marginRight: 5, width: '100%'}}
+          />
+          {this.renderUserPermission()}
+        </div>
+      );
     }
     const data = this.props.grant.value && this.props.grant.value.permissions
       ? this.props.grant.value.permissions
@@ -891,7 +940,10 @@ class PermissionsForm extends React.Component {
   }
 
   selectFirstPermission = () => {
-    if (this.props.grant) {
+    if (this.currentMode === MODES.share) {
+      // todo: possible changes needed to this condition, after path/share permissions API will be ready
+      this.setState({selectedPermission: {mask: 0}});
+    } else if (this.props.grant) {
       this.props.grant.fetchIfNeededOrWait()
         .then(() => {
           if (this.props.grant.loaded) {
@@ -952,5 +1004,5 @@ class PermissionsForm extends React.Component {
   }
 }
 
-export {OBJECT_TYPES};
+export {OBJECT_TYPES, MODES};
 export default PermissionsForm;
