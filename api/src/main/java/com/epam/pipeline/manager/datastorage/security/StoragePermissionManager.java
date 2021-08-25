@@ -41,7 +41,7 @@ public class StoragePermissionManager {
         final List<String> parents = new ArrayList<>();
         final StringJoiner joiner = new StringJoiner("/");
         for (int i = 0; i < items.length - 1; i++) {
-            joiner.add(items[0]);
+            joiner.add(items[i]);
             parents.add(joiner.toString());
         }
         return parents;
