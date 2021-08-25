@@ -147,8 +147,10 @@ public class AclAspect {
             returning = "page")
     @Transactional(propagation = Propagation.REQUIRED)
     public void setMaskForPage(JoinPoint joinPoint, PagedResult<List<PipelineRun>> page) {
-        page.getElements().forEach(entity ->
-                entity.setMask(permissionManager.getPermissionsMask(entity, true, true)));
+        page.getElements().forEach(entity -> {
+                entity.setMask(permissionManager.getPermissionsMask(entity, true, true));
+                ListUtils.emptyIfNull(entity.getChildRuns()).forEach(child -> child.setMask(entity.getMask()));
+        });
     }
 
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclTree)",
