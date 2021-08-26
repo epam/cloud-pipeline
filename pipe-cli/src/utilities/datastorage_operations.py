@@ -40,90 +40,86 @@ FOLDER_MARKER = '.DS_Store'
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           clean=False, skip_existing=False, verify_destination=False):
-        try:
-            source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
-            destination_wrapper = DataStorageWrapper.get_wrapper(destination)
-            files_to_copy = []
+           io_threads, clean=False, skip_existing=False, verify_destination=False):
+        source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
+        destination_wrapper = DataStorageWrapper.get_wrapper(destination)
+        files_to_copy = []
 
-            if source_wrapper is None:
-                click.echo('Could not resolve path {}'.format(source), err=True)
-                sys.exit(1)
-            if not source_wrapper.exists():
-                click.echo("Source {} doesn't exist".format(source), err=True)
-                sys.exit(1)
-            if destination_wrapper is None:
-                click.echo('Could not resolve path {}'.format(destination), err=True)
-                sys.exit(1)
-            if not recursive and not source_wrapper.is_file():
-                click.echo('Flag --recursive (-r) is required to copy folders.', err=True)
-                sys.exit(1)
-            if file_list:
-                if source_wrapper.is_file():
-                    click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
-                    sys.exit(1)
-                if not os.path.exists(file_list):
-                    click.echo('Specified --file-list file does not exist.', err=True)
-                    sys.exit(1)
-                files_to_copy = cls.__get_file_to_copy(file_list, source_wrapper.path)
-            if threads and not recursive:
-                click.echo('-n (--threads) is allowed for folders only.', err=True)
-                sys.exit(1)
-            if threads and platform.system() == 'Windows':
-                click.echo('-n (--threads) is not supported for Windows OS', err=True)
-                sys.exit(1)
-            relative = os.path.basename(source) if source_wrapper.is_file() else None
-            if not force and not verify_destination and not destination_wrapper.is_empty(relative=relative):
-                click.echo('The destination already exists. Specify --force (-f) flag to overwrite data or '
-                           '--verify-destination (-vd) flag to enable existence check for each destination path.',
-                           err=True)
-                sys.exit(1)
-
-            # append slashes to path to correctly determine file/folder type
-            if not source_wrapper.is_file():
-                if not source_wrapper.is_local() and not source_wrapper.path.endswith('/'):
-                    source_wrapper.path = source_wrapper.path + '/'
-                if destination_wrapper.is_local() and not destination_wrapper.path.endswith(os.path.sep):
-                    destination_wrapper.path = destination_wrapper.path + os.path.sep
-                if not destination_wrapper.is_local() and not destination_wrapper.path.endswith('/'):
-                    destination_wrapper.path = destination_wrapper.path + '/'
-
-            # copying a file to a remote destination, we need to set folder/file flag correctly
-            if source_wrapper.is_file() and not destination_wrapper.is_local() and not destination.endswith('/'):
-                destination_wrapper.is_file_flag = True
-
-            command = 'mv' if clean else 'cp'
-            permission_to_check = os.R_OK if command == 'cp' else os.W_OK
-            manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
-            items = files_to_copy if file_list else source_wrapper.get_items()
-            items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                      include, exclude, force, quiet, skip_existing, verify_destination)
-            sorted_items = list()
-            transfer_results = []
-            for item in items:
-                full_path = item[1]
-                relative_path = item[2]
-                size = item[3]
-                if threads:
-                    sorted_items.append(item)
-                else:
-                    transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                                       relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                                       tags=tags)
-                    if not destination_wrapper.is_local() and transfer_result:
-                        transfer_results.append(transfer_result)
-                        transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                                       transfer_results, clean=clean)
-            if threads:
-                cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                                 clean, quiet, tags)
-            else:
-                if not destination_wrapper.is_local():
-                    cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                transfer_results, clean=clean, flush_size=1)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        if source_wrapper is None:
+            click.echo('Could not resolve path {}'.format(source), err=True)
             sys.exit(1)
+        if not source_wrapper.exists():
+            click.echo("Source {} doesn't exist".format(source), err=True)
+            sys.exit(1)
+        if destination_wrapper is None:
+            click.echo('Could not resolve path {}'.format(destination), err=True)
+            sys.exit(1)
+        if not recursive and not source_wrapper.is_file():
+            click.echo('Flag --recursive (-r) is required to copy folders.', err=True)
+            sys.exit(1)
+        if file_list:
+            if source_wrapper.is_file():
+                click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
+                sys.exit(1)
+            if not os.path.exists(file_list):
+                click.echo('Specified --file-list file does not exist.', err=True)
+                sys.exit(1)
+            files_to_copy = cls.__get_file_to_copy(file_list, source_wrapper.path)
+        if threads and not recursive:
+            click.echo('-n (--threads) is allowed for folders only.', err=True)
+            sys.exit(1)
+        if threads and platform.system() == 'Windows':
+            click.echo('-n (--threads) is not supported for Windows OS', err=True)
+            sys.exit(1)
+        relative = os.path.basename(source) if source_wrapper.is_file() else None
+        if not force and not verify_destination and not destination_wrapper.is_empty(relative=relative):
+            click.echo('The destination already exists. Specify --force (-f) flag to overwrite data or '
+                       '--verify-destination (-vd) flag to enable existence check for each destination path.',
+                       err=True)
+            sys.exit(1)
+
+        # append slashes to path to correctly determine file/folder type
+        if not source_wrapper.is_file():
+            if not source_wrapper.is_local() and not source_wrapper.path.endswith('/'):
+                source_wrapper.path = source_wrapper.path + '/'
+            if destination_wrapper.is_local() and not destination_wrapper.path.endswith(os.path.sep):
+                destination_wrapper.path = destination_wrapper.path + os.path.sep
+            if not destination_wrapper.is_local() and not destination_wrapper.path.endswith('/'):
+                destination_wrapper.path = destination_wrapper.path + '/'
+
+        # copying a file to a remote destination, we need to set folder/file flag correctly
+        if source_wrapper.is_file() and not destination_wrapper.is_local() and not destination.endswith('/'):
+            destination_wrapper.is_file_flag = True
+
+        command = 'mv' if clean else 'cp'
+        permission_to_check = os.R_OK if command == 'cp' else os.W_OK
+        manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
+        items = files_to_copy if file_list else source_wrapper.get_items()
+        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                  include, exclude, force, quiet, skip_existing, verify_destination)
+        sorted_items = list()
+        transfer_results = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            if threads:
+                sorted_items.append(item)
+            else:
+                transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                   relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                   tags=tags, io_threads=io_threads)
+                if not destination_wrapper.is_local() and transfer_result:
+                    transfer_results.append(transfer_result)
+                    transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                                   transfer_results, clean=clean)
+        if threads:
+            cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                             clean, quiet, tags, io_threads)
+        else:
+            if not destination_wrapper.is_local():
+                cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                            transfer_results, clean=clean, flush_size=1)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -598,7 +594,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags):
+                                     quiet, tags, io_threads):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -614,13 +610,14 @@ class DataStorageOperations(object):
                                                     clean,
                                                     quiet,
                                                     tags,
+                                                    io_threads,
                                                     lock))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, lock):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads, lock):
         transfer_results = []
         for item in items:
             full_path = item[1]
@@ -628,7 +625,7 @@ class DataStorageOperations(object):
             size = item[3]
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, lock=lock)
+                                               tags=tags, io_threads=io_threads, lock=lock)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
