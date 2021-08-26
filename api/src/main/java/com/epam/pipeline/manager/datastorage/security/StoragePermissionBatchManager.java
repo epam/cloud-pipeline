@@ -63,8 +63,7 @@ public class StoragePermissionBatchManager {
     public List<StoragePermission> load(final StoragePermissionLoadBatchRequest request) {
         return getRoot(request.getId())
                 .map(root -> request.getRequests().stream()
-                        .map(r -> repository.findByDatastorageRootIdAndDatastoragePathAndDatastorageType(root,
-                                r.getPath(), r.getType())))
+                        .map(r -> repository.findByRootAndPathAndType(root, r.getPath(), r.getType())))
                 .orElseGet(Stream::empty)
                 .flatMap(List::stream)
                 .map(mapper::toDto)

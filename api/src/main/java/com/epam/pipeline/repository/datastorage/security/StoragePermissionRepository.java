@@ -21,6 +21,18 @@ import java.util.Optional;
 public interface StoragePermissionRepository
         extends CrudRepository<StoragePermissionEntity, StoragePermissionEntityId> {
 
+    default List<StoragePermissionEntity> findByRootAndPathAndType(Long root,
+                                                                   String path,
+                                                                   StoragePermissionPathType type) {
+        return findByDatastorageRootIdAndDatastoragePathAndDatastorageType(root, path, type);
+    }
+
+    List<StoragePermissionEntity> findByDatastorageRootIdAndDatastoragePathAndDatastorageType(
+            Long datastorageRootId,
+            String datastoragePath,
+            StoragePermissionPathType datastorageType
+    );
+
     @Query(name = "StoragePermissionRepository.findPermissions", nativeQuery = true)
     List<StoragePermissionEntity> findPermissions(@Param("datastorage_root_id") Long root,
                                                   @Param("datastorage_path") String path,
@@ -29,17 +41,31 @@ public interface StoragePermissionRepository
                                                   @Param("user_sid_name") String user,
                                                   @Param("group_sid_names") List<String> groups);
 
-    @Query(name = "StoragePermissionRepository.findDirectChildPermissions", nativeQuery = true)
-    List<StoragePermissionEntity> findDirectChildPermissions(@Param("datastorage_root_id") Long root,
-                                                             @Param("datastorage_path") String path,
-                                                             @Param("user_sid_name") String user,
-                                                             @Param("group_sid_names") List<String> groups);
+    @Query(name = "StoragePermissionRepository.findImmediateChildPermissions", nativeQuery = true)
+    List<StoragePermissionEntity> findImmediateChildPermissions(@Param("datastorage_root_id") Long root,
+                                                                @Param("datastorage_path") String path,
+                                                                @Param("user_sid_name") String user,
+                                                                @Param("group_sid_names") List<String> groups);
 
-    List<StoragePermissionEntity> findByDatastorageRootIdAndDatastoragePathAndDatastorageType(
-            Long datastorageRootId,
-            String datastoragePath,
-            StoragePermissionPathType datastorageType
-    );
+    // returns storage_path, storage_path_type for storage paths with at least single read permission under the given path
+    // which can be used later on to filter items in storage path listings.
+    @Query(name = "StoragePermissionRepository.findReadAllowedImmediateChildItems", nativeQuery = true)
+    List<StorageItem> findReadAllowedImmediateChildItems(@Param("datastorage_root_id") Long root,
+                                                         @Param("datastorage_path") String path,
+                                                         @Param("user_sid_name") String user,
+                                                         @Param("group_sid_names") List<String> groups);
+
+    // returns storage_id, storage_type for with at least single storage path read permission
+    // which can be used later on to filter storages in library tree listings.
+    @Query(name = "StoragePermissionRepository.findReadAllowedStorages", nativeQuery = true)
+    List<Storage> findReadAllowedStorages(@Param("user_sid_name") String user,
+                                          @Param("group_sid_names") List<String> groups);
+
+    @Query(name = "StoragePermissionRepository.findRecursiveMask", nativeQuery = true)
+    Optional<Integer> findRecursiveMask(@Param("datastorage_root_id") Long root,
+                                        @Param("datastorage_path") String path,
+                                        @Param("user_sid_name") String user,
+                                        @Param("group_sid_names") List<String> groups);
 
     @Modifying
     @Query(name = "StoragePermissionRepository.copyFilePermissions", nativeQuery = true)
@@ -62,26 +88,6 @@ public interface StoragePermissionRepository
     @Query(name = "StoragePermissionRepository.deleteFolderPermissions", nativeQuery = true)
     void deleteFolderPermissions(@Param("datastorage_root_id") Long root,
                                  @Param("datastorage_path") String path);
-
-    @Query(name = "StoragePermissionRepository.findAggregatedMask", nativeQuery = true)
-    Optional<Integer> findAggregatedMask(@Param("datastorage_root_id") Long root,
-                                         @Param("datastorage_path") String path,
-                                         @Param("user_sid_name") String user,
-                                         @Param("group_sid_names") List<String> groups);
-
-    // returns storage_id, storage_type for with at least single storage path read permission
-    // which can be used later on to filter storages in library tree listings.
-    @Query(name = "StoragePermissionRepository.findReadAllowedStorages", nativeQuery = true)
-    List<Storage> findReadAllowedStorages(@Param("user_sid_name") String user,
-                                          @Param("group_sid_names") List<String> groups);
-
-    // returns storage_path, storage_path_type for storage paths with at least single read permission under the given path
-    // which can be used later on to filter items in storage path listings.
-    @Query(name = "StoragePermissionRepository.findReadAllowedDirectChildItems", nativeQuery = true)
-    List<StorageItem> findReadAllowedDirectChildItems(@Param("datastorage_root_id") Long root,
-                                                      @Param("datastorage_path") String path,
-                                                      @Param("user_sid_name") String user,
-                                                      @Param("group_sid_names") List<String> groups);
 
     interface Storage {
 

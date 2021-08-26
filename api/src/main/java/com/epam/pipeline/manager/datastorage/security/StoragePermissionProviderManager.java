@@ -121,9 +121,10 @@ public class StoragePermissionProviderManager {
         final List<String> groups = groupSids(user)
                 .map(StoragePermissionSid::getName)
                 .collect(Collectors.toList());
-        return storagePermissionManager.loadAggregatedMask(storage.getRootId(), path, user.getUserName(), groups)
+        return isAllowed(storage, path, StoragePermissionPathType.FOLDER, permissions)
+                && storagePermissionManager.loadRecursiveMask(storage.getRootId(), path, user.getUserName(), groups)
                 .map(mask -> isAllowed(mask, permissions))
-                .orElseGet(() -> isAllowed(storage, path, StoragePermissionPathType.FOLDER, permissions));
+                .orElse(true);
     }
 
     public DataStorageListing applyPermissions(final SecuredStorageEntity storage,
@@ -148,10 +149,10 @@ public class StoragePermissionProviderManager {
                 .map(StoragePermissionSid::getName)
                 .collect(Collectors.toList());
         final Map<StoragePermissionRepository.StorageItem, Integer> masks = storagePermissionManager
-                .loadDirectChildPermissions(storage.getRootId(), absolutePath, user.getUserName(), groups)
+                .loadImmediateChildPermissions(storage.getRootId(), absolutePath, user.getUserName(), groups)
                 .stream()
                 .collect(Collectors.groupingBy(item -> new StoragePermissionRepository.StorageItemImpl(
-                        item.getPath(), item.getType()),
+                                item.getPath(), item.getType()),
                         Collectors.collectingAndThen(Collectors.toList(), list -> list.stream()
                                 .sorted(Comparator.comparing(StoragePermission::getSid,
                                         Comparator.comparing(StoragePermissionSid::getType,
@@ -170,14 +171,15 @@ public class StoragePermissionProviderManager {
                     .collect(Collectors.toList()));
         } else {
             final Set<StoragePermissionRepository.StorageItem> readAllowedItems =
-                    storagePermissionManager.loadReadAllowedDirectChildItems(storage.getRootId(), absolutePath, user.getUserName(), groups);
+                    storagePermissionManager.loadReadAllowedImmediateChildItems(storage.getRootId(), absolutePath,
+                            user.getUserName(), groups);
             if (readAllowedItems.isEmpty()) {
                 // TODO: 23.08.2021 Move this check to SecuredStorageProvider
                 throw new AccessDeniedException(String.format("No recursive read permissions for %s", absolutePath));
             }
             listing.setResults(items.stream()
-                    .filter(item -> readAllowedItems.contains(new StoragePermissionRepository.StorageItemImpl(item.getPath(),
-                            StoragePermissionPathType.from(item.getType()))))
+                    .filter(item -> readAllowedItems.contains(new StoragePermissionRepository.StorageItemImpl(
+                            item.getPath(), StoragePermissionPathType.from(item.getType()))))
                     .map(item -> {
                         int itemMask = masks.getOrDefault(new StoragePermissionRepository.StorageItemImpl(
                                 item.getPath(), StoragePermissionPathType.from(item.getType())), 0);
@@ -227,27 +229,29 @@ public class StoragePermissionProviderManager {
         final List<String> groups = groupSids(user)
                 .map(StoragePermissionSid::getName)
                 .collect(Collectors.toList());
-        final List<StoragePermission> permissions = storagePermissionManager.load(storage.getRootId(), absolutePath,
-                type, user.getUserName(), groups);
-        final Map<StoragePermissionRepository.StorageItem, List<StoragePermission>> perms = permissions.stream()
-                .collect(Collectors.groupingBy(p -> new StoragePermissionRepository.StorageItemImpl(p.getPath(), p.getType()),
-                        Collectors.toCollection(ArrayList::new)));
-        final int storageMask = grantPermissionManager.getPermissionsMask((AbstractSecuredEntity) storage, false, true);
-        final Stream<Integer> pathMasks = perms.keySet().stream()
+        final Map<StoragePermissionRepository.StorageItem, List<StoragePermission>> permissions =
+                storagePermissionManager.load(storage.getRootId(), absolutePath, type, user.getUserName(), groups)
+                        .stream()
+                        .collect(Collectors.groupingBy(p -> new StoragePermissionRepository.StorageItemImpl(
+                                p.getPath(), p.getType()), Collectors.toCollection(ArrayList::new)));
+        final Stream<Integer> pathMasks = permissions.keySet().stream()
                 .sorted(Comparator.comparing(StoragePermissionRepository.StorageItem::getStoragePath,
                         Comparator.reverseOrder()))
-                .map(item -> perms.get(item)
+                .map(item -> permissions.get(item)
                         .stream()
                         .sorted(Comparator.comparing(StoragePermission::getSid,
-                                Comparator.comparing(StoragePermissionSid::getType,
-                                        Comparator.reverseOrder())))
+                                Comparator.comparing(StoragePermissionSid::getType, Comparator.reverseOrder())))
                         .reduce(0, (mask, p) -> p.getMask(), permissionsService::mergeItemMask));
-        return Stream.concat(pathMasks, Stream.of(storageMask))
+        return Stream.concat(pathMasks, Stream.of(getStorageExtendedMask((AbstractSecuredEntity) storage)))
                 .reduce((childMask, parentMask) ->
                         permissionsService.allPermissionsSet(childMask, AclPermission.getBasicPermissions())
                                 ? childMask
                                 : permissionsService.mergeParentMask(childMask, parentMask))
                 .orElse(0);
+    }
+
+    private Integer getStorageExtendedMask(final AbstractSecuredEntity storage) {
+        return grantPermissionManager.getPermissionsMask(storage, false, true);
     }
 
     private Stream<StoragePermissionSid> groupSids(final PipelineUser user) {
