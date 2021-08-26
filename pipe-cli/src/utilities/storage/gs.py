@@ -615,7 +615,7 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
         source_client = GsBucketOperations.get_client(source_wrapper.bucket, read=True, write=clean)
@@ -683,7 +683,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -693,7 +693,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         else:
             progress_callback = None
         self._replace_default_download_chunk_size(self._buffering)
-        transfer_config = self._get_download_config()
+        transfer_config = self._get_transfer_config(io_threads)
         if size > transfer_config.multipart_threshold:
             bucket = self.client.bucket(source_wrapper.bucket.path)
             blob = self.custom_blob(bucket, source_key, None, size)
@@ -713,7 +713,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         if clean:
             blob.delete()
 
-    def _get_download_config(self):
+    def _get_transfer_config(self, io_threads=None):
         transfer_config = TransferConfig(multipart_threshold=200 * MB,
                                          multipart_chunksize=200 * MB)
         if os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD):
@@ -722,6 +722,8 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE))
         if os.getenv(CP_CLI_GCP_MAX_CONCURRENCY):
             transfer_config.max_concurrency = int(os.getenv(CP_CLI_GCP_MAX_CONCURRENCY))
+        if io_threads is not None:
+            transfer_config.max_concurrency = max(io_threads, 1)
         return transfer_config
 
     def _download_to_file(self, blob, destination_key):
@@ -762,7 +764,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -770,7 +772,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
-        transfer_config = self._get_upload_config(size)
+        transfer_config = self._get_transfer_config(size, io_threads)
         if size > transfer_config.multipart_threshold:
             upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key,
                                                     StorageOperations.generate_tags(tags, source_key),
@@ -786,7 +788,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         if clean:
             source_wrapper.delete_item(source_key)
 
-    def _get_upload_config(self, size):
+    def _get_transfer_config(self, size, io_threads):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
                                                                                  multipart_threshold=150 * MB,
                                                                                  max_parts=32)
@@ -798,6 +800,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE))
         if os.getenv(CP_CLI_GCP_MAX_CONCURRENCY):
             transfer_config.max_concurrency = int(os.getenv(CP_CLI_GCP_MAX_CONCURRENCY))
+        if io_threads is not None:
+            transfer_config.max_concurrency = max(io_threads, 1)
         return transfer_config
 
     def _get_adjusted_parameters(self, size, multipart_threshold, max_parts):
@@ -839,7 +843,7 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')

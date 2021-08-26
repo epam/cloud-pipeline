@@ -37,7 +37,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager
+    AbstractDeleteManager, UploadResult, TransferResult
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
@@ -65,6 +65,9 @@ class AzureManager:
 
     def __init__(self, blob_service):
         self.service = blob_service
+
+    def get_max_connections(self, io_threads):
+        return max(io_threads, 1) if io_threads is not None else 2
 
 
 class AzureListingManager(AzureManager, AbstractListingManager):
@@ -201,7 +204,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -264,7 +267,7 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, lock=None):
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -291,15 +294,17 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
+        max_connections = self.get_max_connections(io_threads)
         self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, source_key,
                                            metadata=destination_tags,
-                                           progress_callback=progress_callback)
+                                           progress_callback=progress_callback,
+                                           max_connections=max_connections)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -329,7 +334,7 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
@@ -339,9 +344,11 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
 
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
+        max_connections = self.get_max_connections(io_threads)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
-                                             progress_callback=progress_callback)
+                                             progress_callback=progress_callback,
+                                             max_connections=max_connections)
 
 
 class AzureTemporaryCredentials:

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
@@ -99,6 +100,13 @@ class StorageItemManager(object):
     def get_local_file_size(path):
         return StorageOperations.get_local_file_size(path)
 
+    def get_transfer_config(self, io_threads):
+        transfer_config = TransferConfig()
+        if io_threads is not None:
+            transfer_config.max_concurrency = max(io_threads, 1)
+            transfer_config.use_threads = transfer_config.max_concurrency > 1
+        return transfer_config
+
 
 class DownloadManager(StorageItemManager, AbstractTransferManager):
 
@@ -118,15 +126,18 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
         return self.get_local_file_size(destination_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, lock=None):
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         self.create_local_folder(destination_key, lock)
+        transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
-            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size))
+            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
+                                      Config=transfer_config)
         else:
-            self.bucket.download_file(source_key, destination_key)
+            self.bucket.download_file(source_key, destination_key,
+                                      Config=transfer_config)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -149,7 +160,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), lock=None):
+                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -160,11 +171,12 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
+        transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
-                                    ExtraArgs=extra_args)
+                                    Config=transfer_config, ExtraArgs=extra_args)
         else:
-            self.bucket.upload_file(source_key, destination_key, ExtraArgs=extra_args)
+            self.bucket.upload_file(source_key, destination_key, Config=transfer_config, ExtraArgs=extra_args)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -187,7 +199,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), lock=None):
+                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
         if clean:
             raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
                                  "is not supported for ftp/http sources.")
@@ -226,7 +238,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region

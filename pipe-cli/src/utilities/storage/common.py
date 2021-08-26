@@ -227,7 +227,7 @@ class AbstractTransferManager:
 
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -242,6 +242,7 @@ class AbstractTransferManager:
         :param size: Size of the transfer source object.
         :param tags: Additional tags that will be included to the transferring object.
         Tags CP_SOURCE and CP_OWNER will be included by default.
+        :param io_threads: Number of threads to be used for a single file io operations.
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
         """
