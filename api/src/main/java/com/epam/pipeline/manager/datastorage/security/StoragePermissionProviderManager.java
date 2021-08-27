@@ -1,5 +1,6 @@
 package com.epam.pipeline.manager.datastorage.security;
 
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionSidType;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -130,41 +131,35 @@ public class StoragePermissionProviderManager {
                 .orElse(true);
     }
 
-    public DataStorageListing apply(final SecuredStorageEntity storage,
-                                    final String path,
-                                    final DataStorageListing listing,
-                                    final Function<String, DataStorageListing> markerToListingFunction) {
+    public Optional<DataStorageListing> apply(final SecuredStorageEntity storage,
+                                              final String path,
+                                              final Function<String, DataStorageListing> getListingByMarker) {
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         final int folderMask = getMask(storage, absolutePath, StoragePermissionPathType.FOLDER);
         final DataStorageListing result = new DataStorageListing();
         result.setMask(getSimpleMask(folderMask));
         final PipelineUser user = authManager.getCurrentUser();
         if (user == null) {
-            throw new AccessDeniedException("Unauthorized user access");
+            return Optional.empty();
         }
         if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
+            final DataStorageListing listing = getListingByMarker.apply(null);
             result.setNextPageMarker(listing.getNextPageMarker());
             result.setResults(ListUtils.emptyIfNull(listing.getResults()).stream()
                     .map(item -> withMask(item, AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL))
                     .collect(Collectors.toList()));
-            return result;
+            return Optional.of(result);
         }
         final List<String> groups = groupSidsOf(user)
                 .map(StoragePermissionSid::getName)
                 .collect(Collectors.toList());
-        // TODO: 27.08.2021 Allow/deny permissions for a user should override permissions for any group
-        // TODO: 27.08.2021 Allow permission for any group should override read deny for any group
         final Map<StoragePermissionRepository.StorageItem, Integer> masks = storagePermissionManager
                 .loadImmediateChildPermissions(storage.getRootId(), absolutePath, user.getUserName(), groups)
                 .stream()
                 .collect(Collectors.groupingBy(this::getStorageItem,
-                        Collectors.collectingAndThen(Collectors.toList(), list -> list.stream()
-                                .sorted(Comparator.comparing(StoragePermission::getSid,
-                                        Comparator.comparing(StoragePermissionSid::getType,
-                                                Comparator.reverseOrder())))
-                                .reduce(0, (mask, p) -> permissionsService.mergeItemMask(mask, p.getMask()),
-                                        permissionsService::mergeItemMask))));
+                        Collectors.collectingAndThen(Collectors.toList(), this::mergeExactMask)));
         if (isAllowed(folderMask, AclPermission.READ)) {
+            final DataStorageListing listing = getListingByMarker.apply(null);
             result.setNextPageMarker(listing.getNextPageMarker());
             result.setResults(ListUtils.emptyIfNull(listing.getResults()).stream()
                     .map(item -> {
@@ -178,11 +173,12 @@ public class StoragePermissionProviderManager {
                     storagePermissionManager.loadReadAllowedImmediateChildItems(storage.getRootId(), absolutePath,
                             user.getUserName(), groups);
             if (readAllowedItems.isEmpty()) {
-                throw new AccessDeniedException(String.format("No recursive read permissions for %s", absolutePath));
+                return Optional.empty();
             }
+            DataStorageListing currentListing = getListingByMarker.apply(null);
             int filteredOutItemsNumber = 0;
             final List<AbstractDataStorageItem> items = new ArrayList<>();
-            for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(listing.getResults())) {
+            for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(currentListing.getResults())) {
                 final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(item);
                 if (readAllowedItems.contains(storageItem)) {
                     int mask = masks.getOrDefault(storageItem, 0);
@@ -195,9 +191,8 @@ public class StoragePermissionProviderManager {
                             ? Math.max(CollectionUtils.size(((DataStorageFile) item).getVersions()), 1) : 1;
                 }
             }
-            DataStorageListing currentListing = listing;
             while (filteredOutItemsNumber > 0 && currentListing.getNextPageMarker() != null) {
-                currentListing = markerToListingFunction.apply(currentListing.getNextPageMarker());
+                currentListing = getListingByMarker.apply(currentListing.getNextPageMarker());
                 for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(currentListing.getResults())) {
                     final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(item);
                     if (readAllowedItems.contains(storageItem)) {
@@ -214,7 +209,7 @@ public class StoragePermissionProviderManager {
             result.setNextPageMarker(currentListing.getNextPageMarker());
             result.setResults(items);
         }
-        return result;
+        return Optional.of(result);
     }
 
     private AbstractDataStorageItem withMask(final AbstractDataStorageItem item, final int mask) {
@@ -260,11 +255,8 @@ public class StoragePermissionProviderManager {
         final Stream<Integer> pathMasks = permissions.keySet().stream()
                 .sorted(Comparator.comparing(StoragePermissionRepository.StorageItem::getStoragePath,
                         Comparator.reverseOrder()))
-                .map(item -> permissions.get(item)
-                        .stream()
-                        .sorted(Comparator.comparing(StoragePermission::getSid,
-                                Comparator.comparing(StoragePermissionSid::getType, Comparator.reverseOrder())))
-                        .reduce(0, (mask, p) -> permissionsService.mergeItemMask(mask, p.getMask()), permissionsService::mergeItemMask));
+                .map(permissions::get)
+                .map(this::mergeExactMask);
         return Stream.concat(pathMasks, Stream.of(getStorageMask((AbstractSecuredEntity) storage)))
                 .reduce(this::mergeParentMask)
                 .orElse(0);
@@ -276,6 +268,19 @@ public class StoragePermissionProviderManager {
 
     private int getStorageMask(final AbstractSecuredEntity storage) {
         return grantPermissionManager.getPermissionsMask(storage, false, true);
+    }
+
+    private int mergeExactMask(final List<StoragePermission> permissions) {
+        return permissions.stream()
+                .sorted(Comparator.comparing(StoragePermission::getSid,
+                        Comparator.comparing(StoragePermissionSid::getType, Comparator.reverseOrder())))
+                .reduce(0, this::mergeExactMask, (mask, ignored) -> mask);
+    }
+
+    private int mergeExactMask(final int currentMask, final StoragePermission permission) {
+        return permission.getSid().getType() == StoragePermissionSidType.USER
+                ? permissionsService.mergeExactUserMask(currentMask, permission.getMask())
+                : permissionsService.mergeExactGroupMask(currentMask, permission.getMask());
     }
 
     private int mergeParentMask(final int childMask, final int parentMask) {
