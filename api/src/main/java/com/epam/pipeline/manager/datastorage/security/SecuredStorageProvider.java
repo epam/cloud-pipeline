@@ -17,7 +17,6 @@ import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.io.InputStream;
@@ -67,7 +66,8 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
     public DataStorageListing getItems(T storage, String path, Boolean showVersion,
                                        Integer pageSize, String marker) {
         final DataStorageListing listing = provider.getItems(storage, path, showVersion, pageSize, marker);
-        return permissionProviderManager.applyPermissions(storage, path, listing);
+        return permissionProviderManager.apply(storage, path, listing, nextMarker ->
+                provider.getItems(storage, path, showVersion, pageSize, nextMarker));
     }
 
     public Optional<DataStorageFile> findFile(T storage, String path, String version) {
