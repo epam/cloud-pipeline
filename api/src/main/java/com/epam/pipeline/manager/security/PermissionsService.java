@@ -62,6 +62,10 @@ public class PermissionsService {
         return false;
     }
 
+    public boolean allPermissionsSet(int mask) {
+        return allPermissionsSet(mask, AclPermission.getBasicPermissions());
+    }
+
     public boolean allPermissionsSet(int mask, List<AclPermission> permissionToCollect) {
         for (AclPermission permission : permissionToCollect) {
             if (!isPermissionSet(mask, permission)) {
