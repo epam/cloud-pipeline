@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">5</div>
+<div class="counter">4</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">43m21.92s</div>
+<div class="counter">49m24.15s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">85%</div>
+<div class="percent">87%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,13 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724"></a>
-<h3 class="failures">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</h3>
+<a name="validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697"></a>
+<h3 class="failures">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</h3>
 <span class="code">
 <pre>Element not found {By.className: ant-select-dropdown-menu}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1629945356963.48.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1629945356963.48.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1630026243440.41.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1630026243440.41.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -101,7 +101,7 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setTypeValue(PipelineRunFormAO.java:118)
 	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setLaunchOptions(PipelineRunFormAO.java:104)
 	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setDefaultLaunchOptions(PipelineRunFormAO.java:99)
-	at com.epam.pipeline.autotests.DockerCommitTest.validateDeleteRuntimeFilesFlagWorksProperly(DockerCommitTest.java:230)
+	at com.epam.pipeline.autotests.DockerCommitTest.validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag(DockerCommitTest.java:252)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -121,10 +121,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '1f47928a412e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '10de6eb28fca', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 015e84b71c9981d9e5d0bab19f390b90
+Session ID: 76d0c71fcd6e77c93603212807a8415d
 *** Element info: {Using=class name, value=ant-select-dropdown-menu}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -161,22 +161,22 @@ Session ID: 015e84b71c9981d9e5d0bab19f390b90
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.870s</td>
+<td>2.874s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>5m35.26s</td>
+<td>5m55.18s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>1.293s</td>
+<td>1.482s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>14m20.96s</td>
+<td>15m13.60s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -186,7 +186,7 @@ Session ID: 015e84b71c9981d9e5d0bab19f390b90
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>16m41.84s</td>
+<td>17m33.98s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -200,14 +200,14 @@ Session ID: 015e84b71c9981d9e5d0bab19f390b90
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="skipped">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="failures">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
+<td>2m51.88s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>2m52.07s</td>
-<td class="failures">failed</td>
+<td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
+<td>3m36.96s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="skipped">validateLaunchSpecificVersion</td>
@@ -216,7 +216,7 @@ Session ID: 015e84b71c9981d9e5d0bab19f390b90
 </tr>
 <tr>
 <td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>3m47.61s</td>
+<td>4m8.20s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -224,13 +224,14 @@ Session ID: 015e84b71c9981d9e5d0bab19f390b90
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 5531 from [5531]
-Returns latest run with runId 5531 from [5531]
-Returns latest run with runId 5531 from [5531]
-Returns latest run with runId 5531 from [5531]
-Returns latest run with runId 5532 from [5531, 5532]
-Returns latest run with runId 5532 from [5531, 5532]
-Returns latest run with runId 5533 from [5531, 5532, 5533]
+<pre>Returns latest run with runId 5674 from [5674]
+Returns latest run with runId 5674 from [5674]
+Returns latest run with runId 5674 from [5674]
+Returns latest run with runId 5674 from [5674]
+Returns latest run with runId 5678 from [5674, 5678]
+Returns latest run with runId 5678 from [5674, 5678]
+Returns latest run with runId 5679 from [5674, 5678, 5679]
+Returns latest run with runId 5680 from [5674, 5678, 5679, 5680]
 </pre>
 </span>
 </div>
@@ -242,7 +243,7 @@ Returns latest run with runId 5533 from [5531, 5532, 5533]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 26, 2021 5:55:37 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 27, 2021 2:00:20 PM</p>
 </div>
 </div>
 </body>
