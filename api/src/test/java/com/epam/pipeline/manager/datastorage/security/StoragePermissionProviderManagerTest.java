@@ -25,13 +25,16 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -254,15 +257,14 @@ public class StoragePermissionProviderManagerTest {
                     listing(FULL_MASK, Collections.singletonList(
                             folder(CHILD_PATH, FULL_MASK)))),
             new ApplyTestScenario(
-                    "storage empty + exact group full + exact user nothing = listing nothing + child nothing",
+                    "storage empty + exact group full + exact user nothing = forbidden listing",
                     permissions(
                             permission(PATH, FULL_MASK).withSid(groupSid()),
                             permission(PATH, DENY_MASK)),
                     EMPTY_MASK,
                     listing(Collections.singletonList(
                             folder(CHILD_PATH))),
-                    listing(DENY_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, DENY_MASK)))),
+                    forbiddenListing()),
             new ApplyTestScenario(
                     "storage empty + exact user nothing + exact group full = listing nothing + child nothing",
                     permissions(
@@ -271,8 +273,7 @@ public class StoragePermissionProviderManagerTest {
                     EMPTY_MASK,
                     listing(Collections.singletonList(
                             folder(CHILD_PATH))),
-                    listing(DENY_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, DENY_MASK)))),
+                    forbiddenListing()),
             new ApplyTestScenario(
                     "storage empty + exact group nothing + exact another group full = listing full + child full",
                     permissions(
@@ -303,13 +304,11 @@ public class StoragePermissionProviderManagerTest {
             mockStoragePermissions(storage, scenario.getStorageMask());
             mockPermissions(storage, scenario.getPermissions(), scenario.getChildPermissions(),
                     scenario.getReadAllowedChildPermissions());
-            final DataStorageListing inputListing = scenario.getInputListing();
-            final DataStorageListing expectedListing = scenario.getExpectedListing();
 
-            final DataStorageListing actualListing = manager.apply(storage, PATH, inputListing,
-                    MARKER_TO_EMPTY_LISTING_FUNCTION);
+            final Optional<DataStorageListing> actualListing = manager.apply(storage, PATH,
+                    ignored -> scenario.getInputListing());
 
-            assertListing(scenario.getDescription(), actualListing, expectedListing);
+            assertListing(scenario.getDescription(), actualListing, scenario.getExpectedListing());
         }
     }
 
@@ -323,6 +322,10 @@ public class StoragePermissionProviderManagerTest {
         final DataStorageListing listing = new DataStorageListing(null, items);
         listing.setMask(permissionsService.mergeMask(mask));
         return listing;
+    }
+
+    private DataStorageListing forbiddenListing() {
+        return null;
     }
 
     private AbstractDataStorageItem folder(final String path) {
@@ -423,15 +426,21 @@ public class StoragePermissionProviderManagerTest {
     }
 
     private void assertListing(final String reason,
-                               final DataStorageListing actual,
+                               final Optional<DataStorageListing> optionalActual,
                                final DataStorageListing expected) {
-        assertThat(reason, actual.getMask(), is(expected.getMask()));
-        assertThat(reason, actual.getNextPageMarker(), is(expected.getNextPageMarker()));
-        assertThat(reason, actual.getResults().size(), is(expected.getResults().size()));
-        for (int i = 0; i < actual.getResults().size(); i++) {
-            assertThat(reason, actual.getResults().get(i).getPath(), is(expected.getResults().get(i).getPath()));
-            assertThat(reason, actual.getResults().get(i).getType(), is(expected.getResults().get(i).getType()));
-            assertThat(reason, actual.getResults().get(i).getMask(), is(expected.getResults().get(i).getMask()));
+        if (expected == null) {
+            assertFalse(reason, optionalActual.isPresent());
+        } else {
+            assertTrue(reason, optionalActual.isPresent());
+            final DataStorageListing actual = optionalActual.get();
+            assertThat(reason, actual.getMask(), is(expected.getMask()));
+            assertThat(reason, actual.getNextPageMarker(), is(expected.getNextPageMarker()));
+            assertThat(reason, actual.getResults().size(), is(expected.getResults().size()));
+            for (int i = 0; i < actual.getResults().size(); i++) {
+                assertThat(reason, actual.getResults().get(i).getPath(), is(expected.getResults().get(i).getPath()));
+                assertThat(reason, actual.getResults().get(i).getType(), is(expected.getResults().get(i).getType()));
+                assertThat(reason, actual.getResults().get(i).getMask(), is(expected.getResults().get(i).getMask()));
+            }
         }
     }
 }
