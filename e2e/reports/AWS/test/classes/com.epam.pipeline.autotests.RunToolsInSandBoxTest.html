@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h2m58.90s</div>
+<div class="counter">1h11m10.45s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">90%</div>
+<div class="percent">81%</div>
 <p>successful</p>
 </div>
 </td>
@@ -81,8 +81,8 @@
 <span class="code">
 <pre>Element not found {with text: Endpoint}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1630017707456.20.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1630017707456.20.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1630104324094.20.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1630104324094.20.html
 Timeout: 800 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -136,10 +136,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '10de6eb28fca', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'dc73e4e75c48', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 2cf927fb589e00221474068cfc35f434
+Session ID: 25228836e8a48a2ff09e32208f1f9257
 *** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
  ', '    ')), &quot;Endpoint&quot;)]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
@@ -164,6 +164,82 @@ Session ID: 2cf927fb589e00221474068cfc35f434
 </pre>
 </span>
 </div>
+<div class="test">
+<a name="validateNodeReusage - EPMCMBIBPC-503"></a>
+<h3 class="failures">validateNodeReusage - EPMCMBIBPC-503</h3>
+<span class="code">
+<pre>Element not found {By.className: ant-select-dropdown-menu}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1630105069462.31.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1630105069462.31.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.findElements(Unknown Source)
+	at com.codeborne.selenide.impl.WebElementSelector.findElements(WebElementSelector.java:38)
+	at com.codeborne.selenide.impl.BySelectorCollection.getActualElements(BySelectorCollection.java:38)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:50)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setTypeValue(PipelineRunFormAO.java:118)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setLaunchOptions(PipelineRunFormAO.java:104)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setDefaultLaunchOptions(PipelineRunFormAO.java:99)
+	at com.epam.pipeline.autotests.RunToolsInSandBoxTest.validateNodeReusage(RunToolsInSandBoxTest.java:177)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'dc73e4e75c48', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: bd6108e05e74ea13fbf4e16512550886
+*** Element info: {Using=class name, value=ant-select-dropdown-menu}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByClassName(RemoteWebDriver.java:457)
+	at org.openqa.selenium.By$ByClassName.findElement(By.java:391)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
+	... 30 more
+</pre>
+</span>
+</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -177,12 +253,12 @@ Session ID: 2cf927fb589e00221474068cfc35f434
 </thead>
 <tr>
 <td class="success">checkToolAccessibilityForAnotherUser - EPMCMBIBPC-500</td>
-<td>3m48.93s</td>
+<td>6m13.78s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareForToolInSandbox - EPMCMBIBPC-526</td>
-<td>21.308s</td>
+<td>20.941s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -191,43 +267,43 @@ Session ID: 2cf927fb589e00221474068cfc35f434
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validateNodeReusage - EPMCMBIBPC-503</td>
-<td>37.349s</td>
-<td class="success">passed</td>
+<td class="failures">validateNodeReusage - EPMCMBIBPC-503</td>
+<td>2m55.63s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validatePipelineIsLaunchedForToolInSandbox - EPMCMBIBPC-494</td>
-<td>17.195s</td>
+<td>16.927s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRunParameters - EPMCMBIBPC-493</td>
-<td>6.779s</td>
+<td>6.507s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopToolInSandbox - EPMCMBIBPC-501</td>
-<td>3m17.91s</td>
+<td>3m12.56s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopToolInSandboxWithTimeout - EPMCMBIBPC-504</td>
-<td>19m15.99s</td>
+<td>21m0.87s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateUsernameOnPipelinePage - EPMCMBIBPC-496</td>
-<td>3.634s</td>
+<td>3.373s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfDinDLaunchAndFunctionality - EPMCMBIBPC-3173</td>
-<td>2m35.96s</td>
+<td>2m31.40s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfSingularityLaunchAndFunctionality - EPMCMBIBPC-3175</td>
-<td>19m6.39s</td>
+<td>21m1.02s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -235,43 +311,41 @@ Session ID: 2cf927fb589e00221474068cfc35f434
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 5645 from [5645]
-Returns latest run with runId 5646 from [5645, 5646]
-Returns latest run with runId 5647 from [5645, 5646, 5647]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5648 from [5645, 5646, 5647, 5648]
-Returns latest run with runId 5651 from [5645, 5646, 5647, 5648, 5651]
-Returns latest run with runId 5651 from [5645, 5646, 5647, 5648, 5651]
+<pre>Returns latest run with runId 5764 from [5764]
+Returns latest run with runId 5765 from [5764, 5765]
+Returns latest run with runId 5766 from [5764, 5765, 5766]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
+Returns latest run with runId 5767 from [5764, 5765, 5766, 5767]
 </pre>
 </span>
 </div>
 <div id="tab3" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Aug 26, 2021 10:45:02 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (2cf927fb589e00221474068cfc35f434)
-Aug 26, 2021 10:45:02 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Aug 27, 2021 10:51:04 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (25228836e8a48a2ff09e32208f1f9257)
+Aug 27, 2021 10:51:04 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Aug 26, 2021 10:45:03 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 94 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 32748
+Aug 27, 2021 10:51:04 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 102 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 19667
 Only local connections are allowed.
-Aug 26, 2021 10:45:03 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Aug 27, 2021 10:51:05 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Aug 26, 2021 10:45:03 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Aug 27, 2021 10:51:05 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Aug 26, 2021 10:45:03 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Aug 27, 2021 10:51:05 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Aug 26, 2021 10:45:03 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Aug 27, 2021 10:51:05 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Aug 26, 2021 10:45:03 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (07b9f16773e2aef1d9b854b5a7e3e417)
+Aug 27, 2021 10:51:05 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (bd6108e05e74ea13fbf4e16512550886)
 </pre>
 </span>
 </div>
@@ -283,7 +357,7 @@ INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: ch
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 27, 2021 2:00:21 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 28, 2021 6:23:12 PM</p>
 </div>
 </div>
 </body>
