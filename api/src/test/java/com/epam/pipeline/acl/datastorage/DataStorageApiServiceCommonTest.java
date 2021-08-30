@@ -311,16 +311,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnAvailableStoragesWithShareMountWhenWritePermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
-        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        doReturn(mutableListOf(storageShareMount)).when(mockDataStorageManager).getDataStoragesWithShareMountObject(ID);
-
-        assertThat(dataStorageApiService.getAvailableStoragesWithShareMount(ID)).hasSize(1).contains(storageShareMount);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnEmptyAvailableStoragesWithShareMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
@@ -348,19 +338,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
         assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnAvailableStoragesWhenWritePermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
-        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
-
-        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
-
-        assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
-        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(WRITE_PERMISSION);
     }
 
     @Test
