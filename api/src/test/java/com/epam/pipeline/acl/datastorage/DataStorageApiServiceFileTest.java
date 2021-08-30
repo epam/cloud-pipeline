@@ -180,7 +180,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateDataStorageItemsWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(dataStorageFileList).when(mockDataStorageManager).updateDataStorageItems(ID, dataStorageItemVOList);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
@@ -202,7 +202,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyUpdateDataStorageItemsWhenCheckStorageSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(dataStorageFileList).when(mockDataStorageManager).updateDataStorageItems(ID, dataStorageItemVOList);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
@@ -224,7 +224,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateFileWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(dataStorageFile).when(mockDataStorageManager)
                 .createDataStorageFile(ID, TEST_STRING, TEST_STRING, TEST_ARRAY);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
@@ -248,7 +248,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateFileWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(dataStorageFile).when(mockDataStorageManager)
                 .createDataStorageFile(ID, TEST_STRING, TEST_STRING, TEST_ARRAY);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
@@ -271,7 +271,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateFileThroughInputStreamWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(dataStorageFile).when(mockDataStorageManager)
                 .createDataStorageFile(ID, TEST_STRING, TEST_STRING, inputStream);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
@@ -295,7 +295,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateFileThroughInputStreamWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(dataStorageFile).when(mockDataStorageManager)
                 .createDataStorageFile(ID, TEST_STRING, TEST_STRING, inputStream);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
@@ -317,7 +317,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateFileThroughPathWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(dataStorageFile).when(mockDataStorageManager).createDataStorageFile(ID, TEST_STRING, TEST_ARRAY);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
@@ -339,7 +339,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateFileThroughPathWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(dataStorageFile).when(mockDataStorageManager).createDataStorageFile(ID, TEST_STRING, TEST_ARRAY);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
@@ -360,7 +360,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteItemsWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(TEST_INT).when(mockDataStorageManager).deleteDataStorageItems(ID, dataStorageItemVOList, true);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
@@ -382,7 +382,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyDeleteItemsWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(TEST_INT).when(mockDataStorageManager).deleteDataStorageItems(ID, dataStorageItemVOList, true);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
@@ -425,7 +425,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyDeleteItemsOwnerWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(TEST_INT).when(mockDataStorageManager).deleteDataStorageItems(ID, dataStorageItemVOList, true);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
@@ -588,7 +588,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldGenerateItemUploadUrlOwnerWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(downloadFileUrl).when(mockDataStorageManager).generateDataStorageItemUploadUrl(ID, TEST_STRING);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
@@ -610,7 +610,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyGenerateItemUploadUrlOwnerWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(downloadFileUrl).when(mockDataStorageManager).generateDataStorageItemUploadUrl(ID, TEST_STRING);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
@@ -631,7 +631,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldGenerateFileUploadUrlsWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
+        initAclEntity(s3bucket, AclPermission.READ);
         doReturn(downloadFileUrlList).when(mockDataStorageManager).generateDataStorageItemUploadUrl(ID, testList);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
@@ -653,7 +653,7 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser
     public void shouldDenyGenerateFileUploadUrlsWhenSharedPermissionIsNotGranted() {
-        initAclEntity(notSharedS3bucket, AclPermission.WRITE);
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(downloadFileUrlList).when(mockDataStorageManager).generateDataStorageItemUploadUrl(ID, testList);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 

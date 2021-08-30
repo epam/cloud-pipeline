@@ -66,7 +66,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-// TODO: 24.08.2021 Require only read permissions for data storage content operations
 @Service
 @RequiredArgsConstructor
 public class DataStorageApiService {
@@ -115,13 +114,13 @@ public class DataStorageApiService {
         return dataStorageManager.load(id);
     }
 
-    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT_ID)
+    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT)
     @AclMask
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         return dataStorageManager.loadByNameOrId(identifier);
     }
 
-    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT_ID)
+    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT)
     @AclMask
     public AbstractDataStorage loadByPathOrId(final String identifier) {
         return dataStorageManager.loadByPathOrId(identifier);
