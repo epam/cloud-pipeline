@@ -24,7 +24,6 @@ import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.dto.datastorage.security.StorageKind;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionSid;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -63,7 +62,6 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
-import com.epam.pipeline.manager.datastorage.security.StoragePermissionProviderManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.issue.IssueManager;
@@ -74,6 +72,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.metadata.MetadataPermissionManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
@@ -203,7 +202,7 @@ public class GrantPermissionManager {
 
     @Autowired private MetadataPermissionManager metadataPermissionManager;
 
-    @Autowired private StoragePermissionProviderManager storagePermissionProviderManager;
+    @Autowired private StoragePermissionAccessManager storagePermissionAccessManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -439,7 +438,7 @@ public class GrantPermissionManager {
             return;
         }
         final Set<StoragePermissionRepository.Storage> readAllowedStorages =
-                storagePermissionProviderManager.loadReadAllowedStorages();
+                storagePermissionAccessManager.loadReadAllowedStorages();
         processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids, readAllowedStorages);
     }
 
@@ -503,7 +502,7 @@ public class GrantPermissionManager {
                 ? isOwnerOrAdmin(storage.getOwner())
                 : permissionsHelper.isAllowed(permissionName, storage)
                 || permissionName.equals(AclPermission.READ_NAME)
-                && storagePermissionProviderManager.isReadAllowed(storage);
+                && storagePermissionAccessManager.isReadAllowed(storage);
     }
 
     public boolean storagePermissions(Long storageId, List<String> permissionNames) {

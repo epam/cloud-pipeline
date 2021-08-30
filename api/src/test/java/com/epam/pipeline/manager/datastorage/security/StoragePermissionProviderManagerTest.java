@@ -38,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class StoragePermissionProviderManagerTest {
@@ -266,7 +267,7 @@ public class StoragePermissionProviderManagerTest {
                             folder(CHILD_PATH))),
                     forbiddenListing()),
             new ApplyTestScenario(
-                    "storage empty + exact user nothing + exact group full = listing nothing + child nothing",
+                    "storage empty + exact user nothing + exact group full = forbidden listing",
                     permissions(
                             permission(PATH, DENY_MASK),
                             permission(PATH, FULL_MASK).withSid(groupSid())),
@@ -398,23 +399,29 @@ public class StoragePermissionProviderManagerTest {
     }
 
     private void mockNonAuthorizedUser() {
+        doThrow(AccessDeniedException.class).when(authManager).getCurrentUserOrFail();
         doReturn(null).when(authManager).getCurrentUser();
     }
 
     private void mockOwner() {
-        doReturn(new PipelineUser(OWNER)).when(authManager).getCurrentUser();
+        mockUser(new PipelineUser(OWNER));
     }
 
     private void mockAdmin() {
         final PipelineUser user = new PipelineUser(USER);
         user.setAdmin(true);
-        doReturn(user).when(authManager).getCurrentUser();
+        mockUser(user);
     }
 
     private void mockUser() {
         final PipelineUser user = new PipelineUser(USER);
         user.setRoles(Collections.singletonList(new Role(GROUP)));
         user.setGroups(Collections.singletonList(ANOTHER_GROUP));
+        mockUser(user);
+    }
+
+    private void mockUser(final PipelineUser user) {
+        doReturn(user).when(authManager).getCurrentUserOrFail();
         doReturn(user).when(authManager).getCurrentUser();
     }
 

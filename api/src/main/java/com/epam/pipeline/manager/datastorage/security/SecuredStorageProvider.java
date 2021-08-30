@@ -117,7 +117,7 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
     public void deleteFolder(T storage, String path, Boolean totally) {
         assertFolderRecursiveWriteAccess(storage, path);
         provider.deleteFolder(storage, path, totally);
-        permissionProviderManager.deleteFolderPermissions(storage, path);
+        permissionProviderManager.deleteFolderPermissions(storage, path, totally);
     }
 
     public DataStorageFile moveFile(T storage, String oldPath, String newPath) {
