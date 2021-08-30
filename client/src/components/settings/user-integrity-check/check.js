@@ -158,17 +158,15 @@ function checkUsersIntegrity (users = [], systemDictionaries = [], fieldsToCheck
           users.forEach(user => {
             const userMetadata = usersMetadata
               .find(metadata => metadata.entity?.entityId === user.id);
-            if (userMetadata) {
-              const {data: raw = {}} = userMetadata;
-              const data = Object
-                .entries(raw)
-                .map(([key, value]) => ({[key]: value.value}))
-                .reduce((r, c) => ({...r, ...c}), {});
-              const errors = checkUser(user, data, dictionaries, fieldsToCheck);
-              if (errors.length > 0) {
-                usersWithIssues.push(user);
-                userErrors.push(...errors);
-              }
+            const {data: raw = {}} = userMetadata || {};
+            const data = Object
+              .entries(raw)
+              .map(([key, value]) => ({[key]: value.value}))
+              .reduce((r, c) => ({...r, ...c}), {});
+            const errors = checkUser(user, data, dictionaries, fieldsToCheck);
+            if (errors.length > 0) {
+              usersWithIssues.push(user);
+              userErrors.push(...errors);
             }
           });
           resolve({users: usersWithIssues, errors: userErrors});
