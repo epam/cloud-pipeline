@@ -48,8 +48,8 @@ import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
-import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
-import com.epam.pipeline.manager.security.acl.AclMaskList;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclDelegateList;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclList;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
@@ -78,32 +78,26 @@ public class DataStorageApiService {
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
 
-    // TODO: 24.08.2021 Support data storages without explicit read permissions
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
-    @AclMaskList
+    @StorageAclList
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageManager.getDataStorages();
     }
 
-    // TODO: 24.08.2021 Support data storages without explicit read permissions
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') AND "
-            + "hasPermission(filterObject, 'WRITE'))")
-    @AclMaskList
-    public List<AbstractDataStorage> getWritableStorages() {
-        return dataStorageManager.getDataStorages();
-    }
-
-    // TODO: 24.08.2021 Support data storages without explicit read permissions
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
-            + "hasPermission(filterObject.storage, 'WRITE'))")
-    @AclMaskDelegateList
+    @StorageAclDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') OR "
-            + "hasPermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    // TODO: 30.08.2021 Double check and delete the corresponding controller method since it is not used anywhere.
+    @Deprecated
+    @StorageAclList
+    public List<AbstractDataStorage> getWritableStorages() {
+        return dataStorageManager.getDataStorages();
+    }
+
+    // TODO: 30.08.2021 Double check and delete the corresponding controller method since it is not used anywhere.
+    @Deprecated
+    @StorageAclList
     public List<AbstractDataStorage> getAvailableStorages() {
         return dataStorageManager.getDataStorages();
     }
