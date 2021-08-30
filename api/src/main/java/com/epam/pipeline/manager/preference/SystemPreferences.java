@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
@@ -755,6 +756,13 @@ public class SystemPreferences {
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
+
+    public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
+        "search.storage.elements.hide.mask",
+        Collections.emptyList(),
+        new TypeReference<List<StorageFileSearchMask>>() {},
+        SEARCH_GROUP,
+        isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
