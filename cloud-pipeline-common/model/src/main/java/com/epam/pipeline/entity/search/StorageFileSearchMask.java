@@ -18,11 +18,11 @@ package com.epam.pipeline.entity.search;
 
 import lombok.Data;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class StorageFileSearchMask {
 
     private final String storageName;
-    private final List<String> hiddenFilePathGlobs;
+    private final Set<String> hiddenFilePathGlobs;
 }

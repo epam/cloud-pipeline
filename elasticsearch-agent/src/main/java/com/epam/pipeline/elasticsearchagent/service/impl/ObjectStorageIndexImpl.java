@@ -36,6 +36,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.util.AntPathMatcher;
@@ -46,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,7 +72,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     @Getter
     private final SearchDocumentType documentType;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
-    private final Map<String, List<String>> searchMasks = new HashMap<>();
+    private final Map<String, Set<String>> searchMasks = new HashMap<>();
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
@@ -125,10 +127,11 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     }
 
     private void updateSearchMasks() {
-        final Map<String, List<String>> newMasks = cloudPipelineAPIClient.getStorageSearchMasks()
+        final Map<String, Set<String>> newMasks = cloudPipelineAPIClient.getStorageSearchMasks()
             .stream()
             .collect(Collectors.toMap(StorageFileSearchMask::getStorageName,
-                                      StorageFileSearchMask::getHiddenFilePathGlobs));
+                                      StorageFileSearchMask::getHiddenFilePathGlobs,
+                                      SetUtils::union));
         searchMasks.clear();
         log.info("Updating search masks: {}", newMasks);
         searchMasks.putAll(newMasks);
