@@ -125,6 +125,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -481,16 +482,20 @@ public class GrantPermissionManager {
     }
 
     public boolean storagePermission(final Long storageId, final String permissionName) {
-        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
+        final AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId);
         return storagePermission(storage, permissionName);
     }
 
     public boolean storagePermission(final String identifier, final String permissionName) {
-        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
+        final AbstractDataStorage storage = (AbstractDataStorage) entityManager.loadByNameOrId(AclClass.DATA_STORAGE,
+                identifier);
         return storagePermission(storage, permissionName);
     }
 
-    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
+    private boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
+        if (storage == null) {
+            return false;
+        }
         if (forbiddenByMountStatus(storage, permissionName)) {
             return false;
         }
@@ -498,8 +503,7 @@ public class GrantPermissionManager {
                 ? isOwnerOrAdmin(storage.getOwner())
                 : permissionsHelper.isAllowed(permissionName, storage)
                 || permissionName.equals(AclPermission.READ_NAME)
-                && storage instanceof SecuredStorageEntity
-                && storagePermissionProviderManager.isReadAllowed((SecuredStorageEntity) storage);
+                && storagePermissionProviderManager.isReadAllowed(storage);
     }
 
     public boolean storagePermissions(Long storageId, List<String> permissionNames) {
@@ -512,7 +516,8 @@ public class GrantPermissionManager {
 
     public boolean listedStoragePermissions(List<DataStorageAction> actions) {
         for (DataStorageAction action : actions) {
-            AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, action.getId());
+            AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE,
+                    action.getId());
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
@@ -534,13 +539,25 @@ public class GrantPermissionManager {
     }
 
     public boolean checkStorageShared(Long storageId) {
-        UserContext context = authManager.getUserContext();
-        if (context.isExternal()) {
-            AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId);
-            return storage.isShared();
-        }
+        return checkStorageShared(() -> (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId));
+    }
 
-        return true;
+    public boolean checkStorageShared(String identifier) {
+        return checkStorageShared(() -> (AbstractDataStorage) entityManager.loadByNameOrId(AclClass.DATA_STORAGE,
+                identifier));
+    }
+
+    public boolean checkStorageShared(AbstractDataStorage storage) {
+        return checkStorageShared(() -> storage);
+    }
+
+    public boolean checkStorageShared(Supplier<AbstractDataStorage> supplier) {
+        UserContext context = authManager.getUserContext();
+        if (!context.isExternal()) {
+            return true;
+        }
+        final AbstractDataStorage storage = supplier.get();
+        return storage == null || storage.isShared();
     }
 
     /**

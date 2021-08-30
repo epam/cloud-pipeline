@@ -20,6 +20,8 @@ public final class AclExpressions {
 
     public static final String OR = " OR ";
     public static final String AND = " AND ";
+    public static final String OPENED = " ( ";
+    public static final String CLOSED = " ) ";
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
 
@@ -58,6 +60,9 @@ public final class AclExpressions {
 
     public static final String STORAGE_SHARED = "@grantPermissionManager.checkStorageShared(#id)";
 
+    public static final String STORAGE_SHARED_ON_RETURN_OBJECT =
+            "@grantPermissionManager.checkStorageShared(returnObject.id)";
+
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
             + AND + STORAGE_SHARED;
@@ -70,9 +75,9 @@ public final class AclExpressions {
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
             + AND + STORAGE_SHARED;
 
-    public static final String STORAGE_READ_ON_RETURN_OBJECT_ID =
-            "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#returnObject.id, 'READ')) "
-            + AND + STORAGE_SHARED;
+    public static final String STORAGE_READ_ON_RETURN_OBJECT =
+            OPENED + ADMIN_ONLY + OR + "@grantPermissionManager.storagePermission(returnObject.id, 'READ')" + CLOSED
+            + AND + STORAGE_SHARED_ON_RETURN_OBJECT;
 
     public static final String STORAGE_ID_PERMISSIONS =
             "(" 
