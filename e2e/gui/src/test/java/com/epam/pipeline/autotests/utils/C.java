@@ -93,6 +93,9 @@ public class C {
         SYNC_STORAGE_PERMISSION_NAME = conf.getProperty("e2e.ui.sync.storage.permission.name");
         SYNC_STORAGE_PERMISSIONS = conf.getProperty("e2e.ui.sync.storage.permissions");
         ROLE_USER = conf.getProperty("e2e.ui.role.user");
+        SUPPORT_CONTENT = conf.getProperty("e2e.ui.help.content");
+        LUSTRE_MOUNT_OPTIONS = conf.getProperty("e2e.ui.lustre.fs.mount.options");
+        LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH = conf.getProperty("e2e.ui.launch.system.parameters.path");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -167,4 +170,7 @@ public class C {
     public static final String SYNC_STORAGE_PERMISSION_NAME;
     public static final String SYNC_STORAGE_PERMISSIONS;
 
+    public static final String SUPPORT_CONTENT;
+    public static final String LUSTRE_MOUNT_OPTIONS;
+    public static final String LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH;
 }

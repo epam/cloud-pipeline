@@ -78,10 +78,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(NEXT_PAGE, context().find(byId("next-page-button")))
     );
 
-    public static By browser() {
-        return className("browser__children-container");
-    }
-
     public static By browserItem(final String name) {
         final String browserItemClass = "ant-table-row";
         final String itemNameClass = "browser__tree-item-name";
