@@ -61,6 +61,12 @@ public interface StoragePermissionRepository
     List<Storage> findReadAllowedStorages(@Param("user_sid_name") String user,
                                           @Param("group_sid_names") List<String> groups);
 
+    @Query(name = "StoragePermissionRepository.findReadAllowedStorage", nativeQuery = true)
+    List<Storage> findReadAllowedStorage(@Param("datastorage_root_id") Long root,
+                                             @Param("datastorage_id") Long storage,
+                                             @Param("user_sid_name") String user,
+                                             @Param("group_sid_names") List<String> groups);
+
     @Query(name = "StoragePermissionRepository.findRecursiveMask", nativeQuery = true)
     Optional<Integer> findRecursiveMask(@Param("datastorage_root_id") Long root,
                                         @Param("datastorage_path") String path,
