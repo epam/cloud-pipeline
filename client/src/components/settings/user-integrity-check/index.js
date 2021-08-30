@@ -44,15 +44,20 @@ import {
   update
 } from './links';
 import styles from './user-integrity-check.css';
+import UserName from '../../special/UserName';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
+
+const FILTERS = {
+  blocked: 'blocked',
+  neverLoggedIn: 'never logged in'
+};
 
 @inject('systemDictionaries')
 @observer
 class UserIntegrityCheck extends React.Component {
   state = {
     currentPage: 1,
-    pagesCount: 0,
     pending: false,
     actionInProgress: false,
     defaultColumns: [],
@@ -62,8 +67,25 @@ class UserIntegrityCheck extends React.Component {
     error: undefined,
     visible: this.props.visible,
     paths: [],
-    showFullMetadata: false
+    showFullMetadata: false,
+    filters: []
   };
+
+  get filteredUsers () {
+    const {
+      users = []
+    } = this.props;
+    const {
+      filters = []
+    } = this.state;
+    return (users || [])
+      .filter(user => {
+        const blockedFilter = user.blocked || !filters.includes(FILTERS.blocked);
+        const neverLoggedInFilter = !user.firstLoginDate ||
+          !filters.includes(FILTERS.neverLoggedIn);
+        return blockedFilter && neverLoggedInFilter;
+      });
+  }
 
   componentDidMount () {
     this.updateState();
@@ -81,11 +103,8 @@ class UserIntegrityCheck extends React.Component {
   }
 
   updateState = () => {
-    const {users = []} = this.props;
-    const pagesCount = Math.ceil(users.length / PAGE_SIZE);
     this.setState({
-      currentPage: 1,
-      pagesCount
+      currentPage: 1
     }, this.fetchUsersAttributes);
   };
 
@@ -462,25 +481,39 @@ class UserIntegrityCheck extends React.Component {
 
   renderTableContent = () => {
     const {
-      errors = [],
-      users = []
+      errors = []
     } = this.props;
     const {
       currentPage,
       data: metadata = {},
       actionInProgress
     } = this.state;
-    const data = users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const data = this.filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     if (data.length > 0) {
       return data.map((user) => {
         const userMetadata = metadata[user.id] || {};
         const userErrors = errors.filter(error => error.user.id === user.id);
+        const {
+          blocked
+        } = user;
         return (
           <tr key={user.userName}>
             <th key="userName">
-              <div className={styles.userNameCellContainer}>
+              <div
+                className={
+                  classNames(
+                    styles.userNameCellContainer,
+                    {
+                      [styles.blocked]: blocked
+                    }
+                  )
+                }
+              >
                 <span className={styles.userNameCell}>
-                  {user.userName}
+                  {
+                    blocked && (<Icon type="lock" />)
+                  }
+                  <UserName userName={user.userName} />
                 </span>
                 {
                   userErrors.length > 0 && (
@@ -646,8 +679,41 @@ class UserIntegrityCheck extends React.Component {
     const blur = (e) => {
       e.target.focus();
     };
-    return (
+    const {
+      filters
+    } = this.state;
+    const onChangeFilters = (newFilters) => {
+      this.setState({
+        filters: (newFilters || []).slice(),
+        currentPage: 1
+      });
+    };
+    return [
       <div
+        key="filter"
+        className={styles.filters}
+      >
+        <span className={styles.label}>
+          Filter users:
+        </span>
+        <Select
+          style={{flex: 1}}
+          value={filters}
+          onChange={onChangeFilters}
+          mode="multiple"
+          getPopupContainer={node => node.parentNode}
+          dropdownStyle={{zIndex: 1054}}
+        >
+          <Select.Option key={FILTERS.blocked} value={FILTERS.blocked}>
+            Blocked users
+          </Select.Option>
+          <Select.Option key={FILTERS.neverLoggedIn} value={FILTERS.neverLoggedIn}>
+            Never logged in users
+          </Select.Option>
+        </Select>
+      </div>,
+      <div
+        key="table"
         tabIndex={0}
         className={styles.tableContainer}
         onScroll={blur}
@@ -661,7 +727,7 @@ class UserIntegrityCheck extends React.Component {
           </tbody>
         </table>
       </div>
-    );
+    ];
   };
 
   render () {
@@ -675,9 +741,9 @@ class UserIntegrityCheck extends React.Component {
       defaultColumns,
       columns,
       showFullMetadata,
-      currentPage,
-      pagesCount
+      currentPage
     } = this.state;
+    const pagesCount = Math.ceil(this.filteredUsers.length / PAGE_SIZE);
     const {actionInProgress} = this.state;
     if (/^inline$/i.test(mode)) {
       if (users.length === 0) {
@@ -718,7 +784,7 @@ class UserIntegrityCheck extends React.Component {
                   <Pagination
                     current={currentPage}
                     pageSize={PAGE_SIZE}
-                    total={users.length}
+                    total={this.filteredUsers.length}
                     onChange={this.onPageChange}
                     size="small"
                   />
@@ -797,7 +863,7 @@ class UserIntegrityCheck extends React.Component {
                 <Pagination
                   current={currentPage}
                   pageSize={PAGE_SIZE}
-                  total={users.length}
+                  total={this.filteredUsers.length}
                   onChange={this.onPageChange}
                   size="small"
                 />
