@@ -26,6 +26,7 @@ import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -37,7 +38,11 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class AuthManager {
@@ -118,19 +123,27 @@ public class AuthManager {
      * Wraps a current principal into a pipeline user. Therefore some user or its roles fields may be omitted.
      */
     public PipelineUser getCurrentUser() {
+        return findCurrentUser().orElse(null);
+    }
+
+    public PipelineUser getCurrentUserOrFail() {
+        return findCurrentUser().orElseThrow(() -> new AccessDeniedException("Unauthorized user access"));
+    }
+
+    public Optional<PipelineUser> findCurrentUser() {
         Object principal = getPrincipal();
         if (principal instanceof UserContext) {
-            return ((UserContext)principal).toPipelineUser();
+            return Optional.of(((UserContext)principal).toPipelineUser());
         } else if (principal instanceof User) {
             User user = (User) principal;
-            return PipelineUser.builder()
-                .userName(user.getUsername())
-                .roles(user.getAuthorities().stream().map(a -> new Role(a.getAuthority())).collect(Collectors.toList()))
-                .admin(user.getAuthorities().stream()
-                           .anyMatch(a -> a.getAuthority().equals(DefaultRoles.ROLE_ADMIN.getName())))
-                .build();
+            return Optional.of(PipelineUser.builder()
+                    .userName(user.getUsername())
+                    .roles(user.getAuthorities().stream().map(a -> new Role(a.getAuthority())).collect(Collectors.toList()))
+                    .admin(user.getAuthorities().stream()
+                            .anyMatch(a -> a.getAuthority().equals(DefaultRoles.ROLE_ADMIN.getName())))
+                    .build());
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 

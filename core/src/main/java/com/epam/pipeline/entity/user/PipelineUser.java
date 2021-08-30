@@ -146,6 +146,14 @@ public class PipelineUser implements StorageContainer {
         return authorities;
     }
 
+    @JsonIgnore
+    public List<String> getGroupsAndRoles() {
+        final Set<String> authorities = new HashSet<>();
+        authorities.addAll(roles.stream().map(Role::getName).collect(Collectors.toList()));
+        authorities.addAll(groups);
+        return new ArrayList<>(authorities);
+    }
+
     @Override
     public Long getDefaultStorageId() {
         return defaultStorageId;

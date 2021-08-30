@@ -11,7 +11,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
@@ -21,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.stereotype.Service;
 
@@ -115,10 +113,11 @@ public class StoragePermissionProviderManager {
     public boolean isRecursiveAllowed(final SecuredStorageEntity storage,
                                       final String path,
                                       final Permission... permissions) {
-        final PipelineUser user = loadUser();
+        final PipelineUser user = authManager.getCurrentUserOrFail();
         return isAdminOrOwner(storage, user)
                 || isAllowed(storage, path, StoragePermissionPathType.FOLDER, permissions)
-                && storagePermissionManager.loadRecursiveMask(storage.getRootId(), path, user.getUserName(), groups(user))
+                && storagePermissionManager.loadRecursiveMask(storage.getRootId(), path, user.getUserName(),
+                        user.getGroupsAndRoles())
                 .map(mask -> isAllowed(mask, permissions))
                 .orElse(true);
     }
@@ -142,7 +141,7 @@ public class StoragePermissionProviderManager {
                     .collect(Collectors.toList()));
             return Optional.of(listing);
         }
-        final List<String> groups = groups(user);
+        final List<String> groups = user.getGroupsAndRoles();
         final Map<StoragePermissionRepository.StorageItem, Integer> masks = storagePermissionManager
                 .loadImmediateChildPermissions(storage.getRootId(), absolutePath, user.getUserName(), groups)
                 .stream()
@@ -221,7 +220,7 @@ public class StoragePermissionProviderManager {
     private int getMask(final SecuredStorageEntity storage,
                         final String path,
                         final StoragePermissionPathType type) {
-        final PipelineUser user = loadUser();
+        final PipelineUser user = authManager.getCurrentUserOrFail();
         return isAdminOrOwner(storage, user)
                 ? AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL
                 : getMask(storage, path, type, user);
@@ -231,9 +230,9 @@ public class StoragePermissionProviderManager {
                         final String path,
                         final StoragePermissionPathType type,
                         final PipelineUser user) {
-        final List<String> groups = groups(user);
         final Map<StoragePermissionRepository.StorageItem, List<StoragePermission>> permissions =
-                storagePermissionManager.load(storage.getRootId(), path, type, user.getUserName(), groups)
+                storagePermissionManager.load(storage.getRootId(), path, type, user.getUserName(),
+                                user.getGroupsAndRoles())
                         .stream()
                         .collect(Collectors.groupingBy(this::getStorageItem, Collectors.toCollection(ArrayList::new)));
         final Stream<Integer> pathMasks = permissions.keySet().stream()
@@ -282,13 +281,15 @@ public class StoragePermissionProviderManager {
                                       final String path,
                                       final String version,
                                       final boolean totally) {
-        if (!storage.isVersioningEnabled() || version == null || totally) {
+        if (!storage.isVersioningEnabled() || totally) {
             storagePermissionManager.delete(storage.getRootId(), path, StoragePermissionPathType.FILE);
         }
     }
 
-    public void deleteFolderPermissions(final SecuredStorageEntity storage, final String path) {
-        storagePermissionManager.delete(storage.getRootId(), path, StoragePermissionPathType.FOLDER);
+    public void deleteFolderPermissions(final SecuredStorageEntity storage, final String path, final boolean totally) {
+        if (!storage.isVersioningEnabled() || totally) {
+            storagePermissionManager.delete(storage.getRootId(), path, StoragePermissionPathType.FOLDER);
+        }
     }
 
     public void moveFilePermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
@@ -307,54 +308,6 @@ public class StoragePermissionProviderManager {
 
     public void copyFolderPermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
         storagePermissionManager.copy(storage.getRootId(), oldPath, newPath, StoragePermissionPathType.FOLDER);
-    }
-
-    public Set<StoragePermissionRepository.Storage> loadReadAllowedStorages() {
-        final PipelineUser user = loadUser();
-        final List<String> groups = groups(user);
-        return storagePermissionManager.loadReadAllowedStorages(user.getUserName(), groups);
-    }
-
-    public boolean isReadAllowed(final SecuredStorageEntity storage) {
-        final PipelineUser user = loadUser();
-        final List<String> groups = groups(user);
-        return storagePermissionManager.isReadAllowed(storage.getRootId(), storage.getId(), user.getUserName(), groups);
-    }
-
-    private PipelineUser loadUser() {
-        final PipelineUser user = authManager.getCurrentUser();
-        if (user == null) {
-            throw new AccessDeniedException("Unauthorized user access");
-        }
-        return user;
-    }
-
-    private List<String> groups(final PipelineUser user) {
-        return groupSidsOf(user)
-                .map(StoragePermissionSid::getName)
-                .collect(Collectors.toList());
-    }
-
-    private Stream<StoragePermissionSid> groupSidsOf(final PipelineUser user) {
-        return Stream.concat(rolesOf(user), groupsOf(user))
-                .filter(Objects::nonNull)
-                .distinct()
-                .map(StoragePermissionSid::group);
-    }
-
-    private Stream<String> groupsOf(final PipelineUser user) {
-        return Optional.of(user)
-                .map(PipelineUser::getGroups)
-                .map(List::stream)
-                .orElseGet(Stream::empty);
-    }
-
-    private Stream<String> rolesOf(final PipelineUser user) {
-        return Optional.of(user)
-                .map(PipelineUser::getRoles)
-                .map(List::stream)
-                .orElseGet(Stream::empty)
-                .map(Role::getName);
     }
 
     private boolean isAdminOrOwner(final SecuredStorageEntity storage, final PipelineUser user) {

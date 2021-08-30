@@ -2,8 +2,8 @@ package com.epam.pipeline.manager.security.acl.storage;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.manager.datastorage.security.StoragePermissionProviderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
 import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
@@ -28,14 +28,14 @@ public class StorageAclAspect {
     public static final int READ_MASK = ((AclPermission) AclPermission.READ).getSimpleMask();
 
     private final GrantPermissionManager permissionManager;
-    private final StoragePermissionProviderManager storagePermissionProviderManager;
+    private final StoragePermissionAccessManager storagePermissionManager;
 
     @Around("@annotation(com.epam.pipeline.manager.security.acl.storage.StorageAclList)")
     @Transactional(propagation = Propagation.REQUIRED)
     public List<AbstractDataStorage> filterAndSetMaskForStorages(ProceedingJoinPoint proceedingJoinPoint)
             throws Throwable {
         final Set<StoragePermissionRepository.Storage> readAllowedStorages =
-                storagePermissionProviderManager.loadReadAllowedStorages();
+                storagePermissionManager.loadReadAllowedStorages();
         return listFrom(proceedingJoinPoint)
                 .filter(AbstractDataStorage.class::isInstance)
                 .map(AbstractDataStorage.class::cast)
@@ -64,7 +64,7 @@ public class StorageAclAspect {
     public List<DataStorageWithShareMount> filterAndSetMaskForStorageDelegates(ProceedingJoinPoint proceedingJoinPoint)
             throws Throwable {
         final Set<StoragePermissionRepository.Storage> readAllowedStorages =
-                storagePermissionProviderManager.loadReadAllowedStorages();
+                storagePermissionManager.loadReadAllowedStorages();
         return listFrom(proceedingJoinPoint)
                 .filter(DataStorageWithShareMount.class::isInstance)
                 .map(DataStorageWithShareMount.class::cast)

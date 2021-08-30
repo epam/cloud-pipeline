@@ -59,8 +59,6 @@ import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.security.StoragePermissionBatchManager;
-import com.epam.pipeline.manager.datastorage.security.StoragePermissionManager;
-import com.epam.pipeline.manager.datastorage.security.StoragePermissionProviderManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -124,6 +122,7 @@ import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
@@ -288,7 +287,7 @@ public class AclTestBeans {
     protected DataStorageConvertManager mockDataStorageConvertManager;
 
     @MockBean
-    protected StoragePermissionProviderManager storagePermissionProviderManager;
+    protected StoragePermissionAccessManager storagePermissionAccessManager;
 
     @MockBean
     protected StoragePermissionBatchManager storagePermissionBatchManager;
