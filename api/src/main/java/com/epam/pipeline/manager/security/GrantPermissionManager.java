@@ -63,7 +63,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
-import com.epam.pipeline.manager.datastorage.security.StoragePermissionManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionProviderManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.issue.IssueManager;
@@ -202,7 +202,7 @@ public class GrantPermissionManager {
 
     @Autowired private MetadataPermissionManager metadataPermissionManager;
 
-    @Autowired private StoragePermissionManager storagePermissionManager;
+    @Autowired private StoragePermissionProviderManager storagePermissionProviderManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -437,12 +437,8 @@ public class GrantPermissionManager {
         if (isAdmin(sids)) {
             return;
         }
-        final PipelineUser user = authManager.getCurrentUser();
-        final List<String> groups = groupSids(user)
-                .map(StoragePermissionSid::getName)
-                .collect(toList());
-        final Set<StoragePermissionRepository.Storage> readAllowedStorages = storagePermissionManager
-                .loadReadAllowedStorages(user.getUserName(), groups);
+        final Set<StoragePermissionRepository.Storage> readAllowedStorages =
+                storagePermissionProviderManager.loadReadAllowedStorages();
         processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids, readAllowedStorages);
     }
 
@@ -498,32 +494,18 @@ public class GrantPermissionManager {
         if (forbiddenByMountStatus(storage, permissionName)) {
             return false;
         }
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(storage.getOwner());
-        } else {
-            if (permissionsHelper.isAllowed(permissionName, storage)) {
-                return true;
-            } else {
-                if (!permissionName.equals(AclPermission.READ_NAME)) {
-                    return false;
-                }
-                // TODO: 20.08.2021 Use single storage request here
-                final PipelineUser user = authManager.getCurrentUser();
-                final List<String> groups = groupSids(user)
-                        .map(StoragePermissionSid::getName)
-                        .collect(toList());
-                final Set<StoragePermissionRepository.Storage> readAllowedStorages = storagePermissionManager
-                        .loadReadAllowedStorages(user.getUserName(), groups);
-                return readAllowedStorages.contains(new StoragePermissionRepository.StorageImpl(
-                        storage.getId(), StorageKind.DATA_STORAGE));
-            }
-        }
+        return permissionName.equals(OWNER)
+                ? isOwnerOrAdmin(storage.getOwner())
+                : permissionsHelper.isAllowed(permissionName, storage)
+                || permissionName.equals(AclPermission.READ_NAME)
+                && storage instanceof SecuredStorageEntity
+                && storagePermissionProviderManager.isReadAllowed((SecuredStorageEntity) storage);
     }
 
     public boolean storagePermissions(Long storageId, List<String> permissionNames) {
         return Optional.ofNullable(permissionNames)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList(READ))
+                .orElseGet(() -> Collections.singletonList(AclPermission.READ_NAME))
                 .stream()
                 .allMatch(permissionName -> storagePermission(storageId, permissionName));
     }
@@ -534,12 +516,12 @@ public class GrantPermissionManager {
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !storagePermission(storage, READ)
-                && !forbiddenByMountStatus(storage, READ)) {
+            if (action.isRead() && !storagePermission(storage, AclPermission.READ_NAME)
+                && !forbiddenByMountStatus(storage, AclPermission.READ_NAME)) {
                 return false;
             }
-            if (action.isWrite() && !storagePermission(storage, WRITE)
-                && !forbiddenByMountStatus(storage, WRITE)) {
+            if (action.isWrite() && !storagePermission(storage, AclPermission.WRITE_NAME)
+                && !forbiddenByMountStatus(storage, AclPermission.WRITE_NAME)) {
                 return false;
             }
         }

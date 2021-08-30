@@ -61,6 +61,7 @@ import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.security.StoragePermissionBatchManager;
 import com.epam.pipeline.manager.datastorage.security.StoragePermissionManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionProviderManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -292,7 +293,7 @@ public class AclTestBeans {
     protected DataStorageConvertManager mockDataStorageConvertManager;
 
     @MockBean
-    protected StoragePermissionManager storagePermissionManager;
+    protected StoragePermissionProviderManager storagePermissionProviderManager;
 
     @MockBean
     protected StoragePermissionBatchManager storagePermissionBatchManager;

@@ -2,6 +2,7 @@ package com.epam.pipeline.repository.datastorage.security;
 
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dto.datastorage.security.StorageKind;
+import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageRoot;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -385,6 +387,93 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
     }
 
     @Test
+    public void findReadAllowedStorageShouldNotReturnStorageWithoutPathReadPermissions() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(0));
+    }
+
+    @Test
+    public void findReadAllowedStorageShouldReturnStorageWithRootWithReadPermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(ROOT_PATH).build());
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(1));
+        assertThat(storages.get(0).getStorageId(), is(storage.getId()));
+        assertThat(storages.get(0).getStorageType(), is(StorageKind.DATA_STORAGE));
+    }
+
+    @Test
+    public void findReadAllowedStorageShouldNotReturnStorageWithRootWithWritePermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(NESTED_CHILD_PATH).datastorageType(FILE_TYPE)
+                .mask(WRITE_MASK).build());
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(0));
+    }
+
+    @Test
+    public void findReadAllowedStorageShouldReturnStorageWithRootFolderWithReadPermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(PARENT_PATH).build());
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(1));
+        assertThat(storages.get(0).getStorageId(), is(storage.getId()));
+        assertThat(storages.get(0).getStorageType(), is(StorageKind.DATA_STORAGE));
+    }
+
+    @Test
+    public void findReadAllowedStorageShouldReturnStorageWithRootFileWithReadPermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(PARENT_PATH).datastorageType(FILE_TYPE).build());
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(1));
+        assertThat(storages.get(0).getStorageId(), is(storage.getId()));
+        assertThat(storages.get(0).getStorageType(), is(StorageKind.DATA_STORAGE));
+    }
+
+    @Test
+    public void findReadAllowedStorageShouldReturnStorageWithNestedChildFolderWithReadPermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(NESTED_CHILD_PATH).build());
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(1));
+        assertThat(storages.get(0).getStorageId(), is(storage.getId()));
+        assertThat(storages.get(0).getStorageType(), is(StorageKind.DATA_STORAGE));
+    }
+
+    @Test
+    public void findReadAllowedStorageShouldReturnStorageWithNestedChildFileWithReadPermission() {
+        final DataStorageRoot root = createRoot();
+        final AbstractDataStorage storage = createDataStorage();
+        create(permission(root).toBuilder().datastoragePath(NESTED_CHILD_PATH).datastorageType(FILE_TYPE).build());
+
+        final List<StoragePermissionRepository.Storage> storages = findReadAllowedStorage(root, storage);
+
+        assertThat(storages.size(), is(1));
+        assertThat(storages.get(0).getStorageId(), is(storage.getId()));
+        assertThat(storages.get(0).getStorageType(), is(StorageKind.DATA_STORAGE));
+    }
+
+    @Test
     public void findRecursiveMaskShouldReturnFullPermissionsMaskIfThereAreNoPermissionsUnderGivenPath() {
         final DataStorageRoot root = createRoot();
 
@@ -702,6 +791,11 @@ public class StoragePermissionRepositoryTest extends AbstractJpaTest {
 
     private List<StoragePermissionRepository.Storage> findReadAllowedStorages() {
         return repository.findReadAllowedStorages(USER_SID_NAME, GROUP_SID_NAMES);
+    }
+
+    private List<StoragePermissionRepository.Storage> findReadAllowedStorage(final DataStorageRoot root,
+                                                                             final SecuredStorageEntity storage) {
+        return repository.findReadAllowedStorage(root.getId(), storage.getId(), USER_SID_NAME, GROUP_SID_NAMES);
     }
 
     private Optional<Integer> findRecursiveMask(final DataStorageRoot root) {

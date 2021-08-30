@@ -115,18 +115,10 @@ public class StoragePermissionProviderManager {
     public boolean isRecursiveAllowed(final SecuredStorageEntity storage,
                                       final String path,
                                       final Permission... permissions) {
-        final PipelineUser user = authManager.getCurrentUser();
-        if (user == null) {
-            throw new AccessDeniedException("Unauthorized user access");
-        }
-        if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
-            return true;
-        }
-        final List<String> groups = groupSidsOf(user)
-                .map(StoragePermissionSid::getName)
-                .collect(Collectors.toList());
-        return isAllowed(storage, path, StoragePermissionPathType.FOLDER, permissions)
-                && storagePermissionManager.loadRecursiveMask(storage.getRootId(), path, user.getUserName(), groups)
+        final PipelineUser user = loadUser();
+        return isAdminOrOwner(storage, user)
+                || isAllowed(storage, path, StoragePermissionPathType.FOLDER, permissions)
+                && storagePermissionManager.loadRecursiveMask(storage.getRootId(), path, user.getUserName(), groups(user))
                 .map(mask -> isAllowed(mask, permissions))
                 .orElse(true);
     }
@@ -136,32 +128,30 @@ public class StoragePermissionProviderManager {
                                               final Function<String, DataStorageListing> getListingByMarker) {
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         final int folderMask = getMask(storage, absolutePath, StoragePermissionPathType.FOLDER);
-        final DataStorageListing result = new DataStorageListing();
-        result.setMask(getSimpleMask(folderMask));
+        final DataStorageListing listing = new DataStorageListing();
+        listing.setMask(getSimpleMask(folderMask));
         final PipelineUser user = authManager.getCurrentUser();
         if (user == null) {
             return Optional.empty();
         }
-        if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
-            final DataStorageListing listing = getListingByMarker.apply(null);
-            result.setNextPageMarker(listing.getNextPageMarker());
-            result.setResults(ListUtils.emptyIfNull(listing.getResults()).stream()
+        if (isAdminOrOwner(storage, user)) {
+            final DataStorageListing currentListing = getListingByMarker.apply(null);
+            listing.setNextPageMarker(currentListing.getNextPageMarker());
+            listing.setResults(ListUtils.emptyIfNull(currentListing.getResults()).stream()
                     .map(item -> withMask(item, AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL))
                     .collect(Collectors.toList()));
-            return Optional.of(result);
+            return Optional.of(listing);
         }
-        final List<String> groups = groupSidsOf(user)
-                .map(StoragePermissionSid::getName)
-                .collect(Collectors.toList());
+        final List<String> groups = groups(user);
         final Map<StoragePermissionRepository.StorageItem, Integer> masks = storagePermissionManager
                 .loadImmediateChildPermissions(storage.getRootId(), absolutePath, user.getUserName(), groups)
                 .stream()
                 .collect(Collectors.groupingBy(this::getStorageItem,
                         Collectors.collectingAndThen(Collectors.toList(), this::mergeExactMask)));
         if (isAllowed(folderMask, AclPermission.READ)) {
-            final DataStorageListing listing = getListingByMarker.apply(null);
-            result.setNextPageMarker(listing.getNextPageMarker());
-            result.setResults(ListUtils.emptyIfNull(listing.getResults()).stream()
+            final DataStorageListing currentListing = getListingByMarker.apply(null);
+            listing.setNextPageMarker(currentListing.getNextPageMarker());
+            listing.setResults(ListUtils.emptyIfNull(currentListing.getResults()).stream()
                     .map(item -> {
                         int mask = masks.getOrDefault(getStorageItem(item), 0);
                         mask = mergeParentMask(mask, folderMask);
@@ -206,10 +196,10 @@ public class StoragePermissionProviderManager {
                     }
                 }
             }
-            result.setNextPageMarker(currentListing.getNextPageMarker());
-            result.setResults(items);
+            listing.setNextPageMarker(currentListing.getNextPageMarker());
+            listing.setResults(items);
         }
-        return Optional.of(result);
+        return Optional.of(listing);
     }
 
     private AbstractDataStorageItem withMask(final AbstractDataStorageItem item, final int mask) {
@@ -231,23 +221,17 @@ public class StoragePermissionProviderManager {
     private int getMask(final SecuredStorageEntity storage,
                         final String path,
                         final StoragePermissionPathType type) {
-        final PipelineUser user = authManager.getCurrentUser();
-        if (user == null) {
-            throw new AccessDeniedException("Unauthorized user access");
-        }
-        if (user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner())) {
-            return AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
-        }
-        return getMask(storage, path, type, user);
+        final PipelineUser user = loadUser();
+        return isAdminOrOwner(storage, user)
+                ? AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL
+                : getMask(storage, path, type, user);
     }
 
     private int getMask(final SecuredStorageEntity storage,
                         final String path,
                         final StoragePermissionPathType type,
                         final PipelineUser user) {
-        final List<String> groups = groupSidsOf(user)
-                .map(StoragePermissionSid::getName)
-                .collect(Collectors.toList());
+        final List<String> groups = groups(user);
         final Map<StoragePermissionRepository.StorageItem, List<StoragePermission>> permissions =
                 storagePermissionManager.load(storage.getRootId(), path, type, user.getUserName(), groups)
                         .stream()
@@ -260,6 +244,11 @@ public class StoragePermissionProviderManager {
         return Stream.concat(pathMasks, Stream.of(getStorageMask((AbstractSecuredEntity) storage)))
                 .reduce(this::mergeParentMask)
                 .orElse(0);
+    }
+
+    private StoragePermissionRepository.StorageItemImpl getStorageItem(final AbstractDataStorageItem item) {
+        return new StoragePermissionRepository.StorageItemImpl(item.getPath(),
+                StoragePermissionPathType.from(item.getType()));
     }
 
     private StoragePermissionRepository.StorageItemImpl getStorageItem(final StoragePermission item) {
@@ -287,33 +276,6 @@ public class StoragePermissionProviderManager {
         return permissionsService.allPermissionsSet(childMask)
                 ? childMask
                 : permissionsService.mergeParentMask(childMask, parentMask);
-    }
-
-    private Stream<StoragePermissionSid> groupSidsOf(final PipelineUser user) {
-        return Stream.concat(rolesOf(user), groupsOf(user))
-                .filter(Objects::nonNull)
-                .distinct()
-                .map(StoragePermissionSid::group);
-    }
-
-    private Stream<String> groupsOf(final PipelineUser user) {
-        return Optional.of(user)
-                .map(PipelineUser::getGroups)
-                .map(List::stream)
-                .orElseGet(Stream::empty);
-    }
-
-    private Stream<String> rolesOf(final PipelineUser user) {
-        return Optional.of(user)
-                .map(PipelineUser::getRoles)
-                .map(List::stream)
-                .orElseGet(Stream::empty)
-                .map(Role::getName);
-    }
-
-    private StoragePermissionRepository.StorageItemImpl getStorageItem(final AbstractDataStorageItem item) {
-        return new StoragePermissionRepository.StorageItemImpl(item.getPath(),
-                StoragePermissionPathType.from(item.getType()));
     }
 
     public void deleteFilePermissions(final SecuredStorageEntity storage,
@@ -346,4 +308,57 @@ public class StoragePermissionProviderManager {
     public void copyFolderPermissions(final SecuredStorageEntity storage, final String oldPath, final String newPath) {
         storagePermissionManager.copy(storage.getRootId(), oldPath, newPath, StoragePermissionPathType.FOLDER);
     }
+
+    public Set<StoragePermissionRepository.Storage> loadReadAllowedStorages() {
+        final PipelineUser user = loadUser();
+        final List<String> groups = groups(user);
+        return storagePermissionManager.loadReadAllowedStorages(user.getUserName(), groups);
+    }
+
+    public boolean isReadAllowed(final SecuredStorageEntity storage) {
+        final PipelineUser user = loadUser();
+        final List<String> groups = groups(user);
+        return storagePermissionManager.isReadAllowed(storage.getRootId(), storage.getId(), user.getUserName(), groups);
+    }
+
+    private PipelineUser loadUser() {
+        final PipelineUser user = authManager.getCurrentUser();
+        if (user == null) {
+            throw new AccessDeniedException("Unauthorized user access");
+        }
+        return user;
+    }
+
+    private List<String> groups(final PipelineUser user) {
+        return groupSidsOf(user)
+                .map(StoragePermissionSid::getName)
+                .collect(Collectors.toList());
+    }
+
+    private Stream<StoragePermissionSid> groupSidsOf(final PipelineUser user) {
+        return Stream.concat(rolesOf(user), groupsOf(user))
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(StoragePermissionSid::group);
+    }
+
+    private Stream<String> groupsOf(final PipelineUser user) {
+        return Optional.of(user)
+                .map(PipelineUser::getGroups)
+                .map(List::stream)
+                .orElseGet(Stream::empty);
+    }
+
+    private Stream<String> rolesOf(final PipelineUser user) {
+        return Optional.of(user)
+                .map(PipelineUser::getRoles)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .map(Role::getName);
+    }
+
+    private boolean isAdminOrOwner(final SecuredStorageEntity storage, final PipelineUser user) {
+        return user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner());
+    }
+
 }

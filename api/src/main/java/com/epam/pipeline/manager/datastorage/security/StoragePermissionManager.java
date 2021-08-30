@@ -103,6 +103,10 @@ public class StoragePermissionManager {
                 .collect(Collectors.toList());
     }
 
+    public boolean isReadAllowed(final Long root, final Long storage, final String user, final List<String> groups) {
+        return CollectionUtils.isNotEmpty(repository.findReadAllowedStorage(root, storage, user, groups));
+    }
+
     private List<String> blankStringListIfEmpty(final List<String> list) {
         return CollectionUtils.isEmpty(list) ? Collections.singletonList(StringUtils.EMPTY) : list;
     }
