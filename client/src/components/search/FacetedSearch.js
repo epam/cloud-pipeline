@@ -197,7 +197,7 @@ class FacetedSearch extends React.Component {
       };
     }
     return null;
-  }
+  };
 
   onChangeFilter = (group) => (selection) => {
     if (!group) {
@@ -211,14 +211,14 @@ class FacetedSearch extends React.Component {
       delete newFilters[group];
     }
     this.setState({activeFilters: newFilters}, () => this.doSearch());
-  }
+  };
 
   onClearFilters = () => {
     if (this.activeFiltersIsEmpty) {
       return;
     }
     this.setState({activeFilters: {}}, () => this.doSearch());
-  }
+  };
 
   doSearch = (continuousOptions = undefined) => {
     this.setState({
@@ -437,7 +437,7 @@ class FacetedSearch extends React.Component {
     this.setState({presentationMode: mode}, () => {
       FacetModeStorage.save(mode);
     });
-  }
+  };
 
   onQueryChange = (e) => {
     this.setState({
@@ -450,7 +450,7 @@ class FacetedSearch extends React.Component {
       return;
     }
     this.props.router.push(item.url);
-  }
+  };
 
   onPageSizeChanged = (newPageSize) => {
     const {
@@ -488,6 +488,7 @@ class FacetedSearch extends React.Component {
             .map(f => f.name)
         }
         disabled={pending}
+        loading={pending}
         error={error}
         pageSize={pageSize}
         hasElementsAfter={!isLastPage}
@@ -501,7 +502,7 @@ class FacetedSearch extends React.Component {
         documentTypes={(activeFilters || {})[DocumentTypeFilterName]}
       />
     );
-  }
+  };
 
   render () {
     const {systemDictionaries} = this.props;
