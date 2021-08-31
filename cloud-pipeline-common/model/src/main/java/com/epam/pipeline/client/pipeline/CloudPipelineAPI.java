@@ -41,6 +41,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -253,4 +254,7 @@ public interface CloudPipelineAPI {
 
     @PUT("dts/{id}/heartbeat")
     Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) String dtsId);
+
+    @GET("preferences/{key}")
+    Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
 }
