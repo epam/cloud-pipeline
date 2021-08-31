@@ -297,7 +297,7 @@ function Summary (
         },
         ticks: {
           display: !disabled,
-          callback: costTickFormatter
+          callback: o => costTickFormatter(o)
         }
       }]
     },
