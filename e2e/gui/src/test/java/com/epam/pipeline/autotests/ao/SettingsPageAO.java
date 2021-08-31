@@ -48,6 +48,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -137,9 +138,35 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public CliAO switchPipeCLI() {
+            click(PIPE_CLI);
+            return this;
+        }
+
         public CliAO ensureCodeHasText(final String text) {
             ensure(GIT_COMMAND, matchesText(text));
             return this;
+        }
+
+        public CliAO selectOperationSystem(final String operationSystem) {
+            final String defaultSystem = $(tagName("b")).parent().find(byClassName("ant-select-selection__rendered"))
+                    .getText();
+            selectValue(byText(defaultSystem), menuitem(operationSystem));
+            return this;
+        }
+
+        public CliAO checkOperationSystemInstallationContent(final String content) {
+            ensure(byId("pip-install-url-input"), text(content));
+            return this;
+        }
+
+        public CliAO generateAccessKey() {
+            click(byId("generate-access-key-button"));
+            return this;
+        }
+
+        public String getCLIConfigureCommand() {
+            return $(byId("cli-configure-command-text-area")).getText();
         }
 
         @Override
