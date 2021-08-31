@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">3</div>
+<div class="counter">7</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h28m53.38s</div>
+<div class="counter">44m52.61s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">88%</div>
+<div class="percent">80%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,13 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352"></a>
-<h3 class="failures">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</h3>
+<a name="validateCommittedDocker - EPMCMBIBPC-695"></a>
+<h3 class="failures">validateCommittedDocker - EPMCMBIBPC-695</h3>
 <span class="code">
 <pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1630118139023.38.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1630118139023.38.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1630378959164.37.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1630378959164.37.html
 Timeout: 1200 s.
 Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
 Expected: exact text 'SSH'
@@ -96,9 +96,9 @@ Timeout: 0 ms.
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
 	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
-	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateCommittedDockerInPersonalGroup$18(DockerCommitTest.java:278)
+	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateCommittedDocker$11(DockerCommitTest.java:189)
 	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:145)
-	at com.epam.pipeline.autotests.DockerCommitTest.validateCommittedDockerInPersonalGroup(DockerCommitTest.java:277)
+	at com.epam.pipeline.autotests.DockerCommitTest.validateCommittedDocker(DockerCommitTest.java:188)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -135,22 +135,22 @@ Timeout: 0 ms.
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.722s</td>
+<td>2.831s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>5m5.81s</td>
+<td>5m35.57s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>1.284s</td>
+<td>1.294s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>17m23.19s</td>
+<td>18m57.98s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -159,9 +159,9 @@ Timeout: 0 ms.
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>19m41.31s</td>
-<td class="success">passed</td>
+<td class="failures">validateCommittedDocker - EPMCMBIBPC-695</td>
+<td>20m14.93s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="skipped">validateCommittedDockerInGroup</td>
@@ -169,19 +169,19 @@ Timeout: 0 ms.
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="failures">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
-<td>20m15.43s</td>
-<td class="failures">failed</td>
+<td class="skipped">validateCommittedDockerInPersonalGroup</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
-<td>23.763s</td>
-<td class="success">passed</td>
+<td class="skipped">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>4m46.65s</td>
-<td class="success">passed</td>
+<td class="skipped">validateDeleteRuntimeFilesFlagWorksProperly</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">validateLaunchSpecificVersion</td>
@@ -189,26 +189,20 @@ Timeout: 0 ms.
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>21m13.24s</td>
-<td class="success">passed</td>
+<td class="skipped">validateStopPipelineFlagWorksProperly</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 5797 from [5797]
-Returns latest run with runId 5797 from [5797]
-Returns latest run with runId 5797 from [5797]
-Returns latest run with runId 5797 from [5797]
-Returns latest run with runId 5798 from [5797, 5798]
-Returns latest run with runId 5798 from [5797, 5798]
-Returns latest run with runId 5799 from [5797, 5798, 5799]
-Returns latest run with runId 5800 from [5797, 5798, 5799, 5800]
-Returns latest run with runId 5801 from [5797, 5798, 5799, 5800, 5801]
-Returns latest run with runId 5801 from [5797, 5798, 5799, 5800, 5801]
-Returns latest run with runId 5802 from [5797, 5798, 5799, 5800, 5801, 5802]
+<pre>Returns latest run with runId 5947 from [5947]
+Returns latest run with runId 5947 from [5947]
+Returns latest run with runId 5947 from [5947]
+Returns latest run with runId 5947 from [5947]
+Returns latest run with runId 5948 from [5947, 5948]
 </pre>
 </span>
 </div>
@@ -220,7 +214,7 @@ Returns latest run with runId 5802 from [5797, 5798, 5799, 5800, 5801, 5802]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 28, 2021 6:23:12 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 31, 2021 6:29:42 PM</p>
 </div>
 </div>
 </body>
