@@ -68,7 +68,7 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
         return permissionProviderManager.apply(storage, path, nextMarker ->
                 provider.getItems(storage, path, showVersion, pageSize, nextMarker))
                 .orElseThrow(() -> new AccessDeniedException(
-                        String.format("Data storage path %s read is not allowed.", path)));
+                        String.format("Data storage path %s listing is not allowed.", path)));
     }
 
     public Optional<DataStorageFile> findFile(T storage, String path, String version) {

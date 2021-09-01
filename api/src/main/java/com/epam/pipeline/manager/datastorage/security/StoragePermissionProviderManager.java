@@ -124,7 +124,7 @@ public class StoragePermissionProviderManager {
 
     public Optional<DataStorageListing> apply(final SecuredStorageEntity storage,
                                               final String path,
-                                              final Function<String, DataStorageListing> getListingByMarker) {
+                                              final Function<String, DataStorageListing> listingProvider) {
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         final int folderMask = getMask(storage, absolutePath, StoragePermissionPathType.FOLDER);
         final DataStorageListing listing = new DataStorageListing();
@@ -134,7 +134,7 @@ public class StoragePermissionProviderManager {
             return Optional.empty();
         }
         if (isAdminOrOwner(storage, user)) {
-            final DataStorageListing currentListing = getListingByMarker.apply(null);
+            final DataStorageListing currentListing = listingProvider.apply(null);
             listing.setNextPageMarker(currentListing.getNextPageMarker());
             listing.setResults(ListUtils.emptyIfNull(currentListing.getResults()).stream()
                     .map(item -> withMask(item, AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL))
@@ -148,7 +148,7 @@ public class StoragePermissionProviderManager {
                 .collect(Collectors.groupingBy(this::getStorageItem,
                         Collectors.collectingAndThen(Collectors.toList(), this::mergeExactMask)));
         if (isAllowed(folderMask, AclPermission.READ)) {
-            final DataStorageListing currentListing = getListingByMarker.apply(null);
+            final DataStorageListing currentListing = listingProvider.apply(null);
             listing.setNextPageMarker(currentListing.getNextPageMarker());
             listing.setResults(ListUtils.emptyIfNull(currentListing.getResults()).stream()
                     .map(item -> {
@@ -164,7 +164,7 @@ public class StoragePermissionProviderManager {
             if (readAllowedItems.isEmpty()) {
                 return Optional.empty();
             }
-            DataStorageListing currentListing = getListingByMarker.apply(null);
+            DataStorageListing currentListing = listingProvider.apply(null);
             int filteredOutItemsNumber = 0;
             final List<AbstractDataStorageItem> items = new ArrayList<>();
             for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(currentListing.getResults())) {
@@ -181,7 +181,7 @@ public class StoragePermissionProviderManager {
                 }
             }
             while (filteredOutItemsNumber > 0 && currentListing.getNextPageMarker() != null) {
-                currentListing = getListingByMarker.apply(currentListing.getNextPageMarker());
+                currentListing = listingProvider.apply(currentListing.getNextPageMarker());
                 for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(currentListing.getResults())) {
                     final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(item);
                     if (readAllowedItems.contains(storageItem)) {
@@ -210,9 +210,9 @@ public class StoragePermissionProviderManager {
         return permissionsService.mergeMask(mask);
     }
 
-    public int loadMask(final SecuredStorageEntity storage,
-                        final String path,
-                        final StoragePermissionPathType type) {
+    public int loadExtendedMask(final SecuredStorageEntity storage,
+                                final String path,
+                                final StoragePermissionPathType type) {
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         return getMask(storage, absolutePath, type);
     }
