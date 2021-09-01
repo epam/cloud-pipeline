@@ -15,8 +15,10 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.io.InputStream;
@@ -89,7 +91,7 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
 
     public DataStorageDownloadFileUrl generateUrl(T storage, String path,
                                                   List<String> permissions, Duration duration) {
-        assertFileWriteAccess(storage, path);
+        assertAccess(storage, path, permissions);
         return provider.generateUrl(storage, path, permissions, duration);
     }
 
@@ -202,6 +204,28 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
         return provider.getDataSize(storage, path, pathDescription);
     }
 
+    private void assertAccess(final T storage, final String path, final List<String> permissions) {
+        if (StringUtils.endsWith(path, ProviderUtils.DELIMITER)) {
+            assertFolderAccess(storage, path, permissions);
+        } else {
+            assertFileAccess(storage, path, permissions);
+        }
+    }
+
+    private void assertFileAccess(final T storage, final String path, final List<String> permissions) {
+        if (permissionProviderManager.isNotAllowed(storage, path, StoragePermissionPathType.FILE, permissions)) {
+            throw new AccessDeniedException(String.format(
+                    "Data storage path %s %s operations are not allowed.", path, permissions));
+        }
+    }
+
+    private void assertFolderAccess(final T storage, final String path, final List<String> permissions) {
+        if (permissionProviderManager.isNotRecursiveAllowed(storage, path, permissions)) {
+            throw new AccessDeniedException(String.format(
+                    "Data storage path %s recursive %s operations are not allowed.", path, permissions));
+        }
+    }
+
     private void assertFileReadAccess(T storage, String path) {
         assertReadAccess(storage, path, DataStorageItemType.File);
     }
@@ -236,7 +260,7 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
 
     private void assertFolderRecursiveReadAccess(T storage, String path) {
         if (permissionProviderManager.isRecursiveReadNotAllowed(storage, path)) {
-            throw new AccessDeniedException(String.format("Data storage path %s recursive write is not allowed.",
+            throw new AccessDeniedException(String.format("Data storage path %s recursive read is not allowed.",
                     path));
         }
     }
