@@ -454,6 +454,12 @@
         </classes>
     </test>
 
+    <test name="DataStoragesFeaturesTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.DataStoragesFeaturesTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
