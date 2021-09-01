@@ -25,9 +25,11 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
@@ -40,15 +42,20 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class StoragePermissionProviderManagerTest {
 
     private static final String STORAGE = "storage";
-    private static final String ROOT_PATH = "";
     private static final String PARENT_PATH = "parent";
     private static final String PATH = PARENT_PATH + "/path";
     private static final String CHILD_PATH = PATH + "/child";
-    private static final String NESTED_CHILD_PATH = CHILD_PATH + "/nestedchild";
+    private static final String ANOTHER_CHILD_PATH = PATH + "/anotherchild";
+    private static final String THIRD_CHILD_PATH = PATH + "/thirdchild";
+    private static final String FOURTH_CHILD_PATH = PATH + "/fourthchild";
     private static final String USER = "USER";
     private static final String OWNER = "OWNER";
     private static final String GROUP = "GROUP";
@@ -70,6 +77,10 @@ public class StoragePermissionProviderManagerTest {
     private static final DataStorageListing EMPTY_LISTING = new DataStorageListing(null, Collections.emptyList());
     private static final Function<String, DataStorageListing> MARKER_TO_EMPTY_LISTING_FUNCTION =
             ignored -> EMPTY_LISTING;
+    private static final DataStorageListing NO_LISTING = null;
+    private static final String MARKER = "MARKER";
+    private static final String ANOTHER_MARKER = "ANOTHER_MARKER";
+    private static final String NO_MARKER = null;
 
     private final StoragePermissionManager storagePermissionManager = mock(StoragePermissionManager.class);
     private final PermissionsService permissionsService = new PermissionsService();
@@ -83,7 +94,7 @@ public class StoragePermissionProviderManagerTest {
         mockNonAuthorizedUser();
         final SecuredStorageEntity storage = storage();
 
-        assertThrows(AccessDeniedException.class, () -> manager.loadMask(storage, PATH, TYPE));
+        assertThrows(AccessDeniedException.class, () -> manager.loadExtendedMask(storage, PATH, TYPE));
     }
 
     @Test
@@ -91,7 +102,7 @@ public class StoragePermissionProviderManagerTest {
         mockOwner();
         final SecuredStorageEntity storage = storage();
 
-        assertThat(manager.loadMask(storage, PATH, TYPE), is(OWNER_MASK));
+        assertThat(manager.loadExtendedMask(storage, PATH, TYPE), is(OWNER_MASK));
     }
 
     @Test
@@ -99,111 +110,118 @@ public class StoragePermissionProviderManagerTest {
         mockAdmin();
         final SecuredStorageEntity storage = storage();
 
-        assertThat(manager.loadMask(storage, PATH, TYPE), is(OWNER_MASK));
+        assertThat(manager.loadExtendedMask(storage, PATH, TYPE), is(OWNER_MASK));
     }
 
     @Value
-    private static class LoadMaskTestScenario {
+    private static class LoadExtendedMaskTestCase {
         String description;
         List<StoragePermission> permissions;
         int storageMask;
         int expectedMask;
     }
 
-    private final List<LoadMaskTestScenario> loadMaskTestScenarios = Arrays.asList(
-            new LoadMaskTestScenario("storage all = all",
+    private final List<LoadExtendedMaskTestCase> loadExtendedMaskTestCases = Arrays.asList(
+            new LoadExtendedMaskTestCase("storage all = all",
                     permissions(),
                     FULL_MASK,
                     FULL_MASK),
-            new LoadMaskTestScenario("storage empty = empty",
+            new LoadExtendedMaskTestCase("storage empty = empty",
                     permissions(),
                     EMPTY_MASK,
                     EMPTY_MASK),
-            new LoadMaskTestScenario("storage empty + exact read = read",
+            new LoadExtendedMaskTestCase("storage empty + exact read = read",
                     permissions(permission(PATH, READ_MASK)),
                     EMPTY_MASK,
                     READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact user read + exact group no read = read",
+            new LoadExtendedMaskTestCase("storage empty + exact no read = no read",
+                    permissions(permission(PATH, NO_READ_MASK)),
+                    EMPTY_MASK,
+                    NO_READ_MASK),
+            new LoadExtendedMaskTestCase("storage empty + exact user read + exact group no read = read",
                     permissions(
                             permission(PATH, READ_MASK),
                             permission(PATH, NO_READ_MASK).withSid(groupSid())),
                     EMPTY_MASK,
                     READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact group no read + exact user read = read",
+            new LoadExtendedMaskTestCase("storage empty + exact group no read + exact user read = read",
                     permissions(
                             permission(PATH, NO_READ_MASK).withSid(groupSid()),
                             permission(PATH, READ_MASK)),
                     EMPTY_MASK,
                     READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact user no read + exact group read = no read",
+            new LoadExtendedMaskTestCase("storage empty + exact user no read + exact group read = no read",
                     permissions(permission(PATH, NO_READ_MASK),
                             permission(PATH, READ_MASK).withSid(groupSid())),
                     EMPTY_MASK,
                     NO_READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact group read + exact user no read = no read",
+            new LoadExtendedMaskTestCase("storage empty + exact group read + exact user no read = no read",
                     permissions(permission(PATH, READ_MASK).withSid(groupSid()),
                             permission(PATH, NO_READ_MASK)),
                     EMPTY_MASK,
                     NO_READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact group read + exact another group no read = read",
+            new LoadExtendedMaskTestCase("storage empty + exact group read + exact another group no read = read",
                     permissions(permission(PATH, READ_MASK).withSid(groupSid()),
                             permission(PATH, NO_READ_MASK).withSid(anotherGroupSid())),
                     EMPTY_MASK,
                     READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact group no read + exact another group read = read",
+            new LoadExtendedMaskTestCase("storage empty + exact group no read + exact another group read = read",
                     permissions(permission(PATH, NO_READ_MASK).withSid(groupSid()),
                             permission(PATH, READ_MASK).withSid(anotherGroupSid())),
                     EMPTY_MASK,
                     READ_MASK),
-            new LoadMaskTestScenario("storage empty + parent read = read",
+            new LoadExtendedMaskTestCase("storage empty + parent read = read",
                     permissions(permission(PARENT_PATH, READ_MASK)),
                     EMPTY_MASK,
                     READ_MASK),
-            new LoadMaskTestScenario("storage empty + exact no read = no read",
-                    permissions(permission(PATH, NO_READ_MASK)),
-                    EMPTY_MASK,
-                    NO_READ_MASK),
-            new LoadMaskTestScenario("storage read + exact no read = no read",
+            new LoadExtendedMaskTestCase("storage read + exact no read = no read",
                     permissions(permission(PATH, NO_READ_MASK)),
                     READ_MASK,
                     NO_READ_MASK),
-            new LoadMaskTestScenario("storage read + path no read = no read",
+            new LoadExtendedMaskTestCase("storage read + parent no read = no read",
                     permissions(permission(PARENT_PATH, NO_READ_MASK)),
                     READ_MASK,
                     NO_READ_MASK),
-            new LoadMaskTestScenario("storage nothing + exact read = read + no write + no execute",
+            new LoadExtendedMaskTestCase("storage nothing + exact read = read + no write + no execute",
                     permissions(permission(PATH, READ_MASK)),
-                    NO_READ_MASK | NO_WRITE_MASK | NO_EXECUTE_MASK,
+                    DENY_MASK,
                     READ_MASK | NO_WRITE_MASK | NO_EXECUTE_MASK),
-            new LoadMaskTestScenario("storage empty + exact read + parent write = read + write",
+            new LoadExtendedMaskTestCase("storage empty + exact read + parent write = read + write",
                     permissions(
                             permission(PARENT_PATH, WRITE_MASK),
                             permission(PATH, READ_MASK)),
                     EMPTY_MASK,
                     READ_MASK | WRITE_MASK),
-            new LoadMaskTestScenario("storage no read + exact read + parent write = read + write",
+            new LoadExtendedMaskTestCase("storage no read + exact read + parent write = read + write",
                     permissions(
                             permission(PARENT_PATH, WRITE_MASK),
                             permission(PATH, READ_MASK)),
                     NO_READ_MASK,
-                    READ_MASK | WRITE_MASK));
+                    READ_MASK | WRITE_MASK),
+            new LoadExtendedMaskTestCase("storage nothing + exact read + parent write = read + write + no execute",
+                    permissions(
+                            permission(PARENT_PATH, WRITE_MASK),
+                            permission(PATH, READ_MASK)),
+                    DENY_MASK,
+                    READ_MASK | WRITE_MASK | NO_EXECUTE_MASK));
 
     @Test
-    public void loadMaskShouldReturnIntermediatelyMergedMaskForRegularUser() {
+    public void loadExtendedMaskShouldReturnMergedExactAndParentMasksForRegularUser() {
         mockUser();
         final SecuredStorageEntity storage = storage();
-        for (final LoadMaskTestScenario scenario : loadMaskTestScenarios) {
-            System.out.println(scenario.getDescription());
-            mockStoragePermissions(storage, scenario.getStorageMask());
-            mockPermissions(storage, scenario.getPermissions());
+        for (final LoadExtendedMaskTestCase testCase : loadExtendedMaskTestCases) {
+            System.out.println(testCase.getDescription());
+            mockStoragePermissions(storage, testCase.getStorageMask());
+            mockPermissions(storage, testCase.getPermissions());
 
-            assertThat(scenario.getDescription(), manager.loadMask(storage, PATH, TYPE), is(scenario.getExpectedMask()));
+            assertThat(testCase.getDescription(),
+                    manager.loadExtendedMask(storage, PATH, TYPE), is(testCase.getExpectedMask()));
         }
     }
 
     @Value
     @RequiredArgsConstructor
-    private static class ApplyTestScenario {
+    private static class ApplyTestCase {
         String description;
         List<StoragePermission> permissions;
         List<StoragePermission> childPermissions;
@@ -212,121 +230,253 @@ public class StoragePermissionProviderManagerTest {
         DataStorageListing inputListing;
         DataStorageListing expectedListing;
 
-        public ApplyTestScenario(final String description,
-                                 final List<StoragePermission> permissions,
-                                 final int storageMask,
-                                 final DataStorageListing inputListing,
-                                 final DataStorageListing expectedListing) {
+        public ApplyTestCase(final String description,
+                             final List<StoragePermission> permissions,
+                             final int storageMask,
+                             final DataStorageListing inputListing,
+                             final DataStorageListing expectedListing) {
             this(description, permissions, Collections.emptyList(), Collections.emptySet(), storageMask, inputListing,
                     expectedListing);
         }
     }
 
-    private final List<ApplyTestScenario> applyTestScenarios = Arrays.asList(
-            new ApplyTestScenario(
+    private final List<ApplyTestCase> applyTestCases = Arrays.asList(
+            new ApplyTestCase(
                     "storage empty + exact all = all",
                     permissions(permission(PATH, FULL_MASK)),
                     EMPTY_MASK,
-                    listing(Collections.emptyList()),
-                    listing(FULL_MASK, Collections.emptyList())),
-            new ApplyTestScenario(
+                    listing(),
+                    listing(FULL_MASK)),
+            new ApplyTestCase(
                     "storage empty + exact all = listing all + child all",
                     permissions(permission(PATH, FULL_MASK)),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    listing(FULL_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, FULL_MASK)))),
-            new ApplyTestScenario(
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(FULL_MASK,
+                            folder(CHILD_PATH, FULL_MASK))),
+            new ApplyTestCase(
                     "storage empty + exact user all + exact group nothing = listing all + child all",
                     permissions(
                             permission(PATH, FULL_MASK),
                             permission(PATH, DENY_MASK).withSid(groupSid())),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    listing(FULL_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, FULL_MASK)))),
-            new ApplyTestScenario(
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(FULL_MASK,
+                            folder(CHILD_PATH, FULL_MASK))),
+            new ApplyTestCase(
                     "storage empty + exact group nothing + exact user all = listing all + child all",
                     permissions(
                             permission(PATH, DENY_MASK).withSid(groupSid()),
                             permission(PATH, FULL_MASK)),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    listing(FULL_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, FULL_MASK)))),
-            new ApplyTestScenario(
-                    "storage empty + exact group full + exact user nothing = forbidden listing",
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(FULL_MASK,
+                            folder(CHILD_PATH, FULL_MASK))),
+            new ApplyTestCase(
+                    "storage empty + exact group full + exact user nothing = no listing",
                     permissions(
                             permission(PATH, FULL_MASK).withSid(groupSid()),
                             permission(PATH, DENY_MASK)),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    forbiddenListing()),
-            new ApplyTestScenario(
-                    "storage empty + exact user nothing + exact group full = forbidden listing",
+                    listing(
+                            folder(CHILD_PATH)),
+                    NO_LISTING),
+            new ApplyTestCase(
+                    "storage empty + exact user nothing + exact group full = no listing",
                     permissions(
                             permission(PATH, DENY_MASK),
                             permission(PATH, FULL_MASK).withSid(groupSid())),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    forbiddenListing()),
-            new ApplyTestScenario(
+                    listing(
+                            folder(CHILD_PATH)),
+                    NO_LISTING),
+            new ApplyTestCase(
                     "storage empty + exact group nothing + exact another group full = listing full + child full",
                     permissions(
                             permission(PATH, DENY_MASK).withSid(groupSid()),
                             permission(PATH, FULL_MASK).withSid(anotherGroupSid())),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    listing(FULL_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, FULL_MASK)))),
-            new ApplyTestScenario(
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(FULL_MASK,
+                            folder(CHILD_PATH, FULL_MASK))),
+            new ApplyTestCase(
                     "storage empty + exact group full + exact another group nothing = listing full + child full",
                     permissions(
                             permission(PATH, FULL_MASK).withSid(groupSid()),
                             permission(PATH, DENY_MASK).withSid(anotherGroupSid())),
                     EMPTY_MASK,
-                    listing(Collections.singletonList(
-                            folder(CHILD_PATH))),
-                    listing(FULL_MASK, Collections.singletonList(
-                            folder(CHILD_PATH, FULL_MASK)))));
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(FULL_MASK,
+                            folder(CHILD_PATH, FULL_MASK))),
+            new ApplyTestCase(
+                    "storage empty + child allowed = listing empty + child read",
+                    permissions(),
+                    permissions(),
+                    allowedChildren(
+                            folderItem(CHILD_PATH)),
+                    EMPTY_MASK,
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(EMPTY_MASK,
+                            folder(CHILD_PATH, READ_MASK))),
+            new ApplyTestCase(
+                    "storage empty + child read + child allowed = listing empty + child read",
+                    permissions(),
+                    permissions(
+                            permission(CHILD_PATH, READ_MASK)),
+                    allowedChildren(
+                            folderItem(CHILD_PATH)),
+                    EMPTY_MASK,
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(EMPTY_MASK,
+                            folder(CHILD_PATH, READ_MASK))),
+            new ApplyTestCase(
+                    "storage empty + child full + child allowed = listing empty + child full",
+                    permissions(),
+                    permissions(
+                            permission(CHILD_PATH, FULL_MASK)),
+                    allowedChildren(
+                            folderItem(CHILD_PATH)),
+                    EMPTY_MASK,
+                    listing(
+                            folder(CHILD_PATH)),
+                    listing(EMPTY_MASK,
+                            folder(CHILD_PATH, FULL_MASK))),
+            new ApplyTestCase(
+                    "storage empty + child allowed + another child not allowed = listing empty + child read",
+                    permissions(),
+                    permissions(),
+                    allowedChildren(
+                            folderItem(CHILD_PATH)),
+                    EMPTY_MASK,
+                    listing(
+                            folder(CHILD_PATH),
+                            folder(ANOTHER_CHILD_PATH)),
+                    listing(EMPTY_MASK,
+                            folder(CHILD_PATH, READ_MASK))),
+            new ApplyTestCase(
+                    "storage empty + child not allowed = no listing",
+                    permissions(),
+                    permissions(),
+                    allowedChildren(),
+                    EMPTY_MASK,
+                    listing(
+                            folder(CHILD_PATH)),
+                    NO_LISTING));
 
     @Test
-    public void applyShouldApplyPermissionMaskAndFilterNonReadAllowedItemsForRegularUser() {
+    public void applyShouldReturnFilteredItemsWithMergedExactAndParentAndChildMasksForRegularUser() {
         mockUser();
         final SecuredStorageEntity storage = storage();
-        for (final ApplyTestScenario scenario : applyTestScenarios) {
-            System.out.println(scenario.getDescription());
-            mockStoragePermissions(storage, scenario.getStorageMask());
-            mockPermissions(storage, scenario.getPermissions(), scenario.getChildPermissions(),
-                    scenario.getReadAllowedChildPermissions());
+        for (final ApplyTestCase testCase : applyTestCases) {
+            System.out.println(testCase.getDescription());
+            mockStoragePermissions(storage, testCase.getStorageMask());
+            mockPermissions(storage, testCase.getPermissions(), testCase.getChildPermissions(),
+                    testCase.getReadAllowedChildPermissions());
 
             final Optional<DataStorageListing> actualListing = manager.apply(storage, PATH,
-                    ignored -> scenario.getInputListing());
+                    ignored -> testCase.getInputListing());
 
-            assertListing(scenario.getDescription(), actualListing, scenario.getExpectedListing());
+            assertListing(testCase.getDescription(), actualListing, testCase.getExpectedListing());
         }
     }
 
-    // TODO: 27.08.2021 Add negative test case scenarios
+    @Test
+    public void applyShouldRequestConsequentDataStorageListingIfSomeChildItemsWereFilteredOut() {
+        mockUser();
+        final SecuredStorageEntity storage = storage();
+        mockStoragePermissions(storage, EMPTY_MASK);
+        mockPermissions(storage,
+                permissions(),
+                permissions(),
+                allowedChildren(
+                        folderItem(CHILD_PATH),
+                        folderItem(THIRD_CHILD_PATH)));
+        class DataStorageListingProvider implements Function<String, DataStorageListing> {
+            @Override
+            public DataStorageListing apply(final String marker) {
+                return Objects.equals(marker, NO_MARKER)
+                        ? listing(EMPTY_MASK, MARKER,
+                        folder(CHILD_PATH),
+                        folder(ANOTHER_CHILD_PATH))
+                        : listing(EMPTY_MASK, ANOTHER_MARKER,
+                        folder(THIRD_CHILD_PATH),
+                        folder(FOURTH_CHILD_PATH));
+            }
+        }
+        final DataStorageListingProvider listingProvider = spy(new DataStorageListingProvider());
+
+        final Optional<DataStorageListing> actualListing = manager.apply(storage, PATH, listingProvider);
+
+        verify(listingProvider, times(1)).apply(NO_MARKER);
+        verify(listingProvider, times(1)).apply(MARKER);
+        verify(listingProvider, never()).apply(ANOTHER_MARKER);
+        assertListing(actualListing, listing(EMPTY_MASK, ANOTHER_MARKER,
+                folder(CHILD_PATH, READ_MASK),
+                folder(THIRD_CHILD_PATH, READ_MASK)));
+    }
+
+    private SecuredStorageEntity storage() {
+        final S3bucketDataStorage storage = new S3bucketDataStorage();
+        storage.setOwner(OWNER);
+        storage.setPath(STORAGE);
+        return storage;
+    }
+
+    private List<StoragePermission> permissions(final StoragePermission... permissions) {
+        return Arrays.asList(permissions);
+    }
+
+    private StoragePermission permission(final String path, final int mask) {
+        return new StoragePermission(path, TYPE, userSid(), mask, CREATED);
+    }
+
+    private StoragePermissionSid userSid() {
+        return StoragePermissionSid.user(USER);
+    }
+
+    private StoragePermissionSid groupSid() {
+        return groupSid(GROUP);
+    }
+
+    private StoragePermissionSid anotherGroupSid() {
+        return groupSid(ANOTHER_GROUP);
+    }
+
+    private StoragePermissionSid groupSid(final String group) {
+        return StoragePermissionSid.group(group);
+    }
+
+    private DataStorageListing listing(final AbstractDataStorageItem... items) {
+        return listing(Arrays.asList(items));
+    }
 
     private DataStorageListing listing(final List<AbstractDataStorageItem> items) {
         return listing(EMPTY_MASK, items);
     }
 
-    private DataStorageListing listing(final int mask, final List<AbstractDataStorageItem> items) {
-        final DataStorageListing listing = new DataStorageListing(null, items);
-        listing.setMask(permissionsService.mergeMask(mask));
-        return listing;
+    private DataStorageListing listing(final int mask, final AbstractDataStorageItem... items) {
+        return listing(mask, Arrays.asList(items));
     }
 
-    private DataStorageListing forbiddenListing() {
-        return null;
+    private DataStorageListing listing(final int mask, final List<AbstractDataStorageItem> items) {
+        return listing(mask, null, items);
+    }
+
+    private DataStorageListing listing(final int mask, final String marker, final AbstractDataStorageItem... items) {
+        return listing(mask, marker, Arrays.asList(items));
+    }
+
+    private DataStorageListing listing(final int mask, final String marker, final List<AbstractDataStorageItem> items) {
+        final DataStorageListing listing = new DataStorageListing(marker, items);
+        listing.setMask(permissionsService.mergeMask(mask));
+        return listing;
     }
 
     private AbstractDataStorageItem folder(final String path) {
@@ -338,6 +488,15 @@ public class StoragePermissionProviderManagerTest {
         item.setPath(path);
         item.setMask(permissionsService.mergeMask(mask));
         return item;
+    }
+
+    private StoragePermissionRepository.StorageItem folderItem(final String path) {
+        return new StoragePermissionRepository.StorageItemImpl(path, StoragePermissionPathType.FOLDER);
+    }
+
+    private Set<StoragePermissionRepository.StorageItem> allowedChildren(
+            final StoragePermissionRepository.StorageItem... items) {
+        return Arrays.stream(items).collect(Collectors.toSet());
     }
 
     private void mockStoragePermissions(final SecuredStorageEntity storage, final int mask) {
@@ -361,7 +520,7 @@ public class StoragePermissionProviderManagerTest {
     private void mockPermissions(final SecuredStorageEntity storage,
                                  final List<StoragePermission> permissions,
                                  final List<StoragePermission> childPermissions,
-                                 final Set<StoragePermissionRepository.StorageItem> readAllowedChildPermissions) {
+                                 final Set<StoragePermissionRepository.StorageItem> allowedChildren) {
         Mockito.reset(storagePermissionManager);
         doReturn(permissions)
                 .when(storagePermissionManager)
@@ -369,33 +528,9 @@ public class StoragePermissionProviderManagerTest {
         doReturn(childPermissions)
                 .when(storagePermissionManager)
                 .loadImmediateChildPermissions(storage.getRootId(), PATH, USER, GROUPS);
-        doReturn(readAllowedChildPermissions)
+        doReturn(allowedChildren)
                 .when(storagePermissionManager)
                 .loadReadAllowedImmediateChildItems(storage.getRootId(), PATH, USER, GROUPS);
-    }
-
-    private List<StoragePermission> permissions(final StoragePermission... permissions) {
-        return Arrays.asList(permissions);
-    }
-
-    private StoragePermission permission(final String path, final int mask) {
-        return new StoragePermission(path, TYPE, userSid(), mask, CREATED);
-    }
-
-    private StoragePermissionSid userSid() {
-        return StoragePermissionSid.user(USER);
-    }
-
-    private StoragePermissionSid groupSid() {
-        return groupSid(GROUP);
-    }
-
-    private StoragePermissionSid anotherGroupSid() {
-        return groupSid(GROUP);
-    }
-
-    private StoragePermissionSid groupSid(final String group) {
-        return StoragePermissionSid.group(group);
     }
 
     private void mockNonAuthorizedUser() {
@@ -425,11 +560,9 @@ public class StoragePermissionProviderManagerTest {
         doReturn(user).when(authManager).getCurrentUser();
     }
 
-    private SecuredStorageEntity storage() {
-        final S3bucketDataStorage storage = new S3bucketDataStorage();
-        storage.setOwner(OWNER);
-        storage.setPath(STORAGE);
-        return storage;
+    private void assertListing(final Optional<DataStorageListing> optionalActual,
+                               final DataStorageListing expected) {
+        assertListing("", optionalActual, expected);
     }
 
     private void assertListing(final String reason,
