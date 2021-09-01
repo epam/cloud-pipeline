@@ -18,14 +18,17 @@ package com.epam.pipeline.manager.security.metadata;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -44,12 +47,14 @@ public class MetadataPermissionManager {
     private final EntityManager entityManager;
     private final UserManager userManager;
     private final PreferenceManager preferenceManager;
+    private final StoragePermissionAccessManager storagePermissionAccessManager;
 
     /**
      * - For basic ACL entities (FOLDER, PIPELINE, etc.) admins and
      * users with corresponding permission granted are allowed
      * - For ROLE entity only admins are allowed
      * - For PIPELINE_USER admins are allowed, users are allowed to access own metadata
+     * - For DATA_STORAGE users are allowed to access storages with read allowed path
      * @param entityId
      * @param entityClass
      * @param permission
@@ -58,6 +63,12 @@ public class MetadataPermissionManager {
     public boolean metadataPermission(final Long entityId, final AclClass entityClass, final String permission) {
         if (permissionHelper.isAdmin()) {
             return true;
+        }
+        if (entityClass == null) {
+            return false;
+        }
+        if (entityClass.equals(AclClass.DATA_STORAGE)) {
+            return dataStoragePermission(entityId, permission);
         }
         if (entityClass.isSupportsEntityManager()) {
             final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
@@ -112,6 +123,13 @@ public class MetadataPermissionManager {
         }
         return ListUtils.emptyIfNull(entities).stream()
                 .allMatch(entity -> metadataPermission(entity.getEntityId(), entity.getEntityClass(), permission));
+    }
+
+    private boolean dataStoragePermission(final Long storageId, final String permission) {
+        final AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId);
+        return permissionHelper.isAllowed(permission, storage)
+                || AclPermission.READ_NAME.equals(permission)
+                && storagePermissionAccessManager.isReadAllowed(storage);
     }
 
     private boolean metadataPermission(final MetadataVO metadataVO, final boolean allowUser) {
