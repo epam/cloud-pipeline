@@ -50,10 +50,10 @@ function getPaths (parameters) {
     .filter(filterUnique);
 }
 
-@inject((stores, {parameters}) => {
+@inject((stores, {parameters, skipCheck}) => {
   const paths = getPaths(parameters);
   let sizeRequest;
-  if (paths.length > 0) {
+  if (!skipCheck && paths.length > 0) {
     sizeRequest = new DataStorageItemSize();
     sizeRequest.send(paths);
   }
@@ -64,6 +64,7 @@ function getPaths (parameters) {
 @observer
 class EstimatedDiskSizeWarning extends React.Component {
   static propTypes = {
+    skipCheck: PropTypes.bool,
     parameters: PropTypes.object,
     nodeCount: PropTypes.number,
     hddSize: PropTypes.number,

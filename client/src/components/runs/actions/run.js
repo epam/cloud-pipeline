@@ -313,6 +313,7 @@ function runFn (
                 : undefined
             }
             preferences={stores.preferences}
+            skipCheck={skipCheck}
           />
         ),
         style: {
@@ -407,7 +408,8 @@ export class RunConfirmation extends React.Component {
     hddSize: PropTypes.number,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
-    preferences: PropTypes.object
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -864,6 +866,7 @@ export class RunConfirmation extends React.Component {
           )
         }
         <EstimatedDiskSizeWarning
+          skipCheck={this.props.skipCheck}
           nodeCount={this.props.nodeCount}
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
@@ -913,7 +916,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     onChangeLimitMounts: PropTypes.func,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
-    preferences: PropTypes.object
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -1001,6 +1005,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
             preferences={this.props.preferences}
+            skipCheck={this.props.skipCheck}
           />
         </Row>
         {
