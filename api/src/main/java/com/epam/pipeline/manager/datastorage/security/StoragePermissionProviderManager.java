@@ -70,6 +70,20 @@ public class StoragePermissionProviderManager {
     public boolean isAllowed(final SecuredStorageEntity storage,
                              final String path,
                              final StoragePermissionPathType type,
+                             final List<String> permissions) {
+        return isAllowed(storage, path, type, arrayOf(permissions));
+    }
+
+    public boolean isNotAllowed(final SecuredStorageEntity storage,
+                                final String path,
+                                final StoragePermissionPathType file,
+                                final List<String> permissions) {
+        return !isAllowed(storage, path, file, permissions);
+    }
+
+    public boolean isAllowed(final SecuredStorageEntity storage,
+                             final String path,
+                             final StoragePermissionPathType type,
                              final Permission... permissions) {
         final String absolutePath = Optional.ofNullable(storage.resolveAbsolutePath(path)).orElse(StringUtils.EMPTY);
         final int mask = getMask(storage, absolutePath, type);
@@ -110,6 +124,18 @@ public class StoragePermissionProviderManager {
         return !isRecursiveReadWriteAllowed(storage, path);
     }
 
+    private boolean isRecursiveAllowed(final SecuredStorageEntity storage,
+                                       final String path,
+                                       final List<String> permissions) {
+        return isRecursiveAllowed(storage, path, arrayOf(permissions));
+    }
+
+    public boolean isNotRecursiveAllowed(final SecuredStorageEntity storage,
+                                         final String path,
+                                         final List<String> permissions) {
+        return !isRecursiveAllowed(storage, path, permissions);
+    }
+
     public boolean isRecursiveAllowed(final SecuredStorageEntity storage,
                                       final String path,
                                       final Permission... permissions) {
@@ -120,6 +146,13 @@ public class StoragePermissionProviderManager {
                         user.getGroupsAndRoles())
                 .map(mask -> isAllowed(mask, permissions))
                 .orElse(true);
+    }
+
+    private AclPermission[] arrayOf(final List<String> permissions) {
+        return permissions.stream()
+                .map(AclPermission::getAclPermissionByName)
+                .filter(Objects::nonNull)
+                .toArray(AclPermission[]::new);
     }
 
     public Optional<DataStorageListing> apply(final SecuredStorageEntity storage,

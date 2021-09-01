@@ -38,7 +38,8 @@ public class StoragePermissionManager {
 
     private List<String> getParentPaths(final String path) {
         final String[] items = path.split("/");
-        final List<String> parents = new ArrayList<>();
+        final List<String> parents = new ArrayList<>(items.length + 1);
+        parents.add("");
         final StringJoiner joiner = new StringJoiner("/");
         for (int i = 0; i < items.length - 1; i++) {
             joiner.add(items[i]);
