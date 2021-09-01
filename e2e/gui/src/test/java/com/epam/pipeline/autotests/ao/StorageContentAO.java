@@ -49,12 +49,14 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.editButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class StorageContentAO implements AccessObject<StorageContentAO> {
 
@@ -75,7 +77,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(HEADER, context().find(byClassName("browser__item-header"))),
             entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
-            entry(NEXT_PAGE, context().find(byId("next-page-button")))
+            entry(NEXT_PAGE, context().find(byId("next-page-button"))),
+            entry(GENERATE_URL, context().find(byId("bulk-url-button")))
     );
 
     public static By browser() {
@@ -85,7 +88,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public static By browserItem(final String name) {
         final String browserItemClass = "ant-table-row";
         final String itemNameClass = "browser__tree-item-name";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//tr[contains(@class, '%s') and ./td[@class = '%s' and . = '%s']]",
             browserItemClass, itemNameClass, name
         ));
@@ -98,7 +101,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
      * @return Qualifier of folder with exact {@code name} in a thee.
      */
     public static By folderWithName(final String name) {
-        return byXpath(String.format(".//*[contains(@class, 'browser__folder') and contains(., '%s')]", name));
+        return byXpath(format(".//*[contains(@class, 'browser__folder') and contains(., '%s')]", name));
     }
 
     @Override
@@ -237,7 +240,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         if (filesAndFolders.size() == 1) {
             Assert.assertEquals(filesAndFolders.get(0), "..");
         } else if (!filesAndFolders.isEmpty()) {
-            Assert.fail("Folder is not empty.");
+            fail("Folder is not empty.");
         }
         return this;
     }
@@ -246,7 +249,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         sleep(5, SECONDS);
         SelenideElement inputField = getOpenedNavigationBarInput();
 
-        String parentPath = String.format("%s/", inputField.should(exist).getValue());
+        String parentPath = format("%s/", inputField.should(exist).getValue());
         String addressPath = URI.create(parentPath).resolve(destination).toString();
 
         inputField.setValue(addressPath).pressEnter();
@@ -484,6 +487,14 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO removeAllSelectedElements() {
         return selectElementsUsingCheckboxes().removeAllSelected();
+    }
+
+    public StorageContentAO markCheckboxByName(String name) {
+        SelenideElement checkBox = context().shouldBe(visible)
+                .find(byText(format("%s", name)))
+                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
+        checkBox.click();
+        return this;
     }
 
     public class FileAO extends ElementAO<FileAO> {
