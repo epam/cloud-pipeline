@@ -437,16 +437,6 @@ public class GrantPermissionManager {
         processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids, readAllowedStorages);
     }
 
-    private Stream<StoragePermissionSid> groupSids(final PipelineUser user) {
-        return Optional.of(user)
-                .map(PipelineUser::getRoles)
-                .map(List::stream)
-                .orElseGet(Stream::empty)
-                .map(Role::getName)
-                .filter(Objects::nonNull)
-                .map(StoragePermissionSid::group);
-    }
-
     public boolean ownerPermission(Long id, AclClass aclClass) {
         AbstractSecuredEntity entity = entityManager.load(aclClass, id);
         return permissionsHelper.isOwner(entity);
