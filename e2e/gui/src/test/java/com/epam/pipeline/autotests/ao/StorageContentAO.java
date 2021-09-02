@@ -493,7 +493,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         SelenideElement checkBox = context().shouldBe(visible)
                 .find(byText(format("%s", name)))
                 .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
-        checkBox.click();
+        checkBox.shouldBe(visible).click();
         return this;
     }
 
