@@ -35,7 +35,7 @@ public class PipeCLITest extends AbstractAutoRemovingPipelineRunningTest {
     private final String tool = C.TESTING_TOOL_NAME;
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"2115_1"})
     public void checkPipeCLIInstallationContent() {
         final String installationContent = Utils.readFile(C.PIPE_INSTALLATION_CONTENT).trim();
         navigationMenu()
@@ -47,7 +47,7 @@ public class PipeCLITest extends AbstractAutoRemovingPipelineRunningTest {
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"2115_2"})
     public void checkPipeCLIConfigStore() throws IOException {
         final String pipeConfigContentPath = C.PIPE_CONFIG_CONTENT_PATH;
         final List<String> pipeConfigOutput = Files.readAllLines(Paths.get(pipeConfigContentPath));

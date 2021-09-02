@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements Navigation {
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"897"})
     public void checkHelpContent() {
         navigationMenu()
                 .settings()
@@ -34,7 +34,7 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"1489"})
     public void checkLustreMountOption() {
         navigationMenu()
                 .settings()
@@ -44,7 +44,7 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"223"})
     public void checkLaunchSystemParameters() {
         final String launchConfig = Utils.readFile(C.LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH);
         navigationMenu()
