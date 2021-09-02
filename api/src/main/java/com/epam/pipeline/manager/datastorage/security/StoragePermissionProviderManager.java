@@ -185,7 +185,7 @@ public class StoragePermissionProviderManager {
             listing.setNextPageMarker(currentListing.getNextPageMarker());
             listing.setResults(ListUtils.emptyIfNull(currentListing.getResults()).stream()
                     .map(item -> {
-                        int mask = masks.getOrDefault(getStorageItem(item), 0);
+                        int mask = masks.getOrDefault(getStorageItem(storage, item), 0);
                         mask = mergeParentMask(mask, folderMask);
                         return withMask(item, mask);
                     })
@@ -201,7 +201,7 @@ public class StoragePermissionProviderManager {
             int filteredOutItemsNumber = 0;
             final List<AbstractDataStorageItem> items = new ArrayList<>();
             for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(currentListing.getResults())) {
-                final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(item);
+                final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(storage, item);
                 if (readAllowedItems.contains(storageItem)) {
                     int mask = masks.getOrDefault(storageItem, 0);
                     mask = mergeParentMask(mask, folderMask);
@@ -216,7 +216,7 @@ public class StoragePermissionProviderManager {
             while (filteredOutItemsNumber > 0 && currentListing.getNextPageMarker() != null) {
                 currentListing = listingProvider.apply(currentListing.getNextPageMarker());
                 for (final AbstractDataStorageItem item : ListUtils.emptyIfNull(currentListing.getResults())) {
-                    final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(item);
+                    final StoragePermissionRepository.StorageItemImpl storageItem = getStorageItem(storage, item);
                     if (readAllowedItems.contains(storageItem)) {
                         int mask = masks.getOrDefault(storageItem, 0);
                         mask = mergeParentMask(mask, folderMask);
@@ -278,8 +278,9 @@ public class StoragePermissionProviderManager {
                 .orElse(0);
     }
 
-    private StoragePermissionRepository.StorageItemImpl getStorageItem(final AbstractDataStorageItem item) {
-        return new StoragePermissionRepository.StorageItemImpl(item.getPath(),
+    private StoragePermissionRepository.StorageItemImpl getStorageItem(final SecuredStorageEntity storage,
+                                                                       final AbstractDataStorageItem item) {
+        return new StoragePermissionRepository.StorageItemImpl(storage.resolveAbsolutePath(item.getPath()),
                 StoragePermissionPathType.from(item.getType()));
     }
 
