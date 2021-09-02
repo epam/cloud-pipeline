@@ -16,7 +16,11 @@ import com.epam.pipeline.manager.datastorage.security.SecuredStorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.gcp.GSBucketStorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.nfs.NFSStorageMounter;
 import com.epam.pipeline.manager.datastorage.providers.nfs.NFSStorageProvider;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionManager;
 import com.epam.pipeline.manager.datastorage.security.StoragePermissionProviderManager;
+import com.epam.pipeline.manager.datastorage.security.impl.InsecureStoragePermissionAccessManager;
+import com.epam.pipeline.manager.datastorage.security.impl.SecureStoragePermissionAccessManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -29,9 +33,18 @@ public class StoragePermissionConfiguration {
 
     private final boolean storagePathPermissionsEnabled;
 
-    public StoragePermissionConfiguration(@Value("${data.storage.enable.security}")
-                                            final boolean storagePathPermissionsEnabled) {
+    public StoragePermissionConfiguration(@Value("${data.storage.path.permissions.enabled}")
+                                          final boolean storagePathPermissionsEnabled) {
         this.storagePathPermissionsEnabled = storagePathPermissionsEnabled;
+    }
+
+    @Bean
+    public StoragePermissionAccessManager storagePermissionAccessManager(
+            final StoragePermissionManager storagePermissionManager,
+            final AuthManager authManager) {
+        return storagePathPermissionsEnabled
+                ? new SecureStoragePermissionAccessManager(storagePermissionManager, authManager)
+                : new InsecureStoragePermissionAccessManager();
     }
 
     @Bean
