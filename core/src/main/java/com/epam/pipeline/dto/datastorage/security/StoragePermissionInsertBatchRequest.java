@@ -8,6 +8,6 @@ import java.util.List;
 public class StoragePermissionInsertBatchRequest {
 
     Long id;
-    StoragePermissionType type;
+    StorageKind type;
     List<StoragePermissionInsertRequest> requests;
 }

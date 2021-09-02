@@ -44,7 +44,7 @@ public class StoragePermissionEntity {
 
     @Id
     @Type(type = "StoragePermissionPathTypeUserType")
-    // TODO: 19.08.2021 Rename to storage path type
+    // TODO: 19.08.2021 Rename to storagePathType
     private StoragePermissionPathType datastorageType;
 
     @Id
