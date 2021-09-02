@@ -28,11 +28,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @IdClass(StoragePermissionEntityId.class)
 @TypeDefs({
-        @TypeDef(name = "StoragePermissionPathTypeUserType",
-                typeClass = StoragePermissionPathTypeUserType.class),
-        @TypeDef(name = "StoragePermissionSidTypeUserType",
-                typeClass = StoragePermissionSidTypeUserType.class),
-})
+        @TypeDef(name = "StoragePermissionPathTypeUserType", typeClass = StoragePermissionPathTypeUserType.class),
+        @TypeDef(name = "StoragePermissionSidTypeUserType", typeClass = StoragePermissionSidTypeUserType.class)})
 // TODO: 19.08.2021 Rename fields to from datastorageSomething to storageSomething
 public class StoragePermissionEntity {
 

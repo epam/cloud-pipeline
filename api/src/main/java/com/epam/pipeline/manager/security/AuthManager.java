@@ -38,11 +38,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class AuthManager {
@@ -138,7 +135,9 @@ public class AuthManager {
             User user = (User) principal;
             return Optional.of(PipelineUser.builder()
                     .userName(user.getUsername())
-                    .roles(user.getAuthorities().stream().map(a -> new Role(a.getAuthority())).collect(Collectors.toList()))
+                    .roles(user.getAuthorities().stream()
+                            .map(a -> new Role(a.getAuthority()))
+                            .collect(Collectors.toList()))
                     .admin(user.getAuthorities().stream()
                             .anyMatch(a -> a.getAuthority().equals(DefaultRoles.ROLE_ADMIN.getName())))
                     .build());

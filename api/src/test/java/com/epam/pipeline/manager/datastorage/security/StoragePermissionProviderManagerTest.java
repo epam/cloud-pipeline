@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 
 public class StoragePermissionProviderManagerTest {
 
-    private static final String STORAGE = "storage";
+    private static final String STORAGE_PATH = "storage";
     private static final String PARENT_PATH = "parent";
     private static final String PATH = PARENT_PATH + "/path";
     private static final String CHILD_PATH = PATH + "/child";
@@ -74,9 +74,6 @@ public class StoragePermissionProviderManagerTest {
     private static final int OWNER_MASK = FULL_MASK | OWN_MASK;
     private static final int DENY_MASK = NO_READ_MASK | NO_WRITE_MASK | NO_EXECUTE_MASK;
     private static final LocalDateTime CREATED = LocalDateTime.now();
-    private static final DataStorageListing EMPTY_LISTING = new DataStorageListing(null, Collections.emptyList());
-    private static final Function<String, DataStorageListing> MARKER_TO_EMPTY_LISTING_FUNCTION =
-            ignored -> EMPTY_LISTING;
     private static final DataStorageListing NO_LISTING = null;
     private static final String MARKER = "MARKER";
     private static final String ANOTHER_MARKER = "ANOTHER_MARKER";
@@ -230,7 +227,7 @@ public class StoragePermissionProviderManagerTest {
         DataStorageListing inputListing;
         DataStorageListing expectedListing;
 
-        public ApplyTestCase(final String description,
+        ApplyTestCase(final String description,
                              final List<StoragePermission> permissions,
                              final int storageMask,
                              final DataStorageListing inputListing,
@@ -381,7 +378,7 @@ public class StoragePermissionProviderManagerTest {
                     testCase.getReadAllowedChildPermissions());
 
             final Optional<DataStorageListing> actualListing = manager.apply(storage, PATH,
-                    ignored -> testCase.getInputListing());
+                ignored -> testCase.getInputListing());
 
             assertListing(testCase.getDescription(), actualListing, testCase.getExpectedListing());
         }
@@ -425,7 +422,7 @@ public class StoragePermissionProviderManagerTest {
     private SecuredStorageEntity storage() {
         final S3bucketDataStorage storage = new S3bucketDataStorage();
         storage.setOwner(OWNER);
-        storage.setPath(STORAGE);
+        storage.setPath(STORAGE_PATH);
         return storage;
     }
 
