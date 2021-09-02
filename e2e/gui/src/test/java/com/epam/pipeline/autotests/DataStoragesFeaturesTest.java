@@ -32,7 +32,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.GENERATE_URL;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertFalse;
 
 public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements Authorization, Navigation {
     private String storage = "deactGenUrl-storage-" + Utils.randomSuffix();
@@ -43,14 +43,14 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @BeforeClass
     public void createPresetStorage() {
         library()
-            .createStorage(storage)
-            .selectStorage(storage)
-            .createFileWithContent(fileName, fileName);
+                .createStorage(storage)
+                .selectStorage(storage)
+                .createFileWithContent(fileName, fileName);
         addAccountToStoragePermissions(user, storage);
         givePermissions(user,
-             BucketPermission.allow(READ, storage),
-             BucketPermission.allow(WRITE, storage),
-             BucketPermission.allow(EXECUTE, storage)
+                BucketPermission.allow(READ, storage),
+                BucketPermission.allow(WRITE, storage),
+                BucketPermission.allow(EXECUTE, storage)
         );
         storageAllowSignedUrlsState = navigationMenu()
                 .settings()
@@ -63,11 +63,13 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
         loginAsAdminAndPerform(() -> {
             library()
                     .removeStorage(storage);
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .setCheckboxPreference(storageAllowSignedUrls, storageAllowSignedUrlsState[0], true)
-                    .saveIfNeeded();
+            if ("false".equals(C.AUTH_TOKEN)) {
+                navigationMenu()
+                        .settings()
+                        .switchToPreferences()
+                        .setCheckboxPreference(storageAllowSignedUrls, storageAllowSignedUrlsState[0], true)
+                        .saveIfNeeded();
+            }
         });
     }
 
@@ -75,18 +77,19 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @TestCase(value = {""})
     public void deactivateDownloadFileOption() {
         if ("true".equals(C.AUTH_TOKEN)) {
-            assertTrue(storageAllowSignedUrlsState[0],
+            assertFalse(storageAllowSignedUrlsState[0],
                     storageAllowSignedUrls + "has 'Enable' value");
-            }
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .setCheckboxPreference(storageAllowSignedUrls, false, true)
-                .saveIfNeeded();
+        } else {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setCheckboxPreference(storageAllowSignedUrls, false, true)
+                    .saveIfNeeded();
+        }
         logout();
         loginAs(user);
         library()
-            .selectStorage(storage)
+                .selectStorage(storage)
                 .markCheckboxByName(fileName)
                 .ensure(GENERATE_URL, not(visible));
     }
