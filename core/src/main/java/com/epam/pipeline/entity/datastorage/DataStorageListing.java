@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -30,13 +31,12 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class DataStorageListing {
+    private int mask = AbstractSecuredEntity.ALL_PERMISSIONS_MASK;
     private String nextPageMarker;
-    private int mask = 0;
     private List<AbstractDataStorageItem> results;
 
     public DataStorageListing(final String nextPageMarker, final List<AbstractDataStorageItem> results) {
         this.nextPageMarker = nextPageMarker;
-        this.mask = 0;
         this.results = results;
     }
 }

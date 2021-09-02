@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -33,7 +34,7 @@ public abstract class AbstractDataStorageItem {
     private Map<String, String> tags;
     @Setter(AccessLevel.PACKAGE)
     private DataStorageItemType type;
-    private int mask = 0;
+    private int mask = AbstractSecuredEntity.ALL_PERMISSIONS_MASK;
 
     @JsonIgnore
     public static Comparator<AbstractDataStorageItem> getStorageItemComparator() {
