@@ -48,6 +48,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -137,9 +138,35 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public CliAO switchPipeCLI() {
+            click(PIPE_CLI);
+            return this;
+        }
+
         public CliAO ensureCodeHasText(final String text) {
             ensure(GIT_COMMAND, matchesText(text));
             return this;
+        }
+
+        public CliAO selectOperationSystem(final String operationSystem) {
+            final String defaultSystem = $(tagName("b")).parent().find(byClassName("ant-select-selection__rendered"))
+                    .getText();
+            selectValue(byText(defaultSystem), menuitem(operationSystem));
+            return this;
+        }
+
+        public CliAO checkOperationSystemInstallationContent(final String content) {
+            ensure(byId("pip-install-url-input"), text(content));
+            return this;
+        }
+
+        public CliAO generateAccessKey() {
+            click(byId("generate-access-key-button"));
+            return this;
+        }
+
+        public String getCLIConfigureCommand() {
+            return $(byId("cli-configure-command-text-area")).getText();
         }
 
         @Override
@@ -986,6 +1013,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
                 entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security"))),
                 entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling"))),
+                entry(USER_INTERFACE_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("User Interface"))),
+                entry(LUSTRE_FS_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Lustre FS"))),
+                entry(LAUNCH_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Launch"))),
                 entry(SEARCH,  context().find(byClassName("ant-input-search")).find(tagName("input"))),
                 entry(SAVE, $(byId("edit-preference-form-ok-button")))
         );
@@ -1014,10 +1044,26 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new DockerSecurityAO(parentAO);
         }
 
+        public UserInterfaceAO switchToUserInterface() {
+            click(USER_INTERFACE_TAB);
+            return new UserInterfaceAO(parentAO);
+        }
+
         public PreferencesAO searchPreference(String preference) {
             setValue(SEARCH, preference);
             enter();
             return this;
+        }
+
+        public LustreFSAO switchToLustreFS() {
+            click(LUSTRE_FS_TAB);
+            return new LustreFSAO(parentAO);
+
+        }
+
+        public LaunchAO switchToLaunch() {
+            click(LAUNCH_TAB);
+            return new LaunchAO(parentAO);
         }
 
         public PreferencesAO setPreference(String preference, String value, boolean eyeIsChecked) {
@@ -1070,6 +1116,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .stream()
                             .filter(element -> exactText(variable).apply(element))
                             .map(e -> e.find(".ant-input-sm"))
+                            .collect(toList());
+                }
+            };
+        }
+
+        private By getPreferenceState(String preference) {
+            return new By() {
+                @Override
+                public List<WebElement> findElements(final SearchContext context) {
+                    return $$(byClassName("preference-group__preference-row"))
+                            .stream()
+                            .filter(element -> exactText(preference).apply(element))
+                            .map(e -> e.find(byCssSelector("i")))
                             .collect(toList());
                 }
             };
@@ -1377,6 +1436,61 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .collect(toList());
                     }
                 };
+            }
+        }
+
+        public class UserInterfaceAO extends PreferencesAO {
+
+            public static final String SUPPORT_TEMPLATE = "ui.support.template";
+
+            private final By supportTemplateValue = getByField(SUPPORT_TEMPLATE);
+            private final By supportTemplateState = getPreferenceState(SUPPORT_TEMPLATE);
+
+            UserInterfaceAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            public UserInterfaceAO checkSupportTemplate(final String value) {
+                ensure(supportTemplateValue, value(value));
+                ensure(supportTemplateState, cssClass("anticon-eye"));
+                return this;
+            }
+        }
+
+        public class LustreFSAO extends PreferencesAO {
+
+            private final By lustreFSMountOptions = getByField("lustre.fs.mount.options");
+
+            LustreFSAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            public LustreFSAO checkLustreFSMountOptionsValue(final String value) {
+                ensure(lustreFSMountOptions, value(value));
+                return this;
+            }
+        }
+
+        public class LaunchAO extends PreferencesAO {
+
+            public static final String LAUNCH_PARAMETERS = "launch.system.parameters";
+
+            LaunchAO(PipelinesLibraryAO pipelinesLibraryAO) {
+                super(pipelinesLibraryAO);
+            }
+
+            public LaunchAO checkLaunchSystemParameters(final String value) {
+                final String launchSystemParameters = $$(byClassName("preference-group__preference-row")).stream()
+                        .map(SelenideElement::getText)
+                        .filter(e -> e.startsWith(LAUNCH_PARAMETERS))
+                        .map(e -> e.replaceAll("\\n[0-9]*\\n", "\n"))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
+                assertTrue(launchSystemParameters.contains(value),
+                        format("Value %s isn't found in '%s' preference", value, launchSystemParameters));
+                return this;
             }
         }
 
