@@ -64,7 +64,7 @@ class RemotePost {
   }
 
   _fetchIsExecuting = false;
-  async send (body) {
+  async send (body, abortSignal) {
     if (!this._postIsExecuting) {
       this._pending = true;
       this._postIsExecuting = true;
@@ -82,7 +82,11 @@ class RemotePost {
         } catch (___) {}
         const response = await fetch(
           `${prefix}${this.url}`,
-          {...fetchOptions, body: stringifiedBody}
+          {
+            ...fetchOptions,
+            body: stringifiedBody,
+            ...(abortSignal && {signal: abortSignal})
+          }
         );
         if (!this.constructor.noResponse) {
           this.responseError = !response.ok;
@@ -97,8 +101,13 @@ class RemotePost {
           this.update({status: 'OK', payload: {}});
         }
       } catch (e) {
-        this.failed = true;
-        this.error = e.toString();
+        if (e.name === 'AbortError') {
+          console.log('Request aborted.');
+          this.aborted = true;
+        } else {
+          this.failed = true;
+          this.error = e.toString();
+        }
       } finally {
         this._postIsExecuting = false;
       }

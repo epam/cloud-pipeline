@@ -521,7 +521,7 @@ function GroupReport ({
     key: 'spendings',
     dataIndex: 'spendings',
     title: 'Spendings',
-    render: costTickFormatter,
+    render: o => costTickFormatter(o),
     className: styles.tableCell
   }, {
     key: 'billingCenter',

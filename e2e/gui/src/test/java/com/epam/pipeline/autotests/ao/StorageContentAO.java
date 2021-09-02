@@ -81,10 +81,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(GENERATE_URL, context().find(byId("bulk-url-button")))
     );
 
-    public static By browser() {
-        return className("browser__children-container");
-    }
-
     public static By browserItem(final String name) {
         final String browserItemClass = "ant-table-row";
         final String itemNameClass = "browser__tree-item-name";

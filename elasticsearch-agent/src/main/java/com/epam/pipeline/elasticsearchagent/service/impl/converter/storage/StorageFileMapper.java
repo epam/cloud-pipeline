@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ public class StorageFileMapper {
                     .field("storage_id", dataStorage.getId())
                     .field("storage_name", dataStorage.getName())
                     .field("storage_region", region)
+                    .field("is_hidden", dataStorageFile.getIsHidden())
                     .field(DOC_TYPE_FIELD, type.name())
                     .array("metadata", tags.entrySet().stream()
                             .map(entry -> entry.getKey() + " " + entry.getValue())

@@ -411,4 +411,12 @@ public class Utils {
     public static void resetClick() {
         Selenide.actions().moveByOffset(-50, -50).click().perform();
     }
+
+    public static String readFile(final String filePath) {
+        try {
+            return String.join("\n", Files.readAllLines(Paths.get(filePath)));
+        } catch (IOException e) {
+            throw new RuntimeException(format("Unable to get file from path %s", filePath));
+        }
+    }
 }

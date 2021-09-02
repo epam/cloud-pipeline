@@ -8,6 +8,15 @@
   justify-content: space-between;
 }
 
+.filters {
+  display: flex;
+  align-items: center;
+}
+
+.filters .label {
+  margin-right: 5px;
+}
+
 .table-container {
   width: 100%;
   padding: 10px 0;
@@ -117,6 +126,11 @@
   display: flex;
   align-items: center;
   width: 100%;
+  cursor: default;
+}
+
+.user-name-cell-container.blocked {
+  color: #aaa;
 }
 
 .user-name-cell {

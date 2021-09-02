@@ -454,6 +454,18 @@
         </classes>
     </test>
 
+    <test name="PlatformPreferencesTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PlatformPreferencesTest"/>
+        </classes>
+    </test>
+
+    <test name="PipeCLITest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PipeCLITest"/>
+        </classes>
+    </test>
+
     <test name="DataStoragesFeaturesTest">
         <classes>
             <class name="com.epam.pipeline.autotests.DataStoragesFeaturesTest"/>

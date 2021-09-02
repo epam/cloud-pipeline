@@ -28,6 +28,9 @@ import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -109,7 +112,9 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
         this.addRunId(Utils.getPipelineRunId(pipeline));
         RunsMenuAO runs = new RunsMenuAO();
         runs
-                .showLog(getLastRunId());
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("ORIGINAL_OWNER", user.login), exist);
         runs
                 .ensureHasOwner(getUserNameByAccountLogin(admin.login));
         logout();
