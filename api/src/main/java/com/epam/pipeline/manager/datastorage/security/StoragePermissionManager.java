@@ -29,7 +29,8 @@ public class StoragePermissionManager {
                                         final StoragePermissionPathType type,
                                         final String user,
                                         final List<String> groups) {
-        return repository.findPermissions(root, path, type.name().toUpperCase(), blankStringListIfEmpty(getParentPaths(path)),
+        return repository.findPermissions(root, path, type.name().toUpperCase(),
+                        blankStringListIfEmpty(getParentPaths(path)),
                         user, blankStringListIfEmpty(groups))
                 .stream()
                 .map(mapper::toDto)

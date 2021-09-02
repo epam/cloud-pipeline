@@ -21,6 +21,16 @@ import java.util.Optional;
 public interface StoragePermissionRepository
         extends CrudRepository<StoragePermissionEntity, StoragePermissionEntityId> {
 
+    String STORAGE_ID = "datastorage_id";
+    String STORAGE_ROOT_ID = "datastorage_root_id";
+    String STORAGE_PATH = "datastorage_path";
+    String STORAGE_OLD_PATH = "datastorage_old_path";
+    String STORAGE_NEW_PATH = "datastorage_new_path";
+    String STORAGE_PARENT_PATHS = "datastorage_parent_paths";
+    String STORAGE_PATH_TYPE = "datastorage_type";
+    String USER_SID_NAME = "user_sid_name";
+    String GROUP_SID_NAMES = "group_sid_names";
+
     default List<StoragePermissionEntity> findByRootAndPathAndType(Long root,
                                                                    String path,
                                                                    StoragePermissionPathType type) {
@@ -34,66 +44,68 @@ public interface StoragePermissionRepository
     );
 
     @Query(name = "StoragePermissionRepository.findPermissions", nativeQuery = true)
-    List<StoragePermissionEntity> findPermissions(@Param("datastorage_root_id") Long root,
-                                                  @Param("datastorage_path") String path,
-                                                  @Param("datastorage_type") String type,
-                                                  @Param("datastorage_parent_paths") List<String> parentPaths,
-                                                  @Param("user_sid_name") String user,
-                                                  @Param("group_sid_names") List<String> groups);
+    List<StoragePermissionEntity> findPermissions(@Param(STORAGE_ROOT_ID) Long root,
+                                                  @Param(STORAGE_PATH) String path,
+                                                  @Param(STORAGE_PATH_TYPE) String type,
+                                                  @Param(STORAGE_PARENT_PATHS) List<String> parentPaths,
+                                                  @Param(USER_SID_NAME) String user,
+                                                  @Param(GROUP_SID_NAMES) List<String> groups);
 
     @Query(name = "StoragePermissionRepository.findImmediateChildPermissions", nativeQuery = true)
-    List<StoragePermissionEntity> findImmediateChildPermissions(@Param("datastorage_root_id") Long root,
-                                                                @Param("datastorage_path") String path,
-                                                                @Param("user_sid_name") String user,
-                                                                @Param("group_sid_names") List<String> groups);
+    List<StoragePermissionEntity> findImmediateChildPermissions(@Param(STORAGE_ROOT_ID) Long root,
+                                                                @Param(STORAGE_PATH) String path,
+                                                                @Param(USER_SID_NAME) String user,
+                                                                @Param(GROUP_SID_NAMES) List<String> groups);
 
-    // returns storage_path, storage_path_type for storage paths with at least single read permission under the given path
-    // which can be used later on to filter items in storage path listings.
+    /**
+     * @return Immediate child items with at least a single recursive read permission.
+     */
     @Query(name = "StoragePermissionRepository.findReadAllowedImmediateChildItems", nativeQuery = true)
-    List<StorageItem> findReadAllowedImmediateChildItems(@Param("datastorage_root_id") Long root,
-                                                         @Param("datastorage_path") String path,
-                                                         @Param("user_sid_name") String user,
-                                                         @Param("group_sid_names") List<String> groups);
+    List<StorageItem> findReadAllowedImmediateChildItems(@Param(STORAGE_ROOT_ID) Long root,
+                                                         @Param(STORAGE_PATH) String path,
+                                                         @Param(USER_SID_NAME) String user,
+                                                         @Param(GROUP_SID_NAMES) List<String> groups);
 
-    // returns storage_id, storage_type for with at least single storage path read permission
-    // which can be used later on to filter storages in library tree listings.
+    /**
+     * @return Storages with at least a single path read permission.
+     */
     @Query(name = "StoragePermissionRepository.findReadAllowedStorages", nativeQuery = true)
-    List<Storage> findReadAllowedStorages(@Param("user_sid_name") String user,
-                                          @Param("group_sid_names") List<String> groups);
+    List<Storage> findReadAllowedStorages(@Param(USER_SID_NAME) String user,
+                                          @Param(GROUP_SID_NAMES) List<String> groups);
 
     @Query(name = "StoragePermissionRepository.findReadAllowedStorage", nativeQuery = true)
-    List<Storage> findReadAllowedStorage(@Param("datastorage_root_id") Long root,
-                                             @Param("datastorage_id") Long storage,
-                                             @Param("user_sid_name") String user,
-                                             @Param("group_sid_names") List<String> groups);
+    List<Storage> findReadAllowedStorage(@Param(STORAGE_ROOT_ID) Long root,
+                                             @Param(STORAGE_ID) Long storage,
+                                             @Param(USER_SID_NAME) String user,
+                                             @Param(GROUP_SID_NAMES) List<String> groups);
 
     @Query(name = "StoragePermissionRepository.findRecursiveMask", nativeQuery = true)
-    Optional<Integer> findRecursiveMask(@Param("datastorage_root_id") Long root,
-                                        @Param("datastorage_path") String path,
-                                        @Param("user_sid_name") String user,
-                                        @Param("group_sid_names") List<String> groups);
+    Optional<Integer> findRecursiveMask(@Param(STORAGE_ROOT_ID) Long root,
+                                        @Param(STORAGE_PATH) String path,
+                                        @Param(USER_SID_NAME) String user,
+                                        @Param(GROUP_SID_NAMES) List<String> groups);
 
     @Modifying
     @Query(name = "StoragePermissionRepository.copyFilePermissions", nativeQuery = true)
-    void copyFilePermissions(@Param("datastorage_root_id") Long root,
-                             @Param("datastorage_old_path") String oldPath,
-                             @Param("datastorage_new_path") String newPath);
+    void copyFilePermissions(@Param(STORAGE_ROOT_ID) Long root,
+                             @Param(STORAGE_OLD_PATH) String oldPath,
+                             @Param(STORAGE_NEW_PATH) String newPath);
 
     @Modifying
     @Query(name = "StoragePermissionRepository.copyFolderPermissions", nativeQuery = true)
-    void copyFolderPermissions(@Param("datastorage_root_id") Long root,
-                               @Param("datastorage_old_path") String oldPath,
-                               @Param("datastorage_new_path") String newPath);
+    void copyFolderPermissions(@Param(STORAGE_ROOT_ID) Long root,
+                               @Param(STORAGE_OLD_PATH) String oldPath,
+                               @Param(STORAGE_NEW_PATH) String newPath);
 
     @Modifying
     @Query(name = "StoragePermissionRepository.deleteFilePermissions", nativeQuery = true)
-    void deleteFilePermissions(@Param("datastorage_root_id") Long root,
-                               @Param("datastorage_path") String path);
+    void deleteFilePermissions(@Param(STORAGE_ROOT_ID) Long root,
+                               @Param(STORAGE_PATH) String path);
 
     @Modifying
     @Query(name = "StoragePermissionRepository.deleteFolderPermissions", nativeQuery = true)
-    void deleteFolderPermissions(@Param("datastorage_root_id") Long root,
-                                 @Param("datastorage_path") String path);
+    void deleteFolderPermissions(@Param(STORAGE_ROOT_ID) Long root,
+                                 @Param(STORAGE_PATH) String path);
 
     interface Storage {
 
