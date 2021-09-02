@@ -34,7 +34,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
 
-public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
+public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization {
 
     public static final String RUN_AS_RESOURCE = "run-as";
     private final String pipeline = resourceName(RUN_AS_RESOURCE);
@@ -106,16 +106,16 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
         runsMenu()
                 .activeRuns()
                 .viewAvailableActiveRuns();
-        this.setRunId(Utils.getPipelineRunId(pipeline));
+        this.addRunId(Utils.getPipelineRunId(pipeline));
         RunsMenuAO runs = new RunsMenuAO();
         runs
-                .showLog(getRunId());
+                .showLog(getLastRunId());
         runs
                 .ensureHasOwner(getUserNameByAccountLogin(admin.login));
         logout();
         loginAs(admin);
         runsMenu()
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .waitForSshLink()
                 .validateShareLink(user.login)
                 .validateShareLink(C.ROLE_USER);
@@ -175,7 +175,7 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
         runsMenu()
                 .activeRuns()
                 .viewAvailableActiveRuns()
-                .assertLatestPipelineHasName(pipeline1);
+                .shouldContainRun(pipeline1, getLastRunId());
         logout();
     }
 
