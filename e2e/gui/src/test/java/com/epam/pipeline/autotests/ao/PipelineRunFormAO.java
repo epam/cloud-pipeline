@@ -257,24 +257,33 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkLaunchWarningMessage(String message, boolean isVisible) {
-        try {
-            $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
-            $$(byClassName("ant-modal-body"))
-                    .findBy(text("Launch"))
-                    .find(byClassName("ob-estimated-price-info__info"))
-                    .shouldBe(visible);
-            assertEquals(context().$(byClassName("ant-modal-body")).findAll(byClassName("ant-alert-warning"))
-                    .stream()
-                    .map(SelenideElement::getText)
-                    .filter(e -> e.contains(message))
-                    .count() == 1, isVisible);
-        } finally {
-            $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
-                    .find(button("Cancel"))
-                    .shouldBe(enabled)
-                    .click();
-            return this;
-        }
+        assertEquals(checkMessage("warning", message), isVisible,
+                format("Warning '%s' should be visible on Launch form: ", message));
+        return this;
+    }
+
+    public PipelineRunFormAO checkLaunchErrorMessage(String message, boolean isVisible) {
+        assertEquals(checkMessage("error", message), isVisible,
+                format("Message '%s' should be visible on Launch form: ", message));
+        return this;
+    }
+
+    private boolean checkMessage(String typeMessage, String message) {
+        $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
+        $$(byClassName("ant-modal-body"))
+                .findBy(text("Launch"))
+                .find(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible);
+        boolean messageExist = context().$(byClassName("ant-modal-body")).findAll(byClassName(format("ant-alert-%s", typeMessage)))
+                .stream()
+                .map(SelenideElement::getText)
+                .filter(e -> e.contains(message))
+                .count() == 1;
+        $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
+                .find(button("Cancel"))
+                .shouldBe(enabled)
+                .click();
+        return messageExist;
     }
 
     public PipelineRunFormAO checkLaunchItemName(String name) {
