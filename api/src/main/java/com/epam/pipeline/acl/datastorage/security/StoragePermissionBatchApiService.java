@@ -18,17 +18,17 @@ public class StoragePermissionBatchApiService {
 
     private final StoragePermissionBatchManager manager;
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_REQUEST_ID_OWNER)
     public List<StoragePermission> upsert(final StoragePermissionInsertBatchRequest request) {
         return manager.upsert(request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_REQUEST_ID_OWNER)
     public void delete(final StoragePermissionDeleteBatchRequest request) {
         manager.delete(request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_REQUEST_ID_READ)
     public List<StoragePermission> load(final StoragePermissionLoadBatchRequest request) {
         return manager.load(request);
     }

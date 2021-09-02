@@ -257,6 +257,18 @@ public final class MessageConstants {
             "error.datastorage.convert.source.type.invalid";
     public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
 
+    // Storage permission messages
+    public static final String ERROR_STORAGE_PERMISSION_STORAGE_ID_MISSING =
+            "error.storage.permission.storage.id.missing";
+    public static final String ERROR_STORAGE_PERMISSION_STORAGE_KIND_MISSING =
+            "error.storage.permission.storage.kind.missing";
+    public static final String ERROR_STORAGE_PERMISSION_PATH_MISSING = "error.storage.permission.path.missing";
+    public static final String ERROR_STORAGE_PERMISSION_PATH_TYPE_MISSING =
+            "error.storage.permission.path.type.missing";
+    public static final String ERROR_STORAGE_PERMISSION_SID_MISSING = "error.storage.permission.sid.missing";
+    public static final String ERROR_STORAGE_PERMISSION_SID_NAME_MISSING = "error.storage.permission.sid.name.missing";
+    public static final String ERROR_STORAGE_PERMISSION_SID_TYPE_MISSING = "error.storage.permission.sid.type.missing";
+
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
     public static final String ERROR_DATASTORAGE_NFS_MOUNT_2 = "error.datastorage.nfs.mount.2";

@@ -8,6 +8,6 @@ import java.util.List;
 public class StoragePermissionDeleteBatchRequest {
 
     Long id;
-    StoragePermissionType type;
+    StorageKind type;
     List<StoragePermissionDeleteRequest> requests;
 }
