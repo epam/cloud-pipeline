@@ -175,7 +175,8 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
         runsMenu()
                 .activeRuns()
                 .viewAvailableActiveRuns()
-                .shouldContainRun(pipeline1, getLastRunId());
+                .shouldContainRun(pipeline1, Utils.getPipelineRunId(pipeline1));
+        this.addRunId(Utils.getPipelineRunId(pipeline1));
         logout();
     }
 
