@@ -127,7 +127,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
     }
 
     @Test
-    @TestCase("")
+    @TestCase(value = {"1949"})
     public void userAndWriteAccessToBucketWithRunAsOption() {
         logoutIfNeeded();
         loginAs(admin);

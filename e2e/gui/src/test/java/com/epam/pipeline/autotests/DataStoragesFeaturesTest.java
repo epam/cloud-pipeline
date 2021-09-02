@@ -74,7 +74,7 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"TC-DATASTORAGE-1"})
     public void deactivateDownloadFileOption() {
         if ("true".equals(C.AUTH_TOKEN)) {
             assertFalse(storageAllowSignedUrlsState[0],
