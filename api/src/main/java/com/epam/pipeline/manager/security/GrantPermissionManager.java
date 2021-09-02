@@ -485,10 +485,7 @@ public class GrantPermissionManager {
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !storagePermission(storage, AclPermission.READ_NAME)) {
-                return false;
-            }
-            if (action.isWrite() && !storagePermission(storage, AclPermission.WRITE_NAME)) {
+            if ((action.isRead() || action.isWrite()) && !storagePermission(storage, AclPermission.READ_NAME)) {
                 return false;
             }
         }
