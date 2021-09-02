@@ -1,0 +1,28 @@
+[ {
+  "name" : "default",
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "cloudRegionId" : 1,
+    "instance_size" : "{{instance_type}}",
+    "instance_disk" : "20",
+    "docker_image" : "{{docker_image}}",
+    "cmd_template" : "echo 'Empty pipeline'",
+    "parameters" : {
+      "out" : {
+        "value" : "{{output}}",
+        "type" : "output",
+        "required" : false
+      },
+      "in" : {
+        "value" : "{{input}}",
+        "type" : "input",
+        "required" : false,
+        "no_override" : false
+      }
+
+    },
+    "run_as": "{{user_name}}",
+    "is_spot" : true
+  },
+  "default" : true
+} ]

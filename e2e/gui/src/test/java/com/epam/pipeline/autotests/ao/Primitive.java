@@ -286,5 +286,6 @@ public enum Primitive {
     ADD_INSTANCE,
     DO_NOT_MOUNT_STORAGES,
     LAUNCH_COMMANDS,
-    CONFIGURE
+    CONFIGURE,
+    GENERATE_URL
 }
