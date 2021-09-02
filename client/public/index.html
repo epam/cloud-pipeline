@@ -6,32 +6,7 @@
     <script src="https://apis.google.com/js/api.js"></script>
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <link rel="stylesheet" href="%PUBLIC_URL%/slideatlas-viewer/sa.css">
-    <!-- Array.fill ie 11 polyfill for slideatlas-viewer -->
-    <script>
-      if (![].fill)  {
-        Array.prototype.fill = function(value) {
-          var O = Object(this);
-          var len = parseInt( O.length, 10 );
-          var start = arguments[1];
-          var relativeStart = parseInt(start, 10) || 0;
-          var k = relativeStart < 0
-                  ? Math.max( len + relativeStart, 0)
-                  : Math.min( relativeStart, len );
-          var end = arguments[2];
-          var relativeEnd = end === undefined
-                            ? len
-                            : (parseInt(end) || 0) ;
-          var final = relativeEnd < 0
-                      ? Math.max(len + relativeEnd, 0)
-                      : Math.min(relativeEnd, len);
-          for (; k < final; k++) {
-              O[k] = value;
-          }
-          return O;
-        };
-      }
-    </script>
-    <script type="text/javascript" src="%PUBLIC_URL%/slideatlas-viewer/sa-all.min.js"></script>
+    <%= htmlWebpackPlugin.tags.headTags %>
     <!--
       Notice the use of %PUBLIC_URL% in the tag above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -45,6 +20,7 @@
   </head>
   <body>
     <div id="root"></div>
+    <%= htmlWebpackPlugin.tags.bodyTags %>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
@@ -55,5 +31,6 @@
       To begin the development, run `npm start`.
       To create a production bundle, use `npm run build`.
     -->
+    <script type="text/javascript" src="%PUBLIC_URL%/slideatlas-viewer/sa-all.min.js"></script>
   </body>
 </html>

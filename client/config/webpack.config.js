@@ -480,12 +480,12 @@ module.exports = function (webpackEnv) {
           }
           : undefined
       )),
-      // Generates an `index.html` file with the <script> injected.
+      // Generates an `index.html` file with the <script> injected to placeholder tags.
       new HtmlWebpackPlugin(
         Object.assign(
           {},
           {
-            inject: true,
+            inject: false,
             template: paths.appHtml
           },
           isEnvProduction
