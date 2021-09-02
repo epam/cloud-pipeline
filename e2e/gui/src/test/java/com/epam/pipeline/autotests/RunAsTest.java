@@ -36,9 +36,10 @@ import static java.lang.String.format;
 
 public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
 
-    private final String pipeline = resourceName("run-as");
-    private final String storage = resourceName("run-as");
-    private final String pipeline1 = resourceName("run-as");
+    public static final String RUN_AS_RESOURCE = "run-as";
+    private final String pipeline = resourceName(RUN_AS_RESOURCE);
+    private final String storage = resourceName(RUN_AS_RESOURCE);
+    private final String pipeline1 = resourceName(RUN_AS_RESOURCE);
     private static final String CONFIG_JSON = "/runAsTemplate.json";
     private static final String CONFIG_JSON2 = "/runAsTemplate2.json";
     private final String fileName = "file1.txt";
@@ -169,7 +170,7 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
                 .clickOnPipeline(pipeline1)
                 .firstVersion()
                 .runPipeline()
-//                .checkLaunchErrorMessage("Access is denied", false)
+//                .checkLaunchMessage("error", "Access is denied", false)
                 .launch();
         runsMenu()
                 .activeRuns()

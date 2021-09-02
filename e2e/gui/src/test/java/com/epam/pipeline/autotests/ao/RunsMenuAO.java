@@ -354,7 +354,9 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
+        if ($(elementWithText(tagName("a"), "View other available active runs")).isDisplayed()) {
+            $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
+        }
         sleep(2, SECONDS);
         return this;
     }

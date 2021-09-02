@@ -407,7 +407,7 @@ public class LaunchLimitMountsTest
                 .setTypeValue(minNodeType)
                 .expandTab(ADVANCED_PANEL)
                 .checkWarningMessage(warning, messageIsVisible)
-                .checkLaunchWarningMessage(warning, messageIsVisible);
+                .checkLaunchMessage("warning", warning, messageIsVisible);
     }
 
     private List<String> createStoragesIfNeeded(int objStor, int min) {

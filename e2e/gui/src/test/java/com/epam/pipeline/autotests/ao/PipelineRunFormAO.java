@@ -256,25 +256,23 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         );
     }
 
-    public PipelineRunFormAO checkLaunchWarningMessage(String message, boolean isVisible) {
-        assertEquals(checkMessage("warning", message), isVisible,
-                format("Warning '%s' should be visible on Launch form: ", message));
+    public PipelineRunFormAO checkLaunchMessage(final String typeMessage,
+                                                final String message,
+                                                final boolean isVisible) {
+        assertEquals(checkMessage(typeMessage, message), isVisible,
+                format("%s '%s' should be %s on Launch form: ", typeMessage, message,
+                        isVisible ? "visible" : "not visible"));
         return this;
     }
 
-    public PipelineRunFormAO checkLaunchErrorMessage(String message, boolean isVisible) {
-        assertEquals(checkMessage("error", message), isVisible,
-                format("Message '%s' should be visible on Launch form: ", message));
-        return this;
-    }
-
-    private boolean checkMessage(String typeMessage, String message) {
+    private boolean checkMessage(final String typeMessage, final String message) {
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body"))
                 .findBy(text("Launch"))
                 .find(byClassName("ob-estimated-price-info__info"))
                 .shouldBe(visible);
-        boolean messageExist = context().$(byClassName("ant-modal-body")).findAll(byClassName(format("ant-alert-%s", typeMessage)))
+        boolean messageExist = context().$(byClassName("ant-modal-body"))
+                .findAll(byClassName(format("ant-alert-%s", typeMessage)))
                 .stream()
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
