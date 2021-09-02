@@ -35,10 +35,10 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static org.testng.Assert.assertFalse;
 
 public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements Authorization, Navigation {
-    private String storage = "deactGenUrl-storage-" + Utils.randomSuffix();
+    private final String storage = "deactGenUrl-storage-" + Utils.randomSuffix();
     private boolean[] storageAllowSignedUrlsState;
-    private String storageAllowSignedUrls = "storage.allow.signed.urls";
-    private String fileName = "file1";
+    private final String storageAllowSignedUrls = "storage.allow.signed.urls";
+    private final String fileName = "file1";
 
     @BeforeClass
     public void createPresetStorage() {
