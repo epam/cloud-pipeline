@@ -16,6 +16,8 @@
 
 import React from 'react';
 import {Link} from 'react-router';
+import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {SERVER, VERSION} from '../../../config';
 import {Button, Icon, message, Popover, Row, Tooltip} from 'antd';
 import styles from './Navigation.css';
@@ -26,6 +28,8 @@ import SupportMenuItem from './SupportMenuItem';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 
+@inject('impersonation')
+@observer
 export default class Navigation extends React.Component {
   static propTypes = {
     router: PropTypes.object,
@@ -126,11 +130,26 @@ export default class Navigation extends React.Component {
       isDivider: true
     },
     {
+      key: 'logout',
+      visible: props => !(props && props.impersonation && props.impersonation.isImpersonated),
       title: 'Log out',
       icon: 'poweroff',
       path: '/logout',
-      key: 'logout',
-      isDefault: false
+      isDefault: false,
+      static: true
+    },
+    {
+      key: 'stop-impersonation',
+      visible: props => props && props.impersonation && props.impersonation.isImpersonated,
+      title: (props) => props && props.impersonation && props.impersonation.isImpersonated
+        ? `Stop impersonation as ${props.impersonation.impersonatedUserName}`
+        : undefined,
+      icon: 'user-delete',
+      isDefault: false,
+      static: true,
+      action: (props) => props && props.impersonation
+        ? props.impersonation.stopImpersonation()
+        : undefined
     }
   ];
 
@@ -161,6 +180,11 @@ export default class Navigation extends React.Component {
         url = `${SERVER}saml/logout`;
       }
       window.location = url;
+    } else {
+      const item = this.navigationItems.find(item => item.key === key);
+      if (item && typeof item.action === 'function') {
+        item.action(this.props);
+      }
     }
   };
 
@@ -187,10 +211,28 @@ export default class Navigation extends React.Component {
     }
   }
 
+  getNavigationItemTitle = (title) => {
+    if (typeof title === 'function') {
+      return title(this.props, this.state);
+    }
+    return title;
+  };
+
+  getNavigationItemVisible = (navigationItem) => {
+    if (typeof navigationItem.visible === 'function') {
+      return navigationItem.visible(this.props, this.state);
+    }
+    if (navigationItem.visible === undefined) {
+      return true;
+    }
+    return !!navigationItem.visible;
+  };
+
   render () {
     let activeTabPath = this.props.activeTabPath || '';
     const [navigationItem] = this.navigationItems.filter(
-      item => item.key.toLowerCase() === activeTabPath || (item.keys && item.keys.indexOf(activeTabPath) >= 0)
+      item => item.key.toLowerCase() === activeTabPath ||
+        (item.keys && item.keys.indexOf(activeTabPath) >= 0)
     );
     if (navigationItem) {
       activeTabPath = navigationItem.key;
@@ -202,88 +244,100 @@ export default class Navigation extends React.Component {
         activeTabPath = activeTab.key;
       }
     }
-    const menuItems = this.navigationItems.map((navigationItem, index) => {
-      if (navigationItem.isDivider) {
-        return <div
-          key={`divider_${index}`}
-          style={{height: 1, width: '100%', backgroundColor: '#fff', opacity: 0.5}} />;
-      }
-      if (navigationItem.key === 'billing' && !this.props.billingEnabled) {
-        return null;
-      }
-      if (navigationItem.key === 'search') {
-        if (!this.props.searchEnabled) {
+    const {impersonation} = this.props;
+    const menuItems = this.navigationItems
+      .filter(item => this.getNavigationItemVisible(item))
+      .map((navigationItem, index) => {
+        if (navigationItem.isDivider) {
+          return <div
+            key={`divider_${index}`}
+            style={{height: 1, width: '100%', backgroundColor: '#fff', opacity: 0.5}}
+          />;
+        }
+        if (navigationItem.key === 'billing' && !this.props.billingEnabled) {
           return null;
         }
-        return (
-          <Tooltip
-            key={navigationItem.key}
-            placement="right"
-            text={navigationItem.title}
-            mouseEnterDelay={0.5}
-            overlay={navigationItem.title} >
-            <Button
-              id={`navigation-button-${navigationItem.key}`}
-              key={navigationItem.key}
-              className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              onClick={() => this.navigate({key: navigationItem.key})}
-            >
-              <Icon type={navigationItem.icon} />
-            </Button>
-          </Tooltip>
-        );
-      } else if (navigationItem.key === 'runs') {
-        return (
-          <RunsCounterMenuItem
-            key={navigationItem.key}
-            tooltip={navigationItem.title}
-            className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-            highlightedClassName={this.highlightedMenuItemClassSelector(
-              navigationItem,
-              activeTabPath
-            )}
-            onClick={() => this.navigate({key: navigationItem.key})}
-            icon={navigationItem.icon} />
-        );
-      } else if (navigationItem.isLink) {
-        return (
-          <Link
-            id={`navigation-button-${navigationItem.key}`}
-            key={navigationItem.key}
-            style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
-            className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-            to={navigationItem.path}>
+        if (navigationItem.key === 'search') {
+          if (!this.props.searchEnabled) {
+            return null;
+          }
+          return (
             <Tooltip
+              key={navigationItem.key}
               placement="right"
-              text={navigationItem.title}
+              text={this.getNavigationItemTitle(navigationItem.title)}
               mouseEnterDelay={0.5}
-              overlay={navigationItem.title}>
-              <Icon
-                style={{marginTop: 12}}
-                type={navigationItem.icon} />
+              overlay={this.getNavigationItemTitle(navigationItem.title)}>
+              <Button
+                id={`navigation-button-${navigationItem.key}`}
+                key={navigationItem.key}
+                className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+                onClick={() => this.navigate({key: navigationItem.key})}
+              >
+                <Icon
+                  style={navigationItem.iconStyle}
+                  type={navigationItem.icon}
+                />
+              </Button>
             </Tooltip>
-          </Link>
-        );
-      } else {
-        return (
-          <Tooltip
-            key={navigationItem.key}
-            placement="right"
-            text={navigationItem.title}
-            mouseEnterDelay={0.5}
-            overlay={navigationItem.title}>
-            <Button
+          );
+        } else if (navigationItem.key === 'runs') {
+          return (
+            <RunsCounterMenuItem
+              key={navigationItem.key}
+              tooltip={navigationItem.title}
+              className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+              highlightedClassName={this.highlightedMenuItemClassSelector(
+                navigationItem,
+                activeTabPath
+              )}
+              onClick={() => this.navigate({key: navigationItem.key})}
+              icon={navigationItem.icon}
+            />
+          );
+        } else if (navigationItem.isLink) {
+          return (
+            <Link
               id={`navigation-button-${navigationItem.key}`}
               key={navigationItem.key}
+              style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              onClick={() => this.navigate({key: navigationItem.key})}
-            >
-              <Icon type={navigationItem.icon} />
-            </Button>
-          </Tooltip>
-        );
-      }
-    })
+              to={navigationItem.path}>
+              <Tooltip
+                placement="right"
+                text={this.getNavigationItemTitle(navigationItem.title)}
+                mouseEnterDelay={0.5}
+                overlay={this.getNavigationItemTitle(navigationItem.title)}>
+                <Icon
+                  style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
+                  type={navigationItem.icon}
+                />
+              </Tooltip>
+            </Link>
+          );
+        } else {
+          return (
+            <Tooltip
+              key={navigationItem.key}
+              placement="right"
+              text={this.getNavigationItemTitle(navigationItem.title)}
+              mouseEnterDelay={0.5}
+              overlay={this.getNavigationItemTitle(navigationItem.title)}>
+              <Button
+                id={`navigation-button-${navigationItem.key}`}
+                key={navigationItem.key}
+                className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+                onClick={() => this.navigate({key: navigationItem.key})}
+              >
+                <Icon
+                  style={navigationItem.iconStyle}
+                  type={navigationItem.icon}
+                />
+              </Button>
+            </Tooltip>
+          );
+        }
+      })
       .filter(Boolean);
     const searchStyle = [searchStyles.searchBlur];
     if (this.props.searchControlVisible) {
@@ -292,7 +346,15 @@ export default class Navigation extends React.Component {
     return (
       <div
         id="navigation-container"
-        className={styles.navigationContainer}>
+        className={
+          classNames(
+            styles.navigationContainer,
+            {
+              [styles.impersonated]: impersonation.isImpersonated
+            }
+          )
+        }
+      >
         <div className={`${styles.navigationInsideContainer} ${searchStyle.join(' ')}`}>
           {
             VERSION &&

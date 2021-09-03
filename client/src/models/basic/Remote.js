@@ -95,6 +95,10 @@ class Remote {
 
   _fetchPromise = null;
 
+  getData (response) {
+    return this.constructor.isJson ? (response.json()) : (response.blob());
+  }
+
   async fetch () {
     this._loadRequired = false;
     if (!this._fetchPromise) {
@@ -109,7 +113,7 @@ class Remote {
           }
           fetchOptions.headers = headers;
           const response = await fetch(`${prefix}${this.url}`, fetchOptions);
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          const data = await this.getData(response);
           this.update(data);
         } catch (e) {
           this.failed = true;

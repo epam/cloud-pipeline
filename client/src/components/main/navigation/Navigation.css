@@ -19,8 +19,14 @@
   height: 100vh;
 }
 
+.navigation-container,
 .navigation-menu {
   background-color: #2796dd;
+}
+
+.navigation-container.impersonated,
+.navigation-container.impersonated .navigation-item {
+  background-color: #dd5b27;
 }
 
 .search-control {
@@ -57,6 +63,10 @@
   width: 60px;
 }
 
+.navigation-container.impersonated .navigation-menu-item-selected {
+  background-color: #bd4a1c !important;
+}
+
 .highlighted-navigation-menu-item {
   color: white !important;
   background-color: transparent !important;
@@ -79,6 +89,10 @@
   width: 60px;
 }
 
+.navigation-container.impersonated .highlighted-navigation-menu-item-selected {
+  background-color: #bd4a1c !important;
+}
+
 .navigation-menu-item i,
 .navigation-menu-item-selected i,
 .highlighted-navigation-menu-item i,
@@ -97,11 +111,26 @@
   background-color: #2282bf;
 }
 
+.navigation-container .navigation-menu-item:hover,
+.navigation-container .navigation-menu-item-selected:hover,
+.navigation-container .highlighted-navigation-menu-item:hover,
+.navigation-container .highlighted-navigation-menu-item-selected:hover {
+  color: white;
+  background-color: #bd4a1c;
+}
+
 .navigation-menu-item:active,
 .navigation-menu-item-selected:active,
 .highlighted-navigation-menu-item:active,
 .highlighted-navigation-menu-item-selected:active {
   background-color: #217db7;
+}
+
+.navigation-container .navigation-menu-item:active,
+.navigation-container .navigation-menu-item-selected:active,
+.navigation-container .highlighted-navigation-menu-item:active,
+.navigation-container .highlighted-navigation-menu-item-selected:active {
+  background-color: #dd5b27;
 }
 
 .counter-badge {

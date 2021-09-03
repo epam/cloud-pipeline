@@ -26,3 +26,9 @@
 .instance-types-management-form {
   overflow: initial;
 }
+
+.user-management-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

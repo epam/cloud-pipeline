@@ -58,6 +58,7 @@ import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
+import impersonation from '../../models/user/impersonation';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -123,6 +124,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
       dataStorageAvailable,
