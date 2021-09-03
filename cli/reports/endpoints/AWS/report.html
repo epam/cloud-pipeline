@@ -228,7 +228,7 @@ function filter_table(elem) {
     not_found_message.hidden = !all_rows_hidden;
 }
 </script>
-    <p>Report generated on 02-Sep-2021 at 00:08:24 by<a href="https://pypi.python.org/pypi/pytest-html"> pytest-html</a> v1.15.2</p>
+    <p>Report generated on 03-Sep-2021 at 08:52:51 by<a href="https://pypi.python.org/pypi/pytest-html"> pytest-html</a> v1.15.2</p>
     <h2>Environment</h2>
     <table id="environment">
       <tr>
@@ -247,8 +247,8 @@ function filter_table(elem) {
         <td>Python</td>
         <td>2.7.17</td></tr></table>
     <h2>Summary</h2>
-    <p>24 tests ran in 5578.77 seconds. </p>
-    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">5 passed</span>, <input checked="true" class="filter" data-test-result="skipped" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">5 skipped</span>, <input checked="true" class="filter" data-test-result="failed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">19 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <p>24 tests ran in 37059.11 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">0 passed</span>, <input checked="true" class="filter" data-test-result="skipped" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">5 skipped</span>, <input checked="true" class="filter" data-test-result="failed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">24 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
     <h2>Results</h2>
     <table id="results-table">
       <thead id="results-table-head">
@@ -262,10 +262,40 @@ function filter_table(elem) {
           <th colspan="5">No results found. Try to check the filters</th></tr></thead>
       <tbody class="failed results-table-row">
         <tr>
+          <td>TC-EDGE-12</td>
+          <td class="col-result">Failed</td>
+          <td class="col-name">e2e/cli/endpoints/test_jupiter_endpoint.py::TestJupiterEndpoints::()::test_jupiter_endpoint</td>
+          <td class="col-duration">1640.45</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td>TC-EDGE-14</td>
+          <td class="col-result">Failed</td>
+          <td class="col-name">e2e/cli/endpoints/test_jupiter_endpoint.py::TestJupiterEndpoints::()::test_jupiter_and_no_machine_endpoint_friendly_url</td>
+          <td class="col-duration">1459.62</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td>TC-EDGE-13</td>
+          <td class="col-result">Failed</td>
+          <td class="col-name">e2e/cli/endpoints/test_jupiter_endpoint.py::TestJupiterEndpoints::()::test_jupiter_endpoint_friendly_url</td>
+          <td class="col-duration">1642.93</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
           <td>TC-EDGE-15</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_centos_image.py::TestNoMachineEndpoints::()::test_spark_endpoint_on_centos_image</td>
-          <td class="col-duration">334.66</td>
+          <td class="col-duration">1460.15</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -275,7 +305,7 @@ function filter_table(elem) {
           <td>TC-EDGE-1</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_centos_image.py::TestNoMachineEndpoints::()::test_nomachine_endpoint_on_centos_image</td>
-          <td class="col-duration">214.10</td>
+          <td class="col-duration">1452.04</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -285,7 +315,27 @@ function filter_table(elem) {
           <td>TC-EDGE-16</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_centos_image.py::TestNoMachineEndpoints::()::test_spark_and_no_machine_endpoint_on_centos_image</td>
-          <td class="col-duration">266.95</td>
+          <td class="col-duration">1665.27</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td>TC-EDGE-2</td>
+          <td class="col-result">Failed</td>
+          <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_ubuntu_image.py::TestNoMachineEndpoints::()::test_nomachine_endpoint_on_ubuntu_16_image</td>
+          <td class="col-duration">1458.73</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td>TC-EDGE-3</td>
+          <td class="col-result">Failed</td>
+          <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_ubuntu_image.py::TestNoMachineEndpoints::()::test_nomachine_endpoint_on_ubuntu_18_image</td>
+          <td class="col-duration">1442.64</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -295,7 +345,7 @@ function filter_table(elem) {
           <td>TC-EDGE-28</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_custom_dns_record_endpoint.py::TestRStudioEndpoints::()::test_custom_domain_rstudio_friendly_domain_with_path</td>
-          <td class="col-duration">362.75</td>
+          <td class="col-duration">1646.70</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -305,7 +355,7 @@ function filter_table(elem) {
           <td>TC-EDGE-26</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_custom_dns_record_endpoint.py::TestRStudioEndpoints::()::test_custom_domain_rstudio_with_friendly_path</td>
-          <td class="col-duration">122.97</td>
+          <td class="col-duration">1457.23</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -315,7 +365,7 @@ function filter_table(elem) {
           <td>TC-EDGE-25</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_custom_dns_record_endpoint.py::TestRStudioEndpoints::()::test_custom_domain_rstudio_endpoint</td>
-          <td class="col-duration">106.63</td>
+          <td class="col-duration">1660.86</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -325,7 +375,7 @@ function filter_table(elem) {
           <td>TC-EDGE-29</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_custom_dns_record_endpoint.py::TestRStudioEndpoints::()::test_custom_domain_rstudio_and_no_machine_endpoint</td>
-          <td class="col-duration">224.29</td>
+          <td class="col-duration">1637.73</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -335,7 +385,7 @@ function filter_table(elem) {
           <td>TC-EDGE-31</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_custom_dns_record_endpoint.py::TestRStudioEndpoints::()::test_custom_domain_rstudio_spark_no_machine_endpoint_friendly_path</td>
-          <td class="col-duration">265.97</td>
+          <td class="col-duration">1446.46</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -345,7 +395,7 @@ function filter_table(elem) {
           <td>TC-EDGE-30</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_custom_dns_record_endpoint.py::TestRStudioEndpoints::()::test_custom_domain_rstudio_and_no_machine_endpoint_friendly_path</td>
-          <td class="col-duration">566.54</td>
+          <td class="col-duration">1657.75</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -355,7 +405,7 @@ function filter_table(elem) {
           <td>TC-EDGE-5</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_and_no_machine_endpoint</td>
-          <td class="col-duration">230.83</td>
+          <td class="col-duration">1641.27</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -365,7 +415,7 @@ function filter_table(elem) {
           <td>TC-EDGE-19</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_spark_endpoints_friendly_url</td>
-          <td class="col-duration">137.82</td>
+          <td class="col-duration">1475.27</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -375,7 +425,7 @@ function filter_table(elem) {
           <td>TC-EDGE-10</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_endpoint_friendly_domain_and_endpoint_url</td>
-          <td class="col-duration">107.81</td>
+          <td class="col-duration">1692.79</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -385,7 +435,7 @@ function filter_table(elem) {
           <td>TC-EDGE-20</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_spark_endpoints</td>
-          <td class="col-duration">275.42</td>
+          <td class="col-duration">1652.18</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -395,7 +445,7 @@ function filter_table(elem) {
           <td>TC-EDGE-4</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_endpoint</td>
-          <td class="col-duration">91.87</td>
+          <td class="col-duration">1473.63</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -405,7 +455,7 @@ function filter_table(elem) {
           <td>TC-EDGE-11</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_and_no_machine_endpoint_friendly_domain_and_endpoint_url</td>
-          <td class="col-duration">234.94</td>
+          <td class="col-duration">1468.59</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -415,7 +465,7 @@ function filter_table(elem) {
           <td>TC-EDGE-24</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_spark_no_machine_endpoint_friendly_domain_and_url</td>
-          <td class="col-duration">268.70</td>
+          <td class="col-duration">1476.51</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -425,7 +475,7 @@ function filter_table(elem) {
           <td>TC-EDGE-23</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_spark_endpoints_friendly_domain_and_url</td>
-          <td class="col-duration">150.60</td>
+          <td class="col-duration">1492.42</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -435,7 +485,7 @@ function filter_table(elem) {
           <td>TC-EDGE-6</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_endpoint_friendly_url</td>
-          <td class="col-duration">94.29</td>
+          <td class="col-duration">1474.80</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -445,7 +495,7 @@ function filter_table(elem) {
           <td>TC-EDGE-7</td>
           <td class="col-result">Failed</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_and_no_machine_endpoint_friendly_url</td>
-          <td class="col-duration">224.66</td>
+          <td class="col-duration">1479.93</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -496,56 +546,6 @@ function filter_table(elem) {
           <td class="col-result">Skipped</td>
           <td class="col-name">e2e/cli/endpoints/test_rstudio_endpoint.py::TestRStudioEndpoints::()::test_rstudio_spark_no_machine_endpoint_friendly_domain_url</td>
           <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="passed results-table-row">
-        <tr>
-          <td>TC-EDGE-12</td>
-          <td class="col-result">Passed</td>
-          <td class="col-name">e2e/cli/endpoints/test_jupiter_endpoint.py::TestJupiterEndpoints::()::test_jupiter_endpoint</td>
-          <td class="col-duration">382.21</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="passed results-table-row">
-        <tr>
-          <td>TC-EDGE-14</td>
-          <td class="col-result">Passed</td>
-          <td class="col-name">e2e/cli/endpoints/test_jupiter_endpoint.py::TestJupiterEndpoints::()::test_jupiter_and_no_machine_endpoint_friendly_url</td>
-          <td class="col-duration">281.90</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="passed results-table-row">
-        <tr>
-          <td>TC-EDGE-13</td>
-          <td class="col-result">Passed</td>
-          <td class="col-name">e2e/cli/endpoints/test_jupiter_endpoint.py::TestJupiterEndpoints::()::test_jupiter_endpoint_friendly_url</td>
-          <td class="col-duration">150.57</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="passed results-table-row">
-        <tr>
-          <td>TC-EDGE-2</td>
-          <td class="col-result">Passed</td>
-          <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_ubuntu_image.py::TestNoMachineEndpoints::()::test_nomachine_endpoint_on_ubuntu_16_image</td>
-          <td class="col-duration">233.02</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="passed results-table-row">
-        <tr>
-          <td>TC-EDGE-3</td>
-          <td class="col-result">Passed</td>
-          <td class="col-name">e2e/cli/endpoints/test_nomachine_endpoint_on_ubuntu_image.py::TestNoMachineEndpoints::()::test_nomachine_endpoint_on_ubuntu_18_image</td>
-          <td class="col-duration">232.45</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
