@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
+import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
@@ -140,10 +141,14 @@ public class UserManager {
                 userVO.getDefaultStorageId());
     }
 
-    public UserContext loadUserContext(String name) {
+    public UserContext loadUserContext(final String name) {
         PipelineUser pipelineUser = userDao.loadUserByName(name);
         Assert.notNull(pipelineUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, name));
         return new UserContext(pipelineUser);
+    }
+
+    public ImpersonationStatus getImpersonationStatus() {
+        return authManager.getImpersonationStatus();
     }
 
     /**
