@@ -114,11 +114,28 @@ export default [
   },
   {
     key: 'logout',
+    visible: props => !(props && props.impersonation && props.impersonation.isImpersonated),
     title: 'Log out',
     icon: 'poweroff',
     path: '/logout',
     isDefault: false,
     static: true
+  },
+  {
+    key: 'stop-impersonation',
+    visible: props => props && props.impersonation && props.impersonation.isImpersonated,
+    title: (props) => props && props.impersonation && props.impersonation.isImpersonated
+      ? `Stop impersonation as ${props.impersonation.impersonatedUserName}`
+      : undefined,
+    icon: 'poweroff',
+    iconStyle: {
+      color: '#00ff15'
+    },
+    isDefault: false,
+    static: true,
+    action: (props) => props && props.impersonation
+      ? props.impersonation.stopImpersonation()
+      : undefined
   },
   {
     key: 'launch',

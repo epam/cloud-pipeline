@@ -47,7 +47,7 @@ import UserName from '../../special/UserName';
 import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
+@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation')
 @inject((common, params) => ({
   userInfo: params.user ? new User(params.user.id) : null,
   userId: params.user ? params.user.id : null,
@@ -780,6 +780,16 @@ export default class EditUserRolesDialog extends React.Component {
     return 'configure';
   };
 
+  onImpersonate = () => {
+    const {user, impersonation} = this.props;
+    if (user && user.userName && impersonation) {
+      impersonation.impersonate(user.userName)
+        .then(error => {
+          message.error(error, 5);
+        });
+    }
+  };
+
   render () {
     if (!this.props.userInfo) {
       return null;
@@ -807,18 +817,26 @@ export default class EditUserRolesDialog extends React.Component {
           height: '80vh'
         }}
         title={(
-          <div>
-            <span>
-              {this.props.user.userName}
-            </span>
-            {
-              blocked &&
-              <span
-                style={{fontStyle: 'italic', marginLeft: 5}}
-              >
-                - blocked
+          <div className={styles.userManagementFooter}>
+            <div>
+              <span>
+                {this.props.user.userName}
               </span>
-            }
+              {
+                blocked &&
+                <span
+                  style={{fontStyle: 'italic', marginLeft: 5}}
+                >
+                  - blocked
+                </span>
+              }
+            </div>
+            <Button
+              type="primary"
+              onClick={this.onImpersonate}
+            >
+              IMPERSONATE
+            </Button>
           </div>
         )}
         footer={

@@ -61,6 +61,7 @@ import HiddenObjects from '../../utils/hidden-objects';
 import multiZoneManager from '../../utils/multizone';
 import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
+import impersonation from '../../models/user/impersonation';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -135,6 +136,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
       dataStorageAvailable,
