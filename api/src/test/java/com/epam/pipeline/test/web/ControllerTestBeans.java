@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.datastorage.security.StoragePermissionBatchApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -254,4 +255,8 @@ public class ControllerTestBeans {
 
     @MockBean
     protected NgsPreprocessingApiService preprocessingApiService;
+
+    @MockBean
+    protected StoragePermissionBatchApiService storagePermissionBatchApiService;
+
 }

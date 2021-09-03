@@ -28,14 +28,14 @@ public class StorageAclAspect {
     public static final int READ_MASK = ((AclPermission) AclPermission.READ).getSimpleMask();
 
     private final GrantPermissionManager permissionManager;
-    private final StoragePermissionAccessManager storagePermissionManager;
+    private final StoragePermissionAccessManager storagePermissionAccessManager;
 
     @Around("@annotation(com.epam.pipeline.manager.security.acl.storage.StorageAclList)")
     @Transactional(propagation = Propagation.REQUIRED)
     public List<AbstractDataStorage> filterAndSetMaskForStorages(ProceedingJoinPoint proceedingJoinPoint)
             throws Throwable {
         final Set<StoragePermissionRepository.Storage> readAllowedStorages =
-                storagePermissionManager.loadReadAllowedStorages();
+                storagePermissionAccessManager.loadReadAllowedStorages();
         return listFrom(proceedingJoinPoint)
                 .filter(AbstractDataStorage.class::isInstance)
                 .map(AbstractDataStorage.class::cast)
@@ -64,7 +64,7 @@ public class StorageAclAspect {
     public List<DataStorageWithShareMount> filterAndSetMaskForStorageDelegates(ProceedingJoinPoint proceedingJoinPoint)
             throws Throwable {
         final Set<StoragePermissionRepository.Storage> readAllowedStorages =
-                storagePermissionManager.loadReadAllowedStorages();
+                storagePermissionAccessManager.loadReadAllowedStorages();
         return listFrom(proceedingJoinPoint)
                 .filter(DataStorageWithShareMount.class::isInstance)
                 .map(DataStorageWithShareMount.class::cast)

@@ -29,12 +29,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class StoragePermissionConfiguration {
+public class StorageConfiguration {
 
     private final boolean storagePathPermissionsEnabled;
 
-    public StoragePermissionConfiguration(@Value("${data.storage.path.permissions.enabled}")
-                                          final boolean storagePathPermissionsEnabled) {
+    public StorageConfiguration(@Value("${data.storage.path.permissions.enabled}")
+                                final boolean storagePathPermissionsEnabled) {
         this.storagePathPermissionsEnabled = storagePathPermissionsEnabled;
     }
 
