@@ -99,6 +99,10 @@ class Remote {
 
   _fetchPromise = null;
 
+  getData (response) {
+    return this.constructor.isJson ? (response.json()) : (response.blob());
+  }
+
   async fetch () {
     this._loadRequired = false;
     if (!this._fetchPromise) {
@@ -119,7 +123,7 @@ class Remote {
           if (!response.ok) {
             // throw new Error(response.statusText || `HTTP Error ${response.status}`);
           }
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          const data = await this.getData(response);
           this.update(data);
         } catch (e) {
           this.failed = true;
