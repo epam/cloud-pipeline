@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -51,7 +52,7 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
     public static final String FOLDER = "/folder";
 
     @SpyBean
-    private S3StorageProvider storageProviderManager;
+    private StorageProvider<S3bucketDataStorage> s3StorageProvider;
 
     @MockBean
     private CloudRegionManager regionManager;
@@ -70,7 +71,7 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
 
     @Before
     public void setUp() {
-        doReturn(new MockS3Helper()).when(storageProviderManager)
+        doReturn(new MockS3Helper()).when((S3StorageProvider) s3StorageProvider)
                 .getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
         doReturn(new AwsRegion()).when(regionManager).getAwsRegion(any());

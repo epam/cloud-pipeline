@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -116,7 +117,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private FolderManager folderManager;
 
     @SpyBean
-    private S3StorageProvider storageProviderManager;
+    private StorageProvider<S3bucketDataStorage> s3StorageProvider;
 
     @MockBean
     private CloudRegionManager regionManager;
@@ -141,7 +142,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Before
     public void setUp() {
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
+        doReturn(new MockS3Helper())
+                .when((S3StorageProvider) s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
         doReturn(new AwsRegion()).when(regionManager).getAwsRegion(any());
         Preference systemIndependentBlackList = SystemPreferences.DATA_STORAGE_NFS_MOUNT_BLACK_LIST.toPreference();

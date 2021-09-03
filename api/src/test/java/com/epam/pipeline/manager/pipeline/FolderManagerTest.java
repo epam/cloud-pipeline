@@ -44,6 +44,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
@@ -130,7 +131,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     private DataStorageManager dataStorageManager;
 
     @SpyBean
-    private S3StorageProvider storageProviderManager;
+    private StorageProvider<S3bucketDataStorage> s3StorageProvider;
 
     @Autowired
     private MetadataManager metadataManager;
@@ -157,7 +158,8 @@ public class FolderManagerTest extends AbstractSpringTest {
         awsRegionDTO.setDefault(true);
         awsRegionDTO.setProvider(CloudProvider.AWS);
         cloudRegion = cloudRegionManager.create(awsRegionDTO);
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
+        doReturn(new MockS3Helper())
+                .when((S3StorageProvider) s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
 
         folder = new Folder();
         folder.setName(TEST_NAME);

@@ -47,7 +47,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
     private final String bucketName = "bucketname";
 
     @SpyBean
-    private S3StorageProvider s3StorageProvider;
+    private StorageProvider<S3bucketDataStorage> s3StorageProvider;
 
     @SpyBean
     private S3Helper s3Helper;
@@ -85,7 +85,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
                 "  }" +
                 "]");
         when(cloudRegionManager.getAwsRegion(any())).thenReturn(region);
-        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
+        doReturn(s3Helper).when((S3StorageProvider) s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
     }
 
     @Test

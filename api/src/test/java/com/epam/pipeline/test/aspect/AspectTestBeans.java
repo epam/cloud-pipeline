@@ -68,6 +68,7 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
@@ -86,10 +87,12 @@ import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
+import com.epam.pipeline.mapper.datastorage.security.StoragePermissionMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
+import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
@@ -262,6 +265,9 @@ public class AspectTestBeans {
     protected NodePoolMapper mockNodePoolMapper;
 
     @MockBean
+    protected StoragePermissionMapper storagePermissionMapper;
+
+    @MockBean
     protected TaskScheduler mockTaskScheduler;
 
     @MockBean
@@ -358,6 +364,9 @@ public class AspectTestBeans {
     protected OntologyRepository mockOntologyRepository;
 
     @MockBean
+    protected StoragePermissionRepository storagePermissionRepository;
+
+    @MockBean
     protected PreferenceDao mockPreferenceDao;
 
     @MockBean
@@ -377,4 +386,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @MockBean
+    protected StoragePermissionAccessManager storagePermissionManager;
 }

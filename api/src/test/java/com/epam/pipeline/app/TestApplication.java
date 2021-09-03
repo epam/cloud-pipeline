@@ -30,6 +30,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationSettingsMana
 import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -66,7 +67,8 @@ import java.util.concurrent.Executor;
         DBConfiguration.class,
         CacheConfiguration.class,
         MappersConfiguration.class,
-        ContextualPreferenceConfiguration.class})
+        ContextualPreferenceConfiguration.class,
+        StorageConfiguration.class})
 @EnableAutoConfiguration(exclude = {
         SecurityAutoConfiguration.class,
         ManagementWebSecurityAutoConfiguration.class,
@@ -138,6 +140,9 @@ public class TestApplication {
 
     @MockBean
     public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
+    public StoragePermissionRepository storagePermissionRepository;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
