@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.manager.user.ImpersonationManager;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;
@@ -88,6 +89,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
+import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -140,6 +142,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
+    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
+    private String impersonationOperationsRootUrl;
+
     @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
 
@@ -171,6 +176,8 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getImpersonationStartUrl())
+                    .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
                 .antMatchers(getSecuredResourcesRoot())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
@@ -553,5 +560,25 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
+    }
+
+    @Bean
+    public SwitchUserFilter switchUserFilter(final ImpersonationManager impersonationManager) {
+        final SwitchUserFilter filter = new SwitchUserFilter();
+        filter.setUserDetailsService(impersonationManager);
+        filter.setUserDetailsChecker(impersonationManager);
+        filter.setSwitchUserUrl(getImpersonationStartUrl());
+        filter.setExitUserUrl(getImpersonationStopUrl());
+        filter.setTargetUrl("/");
+        filter.setFailureHandler((request, response, exception) -> {});
+        return filter;
+    }
+
+    public String getImpersonationStartUrl() {
+        return impersonationOperationsRootUrl + "/start";
+    }
+
+    public String getImpersonationStopUrl() {
+        return impersonationOperationsRootUrl + "/stop";
     }
 }

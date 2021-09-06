@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
+    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
+    private String impersonationOperationsRootUrl;
+
     @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
 
@@ -108,6 +111,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getImpersonationStartUrl())
+                     .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
                 .antMatchers(getSecuredResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
@@ -155,6 +160,10 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     public String[] getAnonymousResources() {
         return anonymousResources;
+    }
+
+    public String getImpersonationStartUrl() {
+        return impersonationOperationsRootUrl + "/start";
     }
 
     //List of urls under REST that should be redirected back after authorization

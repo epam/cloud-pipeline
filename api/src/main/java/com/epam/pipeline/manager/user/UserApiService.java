@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
+import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
@@ -225,5 +226,9 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public List<RunnerSid> getRunners(final Long id) {
         return userRunnersManager.getRunners(id);
+    }
+
+    public ImpersonationStatus getImpersonationStatus() {
+        return userManager.getImpersonationStatus();
     }
 }
