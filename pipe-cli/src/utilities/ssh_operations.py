@@ -378,13 +378,23 @@ def check_existing_tunnels(host_id, local_port, remote_port,
             kill_process(tunnel_proc, timeout_stop)
             return
         proc_args = tunnel_proc.cmdline()
-        is_same_tunnel = has_argument(proc_args, host_id)
+        proc_remote_port = None
+        proc_ssh = False
+        proc_ssh_path = None
+        proc_ssh_host = None
+        proc_direct = False
         for i in range(len(proc_args)):
-            is_same_tunnel &= has_parameter(proc_args, i, TUNNEL_REMOTE_PORT_ARGS, remote_port)
-            is_same_tunnel &= has_flag(proc_args, i, TUNNEL_SSH_ARGS, ssh)
-            is_same_tunnel &= has_parameter(proc_args, i, TUNNEL_SSH_PATH_ARGS, ssh_path)
-            is_same_tunnel &= has_parameter(proc_args, i, TUNNEL_SSH_HOST_ARGS, ssh_host)
-            is_same_tunnel &= has_flag(proc_args, i, TUNNEL_DIRECT_ARGS, direct)
+            proc_remote_port = proc_remote_port or get_parameter_value(proc_args, i, TUNNEL_REMOTE_PORT_ARGS)
+            proc_ssh = proc_ssh or get_flag_value(proc_args, i, TUNNEL_SSH_ARGS)
+            proc_ssh_path = proc_ssh_path or get_parameter_value(proc_args, i, TUNNEL_SSH_PATH_ARGS)
+            proc_ssh_host = proc_ssh_host or get_parameter_value(proc_args, i, TUNNEL_SSH_HOST_ARGS)
+            proc_direct = proc_direct or get_flag_value(proc_args, i, TUNNEL_DIRECT_ARGS)
+        is_same_tunnel = (host_id in proc_args) \
+            & (str(remote_port) == str(proc_remote_port)) \
+            & (ssh == proc_ssh) \
+            & (str(ssh_path) == str(proc_ssh_path)) \
+            & (str(ssh_host) == str(proc_ssh_host)) \
+            & (direct == proc_direct)
         if is_same_tunnel and keep_same:
             logging.info('Skipping tunnel establishing since the same tunnel already exists...')
             sys.exit(0)
@@ -396,21 +406,12 @@ def check_existing_tunnels(host_id, local_port, remote_port,
                            .format('Same' if is_same_tunnel else 'Different'))
 
 
-def has_argument(proc_args, arg_value):
-    return arg_value in proc_args
+def get_parameter_value(proc_args, arg_index, arg_names):
+    return proc_args[arg_index + 1] if proc_args[arg_index] in arg_names else None
 
 
-def has_parameter(proc_args, arg_index, arg_names, arg_value):
-    return proc_args[arg_index] not in arg_names \
-           or proc_args[arg_index] in arg_names \
-           and proc_args[arg_index + 1] == str(arg_value)
-
-
-def has_flag(proc_args, arg_index, arg_names, arg_value):
-    return proc_args[arg_index] not in arg_names \
-           and not arg_value \
-           or proc_args[arg_index] not in arg_names \
-           and arg_value
+def get_flag_value(proc_args, arg_index, arg_names):
+    return proc_args[arg_index] in arg_names
 
 
 def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
