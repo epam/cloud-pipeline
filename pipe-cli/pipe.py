@@ -1471,15 +1471,28 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
 @click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
               help='Maximum timeout for background tunnel process health check in seconds')
+@click.option('-ts', '--timeout-stop', required=False, type=int, default=60,
+              help='Maximum timeout for background tunnel process stopping in seconds')
 @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
               help='Establishes tunnel in foreground mode')
+@click.option('-ke', '--keep-existing', required=False, is_flag=True, default=False,
+              help='Skips tunnel establishing if a tunnel on the same local port already exists')
+@click.option('-ks', '--keep-same', required=False, is_flag=True, default=False,
+              help='Skips tunnel establishing if a tunnel with the same configuration '
+                   'on the same local port already exists')
+@click.option('-re', '--replace-existing', required=False, is_flag=True, default=False,
+              help='Replaces existing tunnel on the same local port')
+@click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
+              help='Replaces existing tunnel on the same local port if it has different configuration')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
-                 timeout, foreground, retries, trace):
+                 timeout, timeout_stop, foreground,
+                 keep_existing, keep_same, replace_existing, replace_different,
+                 retries, trace):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1552,7 +1565,9 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
     try:
         create_tunnel(host_id, local_port, remote_port, connection_timeout,
                       ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
-                      timeout, foreground, retries)
+                      timeout, timeout_stop, foreground,
+                      keep_existing, keep_same, replace_existing, replace_different,
+                      retries)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:
