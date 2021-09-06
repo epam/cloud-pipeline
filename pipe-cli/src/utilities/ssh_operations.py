@@ -1049,7 +1049,9 @@ def get_current_pids():
 def kill_process(proc, timeout, force=False):
     import psutil
     import signal
-    if force or is_windows():
+    if is_windows():
+        send_signal_to_process(proc, signal.SIGTERM, timeout)
+    elif force:
         send_signal_to_process(proc, signal.SIGKILL, timeout)
     else:
         try:
