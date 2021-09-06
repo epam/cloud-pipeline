@@ -38,6 +38,20 @@ from urllib.parse import urlparse
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
 DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
+PIPE_PROC_NAMES = ['pipe', 'pipe.exe']
+TUNNEL_REQUIRED_ARGS = ['tunnel', 'start']
+TUNNEL_LOCAL_PORT_ARGS = ['-lp', '--local-port']
+TUNNEL_REMOTE_PORT_ARGS = ['-rp', '--remote-port']
+TUNNEL_SSH_ARGS = ['-s', '--ssh']
+TUNNEL_SSH_PATH_ARGS = ['-sp', '--ssh-path']
+TUNNEL_SSH_HOST_ARGS = ['-sh', '--ssh-host']
+TUNNEL_DIRECT_ARGS = ['-d', '--direct']
+TUNNEL_CONFLICT_ARGS = ['-ke', '--keep-existing',
+                        '-ks', '--keep-same',
+                        '-re', '--replace-existing',
+                        '-rd', '--replace-different']
+PYTHON_PROC_PREFIX = 'python'
+PIPE_SCRIPT_NAME = 'pipe.py'
 
 run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
 
@@ -332,7 +346,12 @@ def parse_scp_location(location):
 
 def create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                  timeout, foreground, retries, region=None):
+                  timeout, timeout_stop, foreground,
+                  keep_existing, keep_same, replace_existing, replace_different,
+                  retries, region=None):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
+    check_existing_tunnels(host_id, local_port, remote_port, ssh, ssh_path, ssh_host, direct, timeout_stop,
+                           keep_existing, keep_same, replace_existing, replace_different)
     run_id = parse_run_identifier(host_id)
     if run_id:
         create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
@@ -344,6 +363,54 @@ def create_tunnel(host_id, local_port, remote_port, connection_timeout,
         create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
                               direct, log_file, log_level,
                               timeout, foreground, retries, region)
+
+
+def check_existing_tunnels(host_id, local_port, remote_port,
+                           ssh, ssh_path, ssh_host, direct, timeout_stop,
+                           keep_existing, keep_same, replace_existing, replace_different):
+    for tunnel_proc in find_tunnel_procs(run_id=None, local_port=local_port):
+        logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+        if keep_existing:
+            logging.info('Skipping tunnel establishing since the tunnel already exists...')
+            sys.exit(0)
+        if replace_existing:
+            logging.info('Stopping existing tunnel...')
+            kill_process(tunnel_proc, timeout_stop)
+            return
+        proc_args = tunnel_proc.cmdline()
+        is_same_tunnel = has_argument(proc_args, host_id)
+        for i in range(len(proc_args)):
+            is_same_tunnel &= has_parameter(proc_args, i, TUNNEL_REMOTE_PORT_ARGS, remote_port)
+            is_same_tunnel &= has_flag(proc_args, i, TUNNEL_SSH_ARGS, ssh)
+            is_same_tunnel &= has_parameter(proc_args, i, TUNNEL_SSH_PATH_ARGS, ssh_path)
+            is_same_tunnel &= has_parameter(proc_args, i, TUNNEL_SSH_HOST_ARGS, ssh_host)
+            is_same_tunnel &= has_flag(proc_args, i, TUNNEL_DIRECT_ARGS, direct)
+        if is_same_tunnel and keep_same:
+            logging.info('Skipping tunnel establishing since the same tunnel already exists...')
+            sys.exit(0)
+        if not is_same_tunnel and replace_different:
+            logging.info('Stopping existing tunnel since it has a different configuration...')
+            kill_process(tunnel_proc, timeout_stop)
+            return
+        raise RuntimeError('{} tunnel already exists on the same local port'
+                           .format('Same' if is_same_tunnel else 'Different'))
+
+
+def has_argument(proc_args, arg_value):
+    return arg_value in proc_args
+
+
+def has_parameter(proc_args, arg_index, arg_names, arg_value):
+    return proc_args[arg_index] not in arg_names \
+           or proc_args[arg_index] in arg_names \
+           and proc_args[arg_index + 1] == str(arg_value)
+
+
+def has_flag(proc_args, arg_index, arg_names, arg_value):
+    return proc_args[arg_index] not in arg_names \
+           and not arg_value \
+           or proc_args[arg_index] not in arg_names \
+           and arg_value
 
 
 def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
@@ -377,7 +444,6 @@ def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
 
 def create_background_tunnel(local_port, remote_port, remote_host, log_file, log_level, timeout):
     import subprocess
-    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     logging.info('Launching background tunnel %s:%s:%s...', local_port, remote_host, remote_port)
     with open(log_file or os.devnull, 'w') as output:
         if is_windows():
@@ -390,7 +456,8 @@ def create_background_tunnel(local_port, remote_port, remote_host, log_file, log
             creationflags = 0
             import pty
             _, stdin = pty.openpty()
-        executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
+        sys_args = [sys_arg for sys_arg in sys.argv if sys_arg not in TUNNEL_CONFLICT_ARGS]
+        executable = sys_args + ['-f'] if is_frozen() else [sys.executable] + sys_args + ['-f']
         tunnel_proc = subprocess.Popen(executable, stdin=stdin, stdout=output, stderr=subprocess.STDOUT,
                                        cwd=os.getcwd(), env=os.environ.copy(), creationflags=creationflags)
         if stdin:
@@ -468,7 +535,6 @@ def is_tunnel_ready_on_win(tunnel_pid, local_port):
 
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
                                       ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
-    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if is_windows():
         create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
                                                      ssh_keep, remote_host, direct, log_level, retries)
@@ -543,7 +609,6 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
 def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                              remote_host, direct, log_level, retries,
                              chunk_size=4096, server_delay=0.0001):
-    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
     target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
@@ -937,40 +1002,65 @@ def perform_command(executable, log_file=None, collect_output=True, fail_on_erro
 
 def kill_tunnels(run_id=None, local_port=None, timeout=None, force=False, log_level=None):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
-    import signal
-
     for tunnel_proc in find_tunnel_procs(run_id, local_port):
         logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
         logging.info('Killing the process...')
-        tunnel_proc.send_signal(signal.SIGKILL if force else signal.SIGTERM)
-        tunnel_proc.wait(timeout / 1000 if timeout else None)
+        kill_process(tunnel_proc, timeout / 1000, force)
 
 
 def find_tunnel_procs(run_id=None, local_port=None):
     import psutil
-
-    pipe_proc_names = ['pipe', 'pipe.exe']
-    required_args = ['tunnel', 'start'] + ([str(run_id)] if run_id else [])
-    local_port_args = ['-lp', '--local-port']
-    python_proc_prefix = 'python'
-    pipe_script_name = 'pipe.py'
-
     logging.info('Searching for pipe tunnel processes...')
+    current_pids = get_current_pids()
     for proc in psutil.process_iter():
+        if proc.pid in current_pids:
+            continue
         proc_name = proc.name()
-        if proc_name not in pipe_proc_names and not proc_name.startswith(python_proc_prefix):
+        if proc_name not in PIPE_PROC_NAMES and not proc_name.startswith(PYTHON_PROC_PREFIX):
             continue
         proc_args = proc.cmdline()
-        if proc_name.startswith(python_proc_prefix) and pipe_script_name not in proc_args:
+        if proc_name.startswith(PYTHON_PROC_PREFIX) \
+                and all(not proc_arg.endswith(PIPE_SCRIPT_NAME)
+                        for proc_arg in proc_args):
             continue
-        if not all(required_arg in proc_args for required_arg in required_args):
+        if not all(required_arg in proc_args
+                   for required_arg in (TUNNEL_REQUIRED_ARGS + ([str(run_id)] if run_id else []))):
             continue
         if local_port:
             for i in range(len(proc_args)):
-                if proc_args[i] in local_port_args and proc_args[i + 1] == str(local_port):
+                if proc_args[i] in TUNNEL_LOCAL_PORT_ARGS and proc_args[i + 1] == str(local_port):
                     yield proc
         else:
             yield proc
+
+
+def get_current_pids():
+    import psutil
+    current_pids = [os.getpid()]
+    try:
+        for _ in range(3):
+            current_pids.append(psutil.Process(current_pids[-1]).ppid())
+    except psutil.NoSuchProcess:
+        pass
+    return current_pids
+
+
+def kill_process(proc, timeout, force=False):
+    import psutil
+    import signal
+    if force or is_windows():
+        send_signal_to_process(proc, signal.SIGKILL, timeout)
+    else:
+        try:
+            send_signal_to_process(proc, signal.SIGTERM, timeout)
+        except psutil.TimeoutExpired:
+            send_signal_to_process(proc, signal.SIGKILL, timeout)
+
+
+def send_signal_to_process(proc, signal, timeout):
+    if proc.is_running():
+        proc.send_signal(signal)
+        proc.wait(timeout if timeout else None)
 
 
 def run_scp_upload(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None, region=None):
