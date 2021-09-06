@@ -127,10 +127,7 @@ export default [
     title: (props) => props && props.impersonation && props.impersonation.isImpersonated
       ? `Stop impersonation as ${props.impersonation.impersonatedUserName}`
       : undefined,
-    icon: 'poweroff',
-    iconStyle: {
-      color: '#00ff15'
-    },
+    icon: 'user-delete',
     isDefault: false,
     static: true,
     action: (props) => props && props.impersonation

@@ -18,6 +18,7 @@ import React from 'react';
 import {Link} from 'react-router';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import {SERVER, VERSION} from '../../../config';
 import {Button, Icon, message, Popover, Row, Tooltip} from 'antd';
 import styles from './Navigation.css';
@@ -129,7 +130,7 @@ export default class Navigation extends React.Component {
   };
 
   render () {
-    const {activeTabPath} = this.props;
+    const {activeTabPath, impersonation} = this.props;
     const menuItems = this.navigationItems
       .filter(item => this.getNavigationItemVisible(item))
       .map((navigationItem, index) => {
@@ -228,7 +229,15 @@ export default class Navigation extends React.Component {
     return (
       <div
         id="navigation-container"
-        className={styles.navigationContainer}>
+        className={
+          classNames(
+            styles.navigationContainer,
+            {
+              [styles.impersonated]: impersonation.isImpersonated
+            }
+          )
+        }
+      >
         <div className={`${styles.navigationInsideContainer} ${searchStyle.join(' ')}`}>
           {
             VERSION &&
