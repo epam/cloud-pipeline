@@ -785,7 +785,9 @@ export default class EditUserRolesDialog extends React.Component {
     if (user && user.userName && impersonation) {
       impersonation.impersonate(user.userName)
         .then(error => {
-          message.error(error, 5);
+          if (error) {
+            message.error(error, 5);
+          }
         });
     }
   };

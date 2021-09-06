@@ -27,6 +27,13 @@ class ImpersonateUser extends Remote {
       this.url = '/user/impersonation/stop';
     }
   }
+
+  getData (response) {
+    if (response.ok) {
+      return Promise.resolve({status: 'OK'});
+    }
+    return super.getData(response);
+  }
 }
 
 class GetImpersonatedUser extends Remote {
@@ -49,7 +56,7 @@ class Impersonation {
           const {
             original,
             impersonated
-          } = this.impersonatedUser.value || {};
+          } = this.impersonatedInfo.value || {};
           this.impersonatedUser = impersonated;
           this.originalUser = original;
         }
@@ -65,7 +72,7 @@ class Impersonation {
   @computed
   get impersonatedUserName () {
     return this.impersonatedUser
-      ? this.impersonatedInfo.userName
+      ? this.impersonatedUser.userName
       : undefined;
   }
 
@@ -76,12 +83,16 @@ class Impersonation {
         .fetch()
         .then(() => {
           if (request.error) {
-            throw new Error(request.error);
+            resolve(request.error);
+          } else {
+            window.location = SERVER;
+            resolve();
           }
+        })
+        .catch(() => {
           window.location = SERVER;
           resolve();
-        })
-        .catch(e => resolve(e.message));
+        });
     });
   }
 
