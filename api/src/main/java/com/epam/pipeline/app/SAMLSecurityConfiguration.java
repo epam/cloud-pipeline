@@ -142,7 +142,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
-    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation/}")
+    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
     private String impersonationOperationsRootUrl;
 
     @Value("#{'${api.security.public.urls}'.split(',')}")
@@ -176,10 +176,10 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
-                .antMatchers(getSecuredResourcesRoot())
-                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .antMatchers(getImpersonationStartUrl())
-                    .hasAuthority(DefaultRoles.ROLE_ADMIN.getName());
+                    .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
+                .antMatchers(getSecuredResourcesRoot())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
     }
 
@@ -575,10 +575,10 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     public String getImpersonationStartUrl() {
-        return impersonationOperationsRootUrl + "start";
+        return impersonationOperationsRootUrl + "/start";
     }
 
     public String getImpersonationStopUrl() {
-        return impersonationOperationsRootUrl + "stop";
+        return impersonationOperationsRootUrl + "/stop";
     }
 }
