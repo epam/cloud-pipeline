@@ -26,6 +26,7 @@ import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 import OpenInHaloAction from '../../special/file-actions/open-in-halo';
+import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import compareArrays from '../../../utils/compareArrays';
 import {SearchItemTypes} from '../../../models/search';
 
@@ -153,23 +154,17 @@ class SearchResults extends React.Component {
     this.infiniteScroll = infiniteScroll;
   };
 
-  renderSearchResultItem = (resultItem) => {
-    const {disabled} = this.props;
-    const {extraColumnsConfiguration} = this.state;
+  renderResultsItemActions = (resultItem) => {
     return (
-      <a
-        href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
-        key={resultItem.elasticId}
-        className={styles.resultItemContainer}
-        onClick={this.navigate(resultItem)}
-      >
-        <Icon
-          type="info-circle-o"
-          className={styles.previewBtn}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            this.setPreview(resultItem);
+      <div className={styles.actionsContainer}>
+        <OpenInToolAction
+          file={resultItem.path}
+          storageId={resultItem.parentId}
+          className={classNames(styles.previewBtn, styles.action)}
+          style={{
+            borderRadius: '0px',
+            borderLeft: 'none',
+            height: '100%'
           }}
         />
         {
@@ -186,6 +181,30 @@ class SearchResults extends React.Component {
             />
           )
         }
+      </div>
+    );
+  };
+
+  renderSearchResultItem = (resultItem) => {
+    const {disabled} = this.props;
+    const {extraColumnsConfiguration} = this.state;
+    return (
+      <a
+        href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
+        key={resultItem.elasticId}
+        className={styles.resultItemContainer}
+        onClick={this.navigate(resultItem)}
+      >
+        <Icon
+          type="info-circle-o"
+          className={styles.previewBtn}
+          onClick={(e) => {
+            e && e.stopPropagation();
+            e && e.preventDefault();
+            this.setPreview(resultItem);
+          }}
+        />
+        {this.renderResultsItemActions(resultItem)}
         <div
           id={`search-result-item-${resultItem.elasticId}`}
           className={

@@ -26,6 +26,7 @@ import displaySize from '../../../../utils/displaySize';
 import displayDate from '../../../../utils/displayDate';
 import styles from '../search-results.css';
 import OpenInHaloAction from '../../../special/file-actions/open-in-halo';
+import OpenInToolAction from '../../../special/file-actions/open-in-tool';
 
 function parseExtraColumns (preferences) {
   return new Promise((resolve) => {
@@ -101,6 +102,16 @@ const DocumentColumns = [
             e.preventDefault();
             onClick && onClick(document);
           }}
+        />
+        <OpenInToolAction
+          file={document.path}
+          storageId={document.parentId}
+          className={classNames(
+            styles.previewBtn,
+            styles.previewBtnTable,
+            styles.action
+          )}
+          titleStyle={{height: '1em'}}
         />
         {
           [
