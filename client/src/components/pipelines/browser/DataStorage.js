@@ -80,7 +80,7 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
-import OpenInHaloAction from '../../special/file-actions/open-in-halo';
+import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
   from '../../special/metadata/special/fs-notifications';
 
@@ -824,17 +824,19 @@ export default class DataStorage extends React.Component {
       );
     };
     if (item.downloadable) {
-      if (OpenInHaloAction.ActionAvailable(item.path)) {
-        actions.push((
-          <OpenInHaloAction
-            key="open-in-halo"
-            mode="link"
-            file={item.path}
-            storageId={this.props.storageId}
-            className={styles.downloadButton}
-          />
-        ));
-      }
+      actions.push((
+        <OpenInToolAction
+          key="open-in-tool"
+          file={item.path}
+          storageId={this.props.storageId}
+          className={styles.downloadButton}
+          style={{
+            display: 'flex',
+            textDecoration: 'none',
+            alignItems: 'center'
+          }}
+        />
+      ));
       actions.push(
         <a
           key="download"

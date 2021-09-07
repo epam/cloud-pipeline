@@ -175,6 +175,11 @@
   color: white;
 }
 
+.result-item-container .actions-container {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
 .result-item.disabled {
   background-color: #eee;
   color: #999;

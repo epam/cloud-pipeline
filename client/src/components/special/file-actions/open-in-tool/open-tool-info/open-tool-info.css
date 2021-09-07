@@ -14,26 +14,13 @@
  *  limitations under the License.
  */
 
-.link,
-.link > * {
-  text-decoration: none;
-}
-
-.tool-icon {
-  height: 20px;
-}
-
-.footer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
-}
-
 .list {
   list-style: disc outside none;
-  margin-left: 1em;
-  min-width: 360px;
+  padding-right: 1em;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .list li {
@@ -51,9 +38,10 @@
 }
 
 .list .code .part {
-  height: 30px;
+  max-height: 40px;
   display: flex;
   align-items: center;
+  overflow: hidden;
 }
 
 .list .code .part:not(:first-child) {
@@ -62,8 +50,9 @@
 
 .list .code pre {
   flex: 1;
-  overflow: auto;
-  padding: 0 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 10px;
 }
 
 .list .code .button {

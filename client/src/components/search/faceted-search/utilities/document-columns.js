@@ -25,7 +25,7 @@ import UserName from '../../../special/UserName';
 import displaySize from '../../../../utils/displaySize';
 import displayDate from '../../../../utils/displayDate';
 import styles from '../search-results.css';
-import OpenInHaloAction from '../../../special/file-actions/open-in-halo';
+import OpenInToolAction from '../../../special/file-actions/open-in-tool';
 
 function parseExtraColumns (preferences) {
   return new Promise((resolve) => {
@@ -102,26 +102,16 @@ const DocumentColumns = [
             onClick && onClick(document);
           }}
         />
-        {
-          [
-            SearchItemTypes.s3File,
-            SearchItemTypes.azFile,
-            SearchItemTypes.gsFile
-          ].indexOf(document.type) >= 0 &&
-          OpenInHaloAction.ActionAvailable(document.path) && (
-            <OpenInHaloAction
-              file={document.path}
-              storageId={document.parentId}
-              className={
-                classNames(
-                  styles.previewBtn,
-                  styles.previewBtnTable,
-                  styles.action
-                )}
-              titleStyle={{height: '1em'}}
-            />
-          )
-        }
+        <OpenInToolAction
+          file={document.path}
+          storageId={document.parentId}
+          className={classNames(
+            styles.previewBtn,
+            styles.previewBtnTable,
+            styles.action
+          )}
+          titleStyle={{height: '1em'}}
+        />
         {renderIcon(document)}
         <b style={{marginLeft: '5px'}}>
           {getDocumentName(document)}

@@ -17,49 +17,72 @@
 import {action, observable} from 'mobx';
 import wrapRequest from './wrap-request';
 import MetadataSearch from '../../../../models/metadata/MetadataSearch';
-import LoadTool from '../../../../models/tools/LoadTool';
+import MetadataMultiLoad from '../../../../models/metadata/MetadataMultiLoad';
 
-class HaloTool {
+const METADATA_KEY = 'open-in-files';
+const METADATA_TEMPLATE = 'open-in-files-template';
+
+function getFileTypes (metadata = {}) {
+  const {value} = metadata;
+  if (!value) {
+    return [];
+  }
+  return value.split(',').map(type => type.trim().toLowerCase());
+}
+
+class FileTools {
   @observable loaded = false;
   @observable error = undefined;
-  @observable tool = undefined;
+  @observable tools = undefined;
   promise = undefined;
+
   @action
   fetch () {
     if (this.promise) {
       return this.promise;
     }
     this.promise = new Promise((resolve) => {
-      const request = new MetadataSearch('TOOL', 'open-in-halo', 'true');
+      const request = new MetadataSearch(
+        'TOOL',
+        METADATA_KEY,
+        ''
+      );
       request
         .fetch()
         .then(() => {
-          const [info] = request.value;
-          if (info) {
-            const {entityId} = info;
-            return wrapRequest(new LoadTool(entityId));
+          if (request.value && request.value.length > 0) {
+            const requestBody = request.value.map(v => v);
+            return wrapRequest(new MetadataMultiLoad(requestBody));
           } else {
-            throw new Error('HALO tool not found');
+            throw new Error('File tools not found');
           }
         })
         .then(toolRequest => {
           if (toolRequest.loaded) {
-            this.tool = toolRequest.value;
+            this.tools = (toolRequest.value || []).map((value) => ({
+              toolId: value.entity.entityId,
+              openInFiles: getFileTypes(value.data[METADATA_KEY]),
+              template: (value.data[METADATA_TEMPLATE] || {}).value
+            }));
             this.loaded = true;
             this.error = undefined;
           } else {
-            throw new Error(toolRequest.error || 'HALO tool not found');
+            throw new Error(request.error || 'File tools not found');
           }
         })
         .catch(e => {
           this.loaded = false;
-          this.tool = undefined;
+          this.tools = undefined;
           this.error = e.message;
         })
-        .then(() => resolve(this.tool));
+        .then(() => resolve(this.tools));
     });
     return this.promise;
   }
+
+  clearCache () {
+    this.promise = undefined;
+  }
 }
 
-export default HaloTool;
+export default FileTools;

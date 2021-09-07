@@ -18,13 +18,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {Icon} from 'antd';
-import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
-import MultizoneUrl from '../../multizone-url';
-import {parseRunServiceUrlConfiguration} from '../../../../utils/multizone';
+import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
+import MultizoneUrl from '../../../multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
 const FETCH_INFO_SEC = 2;
 
-class HaloJobLink extends React.Component {
+class ToolJobLink extends React.Component {
   state = {
     jobInfo: undefined
   };
@@ -112,7 +112,11 @@ class HaloJobLink extends React.Component {
   };
 
   render () {
-    const {job} = this.props;
+    const {
+      job,
+      toolName,
+      linkText
+    } = this.props;
     const {jobInfo} = this.state;
     if (!job || !jobInfo) {
       return (<Icon type="loading" />);
@@ -120,31 +124,34 @@ class HaloJobLink extends React.Component {
     if ((!job.isService && !jobInfo.initialized) || !this.url) {
       return (
         <span>
-          Wait for HALO instance <Link to={`run/${job.id}`}>#{job.id}</Link> to initialize
+          <span>{`Wait for ${toolName} instance `}</span>
+          <Link to={`run/${job.id}`}>#{job.id}</Link> to initialize
         </span>
       );
     }
     return (
       <span>
-        Open HALO desktop:
+        {`Open ${toolName} desktop:`}
         <MultizoneUrl
           style={{
             display: 'inline-flex',
             marginLeft: 5
           }}
-          target={this.url.sameTab ? '_top' : '_blank'}
           configuration={this.url.url}
+          target={this.url.sameTab ? '_top' : '_blank'}
           dropDownIconStyle={{marginTop: 2}}
         >
-          Download remote desktop shortcut
+          {linkText || 'Download remote desktop shortcut'}
         </MultizoneUrl>
       </span>
     );
   }
 }
 
-HaloJobLink.propTypes = {
-  job: PropTypes.object
+ToolJobLink.propTypes = {
+  job: PropTypes.object,
+  toolName: PropTypes.string,
+  linkText: PropTypes.string
 };
 
-export default HaloJobLink;
+export default ToolJobLink;

@@ -25,9 +25,8 @@ import DocumentListPresentation from './document-presentation/list';
 import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
-import OpenInHaloAction from '../../special/file-actions/open-in-halo';
+import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import compareArrays from '../../../utils/compareArrays';
-import {SearchItemTypes} from '../../../models/search';
 
 const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
@@ -153,6 +152,23 @@ class SearchResults extends React.Component {
     this.infiniteScroll = infiniteScroll;
   };
 
+  renderResultsItemActions = (resultItem) => {
+    return (
+      <div className={styles.actionsContainer}>
+        <OpenInToolAction
+          file={resultItem.path}
+          storageId={resultItem.parentId}
+          className={classNames(styles.previewBtn, styles.action)}
+          style={{
+            borderRadius: '0px',
+            borderLeft: 'none',
+            height: '100%'
+          }}
+        />
+      </div>
+    );
+  };
+
   renderSearchResultItem = (resultItem) => {
     const {disabled} = this.props;
     const {extraColumnsConfiguration} = this.state;
@@ -167,25 +183,12 @@ class SearchResults extends React.Component {
           type="info-circle-o"
           className={styles.previewBtn}
           onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
+            e && e.stopPropagation();
+            e && e.preventDefault();
             this.setPreview(resultItem);
           }}
         />
-        {
-          [
-            SearchItemTypes.s3File,
-            SearchItemTypes.azFile,
-            SearchItemTypes.gsFile
-          ].indexOf(resultItem.type) >= 0 &&
-            OpenInHaloAction.ActionAvailable(resultItem.path) && (
-            <OpenInHaloAction
-              file={resultItem.path}
-              storageId={resultItem.parentId}
-              className={classNames(styles.previewBtn, styles.action)}
-            />
-          )
-        }
+        {this.renderResultsItemActions(resultItem)}
         <div
           id={`search-result-item-${resultItem.elasticId}`}
           className={
