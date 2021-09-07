@@ -32,6 +32,16 @@
   padding: 5px;
 }
 
+.clear-query {
+  cursor: pointer;
+  color: #aaa;
+  font-size: smaller;
+}
+
+.clear-query:hover {
+  color: #999;
+}
+
 .container .content {
   flex: 1;
   display: block;

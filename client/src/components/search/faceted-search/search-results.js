@@ -273,6 +273,11 @@ class SearchResults extends React.Component {
             item={preview}
             lightMode
           />
+          <Icon
+            type="close"
+            className={styles.closePreview}
+            onClick={this.onPreviewWrapperClick}
+          />
         </div>
       </div>
     );

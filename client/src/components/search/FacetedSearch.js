@@ -475,6 +475,21 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  initializeSearchRef = (input) => {
+    this.searchInput = input;
+  }
+
+  onClearQuery = () => {
+    this.setState({
+      query: undefined
+    }, () => {
+      this.onChangeQuery();
+      if (this.searchInput) {
+        this.searchInput.focus();
+      }
+    });
+  };
+
   onNavigate = async (item) => {
     if (!this.props.router || !item.url) {
       return;
@@ -562,7 +577,19 @@ class FacetedSearch extends React.Component {
           className={styles.search}
         >
           <Input
+            ref={this.initializeSearchRef}
             size="large"
+            suffix={
+              query
+                ? (
+                  <Icon
+                    type="close-circle"
+                    className={styles.clearQuery}
+                    onClick={this.onClearQuery}
+                  />
+                )
+                : undefined
+            }
             className={styles.searchInput}
             value={query}
             onChange={this.onQueryChange}
