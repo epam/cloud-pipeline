@@ -86,4 +86,8 @@ public interface Navigation {
                 .edit()
                 .impersonate();
     }
+
+    default boolean checkImpersonation() {
+        return $(byId("navigation-button-stop-impersonation")).isEnabled();
+    }
 }

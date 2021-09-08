@@ -99,6 +99,7 @@ public class C {
         PIPE_OPERATION_SYSTEM = conf.getProperty("e2e.ui.pipe.operation.system");
         PIPE_INSTALLATION_CONTENT = conf.getProperty("e2e.ui.pipe.installation.content");
         PIPE_CONFIG_CONTENT_PATH = conf.getProperty("e2e.ui.pipe.config.content.path");
+        IMPERSONATE_AUTH = conf.getProperty("e2e.ui.impersonate.auth");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -179,4 +180,6 @@ public class C {
     public static final String PIPE_OPERATION_SYSTEM;
     public static final String PIPE_INSTALLATION_CONTENT;
     public static final String PIPE_CONFIG_CONTENT_PATH;
+
+    public static final String IMPERSONATE_AUTH;
 }

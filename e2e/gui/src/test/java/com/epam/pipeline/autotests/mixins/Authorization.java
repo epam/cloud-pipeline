@@ -54,6 +54,13 @@ public interface Authorization extends Navigation {
     }
 
     default NavigationMenuAO loginAs(Account account) {
+        if (impersonateMode()) {
+            if (C.LOGIN.equalsIgnoreCase(account.login)) {
+                return new NavigationMenuAO();
+            }
+            impersonateAs(account.login);
+            return new NavigationMenuAO();
+        }
         sleep(LOGIN_DELAY);
         if ("false".equals(C.AUTH_TOKEN)) {
             return new AuthenticationPageAO()
@@ -68,6 +75,12 @@ public interface Authorization extends Navigation {
     }
 
     default void logout() {
+        if (impersonateMode()) {
+            if (checkImpersonation()) {
+                stopImpersonation();
+            }
+            return;
+        }
         sleep(LOGIN_DELAY);
         new NavigationMenuAO().logout();
     }
@@ -142,6 +155,10 @@ public interface Authorization extends Navigation {
 
     default void loginBack() {
         $$(byCssSelector("a")).find(text(format("login back to the %s", C.PLATFORM_NAME))).shouldBe(enabled).click();
+    }
+
+    default boolean impersonateMode() {
+        return "true".equalsIgnoreCase(C.IMPERSONATE_AUTH);
     }
 
     class Account {
