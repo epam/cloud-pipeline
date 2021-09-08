@@ -1730,7 +1730,38 @@ echo "-"
 if [ "$CP_CAP_SINGULARITY" == "true" ]; then
       singularity_setup
 else
-    echo "Singularity support is not requested"
+      echo "Singularity support is not requested"
+fi
+
+######################################################
+
+
+######################################################
+# Install additional packages
+######################################################
+
+echo "Install additional packages"
+echo "-"
+
+EXTRA_PKG_INSTALL_COMMAND=
+EXTRA_PKG_DISTRO_INSTALL_COMMAND=
+if [ "$CP_CAP_EXTRA_PKG" ]; then
+      get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
+fi
+if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+      get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+      get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+fi
+
+if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
+      echo "Installing COMMON extra packages"
+      eval "$EXTRA_PKG_INSTALL_COMMAND"
+fi
+
+if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
+      echo "Installing extra packages for $CP_OS"
+      eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
 fi
 
 ######################################################
