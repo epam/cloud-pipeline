@@ -86,6 +86,4 @@ public interface Navigation {
                 .edit()
                 .impersonate();
     }
-
-
 }
