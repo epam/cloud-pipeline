@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h9m34.89s</div>
+<div class="counter">59m17.11s</div>
 <p>duration</p>
 </div>
 </td>
@@ -75,8 +75,8 @@
 <span class="code">
 <pre>Element not found {task with name Task}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631011089801.121.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631011089801.121.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631103606153.109.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631103606153.109.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: Cannot locate an element using task with name Task
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -108,7 +108,7 @@ Caused by: NoSuchElementException: Cannot locate an element using task with name
 Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using task with name Task
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'a5df20e3f13b', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '2516c998baf2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: driver.version: unknown
 	at org.openqa.selenium.By.findElement(By.java:162)
 	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
@@ -123,22 +123,24 @@ Driver info: driver.version: unknown
 <a name="shell - EPMCMBIBPC-97"></a>
 <h3 class="failures">shell - EPMCMBIBPC-97</h3>
 <span class="code">
-<pre>Element should be status-icon__icon-green {By.className: log__run-title}
-Element: '&lt;h1 class=&quot;log__run-title&quot;&gt;Run #6756 - PipelineFromTemplateTest1065638050 (draft-c73a0968) - Logs&lt;/h1&gt;'
-Actual value: WORKING
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631014269055.122.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631014269055.122.html
-Timeout: 1500 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+<pre>Element not found {task with name Task}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631106092471.110.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631106092471.110.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: Cannot locate an element using task with name Task
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForCompletion(LogAO.java:72)
-	at com.epam.pipeline.autotests.PipelineFromTemplateTest.pipelineFromTemplateFinishesCorrectly(PipelineFromTemplateTest.java:72)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:105)
+	at com.epam.pipeline.autotests.PipelineFromTemplateTest.pipelineFromTemplateFinishesCorrectly(PipelineFromTemplateTest.java:73)
 	at com.epam.pipeline.autotests.PipelineFromTemplateTest.shell(PipelineFromTemplateTest.java:50)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -153,6 +155,17 @@ Timeout: 1500 s.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using task with name Task
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '2516c998baf2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: unknown
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 23 more
 </pre>
 </span>
 </div>
@@ -169,22 +182,22 @@ Timeout: 1500 s.
 </thead>
 <tr>
 <td class="success">luigi - EPMCMBIBPC-542</td>
-<td>15m25.46s</td>
+<td>22m21.90s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">python - EPMCMBIBPC-541</td>
-<td>18m45.90s</td>
+<td>14m49.85s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">shell - EPMCMBIBPC-97</td>
-<td>25m23.04s</td>
+<td>13m49.90s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">wdl - EPMCMBIBPC-228</td>
-<td>10m0.50s</td>
+<td>8m15.45s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -197,7 +210,7 @@ Timeout: 1500 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 7, 2021 5:35:52 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 8, 2021 6:11:37 PM</p>
 </div>
 </div>
 </body>

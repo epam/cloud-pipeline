@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">3</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">44m36.33s</div>
+<div class="counter">22m57.62s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">66%</div>
+<div class="percent">77%</div>
 <p>successful</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>Element not found {By.id: navigation-button-tools}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631026007243.152.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631026007243.152.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631117215928.168.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631117215928.168.html
 Timeout: 80 s.
 Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-tools&quot; class=&quot;navigation__navigation-menu-item&quot; href=&quot;#/tools&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 202). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -107,11 +107,11 @@ Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a 
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'a5df20e3f13b', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '2516c998baf2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 128db86d771f16ef9588a1111f3dd611
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+Session ID: 8f0062471c300b0da4683fa75037f4fa
+	at sun.reflect.GeneratedConstructorAccessor21.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -137,12 +137,12 @@ Session ID: 128db86d771f16ef9588a1111f3dd611
 <a name="removeEntities"></a>
 <h3 class="failures">removeEntities</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4602837710674709780')]]}
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4599546529405674228')]]}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631026281665.153.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631026281665.153.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631117492213.169.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631117492213.169.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4602837710674709780')]]
+Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4599546529405674228')]]
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -170,10 +170,10 @@ Caused by: NoSuchElementException: Cannot locate an element using title of a By.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4602837710674709780')]]
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4599546529405674228')]]
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'a5df20e3f13b', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '2516c998baf2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: driver.version: unknown
 	at org.openqa.selenium.By.findElement(By.java:162)
 	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
@@ -181,54 +181,6 @@ Driver info: driver.version: unknown
 	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
 	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683"></a>
-<h3 class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</h3>
-<span class="code">
-<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631025472740.151.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631025472740.151.html
-Timeout: 1200 s.
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.rerunPipelineWithoutLimitMounts(LaunchLimitMountsTest.java:196)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
 </pre>
 </span>
 </div>
@@ -245,47 +197,47 @@ Timeout: 0 ms.
 </thead>
 <tr>
 <td class="failures">allowToLaunchRunsWithoutMounts - 1590</td>
-<td>1m31.27s</td>
+<td>1m31.84s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>2m41.90s</td>
+<td>2m43.47s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>33.118s</td>
+<td>32.819s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>19.181s</td>
+<td>19.959s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>29.055s</td>
+<td>29.309s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">removeEntities</td>
-<td>1m51.20s</td>
+<td>1m51.65s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>20m21.83s</td>
-<td class="failures">failed</td>
+<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
+<td>3m19.53s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>10m32.48s</td>
+<td>6m12.72s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>6m16.31s</td>
+<td>5m56.32s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -293,10 +245,11 @@ Timeout: 0 ms.
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 6769 from [6769]
-Returns latest run with runId 6770 from [6769, 6770]
-Returns latest run with runId 6771 from [6769, 6770, 6771]
-Returns latest run with runId 6772 from [6769, 6770, 6771, 6772]
+<pre>Returns latest run with runId 6901 from [6901]
+Returns latest run with runId 6902 from [6901, 6902]
+Returns latest run with runId 6902 from [6901, 6902]
+Returns latest run with runId 6903 from [6901, 6902, 6903]
+Returns latest run with runId 6904 from [6901, 6902, 6903, 6904]
 </pre>
 </span>
 </div>
@@ -308,7 +261,7 @@ Returns latest run with runId 6772 from [6769, 6770, 6771, 6772]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 7, 2021 5:35:52 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 8, 2021 6:11:37 PM</p>
 </div>
 </div>
 </body>

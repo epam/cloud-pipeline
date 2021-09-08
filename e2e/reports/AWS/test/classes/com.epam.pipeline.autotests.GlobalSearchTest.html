@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">11</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">8</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h18m5.11s</div>
+<div class="counter">55m0.72s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">90%</div>
+<div class="percent">15%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,24 +73,21 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="identicalNamesSearch - EPMCMBIBPC-2671"></a>
-<h3 class="failures">identicalNamesSearch - EPMCMBIBPC-2671</h3>
+<a name="folderSearch - EPMCMBIBPC-2654"></a>
+<h3 class="failures">folderSearch - EPMCMBIBPC-2654</h3>
 <span class="code">
-<pre>Element should text '1 FOLDER' {[unknown locator]}
-Element: '&lt;div class=&quot;earch__type-button earch__disabled&quot;&gt;FOLDERS&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631018500319.137.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631018500319.137.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
-	at com.epam.pipeline.autotests.GlobalSearchTest.identicalNamesSearch(GlobalSearchTest.java:605)
+<pre>ListSizeMismatch : expected: = 1, actual: 0, collection: By.id: search-results/.earch__search-result-item
+Elements: []
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631109284083.115.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631109284083.115.html
+Timeout: 6 s.
+	at com.codeborne.selenide.collections.ListSize.fail(ListSize.java:24)
+	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
+	at com.codeborne.selenide.ElementsCollection.should(ElementsCollection.java:57)
+	at com.codeborne.selenide.ElementsCollection.shouldHave(ElementsCollection.java:48)
+	at com.codeborne.selenide.ElementsCollection.shouldHaveSize(ElementsCollection.java:33)
+	at com.epam.pipeline.autotests.ao.GlobalSearchAO.validateSearchResults(GlobalSearchAO.java:139)
+	at com.epam.pipeline.autotests.GlobalSearchTest.folderSearch(GlobalSearchTest.java:640)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -108,27 +105,24 @@ Timeout: 80 s.
 </span>
 </div>
 <div class="test">
-<a name="searchForCompletedToolRun - EPMCMBIBPC-2669"></a>
-<h3 class="failures">searchForCompletedToolRun - EPMCMBIBPC-2669</h3>
+<a name="folderSearchByEnterKey - EPMCMBIBPC-2655"></a>
+<h3 class="failures">folderSearchByEnterKey - EPMCMBIBPC-2655</h3>
 <span class="code">
-<pre>Element not found {#run-6759-stop-button}
-Expected: enabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1631019550214.138.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1631019550214.138.html
-Timeout: 5 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-6759-stop-button&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+<pre>Element should be visible {By.id: search-results}
+Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631109371000.116.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631109371000.116.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.RunsMenuAO.stopRun(RunsMenuAO.java:106)
-	at com.epam.pipeline.autotests.GlobalSearchTest.searchForCompletedToolRun(GlobalSearchTest.java:522)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.hover(AccessObject.java:177)
+	at com.epam.pipeline.autotests.GlobalSearchTest.folderSearchByEnterKey(GlobalSearchTest.java:657)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -142,17 +136,275 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-6759-stop-button&quot;}
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="issueSearch - EPMCMBIBPC-2670"></a>
+<h3 class="failures">issueSearch - EPMCMBIBPC-2670</h3>
+<span class="code">
+<pre>Element should be visible {By.id: search-results}
+Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631110007448.117.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631110007448.117.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.hover(AccessObject.java:177)
+	at com.epam.pipeline.autotests.GlobalSearchTest.issueSearch(GlobalSearchTest.java:570)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchAfterDeleting - EPMCMBIBPC-2676"></a>
+<h3 class="failures">searchAfterDeleting - EPMCMBIBPC-2676</h3>
+<span class="code">
+<pre>ListSizeMismatch : expected: &gt;= 1, actual: 0, collection: By.id: search-results/.earch__search-result-item
+Elements: []
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631112583382.155.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631112583382.155.html
+Timeout: 6 s.
+	at com.codeborne.selenide.collections.SizeGreaterThanOrEqual.fail(SizeGreaterThanOrEqual.java:24)
+	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
+	at com.codeborne.selenide.ElementsCollection.should(ElementsCollection.java:57)
+	at com.codeborne.selenide.ElementsCollection.shouldHave(ElementsCollection.java:48)
+	at com.epam.pipeline.autotests.ao.GlobalSearchAO.validateCountSearchResults(GlobalSearchAO.java:147)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchAfterDeleting(GlobalSearchTest.java:763)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForDetachConfigByConfiguration - EPMCMBIBPC-2673"></a>
+<h3 class="failures">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</h3>
+<span class="code">
+<pre>ListSizeMismatch : expected: = 1, actual: 0, collection: By.id: search-results/.earch__search-result-item
+Elements: []
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631110029477.118.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631110029477.118.html
+Timeout: 6 s.
+	at com.codeborne.selenide.collections.ListSize.fail(ListSize.java:24)
+	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
+	at com.codeborne.selenide.ElementsCollection.should(ElementsCollection.java:57)
+	at com.codeborne.selenide.ElementsCollection.shouldHave(ElementsCollection.java:48)
+	at com.codeborne.selenide.ElementsCollection.shouldHaveSize(ElementsCollection.java:33)
+	at com.epam.pipeline.autotests.ao.GlobalSearchAO.validateSearchResults(GlobalSearchAO.java:139)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForDetachConfigByConfiguration(GlobalSearchTest.java:735)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForDetachConfigByName - EPMCMBIBPC-2672"></a>
+<h3 class="failures">searchForDetachConfigByName - EPMCMBIBPC-2672</h3>
+<span class="code">
+<pre>ListSizeMismatch : expected: = 1, actual: 0, collection: By.id: search-results/.earch__search-result-item
+Elements: []
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631110044550.119.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631110044550.119.html
+Timeout: 6 s.
+	at com.codeborne.selenide.collections.ListSize.fail(ListSize.java:24)
+	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
+	at com.codeborne.selenide.ElementsCollection.should(ElementsCollection.java:57)
+	at com.codeborne.selenide.ElementsCollection.shouldHave(ElementsCollection.java:48)
+	at com.codeborne.selenide.ElementsCollection.shouldHaveSize(ElementsCollection.java:33)
+	at com.epam.pipeline.autotests.ao.GlobalSearchAO.validateSearchResults(GlobalSearchAO.java:139)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForDetachConfigByName(GlobalSearchTest.java:712)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForPipeline - EPMCMBIBPC-2658"></a>
+<h3 class="failures">searchForPipeline - EPMCMBIBPC-2658</h3>
+<span class="code">
+<pre>Element should text '3 PIPELINES' {[unknown locator]}
+Element: '&lt;div class=&quot;earch__type-button earch__disabled&quot;&gt;PIPELINES&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631110280578.120.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631110280578.120.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForPipeline(GlobalSearchTest.java:192)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForStorage - EPMCMBIBPC-2660"></a>
+<h3 class="failures">searchForStorage - EPMCMBIBPC-2660</h3>
+<span class="code">
+<pre>Element should text '2 DATA' {[unknown locator]}
+Element: '&lt;div class=&quot;earch__type-button earch__disabled&quot;&gt;DATA&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631110368577.121.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631110368577.121.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForStorage(GlobalSearchTest.java:314)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForToolRun - EPMCMBIBPC-2668"></a>
+<h3 class="failures">searchForToolRun - EPMCMBIBPC-2668</h3>
+<span class="code">
+<pre>Element not found {with text: Endpoint}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631111621510.152.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631111621510.152.html
+Timeout: 1200 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.waitForEndpointLink(LogAO.java:211)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForToolRun(GlobalSearchTest.java:470)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;Endpoint&quot;)]/parent::*&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'a5df20e3f13b', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '2516c998baf2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 3bfa870aa075ef84973ca0490ffdf618
-*** Element info: {Using=css selector, value=#run-6759-stop-button}
+Session ID: 1220b80499a0701987932af0e104a0d9
+*** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;Endpoint&quot;)]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -165,13 +417,84 @@ Session ID: 3bfa870aa075ef84973ca0490ffdf618
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
 	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementByCssSelector(RemoteWebDriver.java:465)
-	at org.openqa.selenium.By$ByCssSelector.findElement(By.java:430)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
 	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
 	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
 	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
+	... 40 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchResultCancel - EPMCMBIBPC-2657"></a>
+<h3 class="failures">searchResultCancel - EPMCMBIBPC-2657</h3>
+<span class="code">
+<pre>Element should be visible {By.className: earch__search-container}
+Element: '&lt;div class=&quot;earch__search-container &quot; displayed:false&gt;&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631111630989.153.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631111630989.153.html
+Timeout: 5 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NavigationMenuAO.search(NavigationMenuAO.java:82)
+	at com.epam.pipeline.autotests.GlobalSearchTest.search(GlobalSearchTest.java:778)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchResultCancel(GlobalSearchTest.java:149)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchWithSpecialExpressions - EPMCMBIBPC-2675"></a>
+<h3 class="failures">searchWithSpecialExpressions - EPMCMBIBPC-2675</h3>
+<span class="code">
+<pre>Element should be visible {By.id: search-results}
+Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1631112143674.154.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1631112143674.154.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.hover(AccessObject.java:177)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchWithSpecialExpressions(GlobalSearchTest.java:695)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
 </pre>
 </span>
 </div>
@@ -187,121 +510,116 @@ Session ID: 3bfa870aa075ef84973ca0490ffdf618
 </tr>
 </thead>
 <tr>
-<td class="success">folderSearch - EPMCMBIBPC-2654</td>
-<td>12.415s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="success">folderSearchByEnterKey - EPMCMBIBPC-2655</td>
-<td>8.310s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">identicalNamesSearch - EPMCMBIBPC-2671</td>
-<td>8m32.81s</td>
+<td class="failures">folderSearch - EPMCMBIBPC-2654</td>
+<td>14.078s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">issueSearch - EPMCMBIBPC-2670</td>
-<td>9m26.93s</td>
-<td class="success">passed</td>
+<td class="failures">folderSearchByEnterKey - EPMCMBIBPC-2655</td>
+<td>1m26.19s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="skipped">identicalNamesSearch</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="failures">issueSearch - EPMCMBIBPC-2670</td>
+<td>10m35.29s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">negativeFolderSearch - EPMCMBIBPC-2656</td>
-<td>6.581s</td>
+<td>6.023s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">searchAfterDeleting - EPMCMBIBPC-2676</td>
-<td>7m16.28s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">searchForCompletedToolRun - EPMCMBIBPC-2669</td>
-<td>7.166s</td>
+<td class="failures">searchAfterDeleting - EPMCMBIBPC-2676</td>
+<td>7m18.51s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</td>
-<td>15.377s</td>
-<td class="success">passed</td>
+<td class="skipped">searchForCompletedToolRun</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">searchForDetachConfigByName - EPMCMBIBPC-2672</td>
-<td>15.660s</td>
-<td class="success">passed</td>
+<td class="failures">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</td>
+<td>14.039s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">searchForFilesAndFoldersInStorage - EPMCMBIBPC-2666</td>
-<td>2m34.42s</td>
-<td class="success">passed</td>
+<td class="failures">searchForDetachConfigByName - EPMCMBIBPC-2672</td>
+<td>14.078s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">searchForPipeline - EPMCMBIBPC-2658</td>
-<td>3m3.04s</td>
-<td class="success">passed</td>
+<td class="skipped">searchForFilesAndFoldersInStorage</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">searchForPipelineRun - EPMCMBIBPC-2663</td>
-<td>13.926s</td>
-<td class="success">passed</td>
+<td class="failures">searchForPipeline - EPMCMBIBPC-2658</td>
+<td>3m55.31s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">searchForPipelineRunByID - EPMCMBIBPC-2665</td>
-<td>11.512s</td>
-<td class="success">passed</td>
+<td class="skipped">searchForPipelineRun</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">searchForPipelineRunOverStoragePath - EPMCMBIBPC-2664</td>
-<td>10m42.25s</td>
-<td class="success">passed</td>
+<td class="skipped">searchForPipelineRunByID</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">searchForPipelineWithRuns - EPMCMBIBPC-2662</td>
-<td>7m53.27s</td>
-<td class="success">passed</td>
+<td class="skipped">searchForPipelineRunOverStoragePath</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">searchForStorage - EPMCMBIBPC-2660</td>
-<td>19.590s</td>
-<td class="success">passed</td>
+<td class="skipped">searchForPipelineWithRuns</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">searchForStorageWithChangedName - EPMCMBIBPC-2661</td>
-<td>9m25.21s</td>
-<td class="success">passed</td>
+<td class="failures">searchForStorage - EPMCMBIBPC-2660</td>
+<td>1m26.85s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="skipped">searchForStorageWithChangedName</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">searchForTool - EPMCMBIBPC-2667</td>
-<td>20.165s</td>
+<td>20.226s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">searchForToolRun - EPMCMBIBPC-2668</td>
-<td>9m33.50s</td>
-<td class="success">passed</td>
+<td class="failures">searchForToolRun - EPMCMBIBPC-2668</td>
+<td>20m30.17s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">searchResultCancel - EPMCMBIBPC-2657</td>
-<td>11.507s</td>
-<td class="success">passed</td>
+<td class="failures">searchResultCancel - EPMCMBIBPC-2657</td>
+<td>8.267s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">searchWithSpecialExpressions - EPMCMBIBPC-2675</td>
-<td>7m15.18s</td>
-<td class="success">passed</td>
+<td class="failures">searchWithSpecialExpressions - EPMCMBIBPC-2675</td>
+<td>8m31.70s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 6759 from [6759]
-Returns latest run with runId 6760 from [6759, 6760]
-Returns latest run with runId 6761 from [6759, 6760, 6761]
-Returns latest run with runId 6763 from [6759, 6760, 6761, 6762, 6763]
-Returns latest run with runId 6763 from [6759, 6760, 6761, 6762, 6763]
-Returns latest run with runId 6763 from [6759, 6760, 6761, 6762, 6763]
+<pre>Returns latest run with runId 6895 from [6895]
 </pre>
 </span>
 </div>
@@ -313,7 +631,7 @@ Returns latest run with runId 6763 from [6759, 6760, 6761, 6762, 6763]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 7, 2021 5:35:52 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 8, 2021 6:11:37 PM</p>
 </div>
 </div>
 </body>
