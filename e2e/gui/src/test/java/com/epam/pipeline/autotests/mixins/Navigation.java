@@ -88,6 +88,6 @@ public interface Navigation {
     }
 
     default boolean checkImpersonation() {
-        return $(byId("navigation-button-stop-impersonation")).isEnabled();
+        return $(byId("navigation-button-stop-impersonation")).isDisplayed();
     }
 }
