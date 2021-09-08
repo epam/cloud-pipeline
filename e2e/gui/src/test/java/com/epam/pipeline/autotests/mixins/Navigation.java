@@ -69,4 +69,23 @@ public interface Navigation {
         $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
     }
+
+    default NavigationHomeAO stopImpersonation() {
+        final By stopImpersonateSelector = byId("navigation-button-stop-impersonation");
+        $(stopImpersonateSelector).shouldBe(visible).click();
+        $(stopImpersonateSelector).shouldNotBe(visible);
+        return new NavigationHomeAO();
+    }
+
+    default NavigationHomeAO impersonateAs(String user) {
+        return navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(user.toUpperCase())
+                .edit()
+                .impersonate();
+    }
+
+
 }

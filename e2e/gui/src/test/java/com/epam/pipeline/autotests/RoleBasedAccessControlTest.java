@@ -304,6 +304,17 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(admin);
     }
 
+    @Test
+    @TestCase({"2144"})
+    public void allowToImpersonateAdministratorAsGeneralUser() {
+        logoutIfNeeded();
+        loginAs(admin);
+        impersonateAs(user.login);
+        checkUserName(user);
+        stopImpersonation();
+        checkUserName(admin);
+    }
+
     private void validateWhileErrorPageMessage() {
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage(singletonList("User is blocked!"));
@@ -326,5 +337,12 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         }
         final Account userWithToken = new Account(user.login, token);
         loginAs(userWithToken);
+    }
+
+    private void checkUserName(Account user) {
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(user.login);
     }
 }

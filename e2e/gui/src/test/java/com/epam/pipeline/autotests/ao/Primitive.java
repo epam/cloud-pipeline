@@ -287,5 +287,7 @@ public enum Primitive {
     DO_NOT_MOUNT_STORAGES,
     LAUNCH_COMMANDS,
     CONFIGURE,
-    GENERATE_URL
+    GENERATE_URL,
+    IMPERSONATE,
+    MY_PROFILE
 }

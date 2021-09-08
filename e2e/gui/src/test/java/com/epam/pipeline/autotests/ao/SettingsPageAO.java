@@ -72,6 +72,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Logs')]"))),
             entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
             entry(CLOUD_REGIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
+            entry(MY_PROFILE, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'My Profile')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -108,6 +109,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
         return new SystemLogsAO();
+    }
+
+    public MyProfileAO switchToMyProfile() {
+        click(MY_PROFILE);
+        return new MyProfileAO();
     }
 
     @Override
@@ -666,7 +672,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(DELETE, context().$(byId("delete-user-button"))),
                             entry(PRICE_TYPE, context().find(byXpath(
                                     format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
-                            entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a")))
+                            entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
+                            entry(IMPERSONATE, context().$(button("IMPERSONATE")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -783,6 +790,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .click();
                         new LogAO.ShareWith().click(OK);
                         return this;
+                    }
+
+                    public NavigationHomeAO impersonate() {
+                        click(IMPERSONATE);
+                        return new NavigationHomeAO();
                     }
                 }
             }
@@ -1589,6 +1601,21 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
                 $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
             }
+        }
+    }
+
+    public class MyProfileAO implements AccessObject<MyProfileAO> {
+        private final Map<Primitive,SelenideElement> elements = initialiseElements(
+                entry(USER_NAME, $(byClassName("ser-profile__header")))
+        );
+
+        public MyProfileAO validateUserName(String user) {
+            return ensure(USER_NAME, text(user));
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 
