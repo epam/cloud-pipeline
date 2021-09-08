@@ -209,6 +209,9 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase({"EPMCMBIBPC-3016"})
     public void blockUnblockUser() {
+        if (impersonateMode()) {
+            return;
+        }
         try {
             loginAs(user);
             tools()
