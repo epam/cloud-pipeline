@@ -58,6 +58,7 @@ setup(name='pipeline',
             'urllib3==1.25.9',
             'paramiko==2.6.0',
             'psutil==5.8.0',
-            'pywin32==300; platform_system == "Windows"'
+            'pywin32==300; platform_system == "Windows"',
+            'watchdog==0.10.7'
       ],
       zip_safe=False)
