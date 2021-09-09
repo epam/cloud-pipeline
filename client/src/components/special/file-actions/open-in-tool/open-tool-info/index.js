@@ -31,7 +31,11 @@ class OpenToolInfo extends React.Component {
   get template () {
     const {template} = this.props;
     if (template) {
-      const listItems = template.split('\n').map(item => item.trim());
+      const listItems = template
+        .replaceAll(/\\n/g, ' \n ')
+        .split(/\r?\n/)
+        .map(item => item.trim())
+        .filter(Boolean);
       return listItems;
     }
     return [];
@@ -43,8 +47,20 @@ class OpenToolInfo extends React.Component {
   }
 
   get filePath () {
-    const {file, storage} = this.props;
-    const filePath = `Z:\\${storage.name}\\${file.replace(/\//g, '\\')}`;
+    const {
+      file,
+      storage,
+      tool
+    } = this.props;
+    const {platform = ''} = tool || {};
+    const isWindowsPlatform = /^windows$/i.test(platform.toLowerCase());
+    let filePath;
+    if (isWindowsPlatform) {
+      filePath = `Z:\\${storage.name}\\${file.replace(/\//g, '\\')}`;
+    } else {
+      // todo: change path to linux associated
+      filePath = `Z:\\${storage.name}\\${file.replace(/\//g, '\\')}`;
+    }
     return filePath;
   }
 
@@ -54,89 +70,6 @@ class OpenToolInfo extends React.Component {
     event.preventDefault();
     onLaunchClick && onLaunchClick();
   };
-
-  renderAppName = () => {
-    const {tool} = this.props;
-    return (
-      <span>
-        {tool.image}
-      </span>
-    );
-  };
-
-  renderAppLink = () => {
-    const {
-      activeJob,
-      activeJobsFetching
-    } = this.props;
-    return (
-      <span>
-        {
-          activeJobsFetching && (<Icon type="loading" />)
-        }
-        {
-          !activeJobsFetching && !!activeJob && (
-            <ToolJobLink
-              job={activeJob}
-              toolName={this.appName}
-            />
-          )
-        }
-        {
-          !activeJobsFetching && !activeJob && (
-            <Button
-              size="small"
-              type="primary"
-              onClick={this.onLaunchClick}
-              style={{marginLeft: 5}}
-            >
-              Launch
-            </Button>
-          )
-        }
-      </span>
-    );
-  };
-
-  renderListItemContent = (rowTemplate) => {
-    const renderers = {
-      '{FILE_PATH}': this.renderFilePath,
-      '{APP_NAME}': this.renderAppName,
-      '{APP_LINK}': this.renderAppLink
-    };
-    const content = rowTemplate
-      .split(/((?!^)\{.*?\})/)
-      .filter(Boolean);
-    return (
-      <div>
-        {content.map((chunk, index) => {
-          return (
-            <span key={index}>
-              {
-                renderers[chunk]
-                  ? renderers[chunk]()
-                  : chunk
-              }
-            </span>
-          );
-        })}
-      </div>
-    );
-  };
-
-  renderCustomTemplate = () => {
-    return (
-      <ul className={styles.list}>
-        {this.template.map((rowTemplate, index) => {
-          return (
-            <li key={index}>
-              {this.renderListItemContent(rowTemplate)}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  }
 
   renderFilePath = () => {
     const initializePathElement = element => {
@@ -177,6 +110,103 @@ class OpenToolInfo extends React.Component {
           </div>
         </div>
       </div>
+    );
+  };
+
+  renderAppName = () => {
+    const {tool} = this.props;
+    return (
+      <span>
+        {tool.image}
+      </span>
+    );
+  };
+
+  renderAppLink = (linkText) => {
+    const {
+      activeJob,
+      activeJobsFetching
+    } = this.props;
+    return (
+      <span>
+        {
+          activeJobsFetching && (<Icon type="loading" />)
+        }
+        {
+          !activeJobsFetching && !!activeJob && (
+            <ToolJobLink
+              job={activeJob}
+              toolName={this.appName}
+              linkText={linkText}
+            />
+          )
+        }
+        {
+          !activeJobsFetching && !activeJob && (
+            <Button
+              size="small"
+              type="primary"
+              onClick={this.onLaunchClick}
+              style={{marginLeft: 5}}
+            >
+              Launch
+            </Button>
+          )
+        }
+      </span>
+    );
+  };
+
+  renderListItemContent = (rowTemplate) => {
+    const renderers = {
+      'FILE_PATH': this.renderFilePath,
+      'APP_NAME': this.renderAppName,
+      'APP_LINK': this.renderAppLink
+    };
+    const rowContent = rowTemplate
+      .split(new RegExp(/((?!^)\{.*?\})/))
+      .filter(Boolean);
+    const getRenderFn = (chunk) => {
+      const templateSignature = new RegExp(/^[{].*[}]$/);
+      if (templateSignature.test(chunk)) {
+        const [placeholderName, argumentString] = chunk
+          .trim()
+          .slice(1, -1)
+          .split(':');
+        const renderFn = renderers[placeholderName];
+        return [renderFn, argumentString];
+      }
+      return [];
+    };
+    return (
+      <div>
+        {rowContent.map((chunk, index) => {
+          const [renderFn, argument] = getRenderFn((chunk));
+          return (
+            <span key={index}>
+              {
+                renderFn
+                  ? renderFn(argument)
+                  : chunk
+              }
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
+  renderCustomTemplate = () => {
+    return (
+      <ul className={styles.list}>
+        {this.template.map((rowTemplate, index) => {
+          return (
+            <li key={index}>
+              {this.renderListItemContent(rowTemplate)}
+            </li>
+          );
+        })}
+      </ul>
     );
   };
 

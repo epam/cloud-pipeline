@@ -34,9 +34,9 @@ import styles from './open-in-tool.css';
 
 const fileToolsRequest = new FileTools();
 
-@inject('dockerRegistries', 'awsRegions', 'preferences', 'dataStorages')
+@inject('dockerRegistries', 'dataStorages')
 @inject(() => ({
-  fileTools: fileToolsRequest
+  openInFileTools: fileToolsRequest
 }))
 @observer
 class OpenInToolAction extends React.Component {
@@ -48,8 +48,15 @@ class OpenInToolAction extends React.Component {
   }
 
   componentDidMount () {
-    const {fileTools} = this.props;
-    fileTools && fileTools.fetch();
+    const {dockerRegistries, openInFileTools} = this.props;
+    dockerRegistries.fetchIfNeededOrWait().then(() => {
+      openInFileTools.fetch(this.tools.map(tool => tool.id));
+    });
+  }
+
+  componentWillUnmount () {
+    const {openInFileTools} = this.props;
+    openInFileTools.clearCache();
   }
 
   get fileExtension () {
@@ -63,10 +70,10 @@ class OpenInToolAction extends React.Component {
   }
 
   @computed
-  get fileTools () {
-    const {fileTools} = this.props;
-    if (fileTools.loaded) {
-      return fileTools.tools.map(t => t);
+  get openInFileTools () {
+    const {openInFileTools} = this.props;
+    if (openInFileTools.loaded) {
+      return openInFileTools.tools.map(t => t);
     }
     return undefined;
   }
@@ -96,8 +103,8 @@ class OpenInToolAction extends React.Component {
 
   @computed
   get filteredFileTools () {
-    if (this.fileTools) {
-      return this.fileTools
+    if (this.openInFileTools) {
+      return this.openInFileTools
         .filter(tool => tool.openInFiles.includes(this.fileExtension))
         .map(tool => this.tools.find(t => t.id === tool.toolId));
     }
@@ -110,7 +117,8 @@ class OpenInToolAction extends React.Component {
     if (!activeTool) {
       return undefined;
     }
-    const tool = this.fileTools.find(tool => tool.toolId === activeTool.id);
+    const tool = this.openInFileTools
+      .find(tool => tool.toolId === activeTool.id);
     return (tool || {}).template;
   }
 

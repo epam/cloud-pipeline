@@ -112,7 +112,11 @@ class ToolJobLink extends React.Component {
   };
 
   render () {
-    const {job, toolName} = this.props;
+    const {
+      job,
+      toolName,
+      linkText
+    } = this.props;
     const {jobInfo} = this.state;
     if (!job || !jobInfo) {
       return (<Icon type="loading" />);
@@ -136,7 +140,7 @@ class ToolJobLink extends React.Component {
           configuration={this.url.url}
           dropDownIconStyle={{marginTop: 2}}
         >
-          Download remote desktop shortcut
+          {linkText || 'Download remote desktop shortcut'}
         </MultizoneUrl>
       </span>
     );
@@ -145,7 +149,8 @@ class ToolJobLink extends React.Component {
 
 ToolJobLink.propTypes = {
   job: PropTypes.object,
-  toolName: PropTypes.string
+  toolName: PropTypes.string,
+  linkText: PropTypes.string
 };
 
 export default ToolJobLink;
