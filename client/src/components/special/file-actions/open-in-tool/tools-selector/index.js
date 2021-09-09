@@ -25,6 +25,23 @@ import {
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './tool-selector.css';
 
+const ToolIcon = ({
+  iconId,
+  toolId,
+  style
+}) => {
+  if (toolId && iconId) {
+    return (
+      <img
+        className={styles.toolIcon}
+        src={ToolImage.url(toolId, iconId)}
+        style={style}
+      />
+    );
+  }
+  return null;
+};
+
 const ButtonTitle = ({
   toolId,
   iconId,
@@ -33,16 +50,16 @@ const ButtonTitle = ({
 }) => {
   return (
     iconId && toolId ? (
-      <img
-        src={ToolImage.url(toolId, iconId)}
-        className={styles.toolIcon}
+      <ToolIcon
         style={titleStyle}
+        toolId={toolId}
+        iconId={iconId}
       />
     ) : (
       <span
         style={titleStyle}
       >
-        {`Open in ${toolName || 'tool'}`}
+        {`Open in ${toolName}`}
       </span>
     )
   );
@@ -70,13 +87,17 @@ class ToolsSelector extends React.Component {
         onClick={this.onMenuClick}
       >
         {tools.map(tool => (
-          <Menu.Item key={tool.id}>
-            <ButtonTitle
+          <Menu.Item
+            key={tool.id}
+            className={styles.dropdownItem}
+          >
+            <ToolIcon
               toolId={tool.id}
               iconId={tool.iconId}
-              toolName={tool.image}
             />
-            {tool.image}
+            <span className={styles.toolName}>
+              {tool.image}
+            </span>
           </Menu.Item>)
         )}
       </Menu>
