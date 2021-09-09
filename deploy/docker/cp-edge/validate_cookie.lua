@@ -55,8 +55,8 @@ local function split_str(inputstr, sep)
     return t
 end
 
--- Check if request alread contains a cookie "bearer"
-local token = ngx.var.cookie_bearer
+-- Check if request alread contains a cookie or a header named "bearer"
+local token = ngx.var.cookie_bearer or ngx.var.http_bearer
 if token then
 
     -- If cookie present - validate it
