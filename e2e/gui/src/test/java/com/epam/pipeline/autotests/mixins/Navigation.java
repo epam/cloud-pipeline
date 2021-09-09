@@ -28,6 +28,8 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public interface Navigation {
 
@@ -88,6 +90,12 @@ public interface Navigation {
     }
 
     default boolean checkImpersonation() {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (!$(byId("navigation-button-stop-impersonation")).isDisplayed() || attempt < maxAttempts) {
+            sleep(1, SECONDS);
+            attempt += 1;
+        }
         return $(byId("navigation-button-stop-impersonation")).isDisplayed();
     }
 }
