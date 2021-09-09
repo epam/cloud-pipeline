@@ -92,7 +92,7 @@ public interface Navigation {
     default boolean checkImpersonation() {
         int attempt = 0;
         int maxAttempts = 5;
-        while (!$(byId("navigation-button-stop-impersonation")).isDisplayed() || attempt < maxAttempts) {
+        while (!$(byId("navigation-button-stop-impersonation")).isDisplayed() && attempt < maxAttempts) {
             sleep(1, SECONDS);
             attempt += 1;
         }
