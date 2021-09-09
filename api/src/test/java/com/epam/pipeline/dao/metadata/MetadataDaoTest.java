@@ -213,6 +213,28 @@ public class MetadataDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void testShouldSearchMetadataByClassAndKey() {
+        EntityVO entityVO = new EntityVO(ID_1, CLASS_1);
+        Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(DATA_KEY_1, new PipeConfValue(null, DATA_VALUE_1));
+        MetadataEntry metadataToSave = new MetadataEntry();
+        metadataToSave.setEntity(entityVO);
+        metadataToSave.setData(data);
+        metadataDao.registerMetadataItem(metadataToSave);
+
+        EntityVO entityVO2 = new EntityVO(ID_2, CLASS_1);
+        metadataToSave.setEntity(entityVO2);
+        data.get(DATA_KEY_1).setValue(DATA_VALUE_2);
+        metadataToSave.setData(data);
+        metadataDao.registerMetadataItem(metadataToSave);
+
+        List<EntityVO> loadedEntities = metadataDao.searchMetadataByClassAndKey(CLASS_1, DATA_KEY_1);
+        Assert.assertEquals(2, loadedEntities.size());
+        Assert.assertEquals(entityVO, loadedEntities.get(0));
+        Assert.assertEquals(entityVO2, loadedEntities.get(1));
+    }
+
+    @Test
     public void testLoadUniqueAttributes() {
         createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
         createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);

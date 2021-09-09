@@ -65,6 +65,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String deleteMetadataItemKeyQuery;
     private String loadMetadataItemsWithIssuesQuery;
     private String searchMetadataByClassAndKeyValueQuery;
+    private String searchMetadataByClassAndKeyQuery;
     private String loadUniqueValuesFromEntitiesAttributes;
     private String createMetadataDictionary;
     private String loadMetadataKeysQuery;
@@ -142,6 +143,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                         MetadataParameters.getParametersWithArrays(entities),
                         MetadataParameters.getRowMapperWithIssues());
         return items.isEmpty() ? null : items;
+    }
+
+    public List<EntityVO> searchMetadataByClassAndKey(final AclClass entityClass, final String key) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue(MetadataParameters.ENTITY_CLASS.name(), entityClass.name());
+        parameters.addValue(KEY, key);
+        return getNamedParameterJdbcTemplate().query(searchMetadataByClassAndKeyQuery,
+                parameters, MetadataParameters.getEntityVORowMapper());
     }
 
     public List<EntityVO> searchMetadataByClassAndKeyValue(final AclClass entityClass,
@@ -242,6 +251,11 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
         this.loadMetadataKeysQuery = loadMetadataKeysQuery;
+    }
+
+    @Required
+    public void setSearchMetadataByClassAndKeyQuery(String searchMetadataByClassAndKeyQuery) {
+        this.searchMetadataByClassAndKeyQuery = searchMetadataByClassAndKeyQuery;
     }
 
     public enum MetadataParameters {
