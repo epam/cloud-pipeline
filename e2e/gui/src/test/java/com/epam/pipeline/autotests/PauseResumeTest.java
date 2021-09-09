@@ -270,8 +270,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
-        Utils.restartBrowser(C.ROOT_ADDRESS);
-        loginAs(admin);
+        restartBrowser(C.ROOT_ADDRESS);
 
         runsMenu()
                 .log(getLastRunId(), log -> log
