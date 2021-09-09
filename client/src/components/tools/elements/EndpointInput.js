@@ -133,6 +133,17 @@ export default class EndpointInput extends React.Component {
     return false;
   }
 
+  get sameTab () {
+    if (this.state.value) {
+      try {
+        const json = JSON.parse(this.state.value || '');
+        return `${json.sameTab}` === 'true';
+      } catch (__) {
+      }
+    }
+    return false;
+  }
+
   get customDNS () {
     if (this.state.value) {
       try {
@@ -156,7 +167,16 @@ export default class EndpointInput extends React.Component {
     return undefined;
   }
 
-  composeValue = (name, port, additional, isDefault, sslBackend, customDNS) => {
+  composeValue = (options = {}) => {
+    let {
+      name,
+      port,
+      additional,
+      isDefault,
+      sslBackend,
+      customDNS,
+      sameTab
+    } = options;
     if (name === undefined || name === null) {
       name = this.name;
     }
@@ -175,6 +195,9 @@ export default class EndpointInput extends React.Component {
     if (customDNS === undefined || customDNS === null) {
       customDNS = this.customDNS;
     }
+    if (sameTab === undefined || sameTab === null) {
+      sameTab = this.sameTab;
+    }
     const value = {
       name,
       nginx: {
@@ -183,7 +206,8 @@ export default class EndpointInput extends React.Component {
       },
       isDefault,
       sslBackend,
-      customDNS
+      customDNS,
+      sameTab
     };
     let result = '';
     try {
@@ -195,7 +219,7 @@ export default class EndpointInput extends React.Component {
 
   onChangeName = (e) => {
     const name = e.target.value;
-    const value = this.composeValue(name, null, null, null, null, null);
+    const value = this.composeValue({name});
     this.setState({
       value
     }, () => {
@@ -206,7 +230,7 @@ export default class EndpointInput extends React.Component {
 
   onChangePort = (e) => {
     const port = e.target.value;
-    const value = this.composeValue(null, port, null, null, null, null);
+    const value = this.composeValue({port});
     this.setState({
       value
     }, () => {
@@ -216,7 +240,7 @@ export default class EndpointInput extends React.Component {
   };
 
   onChangeDefault = (isDefault) => {
-    const value = this.composeValue(null, null, null, isDefault, null, null);
+    const value = this.composeValue({isDefault});
     this.setState({
       value
     }, () => {
@@ -226,14 +250,7 @@ export default class EndpointInput extends React.Component {
   };
 
   onChangeSSLBackend = (sslBackend) => {
-    const value = this.composeValue(
-      null,
-      null,
-      null,
-      null,
-      sslBackend,
-      null
-    );
+    const value = this.composeValue({sslBackend});
     this.setState({
       value
     }, () => {
@@ -242,15 +259,18 @@ export default class EndpointInput extends React.Component {
     });
   };
 
+  onChangeSameTab = (sameTab) => {
+    const value = this.composeValue({sameTab});
+    this.setState({
+      value
+    }, () => {
+      this.props.onChange && this.props.onChange(value);
+      this.validate();
+    });
+  }
+
   onChangeCustomDNS = (customDNS) => {
-    const value = this.composeValue(
-      null,
-      null,
-      null,
-      null,
-      null,
-      customDNS
-    );
+    const value = this.composeValue({customDNS});
     this.setState({
       value
     }, () => {
@@ -260,7 +280,7 @@ export default class EndpointInput extends React.Component {
   };
 
   onChangeAdditional = (additional) => {
-    const value = this.composeValue(null, null, additional, null, null, null);
+    const value = this.composeValue({additional});
     this.setState({
       value
     }, () => {
@@ -284,6 +304,9 @@ export default class EndpointInput extends React.Component {
     if (this.customDNS) {
       options.push('Sub-Domain');
     }
+    if (this.sameTab) {
+      options.push('Same Tab');
+    }
     if (options.length === 0) {
       options.push('Configure');
     }
@@ -295,6 +318,9 @@ export default class EndpointInput extends React.Component {
           break;
         case 'sslBackend':
           this.onChangeSSLBackend(!this.sslBackend);
+          break;
+        case 'sameTab':
+          this.onChangeSameTab(!this.sameTab);
           break;
         case 'customDNS':
           this.onChangeCustomDNS(!this.customDNS);
@@ -318,6 +344,10 @@ export default class EndpointInput extends React.Component {
         <Menu.Item key="customDNS">
           {this.customDNS ? (<Icon type="check" />) : undefined}
           <span style={{marginLeft: 5}}>Use sub-domain</span>
+        </Menu.Item>
+        <Menu.Item key="sameTab">
+          {this.sameTab ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>Open in same tab</span>
         </Menu.Item>
       </Menu>
     );

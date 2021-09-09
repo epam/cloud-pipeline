@@ -1379,9 +1379,10 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <ul>
                 {
-                  regionedUrls.map(({name, url}, index) =>
+                  regionedUrls.map(({name, url, sameTab}, index) =>
                     <li key={index}>
                       <MultizoneUrl
+                        target={sameTab ? '_top' : '_blank'}
                         configuration={url}
                         style={{display: 'inline-flex'}}
                         dropDownIconStyle={{marginTop: 5}}

@@ -49,13 +49,15 @@ export default class MultizoneUrl extends React.Component {
       dropDownIconStyle,
       configuration,
       getPopupContainer,
-      multiZoneManager
+      multiZoneManager,
+      target = '_blank'
     } = this.props;
     const regions = multiZoneManager.getSortedRegionsWithUrls(configuration);
     if (regions.length === 0) {
       return null;
     }
     const defaultRegion = regions[0];
+    console.log(target, regions, configuration);
     const menu = (
       <Menu
         style={{minWidth: 150, cursor: 'pointer'}}
@@ -71,7 +73,7 @@ export default class MultizoneUrl extends React.Component {
                 />
                 <a
                   className={styles.menuLink}
-                  target="_blank"
+                  target={target}
                   href={url}
                   onClick={this.onUrlClicked}
                 >
@@ -93,7 +95,7 @@ export default class MultizoneUrl extends React.Component {
         style={style}
       >
         <a
-          target="_blank"
+          target={target}
           href={defaultRegion.url}
           className={styles.link}
           onClick={this.onUrlClicked}
@@ -126,6 +128,7 @@ export default class MultizoneUrl extends React.Component {
 }
 MultizoneUrl.propTypes = {
   className: PropTypes.string,
+  target: PropTypes.string,
   style: PropTypes.object,
   dropDownIconStyle: PropTypes.object,
   configuration: PropTypes.object,

@@ -183,10 +183,12 @@ export default class CardsPanel extends React.Component {
                 icon,
                 style,
                 overlay,
+                target,
                 multiZoneUrl,
                 runSSH,
                 runId
               } = action;
+              console.log(action);
               const containerStyle = {
                 flex: 1.0 / array.length,
                 minHeight: ACTION_MIN_HEIGHT,
@@ -214,6 +216,7 @@ export default class CardsPanel extends React.Component {
                     className={styles.actionButton}
                     visibilityChanged={onVisibleChange}
                     style={containerStyle}
+                    target={target}
                     configuration={multiZoneUrl}
                   >
                     <div

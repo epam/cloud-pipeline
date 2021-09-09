@@ -28,6 +28,7 @@ export default function parseRunServiceUrlConfiguration (serviceUrl) {
             url = {
               name: urlName,
               isDefault: urlConfiguration.isDefault,
+              sameTab: urlConfiguration.sameTab,
               url: {}
             };
             result.push(url);
