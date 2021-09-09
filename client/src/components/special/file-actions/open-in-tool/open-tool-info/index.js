@@ -54,14 +54,17 @@ class OpenToolInfo extends React.Component {
     } = this.props;
     const {platform = ''} = tool || {};
     const isWindowsPlatform = /^windows$/i.test(platform.toLowerCase());
-    let filePath;
+    let fullPath;
     if (isWindowsPlatform) {
-      filePath = `Z:\\${storage.name}\\${file.replace(/\//g, '\\')}`;
+      fullPath = `Z:\\${storage.name}\\${file.replace(/\//g, '\\')}`;
     } else {
-      // todo: change path to linux associated
-      filePath = `Z:\\${storage.name}\\${file.replace(/\//g, '\\')}`;
+      const isNFS = (storage.type || '').toUpperCase() === 'NFS';
+      const storagePath = isNFS
+        ? storage.path.replace(new RegExp(/:\//g), '/')
+        : storage.path;
+      fullPath = `${storagePath}/${file}`;
     }
-    return filePath;
+    return fullPath;
   }
 
   onLaunchClick = (event) => {
