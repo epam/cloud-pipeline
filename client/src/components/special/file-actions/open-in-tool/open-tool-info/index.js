@@ -181,7 +181,7 @@ class OpenToolInfo extends React.Component {
     return (
       <div>
         {rowContent.map((chunk, index) => {
-          const [renderFn, argument] = getRenderFn((chunk));
+          const [renderFn, argument] = getRenderFn(chunk);
           return (
             <span key={index}>
               {
