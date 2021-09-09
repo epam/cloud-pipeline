@@ -48,29 +48,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         Configuration.startMaximized = true;
         System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
-        if ("true".equals(C.AUTH_TOKEN)) {
-            Selenide.open(C.ROOT_ADDRESS);
-            Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
-            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-        }
-        Selenide.open(C.ROOT_ADDRESS);
-
-        Robot robot;
-        try {
-            robot = new Robot();
-        } catch (AWTException e) {
-            throw new RuntimeException("Something wrong with robot", e);
-        }
-        robot.keyPress(122);
-        robot.keyRelease(122);
-
-        if ("false".equals(C.AUTH_TOKEN)) {
-            new AuthenticationPageAO()
-                    .login(C.LOGIN)
-                    .password(C.PASSWORD)
-                    .signIn();
-        }
-        sleep(3, SECONDS);
+        login(C.ROOT_ADDRESS);
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
@@ -87,6 +65,11 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         } else {
             this.methodName = method.getName();
         }
+    }
+
+    public void restartBrowser(final String address) {
+        Selenide.close();
+        login(address);
     }
 
     @Override
@@ -128,5 +111,31 @@ public abstract class AbstractBfxPipelineTest implements ITest {
                 break;
         }
         return status;
+    }
+
+    private void login(final String address) {
+        if ("true".equals(C.AUTH_TOKEN)) {
+            Selenide.open(address);
+            Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
+            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+        }
+        Selenide.open(address);
+
+        Robot robot;
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            throw new RuntimeException("Something wrong with robot", e);
+        }
+        robot.keyPress(122);
+        robot.keyRelease(122);
+
+        if ("false".equals(C.AUTH_TOKEN)) {
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(C.PASSWORD)
+                    .signIn();
+        }
+        sleep(3, SECONDS);
     }
 }

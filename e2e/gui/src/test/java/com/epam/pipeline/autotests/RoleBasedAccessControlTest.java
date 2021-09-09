@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Selenide;
+import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -107,9 +108,14 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
-        Utils.restartBrowser(C.ROOT_ADDRESS);
-        final Account wrongAccount = new Account(C.LOGIN, format("123%s", C.PASSWORD));
-        loginAs(wrongAccount);
+        Selenide.close();
+        Selenide.open(C.ROOT_ADDRESS);
+        if ("false".equals(C.AUTH_TOKEN)) {
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(format("123%s", C.PASSWORD))
+                    .signIn();
+        }
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage(singletonList("type=Unauthorized, status=401"));
             Selenide.clearBrowserCookies();
@@ -117,7 +123,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         } else {
             validateErrorPage(singletonList("Incorrect user name or password"));
         }
-        loginAs(admin);
+        restartBrowser(C.ROOT_ADDRESS);
     }
 
     @Test
@@ -286,7 +292,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .waitEndpoint()
                 .attr("href");
         logout();
-        Utils.restartBrowser(endpoint);
+        restartBrowser(endpoint);
         new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
         open(C.ROOT_ADDRESS);
         loginAs(admin);
@@ -303,7 +309,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         open(endpoint);
         screenshot("Endpoint_page");
         new ShellAO().assertPageContains(C.ANONYMOUS_NAME);
-        Utils.restartBrowser(C.ROOT_ADDRESS);
+        restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
     }
 
