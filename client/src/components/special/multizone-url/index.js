@@ -57,7 +57,6 @@ export default class MultizoneUrl extends React.Component {
       return null;
     }
     const defaultRegion = regions[0];
-    console.log(target, regions, configuration);
     const menu = (
       <Menu
         style={{minWidth: 150, cursor: 'pointer'}}

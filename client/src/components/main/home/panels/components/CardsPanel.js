@@ -188,7 +188,6 @@ export default class CardsPanel extends React.Component {
                 runSSH,
                 runId
               } = action;
-              console.log(action);
               const containerStyle = {
                 flex: 1.0 / array.length,
                 minHeight: ACTION_MIN_HEIGHT,
