@@ -19,7 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
 
-public class NaturalOrderComparators {
+public final class NaturalOrderComparators {
     private static final String DIGIT_AND_DECIMAL_REGEX = "[^\\d.]";
 
     private NaturalOrderComparators() {}
