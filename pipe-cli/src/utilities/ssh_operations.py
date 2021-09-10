@@ -89,6 +89,30 @@ class PasswordlessSSHConfig:
         self.local_putty_ssh_host_keys_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'SshHostKeys')
 
 
+class TunnelArgs:
+
+    def __init__(self, parsed_args, region=None):
+        self.host_id = parsed_args.get('host_id')
+        self.local_port = parsed_args.get('local_port')
+        self.remote_port = parsed_args.get('remote_port')
+        self.ssh = parsed_args.get('ssh')
+        self.ssh_path = parsed_args.get('ssh_path')
+        self.ssh_host = parsed_args.get('ssh_host')
+        self.direct = parsed_args.get('direct')
+        self.run_id = parse_run_identifier(self.host_id)
+        self.conn_info = get_conn_info(self.run_id, region) if self.run_id \
+            else get_custom_conn_info(self.host_id, region)
+        self.remote_host = self.ssh_host or 'pipeline-{}'.format(self.host_id)
+
+    def equals(self, host_id, remote_port, ssh, ssh_path, ssh_host, direct):
+        return (str(host_id) == str(self.host_id)) \
+               & (str(remote_port) == str(self.remote_port)) \
+               & (ssh == self.ssh) \
+               & (str(ssh_path) == str(self.ssh_path)) \
+               & (str(ssh_host) == str(self.ssh_host)) \
+               & (direct == self.direct)
+
+
 def setup_paramiko_logging():
     # Log to "null" file by default
     paramiko_log_file = os.getenv("PARAMIKO_LOG_FILE", os.devnull)
@@ -348,10 +372,12 @@ def create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different,
-                  retries, region=None):
+                  retries, region, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
-    check_existing_tunnels(host_id, local_port, remote_port, ssh, ssh_path, ssh_host, direct, timeout_stop,
-                           keep_existing, keep_same, replace_existing, replace_different)
+    check_existing_tunnels(host_id, local_port, remote_port,
+                           ssh, ssh_path, ssh_host, direct, log_file, timeout_stop,
+                           keep_existing, keep_same, replace_existing, replace_different,
+                           region, retries, parse_tunnel_args)
     run_id = parse_run_identifier(host_id)
     if run_id:
         create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
@@ -366,37 +392,35 @@ def create_tunnel(host_id, local_port, remote_port, connection_timeout,
 
 
 def check_existing_tunnels(host_id, local_port, remote_port,
-                           ssh, ssh_path, ssh_host, direct, timeout_stop,
-                           keep_existing, keep_same, replace_existing, replace_different):
+                           ssh, ssh_path, ssh_host, direct, log_file, timeout_stop,
+                           keep_existing, keep_same, replace_existing, replace_different,
+                           region, retries, parse_tunnel_args):
     for tunnel_proc in find_tunnel_procs(run_id=None, local_port=local_port):
         logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, local_port, timeout_stop,
+                                                  replace_different, replace_existing,
+                                                  parse_tunnel_args)
+        if not proc_parsed_args:
+            return
+        tunnel_args = TunnelArgs(proc_parsed_args, region)
+        is_same_tunnel = tunnel_args.equals(host_id, remote_port, ssh, ssh_path, ssh_host, direct)
         if keep_existing:
             logging.info('Skipping tunnel establishing since the tunnel already exists...')
+            if tunnel_args.ssh and has_different_owner(tunnel_proc):
+                configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
+                              tunnel_args.conn_info, tunnel_args.ssh_path, tunnel_args.remote_host,
+                              log_file, retries)
             sys.exit(0)
         if replace_existing:
             logging.info('Stopping existing tunnel...')
             kill_process(tunnel_proc, timeout_stop)
             return
-        proc_args = tunnel_proc.cmdline()
-        proc_remote_port = None
-        proc_ssh = False
-        proc_ssh_path = None
-        proc_ssh_host = None
-        proc_direct = False
-        for i in range(len(proc_args)):
-            proc_remote_port = proc_remote_port or get_parameter_value(proc_args, i, TUNNEL_REMOTE_PORT_ARGS)
-            proc_ssh = proc_ssh or get_flag_value(proc_args, i, TUNNEL_SSH_ARGS)
-            proc_ssh_path = proc_ssh_path or get_parameter_value(proc_args, i, TUNNEL_SSH_PATH_ARGS)
-            proc_ssh_host = proc_ssh_host or get_parameter_value(proc_args, i, TUNNEL_SSH_HOST_ARGS)
-            proc_direct = proc_direct or get_flag_value(proc_args, i, TUNNEL_DIRECT_ARGS)
-        is_same_tunnel = (host_id in proc_args) \
-            & (str(remote_port) == str(proc_remote_port)) \
-            & (ssh == proc_ssh) \
-            & (str(ssh_path) == str(proc_ssh_path)) \
-            & (str(ssh_host) == str(proc_ssh_host)) \
-            & (direct == proc_direct)
         if is_same_tunnel and keep_same:
             logging.info('Skipping tunnel establishing since the same tunnel already exists...')
+            if tunnel_args.ssh and has_different_owner(tunnel_proc):
+                configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
+                              tunnel_args.conn_info, tunnel_args.ssh_path, tunnel_args.remote_host,
+                              log_file, retries)
             sys.exit(0)
         if not is_same_tunnel and replace_different:
             logging.info('Stopping existing tunnel since it has a different configuration...')
@@ -404,6 +428,46 @@ def check_existing_tunnels(host_id, local_port, remote_port,
             return
         raise RuntimeError('{} tunnel already exists on the same local port'
                            .format('Same' if is_same_tunnel else 'Different'))
+
+
+def parse_tunnel_proc_args(proc, local_port, timeout_stop,
+                           replace_different, replace_existing,
+                           parse_start_tunnel_arguments):
+    try:
+        proc_args = proc.cmdline()
+        for i in range(len(proc_args)):
+            if proc_args[i] == 'start':
+                return parse_start_tunnel_arguments(proc_args[i + 1:])
+    except:
+        logging.debug('Existing tunnel process arguments parsing has failed.', exc_info=sys.exc_info())
+        if replace_existing or replace_different:
+            kill_process(proc, timeout_stop)
+        else:
+            raise RuntimeError('Existing tunnel process arguments parsing has failed. '
+                               'Use the following command to stop the existing tunnel and then try again: \n\n'
+                               'pipe tunnel stop -lp {}'.format(local_port))
+    return {}
+
+
+def has_different_owner(proc):
+    import psutil
+    return not (psutil.Process().username() == proc.username())
+
+
+def configure_ssh(run_id, local_port, remote_port,
+                  conn_info, ssh_path, remote_host,
+                  log_file, retries):
+    def _establish_tunnel():
+        pass
+    ssh_keep = True
+    if is_windows():
+        configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
+                                             ssh_keep, remote_host,
+                                             retries, _establish_tunnel)
+    else:
+        configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
+                                           ssh_path, ssh_keep, remote_host, log_file,
+                                           retries, _establish_tunnel)
 
 
 def get_parameter_value(proc_args, arg_index, arg_names):
@@ -536,16 +600,22 @@ def is_tunnel_ready_on_win(tunnel_pid, local_port):
 
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
                                       ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
+    def _establish_tunnel():
+        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
+                                 remote_host, direct, log_level, retries)
     if is_windows():
-        create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                     ssh_keep, remote_host, direct, log_level, retries)
+        configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
+                                             ssh_keep, remote_host,
+                                             retries, _establish_tunnel)
     else:
-        create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                   ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries)
+        configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
+                                           ssh_path, ssh_keep, remote_host, log_file,
+                                           retries, _establish_tunnel)
 
 
-def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                 ssh_keep, remote_host, direct, log_level, retries):
+def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
+                                         ssh_keep, remote_host,
+                                         retries, func):
     logging.info('Configuring putty and openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info)
     if not os.path.exists(passwordless_config.local_openssh_path):
@@ -560,10 +630,9 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
         copy_remote_openssh_public_host_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config)
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
-        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                 remote_host, direct, log_level, retries)
+        func()
     except:
-        logging.exception('Error occurred while trying set up tunnel')
+        logging.exception('Error occurred while trying to configure passwordless ssh')
         raise
     finally:
         if not ssh_keep:
@@ -578,8 +647,9 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
                             passwordless_config.local_host_ed25519_public_key_path)
 
 
-def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                               ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
+def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
+                                       ssh_path, ssh_keep, remote_host, log_file,
+                                       retries, func):
     logging.info('Configuring openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_path)
     if not os.path.exists(passwordless_config.local_openssh_path):
@@ -592,10 +662,9 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
         copy_openssh_public_key_to_remote_authorized_hosts(run_id, retries, passwordless_config)
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
-        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                 remote_host, direct, log_level, retries)
+        func()
     except:
-        logging.exception('Error occurred while trying set up tunnel')
+        logging.exception('Error occurred while trying to configure passwordless ssh')
         raise
     finally:
         if not ssh_keep:
