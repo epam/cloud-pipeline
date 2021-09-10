@@ -34,7 +34,7 @@ import styles from './open-in-tool.css';
 
 const fileToolsRequest = new FileTools();
 
-@inject('dockerRegistries', 'dataStorages')
+@inject('dockerRegistries', 'dataStorages', 'preferences', 'awsRegions')
 @inject(() => ({
   openInFileTools: fileToolsRequest
 }))
@@ -131,6 +131,15 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
+  @computed
+  get toolLaunchingStores () {
+    const {preferences, awsRegions} = this.props;
+    return {
+      preferences,
+      awsRegions
+    };
+  }
+
   getToolById = (id) => {
     return (this.tools || []).find(tool => tool.id === id);
   };
@@ -170,7 +179,7 @@ class OpenInToolAction extends React.Component {
     if (activeTool) {
       const hide = message.loading('Launching...', 0);
       const request = new PipelineRunner();
-      getToolLaunchingOptions(this.props, activeTool)
+      getToolLaunchingOptions(this.toolLaunchingStores, activeTool)
         .then((launchPayload) => {
           return request.send({...launchPayload, force: true});
         })
