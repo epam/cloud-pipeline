@@ -26,21 +26,23 @@ import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';
 
 const NON_NFS_LINUX_PREFIX = 'cloud-data';
+const DEFAULT_TEMPLATE = `
+  {FILE_PATH}
+  Open {APP_NAME}: {APP_LINK:Download remote desktop shortcut}
+  Open copied file path in the {APP_NAME}
+`;
 
 class OpenToolInfo extends React.Component {
   pathElement;
 
   get template () {
     const {template} = this.props;
-    if (template) {
-      const listItems = template
-        .replaceAll(/\\n/g, '\n')
-        .split(/\r?\n/)
-        .map(item => item.trim())
-        .filter(Boolean);
-      return listItems;
-    }
-    return [];
+    const listItems = (DEFAULT_TEMPLATE)
+      .replaceAll(/\\n/g, '\n')
+      .split(/\r?\n/)
+      .map(item => item.trim())
+      .filter(Boolean);
+    return listItems;
   }
 
   get appName () {
@@ -201,64 +203,6 @@ class OpenToolInfo extends React.Component {
     );
   };
 
-  renderCustomTemplate = () => {
-    return (
-      <ul className={styles.list}>
-        {this.template.map((rowTemplate, index) => {
-          return (
-            <li key={index}>
-              {this.renderListItemContent(rowTemplate)}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  };
-
-  renderDefaultTemplate = () => {
-    const {
-      activeJob,
-      activeJobsFetching
-    } = this.props;
-    return (
-      <ul className={styles.list}>
-        <li>
-          {this.renderFilePath()}
-        </li>
-        <li>
-          {
-            activeJobsFetching && (<Icon type="loading" />)
-          }
-          {
-            !activeJobsFetching && !!activeJob && (
-              <ToolJobLink
-                job={activeJob}
-              />
-            )
-          }
-          {
-            !activeJobsFetching && !activeJob && (
-              <span>
-                {`Run personal ${this.appName} instance:`}
-                <Button
-                  size="small"
-                  type="primary"
-                  onClick={this.onLaunchClick}
-                  style={{marginLeft: 5}}
-                >
-                  Launch
-                </Button>
-              </span>
-            )
-          }
-        </li>
-        <li>
-          {`Open copied file path in ${this.appName}`}
-        </li>
-      </ul>
-    );
-  };
-
   render () {
     const {
       tool,
@@ -269,9 +213,15 @@ class OpenToolInfo extends React.Component {
       return null;
     }
     return (
-      this.template.length > 0
-        ? this.renderCustomTemplate()
-        : this.renderDefaultTemplate()
+      <ul className={styles.list}>
+        {this.template.map((rowTemplate, index) => {
+          return (
+            <li key={index}>
+              {this.renderListItemContent(rowTemplate)}
+            </li>
+          );
+        })}
+      </ul>
     );
   }
 }
