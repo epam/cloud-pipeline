@@ -24,11 +24,8 @@ from watchdog.events import FileSystemEventHandler, FileMovedEvent
 from watchdog.observers.api import ObservedWatch
 
 NEWLINE = '\n'
-
 COMMA = ','
-EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 3))
-TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre').split(COMMA)
-MNT_LISTING_COMMAND = 'df -t {} --output=fstype,source,target'
+MNT_LISTING_COMMAND = 'df -t {} --output=source,target'
 DT_FORMAT = '%Y-%m-%d %H:%M:%S:%f'
 
 CREATE_EVENT = 'c'
@@ -36,6 +33,10 @@ MODIFY_EVENT = 'm'
 MOVED_FROM_EVENT = 'mf'
 MOVED_TO_EVENT = 'mt'
 DELETE_EVENT = 'd'
+
+EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 1000))
+MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_SEC', 10))
+TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre').split(COMMA)
 
 
 def log(message):
@@ -191,11 +192,30 @@ class S3DumpingEventHandler(FileSystemEventHandler):
 
 class NFSMountWatcher:
 
-    def __init__(self):
+    def __init__(self, target_paths=None):
         self._target_path_mapping = dict()
         self._event_handler = S3DumpingEventHandler()
         self._event_observer = InotifyObserver()
-        self._update_target_mount_points()
+        if target_paths:
+            self._target_paths = target_paths.split(COMMA)
+            self._update_static_paths_mapping()
+        else:
+            self._target_paths = None
+            self._update_target_mount_points()
+
+    def _process_active_target_path(self, mnt_dest, mnt_src):
+        if mnt_dest not in self._target_path_mapping:
+            self._add_new_mount_watcher(mnt_dest, mnt_src)
+        else:
+            self._update_existing_mount_watcher(mnt_dest, mnt_src)
+
+    def _update_static_paths_mapping(self):
+        log('Observing FS events on [{}] target paths specified...'.format(len(self._target_paths)))
+        active_mounts = self._get_target_mount_points()
+        for mnt_dest in self._target_paths:
+            mnt_src = active_mounts.get(mnt_dest, mnt_dest)
+            self._process_active_target_path(mnt_dest, mnt_src)
+        self._event_handler.update_target_mounts_mappings(self._target_path_mapping)
 
     def _update_target_mount_points(self):
         log('Checking active mounts...')
@@ -203,10 +223,7 @@ class NFSMountWatcher:
         log('Found [{}] active mounts'.format(len(latest_mounts_mapping)))
         self._remove_unmounted_watchers(latest_mounts_mapping)
         for mnt_dest, mnt_src in latest_mounts_mapping.items():
-            if mnt_dest not in self._target_path_mapping:
-                self._add_new_mount_watcher(mnt_dest, mnt_src)
-            else:
-                self._update_existing_mount_watcher(mnt_dest, mnt_src)
+            self._process_active_target_path(mnt_dest, mnt_src)
         self._event_handler.update_target_mounts_mappings(self._target_path_mapping)
 
     def _update_existing_mount_watcher(self, mnt_dest, mnt_src):
@@ -258,8 +275,8 @@ class NFSMountWatcher:
                 line = out[index]
                 if line.strip():
                     mount_point_description = re.split('\\s+', line)
-                    mount_source = mount_point_description[1]
-                    mount_point = mount_point_description[2]
+                    mount_source = mount_point_description[0]
+                    mount_point = mount_point_description[1]
                     mount_points[mount_point] = mount_source
         return mount_points
 
@@ -268,8 +285,12 @@ class NFSMountWatcher:
         self._event_observer.start()
         try:
             while True:
-                time.sleep(10)
-                self._update_target_mount_points()
+                time.sleep(MNT_RESYNC_TIMEOUT_SEC)
+                if self._target_paths:
+                    self._update_static_paths_mapping()
+                else:
+                    self._update_target_mount_points()
+
         finally:
             self._event_observer.stop()
             self._event_observer.join()
@@ -277,4 +298,4 @@ class NFSMountWatcher:
 
 
 if __name__ == '__main__':
-    NFSMountWatcher().start()
+    NFSMountWatcher(target_paths=os.getenv('CP_CAP_NFS_OBSERVER_TARGET_PATHS')).start()
