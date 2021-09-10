@@ -80,9 +80,9 @@ class UserIntegrityCheck extends React.Component {
     } = this.state;
     return (users || [])
       .filter(user => {
-        const blockedFilter = user.blocked || !filters.includes(FILTERS.blocked);
-        const neverLoggedInFilter = !user.firstLoginDate ||
-          !filters.includes(FILTERS.neverLoggedIn);
+        const blockedFilter = !filters.includes(FILTERS.blocked) || !user.blocked;
+        const neverLoggedInFilter = !filters.includes(FILTERS.neverLoggedIn) ||
+          user.firstLoginDate;
         return blockedFilter && neverLoggedInFilter;
       });
   }
@@ -694,7 +694,7 @@ class UserIntegrityCheck extends React.Component {
         className={styles.filters}
       >
         <span className={styles.label}>
-          Filter users:
+          Exclude users:
         </span>
         <Select
           style={{flex: 1}}
