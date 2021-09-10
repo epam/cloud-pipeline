@@ -73,7 +73,7 @@ class FrozenMount(AbstractMount):
         mount_bin = self.get_mount_executable(config)
         mount_script = self.create_mount_script(os.path.dirname(Config.get_home_dir_config_path()), mount_bin,
                                                 mountpoint, options, additional_arguments, mode)
-        return ['bash', mount_script]
+        return [mount_script]
 
     def create_mount_script(self, config_folder, mount_bin, mountpoint, options, additional_arguments, mode):
         mount_cmd = '%s --mountpoint %s %s --mode %d' % (mount_bin, mountpoint, ' '.join(additional_arguments), mode)

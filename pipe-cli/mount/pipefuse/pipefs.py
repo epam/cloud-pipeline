@@ -138,8 +138,9 @@ class PipeFS(Operations):
                 'st_size': props.size,
                 'st_nlink': 1,
                 'st_mode': mode | self.mode,
-                'st_gid': os.getgid(),
-                'st_uid': os.getuid(),
+                //TODO: fix
+                'st_gid': 111,
+                'st_uid': 111,
                 'st_atime': time.mktime(datetime.datetime.now(tz=tzlocal()).timetuple())
             }
             if props.mtime:

@@ -16,6 +16,7 @@ import argparse
 import errno
 import logging
 import os
+import platform
 import sys
 import traceback
 
@@ -30,7 +31,11 @@ else:
     source_path = os.path.dirname(__file__)
     libfuse_version = '2.9.2'
 
-libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.%s' % libfuse_version))
+if platform.system() == 'Windows':
+    libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/dokanfuse1.dll'))
+else:
+    libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.%s' % libfuse_version))
+
 if os.path.exists(libfuse_path):
     os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
