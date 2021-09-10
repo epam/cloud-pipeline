@@ -1,3 +1,18 @@
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from collections import OrderedDict
 import datetime
 import errno
 import os
@@ -81,14 +96,14 @@ class Event:
     def __init__(self, path, event_type):
         self.timestamp = current_utc_time_millis()
         self.path = path
-        self.event_type = event_type[:1]
+        self.event_type = event_type
 
 
 class S3DumpingEventHandler(FileSystemEventHandler):
 
     def __init__(self):
         super(FileSystemEventHandler, self).__init__()
-        self._active_events = dict()
+        self._active_events = OrderedDict()
         self._target_path_mapping = dict()
         self._activity_logging_local_dir = self._configure_logging_local_dir()
         self._activity_logging_bucket_dir = self._configure_logging_bucket_dir()
@@ -120,7 +135,7 @@ class S3DumpingEventHandler(FileSystemEventHandler):
         return local_logging_dir
 
     def _convert_event_to_str(self, event):
-        for mnt_src, mnt_dest in self._target_path_mapping.items():
+        for mnt_dest, mnt_src in self._target_path_mapping.items():
             path = event.path
             if path.startswith(mnt_dest):
                 return COMMA.join([str(event.timestamp),
@@ -154,7 +169,7 @@ class S3DumpingEventHandler(FileSystemEventHandler):
                 self._insert_event(event.dest_path, MOVED_TO_EVENT)
             # TODO check if filtering could be applied at observer creation
             elif event.event_type != 'closed':
-                self._insert_event(event.src_path, event.event_type)
+                self._insert_event(event.src_path, event.event_type[:1])
 
     def dump_to_storage(self):
         if len(self._active_events) == 0:
@@ -187,34 +202,32 @@ class NFSMountWatcher:
         latest_mounts_mapping = self._get_target_mount_points()
         log('Found [{}] active mounts'.format(len(latest_mounts_mapping)))
         self._remove_unmounted_watchers(latest_mounts_mapping)
-        for mnt_src, mnt_dest in latest_mounts_mapping.items():
-            if mnt_src not in self._target_path_mapping:
+        for mnt_dest, mnt_src in latest_mounts_mapping.items():
+            if mnt_dest not in self._target_path_mapping:
                 self._add_new_mount_watcher(mnt_dest, mnt_src)
             else:
                 self._update_existing_mount_watcher(mnt_dest, mnt_src)
         self._event_handler.update_target_mounts_mappings(self._target_path_mapping)
 
     def _update_existing_mount_watcher(self, mnt_dest, mnt_src):
-        active_watching_mount = self._target_path_mapping[mnt_src]
-        if active_watching_mount != mnt_dest:
-            log('Updating observer: [{}] mount-point changed from [{}] to [{}]'.format(mnt_src,
-                                                                                         active_watching_mount,
-                                                                                         mnt_dest))
-            if self.try_to_remove_path_from_observer(active_watching_mount) \
-                    and self.try_to_add_path_to_observer(mnt_dest):
-                self._target_path_mapping[mnt_src] = mnt_dest
+        active_mount_src = self._target_path_mapping[mnt_dest]
+        if active_mount_src != mnt_src:
+            log('Updating observer: [{}] mount-source changed from [{}] to [{}]'.format(mnt_dest,
+                                                                                        active_mount_src,
+                                                                                        mnt_src))
+            self._target_path_mapping[mnt_dest] = mnt_src
 
     def _add_new_mount_watcher(self, mnt_dest, mnt_src):
         log('Assigning [{}] to the observer'.format(mnt_dest))
         if self.try_to_add_path_to_observer(mnt_dest):
-            self._target_path_mapping[mnt_src] = mnt_dest
+            self._target_path_mapping[mnt_dest] = mnt_src
 
     def _remove_unmounted_watchers(self, latest_mounts_mapping):
-        for mnt_src, mnt_dest in self._target_path_mapping.items():
-            if mnt_src not in latest_mounts_mapping:
+        for mnt_dest, mnt_src in self._target_path_mapping.items():
+            if mnt_dest not in latest_mounts_mapping:
                 log('Removing observer from [{}]'.format(mnt_dest))
                 if self.try_to_remove_path_from_observer(mnt_dest):
-                    self._target_path_mapping.pop(mnt_src)
+                    self._target_path_mapping.pop(mnt_dest)
 
     def try_to_remove_path_from_observer(self, mnt_dest):
         try:
@@ -247,7 +260,7 @@ class NFSMountWatcher:
                     mount_point_description = re.split('\\s+', line)
                     mount_source = mount_point_description[1]
                     mount_point = mount_point_description[2]
-                    mount_points[mount_source] = mount_point
+                    mount_points[mount_point] = mount_source
         return mount_points
 
     def start(self):
