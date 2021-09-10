@@ -25,6 +25,8 @@ import {
 import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';
 
+const NON_NFS_LINUX_PREFIX = 'cloud-data';
+
 class OpenToolInfo extends React.Component {
   pathElement;
 
@@ -61,7 +63,7 @@ class OpenToolInfo extends React.Component {
       const isNFS = (storage.type || '').toUpperCase() === 'NFS';
       const storagePath = isNFS
         ? storage.path.replace(new RegExp(/:\//g), '/')
-        : storage.path;
+        : `/${NON_NFS_LINUX_PREFIX}/${storage.path}`;
       fullPath = `${storagePath}/${file}`;
     }
     return fullPath;
