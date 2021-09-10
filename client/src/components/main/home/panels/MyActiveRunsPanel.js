@@ -172,8 +172,8 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                   stop: stopRun(this, this.props.refresh),
                   terminate: terminateRun(this, this.props.refresh),
                   run: this.reRun,
-                  openUrl: url => {
-                    window.open(url, '_blank').focus();
+                  openUrl: (url, target = '_blank') => {
+                    window.open(url, target).focus();
                   },
                   ssh: async run => {
                     const runSSH = pipelineRunSSHCache.getPipelineRunSSH(run.id);

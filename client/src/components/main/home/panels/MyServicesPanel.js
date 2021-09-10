@@ -166,14 +166,14 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           array.push(...urls);
           return array;
         }, []);
-      const navigate = ({url}) => {
+      const navigate = ({url, sameTab}) => {
         if (typeof url === 'string') {
-          window.open(url, '_blank').focus();
+          window.open(url, sameTab ? '_top' : '_blank').focus();
         }
         if (typeof url === 'object') {
           const defaultRegion = this.props.multiZoneManager.getDefaultURLRegion(url);
           if (defaultRegion && url.hasOwnProperty(defaultRegion)) {
-            window.open(url[defaultRegion], '_blank').focus();
+            window.open(url[defaultRegion], sameTab ? '_top' : '_blank').focus();
           }
         }
       };

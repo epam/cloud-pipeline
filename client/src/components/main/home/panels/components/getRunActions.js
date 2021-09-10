@@ -47,7 +47,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
               target: regionedUrl.sameTab ? '_top' : '_blank',
               multiZoneUrl: regionedUrl.url,
               action: url && callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(url)
+                ? () => callbacks.openUrl(url, regionedUrl.sameTab ? '_top' : '_blank')
                 : undefined
             });
           } else {
