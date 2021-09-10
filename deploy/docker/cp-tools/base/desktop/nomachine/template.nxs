@@ -49,8 +49,8 @@
   <option key="Last connection time" value="" />
   <option key="Try to wake up server when it is powered off" value="false" />
   <option key="Link quality" value="5" />
-  <option key="Platform of the last connection" value="Linux" />
-  <option key="Node primary display resolution" value="800x600" />
+  <option key="Platform of the last connection" value="" />
+  <option key="Node primary display resolution" value="" />
   <option key="Node UUID" value="" />
   <option key="Physical desktop resize mode" value="scaled" />
   <option key="Session resize mode" value="" />
