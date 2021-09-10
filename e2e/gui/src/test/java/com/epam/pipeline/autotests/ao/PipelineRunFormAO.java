@@ -277,6 +277,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
                 .count() == 1;
+        if (messageExist) {
+            screenshot("check_launch_message" + Utils.randomSuffix());
+        }
         $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
                 .find(button("Cancel"))
                 .shouldBe(enabled)

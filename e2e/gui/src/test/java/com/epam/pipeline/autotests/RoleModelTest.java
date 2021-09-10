@@ -608,15 +608,19 @@ public class RoleModelTest
     @Test(priority = 24)
     @TestCase({"EPMCMBIBPC-572"})
     public void checkToolsPageByReadOnlyUser() {
+        final boolean[] registryExistPermission = new boolean[1];
         try {
             logoutIfNeeded();
             loginAs(admin);
             List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-            tools().editRegistry(registry, edition ->
-                    edition.permissions()
-                            .deleteIfPresent(userWithoutCompletedRuns.login)
-                            .deleteIfPresent(userRoleGroup)
-                            .closeAll());
+            tools().editRegistry(registry, edition -> {
+                PermissionTabAO permissions = edition.permissions();
+                registryExistPermission[0] = permissions.checkPermissionExistence(userRoleGroup);
+                permissions
+                        .deleteIfPresent(userWithoutCompletedRuns.login)
+                        .deleteIfPresent(userRoleGroup)
+                        .closeAll();
+            });
             addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
             givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
             logout();
@@ -630,15 +634,17 @@ public class RoleModelTest
         } finally {
             logoutIfNeeded();
             loginAs(admin);
-            tools().editRegistry(registry, edition ->
-                    edition.permissions()
-                            .addNewGroup(userRoleGroup)
-                            .selectByName(userRoleGroup)
-                            .showPermissions()
-                            .set(READ, ALLOW)
-                            .set(WRITE, DENY)
-                            .set(EXECUTE, ALLOW)
-                            .closeAll());
+            if (registryExistPermission[0]) {
+                tools().editRegistry(registry, edition ->
+                        edition.permissions()
+                                .addNewGroup(userRoleGroup)
+                                .selectByName(userRoleGroup)
+                                .showPermissions()
+                                .set(READ, ALLOW)
+                                .set(WRITE, DENY)
+                                .set(EXECUTE, ALLOW)
+                                .closeAll());
+            }
         }
     }
 
