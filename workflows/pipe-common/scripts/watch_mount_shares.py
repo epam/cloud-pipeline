@@ -267,10 +267,13 @@ class NFSMountWatcher:
             self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
             return True
         except OSError as e:
-            log('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, e.message))
+            log('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, e.message))
             return False
 
     def try_to_add_path_to_observer(self, mnt_dest):
+        if not os.path.exists(mnt_dest):
+            log('Target path [{}] doesn\'t exist, skipping...'.format(mnt_dest))
+            return False
         try:
             self._event_observer.schedule(self._event_handler, mnt_dest, recursive=True)
             return True
