@@ -1735,6 +1735,24 @@ fi
 
 ######################################################
 
+######################################################
+# Enable NFS observer
+######################################################
+
+echo "Setup NFS events observer"
+echo "-"
+
+if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
+    echo "NFS events observer is not requested"
+else
+    inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
+    sysctl -w fs.inotify.max_user_watches=$inotify_watchers
+    sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
+    nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/watch_mount_shares.py > $LOG_DIR/.nohup.nfswatcher.log 2>&1 &
+fi
+
+######################################################
+
 
 ######################################################
 echo Executing task
