@@ -14,6 +14,7 @@
 
 from collections import OrderedDict
 import datetime
+from distutils.spawn import find_executable
 import errno
 import os
 import re
@@ -27,6 +28,8 @@ NEWLINE = '\n'
 COMMA = ','
 MNT_LISTING_COMMAND = 'df -t {} --output=source,target'
 DT_FORMAT = '%Y-%m-%d %H:%M:%S:%f'
+PIPE_CP_TEMPLATE = 'pipe storage cp \'{}\' \'{}\''
+AWS_CP_TEMPLATE = 'aws s3 cp \'{}\' \'{}\' --only-show-errors --sse aws:kms'
 
 CREATE_EVENT = 'c'
 MODIFY_EVENT = 'm'
@@ -100,7 +103,7 @@ class Event:
         self.event_type = event_type
 
 
-class S3DumpingEventHandler(FileSystemEventHandler):
+class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
     def __init__(self):
         super(FileSystemEventHandler, self).__init__()
@@ -108,11 +111,24 @@ class S3DumpingEventHandler(FileSystemEventHandler):
         self._target_path_mapping = dict()
         self._activity_logging_local_dir = self._configure_logging_local_dir()
         self._activity_logging_bucket_dir = self._configure_logging_bucket_dir()
+        self._transfer_template = self._get_available_transfer_template()
+
+    @staticmethod
+    def _get_available_transfer_template():
+        if find_executable('pipe'):
+            transfer_template = PIPE_CP_TEMPLATE
+        elif find_executable('aws'):
+            transfer_template = AWS_CP_TEMPLATE
+        else:
+            raise RuntimeError(
+                'Unable to start CloudBucketDumpingEventHandler: no suitable command for transfer available')
+        log('[{}] will be used as a transfer template'.format(transfer_template))
+        return transfer_template
 
     @staticmethod
     def _configure_logging_bucket_dir():
         bucket_dir = os.path.join(os.getenv('CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET'),
-                                  S3DumpingEventHandler._get_service_name())
+                                  CloudBucketDumpingEventHandler._get_service_name())
         log('Destination bucket location is [{}]'.format(bucket_dir))
         return bucket_dir
 
@@ -184,7 +200,7 @@ class S3DumpingEventHandler(FileSystemEventHandler):
             outfile.write(NEWLINE.join(map(self._convert_event_to_str, sorted_events)))
         bucket_file = os.path.join(self._activity_logging_bucket_dir, filename)
         log('Dumping events to {} '.format(bucket_file))
-        _, result = execute_command('pipe storage cp \'{}\' \'{}\''.format(local_file, bucket_file))
+        _, result = execute_command(self._transfer_template.format(local_file, bucket_file))
         if result:
             log('Cleaning activity list')
             self._active_events.clear()
@@ -194,7 +210,7 @@ class NFSMountWatcher:
 
     def __init__(self, target_paths=None):
         self._target_path_mapping = dict()
-        self._event_handler = S3DumpingEventHandler()
+        self._event_handler = CloudBucketDumpingEventHandler()
         self._event_observer = InotifyObserver()
         if target_paths:
             self._target_paths = target_paths.split(COMMA)
