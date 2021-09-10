@@ -81,3 +81,21 @@ umask ${CP_DAV_UMASK:-0002}
 
 # Start Apache in the foreground
 ${APACHE_HOME}/bin/apachectl -DFOREGROUND
+
+if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
+  export PIPE_COMMON_DISTRIBUTION_URL="${PIPE_COMMON_DISTRIBUTION_URL:-https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/pipe-common.tar.gz}"
+  download_file "${PIPE_COMMON_DISTRIBUTION_URL}"
+  if [ $? -eq 0 ]; then
+        echo "'pipe-common' package was downloaded successfully."
+        tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
+        mv watch_mount_shares.py $SYNC_HOME && \
+        rm -rf pipe-common.tar.gz
+
+        inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
+        sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
+        sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
+        nohup python $SYNC_HOME/watch_mount_shares.py 1>/dev/null 2>$SYNC_LOG_DIR/.nohup.nfswatcher.log &
+  else
+    echo "Unable to retrieve 'pipe-common' package"
+  fi
+fi
