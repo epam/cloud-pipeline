@@ -37,7 +37,7 @@ class OpenToolInfo extends React.Component {
 
   get template () {
     const {template} = this.props;
-    const listItems = (DEFAULT_TEMPLATE)
+    const listItems = (template || DEFAULT_TEMPLATE)
       .replaceAll(/\\n/g, '\n')
       .split(/\r?\n/)
       .map(item => item.trim())
