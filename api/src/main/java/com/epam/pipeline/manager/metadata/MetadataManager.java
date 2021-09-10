@@ -295,8 +295,12 @@ public class MetadataManager {
 
     public List<EntityVO> searchMetadataByClassAndKeyValue(final AclClass entityClass, final String key,
                                                            final String value) {
-        Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
-        return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+        if (value == null) {
+            return metadataDao.searchMetadataByClassAndKey(entityClass, key);
+        } else {
+            final Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
+            return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

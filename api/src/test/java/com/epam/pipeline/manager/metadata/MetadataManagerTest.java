@@ -192,6 +192,30 @@ public class MetadataManagerTest extends AbstractSpringTest {
                    CoreMatchers.is(Collections.singletonList(VALUE_2)));
     }
 
+    @Test
+    @Transactional
+    public void testThatEntityCouldBeSearchedByClassAndKeyOnly() {
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
+
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+
+        List<EntityVO> result = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, VALUE_2);
+
+        Assert.assertTrue(result.isEmpty());
+
+        result = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, null);
+
+        Assert.assertFalse(result.isEmpty());
+    }
+
     @Test(expected = MetadataReadingException.class)
     public void metadataFileShouldFailWithoutHeader() throws IOException {
         String exampleContent = simpleContent("\t", false);
