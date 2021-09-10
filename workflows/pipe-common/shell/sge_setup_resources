@@ -74,13 +74,6 @@ fi
 _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
 
-if (( _NODE_GPUS_COUNT > 0 ))
-then
-    pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
-else
-    pipe_log_info "No GPUs found... GridEngine GPU configuration will be skipped" "$_SGE_RESOURCES_SETUP_TASK"
-fi
-
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
 pipe_log_info "$_NODE_RAM_COUNT RAM found" "$_SGE_RESOURCES_SETUP_TASK"
@@ -108,11 +101,9 @@ pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_
 # If it is set to "YES", the resource request is multiplied by "slots"
 # So we if we run "qsub -pe local 3 -l n_cpu=3", it will require 3*3=9 n_cpu per job
 # For the "ram" resource, keeping it as "YES", as it makes sense to request this resource per slot
-if (( _NODE_GPUS_COUNT > 0 ))
-then
-    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB"
-fi
 
+# For the CPU-only nodes, we still add "gpus" resource with value "0", so that the scripts do not fail if the request "-l gpus=N"
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB"
 configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES"
 configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB"
 
