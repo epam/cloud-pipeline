@@ -15,6 +15,8 @@
  */
 
 import {action, observable} from 'mobx';
+import wrapRequest from '../open-in-halo/wrap-request';
+import MetadataSearch from '../../../../models/metadata/MetadataSearch';
 import MetadataMultiLoad from '../../../../models/metadata/MetadataMultiLoad';
 
 const METADATA_KEY = 'open-in-files';
@@ -35,27 +37,33 @@ class FileTools {
   promise = undefined;
 
   @action
-  fetch (toolsIds) {
+  fetch () {
     if (this.promise) {
       return this.promise;
     }
     this.promise = new Promise((resolve) => {
-      const payload = toolsIds.map(id => ({
-        entityId: id,
-        entityClass: 'TOOL'
-      }));
-      const request = new MetadataMultiLoad(payload);
+      const request = new MetadataSearch(
+        'TOOL',
+        METADATA_KEY,
+        ''
+      );
       request
         .fetch()
         .then(() => {
-          if (request.loaded) {
-            this.tools = (request.value || [])
-              .filter(value => value.data && value.data[METADATA_KEY])
-              .map((value) => ({
-                toolId: value.entity.entityId,
-                openInFiles: getFileTypes(value.data[METADATA_KEY]),
-                template: (value.data[METADATA_TEMPLATE] || {}).value
-              }));
+          if (request.value && request.value.length > 0) {
+            const requestBody = request.value.map(v => v);
+            return wrapRequest(new MetadataMultiLoad(requestBody));
+          } else {
+            throw new Error('File tools not found');
+          }
+        })
+        .then(toolRequest => {
+          if (toolRequest.loaded) {
+            this.tools = (toolRequest.value || []).map((value) => ({
+              toolId: value.entity.entityId,
+              openInFiles: getFileTypes(value.data[METADATA_KEY]),
+              template: (value.data[METADATA_TEMPLATE] || {}).value
+            }));
             this.loaded = true;
             this.error = undefined;
           } else {

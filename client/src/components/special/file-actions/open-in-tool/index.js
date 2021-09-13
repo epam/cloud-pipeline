@@ -55,7 +55,7 @@ class OpenInToolAction extends React.Component {
   componentDidMount () {
     const {dockerRegistries, openInFileTools} = this.props;
     dockerRegistries.fetchIfNeededOrWait().then(() => {
-      openInFileTools.fetch(this.tools.map(tool => tool.id));
+      openInFileTools.fetch();
     });
   }
 
