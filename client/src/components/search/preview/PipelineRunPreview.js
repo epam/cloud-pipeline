@@ -425,9 +425,10 @@ export default class PipelineRunPreview extends React.Component {
                   </td>
                   <td style={valueStyle}>
                     {
-                      regionedUrls.map(({name, url}, index) =>
+                      regionedUrls.map(({name, url, sameTab}, index) =>
                         <MultizoneUrl
                           key={index}
+                          target={sameTab ? '_top' : '_blank'}
                           configuration={url}
                         >
                           {name}

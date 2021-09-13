@@ -44,9 +44,10 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
             actions.push({
               title: 'OPEN',
               icon: 'export',
+              target: regionedUrl.sameTab ? '_top' : '_blank',
               multiZoneUrl: regionedUrl.url,
               action: url && callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(url)
+                ? () => callbacks.openUrl(url, regionedUrl.sameTab ? '_top' : '_blank')
                 : undefined
             });
           } else {
@@ -54,9 +55,12 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
               <div>
                 <ul>
                   {
-                    regionedUrls.map(({name, url}, index) =>
+                    regionedUrls.map(({name, url, sameTab}, index) =>
                       <li key={index} style={{margin: 4}}>
-                        <MultizoneUrl configuration={url}>
+                        <MultizoneUrl
+                          target={sameTab ? '_top' : '_blank'}
+                          configuration={url}
+                        >
                           {name}
                         </MultizoneUrl>
                       </li>

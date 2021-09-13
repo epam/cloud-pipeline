@@ -37,7 +37,7 @@ except ImportError:
 
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
-SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint} }}'
+SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint}, "sameTab": {is_same_tab} }}'
 EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
@@ -453,6 +453,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                         is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
                                         is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
+                                        is_same_tab = str(endpoint["sameTab"]).lower() if "sameTab" in endpoint.keys() else 'false'
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -501,6 +502,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                                         "shared_groups_sids": shared_groups_sids,
                                                                         "service_name": service_name,
                                                                         "is_default_endpoint": is_default_endpoint,
+                                                                        "is_same_tab": is_same_tab,
                                                                         "is_ssl_backend": is_ssl_backend,
                                                                         "edge_num": i,
                                                                         "edge_location": edge_location,
@@ -647,6 +649,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                                           edge_port=str(edge_service_port),
                                           service_name=service_spec["service_name"],
                                           is_default_endpoint=service_spec["is_default_endpoint"],
+                                          is_same_tab=service_spec["is_same_tab"],
                                           external_schema=edge_service_external_schema)
         run_id = service_spec["run_id"]
         if run_id in service_url_dict:

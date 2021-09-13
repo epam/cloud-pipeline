@@ -183,6 +183,7 @@ export default class CardsPanel extends React.Component {
                 icon,
                 style,
                 overlay,
+                target,
                 multiZoneUrl,
                 runSSH,
                 runId
@@ -214,6 +215,7 @@ export default class CardsPanel extends React.Component {
                     className={styles.actionButton}
                     visibilityChanged={onVisibleChange}
                     style={containerStyle}
+                    target={target}
                     configuration={multiZoneUrl}
                   >
                     <div

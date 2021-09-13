@@ -207,7 +207,14 @@ class OpenInHaloAction extends React.Component {
           </span>
           <br />
           <div className={styles.code}>
-            <div className={styles.part} style={{flex: 1}}>
+            <div
+              className={styles.part}
+              style={{
+                flex: 1,
+                overflowX: 'auto',
+                overflowY: 'hidden'
+              }}
+            >
               <pre ref={initializePathElement}>
                 {filePath}
               </pre>

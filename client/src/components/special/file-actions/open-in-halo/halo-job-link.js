@@ -132,6 +132,7 @@ class HaloJobLink extends React.Component {
             display: 'inline-flex',
             marginLeft: 5
           }}
+          target={this.url.sameTab ? '_top' : '_blank'}
           configuration={this.url.url}
           dropDownIconStyle={{marginTop: 2}}
         >
