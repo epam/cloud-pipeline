@@ -109,10 +109,11 @@ class ToolsSelector extends React.Component {
       tools,
       className,
       style,
-      titleStyle
+      titleStyle,
+      singleMode
     } = this.props;
     return (
-      tools.length === 1 ? (
+      singleMode || tools.length === 1 ? (
         <span
           className={classNames(styles.link, className)}
           style={style}
@@ -153,7 +154,8 @@ ToolsSelector.propTypes = {
   style: PropTypes.object,
   titleStyle: PropTypes.object,
   onSelectTool: PropTypes.func,
-  tools: PropTypes.arrayOf(PropTypes.object)
+  tools: PropTypes.arrayOf(PropTypes.object),
+  singleMode: PropTypes.bool
 };
 
 export default ToolsSelector;

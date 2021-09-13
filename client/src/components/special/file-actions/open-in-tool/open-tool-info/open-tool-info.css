@@ -16,8 +16,11 @@
 
 .list {
   list-style: disc outside none;
-  margin-left: 1em;
-  min-width: 360px;
+  padding-right: 1em;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .list li {
@@ -35,7 +38,7 @@
 }
 
 .list .code .part {
-  height: 30px;
+  max-height: 40px;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -49,7 +52,7 @@
   flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0 10px;
+  padding: 4px 10px;
 }
 
 .list .code .button {

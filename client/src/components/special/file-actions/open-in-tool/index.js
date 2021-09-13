@@ -21,11 +21,16 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import {
   message,
-  Popover
+  Popover,
+  Tabs,
+  Button,
+  Row,
+  Icon
 } from 'antd';
 import ToolsSelector from './tools-selector';
 import OpenToolInfo from './open-tool-info';
 import FileTools from './file-tools';
+import ToolImage from '../../../../models/tools/ToolImage';
 import fetchActiveJobs from '../open-in-halo/fetch-active-jobs';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import getToolLaunchingOptions
@@ -210,12 +215,10 @@ class OpenInToolAction extends React.Component {
     }
   };
 
-  openModal = (toolId) => {
+  openModal = () => {
     this.setState({
-      modalVisible: true,
-      activeJobsFetching: true,
-      activeJob: undefined
-    }, this.fetchJobs);
+      modalVisible: true
+    });
   };
 
   closeModal = () => {
@@ -225,11 +228,23 @@ class OpenInToolAction extends React.Component {
     });
   };
 
-  onSelectTool = toolId => {
+  onSelectTool = (toolId) => {
     const tool = this.getToolById(toolId);
     if (tool) {
-      this.setState({activeTool: tool}, () => this.openModal());
+      this.setState({
+        activeTool: this.getToolById(toolId),
+        activeJobsFetching: true,
+        activeJob: undefined
+      }, this.fetchJobs);
     }
+  };
+
+  clearToolSelection = () => {
+    this.setState({
+      activeTool: undefined,
+      activeJob: undefined,
+      activeJobsFetching: false
+    });
   };
 
   renderToolInfo = () => {
@@ -252,6 +267,88 @@ class OpenInToolAction extends React.Component {
     );
   };
 
+  renderModalContent = () => {
+    const {activeTool} = this.state;
+    const TABS = {
+      toolsList: 'toolsList',
+      launchTool: 'launchTool'
+    };
+    const getActiveKey = () => {
+      if (!activeTool && this.filteredFileTools.length > 1) {
+        return TABS.toolsList;
+      }
+      return TABS.launchTool;
+    };
+    return (
+      <div>
+        <Tabs
+          tabPosition="top"
+          tabBarStyle={{display: 'none'}}
+          style={{height: '100%', width: '100%'}}
+          activeKey={getActiveKey()}
+        >
+          <Tabs.TabPane
+            key={TABS.toolsList}
+            tab={TABS.toolsList}
+          >
+            <Row
+              type="flex"
+              align="middle"
+              className={styles.tabHeaderRow}
+            >
+              <span
+                className={styles.tabHeading}
+              >
+                Select tool to open:
+              </span>
+            </Row>
+            <div className={styles.toolSelectionContainer}>
+              {this.filteredFileTools.map(tool => (
+                <div
+                  key={tool.id}
+                  onClick={() => this.onSelectTool(tool.id)}
+                  className={styles.toolItem}
+                >
+                  <img
+                    className={styles.toolIcon}
+                    src={ToolImage.url(tool.id, tool.iconId)}
+                  />
+                  {tool.image}
+                </div>
+              ))}
+            </div>
+          </Tabs.TabPane>
+          <Tabs.TabPane
+            key={TABS.launchTool}
+            tab={TABS.launchTool}
+          >
+            {this.filteredFileTools.length > 1 && (
+              <Row
+                type="flex"
+                align="middle"
+                className={styles.tabHeaderRow}
+              >
+                <Button
+                  size="small"
+                  onClick={() => this.clearToolSelection()}
+                >
+                  <Icon
+                    type="caret-left"
+                    style={{marginRight: '5px'}}
+                  />
+                  <span className={styles.tabHeading}>
+                    Return to tool selection
+                  </span>
+                </Button>
+              </Row>
+            )}
+            {this.renderToolInfo()}
+          </Tabs.TabPane>
+        </Tabs>
+      </div>
+    );
+  };
+
   render () {
     const {
       className,
@@ -268,15 +365,27 @@ class OpenInToolAction extends React.Component {
         visible={modalVisible}
         trigger={['click']}
         title={false}
-        content={this.renderToolInfo()}
+        content={this.renderModalContent()}
         placement="left"
+        overlayClassName={classNames(
+          styles.modalOverlay,
+          {[styles.overlayVisible]: !!modalVisible}
+        )}
       >
         <ToolsSelector
           className={classNames(styles.link, className)}
           style={style}
           titleStyle={titleStyle}
-          onSelectTool={this.onSelectTool}
+          onSelectTool={() => {
+            if (this.filteredFileTools.length === 1) {
+              this.onSelectTool(this.filteredFileTools[0].id);
+              this.openModal(this.filteredFileTools[0].id);
+            } else {
+              this.openModal();
+            }
+          }}
           tools={this.filteredFileTools}
+          singleMode
         />
       </Popover>
     );
