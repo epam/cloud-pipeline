@@ -348,5 +348,12 @@
         "description": "Disables hyper-threading for a run and its workers",
         "defaultValue": "false",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_FSBROWSER_ENABLED",
+        "type": "string",
+        "description": "Disables BROWSE button for the job",
+        "defaultValue": "false",
+        "passToWorkers": true
     }
 ]
