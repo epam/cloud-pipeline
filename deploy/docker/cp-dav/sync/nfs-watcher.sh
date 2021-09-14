@@ -18,6 +18,6 @@ watcher_script_path="$SYNC_HOME/watch_mount_shares.py"
 ps -C python --no-headers -o args | grep "$watcher_script_path"
 if [ $? -ne 0 ]; then
     echo "No active observer process found, starting a new one..."
-    nohup python "$watcher_script_path" 1>/dev/null 2>$SYNC_LOG_DIR/.nohup.nfswatcher.log &
+    nohup python -u "$watcher_script_path" 1>/dev/null 2>$SYNC_LOG_DIR/.nohup.nfswatcher.log &
 fi
 rm -rf /var/run/nfs-watcher.lock

@@ -301,7 +301,7 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
   inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_API_WATCHERS:-131071}
   sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
   sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
-  nohup python $WATCHER_HOME/watch_mount_shares.py 1>/dev/null 2>$WATCHER_LOG_HOME/.nohup.nfswatcher.log &
+  nohup python -u $WATCHER_HOME/watch_mount_shares.py 1>/dev/null 2>$WATCHER_LOG_HOME/.nohup.nfswatcher.log &
 fi
 
 # Workaround the container hanging when being terminated
