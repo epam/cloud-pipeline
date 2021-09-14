@@ -23,14 +23,12 @@ import {
   message,
   Popover,
   Tabs,
-  Button,
   Row,
   Icon
 } from 'antd';
-import ToolsSelector from './tools-selector';
+import ToolsSelector, {ToolIcon} from './tools-selector';
 import OpenToolInfo from './open-tool-info';
 import FileTools from './file-tools';
-import ToolImage from '../../../../models/tools/ToolImage';
 import fetchActiveJobs from '../open-in-halo/fetch-active-jobs';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import getToolLaunchingOptions
@@ -309,41 +307,52 @@ class OpenInToolAction extends React.Component {
                   onClick={() => this.onSelectTool(tool.id)}
                   className={styles.toolItem}
                 >
-                  <img
-                    className={styles.toolIcon}
-                    src={ToolImage.url(tool.id, tool.iconId)}
+                  <ToolIcon
+                    iconId={tool.iconId}
+                    toolId={tool.id}
+                    style={{
+                      height: '20px',
+                      marginRight: '8px'
+                    }}
                   />
                   {tool.image}
                 </div>
               ))}
             </div>
           </Tabs.TabPane>
-          <Tabs.TabPane
-            key={TABS.launchTool}
-            tab={TABS.launchTool}
-          >
-            {this.filteredFileTools.length > 1 && (
-              <Row
-                type="flex"
-                align="middle"
-                className={styles.tabHeaderRow}
-              >
-                <Button
-                  size="small"
-                  onClick={() => this.clearToolSelection()}
+          {activeTool && (
+            <Tabs.TabPane
+              key={TABS.launchTool}
+              tab={TABS.launchTool}
+            >
+              {this.filteredFileTools.length > 1 && (
+                <Row
+                  type="flex"
+                  align="middle"
+                  className={styles.tabHeaderRow}
                 >
-                  <Icon
-                    type="caret-left"
-                    style={{marginRight: '5px'}}
-                  />
+                  <div
+                    onClick={this.clearToolSelection}
+                    className={styles.tabHeadingBtn}
+                  >
+                    <Icon type="caret-left" />
+                  </div>
                   <span className={styles.tabHeading}>
-                    Return to tool selection
+                    <ToolIcon
+                      iconId={activeTool.iconId}
+                      toolId={activeTool.id}
+                      style={{
+                        height: '22px',
+                        marginRight: '5px'
+                      }}
+                    />
+                    {activeTool.image}
                   </span>
-                </Button>
-              </Row>
-            )}
-            {this.renderToolInfo()}
-          </Tabs.TabPane>
+                </Row>
+              )}
+              {this.renderToolInfo()}
+            </Tabs.TabPane>
+          )}
         </Tabs>
       </div>
     );
@@ -379,7 +388,7 @@ class OpenInToolAction extends React.Component {
           onSelectTool={() => {
             if (this.filteredFileTools.length === 1) {
               this.onSelectTool(this.filteredFileTools[0].id);
-              this.openModal(this.filteredFileTools[0].id);
+              this.openModal();
             } else {
               this.openModal();
             }

@@ -68,6 +68,21 @@
 
 .tab-heading {
   font-weight: bold;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.tab-heading-btn {
+  padding: 5px 10px;
+  margin-right: 3px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.tab-heading-btn:hover {
+  background: #e6f7ff;
 }
 
 .tool-selection-container {
@@ -82,17 +97,12 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  height: 25px;
-  line-height: 25px;
+  padding-left: 5px;
+  height: 34px;
+  line-height: 34px;
   transition: all 0.2s ease;
 }
 
 .tool-item:hover {
   background-color: #eef8ff;
-}
-
-.tool-item .tool-icon {
-  height: 20px;
-  margin-right: 8px;
-  margin-left: 5px;
 }

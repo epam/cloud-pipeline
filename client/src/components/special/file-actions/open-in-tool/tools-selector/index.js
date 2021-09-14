@@ -159,3 +159,4 @@ ToolsSelector.propTypes = {
 };
 
 export default ToolsSelector;
+export {ToolIcon};
