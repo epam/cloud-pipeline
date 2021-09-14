@@ -25,17 +25,20 @@ import com.epam.pipeline.elasticsearchagent.model.nfsobserver.NFSObserverEventTy
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
@@ -45,6 +48,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,12 +57,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -70,11 +76,15 @@ import java.util.stream.Stream;
 @ConditionalOnProperty(value = "sync.nfs-file.observer.sync.disable", matchIfMissing = true, havingValue = "false")
 public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
-    public static final String BACKSLASH = "/";
-    public static final String COMMA = ",";
+    private static final String BACKSLASH = "/";
+    private static final String COMMA = ",";
+    private static final String PATH_FIELD = "path";
+    private static final String STORAGE_ID_FIELD = "storage_id";
+    private static final String DOC_MAPPING_TYPE = "_doc";
 
     private final String eventsBucketName;
     private final String eventsBucketFolderPath;
+    private final Integer eventsFileChunkSize;
     private final ObjectStorageFileManager eventBucketFileManager;
 
     public NFSObserverEventSynchronizer(final @Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
@@ -85,6 +95,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final @Value("${sync.nfs-file.bulk.load.tags.size}") Integer bulkLoadTagsSize,
                                         final @Value("${sync.nfs-file.observer.sync.target.bucket}")
                                             String eventsBucketUriStr,
+                                        final @Value("${sync.nfs-file.observer.sync.files.chunk}")
+                                            Integer eventsFileChunkSize,
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
@@ -92,18 +104,12 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, bulkLoadTagsSize,
               cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService);
 
-
-        final URI eventsBucketUri = URI.create(eventsBucketUriStr);
-        final String bucketScheme = eventsBucketUri.getScheme();
-        this.eventsBucketName = eventsBucketUri.getAuthority();
-        this.eventsBucketFolderPath = Optional.ofNullable(eventsBucketUri.getPath())
-            .map(path -> StringUtils.removeEnd(path, BACKSLASH))
-            .map(path -> StringUtils.removeStart(path, BACKSLASH))
-            .orElse(StringUtils.EMPTY);
-        this.eventBucketFileManager = objectStorageFileManagers.stream()
-            .filter(manager -> manager.getType().getId().equalsIgnoreCase(bucketScheme))
-            .findAny()
-            .orElseThrow(() -> new IllegalArgumentException("Can't find a file manger for scheme " + bucketScheme));
+        this.eventsFileChunkSize = eventsFileChunkSize;
+        final URI eventsBucketURI = URI.create(eventsBucketUriStr);
+        final String bucketScheme = getEventsBucketScheme(eventsBucketURI);
+        this.eventsBucketName = eventsBucketURI.getAuthority();
+        this.eventsBucketFolderPath = getEventsBucketFolder(eventsBucketURI);
+        this.eventBucketFileManager = findObjectStorageFileManager(objectStorageFileManagers, bucketScheme);
     }
 
     @Override
@@ -113,58 +119,124 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
         final AbstractDataStorage eventsStorage = storagePathMapping.get(eventsBucketName);
         storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS);
-
-        final Supplier<TemporaryCredentials> listingCredentialsSupplier = getListingCredentialsSupplier(eventsStorage);
-        final Map<String, List<DataStorageFile>> filesByRun =
-            eventBucketFileManager.files(eventsBucketName, eventsBucketFolderPath, listingCredentialsSupplier)
-                .collect(Collectors.groupingBy(this::getProducerName));
-
-        filesByRun.forEach((producer, fileList) -> {
-            final Supplier<TemporaryCredentials> readingCredentialsSupplier =
-                getReadingCredentialsSupplier(eventsStorage);
-            loadAllEventsFromFiles(fileList, readingCredentialsSupplier)
-                .filter(event -> storagePathMapping.get(event.getStorage()) != null)
-                .collect(Collectors.groupingBy(NFSObserverEvent::getStorage))
-                .values()
-                .stream()
-                .map(this::mergeEvents)
-                .flatMap(Collection::stream)
-                .forEach(event -> processEvent(storagePathMapping, event));
-        });
-
+        loadEventsFilesGroupedByProducer(getListingCredentials(eventsStorage))
+            .forEach((producer, fileList) ->
+                         processEventsFromFilesInChunks(storagePathMapping, eventsStorage, producer, fileList));
     }
 
-    private void processEvent(final Map<String, AbstractDataStorage> storagePathMapping,
-                              final NFSObserverEvent event) {
-        final AbstractDataStorage dataStorage = storagePathMapping.get(event.getStorage());
-        if (dataStorage == null) {
-            log.info("No storage with root [{}] is registered in the system, skipping", event.getStorage());
-            return;
+    private void processEventsFromFilesInChunks(final Map<String, AbstractDataStorage> storagePathMapping,
+                                                final AbstractDataStorage eventsStorage,
+                                                final String eventsProducer,
+                                                final List<DataStorageFile> fileList) {
+        StreamUtils.chunked(fileList.stream(), eventsFileChunkSize)
+            .forEach(filesChunk ->
+                         processEventsFromFiles(storagePathMapping, eventsStorage, eventsProducer, filesChunk));
+        log.info("Finished processing events from [{}]", eventsProducer);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void processEventsFromFiles(final Map<String, AbstractDataStorage> storagePathMapping,
+                                        final AbstractDataStorage eventsStorage,
+                                        final String eventsProducer,
+                                        final List<DataStorageFile> files) {
+        try (IndexRequestContainer requestContainer =
+                 new IndexRequestContainer(requests -> getElasticsearchServiceClient().sendRequests(null, requests),
+                                           getBulkInsertSize())) {
+            groupEventsByStorage(storagePathMapping, files, eventsStorage)
+                .forEach((dataStorage, events) -> processStorageEvents(requestContainer, dataStorage, events));
+            deleteEventFiles(eventsStorage, files);
+        } catch (Exception e) {
+            log.warn("Some errors occurred during NFS observer events sync from [{}]: {}",
+                     eventsProducer, e.getMessage());
         }
-        final Optional<SearchHit> existingDocument = searchExistingDocument(event, dataStorage);
+    }
+
+    private void deleteEventFiles(final AbstractDataStorage eventsStorage, final List<DataStorageFile> eventsFiles) {
+        final TemporaryCredentials writingCredentials = getWritingCredentials(eventsStorage);
+        eventsFiles.stream()
+            .map(AbstractDataStorageItem::getPath)
+            .forEach(path -> eventBucketFileManager.deleteFile(eventsStorage.getPath(),
+                                                               path, () -> writingCredentials));
+    }
+
+    private Map<AbstractDataStorage, Collection<NFSObserverEvent>> groupEventsByStorage(
+        final Map<String, AbstractDataStorage> storagePathMapping,
+        final List<DataStorageFile> fileList,
+        final AbstractDataStorage eventsStorage) {
+        final TemporaryCredentials readingCredentials = getReadingCredentials(eventsStorage);
+        return loadAllEventsFromFiles(fileList, () -> readingCredentials)
+            .filter(event -> storagePathMapping.get(event.getStorage()) != null)
+            .collect(Collectors.groupingBy(NFSObserverEvent::getStorage))
+            .entrySet()
+            .stream()
+            .map(entry -> new AbstractMap.SimpleEntry<>(storagePathMapping.get(entry.getKey()),
+                                                        mergeEvents(entry.getValue())))
+            .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+    }
+
+    private Map<String, List<DataStorageFile>> loadEventsFilesGroupedByProducer(
+        final TemporaryCredentials listingCredentials) {
+        return eventBucketFileManager.files(eventsBucketName, eventsBucketFolderPath, () -> listingCredentials)
+            .collect(Collectors.groupingBy(this::getProducerName));
+    }
+
+    private void processStorageEvents(final IndexRequestContainer requestContainer,
+                                      final AbstractDataStorage dataStorage,
+                                      final Collection<NFSObserverEvent> events) {
+        final Map<String, SearchHit> searchHitMap = findIndexedFiles(dataStorage, events);
+        final String indexForNewFiles = createIndexForStorageIfNotExists(dataStorage);
+        final Stream<DataStorageFile> fileUpdates = events.stream()
+            .map(event -> mapUpdateEventToFile(requestContainer, dataStorage, searchHitMap, event))
+            .filter(Objects::nonNull);
+        final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
+        processFilesTagsInChunks(dataStorage, fileUpdates)
+            .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file))
+            .forEach(requestContainer::add);
+    }
+
+    private IndexRequest mapToElasticRequest(final AbstractDataStorage dataStorage,
+                                             final Map<String, SearchHit> searchHitMap,
+                                             final String newIndex,
+                                             final PermissionsContainer permissionsContainer,
+                                             final DataStorageFile storageFile) {
+        return Optional.ofNullable(searchHitMap.get(storageFile.getPath()))
+            .map(document -> updateIndexRequest(dataStorage, storageFile, permissionsContainer, document))
+            .orElseGet(() -> createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer));
+    }
+
+    private DataStorageFile mapUpdateEventToFile(final IndexRequestContainer requestContainer,
+                                                 final AbstractDataStorage dataStorage,
+                                                 final Map<String, SearchHit> searchHitMap,
+                                                 final NFSObserverEvent event) {
         final String storageName = getStorageName(dataStorage.getPath());
         final Path mountFolder = Paths.get(getRootMountPoint(), getMountDirName(dataStorage.getPath()), storageName);
+        Assert.isTrue(mountFolder.toFile().exists(),
+                      String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...",
+                                    mountFolder.toString()));
         final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
         final boolean fileExists = absoluteFilePath.toFile().exists();
 
         if (fileExists) {
-            final DataStorageFile storageFile = convertToStorageFile(absoluteFilePath, mountFolder);
-            final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
-            final IndexRequest request;
-            if (!existingDocument.isPresent()) {
-                final String newIndex = createIndexForStorageIfNotExists(dataStorage);
-                request = createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer);
-            } else {
-                request = existingDocument
-                    .map(document -> updateIndexRequest(dataStorage, storageFile, permissionsContainer, document))
-                    .get();
-            }
-            getElasticsearchServiceClient().sendRequests(request.index(), Collections.singletonList(request));
-        } else if (existingDocument.isPresent()) {
-            existingDocument
-                .map(hit -> new DeleteRequest(hit.getIndex(), Lucene50PostingsFormat.DOC_EXTENSION, hit.getId()))
-                .ifPresent(getElasticsearchServiceClient()::deleteDocument);
+            return convertToStorageFile(absoluteFilePath, mountFolder);
+        } else {
+            Optional.ofNullable(searchHitMap.get(event.getFilePath()))
+                .map(hit -> new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId()))
+                .ifPresent(requestContainer::add);
+            return null;
         }
+    }
+
+    private Map<String, SearchHit> findIndexedFiles(final AbstractDataStorage dataStorage,
+                                                    final Collection<NFSObserverEvent> events) {
+        final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
+        events.stream().map(event -> buildSearchRequest(dataStorage, event)).forEach(multiSearchRequest::add);
+        final MultiSearchResponse multiSearchResponse = getElasticsearchServiceClient().search(multiSearchRequest);
+        return Stream.of(multiSearchResponse.getResponses())
+            .map(MultiSearchResponse.Item::getResponse)
+            .map(SearchResponse::getHits)
+            .filter(hits -> hits.getTotalHits() == 1)
+            .map(hits -> hits.getAt(0))
+            .collect(Collectors.toMap(hit -> (String)hit.getSourceAsMap().get(PATH_FIELD), Function.identity()));
     }
 
     private IndexRequest updateIndexRequest(final AbstractDataStorage dataStorage, final DataStorageFile file,
@@ -174,18 +246,11 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         return updateRequest;
     }
 
-    private Optional<SearchHit> searchExistingDocument(NFSObserverEvent event, AbstractDataStorage dataStorage) {
-        return Optional.of(getElasticsearchServiceClient().search(buildSearchRequest(event, dataStorage)))
-            .map(SearchResponse::getHits)
-            .filter(hits -> hits.getTotalHits() == 1)
-            .map(hits -> hits.getAt(0));
-    }
-
-    private SearchRequest buildSearchRequest(final NFSObserverEvent event, final AbstractDataStorage dataStorage) {
+    private SearchRequest buildSearchRequest(final AbstractDataStorage dataStorage, final NFSObserverEvent event) {
         final SearchSourceBuilder source = new SearchSourceBuilder()
             .query(QueryBuilders.boolQuery()
-                       .must(QueryBuilders.termQuery("path", event.getFilePath()))
-                       .must(QueryBuilders.termQuery("storage_id", dataStorage.getId())))
+                       .must(QueryBuilders.termQuery(PATH_FIELD, event.getFilePath()))
+                       .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
             .size(1);
         return new SearchRequest("*")
             .indicesOptions(IndicesOptions.lenientExpandOpen())
@@ -210,6 +275,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .orElseGet(() -> {
                 try {
                     getElasticIndexService().createIndexIfNotExist(indexName, getIndexSettingsPath());
+                    getElasticsearchServiceClient().createIndexAlias(indexName, alias);
                     return indexName;
                 } catch (ElasticClientException e) {
                     log.error(e.getMessage(), e);
@@ -276,23 +342,51 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         return file.getPath().substring(eventsBucketFolderPath.length() + 1).split(BACKSLASH)[0];
     }
 
-    private Supplier<TemporaryCredentials> getListingCredentialsSupplier(final AbstractDataStorage eventsStorage) {
-        return () -> getTemporaryCredentials(eventsStorage, true, false);
+    private TemporaryCredentials getWritingCredentials(final AbstractDataStorage eventsStorage) {
+        return getTemporaryCredentials(eventsStorage, false, false, true);
     }
 
-    private Supplier<TemporaryCredentials> getReadingCredentialsSupplier(final AbstractDataStorage eventsStorage) {
-        return () -> getTemporaryCredentials(eventsStorage, false, true);
+    private TemporaryCredentials getListingCredentials(final AbstractDataStorage eventsStorage) {
+        return getTemporaryCredentials(eventsStorage, true, false, false);
+    }
+
+    private TemporaryCredentials getReadingCredentials(final AbstractDataStorage eventsStorage) {
+        return getTemporaryCredentials(eventsStorage, false, true, false);
     }
 
     private TemporaryCredentials getTemporaryCredentials(final AbstractDataStorage dataStorage,
                                                          final boolean list,
-                                                         final boolean read) {
-        log.debug("Retrieving {} data storage {} temporary credentials...", DataStorageType.S3, dataStorage.getPath());
+                                                         final boolean read,
+                                                         final boolean write) {
+        log.debug("Retrieving {} data storage {} temporary credentials, (listing={}, read={}, write={})...",
+                  dataStorage.getType(), dataStorage.getPath(), list, read, write);
         final DataStorageAction action = new DataStorageAction();
         action.setBucketName(dataStorage.getPath());
         action.setId(dataStorage.getId());
         action.setRead(read);
         action.setList(list);
+        action.setWrite(write);
         return getCloudPipelineAPIClient().generateTemporaryCredentials(Collections.singletonList(action));
+    }
+
+
+    private String getEventsBucketScheme(final URI eventsBucketURI) {
+        return Optional.ofNullable(eventsBucketURI.getScheme())
+            .orElseThrow(() -> new IllegalArgumentException("Scheme isn't specified for events bucket!"));
+    }
+
+    private ObjectStorageFileManager findObjectStorageFileManager(final List<ObjectStorageFileManager> managers,
+                                                                  final String bucketScheme) {
+        return managers.stream()
+            .filter(manager -> manager.getType().getId().equalsIgnoreCase(bucketScheme))
+            .findAny()
+            .orElseThrow(() -> new IllegalArgumentException("Can't find a file manager for scheme " + bucketScheme));
+    }
+
+    private String getEventsBucketFolder(final URI eventsBucketUri) {
+        return Optional.ofNullable(eventsBucketUri.getPath())
+            .map(path -> StringUtils.removeEnd(path, BACKSLASH))
+            .map(path -> StringUtils.removeStart(path, BACKSLASH))
+            .orElse(StringUtils.EMPTY);
     }
 }

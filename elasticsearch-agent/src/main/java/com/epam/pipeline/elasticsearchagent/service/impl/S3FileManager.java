@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,14 @@ public class S3FileManager implements ObjectStorageFileManager {
         final AmazonS3 client = getS3Client(credentialsSupplier);
         final S3Object object = client.getObject(new GetObjectRequest(storage, path));
         return object.getObjectContent();
+    }
+
+    @Override
+    public void deleteFile(final String storage,
+                           final String path,
+                           final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        client.deleteObject(storage, path);
     }
 
     private AmazonS3 getS3Client(final Supplier<TemporaryCredentials> credentialsSupplier) {

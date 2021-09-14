@@ -17,8 +17,8 @@ package com.epam.pipeline.elasticsearchagent.service;
 
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 
@@ -33,5 +33,5 @@ public interface ElasticsearchServiceClient {
     void createIndexAlias(String indexName, String indexAlias);
     String getIndexNameByAlias(String alias);
     SearchResponse search(SearchRequest request);
-    DeleteResponse deleteDocument(DeleteRequest request);
+    MultiSearchResponse search(MultiSearchRequest request);
 }

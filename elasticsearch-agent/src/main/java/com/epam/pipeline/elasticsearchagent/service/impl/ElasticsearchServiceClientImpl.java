@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -187,11 +187,11 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
     }
 
     @Override
-    public DeleteResponse deleteDocument(final DeleteRequest deleteRequest) {
+    public MultiSearchResponse search(final MultiSearchRequest request) {
         try {
-            return client.delete(deleteRequest, RequestOptions.DEFAULT);
+            return client.msearch(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
-            throw new ElasticsearchException("Failed to delete docs for a query:" + e.getMessage(), e);
+            throw new ElasticsearchException("Failed to find results for multi-search query:" + e.getMessage(), e);
         }
     }
 }

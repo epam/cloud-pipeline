@@ -144,13 +144,18 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             final Stream<DataStorageFile> files = paths
                     .filter(path -> path.toFile().isFile())
                     .map(path -> convertToStorageFile(path, mountFolder));
-            StreamUtils.chunked(files, bulkLoadTagsSize)
-                    .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+            processFilesTagsInChunks(dataStorage, files)
                     .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer))
                     .forEach(walker::add);
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
         }
+    }
+
+    protected Stream<DataStorageFile> processFilesTagsInChunks(final AbstractDataStorage dataStorage,
+                                                               final Stream<DataStorageFile> files) {
+        return StreamUtils.chunked(files, bulkLoadTagsSize)
+                .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk));
     }
 
     protected DataStorageFile convertToStorageFile(final Path path, final Path mountFolder) {
@@ -215,8 +220,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         }
     }
 
-    private Stream<DataStorageFile> filesWithIncorporatedTags(final AbstractDataStorage dataStorage,
-                                                              final List<DataStorageFile> files) {
+    protected Stream<DataStorageFile> filesWithIncorporatedTags(final AbstractDataStorage dataStorage,
+                                                                final List<DataStorageFile> files) {
         final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
                 dataStorage.getId(),
                 new DataStorageTagLoadBatchRequest(
@@ -232,6 +237,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                                               final String indexName,
                                               final AbstractDataStorage dataStorage,
                                               final PermissionsContainer permissionsContainer) {
+        // TODO maybe we can use file path as _id instead of generating it
+        //  on ES side to perform both create and update using this method
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, null, permissionsContainer,
                         SearchDocumentType.NFS_FILE));
