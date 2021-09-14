@@ -59,6 +59,6 @@ setup(name='pipeline',
             'paramiko==2.6.0',
             'psutil==5.8.0',
             'pywin32==300; platform_system == "Windows"',
-            'watchdog==0.10.7'
+            'watchdog==0.10.4'
       ],
       zip_safe=False)
