@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 
+import java.io.InputStream;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -37,5 +38,11 @@ public interface ObjectStorageFileManager {
     Stream<DataStorageFile> versionsWithNativeTags(String storage,
                                                    String path,
                                                    Supplier<TemporaryCredentials> credentialsSupplier);
+
+    default InputStream readFileContent(String storage,
+                                        String path,
+                                        Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
+    }
 
 }

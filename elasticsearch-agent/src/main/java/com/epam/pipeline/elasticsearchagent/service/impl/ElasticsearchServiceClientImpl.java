@@ -28,6 +28,8 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -181,6 +183,15 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return client.search(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to find results for search query:" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public DeleteResponse deleteDocument(final DeleteRequest deleteRequest) {
+        try {
+            return client.delete(deleteRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to delete docs for a query:" + e.getMessage(), e);
         }
     }
 }

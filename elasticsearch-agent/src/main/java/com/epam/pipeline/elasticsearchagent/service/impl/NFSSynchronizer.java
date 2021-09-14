@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
@@ -54,6 +56,7 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "sync.nfs-file.disable", matchIfMissing = true, havingValue = "false")
+@Getter(value = AccessLevel.PROTECTED)
 public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
@@ -150,7 +153,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         }
     }
 
-    private DataStorageFile convertToStorageFile(final Path path, final Path mountFolder) {
+    protected DataStorageFile convertToStorageFile(final Path path, final Path mountFolder) {
         final DataStorageFile file = new DataStorageFile();
         file.setPath(getRelativePath(mountFolder, path));
         file.setName(file.getPath());
@@ -181,11 +184,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         }
     }
 
-    private String getStorageName(final String path) {
+    protected String getStorageName(final String path) {
         return path.replace(getNfsRootPath(path), "");
     }
 
-    private String getMountDirName(final String nfsPath) {
+    protected String getMountDirName(final String nfsPath) {
         String rootPath = getNfsRootPath(nfsPath);
         int index = rootPath.indexOf(':');
         if (index > 0) {
@@ -225,10 +228,10 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 .peek(file -> file.setTags(tags.get(file.getPath())));
     }
 
-    private IndexRequest createIndexRequest(final DataStorageFile file,
-                                            final String indexName,
-                                            final AbstractDataStorage dataStorage,
-                                            final PermissionsContainer permissionsContainer) {
+    protected IndexRequest createIndexRequest(final DataStorageFile file,
+                                              final String indexName,
+                                              final AbstractDataStorage dataStorage,
+                                              final PermissionsContainer permissionsContainer) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, null, permissionsContainer,
                         SearchDocumentType.NFS_FILE));

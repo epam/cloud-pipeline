@@ -20,11 +20,13 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.Tag;
@@ -41,6 +43,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -87,6 +90,15 @@ public class S3FileManager implements ObjectStorageFileManager {
                 .flatMap(List::stream)
                 .filter(file -> !file.getDeleteMarker())
                 .peek(file -> file.setTags(getNativeTags(client, storage, file)));
+    }
+
+    @Override
+    public InputStream readFileContent(final String storage,
+                                       final String path,
+                                       final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        final S3Object object = client.getObject(new GetObjectRequest(storage, path));
+        return object.getObjectContent();
     }
 
     private AmazonS3 getS3Client(final Supplier<TemporaryCredentials> credentialsSupplier) {
