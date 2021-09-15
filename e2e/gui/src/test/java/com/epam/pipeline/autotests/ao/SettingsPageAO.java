@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,7 +56,8 @@ import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
-public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
+public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
+        Authorization {
 
     protected PipelinesLibraryAO parentAO;
 
@@ -203,6 +205,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public SystemEventsAO ensureTableHasTextIfNeeded(String text) {
+            if(!impersonateMode()) {
+                ensure(TABLE, matchesText(text));
+            }
+            return this;
+        }
+
         public SystemEventsAO ensureTableHasNoText(String text) {
             ensure(TABLE, not(matchesText(text)));
             return this;
@@ -234,6 +243,27 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         private List<SelenideElement> getAllEntries() {
             return new ArrayList<>(context().find(byClassName("ant-table-content"))
                     .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]")));
+        }
+
+        public List<String> getAllEntriesNames() {
+            sleep(2, SECONDS);
+            return new ArrayList<>(context().find(byClassName("ant-table-content"))
+                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"))
+                    .stream()
+                    .map(e -> e.find(byClassName("notification-title-column")).text())
+                    .collect(toList()));
+        }
+
+        public SystemEventsAO deleteTestEntries(List<String> initEntries) {
+            sleep(2, SECONDS);
+            List<SelenideElement> entries = getAllEntries();
+            if (!entries.isEmpty()) {
+                entries.stream()
+                       .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
+                       .collect(toList())
+                       .forEach(this::removeEntry);
+            }
+            return this;
         }
 
         private void removeEntry(SelenideElement entry) {
@@ -288,7 +318,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public CreateNotificationPopup setActive() {
-                click(STATE_CHECKBOX);
+                if(!impersonateMode()) {
+                    click(STATE_CHECKBOX);
+                }
                 return this;
             }
 

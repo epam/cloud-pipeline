@@ -95,6 +95,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @AfterClass(alwaysRun = true)
     public void loginToDeleteEntities() {
         loginAs(admin);
+        library()
+                .removeStorageIfExists(format("%s-home", testUser));
     }
 
     @Test
@@ -130,15 +132,17 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @TestCase({"EPMCMBIBPC-3019"})
     public void addTheUser() {
         loginAs(admin);
-        storageUserHomeAutoState = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getCheckboxPreferenceState("storage.user.home.auto");
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .setCheckboxPreference("storage.user.home.auto", false, true)
-                .saveIfNeeded();
+        if(!impersonateMode()) {
+            storageUserHomeAutoState = navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .getCheckboxPreferenceState("storage.user.home.auto");
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setCheckboxPreference("storage.user.home.auto", false, true)
+                    .saveIfNeeded();
+        }
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
