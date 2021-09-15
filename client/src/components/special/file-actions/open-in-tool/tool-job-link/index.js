@@ -139,7 +139,7 @@ class ToolJobLink extends React.Component {
         target={this.url.sameTab ? '_top' : '_blank'}
         dropDownIconStyle={{marginTop: 2}}
       >
-        {linkText || 'Download remote desktop shortcut'}
+        {linkText}
       </MultizoneUrl>
     );
   }

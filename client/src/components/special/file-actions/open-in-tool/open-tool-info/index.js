@@ -28,7 +28,7 @@ import styles from './open-tool-info.css';
 const STORAGE_PREFIX = 'cloud-data';
 const DEFAULT_TEMPLATE = `
   Copy file path: {FILE_PATH}
-  Open {APP_NAME}: {APP_LINK:Download remote desktop shortcut}
+  Open {APP_NAME}: {APP_LINK}
   Open copied file path in the {APP_NAME}
 `;
 
@@ -176,7 +176,7 @@ class OpenToolInfo extends React.Component {
       'APP_LINK': this.renderAppLink
     };
     const rowContent = rowTemplate
-      .split(new RegExp(/((?!^)\{.*?\})/))
+      .split(new RegExp(/(\{.*?\})/))
       .filter(Boolean);
     const getRenderFn = (chunk) => {
       const templateSignature = new RegExp(/^[{].*[}]$/);
