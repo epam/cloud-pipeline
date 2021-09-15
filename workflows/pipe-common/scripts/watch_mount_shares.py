@@ -16,6 +16,7 @@ from collections import OrderedDict
 import datetime
 from distutils.spawn import find_executable
 import errno
+import logging
 import os
 import re
 import subprocess
@@ -41,9 +42,13 @@ EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 1000))
 MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_SEC', 10))
 TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre').split(COMMA)
 
+logging_format = os.getenv('CP_CAP_NFS_OBSERVER__LOGGING_FORMAT', '%(message)s')
+logging_level = os.getenv('CP_CAP_NFS_OBSERVER_LOGGING_LEVEL', 'WARNING')
+logging.basicConfig(level=logging_level, format=logging_format)
 
-def log(message):
-    print('[{}] {}'.format(current_utc_time_str(), message))
+
+def format_message(message):
+    return '[{}] {}'.format(current_utc_time_str(), message)
 
 
 def mkdir(path):
@@ -79,7 +84,8 @@ def execute_command(command, max_attempts=1):
         exit_code, stdout, stderr = execute_cmd_command_and_get_stdout_stderr(command, silent=True)
         success = exit_code == 0
     if not success:
-        log('Execution of [{}] failed due to the reason: {}'.format(command, stderr))
+        logging.error(format_message(
+            'Execution of [{}] failed due to the reason: {}'.format(command, stderr.rstrip(NEWLINE))))
     return stdout, success
 
 
@@ -122,14 +128,14 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
         else:
             raise RuntimeError(
                 'Unable to start CloudBucketDumpingEventHandler: no suitable command for transfer available')
-        log('[{}] will be used as a transfer template'.format(transfer_template))
+        logging.info(format_message('[{}] will be used as a transfer template'.format(transfer_template)))
         return transfer_template
 
     @staticmethod
     def _configure_logging_bucket_dir():
         bucket_dir = os.path.join(os.getenv('CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET'),
                                   CloudBucketDumpingEventHandler._get_service_name())
-        log('Destination bucket location is [{}]'.format(bucket_dir))
+        logging.info(format_message('Destination bucket location is [{}]'.format(bucket_dir)))
         return bucket_dir
 
     @staticmethod
@@ -147,7 +153,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
     @staticmethod
     def _configure_logging_local_dir():
         local_logging_dir = os.path.join(os.getenv('RUN_DIR', '/tmp'), 'fs_watcher')
-        log('Local storage directory is [{}]'.format(local_logging_dir))
+        logging.info(format_message('Local storage directory is [{}]'.format(local_logging_dir)))
         mkdir(local_logging_dir)
         return local_logging_dir
 
@@ -193,16 +199,16 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
             return
         filename = 'events-' + current_utc_time_str().replace(' ', '_')
         local_file = os.path.join(self._activity_logging_local_dir, filename)
-        log('Saving events to {} '.format(local_file))
+        logging.info(format_message('Saving events to {} '.format(local_file)))
         with open(local_file, 'w') as outfile:
             # TODO sorting might be skipped in case events will be sorted in the consuming service
             sorted_events = sorted(self._active_events.values(), key=lambda e: e.timestamp)
             outfile.write(NEWLINE.join(map(self._convert_event_to_str, sorted_events)))
         bucket_file = os.path.join(self._activity_logging_bucket_dir, filename)
-        log('Dumping events to {} '.format(bucket_file))
+        logging.info(format_message('Dumping events to {} '.format(bucket_file)))
         _, result = execute_command(self._transfer_template.format(local_file, bucket_file))
         if result:
-            log('Cleaning activity list')
+            logging.info(format_message('Cleaning activity list'))
             self._active_events.clear()
 
 
@@ -226,7 +232,8 @@ class NFSMountWatcher:
             self._update_existing_mount_watcher(mnt_dest, mnt_src)
 
     def _update_static_paths_mapping(self):
-        log('Observing FS events on [{}] target paths specified...'.format(len(self._target_paths)))
+        logging.info(
+            format_message('Observing FS events on [{}] target paths specified...'.format(len(self._target_paths))))
         active_mounts = self._get_target_mount_points()
         for mnt_dest in self._target_paths:
             mnt_src = active_mounts.get(mnt_dest, mnt_dest)
@@ -234,9 +241,9 @@ class NFSMountWatcher:
         self._event_handler.update_target_mounts_mappings(self._target_path_mapping)
 
     def _update_target_mount_points(self):
-        log('Checking active mounts...')
+        logging.info(format_message('Checking active mounts...'))
         latest_mounts_mapping = self._get_target_mount_points()
-        log('Found [{}] active mounts'.format(len(latest_mounts_mapping)))
+        logging.info(format_message('Found [{}] active mounts'.format(len(latest_mounts_mapping))))
         self._remove_unmounted_watchers(latest_mounts_mapping)
         for mnt_dest, mnt_src in latest_mounts_mapping.items():
             self._process_active_target_path(mnt_dest, mnt_src)
@@ -245,20 +252,21 @@ class NFSMountWatcher:
     def _update_existing_mount_watcher(self, mnt_dest, mnt_src):
         active_mount_src = self._target_path_mapping[mnt_dest]
         if active_mount_src != mnt_src:
-            log('Updating observer: [{}] mount-source changed from [{}] to [{}]'.format(mnt_dest,
+            logging.warning(format_message(
+                'Updating observer: [{}] mount-source changed from [{}] to [{}]'.format(mnt_dest,
                                                                                         active_mount_src,
-                                                                                        mnt_src))
+                                                                                        mnt_src)))
             self._target_path_mapping[mnt_dest] = mnt_src
 
     def _add_new_mount_watcher(self, mnt_dest, mnt_src):
-        log('Assigning [{}] to the observer'.format(mnt_dest))
+        logging.warning(format_message('Assigning [{}] to the observer'.format(mnt_dest)))
         if self.try_to_add_path_to_observer(mnt_dest):
             self._target_path_mapping[mnt_dest] = mnt_src
 
     def _remove_unmounted_watchers(self, latest_mounts_mapping):
         for mnt_dest, mnt_src in self._target_path_mapping.items():
             if mnt_dest not in latest_mounts_mapping:
-                log('Removing observer from [{}]'.format(mnt_dest))
+                logging.warning(format_message('Removing observer from [{}]'.format(mnt_dest)))
                 if self.try_to_remove_path_from_observer(mnt_dest):
                     self._target_path_mapping.pop(mnt_dest)
 
@@ -267,18 +275,19 @@ class NFSMountWatcher:
             self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
             return True
         except OSError as e:
-            log('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, e.message))
+            logging.error(
+                format_message('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, e.message)))
             return False
 
     def try_to_add_path_to_observer(self, mnt_dest):
         if not os.path.exists(mnt_dest):
-            log('Target path [{}] doesn\'t exist, skipping...'.format(mnt_dest))
+            logging.warning(format_message('Target path [{}] doesn\'t exist, skipping...'.format(mnt_dest)))
             return False
         try:
             self._event_observer.schedule(self._event_handler, mnt_dest, recursive=True)
             return True
         except OSError as e:
-            log('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, e.message))
+            logging.error(format_message('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, e.message)))
             return False
 
     @staticmethod
@@ -287,7 +296,7 @@ class NFSMountWatcher:
         for fs_type in TARGET_FS_TYPES:
             out, res = execute_command(MNT_LISTING_COMMAND.format(fs_type))
             if not res:
-                log('Unable to retrieve [{}] mounts'.format(fs_type))
+                logging.info(format_message('Unable to retrieve [{}] mounts'.format(fs_type)))
                 continue
             out = out.split(NEWLINE)
             for index in range(1, len(out)):
@@ -300,7 +309,7 @@ class NFSMountWatcher:
         return mount_points
 
     def start(self):
-        log('Start monitoring shares state...')
+        logging.info(format_message('Start monitoring shares state...'))
         self._event_observer.start()
         try:
             while True:
