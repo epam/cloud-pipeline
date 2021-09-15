@@ -56,12 +56,12 @@ import fuse
 from fuse import FUSE, fuse_operations, fuse_file_info
 from cachetools import TTLCache
 
-_allowed_logging_level_names = logging._levelNames
-_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
+_allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
-_default_logging_level = _allowed_logging_level_names[logging.ERROR]
-_debug_logging_level = _allowed_logging_level_names[logging.DEBUG]
-_info_logging_level = _allowed_logging_level_names[logging.INFO]
+_default_logging_level = 'ERROR'
+_debug_logging_level = 'DEBUG'
+_info_logging_level = 'INFO'
 
 
 def start(mountpoint, webdav, bucket,
@@ -250,7 +250,7 @@ if __name__ == '__main__':
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
     recording = args.logging_level in [_info_logging_level, _debug_logging_level]
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
-                        level=_allowed_logging_level_names[args.logging_level])
+                        level=args.logging_level)
     logging.getLogger('botocore').setLevel(logging.ERROR)
 
     if is_frozen:

@@ -20,8 +20,8 @@ from threading import RLock
 
 from dateutil.tz import tzlocal
 
-from fsclient import File, FileSystemClientDecorator
-import fuseutils
+from pipefuse.fsclient import File, FileSystemClientDecorator
+from pipefuse import fuseutils
 
 
 _ANY_ERROR = BaseException

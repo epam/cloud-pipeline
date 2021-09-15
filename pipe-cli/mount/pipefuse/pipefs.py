@@ -26,7 +26,7 @@ from dateutil.tz import tzlocal
 from fuse import FuseOSError, Operations
 from threading import RLock
 
-import fuseutils
+from pipefuse import fuseutils
 
 
 class UnsupportedOperationException(Exception):
