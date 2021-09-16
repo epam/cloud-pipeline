@@ -22,7 +22,7 @@ import {PlotColors} from './utilities';
 const maxHeight = 40;
 
 @observer
-class UsagePlot extends React.PureComponent {
+class UsagePlot extends React.Component {
   renderSingleUsageBar = (config, index, barHeight, totalCount) => {
     const {
       chartArea,

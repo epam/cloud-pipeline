@@ -213,7 +213,7 @@ TooltipRenderer.defaultProps = {
 
 @inject('data', 'plot', 'timeline')
 @observer
-class Tooltip extends React.PureComponent {
+class Tooltip extends React.Component {
   @observable hoveredItem;
 
   componentDidMount () {

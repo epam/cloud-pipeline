@@ -23,7 +23,7 @@ import tickGenerators from './ticks';
 
 @inject('plot', 'data')
 @observer
-class ValueAxis extends React.PureComponent {
+class ValueAxis extends React.Component {
   state = {
     from: undefined,
     to: undefined,

@@ -27,7 +27,7 @@ const SizePerTickPx = 100;
 
 @inject('plot', 'data')
 @observer
-class Timeline extends React.PureComponent {
+class Timeline extends React.Component {
   state = {
     from: undefined,
     to: undefined,

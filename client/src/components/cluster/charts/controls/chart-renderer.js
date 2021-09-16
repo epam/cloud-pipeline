@@ -123,7 +123,7 @@ function splitDataParts(data) {
 }
 
 @observer
-class ChartRendererWithOffset extends React.PureComponent {
+class ChartRendererWithOffset extends React.Component {
   state = {
     baseLine: 0,
     data: [],
