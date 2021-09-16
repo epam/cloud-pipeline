@@ -1159,12 +1159,32 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
               default=1000, type=int)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode, timeout):
-    """ Mounts either all available file systems or a single bucket into a local folder.
-        Either -f\\--file flag or -b\\--bucket argument should be specified.
-        Command is supported for Linux distributions and MacOS and requires
-        FUSE installed.
+@stacktracing
+def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode, timeout,
+                  trace):
+    """
+    Mounts either all available network file systems or a single object storage to a local folder.
+
+    Linux, MacOS and Windows platforms are supported. The following libraries have to be installed
+    for each individual platform in order to mount anything:
+    FUSE on Linux,
+    macFUSE (https://github.com/osxfuse/osxfuse/releases/tag/macfuse-4.1.2) on MacOS
+    and (https://github.com/dokan-dev/dokany/releases/tag/v1.5.0.3000) on Windows.
+
+    Examples:
+
+    I.  Mount all network file systems to some local folder (/path/to/mount/directory)
+        with read and write access:
+
+        pipe storage mount /path/to/mount/directory -f -th -m 775 -o allow_other
+
+    II. Mount a single object storage (storage-name) to some local folder (/path/to/mount/directory)
+        with read and write access:
+
+        pipe storage mount /path/to/mount/directory -b storage-name -th -m 775 -o allow_other
+
     """
     DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, custom_options=custom_options,
@@ -1378,7 +1398,7 @@ def scp(source, destination, recursive, quiet, retries, trace, region):
     """
     Transfers files or directories between local workstation and run instance.
 
-    It allows to copy file from a local worstation to a remote run instance
+    It allows to copy a file from a local workstation to a remote run instance
     and from a remote run instance to a local workstation.
 
     Examples:
