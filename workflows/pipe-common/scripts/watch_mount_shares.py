@@ -27,7 +27,9 @@ from watchdog.observers.api import ObservedWatch
 
 NEWLINE = '\n'
 COMMA = ','
-MNT_LISTING_COMMAND = 'df -t {} --output=source,target'
+MNT_LISTING_COMMAND = 'mount -t {}'
+MNT_PARSING_REGEXP = r"(.*) on (.*) type (.*) \((.*)\)"
+
 DT_FORMAT = '%Y-%m-%d %H:%M:%S:%f'
 PIPE_CP_TEMPLATE = 'pipe storage cp \'{}\' \'{}\''
 AWS_CP_TEMPLATE = 'aws s3 cp \'{}\' \'{}\' --only-show-errors --sse aws:kms'
@@ -40,7 +42,7 @@ DELETE_EVENT = 'd'
 
 EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 1000))
 MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_SEC', 10))
-TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre').split(COMMA)
+TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre')
 
 logging_format = os.getenv('CP_CAP_NFS_OBSERVER__LOGGING_FORMAT', '%(message)s')
 logging_level = os.getenv('CP_CAP_NFS_OBSERVER_LOGGING_LEVEL', 'WARNING')
@@ -293,19 +295,19 @@ class NFSMountWatcher:
     @staticmethod
     def _get_target_mount_points():
         mount_points = dict()
-        for fs_type in TARGET_FS_TYPES:
-            out, res = execute_command(MNT_LISTING_COMMAND.format(fs_type))
-            if not res:
-                logging.info(format_message('Unable to retrieve [{}] mounts'.format(fs_type)))
-                continue
-            out = out.split(NEWLINE)
-            for index in range(1, len(out)):
-                line = out[index]
-                if line.strip():
-                    mount_point_description = re.split('\\s+', line)
-                    mount_source = mount_point_description[0]
-                    mount_point = mount_point_description[1]
-                    mount_points[mount_point] = mount_source
+        out, res = execute_command(MNT_LISTING_COMMAND.format(TARGET_FS_TYPES))
+        if not res or not out:
+            logging.info(format_message('Unable to retrieve [{}] mounts'.format(TARGET_FS_TYPES)))
+        else:
+            for line in out.split(NEWLINE):
+                if line:
+                    mnt_details = re.search(MNT_PARSING_REGEXP, line).groups()
+                    if len(mnt_details) == 4:
+                        mount_source = mnt_details[0]
+                        mount_point = mnt_details[1]
+                        mount_attributes = mnt_details[3].split(COMMA)
+                        if 'rw' in mount_attributes:
+                            mount_points[mount_point] = mount_source
         return mount_points
 
     def start(self):
