@@ -18,8 +18,8 @@ import logging
 def debug_log_proxy(proxy_config, proxy_name):
     _proxy_value = None
     _no_proxy_value = None
-    if proxy_config and proxy_config.__dict__[proxy_name]:
-        _proxy_value = proxy_config.__dict__[proxy_name]
+    if proxy_config and proxy_name in proxy_config and proxy_config[proxy_name]:
+        _proxy_value = proxy_config[proxy_name]
     else:
         _proxy_value = os.getenv(proxy_name + '_proxy', None)
         _no_proxy_value = os.getenv('no_proxy', None)
