@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import connect from '../../../utils/connect';
 import {computed} from 'mobx';
 import LoadingView from '../../special/LoadingView';
@@ -59,12 +60,12 @@ import styles from './Browser.css';
   pipelines
 })
 @localization.localizedComponent
-@HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
+@HiddenObjects.checkPipelines(p => (p.match && p.match.params ? p.match.params.id : p.id))
 @HiddenObjects.injectTreeFilter
 @inject(({pipelines, folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
-  if (params.params) {
-    componentParameters = params.params;
+  if (params.match && params.match.params) {
+    componentParameters = params.match.params;
   }
   return {
     versions: pipelines.versionsForPipeline(componentParameters.id),
@@ -76,7 +77,7 @@ import styles from './Browser.css';
   };
 })
 @observer
-export default class Pipeline extends localization.LocalizedReactComponent {
+class Pipeline extends localization.LocalizedReactComponent {
   _versions = null;
 
   static propTypes = {
@@ -252,7 +253,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   runPipeline = (event, version) => {
     event.stopPropagation();
-    this.props.router.push(`/launch/${this.props.pipelineId}/${version}/default`);
+    this.props.history.push(`/launch/${this.props.pipelineId}/${version}/default`);
   };
 
   renderTreeItemSelection = (item) => {
@@ -365,13 +366,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     } else {
       switch (item.type) {
         case ItemTypes.folder:
-          this.props.router.push(`/folder/${item.id}`);
+          this.props.history.push(`/folder/${item.id}`);
           break;
         case ItemTypes.pipeline:
-          this.props.router.push(`/${item.id}`);
+          this.props.history.push(`/${item.id}`);
           break;
         case ItemTypes.version:
-          this.props.router.push(`/${this.props.pipelineId}/${item.name}`);
+          this.props.history.push(`/${this.props.pipelineId}/${item.name}`);
           break;
       }
     }
@@ -486,9 +487,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         this.props.onReloadTree(!parentFolderId);
       }
       if (parentFolderId) {
-        this.props.router.push(`/folder/${parentFolderId}`);
+        this.props.history.push(`/folder/${parentFolderId}`);
       } else {
-        this.props.router.push('/library');
+        this.props.history.push('/library');
       }
     }
   };
@@ -557,9 +558,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       }
       const pipelineId = request.value.id;
       if (pipelineId) {
-        this.props.router.push(`/${pipelineId}`);
+        this.props.history.push(`/${pipelineId}`);
       } else {
-        this.props.router.push('/library');
+        this.props.history.push('/library');
       }
     }
   };
@@ -865,7 +866,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     if (this.props.pipeline.loaded && !this.props.listingMode) {
       const {id, pipelineType} = this.props.pipeline.value;
       if (/^versioned_storage$/i.test(pipelineType)) {
-        this.props.router && this.props.router.push(`/vs/${id}`);
+        this.props.history && this.props.history.push(`/vs/${id}`);
       }
     }
   };
@@ -900,3 +901,5 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     this.redirectToVersionedStorage();
   }
 }
+
+export default withRouter(Pipeline);

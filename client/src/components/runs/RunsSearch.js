@@ -15,32 +15,19 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {Table} from 'antd';
 import PipelineRunFilter from '../../models/pipelines/PipelineRunFilter';
 import styles from './RunsSearch.css';
 import StatusIcon from '../special/run-status-icon';
 import localization from '../../utils/localization';
+import parseQueryParameters from '../../utils/queryParameters';
 
 const pageSize = 20;
 
 @inject(({routing}) => {
-  const queryParameters = routing.location.search &&
-    routing.location.search.substring(1, routing.location.search.length)
-      .split('&').map(s => {
-      const parts = s.split('=');
-      let value = parts[1];
-      for (let i = 2; i < parts.length; i++) {
-        value += `=${parts[i]}`;
-      }
-      return {
-        key: parts[0],
-        value: value
-      }
-    }).reduce((obj, current) => {
-      obj[current.key] = current.value;
-      return obj;
-    }, {});
+  const queryParameters = parseQueryParameters(routing);
   const runParams = {
     page: 1,
     pageSize: pageSize,
@@ -54,7 +41,7 @@ const pageSize = 20;
 })
 @localization.localizedComponent
 @observer
-export default class RunsSearch extends localization.LocalizedReactComponent {
+class RunsSearch extends localization.LocalizedReactComponent {
 
   state = {currentPage: 1};
 
@@ -175,13 +162,15 @@ export default class RunsSearch extends localization.LocalizedReactComponent {
   }
 
   goToRun = (run) => {
-    this.props.router.push(`/run/${run.id}`);
+    this.props.history.push(`/run/${run.id}`);
   };
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate (prevProps, prevState) {
     if (prevState.currentPage !== this.state.currentPage) {
       this.setState({currentPage: this.state.currentPage});
       this.props.runFilter.filter(this.getFilterParams());
     }
   }
 }
+
+export default withRouter(RunsSearch);

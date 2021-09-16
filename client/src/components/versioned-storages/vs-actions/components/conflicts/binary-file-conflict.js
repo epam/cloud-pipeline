@@ -21,7 +21,7 @@ import {Button, Icon} from 'antd';
 import {HeadBranch, RemoteBranch} from './utilities/conflicted-file/branches';
 import styles from './conflicts.css';
 
-class BinaryFileConflict extends React.PureComponent {
+class BinaryFileConflict extends React.Component {
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);

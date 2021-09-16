@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
 import {observable} from 'mobx';
 import {Row, Col, Icon, message} from 'antd';
 import styles from './Graph.css';
@@ -25,7 +24,6 @@ import PipelineFilesUpdate from '../../../../../models/pipelines/PipelineFilesUp
 import PipelineConfigurationUpdate from '../../../../../models/pipelines/PipelineConfigurationUpdate';
 import roleModel from '../../../../../utils/roleModel';
 
-@observer
 export default class Graph extends React.Component {
   static propTypes = {
     canEdit: PropTypes.bool,

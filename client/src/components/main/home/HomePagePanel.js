@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import styles from './HomePage.css';
 import {Row, Icon, Tooltip} from 'antd';
@@ -52,13 +53,14 @@ const PanelComponent = {
 
 @localization.localizedComponent
 @AsyncLayout.use
+@observer
 export default class HomePagePanel extends localization.LocalizedReactComponent {
   static propTypes = {
     onInitialize: PropTypes.func,
     panelKey: PropTypes.string,
     onPanelRemoved: PropTypes.func,
     closable: PropTypes.bool,
-    router: PropTypes.object,
+    history: PropTypes.object,
     activeRuns: PropTypes.object,
     completedRuns: PropTypes.object,
     services: PropTypes.object,
@@ -142,7 +144,7 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
             <Panel
               panelKey={this.props.panelKey}
               onInitialize={this.initializeContent}
-              router={this.props.router}
+              history={this.props.history}
               refresh={this.props.refresh}
               completedRuns={this.props.completedRuns}
               activeRuns={this.props.activeRuns}

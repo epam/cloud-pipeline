@@ -17,7 +17,7 @@
 import React, {Component} from 'react';
 import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
-import {Link} from 'react-router';
+import {Link, Route, Switch, withRouter} from 'react-router-dom';
 import clusterNodes from '../../models/cluster/ClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
@@ -29,14 +29,18 @@ import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
+import parseQueryParameters from '../../utils/queryParameters';
+import ClusterNodeGeneralInfo from './ClusterNodeGeneralInfo';
+import ClusterNodePods from './ClusterNodePods';
+import ClusterNodeMonitor from './ClusterNodeMonitor';
 
-@inject((stores, {params, location}) => {
-  const {from, to} = location?.query;
+@inject((stores, {match, location}) => {
+  const {from, to} = parseQueryParameters(location);
   return {
     pools,
-    name: params.nodeName,
-    node: clusterNodes.getNode(params.nodeName),
-    chartsData: new ChartsData(params.nodeName, from, to)
+    name: match.params.nodeName,
+    node: clusterNodes.getNode(match.params.nodeName),
+    chartsData: new ChartsData(match.params.nodeName, from, to)
   };
 })
 @observer
@@ -71,7 +75,7 @@ class ClusterNode extends Component {
 
   renderError = () => {
     if (!this.props.node.pending && this.props.node.error) {
-      const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+      const activeTab = this.props.location.pathname.split('/').slice(-1)[0];
       if (/^monitor$/i.test(activeTab)) {
         return null;
       }
@@ -92,7 +96,7 @@ class ClusterNode extends Component {
     if (this.props.node.pending || this.props.node.error) {
       return null;
     }
-    let activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+    let activeTab = this.props.location.pathname.split('/').slice(-1)[0];
     if (activeTab === 'monitor' && this.windowsOS) {
       activeTab = 'info';
     }
@@ -106,13 +110,13 @@ class ClusterNode extends Component {
             <AdaptedLink
               id="cluster-node-tab-info"
               to={`/cluster/${this.props.name}/info`}
-              location={this.props.router.location}>General info</AdaptedLink>
+              location={this.props.location}>General info</AdaptedLink>
           </Menu.Item>
           <Menu.Item key="jobs">
             <AdaptedLink
               id="cluster-node-tab-jobs"
               to={`/cluster/${this.props.name}/jobs`}
-              location={this.props.router.location}>Jobs</AdaptedLink>
+              location={this.props.location}>Jobs</AdaptedLink>
           </Menu.Item>
           {
             !this.windowsOS && (
@@ -120,7 +124,7 @@ class ClusterNode extends Component {
                 <AdaptedLink
                   id="cluster-node-tab-monitor"
                   to={`/cluster/${this.props.name}/monitor`}
-                  location={this.props.router.location}>Monitor</AdaptedLink>
+                  location={this.props.location}>Monitor</AdaptedLink>
               </Menu.Item>
             )
           }
@@ -155,7 +159,7 @@ class ClusterNode extends Component {
           fontSize: 'smaller',
           marginBottom: 2
         },
-        location: this.props.router.location,
+        location: this.props.location,
         pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null,
         pools: this.props.pools.loaded ? (this.props.pools.value || []) : []
       });
@@ -169,7 +173,7 @@ class ClusterNode extends Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      this.props.router.push('/cluster');
+      this.props.history.push('/cluster');
     }
   };
 
@@ -195,18 +199,20 @@ class ClusterNode extends Component {
   };
 
   render () {
+    const childrenProps = {
+      node: this.props.node,
+      chartsData: this.props.chartsData
+    };
     const result = [
       this.renderError(),
       this.renderMenu(),
-      React.Children.map(this.props.children,
-        (child) => React.cloneElement(
-          child,
-          {
-            node: this.props.node,
-            chartsData: this.props.chartsData
-          }
-        )
-      )
+      <React.Fragment key="cluster-node-children">
+        <Switch>
+          <Route path="/cluster/:nodeName/info"><ClusterNodeGeneralInfo {...childrenProps} /></Route>
+          <Route path="/cluster/:nodeName/jobs"><ClusterNodePods {...childrenProps} /></Route>
+          <Route path="/cluster/:nodeName/monitor"><ClusterNodeMonitor {...childrenProps} /></Route>
+        </Switch>
+      </React.Fragment>
     ];
     const nodeLabels = this.renderNodeLabels();
     const allowToTerminate = this.props.node.loaded &&
@@ -254,4 +260,4 @@ class ClusterNode extends Component {
   }
 }
 
-export default ClusterNode;
+export default withRouter(ClusterNode);

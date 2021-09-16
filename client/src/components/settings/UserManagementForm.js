@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import {
   Alert,
   Tabs,
@@ -51,6 +52,7 @@ import roleModel from '../../utils/roleModel';
 
 const PAGE_SIZE = 20;
 
+@withRouter
 @roleModel.authenticationInfo
 @inject('dataStorages', 'users', 'userMetadataKeys')
 @inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({

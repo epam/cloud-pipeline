@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
@@ -24,6 +25,7 @@ import {
   Pagination
 } from 'antd';
 import FileSaver from 'file-saver';
+import parseQueryParameters from '../../../../utils/queryParameters';
 import VersionedStorageHeader from './header';
 import VersionedStorageTable from './table';
 import {SplitPanel} from '../../../special/splitPanel';
@@ -127,8 +129,9 @@ function generateItemsFilter (preferences) {
 @inject(({pipelines}, params) => {
   const {location} = params;
   let path;
-  if (location && location.query.path) {
-    path = location.query.path;
+  const queryParams = parseQueryParameters(location);
+  if (queryParams && queryParams.path) {
+    path = queryParams.path;
   }
   let componentParameters = params;
   if (params.params) {
@@ -334,18 +337,18 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   openLaunchVSAdvancedForm = (tool, tag) => {
     const {
-      router,
+      history,
       pipelineId,
       pipeline
     } = this.props;
-    if (router && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
+    if (history && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
       const options = [
         `vs=true`,
         tool && `tool=${tool.id}`,
         tool && tag && `version=${tag}`
       ]
         .filter(Boolean);
-      router.push(
+      history.push(
         `/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default?${options.join('&')}`
       );
     }
@@ -363,7 +366,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       preferences,
       pipeline,
       pipelineId,
-      router
+      history
     } = this.props;
     this.closeLaunchVSForm();
     const hide = message.loading('Launching Versioned Storage...', 0);
@@ -395,7 +398,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       .then((runId) => {
         hide();
         if (typeof runId === 'number') {
-          router.push(`/run/${runId}`);
+          history.push(`/run/${runId}`);
         }
       });
   };
@@ -541,9 +544,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onReloadTree(!parentFolderId);
         }
         if (parentFolderId) {
-          this.props.router.push(`/folder/${parentFolderId}`);
+          this.props.history.push(`/folder/${parentFolderId}`);
         } else {
-          this.props.router.push('/library');
+          this.props.history.push('/library');
         }
       }
     }
@@ -853,17 +856,17 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   navigate = (path) => {
-    const {router, pipelineId} = this.props;
-    if (!router) {
+    const {history, pipelineId} = this.props;
+    if (!history) {
       return;
     }
     if (path) {
-      router.push({
+      history.push({
         pathname: `/vs/${pipelineId}`,
         search: `?path=${path}`
       });
     } else {
-      router.push(`/vs/${pipelineId}`);
+      history.push(`/vs/${pipelineId}`);
     }
   };
 
@@ -1171,4 +1174,4 @@ VersionedStorage.propTypes = {
   path: PropTypes.string
 };
 
-export default VersionedStorage;
+export default withRouter(VersionedStorage);

@@ -27,7 +27,7 @@ const SizePerTickPx = 100;
 
 @inject('plot', 'data')
 @observer
-class Timeline extends React.PureComponent {
+class Timeline extends React.Component {
   state = {
     from: undefined,
     to: undefined,
@@ -123,7 +123,7 @@ class Timeline extends React.PureComponent {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const newState = {};
     if (nextProps.from !== this.props.from) {
       newState.from = nextProps.from;

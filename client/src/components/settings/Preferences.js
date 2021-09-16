@@ -15,18 +15,19 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, Input, message, Modal, Row, Table} from 'antd';
 import PreferencesUpdate from '../../models/preferences/PreferencesUpdate';
 import PreferenceGroup from './forms/PreferenceGroup';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel/SplitPanel';
+import {SplitPanel} from '../special/splitPanel';
 import styles from './Preferences.css';
 
-@inject('preferences', 'router', 'authenticatedUserInfo')
+@inject('preferences', 'authenticatedUserInfo')
 @observer
-export default class Preferences extends React.Component {
+class Preferences extends React.Component {
   state = {
     selectedPreferenceGroup: null,
     operationInProgress: false,
@@ -40,9 +41,10 @@ export default class Preferences extends React.Component {
     if (!selectedPreferenceGroup && this.preferencesGroups.length > 0) {
       this.selectPreferenceGroup(this.preferencesGroups[0]);
     }
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
-    }
+    // todo replace with history or with <Prompt>
+    // if (route && router) {
+    //   router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    // }
     preferences.fetch();
   };
 
@@ -96,12 +98,13 @@ export default class Preferences extends React.Component {
     return [];
   }
 
+  // todo
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {history} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => history.push(nextLocation)
       );
     };
     if (this.templateModified && !changesCanBeSkipped) {
@@ -289,3 +292,5 @@ export default class Preferences extends React.Component {
     );
   }
 }
+
+export default withRouter(Preferences);

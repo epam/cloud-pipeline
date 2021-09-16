@@ -625,7 +625,7 @@ export default class AddInstanceForm extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const typesAreEquals = (type1, type2) => type1.metadataClass.id === type2.metadataClass.id;
     if (this.props.entityTypes !== nextProps.entityTypes ||
       !compareArrays(this.props.entityTypes, nextProps.entityTypes, typesAreEquals)) {

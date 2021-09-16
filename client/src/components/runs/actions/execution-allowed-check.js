@@ -347,7 +347,7 @@ class SubmitButton extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     return this.performAsyncCheck(nextProps, true);
   }
 

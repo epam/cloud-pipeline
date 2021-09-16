@@ -190,8 +190,8 @@ function fetchAttributes (user, preferences) {
 const allPages = Object.values(Pages);
 
 class UINavigation {
-  static testPage (router) {
-    const path = (router.location.pathname || '')
+  static testPage (history) {
+    const path = (history.location.pathname || '')
       .split('/')
       .slice(1)
       .shift();
@@ -293,23 +293,23 @@ class UINavigation {
     return !this.pageIsUnavailable(Pages.search);
   }
 
-  getActivePage (router) {
-    const page = UINavigation.testPage(router);
+  getActivePage (history) {
+    const page = UINavigation.testPage(history);
     const active = page
       ? this.navigationItems.find(item => item.key === page.key)
       : undefined;
     return active ? active.key : undefined;
   }
 
-  redirectIfPageIsUnavailable (router) {
-    const page = UINavigation.testPage(router);
+  redirectIfPageIsUnavailable (history) {
+    const page = UINavigation.testPage(history);
     if (
       page &&
-      !this.getActivePage(router) &&
-      router.location.pathname !== this.home &&
+      !this.getActivePage(history) &&
+      history.location.pathname !== this.home &&
       this.loaded
     ) {
-      router.push(this.home);
+      history.push(this.home);
     }
   }
 }

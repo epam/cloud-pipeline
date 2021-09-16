@@ -32,6 +32,7 @@ import pipelines from '../../models/pipelines/Pipelines';
 import FilterInput from '../../utils/filter/inputControl/FilterInput';
 import SaveFilterForm from './SaveFilterForm';
 import {openReRunForm} from './actions';
+import {withRouter} from 'react-router-dom';
 
 const pageSize = 20;
 
@@ -311,7 +312,7 @@ class RunsFilter extends React.Component {
   };
 
   onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
+    this.props.history.push(`/run/${id}`);
   };
 
   openSaveFilterForm = () => {
@@ -541,4 +542,4 @@ class RunsFilter extends React.Component {
   }
 }
 
-export default RunsFilter;
+export default withRouter(RunsFilter);

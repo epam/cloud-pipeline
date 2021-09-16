@@ -23,7 +23,7 @@ import tickGenerators from './ticks';
 
 @inject('plot', 'data')
 @observer
-class ValueAxis extends React.PureComponent {
+class ValueAxis extends React.Component {
   state = {
     from: undefined,
     to: undefined,
@@ -93,7 +93,7 @@ class ValueAxis extends React.PureComponent {
     this.processDataGroup(this.props);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (
       nextProps.from !== this.props.from ||
       nextProps.to !== this.props.to ||

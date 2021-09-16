@@ -28,20 +28,22 @@ import LoadingView from '../../../special/LoadingView';
 import VersionScanResult from '../../elements/VersionScanResult';
 import roleModel from '../../../../utils/roleModel';
 import styles from './ToolScanningInfo.css';
+import {withRouter} from 'react-router-dom';
 
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
 
 const PAGE_SIZE = 40;
 
+@withRouter
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject((stores, {match}) => {
   return {
     ...stores,
-    toolId: params.id,
-    version: params.version,
-    tool: new LoadTool(params.id),
-    versions: new LoadToolAttributes(params.id, params.version)
+    toolId: match.params.id,
+    version: match.params.version,
+    tool: new LoadTool(match.params.id),
+    versions: new LoadToolAttributes(match.params.id, match.params.version)
   };
 })
 @observer
@@ -62,12 +64,12 @@ export default class ToolScanningInfo extends React.Component {
   checkToolPlatform () {
     if (/^windows$/i.test(this.toolPlatform)) {
       const {
-        router,
+        history,
         toolId,
         version
       } = this.props;
-      if (router) {
-        router.push(`/tool/${toolId}/info/${version}/settings`);
+      if (history) {
+        history.push(`/tool/${toolId}/info/${version}/settings`);
       }
     }
   }

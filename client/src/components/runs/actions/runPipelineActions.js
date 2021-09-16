@@ -25,5 +25,5 @@ export default function runPipelineActions (WrappedComponent) {
     'preferences',
     'pipelines',
     'hiddenObjects'
-  )(observer(WrappedComponent));
+  )(WrappedComponent);
 }

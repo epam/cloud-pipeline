@@ -28,13 +28,15 @@ import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
 import styles from './packages.css';
+import {withRouter} from 'react-router-dom';
 
-@inject((stores, {params}) => {
+@withRouter
+@inject((stores, {match}) => {
   return {
-    toolId: params.id,
-    version: params.version,
-    tool: new LoadTool(params.id),
-    versions: new LoadToolAttributes(params.id, params.version)
+    toolId: match.params.id,
+    version: match.params.version,
+    tool: new LoadTool(match.params.id),
+    versions: new LoadToolAttributes(match.params.id, match.params.version)
   };
 })
 @observer
@@ -60,12 +62,12 @@ export default class Packages extends React.Component {
   checkToolPlatform () {
     if (/^windows$/i.test(this.toolPlatform)) {
       const {
-        router,
+        history,
         toolId,
         version
       } = this.props;
-      if (router) {
-        router.push(`/tool/${toolId}/info/${version}/settings`);
+      if (history) {
+        history.push(`/tool/${toolId}/info/${version}/settings`);
       }
     }
   }
@@ -185,7 +187,7 @@ export default class Packages extends React.Component {
     this.setState({filterDependencies: e.target.value});
   };
 
-  renderDependency = (includePackage=false) => (d, index) => {
+  renderDependency = (includePackage = false) => (d, index) => {
     return (
       <li key={index} className={styles.dependency}>
         <b>{highlightText(d.name, this.state.filterDependencies)} v{d.version}</b>

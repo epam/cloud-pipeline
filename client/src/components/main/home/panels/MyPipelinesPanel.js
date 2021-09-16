@@ -94,7 +94,7 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
 
   renderContent = () => {
     const navigate = ({id}) => {
-      this.props.router && this.props.router.push(`/${id}`);
+      this.props.history && this.props.history.push(`/${id}`);
     };
     const launch = async ({id}) => {
       const hide = message.loading(`Fetching ${this.localizedString('pipeline')}'s info...`, -1);
@@ -108,8 +108,8 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         message.error('Error fetching last version', 5);
       } else {
         hide();
-        this.props.router &&
-        this.props.router.push(`/launch/${id}/${request.value.currentVersion.name}`);
+        this.props.history &&
+        this.props.history.push(`/launch/${id}/${request.value.currentVersion.name}`);
       }
     };
     const history = async ({id}) => {
@@ -124,8 +124,8 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         message.error('Error fetching last version', 5);
       } else {
         hide();
-        this.props.router &&
-        this.props.router.push(`/${id}/${request.value.currentVersion.name}/history`);
+        this.props.history &&
+        this.props.history.push(`/${id}/${request.value.currentVersion.name}/history`);
       }
     };
     return (

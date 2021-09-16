@@ -30,10 +30,13 @@ const SummaryHOC = WrappedComponent => {
     };
     render () {
       const {display} = this.state;
-      let {style = {}} = this.props;
-      if (style && style.hasOwnProperty('height') && !isNaN(style.height)) {
-        style.height = +style.height - 22;
-      }
+      const style = {
+        ...this.props.style || {},
+        ...this.props.style && this.props.style.hasOwnProperty('height') && !isNaN(this.props.style.height)
+          ? {
+            height: +this.props.style.height - 22
+          } : {}
+      };
       const wrappedProps = {
         ...this.props,
         style

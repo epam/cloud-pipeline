@@ -16,6 +16,7 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
@@ -37,24 +38,23 @@ import roleModel from '../../../../utils/roleModel';
 import LoadingView from '../../../special/LoadingView';
 import UploadButton from '../../../special/UploadButton';
 
-@inject(({pipelines, routing}, {onReloadTree, params}) => {
+@inject(({pipelines, routing}, {onReloadTree, match}) => {
   const queryParameters = parseQueryParameters(routing);
   const path = queryParameters.path ? `src/${parseQueryParameters(routing).path}` : undefined;
   return {
     onReloadTree,
     path: parseQueryParameters(routing).path,
-    source: pipelines.getSource(params.id, params.version, path),
-    pipeline: pipelines.getPipeline(params.id),
+    source: pipelines.getSource(match.params.id, match.params.version, path),
+    pipeline: pipelines.getPipeline(match.params.id),
     pipelines,
-    pipelineId: params.id,
-    version: params.version,
-    pipelineVersions: pipelines.versionsForPipeline(params.id),
+    pipelineId: match.params.id,
+    version: match.params.version,
+    pipelineVersions: pipelines.versionsForPipeline(match.params.id),
     routing
   };
 })
 @observer
-export default class PipelineCode extends Component {
-
+class PipelineCode extends Component {
   state = {
     createFileDialog: false,
     editFileDialog: false,
@@ -619,3 +619,5 @@ export default class PipelineCode extends Component {
     );
   }
 }
+
+export default withRouter(PipelineCode);

@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {Pagination, Table, Tooltip} from 'antd';
 import {
@@ -43,20 +44,20 @@ import {
   ResizableContainer, getPeriodMonths
 } from './utilities';
 import {InstanceReportLayout, Layout} from './layout';
+import parseQueryParameters from '../../../utils/queryParameters';
 import styles from './reports.css';
 
 const tablePageSize = 10;
 
-function injection (stores, props) {
-  const {location, params} = props;
-  const {type} = params || {};
+function injection (stores, {location, match}) {
+  const {type} = match?.params || {};
   const {
     user: userQ,
     group: groupQ,
     period = Period.month,
     range,
     region: regionQ
-  } = location.query;
+  } = parseQueryParameters(location);
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
@@ -562,9 +563,11 @@ class InstanceReport extends React.Component {
 }
 
 export default inject('awsRegions')(
-  inject(injection)(
-    Filters.attach(
-      observer(InstanceReport)
+  withRouter(
+    inject(injection)(
+      Filters.attach(
+        observer(InstanceReport)
+      )
     )
   )
 );

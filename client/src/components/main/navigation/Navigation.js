@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
@@ -33,7 +33,7 @@ import searchStyles from '../../search/search.css';
 @observer
 export default class Navigation extends React.Component {
   static propTypes = {
-    router: PropTypes.object,
+    history: PropTypes.object,
     onLibraryCollapsedChange: PropTypes.func,
     collapsed: PropTypes.bool,
     activeTabPath: PropTypes.string,
@@ -74,7 +74,7 @@ export default class Navigation extends React.Component {
 
   navigate = ({key}) => {
     if (key === 'runs') {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      SessionStorageWrapper.navigateToActiveRuns(this.props.history);
     } else if (key === 'logout') {
       let url = `${SERVER}/saml/logout`;
       if (SERVER.endsWith('/')) {
@@ -108,7 +108,7 @@ export default class Navigation extends React.Component {
       message.error(info.error, 5);
     } else {
       message.destroy();
-      this.props.router.push(`/run/${runId}`);
+      this.props.history.push(`/run/${runId}`);
     }
   }
 

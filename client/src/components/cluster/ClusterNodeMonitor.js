@@ -42,6 +42,7 @@ import {ResponsiveContainer} from './charts/utilities';
 import ClusterNodeUsageReport, * as usageUtilities
   from '../../models/cluster/ClusterNodeUsageReport';
 import ClusterUsageExportSettingsDialog from './ClusterUsageExportSettingsDialog';
+import {withRouter} from 'react-router-dom';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -109,7 +110,7 @@ function ChartContainer (
   );
 }
 
-@inject('chartsData', 'preferences')
+@inject('preferences')
 @observer
 class ClusterNodeMonitor extends React.Component {
   state = {
@@ -214,11 +215,11 @@ class ClusterNodeMonitor extends React.Component {
   checkWindowsBasedNode = () => {
     if (this.windowsOS) {
       const {
-        router,
+        history,
         node
       } = this.props;
-      if (node && node.loaded && router) {
-        router.push(`/cluster/${node.value.name}/info`);
+      if (node && node.loaded && history) {
+        history.push(`/cluster/${node.value.name}/info`);
       }
     }
   }
@@ -513,7 +514,7 @@ class ClusterNodeMonitor extends React.Component {
     } = this.props;
     if (chartsData.error) {
       return (
-        <Alert type={'error'} message={chartsData.error}/>
+        <Alert type={'error'} message={chartsData.error} />
       );
     }
     if (!chartsData.initialized) {
@@ -700,4 +701,4 @@ class ClusterNodeMonitor extends React.Component {
   }
 }
 
-export default ClusterNodeMonitor;
+export default withRouter(ClusterNodeMonitor);

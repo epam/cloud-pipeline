@@ -28,7 +28,7 @@ class TooltipRenderer extends React.PureComponent {
     sizes: {}
   };
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.tooltipString !== this.props.tooltipString) {
       this.setState({sizes: {}});
     }
@@ -213,7 +213,7 @@ TooltipRenderer.defaultProps = {
 
 @inject('data', 'plot', 'timeline')
 @observer
-class Tooltip extends React.PureComponent {
+class Tooltip extends React.Component {
   @observable hoveredItem;
 
   componentDidMount () {
@@ -227,7 +227,7 @@ class Tooltip extends React.PureComponent {
     window.removeEventListener('mousemove', this.mouseMove);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.data !== this.props.data) {
       if (this.props.data) {
         this.props.data.unRegisterListener(this.dataUpdated);

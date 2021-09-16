@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
@@ -50,7 +50,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
   }
 
   navigateToRun = ({id}) => {
-    this.props.router && this.props.router.push(`/run/${id}`);
+    this.props.history && this.props.history.push(`/run/${id}`);
   };
 
   confirm = (warning, actionText, action) => {

@@ -50,18 +50,7 @@ export default class PipelinesLibraryContent extends React.Component {
           )
         }
       >
-        {
-          React.Children.map(
-            this.props.children,
-            (child) => React.cloneElement(
-              child, {
-                onReloadTree: this.props.onReloadTree,
-                browserLocation: this.props.location,
-                browserLocationQuery: this.props.query
-              }
-            )
-          )
-        }
+        {this.props.children}
       </Card>
     );
   }

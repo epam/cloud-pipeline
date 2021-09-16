@@ -520,7 +520,7 @@ export default class DockerImageBrowser extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.dockerImage !== this.props.dockerImage || nextProps.visible) {
       this.parseDockerImage(nextProps.dockerImage);
     }

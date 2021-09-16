@@ -39,6 +39,7 @@ import LoadingView from '../special/LoadingView';
 import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
 import roleModel from '../../utils/roleModel';
+import {withRouter} from 'react-router-dom';
 
 const CLI_KEY = 'cli';
 const GIT_CLI_KEY = 'git cli';
@@ -61,6 +62,7 @@ function processBashScript (script) {
   return command;
 }
 
+@withRouter
 @inject('authenticatedUserInfo', 'dataStorages', 'preferences')
 @inject(({authenticatedUserInfo, dataStorages, preferences}) => ({
   authenticatedUserInfo,

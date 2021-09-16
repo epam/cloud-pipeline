@@ -42,7 +42,7 @@ class GitRepositoryControl extends React.Component {
     cloneType: undefined,
     visible: false
   };
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.ssh !== nextProps.ssh || this.props.https !== nextProps.https) {
       this.setState({
         cloneType: undefined

@@ -17,6 +17,7 @@
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import {Input, Row, Button, Icon, Table, message, Modal} from 'antd';
 import FileSaver from 'file-saver';
 import PipelineFile from '../../../../models/pipelines/PipelineFile';
@@ -56,17 +57,17 @@ const MarkdownRenderer = new Remarkable('full', {
   }
 });
 
-@inject(({pipelines, routing}, {onReloadTree, params}) => ({
+@inject(({pipelines, routing}, {onReloadTree, match}) => ({
   onReloadTree,
-  pipelineId: params.id,
-  pipeline: pipelines.getPipeline(params.id),
-  version: params.version,
-  pipelineVersions: pipelines.versionsForPipeline(params.id),
-  docs: pipelines.getDocuments(params.id, params.version),
+  pipelineId: match.params.id,
+  pipeline: pipelines.getPipeline(match.params.id),
+  version: match.params.version,
+  pipelineVersions: pipelines.versionsForPipeline(match.params.id),
+  docs: pipelines.getDocuments(match.params.id, match.params.version),
   routing
 }))
 @observer
-export default class PipelineDocuments extends Component {
+class PipelineDocuments extends Component {
   state = {
     renameFile: null,
     managingMdFile: null,
@@ -251,7 +252,7 @@ export default class PipelineDocuments extends Component {
   };
 
   downloadPipelineFile = async (file, event) => {
-    const {id, version} = this.props.params;
+    const {id, version} = this.props.match.params;
     event && event.stopPropagation();
     try {
       const pipelineFile = new PipelineFile(id, version, file.path);
@@ -284,7 +285,7 @@ export default class PipelineDocuments extends Component {
   }
 
   generateDocument = async (file) => {
-    const {id, version} = this.props.params;
+    const {id, version} = this.props.match.params;
     let graph = this._graphComponent ? this._graphComponent.base64Image() : '';
     if (graph.indexOf('data:image/png;base64,') === 0) {
       graph = graph.substring('data:image/png;base64,'.length);
@@ -606,7 +607,7 @@ export default class PipelineDocuments extends Component {
     this._mdOriginalContent = '';
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.version !== this.props.version ||
       nextProps.pipelineId !== this.props.pipelineId) {
       this._graphReady = false;
@@ -616,3 +617,5 @@ export default class PipelineDocuments extends Component {
     }
   }
 }
+
+export default withRouter(PipelineDocuments);

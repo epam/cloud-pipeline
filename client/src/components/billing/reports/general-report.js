@@ -17,7 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import {Pagination, Radio, Table} from 'antd';
+import parseQueryParameters from '../../../utils/queryParameters';
 import {
   BarChart,
   GroupedBarChart,
@@ -48,16 +50,14 @@ import {GeneralReportLayout, Layout} from './layout';
 import roleModel from '../../../utils/roleModel';
 import styles from './reports.css';
 
-function injection (stores, props) {
-  const {location} = props;
+function injection ({users, preferences}, {location}) {
   const {
     user: userQ,
     group: groupQ,
     period = Period.month,
     range,
     region: regionQ
-  } = location.query;
-  const {users, preferences} = stores;
+  } = parseQueryParameters(location);
   users.fetchIfNeededOrWait();
   preferences.fetchIfNeededOrWait();
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
@@ -786,7 +786,7 @@ function DefaultReport (props) {
   return GeneralReport(props);
 }
 
-export default inject('billingCenters', 'users', 'preferences')(
+export default withRouter(inject('billingCenters', 'users', 'preferences')(
   inject(injection)(
     Filters.attach(
       roleModel.authenticationInfo(
@@ -794,4 +794,4 @@ export default inject('billingCenters', 'users', 'preferences')(
       )
     )
   )
-);
+));

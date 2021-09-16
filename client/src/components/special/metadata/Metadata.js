@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import {computed} from 'mobx';
@@ -1624,7 +1624,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.entityClass !== nextProps.entityClass ||
       this.props.entityId !== nextProps.entityId ||
       this.props.entityParentId !== nextProps.entityParentId) {

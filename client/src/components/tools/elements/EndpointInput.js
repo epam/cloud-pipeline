@@ -479,7 +479,7 @@ export default class EndpointInput extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.value !== this.state.value) {
       this.editor && this.editor.clear();
       this.setState({

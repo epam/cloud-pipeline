@@ -15,6 +15,7 @@
  */
 
 import React, {Component} from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Card, Col, Menu, Row} from 'antd';
@@ -40,11 +41,11 @@ const refreshInterval = 10000;
   pipelineRun
 })
 @roleModel.authenticationInfo
-@inject(({routing, counter, pipelineRun, authenticatedUserInfo}, {params}) => {
+@inject(({routing, counter, pipelineRun, authenticatedUserInfo}, {match}) => {
   let runFilter;
   let runParams;
   let allUsers = false;
-  if (params.status === 'active') {
+  if (match.params.status === 'active') {
     const queryParameters = parseQueryParameters(routing);
     allUsers = queryParameters.hasOwnProperty('all')
       ? (queryParameters.all === undefined ? true : queryParameters.all === 'true')
@@ -53,7 +54,7 @@ const refreshInterval = 10000;
       runParams = {
         page: 1,
         pageSize: pageSize,
-        statuses: getStatusForServer(params.status),
+        statuses: getStatusForServer(match.params.status),
         owners: [authenticatedUserInfo.value.userName],
         userModified: false
       };
@@ -62,7 +63,7 @@ const refreshInterval = 10000;
       runParams = {
         page: 1,
         pageSize: pageSize,
-        statuses: getStatusForServer(params.status),
+        statuses: getStatusForServer(match.params.status),
         userModified: false
       };
       runFilter = pipelineRun.runFilter(runParams, true);
@@ -71,7 +72,7 @@ const refreshInterval = 10000;
     runParams = {
       page: 1,
       pageSize: pageSize,
-      statuses: getStatusForServer(params.status),
+      statuses: getStatusForServer(match.params.status),
       userModified: false
     };
     runFilter = pipelineRun.runFilter(runParams, true);
@@ -81,7 +82,7 @@ const refreshInterval = 10000;
     initialRunParams: runParams,
     counter,
     pipelines: pipelines,
-    status: params.status,
+    status: match.params.status,
     authenticatedUserInfo,
     pipelineRun,
     allUsers
@@ -163,7 +164,7 @@ class AllRuns extends Component {
 
   navigateToActiveRuns = (my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
-    SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+    SessionStorageWrapper.navigateToActiveRuns(this.props.history);
   };
 
   renderOwnersSwitch = () => {
@@ -203,7 +204,7 @@ class AllRuns extends Component {
     return openReRunForm(run, this.props);
   };
   onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
+    this.props.history.push(`/run/${id}`);
   };
   refreshTimer;
   startTimer = () => {
@@ -277,7 +278,7 @@ class AllRuns extends Component {
   getFilterParams () {
     const statuses = this.state.filter.statuses && this.state.filter.statuses.length
       ? this.state.filter.statuses
-      : getStatusForServer(this.props.params.status);
+      : getStatusForServer(this.props.match.params.status);
     const startDateFrom = this.state.filter.started && this.state.filter.started.length === 1
       ? moment(this.state.filter.started[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS')
       : undefined;
@@ -303,8 +304,8 @@ class AllRuns extends Component {
     };
   }
 
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.params.status !== this.props.params.status) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
+    if (nextProps.match.params.status !== this.props.match.params.status) {
       this.setState(
         {
           activeRuns: this.props.counter.value,
@@ -338,7 +339,7 @@ class AllRuns extends Component {
       this.setState(
         {
           activeRuns: this.props.counter.value,
-          status: this.props.params.status
+          status: this.props.match.params.status
         }
       );
       if (!this.runFilter) {
@@ -360,7 +361,7 @@ class AllRuns extends Component {
   }
 
   render () {
-    const {status} = this.props.params;
+    const {status} = this.props.match.params;
 
     return (
       <Card className={styles.runsCard} bodyStyle={{padding: 15}}>
@@ -406,7 +407,7 @@ class AllRuns extends Component {
             loading={this.props.authenticatedUserInfo.pending || !this.runFilter || this.runFilter.pending}
             dataSource={this.runFilter ? this.runFilter.value : []}
             handleTableChange={::this.handleTableChange}
-            statuses={getStatusForServer(this.props.params.status)}
+            statuses={getStatusForServer(this.props.match.params.status)}
             pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
             pagination={{total: this.runFilter ? this.runFilter.total : 0, pageSize, current: this.state.currentPage}}
             ownersDisabled={this.props.status === 'active' && !this.props.allUsers}
@@ -419,4 +420,4 @@ class AllRuns extends Component {
   }
 }
 
-export default AllRuns;
+export default withRouter(AllRuns);

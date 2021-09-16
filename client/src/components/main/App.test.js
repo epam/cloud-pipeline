@@ -22,13 +22,13 @@ import App from './App';
 /* eslint-disable */
 xit('App renders correctly', () => {
   const tree = renderer.create(
-    <App router={{location: '/'}} counter={{value: 1}} children={null} />
+    <App history={{location: '/'}} counter={{value: 1}} children={null} />
   ).toJSON();
   expect(tree).toMatchSnapshot();
 });
 
 xit('renders without crashing', () => {
   const div = document.createElement('div');
-  ReactDOM.render(<App router={{location: '/'}} counter={{value: 1}} />, div);
+  ReactDOM.render(<App history={{location: '/'}} counter={{value: 1}} />, div);
 });
 /* eslint-enable */

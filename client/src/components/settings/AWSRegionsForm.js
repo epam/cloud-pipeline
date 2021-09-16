@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import LoadingView from '../special/LoadingView';
@@ -88,10 +89,9 @@ function fromJSON (obj, defaultValue) {
   return defaultValue;
 }
 
-@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
+@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'authenticatedUserInfo')
 @observer
-export default class AWSRegionsForm extends React.Component {
-
+class AWSRegionsForm extends React.Component {
   static propTypes = {
     onInitialize: PropTypes.func
   };
@@ -111,9 +111,10 @@ export default class AWSRegionsForm extends React.Component {
   componentDidMount () {
     const {route, router} = this.props;
     this.props.onInitialize && this.props.onInitialize(this);
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
-    }
+    // todo replace with history or with <Prompt>
+    // if (route && router) {
+    //   router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    // }
   };
 
   componentDidUpdate () {
@@ -610,12 +611,13 @@ export default class AWSRegionsForm extends React.Component {
     }, this.loadAvailableRegionIds);
   };
 
+  // todo
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {history} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => history.push(nextLocation)
       );
     };
     if (this.regionModified && !changesCanBeSkipped) {
@@ -2066,7 +2068,7 @@ class IPRangeFormItem extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (!!nextProps.value !== !!this.props.value ||
       (!!nextProps.value &&
         (nextProps.value.ipMin !== this.props.value.ipMin ||
@@ -2183,7 +2185,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
       valueB.mountOptions === valueB.mountOptions;
   };
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (
       !CloudRegionFileShareMountFormItem.valuesAreEqual(this.state, nextProps.value) ||
       nextProps.provider !== this.props.provider
@@ -2357,7 +2359,6 @@ class CloudRegionFileShareMountFormItem extends React.Component {
       </Row>
     );
   }
-
 }
 
 @observer
@@ -2414,7 +2415,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
     this.props.onUnMount && this.props.onUnMount(this);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (!CloudRegionFileShareMountsFormItem.fileShareMountsAreEqual(
       this.state.mounts,
       nextProps.value
@@ -2515,3 +2516,5 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
     );
   }
 }
+
+export default withRouter(AWSRegionsForm);

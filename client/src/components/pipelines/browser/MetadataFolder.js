@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import connect from '../../../utils/connect';
 import {Checkbox, Modal, Table, Icon, Row, Col, Button, message} from 'antd';
 import {ItemTypes, generateTreeData} from '../model/treeStructureFunctions';
@@ -44,8 +45,8 @@ import HiddenObjects from '../../../utils/hidden-objects';
 @HiddenObjects.checkMetadataFolders(props => (props.params || props).id)
 @inject(({folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
-  if (params.params) {
-    componentParameters = params.params;
+  if (params.match && params.match.params) {
+    componentParameters = params.match.params;
   }
   return {
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
@@ -56,7 +57,7 @@ import HiddenObjects from '../../../utils/hidden-objects';
   };
 })
 @observer
-export default class MetadataFolder extends React.Component {
+class MetadataFolder extends React.Component {
 
   static propTypes = {
     selectionAvailable: PropTypes.bool,
@@ -181,7 +182,7 @@ export default class MetadataFolder extends React.Component {
     if (this.props.onNavigate) {
       this.props.onNavigate(item);
     } else {
-      this.props.router.push(item.url());
+      this.props.history.push(item.url());
     }
   };
 
@@ -258,7 +259,7 @@ export default class MetadataFolder extends React.Component {
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.folder.value.parentId);
         }
-        this.props.router.push(`/folder/${this.props.folderId}`);
+        this.props.history.push(`/folder/${this.props.folderId}`);
       }
     };
     Modal.confirm({
@@ -399,7 +400,7 @@ export default class MetadataFolder extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.initialSelection) {
       this.state.selectedItems = nextProps.initialSelection;
     }
@@ -421,3 +422,5 @@ export default class MetadataFolder extends React.Component {
     }
   }
 }
+
+export default withRouter(MetadataFolder);

@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -54,28 +55,28 @@ const DTS_ENVIRONMENT = 'DTS';
   preferences
 })
 @localization.localizedComponent
-@HiddenObjects.checkConfigurations(props => props?.params?.id)
+@HiddenObjects.checkConfigurations(props => props?.match?.params?.id)
 @inject('projects')
 @inject((
   {configurations, projects, folders, pipelinesLibrary, preferences, history, routing},
-  {onReloadTree, params}) => {
+  {onReloadTree, match}) => {
   return {
     history,
     routing,
     onReloadTree,
-    configurations: configurations.getConfiguration(params.id),
-    project: projects.getProjectFor(params.id, 'CONFIGURATION'),
+    configurations: configurations.getConfiguration(match?.params?.id),
+    project: projects.getProjectFor(match?.params?.id, 'CONFIGURATION'),
     pipelines,
     folders,
     pipelinesLibrary,
-    configurationId: params.id,
-    currentConfiguration: params.name,
+    configurationId: match?.params?.id,
+    currentConfiguration: match?.params?.name,
     configurationsCache: configurations,
     preferences
   };
 })
 @observer
-export default class DetachedConfiguration extends localization.LocalizedReactComponent {
+class DetachedConfiguration extends localization.LocalizedReactComponent {
   @observable allowedInstanceTypes;
 
   @observable configurationModified;
@@ -169,7 +170,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         overriddenConfiguration: null,
         emptyPipeline: false
       }, () => {
-        this.props.router.push(`/configuration/${this.props.configurationId}/${key}`);
+        this.props.history.push(`/configuration/${this.props.configurationId}/${key}`);
       });
     }
   };
@@ -202,7 +203,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           await this.props.configurations.fetch();
           this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
           hide();
-          this.props.router.push(`/configuration/${this.props.configurationId}/${entries[0].name}`);
+          this.props.history.push(`/configuration/${this.props.configurationId}/${entries[0].name}`);
         }
       }
     };
@@ -267,7 +268,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       await this.props.configurations.fetch();
       this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
       hide();
-      this.props.router.push(`/configuration/${this.props.configurationId}/${name}`);
+      this.props.history.push(`/configuration/${this.props.configurationId}/${name}`);
     }
   };
 
@@ -410,7 +411,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             if (this.selectedConfigurationName !== configuration.name) {
               this.allowedNavigation =
                 `/configuration/${this.props.configurationId}/${configuration.name}`;
-              this.props.router.push(this.allowedNavigation);
+              this.props.history.push(this.allowedNavigation);
             }
           });
           return true;
@@ -705,7 +706,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       if (request.error) {
         message.error(request.error);
       } else {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        SessionStorageWrapper.navigateToActiveRuns(this.props.history);
       }
     };
     let title = `Launch ${this.selectedConfigurationName} configuration?`;
@@ -822,7 +823,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       if (request.error) {
         message.error(request.error);
       } else {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        SessionStorageWrapper.navigateToActiveRuns(this.props.history);
       }
     };
     let title = 'Launch cluster?';
@@ -866,7 +867,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
       hide();
       this.closeEditConfigurationForm();
-      this.props.router.push(`/configuration/${this.props.configurationId}/${this.selectedConfigurationName}`);
+      this.props.history.push(`/configuration/${this.props.configurationId}/${this.selectedConfigurationName}`);
     }
   };
 
@@ -920,9 +921,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         this.props.onReloadTree(!parentFolderId);
       }
       if (parentFolderId) {
-        this.props.router.push(`/folder/${parentFolderId}`);
+        this.props.history.push(`/folder/${parentFolderId}`);
       } else {
-        this.props.router.push('/library');
+        this.props.history.push('/library');
       }
     }
   };
@@ -1096,6 +1097,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   componentDidMount () {
     this.loadSelectedPipelineParameters();
+/*
     this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (location.pathname === locationBefore) {
@@ -1135,6 +1137,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         callback();
       }
     });
+*/
   }
 
   componentWillUnmount () {
@@ -1161,3 +1164,5 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
   }
 }
+
+export default withRouter(DetachedConfiguration);

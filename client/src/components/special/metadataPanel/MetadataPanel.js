@@ -599,7 +599,7 @@ export default class MetadataPanel extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.entityId !== this.props.entityId) {
       this.setState({
         undoItems: [],

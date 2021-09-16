@@ -190,7 +190,7 @@ export default class FilterInput extends React.Component {
     this.updateEditor();
   }
 
-  componentWillMount () {
+  componentDidMount () {
     let keywordsRule = {};
     if (this.props.keywords && this.props.keywords.length > 0) {
       const keywordsRegex = (this.props.keywords || []).map(keyword => {

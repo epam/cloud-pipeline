@@ -402,7 +402,7 @@ export default class ShareWithForm extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.visible !== this.props.visible) {
       this.setState({
         sids: this.props.sids || []

@@ -311,7 +311,7 @@ class PreferenceInput extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if ('value' in nextProps &&
       (nextProps.value.value !== this.state.value || nextProps.value.visible !== this.state.visible)) {
       const value = nextProps.value;

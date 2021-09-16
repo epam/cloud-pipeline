@@ -33,6 +33,7 @@ import HotNodePoolScheduleUpdate from '../../../models/cluster/HotNodePoolSchedu
 import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolScheduleDelete';
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
+import {withRouter} from 'react-router-dom';
 
 @inject(() => {
   return {
@@ -203,8 +204,8 @@ class HotCluster extends React.Component {
   };
 
   onPoolClick = (pool) => {
-    const {router} = this.props;
-    router.push(`/cluster?pool_id=${pool.id}`);
+    const {history} = this.props;
+    history.push(`/cluster?pool_id=${pool.id}`);
   }
 
   render () {
@@ -294,4 +295,4 @@ class HotCluster extends React.Component {
   }
 }
 
-export default HotCluster;
+export default withRouter(HotCluster);

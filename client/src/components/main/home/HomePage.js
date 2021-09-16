@@ -165,7 +165,7 @@ export default class HomePage extends React.Component {
                     <HomePagePanel
                       onInitialize={this.initializePanel(item.i)}
                       refresh={this.refresh}
-                      router={this.props.router}
+                      history={this.props.history}
                       panelKey={item.i}
                       onPanelRemoved={this.onPanelRemoved}
                       closable={panelsLayout.length > 1}

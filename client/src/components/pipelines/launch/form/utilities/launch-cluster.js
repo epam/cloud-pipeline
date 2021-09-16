@@ -771,7 +771,7 @@ class ConfigureClusterDialog extends React.Component {
     return !nodesCount && !maxNodesCount;
   };
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.visible !== this.props.visible && nextProps.visible) {
       this.setState({
         launchCluster: nextProps.launchCluster,

@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import {Alert, Card, Modal, message} from 'antd';
 import localization from '../../../utils/localization';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -44,7 +45,7 @@ const DTS_ENVIRONMENT = 'DTS';
 @submitsRun
 @runPipelineActions
 @inject('awsRegions', 'pipelines', 'preferences')
-@inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
+@inject(({allowedInstanceTypes, routing, pipelines, preferences}, {match}) => {
   const components = queryParameters(routing);
   const isVersionedStorage = components.vs;
   let versionedStorageLaunchInfo;
@@ -60,18 +61,18 @@ const DTS_ENVIRONMENT = 'DTS';
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
-    pipeline: params.id ? pipelines.getPipeline(params.id) : undefined,
-    run: params.runId ? pipelineRun.run(params.runId, {refresh: true}) : undefined,
-    pipelineId: params.id,
-    version: params.version,
-    runId: params.runId,
-    configurationName: params.configuration,
-    image: params.image,
-    tool: params.image ? new LoadTool(params.image) : undefined,
-    toolVersion: params.image ? components.version : undefined,
-    toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
-    configurations: params.id && params.version && !isVersionedStorage
-      ? new PipelineConfigurations(params.id, params.version)
+    pipeline: match.params.id ? pipelines.getPipeline(match.params.id) : undefined,
+    run: match.params.runId ? pipelineRun.run(match.params.runId, {refresh: true}) : undefined,
+    pipelineId: match.params.id,
+    version: match.params.version,
+    runId: match.params.runId,
+    configurationName: match.params.configuration,
+    image: match.params.image,
+    tool: match.params.image ? new LoadTool(match.params.image) : undefined,
+    toolVersion: match.params.image ? components.version : undefined,
+    toolSettings: match.params.image ? new LoadToolVersionSettings(match.params.image) : undefined,
+    configurations: match.params.id && match.params.version && !isVersionedStorage
+      ? new PipelineConfigurations(match.params.id, match.params.version)
       : undefined,
     isVersionedStorage,
     versionedStorageLaunchInfo
@@ -357,7 +358,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       platform,
       skipCheck
     )) {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      SessionStorageWrapper.navigateToActiveRuns(this.props.history);
     }
   };
 
@@ -492,7 +493,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         message.error(request.error);
       } else {
         this.clearRunPayload();
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        SessionStorageWrapper.navigateToActiveRuns(this.props.history);
       }
     };
   };
@@ -674,4 +675,4 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   }
 }
 
-export default LaunchPipeline;
+export default withRouter(LaunchPipeline);

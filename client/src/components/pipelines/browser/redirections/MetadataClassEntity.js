@@ -15,12 +15,13 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import LoadingView from '../../../special/LoadingView';
 import MetadataEntityLoad from '../../../../models/folderMetadata/MetadataEntityLoad';
 
-class MetadataClassEntity extends React.PureComponent {
+class MetadataClassEntity extends React.Component {
   state = {
     error: undefined,
     folder: undefined,
@@ -51,7 +52,7 @@ class MetadataClassEntity extends React.PureComponent {
   navigate = () => {
     const {
       routeParams = {},
-      router
+      history
     } = this.props || {};
     const {
       folder,
@@ -84,15 +85,15 @@ class MetadataClassEntity extends React.PureComponent {
                   classEntity
                 } = result;
                 if (!classEntity) {
-                  router.push(`/metadataFolder/${folder}`);
+                  history.push(`/metadataFolder/${folder}`);
                 } else {
                   const {
                     name
                   } = classEntity;
                   if (!name) {
-                    router.push(`/metadataFolder/${folder}`);
+                    history.push(`/metadataFolder/${folder}`);
                   } else {
-                    router.push(`/metadata/${folder}/${name}`);
+                    history.push(`/metadata/${folder}/${name}`);
                   }
                 }
               }
@@ -117,4 +118,4 @@ class MetadataClassEntity extends React.PureComponent {
   }
 }
 
-export default inject('pipelines')(observer(MetadataClassEntity));
+export default inject('pipelines')(withRouter(observer(MetadataClassEntity)));

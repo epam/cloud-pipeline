@@ -258,7 +258,7 @@ export default class IssueComment extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const nextPropsText = nextProps.value ? nextProps.value.text : undefined;
     const text = this.props.value ? this.props.value.text : undefined;
     if (nextPropsText !== text && nextPropsText !== this.state.rawText) {

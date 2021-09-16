@@ -53,7 +53,7 @@ export default class AsyncLayout {
   }
 
   static use (...opts) {
-    return inject('layout')(observer(...opts));
+    return inject('layout')(...opts);
   }
 
   @observable loaded = false;

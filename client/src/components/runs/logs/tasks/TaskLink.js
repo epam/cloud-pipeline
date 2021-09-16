@@ -17,7 +17,7 @@
 import React, {Component} from 'react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import styles from './TaskLink.css';
 import StatusIcon from '../../../special/run-status-icon';
 import displayDate from '../../../../utils/displayDate';
@@ -31,7 +31,7 @@ export class TaskLink extends Component {
       status: PropTypes.string
     }),
     location: PropTypes.shape({
-      pathinfo: PropTypes.string
+      pathname: PropTypes.string
     }),
     timings: PropTypes.bool
   };
@@ -60,7 +60,7 @@ export class TaskLink extends Component {
   }
 
   render () {
-    const {to, task: {name, status}, location: {pathinfo}} = this.props;
+    const {to, task: {name, status}, location: {pathname}} = this.props;
     const taskNameClass = 'default';
     const infos = [];
     if (this.props.timings) {
@@ -108,7 +108,7 @@ export class TaskLink extends Component {
       }
     }
 
-    if (to === pathinfo) {
+    if (to === pathname) {
       return (
         <div>
           <StatusIcon status={status} small displayTooltip={false} />

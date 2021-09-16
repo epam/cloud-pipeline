@@ -64,7 +64,7 @@ class QuotasSection extends React.Component {
     this.updateQuotaType(this.props.quotaType);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     this.updateQuotaType(nextProps.quotaType);
   }
 

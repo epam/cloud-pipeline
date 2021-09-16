@@ -470,7 +470,7 @@ export class SplitPanel extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const nextPropsChildrenLength = (nextProps.children || []).filter(filterRealChild).length;
     const currentPropsChildrenLength = (this.props.children || []).filter(filterRealChild).length;
     if (nextPropsChildrenLength !== currentPropsChildrenLength) {

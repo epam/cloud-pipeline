@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-const parseQueryParameters = (routing) => {
-  return routing.location.search
-    ? routing.location.search.substring(1, routing.location.search.length)
+const parseQueryParameters = (routingOrLocation) => {
+  const location = Object.hasOwnProperty.call(routingOrLocation, 'location')
+    ? routingOrLocation.location
+    : Object.hasOwnProperty.call(routingOrLocation, 'search') ? routingOrLocation : {};
+  return location.search
+    ? location.search.substring(1, location.search.length)
       .split('&').map(s => {
         const parts = s.split('=');
         let value = parts[1];

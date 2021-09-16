@@ -145,7 +145,7 @@ export class WDLItemPortFormItem extends React.Component {
     this.props.onInitialize && this.props.onInitialize(this);
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (!valuesAreEqual(nextProps.value, this.state.formItemValue, true)) {
       this.updateState(nextProps.value);
     }

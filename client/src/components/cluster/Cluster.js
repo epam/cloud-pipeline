@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import moment from 'moment-timezone';
 import {
   Alert,
@@ -63,7 +64,7 @@ import {
   };
 })
 @observer
-export default class Cluster extends localization.LocalizedReactComponent {
+class Cluster extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
       runId: null,
@@ -174,7 +175,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   }
 
   renderLabels = (labels, item, pools) => {
-    const {router: {location}} = this.props;
+    const {location} = this.props;
     return renderNodeLabels(
       labels,
       {
@@ -593,7 +594,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   onNodeInstanceSelect = (node) => {
     this.props.clusterNodes.clearCachedNode(node.name);
-    this.props.router.push(`/cluster/${node.name}`);
+    this.props.history.push(`/cluster/${node.name}`);
   };
 
   nodeIsSlave = (node) => {
@@ -688,4 +689,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
       </div>
     );
   }
-};
+}
+
+export default withRouter(Cluster);

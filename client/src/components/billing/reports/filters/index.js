@@ -36,7 +36,7 @@ class Filters extends React.Component {
   static runnerTypes = RunnerType;
 
   @observable filterStore = new FilterStore();
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
 

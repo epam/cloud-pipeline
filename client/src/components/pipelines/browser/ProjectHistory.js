@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import folders from '../../../models/folders/Folders';
 import pipelines from '../../../models/pipelines/Pipelines';
 import RunTable from '../../runs/RunTable';
@@ -35,31 +36,31 @@ const PAGE_SIZE = 20;
   folders,
   pipelines
 })
-@HiddenObjects.checkFolders(p => (p.params ? p.params.id : p.id))
-@inject(({folders}, {params}) => {
+@HiddenObjects.checkFolders(p => (p.match && p.match.params ? p.match.params.id : p.id))
+@inject(({folders}, {match}) => {
   const filterParams = {
     page: 1,
     pageSize: PAGE_SIZE,
-    projectIds: [params.id],
+    projectIds: [match.params.id],
     userModified: false
   };
   return {
     runFilter: pipelineRun.runFilter(filterParams, true),
-    folder: folders.load(params.id),
-    folderId: params.id,
-    id: params.id,
+    folder: folders.load(match.params.id),
+    folderId: match.params.id,
+    id: match.params.id,
     folders,
     pipelines
   };
 })
 @observer
-export default class ProjectHistory extends React.Component {
+class ProjectHistory extends React.Component {
 
   launchPipeline = (run) => {
     return openReRunForm(run, this.props);
   };
   onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
+    this.props.history.push(`/run/${id}`);
   };
   reloadTable = () => {
     this.props.runFilter.fetch();
@@ -161,7 +162,7 @@ export default class ProjectHistory extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.id !== this.props.id) {
       if (this.runTable) {
         this.runTable.clearState();
@@ -169,3 +170,5 @@ export default class ProjectHistory extends React.Component {
     }
   }
 }
+
+export default withRouter(ProjectHistory);

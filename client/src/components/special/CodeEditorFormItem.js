@@ -72,7 +72,7 @@ export default class CodeEditorFormItem extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if ('value' in nextProps) {
       const value = nextProps.value;
       if (value !== this.state.value) {

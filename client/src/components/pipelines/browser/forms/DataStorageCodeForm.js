@@ -74,7 +74,7 @@ export default class DataStorageCodeForm extends React.Component {
     return undefined;
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.file && nextProps.file !== this.props.file) {
       this._generateDownloadUrl = new GenerateDownloadUrlRequest(
         nextProps.storageId,

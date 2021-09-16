@@ -18,6 +18,7 @@ import {observable, isObservableArray} from 'mobx';
 import {Period, getPeriod} from '../periods';
 import {RunnerType} from './runner-filter';
 import ReportsRouting from './reports-routing';
+import parseQueryParameters from '../../../../utils/queryParameters';
 
 class Filter {
   static RUNNER_SEPARATOR = '|';
@@ -27,15 +28,15 @@ class Filter {
   @observable report;
   @observable runner;
 
-  rebuild = ({location, router}) => {
-    this.router = router;
+  rebuild = ({location, history}) => {
+    this.history = history;
     const {
       period = Period.month,
       user,
       group,
       range,
       region
-    } = (location || {}).query || {};
+    } = parseQueryParameters(location || {});
     if (user) {
       this.runner = {
         type: RunnerType.user,
@@ -96,8 +97,8 @@ class Filter {
     if (params.length) {
       query = `?${params.join('&')}`;
     }
-    if (this.router) {
-      this.router.push(`${ReportsRouting.getPath(report)}${query}`);
+    if (this.history) {
+      this.history.push(`${ReportsRouting.getPath(report)}${query}`);
     }
   };
 

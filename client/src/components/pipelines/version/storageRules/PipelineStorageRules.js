@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import PipelineStorageRuleCreateDialog from './forms/PipelineStorageRuleCreateDialog';
 import displayDate from '../../../../utils/displayDate';
 import {message, Button, Checkbox, Modal, Row, Table} from 'antd';
@@ -23,13 +24,13 @@ import DataStorageRules from '../../../../models/dataStorage/DataStorageRules';
 import styles from './PipelineStorageRules.css';
 import roleModel from '../../../../utils/roleModel';
 
-@inject(({pipelines, routing}, {params}) => ({
-  rules: new DataStorageRules(params.id),
-  pipelineId: params.id,
-  pipeline: pipelines.getPipeline(params.id),
+@inject(({pipelines, routing}, {match}) => ({
+  rules: new DataStorageRules(match.params.id),
+  pipelineId: match.params.id,
+  pipeline: pipelines.getPipeline(match.params.id)
 }))
 @observer
-export default class PipelineStorageRules extends React.Component {
+class PipelineStorageRules extends React.Component {
 
   state = {createRuleDialogVisible: false};
 
@@ -141,3 +142,5 @@ export default class PipelineStorageRules extends React.Component {
     );
   }
 }
+
+export default withRouter(PipelineStorageRules);

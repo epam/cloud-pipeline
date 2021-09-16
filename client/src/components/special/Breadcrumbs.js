@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {Icon} from 'antd';
 import EditableField from './EditableField';
 import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
@@ -187,7 +187,7 @@ export default class Breadcrumbs extends React.Component {
                     editClassName={styles.breadcrumbsInput}
                     style={{
                       paddingLeft: '0px',
-                      background: 'transparent',
+                      backgroundColor: 'transparent',
                       textDecoration: 'none',
                       outline: 'none',
                       transition: 'color .3s ease',
@@ -319,7 +319,7 @@ export default class Breadcrumbs extends React.Component {
     this.reload();
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (`${this.props.id}` !== `${nextProps.id}` || this.props.type !== nextProps.type) {
       (async() => {
         await this.props.pipelinesLibrary.fetch();

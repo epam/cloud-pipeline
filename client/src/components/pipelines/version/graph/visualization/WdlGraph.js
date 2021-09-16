@@ -1445,6 +1445,7 @@ export default class WdlGraph extends Graph {
 
   componentDidMount () {
     this.loadMainFile();
+/*
     this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (this.state.modified && !this._routeChangeConfirm) {
@@ -1468,6 +1469,7 @@ export default class WdlGraph extends Graph {
         callback();
       }
     });
+*/
     this.props.onGraphReady && this.props.onGraphReady(this);
   }
 

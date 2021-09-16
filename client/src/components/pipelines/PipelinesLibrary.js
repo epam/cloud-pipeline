@@ -47,6 +47,23 @@ import DataStorageUpdate from '../../models/dataStorage/DataStorageUpdate';
 import UpdatePipeline from '../../models/pipelines/UpdatePipeline';
 import AWSRegionTag from '../special/AWSRegionTag';
 import HiddenObjects from '../../utils/hidden-objects';
+import {Redirect, Route, Switch, withRouter} from 'react-router-dom';
+import FolderBrowser from './browser/Folder';
+import Browser from './browser/Browser';
+import ProjectHistory from './browser/ProjectHistory';
+import StorageBrowser from './browser/DataStorage';
+import DetachedConfiguration from './configuration/DetachedConfiguration';
+import MetadataBrowser from './browser/Metadata';
+import MetadataFolderBrowser from './browser/MetadataFolder';
+import VersionedStorageBrowser from './browser/versioned-storage';
+import PipelineBrowser from './browser/Pipeline';
+import PipelineDetails from './version/PipelineDetails';
+import PipelineHistory from './version/history/PipelineHistory';
+import PipelineCode from './version/code/PipelineCode';
+import PipelineConfiguration from './version/configuration/PipelineConfiguration';
+import PipelineGraph from './version/graph/PipelineGraph';
+import PipelineDocuments from './version/documents/PipelineDocuments';
+import PipelineStorageRules from './version/storageRules/PipelineStorageRules';
 
 const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 
@@ -77,8 +94,7 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 })
 @HiddenObjects.injectTreeFilter
 @observer
-export default class PipelinesLibrary extends localization.LocalizedReactComponent {
-
+class PipelinesLibrary extends localization.LocalizedReactComponent {
   state = {
     rootItems: [],
     expandedKeys: [],
@@ -123,7 +139,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         this.props.folders.invalidateFolder(item.id);
         break;
     }
-    this.props.router.push(item.url());
+    this.props.history.push(item.url());
     const keys = getExpandedKeys(this.state.rootItems);
     this.savedExpandedKeys = keys;
     this.setState({selectedKeys, expandedKeys: keys});
@@ -447,7 +463,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         className={`${styles.libraryTree} pipeline-library`}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         loadData={this.loadData}
         draggable
         onDragStart={this.onDragStart}
@@ -508,20 +524,68 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   }
 
   render () {
+    const pipelinesLibraryChildrenProps = {
+      onReloadTree: (reloadRoot, folder) => this.reloadTree(
+        reloadRoot === undefined ? true : reloadRoot,
+        folder
+      ),
+      browserLocation: this.props.path,
+      browserLocationQuery: this.props.query
+    };
+    const pipelinesLibraryChildren = (
+      <Switch>
+        <Route exact path="/library"><FolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        <Route exact path="/pipelines"><Browser {...pipelinesLibraryChildrenProps} /></Route>
+        <Route exact path="/storages"><Browser {...pipelinesLibraryChildrenProps} /></Route>
+        <Route path="/folder">
+          <Switch>
+            <Route path="/folder/:id"><FolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
+            <Route path="/folder/:id/history"><ProjectHistory {...pipelinesLibraryChildrenProps} /></Route>
+          </Switch>
+        </Route>
+        <Route path="/storage">
+          <Route path="/storage/:id"><StorageBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        </Route>
+        <Route path="/configuration">
+          <Route path="/configuration/:id/:name?"><DetachedConfiguration {...pipelinesLibraryChildrenProps} /></Route>
+        </Route>
+        <Route path="/metadata">
+          <Route path="/metadata/:id/:class"><MetadataBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        </Route>
+        <Route path="/metadataFolder">
+          <Route path="/metadataFolder/:id"><MetadataFolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        </Route>
+        <Route path="/vs/:id">
+          <Route exact path="/vs/:id"><VersionedStorageBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        </Route>
+        <Route path="/:id">
+          <Switch>
+            <Route exact path="/:id"><PipelineBrowser {...pipelinesLibraryChildrenProps} /></Route>
+            <Redirect exact from="/:id/:version" to="/:id/:version/documents" />
+            <Route path="/:id/:version">
+              <PipelineDetails {...pipelinesLibraryChildrenProps}>
+                <Switch>
+                  <Route path="/:id/:version/history"><PipelineHistory {...pipelinesLibraryChildrenProps} /></Route>
+                  <Route path="/:id/:version/code"><PipelineCode {...pipelinesLibraryChildrenProps} /></Route>
+                  <Route path="/:id/:version/configuration/:configuration?"><PipelineConfiguration {...pipelinesLibraryChildrenProps} /></Route>
+                  <Route path="/:id/:version/graph"><PipelineGraph {...pipelinesLibraryChildrenProps} /></Route>
+                  <Route path="/:id/:version/documents"><PipelineDocuments {...pipelinesLibraryChildrenProps} /></Route>
+                  <Route path="/:id/:version/storage"><PipelineStorageRules {...pipelinesLibraryChildrenProps} /></Route>
+                </Switch>
+              </PipelineDetails>
+            </Route>
+          </Switch>
+        </Route>
+      </Switch>
+    );
     if (this.props.displayInfo.libraryCollapsed) {
       return (
         <PipelinesLibraryContent
           location={this.props.path}
           query={this.props.query}
-          onReloadTree={
-            (reloadRoot, folder) => this.reloadTree(
-              reloadRoot === undefined ? true : reloadRoot,
-              folder
-            )
-          }
           style={{overflow: 'auto'}}
         >
-          {this.props.children}
+          {pipelinesLibraryChildren}
         </PipelinesLibraryContent>
       );
     }
@@ -553,14 +617,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             <PipelinesLibraryContent
               location={this.props.path}
               query={this.props.query}
-              onReloadTree={
-                (reloadRoot, folder) => this.reloadTree(
-                  reloadRoot === undefined ? true : reloadRoot,
-                  folder
-                )
-              }
             >
-              {this.props.children}
+              {pipelinesLibraryChildren}
             </PipelinesLibraryContent>
           </div>
         </SplitPane>
@@ -856,9 +914,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           rootItem.type === ItemTypes.folder &&
           ['root', 'pipelines', 'storages'].indexOf(rootItem.id) === -1
         ) {
-          this.props.router.push(`/folder/${rootItem.id}`);
+          this.props.history.push(`/folder/${rootItem.id}`);
         }
       }
     })();
   }
 }
+
+export default withRouter(PipelinesLibrary);

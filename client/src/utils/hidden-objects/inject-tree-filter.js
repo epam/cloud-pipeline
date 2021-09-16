@@ -22,8 +22,6 @@ export default function injectTreeFilter (WrappedComponent) {
   return inject(HIDDEN_OBJECTS_INJECTION)(
     inject(({hiddenObjects}) => ({
       hiddenObjectsTreeFilter: treeFilter(hiddenObjects)
-    }))(
-      observer(WrappedComponent)
-    )
+    }))(WrappedComponent)
   );
 }

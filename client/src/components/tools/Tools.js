@@ -17,7 +17,7 @@
 import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Link} from 'react-router';
+import {Link, withRouter} from 'react-router-dom';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
 import LoadingView from '../special/LoadingView';
 import DockerRegistriesActionsButton from './DockerRegistriesActionsButton';
@@ -29,7 +29,7 @@ import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY
-} from '../special/splitPanel/SplitPanel';
+} from '../special/splitPanel';
 import Issues from '../special/issues/Issues';
 import {Alert, Row, Button, Card, Icon, Col} from 'antd';
 import roleModel from '../../utils/roleModel';
@@ -47,15 +47,14 @@ const findGroupByName = (groups, name) => {
 @roleModel.authenticationInfo
 @inject('dockerRegistries')
 @HiddenObjects.injectToolsFilters
-@inject((stores, {params}) => {
+@inject((stores, {match}) => {
   return {
-    registryId: params.registryId,
-    groupId: params.groupId
+    registryId: match.params.registryId,
+    groupId: match.params.groupId
   };
 })
 @observer
-export default class ToolsNew extends React.Component {
-
+class ToolsNew extends React.Component {
   state = {
     metadata: false,
     redirected: false,
@@ -183,18 +182,18 @@ export default class ToolsNew extends React.Component {
 
   navigate = (registryId, groupId) => {
     if (!registryId) {
-      this.props.router.push('/tools');
+      this.props.history.push('/tools');
     } else {
       if (groupId) {
-        this.props.router.push(`/tools/${registryId}/${groupId}`);
+        this.props.history.push(`/tools/${registryId}/${groupId}`);
       } else {
-        this.props.router.push(`/tools/${registryId}`);
+        this.props.history.push(`/tools/${registryId}`);
       }
     }
   };
 
   navigateToTool = (id) => {
-    this.props.router.push(`/tool/${id}`);
+    this.props.history.push(`/tool/${id}`);
   };
 
   search = (searchCriteria) => {
@@ -319,14 +318,15 @@ export default class ToolsNew extends React.Component {
               </span>
             </Button>
           }
-          <DockerRegistriesActionsButton
+          <
+            DockerRegistriesActionsButton
             docker={this.props.dockerRegistries.value}
             registry={this.currentRegistry}
             group={this.currentGroup}
             hasPersonalGroup={this.hasPersonalGroup}
             onRefresh={this.refresh}
             onNavigate={this.navigate}
-            router={this.props.router}
+            history={this.props.history}
           />
         </Col>
       </Row>
@@ -523,9 +523,9 @@ export default class ToolsNew extends React.Component {
             registry.privateGroupAllowed
           );
           if (groupToRedirect) {
-            this.props.router.push(`/tools/${registry.id}/${groupToRedirect.id}`);
+            this.props.history.push(`/tools/${registry.id}/${groupToRedirect.id}`);
           } else {
-            this.props.router.push(`/tools/${registry.id}`);
+            this.props.history.push(`/tools/${registry.id}`);
           }
         } else {
           this.setState({
@@ -538,7 +538,7 @@ export default class ToolsNew extends React.Component {
           this.currentRegistry.privateGroupAllowed
         );
         if (groupToRedirect) {
-          this.props.router.push(`/tools/${this.currentRegistry.id}/${groupToRedirect.id}`);
+          this.props.history.push(`/tools/${this.currentRegistry.id}/${groupToRedirect.id}`);
         } else {
           this.setState({
             redirected: true
@@ -548,12 +548,9 @@ export default class ToolsNew extends React.Component {
     }
   };
 
-  componentWillMount () {
+  componentDidMount () {
     this.props.dockerRegistries.fetch();
     this.reloadIssues();
-  }
-
-  componentDidMount () {
     this.redirectIfNeeded();
   }
 
@@ -561,7 +558,7 @@ export default class ToolsNew extends React.Component {
     this.redirectIfNeeded();
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.registryId !== this.props.registryId ||
       nextProps.groupId !== this.props.groupId) {
       this.setState({
@@ -577,3 +574,5 @@ export default class ToolsNew extends React.Component {
     this.props.dockerRegistries.invalidateCache();
   }
 }
+
+export default withRouter(ToolsNew);

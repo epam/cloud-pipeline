@@ -244,7 +244,7 @@ export default class UploadToDatastorageForm extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.visible !== nextProps.visible && nextProps.visible) {
       const state = {
         pathFields: [],

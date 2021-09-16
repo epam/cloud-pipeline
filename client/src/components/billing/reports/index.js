@@ -19,12 +19,13 @@ import Filters from './filters';
 import Discounts from './discounts';
 import {Container, RestoreLayoutProvider} from './layout';
 import styles from './reports.css';
+import {withRouter} from 'react-router-dom';
 
-function Reports ({children, location, router}) {
+function Reports ({children, location, history}) {
   return (
     <Discounts>
       <RestoreLayoutProvider>
-        <Filters location={location} router={router}>
+        <Filters location={location} history={history}>
           <Container className={styles.chartsLayout}>
             {children}
           </Container>
@@ -34,7 +35,7 @@ function Reports ({children, location, router}) {
   );
 }
 
-export default Reports;
+export default withRouter(Reports);
 export {default as InstanceReport} from './instance-report';
 export {default as StorageReport} from './storage-report';
 export {default as GeneralReport} from './general-report';

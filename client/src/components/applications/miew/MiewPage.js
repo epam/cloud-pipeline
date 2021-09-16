@@ -23,7 +23,9 @@ import $ from 'jquery';
 import 'jquery.terminal';
 import 'jquery.terminal/css/jquery.terminal.css';
 import styles from './EmbeddedMiew.css';
+import {withRouter} from 'react-router-dom';
 
+@withRouter
 @inject(({routing}) => {
   const queryParameters = parseQueryParameters(routing);
   return {

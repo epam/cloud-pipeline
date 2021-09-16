@@ -193,7 +193,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
 
   _confirmDeleteRegistry = () => {
     const deleteRegistry = this._deleteRegistry;
-    deleteToolConfirmModal({registry: this.props.registry}, this.props.router)
+    deleteToolConfirmModal({registry: this.props.registry}, this.props.history)
       .then((confirm) => {
         if (confirm) {
           return deleteRegistry();
@@ -314,7 +314,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _confirmDeleteGroup = () => {
-    deleteToolConfirmModal({group: this.props.group}, this.props.router)
+    deleteToolConfirmModal({group: this.props.group}, this.props.history)
       .then((confirm) => {
         if (confirm) {
           return this._deleteGroup();
@@ -573,5 +573,5 @@ DockerRegistriesActionsButton.propTypes = {
   hasPersonalGroup: PropTypes.bool,
   onRefresh: PropTypes.func,
   onNavigate: PropTypes.func,
-  router: PropTypes.any
+  history: PropTypes.any
 };

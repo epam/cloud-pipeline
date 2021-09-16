@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -45,22 +46,24 @@ import HiddenObjects from '../../../utils/hidden-objects';
   folders
 })
 @localization.localizedComponent
-@HiddenObjects.checkPipelines(props => props?.params?.id)
-@HiddenObjects.checkPipelineVersions(props => props?.params?.id, props => props?.params?.version)
-@inject(({pipelines, pipelinesLibrary, routing, folders}, {onReloadTree, params}) => ({
-  onReloadTree,
-  pipelines,
-  pipeline: pipelines.getPipeline(params.id),
-  language: pipelines.getLanguage(params.id, params.version),
-  configurations: pipelines.getConfiguration(params.id, params.version),
-  currentConfiguration: params.configuration,
-  version: params.version,
-  pipelineId: params.id,
-  folders,
-  pipelinesLibrary
-}))
+@HiddenObjects.checkPipelines(props => props?.match?.params?.id)
+@HiddenObjects.checkPipelineVersions(props => props?.match?.params?.id, props => props?.match?.params?.version)
+@inject(({pipelines, pipelinesLibrary, routing, folders}, {onReloadTree, match}) => {
+  return ({
+    onReloadTree,
+    pipelines,
+    pipeline: pipelines.getPipeline(match.params.id),
+    language: pipelines.getLanguage(match.params.id, match.params.version),
+    configurations: pipelines.getConfiguration(match.params.id, match.params.version),
+    currentConfiguration: match.params.configuration,
+    version: match.params.version,
+    pipelineId: match.params.id,
+    folders,
+    pipelinesLibrary
+  });
+})
 @observer
-export default class PipelineDetails extends localization.LocalizedReactComponent {
+class PipelineDetails extends localization.LocalizedReactComponent {
   state = {isModalVisible: false, updating: false, deleting: false};
 
   @observable _graphIsSupported = null;
@@ -83,7 +86,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     if (this.props.pipeline.loaded) {
       const {id, pipelineType} = this.props.pipeline.value;
       if (/^versioned_storage$/i.test(pipelineType)) {
-        this.props.router && this.props.router.push(`/vs/${id}`);
+        this.props.history && this.props.history.push(`/vs/${id}`);
       }
     }
   };
@@ -165,9 +168,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           this.props.onReloadTree(!parentFolderId);
         }
         if (parentFolderId) {
-          this.props.router.push(`/folder/${parentFolderId}`);
+          this.props.history.push(`/folder/${parentFolderId}`);
         } else {
-          this.props.router.push('/library');
+          this.props.history.push('/library');
         }
       }
     });
@@ -190,12 +193,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
   runPipeline = () => {
     const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
-    this.props.router.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
+    this.props.history.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
   };
 
   runPipelineConfiguration = (configuration) => {
     const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
-    this.props.router.push(`${baseUrl}/${configuration || 'default'}`);
+    this.props.history.push(`${baseUrl}/${configuration || 'default'}`);
   };
 
   renderRunButton = () => {
@@ -264,10 +267,10 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         <LoadingView />
       );
     }
-    const {version} = this.props.params;
+    const {version} = this.props.match.params;
 
-    const {router: {location}} = this.props;
-    const activeTab = this.props.router.location.pathname.split('/').slice(3)[0];
+    const {location} = this.props;
+    const activeTab = location.pathname.split('/').slice(3)[0];
 
     let displayGraph = false;
     if (!this.props.language.pending) {
@@ -371,14 +374,8 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             </TabMenu.Item>
           </TabMenu>
         </Row>
-        <div
-          className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
-          {
-            React.Children.map(
-              this.props.children,
-              (child) => React.cloneElement(child, {onReloadTree: this.props.onReloadTree})
-            )
-          }
+        <div className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
+          {this.props.children}
         </div>
         <EditPipelineForm
           onSubmit={this.updatePipeline}
@@ -391,3 +388,5 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     );
   }
 }
+
+export default withRouter(PipelineDetails);

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {canPauseRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {hashHistory} from 'react-router';
+import {createHashHistory} from 'history';
 import {Provider} from 'mobx-react';
 import {RouterStore, syncHistoryWithStore} from 'mobx-react-router';
 import GoogleApi from '../../models/google/GoogleApi';
@@ -64,7 +64,7 @@ import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
 
 const routing = new RouterStore();
-const history = syncHistoryWithStore(hashHistory, routing);
+const history = syncHistoryWithStore(createHashHistory(), routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);

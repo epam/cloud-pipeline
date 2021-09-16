@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import LoadToolHistory from '../../../../models/tools/LoadToolHistory';
@@ -28,15 +29,15 @@ function processScript (script) {
   return hljs.highlight('bash', script).value;
 }
 
-@inject((stores, {params}) => {
+@inject((stores, {match}) => {
   return {
-    toolId: params.id,
-    version: params.version,
-    history: new LoadToolHistory(params.id, params.version)
+    toolId: match.params.id,
+    version: match.params.version,
+    history: new LoadToolHistory(match.params.id, match.params.version)
   };
 })
 @observer
-export default class History extends React.Component {
+class History extends React.Component {
   state = {
     selectedLayer: 0
   };
@@ -59,6 +60,7 @@ export default class History extends React.Component {
           {
             (this.props.history.value || []).map((layer, index) => (
               <div
+                key={index}
                 className={[
                   styles.layer,
                   this.state.selectedLayer === index ? styles.selected : false
@@ -90,3 +92,5 @@ export default class History extends React.Component {
     );
   }
 }
+
+export default withRouter(History);

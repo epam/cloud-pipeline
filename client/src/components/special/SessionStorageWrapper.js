@@ -15,7 +15,6 @@
  */
 
 export default class SessionStorageWrapper {
-
   static ACTIVE_RUNS_KEY = 'active_runs';
 
   static getItem (key, defaultValue) {
@@ -36,11 +35,11 @@ export default class SessionStorageWrapper {
     } catch (___) {}
   }
 
-  static navigateToActiveRuns (router) {
-    if (!router || !router.push) {
+  static navigateToActiveRuns (history) {
+    if (!history || !history.push) {
       return;
     }
-    router.push(SessionStorageWrapper.getActiveRunsLink());
+    history.push(SessionStorageWrapper.getActiveRunsLink());
   }
 
   static getActiveRunsLink () {
@@ -51,5 +50,4 @@ export default class SessionStorageWrapper {
       return '/runs/active?all';
     }
   }
-
 }

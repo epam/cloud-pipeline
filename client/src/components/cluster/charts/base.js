@@ -88,7 +88,7 @@ class Chart extends React.Component {
     this.updateRange(this.props);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const {start, end} = this.state;
     if (
       nextProps.followCommonScale &&

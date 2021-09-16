@@ -21,7 +21,7 @@ import {inject, observer} from 'mobx-react';
 import TextFileConflict from './text-file-conflict';
 import BinaryFileConflict from './binary-file-conflict';
 
-class Conflict extends React.PureComponent {
+class Conflict extends React.Component {
   state = {
     error: undefined,
     conflictedFile: undefined

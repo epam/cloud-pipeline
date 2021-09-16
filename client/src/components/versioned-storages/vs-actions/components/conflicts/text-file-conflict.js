@@ -100,7 +100,7 @@ const getNumbersContainerWidthCss = (conflictedFile, branch) => {
   };
 };
 
-class TextFileConflict extends React.PureComponent {
+class TextFileConflict extends React.Component {
   state = {
     ide: {
       width: undefined,

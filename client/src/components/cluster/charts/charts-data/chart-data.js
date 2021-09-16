@@ -195,9 +195,9 @@ class ChartData {
     const config = this.getConfigForData(responseData);
     const makeEmptyData = () => {
       return {
-        data: observable([]),
-        min: observable(Infinity),
-        max: observable(-Infinity)
+        @observable data: [],
+        @observable min: Infinity,
+        @observable max: -Infinity
       };
     };
     const data = config
