@@ -29,6 +29,7 @@ TAGS_MAPPING_KEYS_DELIMITER = '='
 SCHEMA_PREFIX = '{http://www.openmicroscopy.org/Schemas/OME/2016-06}'
 DZ_IMAGE_AREA_LIMIT = int(os.getenv('WSI_PARSING_DZ_IMAGE_LIMIT', 15000 * 25000))
 WSI_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('WSI_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
+DZ_TILES_SIZE = int(os.getenv('WSI_PARSING_DZ_TILES_SIZE', 256))
 
 
 class ImageDetails(object):
@@ -49,6 +50,8 @@ class ImageDetails(object):
 
 
 class WsiParsingUtils:
+
+    TILES_DIR_SUFFIX = '.tiles'
 
     @staticmethod
     def get_file_without_extension(file_path):
@@ -114,7 +117,7 @@ class WsiProcessingFileGenerator:
             full_file_path = os.path.join(parent_dir, file)
             if os.path.isdir(full_file_path):
                 file_basename = WsiParsingUtils.get_basename_without_extension(file_path)
-                if not full_file_path.endswith('.tiles') and file_basename in os.path.basename(full_file_path):
+                if not full_file_path.endswith(WsiParsingUtils.TILES_DIR_SUFFIX) and file_basename in os.path.basename(full_file_path):
                     related_subdirectories.add(full_file_path)
         return related_subdirectories
 
@@ -317,12 +320,62 @@ class WsiFileParser:
         with open(file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
 
+    def update_dz_info_file(self, original_width, original_height):
+        service_directory = WsiParsingUtils.get_service_directory(self.file_path)
+        file_name = WsiParsingUtils.get_basename_without_extension(self.file_path)
+        image = os.path.join(service_directory, '{}.jpeg'.format(file_name))
+        if os.path.exists(image):
+            tiles_dir = os.path.join(os.path.dirname(self.file_path), file_name, WsiParsingUtils.TILES_DIR_SUFFIX)
+            max_zoom = self._max_zoom_level(tiles_dir)
+            if max_zoom < 0:
+                self.log_processing_info('Unable to determine DZ depth calculation, skipping json file creation')
+                return
+            self._write_dz_info_to_file(os.path.join(tiles_dir, 'info.json'),
+                                        original_width,
+                                        original_height,
+                                        max_zoom)
+
+    def _max_zoom_level(self, tiles_dir):
+        dz_layers_folders = 0
+        for dz_layer_folder in os.listdir(tiles_dir):
+            if os.path.isdir(os.path.join(tiles_dir, dz_layer_folder)) and dz_layer_folder.isnumeric():
+                dz_layers_folders += 1
+        return dz_layers_folders - 1
+
+    def _calculate_dz_bounds(self, original_height, original_width):
+        width = original_width
+        height = original_height
+        while True:
+            if height < DZ_TILES_SIZE and width < DZ_TILES_SIZE:
+                break
+            else:
+                width = width / 2
+                height = height / 2
+        height_ratio = float(height) / DZ_TILES_SIZE
+        width_ratio = float(width) / DZ_TILES_SIZE
+        height_bound = int(original_height / height_ratio)
+        width_bound = int(original_width / width_ratio)
+        return height_bound, width_bound
+
+    def _write_dz_info_to_file(self, dz_info_file_path, width, height, max_dz_level):
+        width_bound, height_bound = self._calculate_dz_bounds(width, height)
+        details = {
+            'width': width,
+            'height': height,
+            'minLevel': 0,
+            'maxLevel': max_dz_level,
+            'tileSize': DZ_TILES_SIZE,
+            'bounds': [0, width_bound, 0, height_bound]
+        }
+        with open(dz_info_file_path, 'w') as output_file:
+            output_file.write(json.dumps(details, indent=4))
+
     def calculate_target_series(self):
         images = self.xml_info_tree.findall(SCHEMA_PREFIX + 'Image')
         series_mapping = self.group_image_series(images)
         self.log_processing_info('Following image groups are found: {}'.format(series_mapping.keys()))
         target_group = None
-        target_series = None
+        target_image_details = None
         for group_name in series_mapping.keys():
             if group_name not in self._SYSTEM_IMAGE_NAMES:
                 target_group = group_name
@@ -332,11 +385,11 @@ class WsiFileParser:
             for image_details in series_mapping[target_group]:
                 image_area_size = image_details.width * image_details.height
                 if image_area_size < DZ_IMAGE_AREA_LIMIT:
-                    target_series = image_details.id
+                    target_image_details = image_details
                     break
-            if not target_series:
-                target_series = series_mapping[target_group][-1].id
-        return target_series
+            if not target_image_details:
+                target_image_details = series_mapping[target_group][-1]
+        return target_image_details
 
     def group_image_series(self, images):
         base_name = os.path.basename(self.file_path)
@@ -373,7 +426,8 @@ class WsiFileParser:
                     self.log_processing_info('Some errors occurred during file tagging')
             except Exception as e:
                 log_info('An error occurred during tags processing: {}'.format(str(e)))
-        target_series = self.calculate_target_series()
+        target_image_details = self.calculate_target_series()
+        target_series = target_image_details.id
         if target_series is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation ')
             return 1
@@ -387,6 +441,7 @@ class WsiFileParser:
                                               WsiParsingUtils.get_service_directory(self.file_path)))
         if conversion_result == 0:
             self.update_stat_file()
+            self.update_dz_info_file(target_image_details.width, target_image_details.height)
             self.log_processing_info('File processing is finished')
         else:
             self.log_processing_info('File processing was not successful')
