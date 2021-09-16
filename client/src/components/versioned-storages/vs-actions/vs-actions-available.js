@@ -34,7 +34,7 @@ class VsActionsAvailable {
 }
 
 function vsAvailabilityCheck (...opts) {
-  return inject('vsActions')(observer(...opts));
+  return inject('vsActions')(...opts);
 }
 
 export {vsAvailabilityCheck};

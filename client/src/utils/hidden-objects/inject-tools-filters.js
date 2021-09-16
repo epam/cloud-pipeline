@@ -25,8 +25,6 @@ export default function injectToolsFilters (WrappedComponent) {
       hiddenToolGroupsFilter: filters.toolGroupsFilter(hiddenObjects),
       hiddenToolRegistriesFilter: filters.toolRegistriesFilter(hiddenObjects),
       hiddenToolsTreeFilter: filters.toolsTreeFilter(hiddenObjects)
-    }))(
-      observer(WrappedComponent)
-    )
+    }))(WrappedComponent)
   );
 }
