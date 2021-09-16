@@ -87,6 +87,8 @@ public class NodePool {
         runInstance.setSpot(PriceType.SPOT.equals(priceType));
         runInstance.setNodeImage(instanceImage);
         runInstance.setPrePulledDockerImages(dockerImages);
+        //Only linux is supported for Node pools
+        runInstance.setNodePlatform("linux");
         return runInstance;
     }
 }
