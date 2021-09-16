@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react/index';
+import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import DockerRegistriesGroupsSearch from './DockerRegistriesGroupsSearch';
 import DockerRegistryGroupsList from './DockerRegistriesGroupsList';
