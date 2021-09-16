@@ -156,6 +156,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase({"EPMCMBIBPC-2627"})
     public void dockerExtraMultiValidation() {
+        if (impersonateMode() && "true".equalsIgnoreCase(C.AUTH_TOKEN)) {
+            return;
+        }
         try {
             tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
