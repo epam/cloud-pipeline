@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {
@@ -56,7 +57,7 @@ import {
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY,
   SplitPanel
-} from '../special/splitPanel/SplitPanel';
+} from '../special/splitPanel';
 import Owner from '../special/owner';
 import styles from './Tools.css';
 import Remarkable from 'remarkable';
@@ -112,24 +113,24 @@ const DEFAULT_FILE_SIZE_KB = 50;
 @submitsRun
 @runPipelineActions
 @HiddenObjects.injectToolsFilters
-@HiddenObjects.checkTools(props => props?.params?.id)
+@HiddenObjects.checkTools(props => props?.match?.params?.id)
 @inject('awsRegions', 'dockerRegistries', 'preferences')
-@inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
+@inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {match}) => {
   return {
     allowedInstanceTypesCache: allowedInstanceTypes,
-    toolId: params.id,
-    tool: new LoadTool(params.id),
-    versions: new LoadToolAttributes(params.id),
-    section: params.section.toLowerCase(),
+    toolId: match.params.id,
+    tool: new LoadTool(match.params.id),
+    versions: new LoadToolAttributes(match.params.id),
+    section: match.params.section.toLowerCase(),
     preferences,
     docker: dockerRegistries,
     scanPolicy: new LoadToolScanPolicy(),
     authenticatedUserInfo,
-    versionSettings: new LoadToolVersionSettings(params.id)
+    versionSettings: new LoadToolVersionSettings(match.params.id)
   };
 })
 @observer
-export default class Tool extends localization.LocalizedReactComponent {
+class Tool extends localization.LocalizedReactComponent {
   state = {
     metadata: false,
     editDescriptionMode: false,
@@ -268,7 +269,7 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   deleteToolConfirm = () => {
     const deleteToolVersion = this.deleteToolVersion;
-    deleteToolConfirmModal({tool: this.props.toolId, link: this.link}, this.props.router)
+    deleteToolConfirmModal({tool: this.props.toolId, link: this.link}, this.props.history)
       .then((confirm) => {
         if (confirm) {
           return deleteToolVersion();
@@ -279,7 +280,7 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   deleteToolVersionConfirm = (version) => {
     const deleteToolVersion = this.deleteToolVersion;
-    deleteToolConfirmModal({tool: this.props.toolId, version}, this.props.router)
+    deleteToolConfirmModal({tool: this.props.toolId, version}, this.props.history)
       .then((confirm) => {
         if (confirm) {
           return deleteToolVersion(version);
@@ -1036,9 +1037,9 @@ export default class Tool extends localization.LocalizedReactComponent {
           onRowClick={(version) => {
             if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
               version.status !== ScanStatuses.notScanned) {
-              this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
+              this.props.history.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
             } else {
-              this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+              this.props.history.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
             }
           }}
           size="small" />
@@ -1271,7 +1272,7 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   renderMenu = () => {
     const onChangeSection = ({key}) => {
-      this.props.router.push(`/tool/${this.props.toolId}/${key}`);
+      this.props.history.push(`/tool/${this.props.toolId}/${key}`);
     };
     return (
       <Row type="flex" justify="center">
@@ -1405,7 +1406,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       undefined,
       platform
     )) {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      SessionStorageWrapper.navigateToActiveRuns(this.props.history);
     }
   };
 
@@ -1413,11 +1414,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     const info = this.getVersionRunningInformation(version || this.defaultTag);
     const navigate = () => {
       if (version) {
-        this.props.router.push(`/launch/tool/${this.props.toolId}?version=${version}`);
+        this.props.history.push(`/launch/tool/${this.props.toolId}?version=${version}`);
       } else if (this.defaultTag) {
-        this.props.router.push(`/launch/tool/${this.props.toolId}?version=${this.defaultTag}`);
+        this.props.history.push(`/launch/tool/${this.props.toolId}?version=${this.defaultTag}`);
       } else {
-        this.props.router.push(`/launch/tool/${this.props.toolId}`);
+        this.props.history.push(`/launch/tool/${this.props.toolId}`);
       }
     };
     if (info.launchTooltip) {
@@ -1445,7 +1446,7 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   navigateBack = () => {
     this.props.docker.fetch();
-    this.props.router.push(`/tools/${this.props.tool.value.registryId}/${this.props.tool.value.toolGroupId}`);
+    this.props.history.push(`/tools/${this.props.tool.value.registryId}/${this.props.tool.value.toolGroupId}`);
   };
 
   @computed
@@ -1780,7 +1781,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             createLinkInProgress: false,
             createLinkFormVisible: false
           }, () => {
-            this.props.router.push(`tool/${id}`);
+            this.props.history.push(`tool/${id}`);
           });
         }
       });
@@ -1960,3 +1961,5 @@ export default class Tool extends localization.LocalizedReactComponent {
     this.props.versions.clearInterval();
   }
 }
+
+export default withRouter(Tool);

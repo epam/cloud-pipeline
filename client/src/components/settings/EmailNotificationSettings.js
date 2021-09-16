@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import NotificationSettings from '../../models/settings/NotificationSettings';
@@ -22,13 +23,13 @@ import NotificationSettingUpdate from '../../models/settings/NotificationSetting
 import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
 import NotificationTemplates from '../../models/settings/NotificationTemplates';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel/SplitPanel';
+import {SplitPanel} from '../special/splitPanel';
 import Users from '../../models/user/Users';
 import {Alert, message, Modal, Table} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
 import styles from './EmailNotificationSettings.css';
 
-@inject('router', 'authenticatedUserInfo')
+@inject('authenticatedUserInfo')
 @inject(() => {
   return {
     notificationSettings: new NotificationSettings(),
@@ -37,7 +38,7 @@ import styles from './EmailNotificationSettings.css';
   };
 })
 @observer
-export default class EmailNotificationSettings extends React.Component {
+class EmailNotificationSettings extends React.Component {
   state = {
     selectedTemplateId: null,
     changesCanBeSkipped: false
@@ -45,9 +46,10 @@ export default class EmailNotificationSettings extends React.Component {
 
   componentDidMount () {
     const {route, router} = this.props;
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
-    }
+    // todo replace with history or with <Prompt>
+    // if (route && router) {
+    //   router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    // }
   };
 
   componentDidUpdate () {
@@ -100,12 +102,13 @@ export default class EmailNotificationSettings extends React.Component {
     return [];
   }
 
+  // todo
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {history} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => history.push(nextLocation)
       );
     };
     if (this.templateModified && !changesCanBeSkipped) {
@@ -292,3 +295,5 @@ export default class EmailNotificationSettings extends React.Component {
     );
   }
 }
+
+export default withRouter(EmailNotificationSettings);

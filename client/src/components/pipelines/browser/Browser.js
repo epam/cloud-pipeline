@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import connect from '../../../utils/connect';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
@@ -67,7 +68,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
   };
 })
 @observer
-export default class Folder extends localization.LocalizedReactComponent {
+class Folder extends localization.LocalizedReactComponent {
   state = {
     filter: undefined
   };
@@ -164,14 +165,14 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (pipelineRequest.error) {
       message.error(pipelineRequest.error, 5);
     } else if (pipelineRequest.value && pipelineRequest.value.currentVersion) {
-      this.props.router.push(`/launch/${pipeline.id}/${pipelineRequest.value.currentVersion.name}`);
+      this.props.history.push(`/launch/${pipeline.id}/${pipelineRequest.value.currentVersion.name}`);
     } else {
       message.error('Error fetching last version info', 5);
     }
   };
 
   navigate = (item) => {
-    this.props.router.push(item.url());
+    this.props.history.push(item.url());
   };
 
   renderMetadataKeyValue = (key, value) => {
@@ -397,3 +398,5 @@ export default class Folder extends localization.LocalizedReactComponent {
     );
   }
 }
+
+export default withRouter(Folder);

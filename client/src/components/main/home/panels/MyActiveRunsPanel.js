@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
@@ -70,7 +70,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   navigateToRun = ({id}) => {
-    this.props.router && this.props.router.push(`/run/${id}`);
+    this.props.history && this.props.history.push(`/run/${id}`);
   };
 
   confirm = (warning, actionText, action) => {

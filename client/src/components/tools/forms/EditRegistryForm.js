@@ -15,7 +15,6 @@
  */
 
 import React from 'react';
-import {Link} from 'react-router';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Col, Form, Input, Modal, Row, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../roleModel/PermissionsForm';
@@ -144,12 +143,12 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
           <Row style={{marginTop: 5, marginBottom: 5}} key="certificate link" type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={18}>
-              <Link
+              <a
                 id="certificate-link"
                 onClick={this.onClickCertificateLink}
               >
                 Insert certificate as plain text
-              </Link>
+              </a>
             </Col>
           </Row>,
           this.state.displayCertificateInput &&

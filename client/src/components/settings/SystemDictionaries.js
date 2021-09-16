@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
@@ -48,9 +49,10 @@ class SystemDictionaries extends React.Component {
   componentDidMount () {
     const {route, router} = this.props;
     this.navigateToDefault();
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
-    }
+    // todo replace with history or with <Prompt>
+    // if (route && router) {
+    //   router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
+    // }
   };
 
   componentDidUpdate () {
@@ -99,8 +101,9 @@ class SystemDictionaries extends React.Component {
     return names;
   }
 
+  // todo
   checkModifiedBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {history} = this.props;
     const {changesCanBeSkipped, modified} = this.state;
     const resetChangesCanBeSkipped = () => {
       this.resetChangesStateTimeout = setTimeout(
@@ -111,7 +114,7 @@ class SystemDictionaries extends React.Component {
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
         () => {
-          router.push(nextLocation);
+          history.push(nextLocation);
           resetChangesCanBeSkipped();
         }
       );
@@ -142,8 +145,8 @@ class SystemDictionaries extends React.Component {
     if (this.state.newDictionary) {
       return;
     }
-    const {router} = this.props;
-    router && router.push(`settings/dictionaries/${encodeURIComponent(name)}`);
+    const {history} = this.props;
+    history && history.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
   };
 
   onDictionaryChanged = (name, items, changed) => {
@@ -153,7 +156,7 @@ class SystemDictionaries extends React.Component {
   onDictionarySave = (id, name, items) => {
     const {currentDictionary} = this.props;
     const hide = message.loading('Saving dictionary...', 0);
-    const {systemDictionaries, router} = this.props;
+    const {systemDictionaries, history} = this.props;
     this.setState({pending: true}, async () => {
       const request = new SystemDictionariesUpdate();
       await request.send({
@@ -175,7 +178,7 @@ class SystemDictionaries extends React.Component {
           navigating: true
         }, () => {
           if (currentDictionary !== name) {
-            router.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
+            history.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
             this.setState({navigating: false});
           }
         });
@@ -190,7 +193,7 @@ class SystemDictionaries extends React.Component {
       });
     } else {
       const hide = message.loading('Removing dictionary...', 0);
-      const {systemDictionaries, router} = this.props;
+      const {systemDictionaries, history} = this.props;
       this.setState({pending: true}, async () => {
         const request = new SystemDictionariesDelete(name);
         await request.send();
@@ -206,7 +209,7 @@ class SystemDictionaries extends React.Component {
             modified: false,
             navigating: true
           }, () => {
-            router.push('/settings/dictionaries');
+            history.push('/settings/dictionaries');
             this.setState({navigating: false});
           });
         }
@@ -352,8 +355,8 @@ class SystemDictionaries extends React.Component {
   }
 }
 
-export default inject(({systemDictionaries}, {params = {}}) => {
-  const {currentDictionary} = params;
+export default withRouter(inject(({systemDictionaries}, {match = {}}) => {
+  const {currentDictionary} = match.params;
   return {
     currentDictionary: decodeURIComponent(currentDictionary),
     systemDictionaries
@@ -362,4 +365,4 @@ export default inject(({systemDictionaries}, {params = {}}) => {
   roleModel.authenticationInfo(
     observer(SystemDictionaries)
   )
-);
+));

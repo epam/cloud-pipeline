@@ -238,7 +238,7 @@ async function fetchActiveRuns (dockerImages) {
 const STATUSES_SEARCH_STRING =
   'run.status=RUNNING or run.status=PAUSING or run.status=PAUSED or run.status=RESUMING';
 
-function deleteToolConfirm ({registry, group, tool: toolId, version, link}, router) {
+function deleteToolConfirm ({registry, group, tool: toolId, version, link}, history) {
   return new Promise(async (resolve) => {
     const dockerImages = [];
     const hide = message.loading('Fetching active jobs info...', 0);
@@ -309,7 +309,7 @@ function deleteToolConfirm ({registry, group, tool: toolId, version, link}, rout
       title = `Are you sure you want to delete tool registry '${registryName(registry)}'?`;
     }
     const navigate = () => {
-      router.push(`/runs/filter?search=${advancedSearchString}`);
+      history.push(`/runs/filter?search=${advancedSearchString}`);
     };
     const success = await toolDeletionWarningDialog.display(
       title,

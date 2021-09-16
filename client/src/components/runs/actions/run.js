@@ -89,10 +89,10 @@ export function run (parent, callback) {
 
 export function openReRunForm (run, props) {
   const {
-    router,
+    history,
     pipelines
   } = props;
-  if (!run || !router) {
+  if (!run || !history) {
     return Promise.resolve();
   }
   const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@ export function openReRunForm (run, props) {
           link = `/launch/${id}${query}`;
         }
         if (link) {
-          router.push(link);
+          history.push(link);
         }
         resolve(link);
       });

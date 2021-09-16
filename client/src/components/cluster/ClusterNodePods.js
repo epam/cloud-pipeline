@@ -15,12 +15,13 @@
  */
 
 import React, {Component} from 'react';
+import {withRouter} from 'react-router-dom';
 import {Alert, Badge, Table, Row, Spin} from 'antd';
 import {observer} from 'mobx-react';
 import styles from './ClusterNode.css';
 
 @observer
-export default class ClusterNodePods extends Component {
+class ClusterNodePods extends Component {
   state = {dataLoaded: false};
 
   componentDidUpdate () {
@@ -281,3 +282,5 @@ export default class ClusterNodePods extends Component {
     }
   }
 }
+
+export default withRouter(ClusterNodePods);

@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
@@ -85,7 +86,7 @@ const SettingsTabs = [
 }))
 @roleModel.authenticationInfo
 @observer
-export default class extends React.Component {
+class SettingsForm extends React.Component {
   get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
@@ -94,7 +95,7 @@ export default class extends React.Component {
   };
 
   renderSettingsNavigation = () => {
-    const {router: {location}} = this.props;
+    const {location} = this.props;
     const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
     const activeTab = location.pathname.split('/').filter(Boolean)[1];
     return (
@@ -136,3 +137,5 @@ export default class extends React.Component {
     );
   };
 }
+
+export default withRouter(SettingsForm);

@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
@@ -40,13 +41,13 @@ import {
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
+import parseQueryParameters from '../../utils/queryParameters';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
 @inject((stores, props) => {
   const {location = {}} = props || {};
-  const {query = {}} = location;
   return {
-    facetedFilters: facetedQueryString.parse(query)
+    facetedFilters: facetedQueryString.parse(parseQueryParameters(location))
   };
 })
 @observer
@@ -284,8 +285,8 @@ class FacetedSearch extends React.Component {
             if (queryString) {
               queryString = `?${queryString}`;
             }
-            if (this.props.router.location.search !== queryString) {
-              this.props.router.push(`/search/advanced${queryString || ''}`);
+            if (this.props.location.search !== queryString) {
+              this.props.history.push(`/search/advanced${queryString || ''}`);
             }
             if (this.abortController && abortPendingRequests) {
               this.abortController.abort();
@@ -491,10 +492,10 @@ class FacetedSearch extends React.Component {
   };
 
   onNavigate = async (item) => {
-    if (!this.props.router || !item.url) {
+    if (!this.props.history || !item.url) {
       return;
     }
-    this.props.router.push(item.url);
+    this.props.history.push(item.url);
   };
 
   onPageSizeChanged = (newPageSize) => {
@@ -685,4 +686,4 @@ class FacetedSearch extends React.Component {
   }
 }
 
-export default FacetedSearch;
+export default withRouter(FacetedSearch);

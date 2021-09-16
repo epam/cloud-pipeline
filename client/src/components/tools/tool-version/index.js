@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../models/tools/LoadTool';
@@ -35,17 +36,18 @@ import styles from './ToolVersion.css';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject((stores, {match}) => {
   return {
     ...stores,
-    toolId: params.id,
-    version: params.version,
-    tool: new LoadTool(params.id),
-    settings: new LoadToolVersionSettings(params.id, params.version)
+    activeKey: match.params.activeKey,
+    toolId: match.params.id,
+    version: match.params.version,
+    tool: new LoadTool(match.params.id),
+    settings: new LoadToolVersionSettings(match.params.id, match.params.version)
   };
 })
 @observer
-export default class ToolVersion extends React.Component {
+class ToolVersion extends React.Component {
   @computed
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
@@ -56,11 +58,11 @@ export default class ToolVersion extends React.Component {
   }
 
   navigateBack = () => {
-    this.props.router.push(`/tool/${this.props.tool.value.id}/versions`);
+    this.props.history.push(`/tool/${this.props.tool.value.id}/versions`);
   };
 
   navigateTo = (key) => {
-    this.props.router.push(`/tool/${this.props.tool.value.id}/info/${this.props.version}/${key}`);
+    this.props.history.push(`/tool/${this.props.tool.value.id}/info/${this.props.version}/${key}`);
   };
 
   render () {
@@ -89,10 +91,7 @@ export default class ToolVersion extends React.Component {
 
     const isWindowsPlatform = /^windows$/i.test(platform);
 
-    let activeKey = 'scaninfo';
-    if (this.props.routes) {
-      activeKey = this.props.routes[this.props.routes.length - 1].tabKey;
-    }
+    let activeKey = this.props.activeKey || 'scaninfo';
 
     if (isWindowsPlatform && ['scaninfo', 'packages'].indexOf(activeKey) >= 0) {
       activeKey = 'settings';
@@ -146,3 +145,5 @@ export default class ToolVersion extends React.Component {
     );
   }
 }
+
+export default withRouter(ToolVersion);

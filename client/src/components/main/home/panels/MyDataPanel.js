@@ -109,7 +109,7 @@ export default class MyDataPanel extends React.Component {
 
   renderContent = () => {
     const navigate = ({id}) => {
-      this.props.router && this.props.router.push(`/storage/${id}`);
+      this.props.history && this.props.history.push(`/storage/${id}`);
     };
     return (
       <div key="cards" style={{flex: 1, overflow: 'auto'}}>

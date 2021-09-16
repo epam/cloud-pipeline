@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
+import {inject, observer} from 'mobx-react';
 import Graph from './Graph';
 import GraphData from '../../../../../models/pipelines/Graph';
-import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../../special/LoadingView';
 import {Alert} from 'antd';
 import cytoscape from 'cytoscape';

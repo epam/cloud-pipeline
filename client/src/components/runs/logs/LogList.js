@@ -394,7 +394,8 @@ class LogList extends Component {
       }} onResize={this.onResize}>
         {({width, height}) => (
           <List
-            ref="list"
+            // todo check if we need this
+            // ref="list"
             className={styles.logsTable}
             height={height}
             rowHeight={this.getRowHeight}

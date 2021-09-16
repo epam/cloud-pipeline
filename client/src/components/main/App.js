@@ -17,6 +17,7 @@
 import React, {Component} from 'react';
 import {Layout, LocaleProvider} from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
+import {withRouter} from 'react-router-dom';
 import {observer, Provider, inject} from 'mobx-react';
 import {observable} from 'mobx';
 import styles from './App.css';
@@ -30,7 +31,7 @@ import {Pages} from '../../utils/ui-navigation';
 @inject('preferences', 'uiNavigation')
 @roleModel.authenticationInfo
 @observer
-export default class App extends Component {
+class App extends Component {
   state = {
     navigationCollapsed: true,
     documentTitleSet: false,
@@ -75,12 +76,12 @@ export default class App extends Component {
       authenticatedUserInfo,
       uiNavigation
     } = this.props;
-    uiNavigation.getActivePage(this.props.router);
+    uiNavigation.getActivePage(this.props.history);
     const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
       roleModel.isManager.billing(this);
-    const activeTabPath = uiNavigation.getActivePage(this.props.router);
+    const activeTabPath = uiNavigation.getActivePage(this.props.history);
     const isExternalApp = [Pages.miew, Pages.wsi].indexOf(activeTabPath) >= 0;
-    const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
+    const isSearch = /[\\/]+search\/advanced/i.test(this.props.history.location.pathname);
     let content;
     if (isExternalApp) {
       content = this.props.children;
@@ -111,7 +112,7 @@ export default class App extends Component {
                   (isBillingPrivilegedUser && preferences.billingAdminsEnabled)
                 )
               }
-              router={this.props.router} />
+              history={this.props.history} />
           </Layout.Sider>
           <Layout.Content
             id="root-content"
@@ -130,7 +131,7 @@ export default class App extends Component {
             this.props.uiNavigation.searchEnabled() && !isExternalApp && (
               <SearchDialog
                 onInitialized={this.onSearchDialogInitialized}
-                router={this.props.router}
+                history={this.props.history}
                 blockInput={activeTabPath === Pages.run || isSearch}
                 onVisibilityChanged={this.onSearchControlVisibilityChanged}
               />
@@ -167,3 +168,5 @@ export default class App extends Component {
     this.info.libraryCollapsed = info.libraryCollapsed;
   }
 }
+
+export default withRouter(App);

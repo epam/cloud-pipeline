@@ -27,18 +27,19 @@ import {
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import EditToolForm from '../../forms/EditToolForm';
+import {withRouter} from 'react-router-dom';
 
+@withRouter
 @inject('preferences')
-@inject((stores, {params}) => {
+@inject((stores, {match}) => {
   return {
-    toolId: params.id,
-    version: params.version,
-    tool: new LoadTool(params.id),
-    settings: new LoadToolVersionSettings(params.id, params.version),
+    toolId: match.params.id,
+    version: match.params.version,
+    tool: new LoadTool(match.params.id),
+    settings: new LoadToolVersionSettings(match.params.id, match.params.version),
     preferences: stores.preferences
   };
 })
-
 @observer
 export default class ToolSetttings extends React.Component {
   state = {

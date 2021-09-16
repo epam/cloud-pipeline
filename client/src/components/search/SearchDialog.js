@@ -49,7 +49,8 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   static propTypes = {
     onInitialized: PropTypes.func,
     onVisibilityChanged: PropTypes.func,
-    blockInput: PropTypes.bool
+    blockInput: PropTypes.bool,
+    history: PropTypes.object
   };
 
   state = {
@@ -113,14 +114,14 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   navigate = (itemIndex) => async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!this.props.router) {
+    if (!this.props.history) {
       return false;
     }
     if (this.state.searchResults.length > itemIndex) {
       const item = this.state.searchResults[itemIndex];
       const url = await getItemUrl(item);
       if (url) {
-        this.props.router.push(url);
+        this.props.history.push(url);
         this.closeDialog();
       } else {
         message.error('Cannot navigate to item', 3);
@@ -554,7 +555,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     if (queryString) {
       queryString = `?${queryString}`;
     }
-    this.props.router.push(`/search/advanced${queryString}`);
+    this.props.history.push(`/search/advanced${queryString}`);
     this.closeDialog();
   };
 

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import connect from '../../../../utils/connect';
 import {computed, observable} from 'mobx';
 import {Row, Tabs, Modal, Button, Alert, Icon, message} from 'antd';
@@ -35,23 +36,23 @@ import styles from './PipelineConfiguration.css';
 @connect({
   pipelines, preferences
 })
-@inject(({history, pipelines, routing, preferences}, {onReloadTree, params}) => {
+@inject(({history, pipelines, routing, preferences}, {onReloadTree, match}) => {
   return {
     history,
     onReloadTree,
-    currentConfiguration: params.configuration,
-    pipeline: pipelines.getPipeline(params.id),
-    pipelineVersions: pipelines.versionsForPipeline(params.id),
+    currentConfiguration: match.params.configuration,
+    pipeline: pipelines.getPipeline(match.params.id),
+    pipelineVersions: pipelines.versionsForPipeline(match.params.id),
     pipelines,
-    pipelineId: params.id,
-    version: params.version,
+    pipelineId: match.params.id,
+    version: match.params.version,
     routing,
-    configurations: pipelines.getConfiguration(params.id, params.version),
+    configurations: pipelines.getConfiguration(match.params.id, match.params.version),
     preferences
   };
 })
 @observer
-export default class PipelineConfiguration extends React.Component {
+class PipelineConfiguration extends React.Component {
   @observable allowedInstanceTypes;
 
   @observable configurationModified;
@@ -67,7 +68,8 @@ export default class PipelineConfiguration extends React.Component {
   };
 
   componentDidMount() {
-    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
+      /*
+      this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (location.pathname === locationBefore) {
         callback();
@@ -105,6 +107,7 @@ export default class PipelineConfiguration extends React.Component {
         callback();
       }
     });
+    */
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = new AllowedInstanceTypes();
@@ -189,7 +192,7 @@ export default class PipelineConfiguration extends React.Component {
   };
 
   onSelectConfiguration = (key) => {
-    this.props.router.push(`/${this.props.pipelineId}/${this.props.version}/configuration/${key}`);
+    this.props.history.push(`/${this.props.pipelineId}/${this.props.version}/configuration/${key}`);
   };
 
   onSetAsDefaultClicked = () => {
@@ -238,7 +241,7 @@ export default class PipelineConfiguration extends React.Component {
       url = `/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration`;
     }
     this.allowedNavigation = url;
-    this.props.router.push(url);
+    this.props.history.push(url);
   };
 
   onRemoveConfigurationClicked = (configuration) => (e) => {
@@ -524,3 +527,5 @@ export default class PipelineConfiguration extends React.Component {
   }
 
 }
+
+export default withRouter(PipelineConfiguration);

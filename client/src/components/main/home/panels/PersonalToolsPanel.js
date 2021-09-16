@@ -242,9 +242,9 @@ export default class PersonalToolsPanel extends React.Component {
   runToolWithCustomSettings = (toolId, version, warning) => {
     const navigate = () => {
       if (version) {
-        this.props.router.push(`/launch/tool/${toolId}?version=${version}`);
+        this.props.history.push(`/launch/tool/${toolId}?version=${version}`);
       } else {
-        this.props.router.push(`/launch/tool/${toolId}`);
+        this.props.history.push(`/launch/tool/${toolId}`);
       }
     };
     if (warning) {
@@ -589,7 +589,7 @@ export default class PersonalToolsPanel extends React.Component {
 
   renderContent = () => {
     const navigate = ({id}) => {
-      this.props.router && this.props.router.push(`/tool/${id}`);
+      this.props.history && this.props.history.push(`/tool/${id}`);
     };
     return (
       <div key="cards" style={{flex: '1 1 auto', overflow: 'auto'}}>

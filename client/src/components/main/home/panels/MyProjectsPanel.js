@@ -106,7 +106,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
 
   getProjectActions = (project) => {
     const history = ({id}) => {
-      this.props.router && this.props.router.push(`/folder/${id}/history`);
+      this.props.history && this.props.history.push(`/folder/${id}/history`);
     };
     const actions = [
       {
@@ -121,7 +121,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
         actions.push({
           title: 'Data storage',
           icon: 'hdd',
-          action: () => this.props.router && this.props.router.push(`/storage/${storages[0].id}`)
+          action: () => this.props.history && this.props.history.push(`/storage/${storages[0].id}`)
         });
       } else {
         actions.push({
@@ -134,7 +134,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
                   return (
                     <Row key={index}>
                       <a onClick={() => {
-                        this.props.router && this.props.router.push(`/storage/${storage.id}`);
+                        this.props.history && this.props.history.push(`/storage/${storage.id}`);
                       }}>{storage.name}</a>
                     </Row>
                   );
@@ -150,7 +150,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
 
   renderContent = () => {
     const navigate = ({id}) => {
-      this.props.router && this.props.router.push(`/folder/${id}`);
+      this.props.history && this.props.history.push(`/folder/${id}`);
     };
     return (
       <div key="cards" style={{flex: 1, overflow: 'auto'}}>

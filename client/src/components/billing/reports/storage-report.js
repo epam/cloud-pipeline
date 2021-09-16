@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {
   Pagination,
@@ -50,19 +51,20 @@ import {
 import {StorageReportLayout, Layout} from './layout';
 import styles from './reports.css';
 import displayDate from '../../../utils/displayDate';
+import parseQueryParameters from '../../../utils/queryParameters';
 
 const tablePageSize = 10;
 
 function injection (stores, props) {
-  const {location, params} = props;
-  const {type} = params || {};
+  const {location, match} = props;
+  const {type} = match?.params || {};
   const {
     user: userQ,
     group: groupQ,
     period = Period.month,
     range,
     region: regionQ
-  } = location.query;
+  } = parseQueryParameters(location);
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
@@ -459,8 +461,8 @@ class StorageReports extends React.Component {
   }
 }
 
-export default inject(injection)(
+export default withRouter(inject(injection)(
   Filters.attach(
     observer(StorageReports)
   )
-);
+));

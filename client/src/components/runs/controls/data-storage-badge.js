@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';

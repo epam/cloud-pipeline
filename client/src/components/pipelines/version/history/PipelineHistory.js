@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link, withRouter} from 'react-router-dom';
 import {Row} from 'antd';
 import pipelines from '../../../../models/pipelines/Pipelines';
 import styles from './PipelineHistory.css';
@@ -32,7 +32,7 @@ const pageSize = 20;
 @connect({
   pipelineRun, pipelines
 })
-@inject(({pipelineRun, routing}, {params}) => {
+@inject(({pipelineRun, routing}, {match}) => {
   const queryParameters = parseQueryParameters(routing);
   const allVersions = queryParameters.hasOwnProperty('all')
     ? (queryParameters.all === undefined ? true : queryParameters.all === 'true')
@@ -40,26 +40,26 @@ const pageSize = 20;
   const filterParams = {
     page: 1,
     pageSize,
-    pipelineIds: [params.id],
+    pipelineIds: [match.params.id],
     userModified: false
   };
 
   if (!allVersions) {
-    filterParams.versions = [params.version];
+    filterParams.versions = [match.params.version];
   }
 
   return {
     allVersions,
     runFilter: pipelineRun.runFilter(filterParams, true),
-    pipeline: pipelines.getPipeline(params.id),
-    pipelineId: params.id,
-    version: params.version,
+    pipeline: pipelines.getPipeline(match.params.id),
+    pipelineId: match.params.id,
+    version: match.params.version,
     routing,
     pipelines
   };
 })
 @observer
-export default class PipelineHistory extends Component {
+class PipelineHistory extends Component {
 
   handleTableChange (pagination, filter) {
     const {current, pageSize} = pagination;
@@ -111,7 +111,7 @@ export default class PipelineHistory extends Component {
   };
 
   onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
+    this.props.history.push(`/run/${id}`);
   };
 
   reloadTable = () => {
@@ -120,14 +120,14 @@ export default class PipelineHistory extends Component {
 
   renderVersionsSwitch = () => {
     if (this.props.allVersions) {
-      const currentVersionLink = `${this.props.pipelineId}/${this.props.version}/history`;
+      const currentVersionLink = `/${this.props.pipelineId}/${this.props.version}/history`;
       return (
         <Row style={{marginBottom: 5, padding: 2}}>
           Currently viewing history for <b>all versions</b>. <Link to={currentVersionLink}>View only current version (<b>{this.props.version}</b>) history</Link>
         </Row>
       );
     } else {
-      const allVersionsLink = `${this.props.pipelineId}/${this.props.version}/history?all`;
+      const allVersionsLink = `/${this.props.pipelineId}/${this.props.version}/history?all`;
       return (
         <Row style={{marginBottom: 5, padding: 2}}>
           Currently viewing history for <b>{this.props.version}</b> version. <Link to={allVersionsLink}>View all versions history</Link>
@@ -162,11 +162,13 @@ export default class PipelineHistory extends Component {
     this.runTable = control;
   };
 
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.allVersions !== this.props.allVersions) {
+  componentDidUpdate (prevProps) {
+    if (prevProps.allVersions !== this.props.allVersions) {
       if (this.runTable) {
         this.runTable.clearState();
       }
     }
   }
 }
+
+export default withRouter(PipelineHistory);

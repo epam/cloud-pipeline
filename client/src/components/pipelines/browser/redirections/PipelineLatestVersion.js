@@ -15,11 +15,12 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import LoadingView from '../../../special/LoadingView';
 
-class PipelineLatestVersion extends React.PureComponent {
+class PipelineLatestVersion extends React.Component {
   state = {
     error: undefined,
     pipeline: undefined
@@ -31,11 +32,11 @@ class PipelineLatestVersion extends React.PureComponent {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     const {
-      routeParams = {}
+      match = {}
     } = this.props;
     const {
       pipeline: propPipeline
-    } = routeParams;
+    } = match.params;
     const {
       pipeline
     } = this.state;
@@ -47,22 +48,16 @@ class PipelineLatestVersion extends React.PureComponent {
   navigate = () => {
     const {
       location = {},
-      routeParams = {},
+      match = {},
       pipelines,
-      router
+      history
     } = this.props || {};
     const {
       pipeline,
       section,
       subSection
-    } = routeParams;
-    let queryString = Object
-      .entries(location.query || {})
-      .map(([key, value]) => `${key}=${value}`)
-      .join('&');
-    if (queryString) {
-      queryString = `?${queryString}`;
-    }
+    } = match.params;
+    const queryString = location.search || '';
     let subPath = [section, subSection].filter(Boolean).join('/');
     if (subPath) {
       subPath = `/${subPath}`;
@@ -92,15 +87,15 @@ class PipelineLatestVersion extends React.PureComponent {
                   currentVersion
                 } = result;
                 if (!currentVersion) {
-                  router.push(`/${pipeline}`);
+                  history.push(`/${pipeline}`);
                 } else {
                   const {
                     name
                   } = currentVersion;
                   if (!name) {
-                    router.push(`/${pipeline}`);
+                    history.push(`/${pipeline}`);
                   } else {
-                    router.push(`/${pipeline}/${name}${restUrl}`);
+                    history.push(`/${pipeline}/${name}${restUrl}`);
                   }
                 }
               }
@@ -125,4 +120,4 @@ class PipelineLatestVersion extends React.PureComponent {
   }
 }
 
-export default inject('pipelines')(observer(PipelineLatestVersion));
+export default inject('pipelines')(withRouter(observer(PipelineLatestVersion)));

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import styles from './vsi-preview.css';
 import previewStyles from '../../search/preview/preview.css';
 import VSIPreview from '../../search/preview/vsi-preview';
@@ -35,15 +36,14 @@ import parseQueryParameters from '../../../utils/queryParameters';
 })
 class VSIPreviewPage extends React.Component {
   onCameraChanged = (opts) => {
-    const {router, storageId, file} = this.props;
+    const {history, storageId, file} = this.props;
     const {
       zoom,
       roll,
       x,
       y
     } = opts || {};
-    // eslint-disable-next-line
-    router.push(`/wsi?storage=${storageId}&file=${encodeURIComponent(file)}&roll=${roll}&zoom=${zoom}&x=${x}&y=${y}`);
+    history.push(`/wsi?storage=${storageId}&file=${encodeURIComponent(file)}&roll=${roll}&zoom=${zoom}&x=${x}&y=${y}`);
   };
 
   shouldComponentUpdate (nextProps, nextState, nextContext) {
@@ -81,4 +81,4 @@ class VSIPreviewPage extends React.Component {
   }
 }
 
-export default VSIPreviewPage;
+export default withRouter(VSIPreviewPage);

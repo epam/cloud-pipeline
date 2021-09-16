@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {Icon} from 'antd';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import MultizoneUrl from '../../../multizone-url';

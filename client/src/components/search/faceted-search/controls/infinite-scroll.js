@@ -25,6 +25,15 @@ const SCROLL_BLOCK_DELAY = 100;
 
 const MORE_PLACEHOLDER_HEIGHT = 38;
 
+// todo
+//  Warning: Encountered two children with the same key, `94`.
+//  Keys should be unique so that components maintain their identity across updates.
+//  Non-unique keys may cause children to be duplicated and/or omitted — the behavior
+//  is unsupported and could change in a future version.
+//   in div (at infinite-scroll.js:236)
+//   in div (at infinite-scroll.js:225)
+//   in InfiniteScroll (at search-results.js:317)
+
 class InfiniteScroll extends React.Component {
   state = {
     rowKeyFn: (o, i) => `${i}`,

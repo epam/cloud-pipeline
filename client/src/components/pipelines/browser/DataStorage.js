@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../utils/connect';
-import {Link} from 'react-router';
+import {Link, withRouter} from 'react-router-dom';
 import {computed, observable} from 'mobx';
 import {
   Alert,
@@ -91,7 +91,7 @@ const PAGE_SIZE = 40;
 })
 @roleModel.authenticationInfo
 @inject('awsRegions')
-@HiddenObjects.checkStorages(props => props.params.id)
+@HiddenObjects.checkStorages(props => props.match.params.id)
 @inject(({
   authenticatedUserInfo,
   routing,
@@ -100,23 +100,23 @@ const PAGE_SIZE = 40;
   pipelinesLibrary,
   preferences,
   dataStorageCache
-}, {params, onReloadTree}) => {
+}, {match, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
   return {
     authenticatedUserInfo,
     onReloadTree,
     dataStorageCache,
-    storageId: params.id,
+    storageId: match?.params?.id,
     path: decodeURIComponent(queryParameters.path || ''),
     showVersions: showVersions,
     storage: new DataStorageRequest(
-      params.id,
+      match?.params?.id,
       decodeURIComponent(queryParameters.path || ''),
       showVersions,
       PAGE_SIZE
     ),
-    info: dataStorages.load(params.id),
+    info: dataStorages.load(match?.params?.id),
     dataStorages,
     pipelinesLibrary,
     folders,
@@ -124,7 +124,7 @@ const PAGE_SIZE = 40;
   };
 })
 @observer
-export default class DataStorage extends React.Component {
+class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     editDropdownVisible: false,
@@ -359,9 +359,9 @@ export default class DataStorage extends React.Component {
         this.props.onReloadTree(!this.props.info.value.parentFolderId);
       }
       if (this.props.info.value.parentFolderId) {
-        this.props.router.push(`/folder/${this.props.info.value.parentFolderId}`);
+        this.props.history.push(`/folder/${this.props.info.value.parentFolderId}`);
       } else {
-        this.props.router.push('/library');
+        this.props.history.push('/library');
       }
     }
   };
@@ -371,9 +371,9 @@ export default class DataStorage extends React.Component {
       path = path.substring(0, path.length - 1);
     }
     if (path) {
-      this.props.router.push(`/storage/${id}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
+      this.props.history.push(`/storage/${id}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
     } else {
-      this.props.router.push(`/storage/${id}?versions=${this.showVersions}`);
+      this.props.history.push(`/storage/${id}?versions=${this.showVersions}`);
     }
     this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
   };
@@ -401,9 +401,9 @@ export default class DataStorage extends React.Component {
           relativePath = relativePath.substr(0, relativePath.length - 1);
         }
         if (relativePath) {
-          this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(relativePath)}&versions=${this.showVersions}`);
+          this.props.history.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(relativePath)}&versions=${this.showVersions}`);
         } else {
-          this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
+          this.props.history.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
         }
         this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
       } else {
@@ -1077,8 +1077,8 @@ export default class DataStorage extends React.Component {
                 className={styles.appLink}
                 to={
                   item.version
-                    ? `miew?storageId=${this.props.storageId}&path=${item.path}&version=${item.version}`
-                    : `miew?storageId=${this.props.storageId}&path=${item.path}`
+                    ? `/miew?storageId=${this.props.storageId}&path=${item.path}&version=${item.version}`
+                    : `/miew?storageId=${this.props.storageId}&path=${item.path}`
                 }
                 target="_blank">
                 <img src="miew_logo.png" />
@@ -1157,9 +1157,9 @@ export default class DataStorage extends React.Component {
         path = path.substring(0, path.length - 1);
       }
       if (path) {
-        this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
+        this.props.history.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
       } else {
-        this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
+        this.props.history.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
       }
       this.setState({
         selectedFile: null,
@@ -1242,9 +1242,9 @@ export default class DataStorage extends React.Component {
 
   showFilesVersionsChanged = (e) => {
     if (this.props.path) {
-      this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(this.props.path)}&versions=${e.target.checked}`);
+      this.props.history.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(this.props.path)}&versions=${e.target.checked}`);
     } else {
-      this.props.router.push(`/storage/${this.props.storageId}?versions=${e.target.checked}`);
+      this.props.history.push(`/storage/${this.props.storageId}?versions=${e.target.checked}`);
     }
   };
 
@@ -1328,8 +1328,8 @@ export default class DataStorage extends React.Component {
           if (vs) {
             let hideInfo;
             const openLink = () => {
-              const {router} = this.props;
-              router && router.push(`/vs/${vs.id}`);
+              const {history} = this.props;
+              history && history.push(`/vs/${vs.id}`);
               hideInfo && hideInfo();
             };
             hideInfo = message.info(
@@ -2078,3 +2078,5 @@ export default class DataStorage extends React.Component {
     }
   }
 }
+
+export default withRouter(DataStorage);

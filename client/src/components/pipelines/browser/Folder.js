@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import classNames from 'classnames';
@@ -110,12 +111,12 @@ function splitFolderPaths (foldersStructure) {
 })
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
-@HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
+@HiddenObjects.checkFolders(props => (props?.match?.params ? props.match?.params.id : props.id))
 @inject('awsRegions')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
-  if (params.params) {
-    componentParameters = params.params;
+  if (params.match && params.match.params) {
+    componentParameters = params.match.params;
   }
   return {
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
@@ -132,7 +133,7 @@ function splitFolderPaths (foldersStructure) {
   };
 })
 @observer
-export default class Folder extends localization.LocalizedReactComponent {
+class Folder extends localization.LocalizedReactComponent {
   static propTypes = {
     id: PropTypes.oneOfType([
       PropTypes.string,
@@ -593,9 +594,9 @@ export default class Folder extends localization.LocalizedReactComponent {
           await this.props.pipelinesLibrary.fetchIfNeededOrWait();
         }
         if (this._currentFolder.folder.parentId) {
-          this.props.router.push(`/folder/${this._currentFolder.folder.parentId}`);
+          this.props.history.push(`/folder/${this._currentFolder.folder.parentId}`);
         } else {
-          this.props.router.push('/library');
+          this.props.history.push('/library');
         }
       } else {
         await this.props.folder.fetch();
@@ -836,9 +837,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       const folderId = request.value.id;
       if (folderId) {
-        this.props.router.push(`/folder/${folderId}`);
+        this.props.history.push(`/folder/${folderId}`);
       } else {
-        this.props.router.push('/library');
+        this.props.history.push('/library');
       }
     }
   };
@@ -889,7 +890,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (pipelineRequest.error) {
       message.error(pipelineRequest.error, 5);
     } else if (pipelineRequest.value && pipelineRequest.value.currentVersion) {
-      this.props.router.push(`/launch/${pipeline.id}/${pipelineRequest.value.currentVersion.name}`);
+      this.props.history.push(`/launch/${pipeline.id}/${pipelineRequest.value.currentVersion.name}`);
     } else {
       message.error('Error fetching last version info', 5);
     }
@@ -1062,7 +1063,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           }
           break;
       }
-      this.props.router.push(item.url());
+      this.props.history.push(item.url());
     }
   };
 
@@ -2224,7 +2225,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   }
 
-  componentWillMount () {
+  componentDidMount () {
     let showDescriptionInfo = localStorage.getItem('show_description');
     if (showDescriptionInfo) {
       try {
@@ -2236,3 +2237,5 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   }
 }
+
+export default withRouter(Folder);

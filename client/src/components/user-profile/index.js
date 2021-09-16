@@ -23,6 +23,7 @@ import Metadata from '../special/metadata/Metadata';
 import UserName from '../special/UserName';
 import displayDate from '../../utils/displayDate';
 import styles from './user-profile.css';
+import {withRouter} from 'react-router-dom';
 
 function renderRoleName (role) {
   if (!role.predefined) {
@@ -167,4 +168,4 @@ class UserProfile extends React.Component {
   }
 }
 
-export default UserProfile;
+export default withRouter(UserProfile);

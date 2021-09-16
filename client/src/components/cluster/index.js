@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import {Row, Menu} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import styles from './Cluster.css';
@@ -39,7 +40,7 @@ const Tabs = [
 
 @roleModel.authenticationInfo
 @observer
-export default class extends React.Component {
+class ClusterRoot extends React.Component {
   get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
@@ -48,7 +49,7 @@ export default class extends React.Component {
   };
 
   renderClusterNavigation = () => {
-    const {router: {location}} = this.props;
+    const {location} = this.props;
     const tabs = Tabs.filter(tab => tab.available(this.currentUser));
     if (tabs.length < 2) {
       return null;
@@ -94,3 +95,5 @@ export default class extends React.Component {
     );
   };
 }
+
+export default withRouter(ClusterRoot);

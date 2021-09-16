@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import {withRouter} from 'react-router-dom';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
@@ -41,7 +42,7 @@ import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
 import styles from './Browser.css';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import MetadataPanel from '../../special/metadataPanel/MetadataPanel';
@@ -141,12 +142,12 @@ function makeCurrentOrderSort (array) {
 })
 @roleModel.authenticationInfo
 @inject('preferences', 'dataStorages')
-@HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
-@HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
+@HiddenObjects.checkMetadataFolders(p => (p.match?.params || p).id)
+@HiddenObjects.checkMetadataClassesWithParent(p => (p.match?.params || p).id, p => (p.match?.params || p).class)
 @inject(({folders, pipelinesLibrary, authenticatedUserInfo, preferences, dataStorages}, params) => {
   let componentParameters = params;
-  if (params.params) {
-    componentParameters = params.params;
+  if (params.match && params.match.params) {
+    componentParameters = params.match.params;
   }
   return {
     folders,
@@ -163,7 +164,7 @@ function makeCurrentOrderSort (array) {
   };
 })
 @observer
-export default class Metadata extends React.Component {
+class Metadata extends React.Component {
   static propTypes = {
     onSelectItems: PropTypes.func,
     initialSelection: PropTypes.array,
@@ -592,7 +593,7 @@ export default class Metadata extends React.Component {
           <AdaptedLink
             key={i}
             to={url}
-            location={this.props.router ? this.props.router.location : {}}>{name}</AdaptedLink>
+            location={this.props.history ? this.props.history.location : {}}>{name}</AdaptedLink>
         ));
       }
       return <span title={title}>{urls.map((url, index) => {
@@ -1070,7 +1071,7 @@ export default class Metadata extends React.Component {
     if (PipelineRunner.error) {
       message.error(PipelineRunner.error, 5);
     } else {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      SessionStorageWrapper.navigateToActiveRuns(this.props.history);
     }
   };
 
@@ -1136,7 +1137,7 @@ export default class Metadata extends React.Component {
       this.setState({
         selectedItemsCanBeSkipped: true
       }, () => {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        SessionStorageWrapper.navigateToActiveRuns(this.props.history);
       });
     }
   };
@@ -1705,7 +1706,7 @@ export default class Metadata extends React.Component {
           this.props.onReloadTree(!this.props.folder.value.parentId);
         }
         hide();
-        this.props.router.push(`/metadataFolder/${this.props.folderId}`);
+        this.props.history.push(`/metadataFolder/${this.props.folderId}`);
       }
     };
     Modal.confirm({
@@ -2387,9 +2388,10 @@ export default class Metadata extends React.Component {
       route,
       router
     } = this.props;
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
-    }
+    // todo replace with history or with <Prompt>
+    // if (route && router) {
+    //   router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
+    // }
     this.onFolderChanged();
     authenticatedUserInfo
       .fetchIfNeededOrWait()
@@ -2475,7 +2477,7 @@ export default class Metadata extends React.Component {
   };
 
   leavePageWithSelectedItems (nextLocation) {
-    const {router} = this.props;
+    const {history} = this.props;
     const {selectedItemsCanBeSkipped} = this.state;
 
     const resetSelectedItemsCanBeSkipped = () => {
@@ -2488,7 +2490,7 @@ export default class Metadata extends React.Component {
     const leave = nextLocation => {
       this.setState({selectedItemsCanBeSkipped: true},
         () => {
-          router.push(nextLocation);
+          history.push(nextLocation);
           resetSelectedItemsCanBeSkipped();
         }
       );
@@ -2515,3 +2517,5 @@ export default class Metadata extends React.Component {
     window.removeEventListener('mouseup', this.handleFinishSelection);
   }
 }
+
+export default withRouter(Metadata);

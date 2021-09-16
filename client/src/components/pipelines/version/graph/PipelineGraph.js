@@ -16,20 +16,20 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from 'react-router-dom';
 import {Row} from 'antd';
 import parentStyles from '../PipelineDetails.css';
 import WorkflowGraph from './WorkflowGraph';
 import PipelineConfigurations from '../../../../models/pipelines/PipelineConfigurations';
 
-@inject(({pipelines}, {params}) => ({
-  pipelineId: params.id,
-  version: params.version,
-  pipeline: pipelines.getPipeline(params.id),
-  configurations: new PipelineConfigurations(params.id, params.version)
+@inject(({pipelines}, {match}) => ({
+  pipelineId: match.params.id,
+  version: match.params.version,
+  pipeline: pipelines.getPipeline(match.params.id),
+  configurations: new PipelineConfigurations(match.params.id, match.params.version)
 }))
 @observer
-export default class PipelineGraph extends Component {
-
+class PipelineGraph extends Component {
   onGraphUpdated = async () => {
     await this.props.pipeline.fetch();
     return this.props.pipeline.value;
@@ -41,7 +41,7 @@ export default class PipelineGraph extends Component {
         className={parentStyles.fullHeightContainer}>
         <Row className={parentStyles.fullHeightContainer}>
           <WorkflowGraph
-            canEdit={true}
+            canEdit
             onGraphUpdated={this.onGraphUpdated}
             pipelineId={this.props.pipelineId}
             configurations={this.props.configurations}
@@ -51,3 +51,5 @@ export default class PipelineGraph extends Component {
     );
   }
 }
+
+export default withRouter(PipelineGraph);

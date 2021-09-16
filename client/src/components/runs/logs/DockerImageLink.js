@@ -17,7 +17,7 @@
 import React, {Component} from 'react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import LoadingView from '../../special/LoadingView';
 import HiddenObjects from '../../../utils/hidden-objects';

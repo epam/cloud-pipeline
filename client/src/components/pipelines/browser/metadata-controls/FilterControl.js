@@ -22,7 +22,7 @@ function tagsAreEqual (tagsA, tagsB) {
 }
 
 @observer
-class FilterControl extends React.PureComponent {
+class FilterControl extends React.Component {
   state = {
     selectedTags: [],
     popoverVisible: false

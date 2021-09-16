@@ -15,7 +15,9 @@ import UpdateNotification from '../../models/notifications/UpdateNotification';
 import DeleteNotification from '../../models/notifications/DeleteNotification';
 import displayDate from '../../utils/displayDate';
 import styles from './styles.css';
+import {withRouter} from 'react-router-dom';
 
+@withRouter
 @inject(({authenticatedUserInfo}) => ({
   authenticatedUserInfo,
   notifications: new Notifications()

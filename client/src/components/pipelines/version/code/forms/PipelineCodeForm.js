@@ -27,10 +27,7 @@ import Papa from 'papaparse';
 import styles from './PipelineCodeForm.css';
 import roleModel from '../../../../../utils/roleModel';
 
-@inject(({routing}, params) => ({
-  routing
-}))
-@inject('cancel', 'version', 'pipeline', 'save')
+@inject('cancel', 'routing', 'version', 'pipeline', 'save')
 @observer
 export default class PipelineCodeForm extends React.Component {
   static propTypes = {

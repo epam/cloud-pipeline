@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Link} from 'react-router';
+import {Link, withRouter} from 'react-router-dom';
 import FileSaver from 'file-saver';
 import {
   Alert,
@@ -109,27 +109,28 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 @runPipelineActions
 @inject('preferences', 'dtsList', 'multiZoneManager')
 @VSActions.check
-@inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
+@inject(({pipelineRun, routing, pipelines, multiZoneManager}, {match}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
-  if (params.taskName) {
+  if (match.params.taskName) {
     task = {
-      name: params.taskName,
+      name: match.params.taskName,
       parameters: queryParameters.parameters,
       instance: queryParameters.instance
     };
   }
 
   return {
-    runId: params.runId,
-    taskName: params.taskName,
-    run: pipelineRun.run(params.runId, {refresh: true}),
-    nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
-    runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
-    runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(params.runId),
-    runTasks: pipelineRun.runTasks(params.runId),
-    runSchedule: new RunSchedules(params.runId),
-    runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
+    mode: match.params.mode,
+    runId: match.params.runId,
+    taskName: match.params.taskName,
+    run: pipelineRun.run(match.params.runId, {refresh: true}),
+    nestedRuns: pipelineRun.nestedRuns(match.params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
+    runSSH: pipelineRunSSHCache.getPipelineRunSSH(match.params.runId),
+    runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(match.params.runId),
+    runTasks: pipelineRun.runTasks(match.params.runId),
+    runSchedule: new RunSchedules(match.params.runId),
+    runKubeServices: new PipelineRunKubeServicesLoad(match.params.runId),
     task,
     pipelines,
     roles: new Roles(),
@@ -236,7 +237,7 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   exportLog = async () => {
-    const {runId} = this.props.params;
+    const {runId} = this.props;
 
     try {
       const hide = message.loading('Exporting log...');
@@ -369,7 +370,7 @@ class Logs extends localization.LocalizedReactComponent {
               key={i}
               className={styles.taskParameterValue}
               to={url}
-              location={this.props.router.location}>{value}</AdaptedLink>
+              location={this.props.location}>{value}</AdaptedLink>
           ));
         } else {
           urls.push(<span key={i}>{value}</span>);
@@ -406,8 +407,8 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <AdaptedLink
                 className={styles.taskParameterValue}
-                to={`/run/${valueSelector()}/${this.props.params.mode}`}
-                location={this.props.router.location}>
+                to={`/run/${valueSelector()}/${this.props.mode}`}
+                location={this.props.location}>
                 {valueSelector()}
               </AdaptedLink>
             </td>
@@ -802,11 +803,11 @@ class Logs extends localization.LocalizedReactComponent {
       }
       const parameters = task.parameters ? `?parameters=${task.parameters}` : '';
       const taskUrl = this.getTaskUrl(task);
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
-      this.props.router.push(url);
+      const url = `/run/${this.props.runId}/${this.props.mode}/${taskUrl}`;
+      this.props.history.push(url);
     } else {
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}`;
-      this.props.router.push(url);
+      const url = `/run/${this.props.runId}/${this.props.mode}`;
+      this.props.history.push(url);
     }
   };
 
@@ -952,7 +953,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   renderContentPlainMode () {
-    const {runId} = this.props.params;
+    const {runId} = this.props;
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
     let Tasks;
 
@@ -965,7 +966,7 @@ class Logs extends localization.LocalizedReactComponent {
         return (
           <Menu.Item key={this.getTaskUrl(task, index)}>
             <TaskLink
-              to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
+              to={`/run/${runId}/${this.props.mode}/${this.getTaskUrl(task)}`}
               location={location}
               task={task}
               timings={this.state.timings} />
@@ -1012,7 +1013,7 @@ class Logs extends localization.LocalizedReactComponent {
   renderContent () {
     if (this._pipelineLanguage) {
       if (graphIsSupportedForLanguage(this._pipelineLanguage)) {
-        if (this.props.params.mode.toLowerCase() === 'plain') {
+        if (this.props.mode.toLowerCase() === 'plain') {
           return this.renderContentPlainMode();
         } else {
           return this.renderContentGraphMode();
@@ -1306,7 +1307,7 @@ class Logs extends localization.LocalizedReactComponent {
     if (this.props.run.error) {
       return <Alert type="error" message={this.props.run.error} />;
     }
-    const {router: {location}} = this.props;
+    const {location} = this.props;
 
     let Details;
     let Parameters;
@@ -1466,7 +1467,7 @@ class Logs extends localization.LocalizedReactComponent {
       const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
-      const {runId} = this.props.params;
+      const {runId} = this.props;
 
       const {
         startDate,
@@ -1858,7 +1859,7 @@ class Logs extends localization.LocalizedReactComponent {
 
       SwitchModeButton = switchModeUrl &&
         <AdaptedLink to={switchModeUrl} location={location}>
-          {this.props.params.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
+          {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
     }
 
@@ -2016,4 +2017,4 @@ class Logs extends localization.LocalizedReactComponent {
   }
 }
 
-export default Logs;
+export default withRouter(Logs);
