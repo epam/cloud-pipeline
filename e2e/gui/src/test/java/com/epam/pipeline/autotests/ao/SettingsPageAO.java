@@ -1575,7 +1575,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemLogsAO filterByService(final String service) {
-            selectValue(combobox("Service"), service).enter();
+            selectValue(combobox("Service"), service);
+            click(byText("Service"));
             return this;
         }
 
