@@ -37,6 +37,7 @@ from s3transfer.manager import TransferManager
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
+from src.utilities.debug_utils import debug_log_proxies
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
@@ -49,12 +50,14 @@ class StorageItemManager(object):
     def __init__(self, session, bucket=None, region_name=None, cross_region=False):
         self.session = session
         self.region_name = region_name
-        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config(cross_region=cross_region),
+        _boto_config = S3BucketOperations.get_proxy_config(cross_region=cross_region)
+        self.s3 = session.resource('s3', config=_boto_config,
                                    region_name=self.region_name)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
             self.bucket = self.s3.Bucket(bucket)
+        debug_log_proxies(_boto_config)
 
     @classmethod
     def show_progress(cls, quiet, size, lock=None):
@@ -73,9 +76,11 @@ class StorageItemManager(object):
         return '&'.join(formatted_tags)
 
     def _get_client(self):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=self.region_name)
+        _boto_config = S3BucketOperations.get_proxy_config()
+        client = self.session.client('s3', config=_boto_config, region_name=self.region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        debug_log_proxies(_boto_config)
         return client
 
     def get_s3_file_size(self, bucket, key):
@@ -254,12 +259,13 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             source_wrapper.delete_item(path)
 
     def build_source_client(self, source_region):
+        _boto_config = S3BucketOperations.get_proxy_config(cross_region=self.cross_region)
         source_s3 = self.session.resource('s3',
-                                          config=S3BucketOperations.get_proxy_config(
-                                              cross_region=self.cross_region),
+                                          config=_boto_config,
                                           region_name=source_region)
         source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        debug_log_proxies(_boto_config)
         return source_s3.meta.client
 
     @classmethod
@@ -654,9 +660,11 @@ class S3BucketOperations(object):
 
     @classmethod
     def _get_client(cls, session, region_name=None):
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=region_name)
+        _boto_config = S3BucketOperations.get_proxy_config()
+        client = session.client('s3', config=_boto_config, region_name=region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        debug_log_proxies(_boto_config)
         return client
 
     @classmethod

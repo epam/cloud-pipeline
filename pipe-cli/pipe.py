@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import traceback
+import functools
+
 import click
 import requests
 import sys
@@ -24,7 +26,7 @@ from src.api.cluster import Cluster
 from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
-from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
+from src.config import Config, ConfigNotFoundError, silent_print_creds_info, is_frozen
 from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
@@ -73,13 +75,52 @@ def print_version(ctx, param, value):
         return
     silent_print_api_version()
     click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
-    silent_print_config_info()
+    silent_print_creds_info()
     ctx.exit()
 
+def enable_debug_logging(ctx, param, value):
+    if value is False:
+        return
+    # Enable body/headers logging from httplib requests
+    try:
+        from http.client import HTTPConnection  # py3
+    except ImportError:
+        from httplib import HTTPConnection      # py2
+    HTTPConnection.debuglevel = 5
+    # Enable urlib3/boto/requests logging
+    import logging
+    logging.basicConfig(level='DEBUG')
+    stream = logging.StreamHandler()
+    stream.setLevel(logging.DEBUG)
+    # Print current configuration
+    click.echo('=====================Configuration=========================')
+    _current_config = Config.instance(raise_config_not_found_exception=False)
+    click.echo(_current_config.__dict__ if _current_config and _current_config.initialized else 'Not configured')
+    # Print current environment
+    click.echo('=====================Environment============================')
+    import os
+    for k, v in sorted(os.environ.items()):
+        click.echo('{}={}'.format(k, v))
+    click.echo('============================================================')
 
 def set_user_token(ctx, param, value):
     if value:
         UserTokenOperations().set_user_token(value)
+
+
+def common_options(func):
+    @click.option(
+        '--debug',
+        is_eager=False,
+        is_flag=True,
+        expose_value=False,
+        callback=enable_debug_logging,
+        help='Enable verbose logging'
+    )
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
 
 
 @click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
@@ -865,6 +906,7 @@ def storage():
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
               help=USER_OPTION_DESCRIPTION, prompt=USER_OPTION_DESCRIPTION, default='')
 @Config.validate_access_token
+@common_options
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
     """Creates a new object storage
@@ -879,6 +921,7 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def delete(name, on_cloud, yes):
     """Deletes an object storage
     """
@@ -899,6 +942,7 @@ def delete(name, on_cloud, yes):
 @click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the datastorage')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
     """Updates the policy of the datastorage
     """
@@ -913,6 +957,7 @@ def update_policy(name, short_term_storage, long_term_storage, versioning, backu
 @click.argument('name', required=True)
 @click.argument('directory', required=True)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@common_options
 def mvtodir(name, directory):
     """Moves an object storage to a new parent folder
     """
@@ -928,6 +973,7 @@ def mvtodir(name, directory):
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_list(path, show_details, show_versions, recursive, page, all):
     """Lists storage contents
     """
@@ -938,6 +984,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 @click.argument('folders', required=True, nargs=-1)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_mk_dir(folders):
     """ Creates a directory in a storage
     """
@@ -956,6 +1003,7 @@ def storage_mk_dir(folders):
               help='Include only files matching this pattern into processing')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
     """ Removes file or folder from a datastorage
     """
@@ -994,6 +1042,7 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
+@common_options
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks, threads, verify_destination):
     """ Moves a file or a folder from one datastorage to another one
@@ -1036,6 +1085,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
+@common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks, threads, verify_destination):
     """ Copies files from one datastorage to another one
@@ -1055,6 +1105,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
               help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
+@common_options
 def du(name, relative_path, format, depth):
     DataStorageOperations.du(name, relative_path, format, depth)
 
@@ -1069,6 +1120,7 @@ def du(name, relative_path, format, depth):
               help='Include only files matching this pattern into processing')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_restore_item(path, version, recursive, exclude, include):
     """ Restores file version in a datastorage.\n
     If version is not specified it will try to restore the latest non deleted version.
@@ -1083,6 +1135,7 @@ def storage_restore_item(path, version, recursive, exclude, include):
 @click.option('-v', '--version', required=False, help='Set tags for a specified version')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_set_object_tags(path, tags, version):
     """ Sets tags for a specified object.\n
         If a specific tag key already exists for an object - it will
@@ -1100,6 +1153,7 @@ def storage_set_object_tags(path, tags, version):
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_get_object_tags(path, version):
     """ Gets tags for a specified object.\n
         - PATH: full path to an object in a datastorage starting
@@ -1115,6 +1169,7 @@ def storage_get_object_tags(path, version):
 @click.option('-v', '--version', required=False, help='Delete tags for a specified version')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@common_options
 def storage_delete_object_tags(path, tags, version):
     """ Deletes tags for a specified object.\n
         - PATH: full path to an object in a datastorage starting

@@ -39,12 +39,11 @@ def is_frozen():
     return getattr(sys, 'frozen', False)
 
 
-def silent_print_config_info():
+def silent_print_creds_info():
     config = Config.instance(raise_config_not_found_exception=False)
     if config is not None and config.initialized:
         click.echo()
         config.validate(print_info=True)
-
 
 class ConfigNotFoundError(Exception):
     def __init__(self):
