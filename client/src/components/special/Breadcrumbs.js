@@ -187,7 +187,7 @@ export default class Breadcrumbs extends React.Component {
                     editClassName={styles.breadcrumbsInput}
                     style={{
                       paddingLeft: '0px',
-                      background: 'transparent',
+                      backgroundColor: 'transparent',
                       textDecoration: 'none',
                       outline: 'none',
                       transition: 'color .3s ease',
