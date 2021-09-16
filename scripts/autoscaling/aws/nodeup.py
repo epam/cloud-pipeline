@@ -1175,6 +1175,9 @@ def main():
     ins_hdd = args.ins_hdd
     ins_img = args.ins_img
     ins_platform = args.ins_platform
+    # Java may pass 'null' (literally) instead of the empty parameter
+    if ins_platform == 'null':
+        ins_platform = 'linux'
     num_rep = args.num_rep
     time_rep = args.time_rep
     is_spot = args.is_spot
