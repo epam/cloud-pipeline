@@ -526,18 +526,16 @@ export default class EditToolForm extends React.Component {
         : undefined;
       this.props.allowedInstanceTypes.setRegionId(cloudRegionId, true);
     }
+    if (prevProps.tool !== this.props.tool || prevProps.configuration !== this.props.configuration) {
+      this.reset();
+    }
+
     const fields = getFieldsValue();
     if ('instanceType' in fields && this.props.allowedInstanceTypes &&
       this.props.allowedInstanceTypes.loaded &&
       this.props.allowedInstanceTypes.changed) {
       this.correctAllowedInstanceValues();
       this.props.allowedInstanceTypes.handleChanged();
-    }
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.tool !== this.props.tool || nextProps.configuration !== this.props.configuration) {
-      this.reset(nextProps);
     }
   }
 

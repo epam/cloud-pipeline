@@ -50,7 +50,7 @@ class ChartWrapper extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (this.ctx) {
       this.chartRef(this.ctx, nextProps);
     }

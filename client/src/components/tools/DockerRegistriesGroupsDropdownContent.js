@@ -74,7 +74,7 @@ export default class DockerRegistriesGroupsDropdownContent extends React.Compone
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (!nextProps.isVisible) {
       this.setState({
         groupSearch: null

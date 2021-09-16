@@ -548,12 +548,9 @@ export default class ToolsNew extends React.Component {
     }
   };
 
-  componentWillMount () {
+  componentDidMount () {
     this.props.dockerRegistries.fetch();
     this.reloadIssues();
-  }
-
-  componentDidMount () {
     this.redirectIfNeeded();
   }
 
@@ -561,7 +558,7 @@ export default class ToolsNew extends React.Component {
     this.redirectIfNeeded();
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.registryId !== this.props.registryId ||
       nextProps.groupId !== this.props.groupId) {
       this.setState({

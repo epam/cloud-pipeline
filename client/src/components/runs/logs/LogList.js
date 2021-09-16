@@ -180,7 +180,7 @@ class LogList extends Component {
     );
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.logs &&
       (
         nextProps.taskName !== this.props.taskName ||

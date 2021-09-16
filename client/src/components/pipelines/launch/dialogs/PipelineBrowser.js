@@ -624,7 +624,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     this.props.library.fetch();
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.visible && nextProps.visible !== this.props.visible) {
       this.props.library.fetch();
       this.rootItems = null;

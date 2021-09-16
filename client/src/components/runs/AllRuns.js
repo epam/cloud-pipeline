@@ -303,8 +303,8 @@ class AllRuns extends Component {
     };
   }
 
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.params.status !== this.props.params.status) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
+    if (nextProps.match.params.status !== this.props.match.params.status) {
       this.setState(
         {
           activeRuns: this.props.counter.value,

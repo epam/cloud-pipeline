@@ -65,7 +65,7 @@ export class WDLRuntimeDockerFormItem extends React.Component {
     this.props.onInitialize && this.props.onInitialize(this);
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (parseRawDockerImageValue(nextProps.value) !== this.state.dockerImage) {
       this.updateState(parseRawDockerImageValue(nextProps.value));
     }

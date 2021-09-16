@@ -5210,7 +5210,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.fireCloudMethod && nextProps.fireCloudMethod.name &&
       this.state.execEnvSelectValue !== FIRE_CLOUD_ENVIRONMENT) {
       this.setState({execEnvSelectValue: FIRE_CLOUD_ENVIRONMENT});

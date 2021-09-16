@@ -443,7 +443,7 @@ export default class S3FilePreview extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.item !== this.props.item) {
       this.setState({pdbError: null, imageError: null});
     }

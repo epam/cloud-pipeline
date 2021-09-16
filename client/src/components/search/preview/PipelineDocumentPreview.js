@@ -401,7 +401,7 @@ export default class PipelineDocumentPreview extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.item !== this.props.item) {
       this.setState({pdbError: null, imageError: null});
     }

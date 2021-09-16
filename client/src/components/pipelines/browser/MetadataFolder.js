@@ -399,7 +399,7 @@ export default class MetadataFolder extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.initialSelection) {
       this.state.selectedItems = nextProps.initialSelection;
     }

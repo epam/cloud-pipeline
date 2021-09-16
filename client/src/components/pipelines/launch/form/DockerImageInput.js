@@ -118,7 +118,7 @@ export default class DockerImageInput extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if ('value' in nextProps) {
       const value = nextProps.value;
       this.setState({value});

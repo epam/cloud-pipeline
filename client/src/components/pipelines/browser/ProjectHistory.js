@@ -161,7 +161,7 @@ export default class ProjectHistory extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.id !== this.props.id) {
       if (this.runTable) {
         this.runTable.clearState();

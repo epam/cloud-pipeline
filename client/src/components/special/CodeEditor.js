@@ -235,7 +235,7 @@ export default class CodeEditor extends React.Component {
     }
   }
 
-  componentWillMount () {
+  componentDidMount () {
     CodeMirror.defineSimpleMode('wdl', {
       start: [
         {regex: /"(?:[^\\]|\\.)*?(?:"|$)/, token: 'string'},

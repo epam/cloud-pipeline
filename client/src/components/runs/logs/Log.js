@@ -1965,7 +1965,7 @@ class Logs extends localization.LocalizedReactComponent {
       </Card>);
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.runId !== this.props.runId) {
       this.language = null;
       this._pipelineLanguage = null;

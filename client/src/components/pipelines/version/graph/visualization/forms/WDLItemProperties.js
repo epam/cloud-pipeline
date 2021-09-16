@@ -174,7 +174,7 @@ export class WDLItemProperties extends React.Component {
     this.props.onInitialize && this.props.onInitialize(this);
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.task !== this.props.task) {
       this.inputPortsComponent && this.inputPortsComponent.reset();
       this.outputPortsComponent && this.outputPortsComponent.reset();

@@ -98,7 +98,7 @@ class LaunchCommand extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.visible !== this.props.visible && nextProps.visible) {
       this.rebuild(nextProps.payload);
     }

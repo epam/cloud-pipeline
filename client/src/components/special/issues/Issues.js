@@ -274,7 +274,7 @@ export default class Issues extends localization.LocalizedReactComponent {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.entityId !== this.props.entityId || nextProps.entityClass !== this.props.entityClass) {
       this.setState({
         selectedIssue: null,

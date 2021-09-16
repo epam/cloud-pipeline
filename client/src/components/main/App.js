@@ -52,24 +52,6 @@ export default class App extends Component {
     this.searchDialog && this.searchDialog.openDialog && this.searchDialog.openDialog();
   };
 
-  componentWillMount () {
-    let infoStr = localStorage.getItem('displayInfo');
-    // default value:
-    let info = {
-      libraryCollapsed: false
-    };
-    if (!infoStr) {
-      try {
-        localStorage.setItem('displayInfo', JSON.stringify(info));
-      } catch (___) {}
-    } else {
-      try {
-        info = JSON.parse(infoStr);
-      } catch (___) {}
-    }
-    this.info.libraryCollapsed = info.libraryCollapsed;
-  }
-
   onLibraryCollapsedChange = () => {
     this.info.libraryCollapsed = !this.info.libraryCollapsed;
     try {
@@ -167,5 +149,21 @@ export default class App extends Component {
 
   componentDidMount () {
     document.title = this.props.preferences.deploymentName || 'Loading...';
+
+    let infoStr = localStorage.getItem('displayInfo');
+    // default value:
+    let info = {
+      libraryCollapsed: false
+    };
+    if (!infoStr) {
+      try {
+        localStorage.setItem('displayInfo', JSON.stringify(info));
+      } catch (___) {}
+    } else {
+      try {
+        info = JSON.parse(infoStr);
+      } catch (___) {}
+    }
+    this.info.libraryCollapsed = info.libraryCollapsed;
   }
 }

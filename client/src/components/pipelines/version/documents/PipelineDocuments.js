@@ -606,7 +606,7 @@ export default class PipelineDocuments extends Component {
     this._mdOriginalContent = '';
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.version !== this.props.version ||
       nextProps.pipelineId !== this.props.pipelineId) {
       this._graphReady = false;

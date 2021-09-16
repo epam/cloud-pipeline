@@ -133,7 +133,7 @@ export default class ToolEndpointsFormItem extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if ((nextProps.value || []).join('|') !== (this.state.value || []).join('|')) {
       this.components = {};
       this.setState({

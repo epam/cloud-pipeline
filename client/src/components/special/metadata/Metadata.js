@@ -1624,7 +1624,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.entityClass !== nextProps.entityClass ||
       this.props.entityId !== nextProps.entityId ||
       this.props.entityParentId !== nextProps.entityParentId) {

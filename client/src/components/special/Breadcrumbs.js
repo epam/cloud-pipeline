@@ -319,7 +319,7 @@ export default class Breadcrumbs extends React.Component {
     this.reload();
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (`${this.props.id}` !== `${nextProps.id}` || this.props.type !== nextProps.type) {
       (async() => {
         await this.props.pipelinesLibrary.fetch();

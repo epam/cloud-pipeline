@@ -45,7 +45,7 @@ export class WDLInstanceTypeFormItem extends React.Component {
     this.props.onInitialize && this.props.onInitialize(this);
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (quotesFn.clear(nextProps.value) !== this.state.instanceType) {
       this.updateState(quotesFn.clear(nextProps.value));
     }

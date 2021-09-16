@@ -67,7 +67,7 @@ class EditQuotaDialog extends React.Component {
     this.createInitialState(this.props);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.visible && nextProps.visible !== this.props.visible) {
       this.createInitialState(nextProps);
     }

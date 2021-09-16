@@ -158,7 +158,7 @@ export default class ToolGroupSelector extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const groupsAreEqual = (group1, group2) => group1.name === group2.name;
     if (this.props.value !== nextProps.value ||
       !compareArrays(this.props.groups, nextProps.groups, groupsAreEqual)) {

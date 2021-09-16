@@ -56,7 +56,7 @@ export default class PipelineCodeForm extends React.Component {
   _originalCode = null;
   _fileContents;
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.file) {
       this._fileContents = new VersionFile(
         nextProps.pipeline.value.id,
