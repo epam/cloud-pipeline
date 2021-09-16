@@ -21,6 +21,7 @@ import requests
 import urllib3
 
 from ..config import Config
+from src.utilities.debug_utils import debug_log_proxies
 
 
 class ServerError(RuntimeError):
@@ -57,6 +58,7 @@ class API(object):
         return self.__headers__
 
     def call(self, method, data, http_method=None, error_message=None):
+        debug_log_proxies(self.__proxies__)
         url = '{}/{}'.format(self.__config__.api.strip('/'), method)
         if not http_method:
             if data:
