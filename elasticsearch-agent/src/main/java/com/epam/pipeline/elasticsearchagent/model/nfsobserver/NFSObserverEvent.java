@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.pipeline.elasticsearchagent.service;
 
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
+package com.epam.pipeline.elasticsearchagent.model.nfsobserver;
 
-import java.util.List;
+import lombok.Value;
 
-@FunctionalInterface
-public interface BulkRequestCreator {
-    BulkResponse sendRequest(List<? extends DocWriteRequest> requests);
+@Value
+public class NFSObserverEvent {
+    private final Long timestamp;
+    private final NFSObserverEventType eventType;
+    private final String storage;
+    private final String filePath;
+
 }

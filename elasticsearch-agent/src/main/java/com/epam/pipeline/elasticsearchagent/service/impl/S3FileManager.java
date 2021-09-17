@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.Tag;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
@@ -34,15 +36,23 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.utils.StreamUtils;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 
@@ -72,6 +82,26 @@ public class S3FileManager implements ObjectStorageFileManager {
                                   final IndexRequestContainer requestContainer) {
         listFiles(getS3Client(credentials), indexName, dataStorage, credentials,
                 permissions, requestContainer);
+    }
+
+    public Stream<DataStorageFile> files(final String storage, final String path,
+                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier.get());
+        return StreamUtils.from(new S3PageIterator(client, storage, path))
+                .flatMap(List::stream);
+    }
+
+    public InputStream readFileContent(final String storage, final String path,
+                                       final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier.get());
+        final S3Object object = client.getObject(new GetObjectRequest(storage, path));
+        return object.getObjectContent();
+    }
+
+    public void deleteFile(final String storage, final String path,
+                           final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier.get());
+        client.deleteObject(storage, path);
     }
 
     private AmazonS3 getS3Client(final TemporaryCredentials credentials) {
@@ -162,4 +192,54 @@ public class S3FileManager implements ObjectStorageFileManager {
                 .source(fileMapper.fileToDocument(item, dataStorage, credentials.getRegion(), permissions,
                         SearchDocumentType.S3_FILE));
     }
+
+
+    @RequiredArgsConstructor
+    public static class S3PageIterator implements Iterator<List<DataStorageFile>> {
+
+        private final AmazonS3 client;
+        private final String bucket;
+        private final String path;
+
+        private String continuationToken;
+        private List<DataStorageFile> items;
+
+        @Override
+        public boolean hasNext() {
+            return items == null || StringUtils.isNotBlank(continuationToken);
+        }
+
+        @Override
+        public List<DataStorageFile> next() {
+            final ListObjectsV2Result objectsListing = client.listObjectsV2(
+                new ListObjectsV2Request()
+                    .withBucketName(bucket)
+                    .withPrefix(path)
+                    .withContinuationToken(continuationToken));
+            continuationToken = objectsListing.isTruncated() ? objectsListing.getNextContinuationToken() : null;
+            items = objectsListing.getObjectSummaries()
+                .stream()
+                .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(),
+                                                                ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
+                .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), S3FileManager.DELIMITER))
+                .map(this::convertToStorageFile)
+                .collect(Collectors.toList());
+            return items;
+        }
+
+        private DataStorageFile convertToStorageFile(final S3ObjectSummary s3ObjectSummary) {
+            final DataStorageFile file = new DataStorageFile();
+            file.setName(s3ObjectSummary.getKey());
+            file.setPath(s3ObjectSummary.getKey());
+            file.setSize(s3ObjectSummary.getSize());
+            file.setVersion(null);
+            file.setChanged(ESConstants.FILE_DATE_FORMAT.format(s3ObjectSummary.getLastModified()));
+            file.setDeleteMarker(null);
+            file.setLabels(Optional.ofNullable(s3ObjectSummary.getStorageClass())
+                               .map(it -> Collections.singletonMap(ESConstants.STORAGE_CLASS_LABEL, it))
+                               .orElseGet(Collections::emptyMap));
+            return file;
+        }
+    }
+
 }
