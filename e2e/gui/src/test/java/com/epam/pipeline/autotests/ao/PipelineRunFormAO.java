@@ -101,6 +101,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setLaunchOptions(String disk, String type, String timeOut) {
         return setDisk(disk)
+                .sleep(1, SECONDS)
                 .setTypeValue(type)
                 .setTimeOut(timeOut);
     }

@@ -153,7 +153,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .switchToUserManagement()
                 .switchToUsers()
                 .checkUserExist(testUser)
-                .checkUserRoles(testUser, C.ROLE_USER, "ROLE_PIPELINE_MANAGER",
+                .checkUserRoles(testUser, "ROLE_USER", "ROLE_PIPELINE_MANAGER",
                         "ROLE_FOLDER_MANAGER", "ROLE_CONFIGURATION_MANAGER");
     }
 
