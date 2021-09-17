@@ -1171,7 +1171,7 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
     for each individual platform in order to mount anything:
     FUSE on Linux,
     macFUSE (https://github.com/osxfuse/osxfuse/releases/tag/macfuse-4.1.2) on MacOS
-    and (https://github.com/dokan-dev/dokany/releases/tag/v1.5.0.3000) on Windows.
+    and Dokany (https://github.com/dokan-dev/dokany/releases/tag/v1.5.0.3000) on Windows.
 
     Examples:
 

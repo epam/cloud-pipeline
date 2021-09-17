@@ -12,45 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import platform
 import subprocess
 
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
-    if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
-    else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    if not silent and stderr:
-        print(stderr)
-    if not silent and stdout:
-        print(stdout)
-    return p.wait(), stdout, stderr
+    stdout, stderr = _get_stdout_and_stderr()
+    p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable)
+    out, err = p.communicate()
+    if not silent and err:
+        print(err)
+    if not silent and out:
+        print(out)
+    return p.returncode, out, err
 
 
 def execute_cmd_command(command, silent=False, executable=None):
-    if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
-    else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    for line in p.stderr.readlines():
-        if not silent:
-            print(line)
-    for line in p.stdout.readlines():
-        if not silent:
-            print(line)
-    return p.wait()
+    exit_code, _, _ = execute_cmd_command_and_get_stdout_stderr(command, silent, executable)
+    return exit_code
 
 
 def get_cmd_command_output(command, executable=None):
-    if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
-    else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    output, error = p.communicate()
-    exit_code = p.returncode
-    if error: print(error)
-    return exit_code, output.splitlines()
+    stdout, stderr = _get_stdout_and_stderr()
+    p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable)
+    out, err = p.communicate()
+    if err:
+        print(err)
+    return p.returncode, out.splitlines()
+
+
+def _get_stdout_and_stderr():
+    return (None, None) if platform.system() == 'Windows' else (subprocess.PIPE, subprocess.PIPE)
 
 
 def pack_script(script_path):

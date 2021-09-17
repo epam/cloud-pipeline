@@ -153,6 +153,15 @@ function InstallChromeIfRequired {
     }
 }
 
+function InstallDokanyIfRequired($DokanyDir) {
+    if (-not (Test-Path "$DokanyDir")) {
+        Write-Host "Installing Dokany..."
+        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
+        & "$workingDir\DokanSetup.exe" /quiet /silent /verysilent
+        WaitForProcess -ProcessName "DokanSetup"
+    }
+}
+
 function GenerateSshKeys($Path) {
     NewDirIfRequired -Path "$Path\.ssh"
     if (!(Test-Path "$Path\.ssh\id_rsa")) {
@@ -419,6 +428,7 @@ $hostDir = "c:\host"
 $runsDir = "c:\runs"
 $kubeDir = "c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
+$dokanyDir = "C:\Program Files\Dokan\Dokan Library-1.5.0"
 $initLog = "$workingDir\log.txt"
 
 Write-Host "Creating system directories..."
@@ -477,6 +487,9 @@ InstallPythonIfRequired -PythonDir $pythonDir
 
 Write-Host "Installing chrome if required..."
 InstallChromeIfRequired
+
+Write-Host "Installing Dokany if required..."
+InstallDokanyIfRequired -DokanyDir $dokanyDir
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
