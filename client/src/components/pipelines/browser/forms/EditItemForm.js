@@ -107,9 +107,8 @@ export default class EditItemForm extends React.Component {
               this.props.includeFileContentField &&
               <Form.Item {...this.formItemLayout} label="Content">
                 {getFieldDecorator('content')(
-                  <Input
+                  <Input.TextArea
                     disabled={this.props.pending}
-                    type="textarea"
                   />
                 )}
               </Form.Item>

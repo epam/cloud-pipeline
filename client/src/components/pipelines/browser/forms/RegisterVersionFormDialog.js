@@ -83,7 +83,7 @@ export default class RegisterVersionFormDialog extends Component {
               className="register-version-form-description-container"
               {...this.formItemLayout} label="Description">
               {getFieldDecorator('description', {})(
-                <Input disabled={this.props.pending} type="textarea" rows={4} />
+                <Input.TextArea disabled={this.props.pending} rows={4} />
               )}
             </Form.Item>
           </Form>

@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
+// todo Mention deprecated since 3.19.0
 import {Mention, Row, Tabs, Icon} from 'antd';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';

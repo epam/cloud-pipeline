@@ -140,20 +140,26 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
       key: 'selection',
       className: styles.treeItemSelection,
       render: (item) => this.renderTreeItemSelection(item),
-      onCellClick: (item) => this.onConfigurationSelect(item)
+      onCell: item => ({
+        onClick: () => this.onConfigurationSelect(item)
+      })
     },
     {
       key: 'type',
       className: styles.treeItemType,
       render: (item) => this.renderTreeItemType(item),
-      onCellClick: (item) => this.onConfigurationSelect(item)
+      onCell: item => ({
+        onClick: () => this.onConfigurationSelect(item)
+      })
     },
     {
       dataIndex: 'name',
       key: 'name',
       title: 'Name',
       className: styles.treeItemName,
-      onCellClick: (item) => this.onConfigurationSelect(item)
+      onCell: item => ({
+        onClick: () => this.onConfigurationSelect(item)
+      })
     },
     {
       key: 'actions',

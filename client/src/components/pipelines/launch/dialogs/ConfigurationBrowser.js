@@ -164,6 +164,7 @@ export default class ConfigurationBrowser extends React.Component {
       }
     };
 
+    // todo replace with AutoComplete before antd 4
     return (
       <Select
         style={{width: '100%'}}

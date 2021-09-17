@@ -1279,7 +1279,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
         } run-${record.id}`}
         dataSource={source}
         onChange={this.props.handleTableChange}
-        onRowClick={this.props.onSelect}
+        onRow={item => ({
+          onClick: () => this.props.onSelect(item)
+        })}
         pagination={this.props.pagination}
         loading={this.props.loading}
         size="small"

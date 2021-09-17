@@ -156,7 +156,9 @@ class CloudCredentialsForm extends React.Component {
             size="small"
             rowKey="id"
             rowClassName={() => styles.credentialsRow}
-            onRowClick={o => this.onEditCredentialsClicked(o)}
+            onRow={o => ({
+              onClick: () => this.onEditCredentialsClicked(o)
+            })}
           />
           <CloudCredentialsProfileForm
             visible={createNew || !!currentCredentials}

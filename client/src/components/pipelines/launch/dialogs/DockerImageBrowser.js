@@ -376,7 +376,9 @@ export default class DockerImageBrowser extends React.Component {
       {
         dataIndex: 'image',
         key: 'image',
-        onCellClick: (tool) => onSelect(tool),
+        onCell: tool => ({
+          onClick: () => onSelect(tool)
+        }),
         render: (image, tool) => {
           if (toolIsSelected(tool)) {
             return (
@@ -393,11 +395,13 @@ export default class DockerImageBrowser extends React.Component {
       {
         key: 'version',
         className: styles.toolColumnTags,
-        onCellClick: (tool) => {
-          if (!toolIsSelected(tool)) {
-            return onSelect(tool);
+        onCell: tool => ({
+          onClick: () => {
+            if (!toolIsSelected(tool)) {
+              return onSelect(tool);
+            }
           }
-        },
+        }),
         render: (tool) => {
           if (toolIsSelected(tool)) {
             const {tagsPending, tagsError, tags = []} = this.state;

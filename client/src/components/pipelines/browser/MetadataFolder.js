@@ -75,14 +75,18 @@ class MetadataFolder extends React.Component {
         key: 'type',
         className: styles.treeItemType,
         render: (item) => this.renderTreeItemType(item),
-        onCellClick: (item) => this.navigate(item)
+        onCell: item => ({
+          onClick: () => this.navigate(item)
+        })
       },
       {
         key: 'name',
         title: 'Name',
         className: styles.metadataFolderItemName,
         render: (item) => this.renderItemName(item),
-        onCellClick: (item) => this.navigate(item)
+        onCell: item => ({
+          onClick: () => this.navigate(item)
+        })
       }
     ],
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],

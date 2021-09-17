@@ -387,6 +387,7 @@ export default class MetadataBrowser extends React.Component {
       }
     };
 
+    // todo replace Select with AutoComplete before antd 4
     return (
       <Select
         style={{width: '100%'}}

@@ -170,7 +170,9 @@ class Preferences extends React.Component {
             ? `${styles.preferenceGroupRow} ${styles.selected}`
             : styles.preferenceGroupRow
         }
-        onRowClick={group => this.selectPreferenceGroup(group.name)}
+        onRow={group => ({
+          onClick: () => this.selectPreferenceGroup(group.name)
+        })}
         size="medium" />
     );
   };

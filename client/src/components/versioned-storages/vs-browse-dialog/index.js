@@ -45,18 +45,24 @@ class VSBrowseDialog extends React.Component {
     key: 'selection',
     className: styles.checkCell,
     render: () => (<Icon type="check" className={styles.check} />),
-    onCellClick: storage => this.wrapPromiseAction(this.onSelectStorage)(storage)
+    onCell: storage => ({
+      onClick: () => this.wrapPromiseAction(this.onSelectStorage)(storage)
+    })
   }, {
     title: 'Storage',
     key: 'name',
     dataIndex: 'name',
     className: styles.cell,
-    onCellClick: storage => this.wrapPromiseAction(this.onSelectStorage)(storage)
+    onCell: storage => ({
+      onClick: () => this.wrapPromiseAction(this.onSelectStorage)(storage)
+    })
   }, {
     key: 'versions',
     className: styles.versions,
     render: storage => this.renderVSVersions(storage),
-    onCellClick: storage => this.onVersionsCellClicked(storage)
+    onCell: storage => ({
+      onClick: () => this.onVersionsCellClicked(storage)
+    })
   }];
 
   componentDidUpdate (prevProps, prevState, snapshot) {

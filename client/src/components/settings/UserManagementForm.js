@@ -523,7 +523,9 @@ export default class UserManagementForm extends React.Component {
         dataSource={this.users}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
-        onRowClick={(user) => this.openEditUserRolesDialog(user)}
+        onRow={user => ({
+          onClick: () => this.openEditUserRolesDialog(user)
+        })}
         pagination={{
           total: this.users.length,
           PAGE_SIZE,
@@ -628,7 +630,9 @@ export default class UserManagementForm extends React.Component {
         columns={columns}
         dataSource={roles}
         onChange={this.handleRolesTableChange}
-        onRowClick={(role) => this.openEditRoleDialog(role)}
+        onRow={role => ({
+          onClick: () => this.openEditRoleDialog(role)
+        })}
         pagination={{total: roles.length, PAGE_SIZE, current: this.state.rolesTableCurrentPage}}
         size="small" />
     );
@@ -709,7 +713,9 @@ export default class UserManagementForm extends React.Component {
         columns={columns}
         dataSource={roles}
         onChange={this.handleGroupsTableChange}
-        onRowClick={(group) => this.openEditGroupDialog(group)}
+        onRow={group => ({
+          onClick: () => this.openEditGroupDialog(group)
+        })}
         pagination={{total: roles.length, PAGE_SIZE, current: this.state.groupsTableCurrentPage}}
         size="small" />
     );

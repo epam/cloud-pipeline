@@ -1007,10 +1007,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
-            <Input
+            <Input.TextArea
               {...inputOptions('value')}
-              type="textarea"
-              autosize={MetadataDisplayOptions.edit.autosize} />
+              autoSize={MetadataDisplayOptions.edit.autosize} />
           </td>
         </tr>
       );
@@ -1226,7 +1225,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         );
       } else {
         valueItem = (
-          <Input
+          <Input.TextArea
             disabled={readOnly}
             onPressEnter={readOnly ? undefined : onEnter}
             onKeyDown={(e) => {
@@ -1237,8 +1236,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             value={this.state.addKey.value}
             onChange={onChange('value')}
             size="small"
-            type="textarea"
-            autosize
+            autoSize
           />
         );
       }
@@ -1381,12 +1379,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
           key="preview body"
           style={{color: '#777', flex: 1}}
         >
-          <Input
+          <Input.TextArea
             spellCheck="false"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            type="textarea"
             className={styles.disabledTextarea}
             value={preview}
             readOnly

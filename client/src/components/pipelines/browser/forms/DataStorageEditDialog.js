@@ -393,7 +393,7 @@ export class DataStorageEditDialog extends React.Component {
                       ? this.props.dataStorage.description
                       : undefined
                   })(
-                    <Input type="textarea" disabled={this.props.pending || isReadOnly} />
+                    <Input.TextArea disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 <Form.Item

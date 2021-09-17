@@ -562,7 +562,9 @@ export default class CLIForm extends React.Component {
             bordered={false}
             size="medium"
             rowClassName={row => row.key === this.state.activeTab ? styles.tabSelected : styles.tab}
-            onRowClick={this.selectTab}
+            onRow={item => ({
+              onClick: () => this.selectTab(item)
+            })}
             pagination={false} />
         </div>
         <div style={{flex: 1, height: '100%', overflow: 'auto', paddingLeft: 10}}>

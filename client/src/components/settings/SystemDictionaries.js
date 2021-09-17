@@ -263,7 +263,9 @@ class SystemDictionaries extends React.Component {
         pagination={false}
         rowKey="name"
         rowClassName={getRowClassName}
-        onRowClick={group => this.selectDictionary(group.name)}
+        onRow={group => ({
+          onClick: () => this.selectDictionary(group.name)
+        })}
         size="medium" />
     );
   };

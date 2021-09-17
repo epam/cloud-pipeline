@@ -151,9 +151,8 @@ class CreateItemForm extends React.Component {
               label="Comment"
             >
               {getFieldDecorator('comment')(
-                <Input
+                <Input.TextArea
                   disabled={this.props.pending}
-                  type="textarea"
                 />
               )}
             </Form.Item>

@@ -172,7 +172,7 @@ class ItemsTable extends React.Component {
         <Row
           type="flex"
           justify="space-between"
-          align="center"
+          align="middle"
         >
           <Button
             id="items-table-modal-edit-cancel"
@@ -196,7 +196,7 @@ class ItemsTable extends React.Component {
       <Row
         type="flex"
         justify="end"
-        align="center"
+        align="middle"
       >
         {
           !disabled && (

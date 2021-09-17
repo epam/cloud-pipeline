@@ -163,8 +163,7 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
           <Form>
             <Form.Item {...this.formItemLayout} label="Commit message">
               {getFieldDecorator('message', {rules: [{required: true, message: 'Commit message is required'}]})(
-                <Input
-                  type="textarea"
+                <Input.TextArea
                   ref={this.initializeNameInput}
                   onPressEnter={this.handleSubmit}
                   disabled={this.props.pending} />

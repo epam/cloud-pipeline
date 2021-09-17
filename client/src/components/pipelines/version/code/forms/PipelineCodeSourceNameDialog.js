@@ -106,7 +106,7 @@ export default class PipelineCodeSourceNameDialog extends React.Component {
             </Form.Item>
             <Form.Item {...this.formItemLayout} label="Comment">
               {getFieldDecorator('comment')(
-                <Input disabled={this.props.pending} type="textarea" />
+                <Input.TextArea disabled={this.props.pending} />
               )}
             </Form.Item>
           </Form>

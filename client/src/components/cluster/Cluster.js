@@ -520,7 +520,9 @@ class Cluster extends localization.LocalizedReactComponent {
         title: 'Name',
         sorter: this.alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: item => ({
+          onClick: () => this.onNodeInstanceSelect(item)
+        })
       },
       {
         dataIndex: 'pipelineRun',
@@ -528,7 +530,9 @@ class Cluster extends localization.LocalizedReactComponent {
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
         className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: item => ({
+          onClick: () => this.onNodeInstanceSelect(item)
+        })
       },
       {
         dataIndex: 'labels',
@@ -538,7 +542,9 @@ class Cluster extends localization.LocalizedReactComponent {
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: item => ({
+          onClick: () => this.onNodeInstanceSelect(item)
+        })
       },
       {
         dataIndex: 'addresses',
@@ -547,7 +553,9 @@ class Cluster extends localization.LocalizedReactComponent {
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
         render: (addresses) => addressesCellContent(addresses),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: item => ({
+          onClick: () => this.onNodeInstanceSelect(item)
+        })
       },
       {
         dataIndex: 'created',
@@ -556,7 +564,9 @@ class Cluster extends localization.LocalizedReactComponent {
         sorter: this.dateSorter,
         className: styles.clusterNodeRowCreated,
         render: (date) => createdCellContent(date),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: item => ({
+          onClick: () => this.onNodeInstanceSelect(item)
+        })
       },
       {
         key: 'terminate',

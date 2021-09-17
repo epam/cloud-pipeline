@@ -129,8 +129,7 @@ export default class EditToolGroupForm extends React.Component {
           {
             initialValue: `${this.props.toolGroup ? this.props.toolGroup.description || '' : ''}`
           })(
-          <Input
-            type="textarea"
+          <Input.TextArea
             ref={this.props.toolGroup ? this.initializeNameInput : null}
             disabled={this.props.pending} />
         )}

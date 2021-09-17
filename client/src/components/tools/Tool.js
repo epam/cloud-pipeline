@@ -492,11 +492,10 @@ class Tool extends localization.LocalizedReactComponent {
     const renderDescription = () => {
       if (this.state.editDescriptionMode) {
         return (
-          <Input
+          <Input.TextArea
             id="description-input"
             value={this.state.description}
             onChange={(e) => this.setState({description: e.target.value})}
-            type="textarea"
             onKeyDown={(e) => {
               if (e.key && e.key === 'Escape') {
                 this.toggleEditDescriptionMode(false);
@@ -1034,14 +1033,16 @@ class Tool extends localization.LocalizedReactComponent {
           columns={columns}
           dataSource={data}
           pagination={{pageSize: 20}}
-          onRowClick={(version) => {
-            if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
-              version.status !== ScanStatuses.notScanned) {
-              this.props.history.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
-            } else {
-              this.props.history.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+          onRow={version => ({
+            onClick: () => {
+              if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+                version.status !== ScanStatuses.notScanned) {
+                this.props.history.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
+              } else {
+                this.props.history.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+              }
             }
-          }}
+          })}
           size="small" />
         {
           isContainsUnscannedVersion &&

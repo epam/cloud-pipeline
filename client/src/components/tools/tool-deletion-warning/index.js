@@ -159,7 +159,7 @@ class ToolDeletionWarning extends React.Component {
         bodyStyle={{wordWrap: 'break-word'}}
         zIndex={1001}
         footer={(
-          <Row type="flex" align="center" justify="end">
+          <Row type="flex" align="middle" justify="end">
             <Button
               id="remove-button-cancel"
               onClick={resolve ? () => resolve(false) : undefined}

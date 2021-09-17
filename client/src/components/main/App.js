@@ -15,8 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {Layout, LocaleProvider} from 'antd';
-import enUS from 'antd/lib/locale-provider/en_US';
+import {Layout} from 'antd';
 import {withRouter} from 'react-router-dom';
 import {observer, Provider, inject} from 'mobx-react';
 import {observable} from 'mobx';
@@ -125,22 +124,20 @@ class App extends Component {
       );
     }
     return (
-      <LocaleProvider locale={enUS}>
-        <div id="root-container" className={styles.appContainer}>
-          {
-            this.props.uiNavigation.searchEnabled() && !isExternalApp && (
-              <SearchDialog
-                onInitialized={this.onSearchDialogInitialized}
-                history={this.props.history}
-                blockInput={activeTabPath === Pages.run || isSearch}
-                onVisibilityChanged={this.onSearchControlVisibilityChanged}
-              />
-            )
-          }
-          {content}
-          <NotificationCenter delaySeconds={2} />
-        </div>
-      </LocaleProvider>
+      <div id="root-container" className={styles.appContainer}>
+        {
+          this.props.uiNavigation.searchEnabled() && !isExternalApp && (
+            <SearchDialog
+              onInitialized={this.onSearchDialogInitialized}
+              history={this.props.history}
+              blockInput={activeTabPath === Pages.run || isSearch}
+              onVisibilityChanged={this.onSearchControlVisibilityChanged}
+            />
+          )
+        }
+        {content}
+        <NotificationCenter delaySeconds={2} />
+      </div>
     );
   }
 

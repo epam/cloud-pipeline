@@ -206,7 +206,9 @@ class Conflicts extends React.Component {
             {[styles.selectedFile]: file.name === current}
           )
         }
-        onRowClick={file => this.setState({current: file.name})}
+        onRow={file => ({
+          onClick: () => this.setState({current: file.name})
+        })}
       />
     );
   };

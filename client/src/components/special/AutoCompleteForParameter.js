@@ -123,6 +123,7 @@ export default class AutoCompleteForParameter extends React.Component {
   };
 
   render () {
+    // todo replace Select with AutoComplete before antd 4
     return (
       <Input.Group compact style={{display: 'flex'}}>
         {

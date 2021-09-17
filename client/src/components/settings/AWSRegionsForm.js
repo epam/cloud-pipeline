@@ -291,7 +291,9 @@ class AWSRegionsForm extends React.Component {
               ? `${styles.regionRow} ${styles.selected}`
               : styles.regionRow
         }
-        onRowClick={region => !this.state.newRegion && this.selectRegion(region)}
+        onRow={(region) => ({
+          onClick: () => !this.state.newRegion && this.selectRegion(region)
+        })}
         size="medium" />
     );
   };

@@ -544,6 +544,7 @@ class UserIntegrityCheck extends React.Component {
                 const dictionary = this.getSystemDictionary(column);
                 if (dictionary) {
                   const fieldParentLink = this.getFieldParentLink(user.id, column);
+                  // todo replace Select with AutoComplete before antd 4
                   return (
                     <td key={column}>
                       <div className={styles.cell}>

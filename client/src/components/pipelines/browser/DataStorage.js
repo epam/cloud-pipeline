@@ -1048,7 +1048,9 @@ class DataStorage extends React.Component {
       key: 'type',
       title: '',
       className: styles.itemTypeCell,
-      onCellClick: (item) => this.didSelectDataStorageItem(item),
+      onCell: item => ({
+        onClick: () => this.didSelectDataStorageItem(item)
+      }),
       render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
     };
     const appsColumn = {
@@ -1100,7 +1102,9 @@ class DataStorage extends React.Component {
         }
         return text;
       },
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: item => ({
+        onClick: () => this.didSelectDataStorageItem(item)
+      })
     };
     const sizeColumn = {
       dataIndex: 'size',
@@ -1108,7 +1112,9 @@ class DataStorage extends React.Component {
       title: 'Size',
       className: styles.sizeCell,
       render: size => displaySize(size),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: item => ({
+        onClick: () => this.didSelectDataStorageItem(item)
+      })
     };
     const changedColumn = {
       dataIndex: 'changed',
@@ -1116,7 +1122,9 @@ class DataStorage extends React.Component {
       title: 'Date changed',
       className: styles.changedCell,
       render: (date) => date ? displayDate(date) : '',
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: item => ({
+        onClick: () => this.didSelectDataStorageItem(item)
+      })
     };
     const labelsColumn = {
       dataIndex: 'labels',
@@ -1124,7 +1132,9 @@ class DataStorage extends React.Component {
       title: '',
       className: styles.labelsCell,
       render: this.labelsRenderer,
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: item => ({
+        onClick: () => this.didSelectDataStorageItem(item)
+      })
     };
     const actionsColumn = {
       key: 'actions',
@@ -1880,8 +1890,7 @@ class DataStorage extends React.Component {
           }
           {
             this.generateDownloadUrls && this.generateDownloadUrls.loaded && (
-              <Input
-                type="textarea"
+              <Input.TextArea
                 className={styles.generateDownloadUrlInput}
                 rows={10}
                 value={this.generateDownloadUrls.value.map(u => u.url).join('\n')} />
@@ -1929,9 +1938,8 @@ class DataStorage extends React.Component {
               this._shareStorageLink && (!this._shareStorageLink.error
                 ? (!this._shareStorageLink.pending
                   ? (
-                    <Input
-                      autosize
-                      type="textarea"
+                    <Input.TextArea
+                      autoSize
                       value={this._shareStorageLink.value}/>
                   )
                   : <LoadingView />)

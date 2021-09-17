@@ -172,8 +172,10 @@ export default class SystemParametersBrowser extends Component {
           dataSource={this.currentParameters}
           columns={columns}
           loading={this.props.runDefaultParameters.pending}
-          showHeader={true}
-          onRowClick={(parameter) => this.onSelect(parameter)}
+          showHeader
+          onRow={parameter => ({
+            onClick: () => this.onSelect(parameter)
+          })}
           rowKey="name"
           rowClassName={() => styles.parameterRow}
           pagination={false}

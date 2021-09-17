@@ -125,7 +125,7 @@ class DockerImagesEdit extends React.Component {
   }
 }
 
-DockerImagesEdit.PropTypes = {
+DockerImagesEdit.propTypes = {
   toolsToMount: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.number,
     image: PropTypes.string,

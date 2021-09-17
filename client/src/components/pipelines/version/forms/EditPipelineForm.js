@@ -182,9 +182,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             initialValue: `${this.props.pipeline && this.props.pipeline.description
               ? this.props.pipeline.description : ''}`
           })(
-            <Input
-              type="textarea"
-              autosize={{minRows: 2, maxRows: 6}}
+            <Input.TextArea
+              autoSize={{minRows: 2, maxRows: 6}}
               disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
         )}
       </Form.Item>

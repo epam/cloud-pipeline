@@ -278,10 +278,11 @@ export default class CommitRunDockerImageInput extends React.Component {
     if (this.state.value === undefined) {
       return (
         <Input
-          disabled={true}
+          disabled
           size="large" />
       );
     }
+    // todo replace Select with AutoComplete before antd 4
     return (
       <Row type="flex">
         <div

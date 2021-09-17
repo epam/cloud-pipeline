@@ -108,9 +108,8 @@ export default class EditSystemNotificationForm extends React.Component {
                 initialValue: `${this.props.notification && this.props.notification.body
                   ? this.props.notification.body : ''}`
               })(
-              <Input
-                type="textarea"
-                autosize={{minRows: 2, maxRows: 6}}
+              <Input.TextArea
+                autoSize={{minRows: 2, maxRows: 6}}
                 className={styles.notificationBodyInput}
                 disabled={this.props.pending}
                 placeholder="Notification text"

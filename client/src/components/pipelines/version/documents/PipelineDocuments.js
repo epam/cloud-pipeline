@@ -457,16 +457,15 @@ class PipelineDocuments extends Component {
       }
       if (this.state.editManagingMdFileMode) {
         return (
-          <Input
+          <Input.TextArea
             value={this.state.mdModifiedContent}
             onChange={(e) => this.onMdFileChanged(e.target.value)}
-            type="textarea"
             onKeyDown={(e) => {
               if (e.key && e.key === 'Escape') {
                 this.toggleEditManagingMdFileMode(false);
               }
             }}
-            autosize={{minRows: 25}}
+            autoSize={{minRows: 25}}
             style={{width: '100%', resize: 'none'}} />
         );
       } else {
@@ -505,7 +504,9 @@ class PipelineDocuments extends Component {
       <Table
         key="docs table"
         rowKey="name"
-        onRowClick={(file, index, evt) => this.onFileClick(file, index, evt)}
+        onRow={(file, index) => ({
+          onClick: evt => this.onFileClick(file, index, evt)
+        })}
         rowClassName={() => styles.documentRow}
         className={styles.docsTable}
         dataSource={tableData.dataSource}

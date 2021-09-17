@@ -113,9 +113,8 @@ export default class CreateConfigurationForm extends React.Component {
                     initialValue: `${this.props.pipeline && this.props.pipeline.description
                       ? this.props.pipeline.description : ''}`
                   })(
-                    <Input
-                      type="textarea"
-                      autosize={{minRows: 2, maxRows: 6}}
+                    <Input.TextArea
+                      autoSize={{minRows: 2, maxRows: 6}}
                       disabled={this.props.pending} />
                 )}
             </Form.Item>

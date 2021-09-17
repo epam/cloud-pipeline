@@ -261,7 +261,9 @@ export default class Issues extends localization.LocalizedReactComponent {
               rowKey="id"
               rowClassName={() => styles.issueRow}
               showHeader={false}
-              onRowClick={(item) => this.onSelectIssue(item)}
+              onRow={item => ({
+                onClick: () => this.onSelectIssue(item)
+              })}
               columns={this.issuesColumns}
               dataSource={this.issues}
               pagination={false}

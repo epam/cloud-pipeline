@@ -337,14 +337,18 @@ export default class BucketBrowser extends React.Component {
         title: '',
         className: styles.itemTypeCell,
         render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({
+          onClick: () => this.didSelectDataStorageItem(item)
+        })
       },
       {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
         className: styles.selectableCell,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({
+          onClick: () => this.didSelectDataStorageItem(item)
+        })
       },
       {
         dataIndex: 'size',
@@ -352,7 +356,9 @@ export default class BucketBrowser extends React.Component {
         title: 'Size',
         render: size => displaySize(size),
         className: styles.selectableCell,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({
+          onClick: () => this.didSelectDataStorageItem(item)
+        })
       },
       {
         dataIndex: 'changed',
@@ -360,7 +366,9 @@ export default class BucketBrowser extends React.Component {
         title: 'Date changed',
         className: styles.selectableCell,
         render: (date) => date ? displayDate(date) : '',
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({
+          onClick: () => this.didSelectDataStorageItem(item)
+        })
       },
       {
         dataIndex: 'labels',
@@ -368,7 +376,9 @@ export default class BucketBrowser extends React.Component {
         title: '',
         className: styles.selectableCell,
         render: this.labelsRenderer,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({
+          onClick: () => this.didSelectDataStorageItem(item)
+        })
       }
     ];
 

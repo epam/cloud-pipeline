@@ -154,7 +154,9 @@ class RunsSearch extends localization.LocalizedReactComponent {
         onChange={this.handleTableChange}
         pagination={{total: this.props.runFilter.total, pageSize, current: this.state.currentPage}}
         rowKey="id"
-        onRowClick={run => this.goToRun(run)}
+        onRow={run => ({
+          onClick: () => this.goToRun(run)
+        })}
         rowClassName={() => styles.row}
         className={styles.runsSearchTable}
         size="small" />

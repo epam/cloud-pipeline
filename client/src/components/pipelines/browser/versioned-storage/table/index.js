@@ -145,8 +145,7 @@ class VersionedStorageTable extends React.Component {
             All child folders and files will be removed.
           </Row>
         )}
-        <Input
-          type="textarea"
+        <Input.TextArea
           placeholder="Please type a comment"
           rows={4}
           onChange={this.onCommentChange}
@@ -376,8 +375,7 @@ class VersionedStorageTable extends React.Component {
             <span style={{marginRight: '15px'}}>
               Comment:
             </span>
-            <Input
-              type="textarea"
+            <Input.TextArea
               rows={1}
               value={comment}
               onChange={this.onCommentChange}
@@ -419,7 +417,9 @@ class VersionedStorageTable extends React.Component {
           rowKey={(record) => record.name}
           dataSource={this.data}
           size="small"
-          onRowClick={this.onRowClick}
+          onRow={item => ({
+            onClick: () => this.onRowClick(item)
+          })}
           pagination={false}
           rowClassName={() => styles.tableRow}
           loading={pending}

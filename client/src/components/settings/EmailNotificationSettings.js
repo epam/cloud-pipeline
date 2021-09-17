@@ -217,7 +217,9 @@ class EmailNotificationSettings extends React.Component {
               : `${styles.templateRow} ${disabledClass}`;
           }
         }
-        onRowClick={this.selectTemplate}
+        onRow={item => ({
+          onClick: () => this.selectTemplate(item)
+        })}
         size="medium" />
     );
   };
