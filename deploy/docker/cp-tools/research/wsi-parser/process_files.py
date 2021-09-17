@@ -364,7 +364,8 @@ class WsiFileParser:
             'height': height,
             'minLevel': 0,
             'maxLevel': max_dz_level,
-            'tileSize': DZ_TILES_SIZE,
+            'tileWidth': DZ_TILES_SIZE,
+            'tileHeight': DZ_TILES_SIZE,
             'bounds': [0, width_bound, 0, height_bound]
         }
         with open(dz_info_file_path, 'w') as output_file:
