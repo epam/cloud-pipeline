@@ -117,13 +117,20 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .ok();
             logout();
             loginAs(userWithoutCompletedRuns);
-            if ("false".equals(C.AUTH_TOKEN)) {
-                validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
-                loginBack();
-            } else {
+            if (!impersonateMode()) {
+                if ("false".equals(C.AUTH_TOKEN)) {
+                    validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
+                    loginBack();
+                    return;
+                }
                 validateErrorPage(Collections.singletonList("User is blocked!"));
                 Selenide.clearBrowserCookies();
                 sleep(1, SECONDS);
+            } else {
+                navigationMenu()
+                        .settings()
+                        .switchToMyProfile()
+                        .validateUserName(admin.login);
             }
             loginAs(admin);
             navigationMenu()
@@ -192,8 +199,8 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
                 .filterByMessage(format("id=%s", userId))
-                .validateRow(format("Assing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE)
-                .validateRow(format("Unassing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE);
+                .validateRow(format("Assing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login, TYPE)
+                .validateRow(format("Unassing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login, TYPE);
     }
 
     @Test
@@ -258,10 +265,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(user.login.toUpperCase())
                 .filterByService("edge")
                 .validateRow(format(
-                        ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
+                        ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated.",
                         getLastRunId(), endpoint, user.login), user.login, TYPE)
                 .validateRow(format(
-                        ".*\\[SECURITY\\] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated",
+                        ".*\\[SECURITY\\] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated.",
                         getLastRunId(), user.login), user.login, TYPE);
     }
 
