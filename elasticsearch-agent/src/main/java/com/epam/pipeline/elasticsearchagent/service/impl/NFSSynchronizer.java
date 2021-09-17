@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -49,6 +52,7 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "sync.nfs-file.disable", matchIfMissing = true, havingValue = "false")
+@Getter(value = AccessLevel.PROTECTED)
 public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
@@ -143,6 +147,15 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         }
     }
 
+    protected DataStorageFile convertToStorageFile(final Path path, final Path mountFolder) {
+        final DataStorageFile file = new DataStorageFile();
+        file.setPath(getRelativePath(mountFolder, path));
+        file.setName(file.getPath());
+        file.setChanged(getLastModified(path));
+        file.setSize(getSize(path));
+        return file;
+    }
+
     private String getRelativePath(final Path mountFolder, final Path path) {
         return mountFolder.relativize(path).toString();
     }
@@ -165,11 +178,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         }
     }
 
-    private String getStorageName(final String path) {
+    protected String getStorageName(final String path) {
         return path.replace(getNfsRootPath(path), "");
     }
 
-    private String getMountDirName(final String nfsPath) {
+    protected String getMountDirName(final String nfsPath) {
         String rootPath = getNfsRootPath(nfsPath);
         int index = rootPath.indexOf(':');
         if (index > 0) {
