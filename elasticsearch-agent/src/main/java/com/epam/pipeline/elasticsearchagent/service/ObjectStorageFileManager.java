@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 
+import java.io.InputStream;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -38,4 +39,15 @@ public interface ObjectStorageFileManager {
                                                    String path,
                                                    Supplier<TemporaryCredentials> credentialsSupplier);
 
+    default InputStream readFileContent(String storage,
+                                        String path,
+                                        Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deleteFile(String storage,
+                            String path,
+                            Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
+    }
 }
