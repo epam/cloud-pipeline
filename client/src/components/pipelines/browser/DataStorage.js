@@ -90,7 +90,7 @@ const PAGE_SIZE = 40;
   dataStorages, folders, pipelinesLibrary
 })
 @roleModel.authenticationInfo
-@inject('awsRegions')
+@inject('awsRegions', 'pipelines')
 @HiddenObjects.checkStorages(props => props.params.id)
 @inject(({
   authenticatedUserInfo,
@@ -1313,6 +1313,7 @@ export default class DataStorage extends React.Component {
         })
         .then((vs) => {
           if (vs) {
+            this.props.pipelines.fetch();
             if (this.props.info.value.parentFolderId) {
               this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
             }
