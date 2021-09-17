@@ -111,8 +111,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .find(className("ant-select-selection"))
                 .shouldBe(visible)
                 .click();
-
+        $(byClassName("ant-select-dropdown-hidden")).shouldNotBe(exist);
         $(byClassName("ant-select-dropdown-menu"))
+                .shouldBe(enabled)
                 .findAll(byClassName("ant-select-dropdown-menu-item"))
                 .find(text(type))
                 .click();
