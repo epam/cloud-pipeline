@@ -15,7 +15,8 @@
 ARG BASE_IMAGE="library/centos:7"
 FROM $BASE_IMAGE
 
-RUN  yum install -y -q  gcc \
+RUN  yum install -y -q  awscli \
+                        gcc \
                         gcc-c++ \
                         make \
                         java-11-openjdk-headless \
