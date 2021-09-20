@@ -291,7 +291,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
   };
 }
 
-HistoryFilter.PropTypes = {
+HistoryFilter.propTypes = {
   visible: PropTypes.bool,
   filters: PropTypes.shape({
     authors: PropTypes.array,

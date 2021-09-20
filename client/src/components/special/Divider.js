@@ -43,9 +43,9 @@ function Divider ({style, vertical}) {
       {'\u00A0'}
     </div>
   );
-};
+}
 
-Divider.PropTypes = {
+Divider.propTypes = {
   style: PropTypes.object,
   vertical: PropTypes.bool
 };

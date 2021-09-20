@@ -360,7 +360,7 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
   };
 }
 
-GenerateReportDialog.PropTypes = {
+GenerateReportDialog.propTypes = {
   visible: PropTypes.bool,
   onCancel: PropTypes.func,
   onOk: PropTypes.func,

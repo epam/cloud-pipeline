@@ -423,9 +423,9 @@ class VersionedStorageTable extends React.Component {
   }
 }
 
-VersionedStorageTable.PropTypes = {
+VersionedStorageTable.propTypes = {
   className: PropTypes.string,
-  contents: PropTypes.object,
+  contents: PropTypes.array,
   onRowClick: PropTypes.func,
   showNavigateBack: PropTypes.bool,
   pending: PropTypes.bool,

@@ -181,7 +181,7 @@ class MultiSelect extends React.Component {
   }
 }
 
-MultiSelect.PropTypes = {
+MultiSelect.propTypes = {
   options: PropTypes.arrayOf(PropTypes.string),
   values: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   onChange: PropTypes.func,

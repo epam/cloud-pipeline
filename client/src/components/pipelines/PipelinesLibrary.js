@@ -16,7 +16,18 @@
 
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {
+  AppstoreOutlined,
+  ClockCircleOutlined,
+  FolderOutlined,
+  ForkOutlined,
+  HddOutlined,
+  InboxOutlined,
+  LockOutlined,
+  SettingOutlined,
+  SolutionOutlined,
+  TagOutlined
+} from '@ant-design/icons';
 import {Card, Input, message, Row, Tree} from 'antd';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
@@ -113,7 +124,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
+    const item = getTreeItemByKey(node.key, this.state.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
@@ -125,9 +136,9 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
   onSelect = (selectedKeys, opts) => {
     const {node, selected} = opts;
     if (!selected) {
-      selectedKeys.push(node.props.eventKey);
+      selectedKeys.push(node.key);
     }
-    const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
+    const item = getTreeItemByKey(node.key, this.state.rootItems);
     if (item) {
       expandItem(item, true);
     }
@@ -147,7 +158,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
   };
 
   onDragStart = ({event, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems || []);
+    const item = getTreeItemByKey(node.key, this.state.rootItems || []);
     if (!this.dragEnabled) {
       const emptyImage = document.getElementById('drag-placeholder');
       event.dataTransfer.setDragImage(emptyImage, 0, 0);
@@ -157,7 +168,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
     } else if (item.type === ItemTypes.version && item.parent) {
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`);
     } else {
-      event.dataTransfer.setData('dropDataKey', node.props.eventKey);
+      event.dataTransfer.setData('dropDataKey', node.key);
     }
   };
 
@@ -165,8 +176,8 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
     if (!this.dragEnabled) {
       return;
     }
-    const dragItem = getTreeItemByKey(dragNode.props.eventKey, this.state.rootItems);
-    const dropItem = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
+    const dragItem = getTreeItemByKey(dragNode.key, this.state.rootItems);
+    const dropItem = getTreeItemByKey(node.key, this.state.rootItems);
     if (['pipelines', 'storages'].indexOf(dropItem.id) >= 0) {
       message.error(`You cannot drop items to the ${dropItem.id} folder`);
     } else if (dragItem.type === ItemTypes.version) {
@@ -282,7 +293,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
 
   loadData = (node) => {
     const rootItems = this.state.rootItems;
-    const item = getTreeItemByKey(node.props.eventKey, rootItems);
+    const item = getTreeItemByKey(node.key, rootItems);
     const setState = (state) => this.setState(state);
     return new Promise(async (resolve) => {
       if (item.type === ItemTypes.pipeline && item.children.length === 0) {
@@ -326,37 +337,37 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
   };
 
   renderItemTitle (item) {
-    let icon;
-    const subIcon = item.locked ? 'lock' : undefined;
+    let Icon;
+    const SubIcon = item.locked ? LockOutlined : null;
     let sensitive = false;
     let subTitle;
     let iconStyle = {};
     switch (item.type) {
-      case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.pipeline: Icon = ForkOutlined; break;
       case ItemTypes.versionedStorage:
-        icon = 'inbox';
+        Icon = InboxOutlined;
         iconStyle = {
           color: '#2696dd'
         };
         break;
       case ItemTypes.folder:
         if (item.id === 'pipelines') {
-          icon = 'fork';
+          Icon = ForkOutlined;
         } else if (item.id === 'storages') {
-          icon = 'inbox';
+          Icon = InboxOutlined;
         } else if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
           (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-          icon = 'solution';
+          Icon = SolutionOutlined;
         } else {
-          icon = 'folder';
+          Icon = FolderOutlined;
         }
         break;
-      case ItemTypes.version: icon = 'tag'; break;
+      case ItemTypes.version: Icon = TagOutlined; break;
       case ItemTypes.storage:
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          icon = 'inbox';
+          Icon = InboxOutlined;
         } else {
-          icon = 'hdd';
+          Icon = HddOutlined;
         }
         sensitive = item.sensitive;
         subTitle = (
@@ -366,10 +377,10 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
           />
         );
         break;
-      case ItemTypes.configuration: icon = 'setting'; break;
-      case ItemTypes.metadataFolder: icon = 'appstore-o'; break;
-      case ItemTypes.metadata: icon = 'appstore-o'; break;
-      case ItemTypes.projectHistory: icon = 'clock-circle-o'; break;
+      case ItemTypes.configuration: Icon = SettingOutlined; break;
+      case ItemTypes.metadataFolder: Icon = AppstoreOutlined; break;
+      case ItemTypes.metadata: Icon = AppstoreOutlined; break;
+      case ItemTypes.projectHistory: Icon = ClockCircleOutlined; break;
     }
     let name = item.type === ItemTypes.metadata ? `${item.name} [${item.amount}]` : item.name;
     if (item.searchResult) {
@@ -397,9 +408,9 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={treeItemTitleClassName}>
         {
-          icon && (
-            <LegacyIcon
-              type={icon}
+          Icon && (
+            <Icon
+              className={styles.treeItemTitleIcon}
               style={
                 Object.assign(
                   {},
@@ -413,9 +424,9 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
           )
         }
         {
-          subIcon && (
-            <LegacyIcon
-              type={subIcon}
+          SubIcon && (
+            <SubIcon
+              className={styles.treeItemTitleIcon}
               style={
                 Object.assign(
                   {},
@@ -428,7 +439,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
             />
           )
         }
-        <span className="name">{name}</span>
+        <span className={`${styles.treeItemTitleName} name`}>{name}</span>
         {subTitle}
       </span>
     );
@@ -437,23 +448,20 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
   generateTreeItems (items) {
     return items.map(item => {
       if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
+        return ({
+          key: item.key,
+          className: `pipelines-library-tree-node-${item.key}`,
+          title: this.renderItemTitle(item),
+          isLeaf: item.isLeaf
+        });
       } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
+        return ({
+          className: `pipelines-library-tree-node-${item.key}`,
+          title: this.renderItemTitle(item),
+          key: item.key,
+          isLeaf: item.isLeaf,
+          children: this.generateTreeItems(item.children)
+        });
       }
     });
   }
@@ -470,9 +478,9 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
         onDragStart={this.onDragStart}
         onDrop={this.onDrop}
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.state.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+        treeData={this.generateTreeItems(this.state.rootItems)}
+      />
     );
   }
 
@@ -540,25 +548,15 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
         <Route exact path="/storages"><Browser {...pipelinesLibraryChildrenProps} /></Route>
         <Route path="/folder">
           <Switch>
-            <Route path="/folder/:id"><FolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
             <Route path="/folder/:id/history"><ProjectHistory {...pipelinesLibraryChildrenProps} /></Route>
+            <Route path="/folder/:id"><FolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
           </Switch>
         </Route>
-        <Route path="/storage">
-          <Route path="/storage/:id"><StorageBrowser {...pipelinesLibraryChildrenProps} /></Route>
-        </Route>
-        <Route path="/configuration">
-          <Route path="/configuration/:id/:name?"><DetachedConfiguration {...pipelinesLibraryChildrenProps} /></Route>
-        </Route>
-        <Route path="/metadata">
-          <Route path="/metadata/:id/:class"><MetadataBrowser {...pipelinesLibraryChildrenProps} /></Route>
-        </Route>
-        <Route path="/metadataFolder">
-          <Route path="/metadataFolder/:id"><MetadataFolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
-        </Route>
-        <Route path="/vs/:id">
-          <Route exact path="/vs/:id"><VersionedStorageBrowser {...pipelinesLibraryChildrenProps} /></Route>
-        </Route>
+        <Route path="/storage/:id"><StorageBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        <Route path="/configuration/:id/:name?"><DetachedConfiguration {...pipelinesLibraryChildrenProps} /></Route>
+        <Route path="/metadata/:id/:class"><MetadataBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        <Route path="/metadataFolder/:id"><MetadataFolderBrowser {...pipelinesLibraryChildrenProps} /></Route>
+        <Route exact path="/vs/:id"><VersionedStorageBrowser {...pipelinesLibraryChildrenProps} /></Route>
         <Route path="/:id">
           <Switch>
             <Route exact path="/:id"><PipelineBrowser {...pipelinesLibraryChildrenProps} /></Route>

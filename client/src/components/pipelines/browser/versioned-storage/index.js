@@ -134,8 +134,8 @@ function generateItemsFilter (preferences) {
     path = queryParams.path;
   }
   let componentParameters = params;
-  if (params.params) {
-    componentParameters = params.params;
+  if (params.match.params) {
+    componentParameters = params.match.params;
   }
   return {
     path,

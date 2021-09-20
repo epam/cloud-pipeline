@@ -47,6 +47,7 @@
   padding-left: 10px;
   padding-right: 10px;
   margin-top: 10px;
+  margin-bottom: 5px;
 }
 
 .sub-container {
@@ -76,6 +77,7 @@
   width: 100%;
   display: flex;
   flex-direction: row;
+  align-items: center;
 }
 
 .tree-item-title .region-flags {
@@ -87,9 +89,13 @@
 
 }
 
-.tree-item-title i {
+.tree-item-title-icon {
   margin-right: 5px;
   font-size: larger;
+}
+
+.tree-item-title-name {
+  white-space: nowrap;
 }
 
 #components .ant-tree-node-content-wrapper {
