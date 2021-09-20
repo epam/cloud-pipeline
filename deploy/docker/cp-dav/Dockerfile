@@ -90,6 +90,7 @@ ENV SYNC_HOME=/opt/sync
 ENV SYNC_LOG_DIR=/var/log/dav/sync
 COPY sync/crontab /tmp/sync
 COPY sync/sync-nfs.sh ${SYNC_HOME}/
+COPY sync/nfs-watcher.sh ${SYNC_HOME}/
 # "nfs-roles-management" shall be copied to the docker build folder from "(repo-root)/scripts/nfs-roles-management"
 # E.g.: cp cp ../../../scripts/nfs-roles-management ./ -r && docker build ...
 COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management
