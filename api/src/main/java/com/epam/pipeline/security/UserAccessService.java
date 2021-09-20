@@ -75,7 +75,7 @@ public class UserAccessService {
 
     public void throwUserIsBlocked(final String userName) {
         log.info("Authentication failed! User {} is blocked!", userName);
-        throw new LockedException("User is blocked!");
+        throw new LockedException("User: " + userName + " is blocked!");
     }
 
     public void validateUserGroupsBlockStatus(final PipelineUser user) {
@@ -91,7 +91,7 @@ public class UserAccessService {
         if (!isValidGroupList) {
             log.info("Authentication failed! User {} is blocked due to one of his groups is blocked!",
                     user.getUserName());
-            throw new LockedException("User is blocked!");
+            throw new LockedException("User: " + user.getUserName() + " is blocked!");
         }
     }
 }
