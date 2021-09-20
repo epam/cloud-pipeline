@@ -373,3 +373,48 @@
 .vsi-sa-view-hidden {
   display: none;
 }
+
+.share-url-popover {
+  min-width: 25vw;
+  max-width: 400px;
+}
+
+.share-url-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.share-url-container .input-row {
+  background-color: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  width: 100%;
+  max-width: 50vw;
+  display: flex;
+  align-items: center;
+}
+
+.share-url {
+  overflow-x: auto;
+  resize: none;
+  height: 45px;
+  border: none;
+  background: transparent;
+  padding: 5px;
+  flex-grow: 1;
+}
+
+.share-url:focus {
+  outline: none;
+}
+
+.share-url-button {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  height: 45px;
+  width: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
