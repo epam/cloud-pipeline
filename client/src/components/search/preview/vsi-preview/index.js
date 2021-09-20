@@ -20,7 +20,9 @@ import {inject, observer} from 'mobx-react';
 import {
   Button,
   Tabs,
-  Icon
+  Icon,
+  Popover,
+  message
 } from 'antd';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
@@ -128,10 +130,13 @@ class VSIPreview extends React.Component {
     preview: undefined,
     active: undefined,
     pending: false,
-    fullscreen: false
+    fullscreen: false,
+    shareUrl: undefined,
+    showShareUrlModal: false
   };
 
   map;
+  pathElement;
 
   componentDidMount () {
     this.fetchPreviewItems();
@@ -417,7 +422,7 @@ class VSIPreview extends React.Component {
     );
   };
 
-  shareButtonClicked = () => {
+  generateShareUrl = () => {
     if (!this.saViewer) {
       return;
     }
@@ -438,8 +443,72 @@ class VSIPreview extends React.Component {
       `x=${x}`,
       `y=${y}`
     ];
-    const url = `${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`;
-    window.open(url, '_blank');
+    return new URL(`${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`, document.location.origin).href;
+  };
+
+  openShareUrlModal = (e) => {
+    e && e.stopPropagation();
+    const url = this.generateShareUrl();
+    if (url) {
+      this.setState({shareUrl: url});
+    }
+  };
+
+  closeShareUrlModal = () => {
+    this.setState({shareUrl: undefined});
+  };
+
+  shareUrlVisibilityChanged = (visible) => {
+    if (visible) {
+      this.openShareUrlModal();
+    } else {
+      this.closeShareUrlModal();
+    }
+  };
+
+  onChangeShareUrl = (e) => {
+    this.setState({shareUrl: e.target.value});
+  };
+
+  renderShareUrl = () => {
+    const {shareUrl} = this.state;
+    const initializePathElement = element => {
+      this.pathElement = element;
+    };
+    const copy = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (this.pathElement) {
+        const range = document.createRange();
+        window.getSelection().removeAllRanges();
+        range.selectNode(this.pathElement);
+        window.getSelection().addRange(range);
+        if (document.execCommand('copy')) {
+          message.info('Copied to clipboard', 3);
+          window.getSelection().removeAllRanges();
+        }
+      }
+    };
+    return (
+      <div className={styles.shareUrlContainer}>
+        <span>Copy file path:</span>
+        <div className={styles.inputRow}>
+          <textarea
+            wrap="off"
+            className={styles.shareUrl}
+            ref={initializePathElement}
+            value={shareUrl}
+            onChange={this.onChangeShareUrl}
+          />
+          <div
+            className={styles.shareUrlButton}
+            onClick={copy}
+          >
+            <Icon type="copy" />
+          </div>
+        </div>
+      </div>
+    );
   };
 
   renderTiles = () => {
@@ -454,7 +523,8 @@ class VSIPreview extends React.Component {
     } = this.props;
     const {
       tiles,
-      fullscreen
+      fullscreen,
+      shareUrl
     } = this.state;
     if (!tiles || !storageId) {
       return null;
@@ -540,6 +610,11 @@ class VSIPreview extends React.Component {
     };
     return (
       <div
+        onClick={() => {
+          if (shareUrl !== null || shareUrl !== undefined) {
+            this.closeShareUrlModal();
+          }
+        }}
         className={
           classNames(
             styles.vsiContentPreview,
@@ -580,13 +655,27 @@ class VSIPreview extends React.Component {
           </Button>
           {
             shareAvailable && (
-              <Button
-                id="vsi-preview-share-button"
-                className={styles.vsiPreviewButton}
-                onClick={this.shareButtonClicked}
+              <Popover
+                visible={shareUrl !== undefined && shareUrl !== null}
+                trigger={['click']}
+                title={false}
+                content={this.renderShareUrl()}
+                onVisibleChange={this.shareUrlVisibilityChanged}
+                overlayClassName={styles.shareUrlPopover}
+                align={fullscreen ? {
+                  points: ['tl', 'bl'],
+                  offset: ['-10px']
+                } : {}}
+                placement="bottom"
               >
-                <Icon type="export" />
-              </Button>
+                <Button
+                  id="vsi-preview-share-button"
+                  className={styles.vsiPreviewButton}
+                  onClick={this.openShareUrlModal}
+                >
+                  <Icon type="export" />
+                </Button>
+              </Popover>
             )
           }
         </div>
