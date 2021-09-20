@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {PUBLIC_URL} from '../../../../../config';
 import {Icon} from 'antd';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import MultizoneUrl from '../../../multizone-url';
@@ -125,7 +125,7 @@ class ToolJobLink extends React.Component {
       return (
         <span>
           <span>{`Wait for ${toolName} instance `}</span>
-          <Link to={`run/${job.id}`}>#{job.id}</Link> to initialize
+          <a href={`${PUBLIC_URL || ''}#/run/${job.id}`}>#{job.id}</a> to initialize
         </span>
       );
     }

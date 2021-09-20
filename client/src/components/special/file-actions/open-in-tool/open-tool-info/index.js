@@ -15,8 +15,12 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import {Provider, inject} from 'mobx-react';
 import classNames from 'classnames';
+import Remarkable from 'remarkable';
+import hljs from 'highlight.js';
 import {
   Button,
   Icon,
@@ -25,13 +29,35 @@ import {
 import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';
 
+const MarkdownRenderer = new Remarkable('full', {
+  html: true,
+  xhtmlOut: true,
+  breaks: false,
+  langPrefix: 'language-',
+  linkify: true,
+  linkTarget: '',
+  typographer: true,
+  highlight: function (str, lang) {
+    lang = lang || 'bash';
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(lang, str).value;
+      } catch (__) {}
+    }
+    try {
+      return hljs.highlightAuto(str).value;
+    } catch (__) {}
+    return '';
+  }
+});
+
 const STORAGE_PREFIX = 'cloud-data';
-const DEFAULT_TEMPLATE = `
-  Copy file path: {FILE_PATH}
-  Open {APP_NAME}: {APP_LINK}
-  Open copied file path in the {APP_NAME}
+const DEFAULT_TEMPLATE = `Copy file path: {FILE_PATH}
+Open {APP_NAME}: {APP_LINK}
+Open copied file path in the {APP_NAME}
 `;
 
+@inject('multiZoneManager', 'preferences', 'awsRegions')
 class OpenToolInfo extends React.Component {
   pathElement;
 
@@ -39,9 +65,8 @@ class OpenToolInfo extends React.Component {
     const {template} = this.props;
     return (template || DEFAULT_TEMPLATE)
       .replaceAll(/\\n/g, '\n')
-      .split(/\r?\n/)
-      .map(item => item.trim())
-      .filter(Boolean);
+      .split('\n')
+      .join('\n\n');
   }
 
   get appName () {
@@ -169,44 +194,58 @@ class OpenToolInfo extends React.Component {
     );
   };
 
-  renderListItemContent = (rowTemplate) => {
+  renderContent = () => {
     const renderers = {
       'FILE_PATH': this.renderFilePath,
       'APP_NAME': this.renderAppName,
       'APP_LINK': this.renderAppLink
     };
-    const rowContent = rowTemplate
-      .split(new RegExp(/(\{.*?\})/))
-      .filter(Boolean);
-    const getRenderFn = (chunk) => {
-      const templateSignature = new RegExp(/^[{].*[}]$/);
-      if (templateSignature.test(chunk)) {
-        const [placeholderName, argumentString] = chunk
-          .trim()
-          .slice(1, -1)
-          .split(':');
-        const renderFn = renderers[placeholderName];
-        return [renderFn, argumentString];
+    const html = MarkdownRenderer.render(this.template);
+    const {tool} = this.props;
+    if (tool && tool.image) {
+      html.replace(/\{app_name\}/g, tool.image);
+    }
+    let result = html;
+    let r = /\{(.*?)\}/g.exec(result);
+    while (r) {
+      const [type, attribute = ''] = r[1].split(':');
+      result = result.slice(0, r.index)
+        .concat(`<span
+ class="open-in-placeholder"
+ data-type="${type}"
+ data-attribute="${attribute}"></span>`)
+        .concat(result.slice(r.index + r[0].length));
+      r = /\{(.*?)\}/g.exec(result);
+    }
+    const initialized = (div) => {
+      if (div) {
+        const placeholders = document.getElementsByClassName('open-in-placeholder');
+        for (let p = 0; p < placeholders.length; p += 1) {
+          const placeholder = placeholders[p];
+          if (placeholder.dataset && placeholder.dataset['type']) {
+            const {attribute = '', type} = placeholder.dataset;
+            if (renderers.hasOwnProperty(type)) {
+              ReactDOM.render(
+                (
+                  <Provider {...this.props}>
+                    {renderers[type](attribute)}
+                  </Provider>
+                ),
+                placeholder
+              );
+            }
+          }
+        }
       }
-      return [];
     };
     return (
-      <div>
-        {rowContent.map((chunk, index) => {
-          const [renderFn, argument] = getRenderFn(chunk);
-          return (
-            <span key={index}>
-              {
-                renderFn
-                  ? renderFn(argument)
-                  : chunk
-              }
-            </span>
-          );
-        })}
-      </div>
+      <div
+        className={styles.list}
+        dangerouslySetInnerHTML={{__html: result}}
+        ref={initialized}
+      />
     );
-  };
+  }
 
   render () {
     const {
@@ -217,17 +256,7 @@ class OpenToolInfo extends React.Component {
     if (!tool || !file || !storage) {
       return null;
     }
-    return (
-      <ul className={styles.list}>
-        {this.template.map((rowTemplate, index) => {
-          return (
-            <li key={index}>
-              {this.renderListItemContent(rowTemplate)}
-            </li>
-          );
-        })}
-      </ul>
-    );
+    return this.renderContent();
   }
 }
 

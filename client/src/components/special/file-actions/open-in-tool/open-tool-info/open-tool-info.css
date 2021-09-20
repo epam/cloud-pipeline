@@ -23,8 +23,33 @@
   overflow-y: auto;
 }
 
+.list p {
+  margin: 2px 0;
+}
+
+.list ul p {
+  display: inline;
+}
+
+.list ol p {
+  display: inline;
+}
+
 .list li {
   margin: 5px 0;
+}
+
+.list ul,
+.list ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+
+.list li {
+  display: list-item;
+  margin: 5px;
 }
 
 .list .code {
