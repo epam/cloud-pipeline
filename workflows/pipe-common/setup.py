@@ -51,6 +51,7 @@ setup(name='pipeline',
             'six==1.15.0',
             'tornado==4.5.3',
             'tzlocal==2.1',
-            'urllib3==1.25.9'
+            'urllib3==1.25.9',
+            'watchdog==0.10.4'
       ],
       zip_safe=False)
