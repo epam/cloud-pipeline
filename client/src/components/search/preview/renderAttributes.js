@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Icon, Row} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Row} from 'antd';
 import styles from './preview.css';
 
 export function metadataLoad (params, entityClass, {metadataCache, dataStorageCache}) {
@@ -34,7 +35,7 @@ export function metadataLoad (params, entityClass, {metadataCache, dataStorageCa
 export function renderAttributes (metadataRequest, isTags = false) {
   if (metadataRequest) {
     if (metadataRequest.pending) {
-      return <Row className={styles.attributes} type="flex" justify="center"><Icon type="loading" /></Row>;
+      return <Row className={styles.attributes} type="flex" justify="center"><LoadingOutlined /></Row>;
     }
     if (metadataRequest.error) {
       return (

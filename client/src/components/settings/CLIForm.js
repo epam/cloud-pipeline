@@ -18,16 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {API_PATH, SERVER} from '../../config';
-import {
-  Alert,
-  Button,
-  DatePicker,
-  Icon,
-  message,
-  Row,
-  Select,
-  Table
-} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Alert, Button, DatePicker, message, Row, Select, Table} from 'antd';
 import styles from './styles.css';
 import UserToken from '../../models/user/UserToken';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
@@ -184,8 +176,8 @@ export default class CLIForm extends React.Component {
       operationSystem;
 
     if (this.props.preferences.pending && !this.props.preferences.loaded) {
-      cliConfigureCommand = <Icon type="loading" />;
-      pipInstallCommand = <Icon type="loading" />;
+      cliConfigureCommand = <LoadingOutlined />;
+      pipInstallCommand = <LoadingOutlined />;
     } else {
       let pipInstallCommandTemplate = this.props.preferences.replacePlaceholders(
         getSettingsValue('ui.pipe.cli.install.template') ||
@@ -454,7 +446,7 @@ export default class CLIForm extends React.Component {
       } else {
         return (
           <Row type="flex" className={styles.mdPreview}>
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }

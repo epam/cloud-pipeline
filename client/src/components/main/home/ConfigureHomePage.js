@@ -24,7 +24,9 @@ import {
   PanelInfos,
   AsyncLayout
 } from './layout';
-import {Button, Checkbox, Col, Icon, Modal, Row, Tooltip} from 'antd';
+import {QuestionCircleOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Button, Checkbox, Col, Modal, Row, Tooltip} from 'antd';
 import {getDisplayOnlyFavourites, setDisplayOnlyFavourites} from './utils/favourites';
 import localization from '../../../utils/localization';
 
@@ -120,7 +122,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
                       {
                         panel.info &&
                         <Tooltip title={panel.info} placement="left">
-                          <Icon type="question-circle" />
+                          <QuestionCircleOutlined />
                         </Tooltip>
                       }
                     </td>
@@ -163,7 +165,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         let icon;
         if (PanelIcons[Panels[key]]) {
           icon = (
-            <Icon
+            <LegacyIcon
               type={PanelIcons[Panels[key]]}
               style={{
                 fontSize: 'larger',

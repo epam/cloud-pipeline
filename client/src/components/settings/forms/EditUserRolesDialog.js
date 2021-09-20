@@ -18,7 +18,8 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Modal, Row, Button, message, Icon, Table, Select} from 'antd';
+import {DeleteOutlined, LoadingOutlined, PlusOutlined} from '@ant-design/icons';
+import {Modal, Row, Button, message, Table, Select} from 'antd';
 import User from '../../../models/user/User';
 import Roles from '../../../models/user/Roles';
 import MetadataUpdateKeys from '../../../models/metadata/MetadataUpdateKeys';
@@ -249,7 +250,7 @@ export default class EditUserRolesDialog extends React.Component {
               onClick={() => this.removeRole(role.id)}
               disabled={this.state.operationInProgress || readOnly}
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         );
@@ -744,9 +745,7 @@ export default class EditUserRolesDialog extends React.Component {
       roles: rolesRequest
     } = this.props;
     if (runnersRequest && runnersRequest.pending && !runnersRequest.loaded) {
-      return (
-        <Icon type="loading" />
-      );
+      return <LoadingOutlined />;
     }
     const renderRole = (roleName) => {
       if (rolesRequest && rolesRequest.loaded) {
@@ -979,7 +978,7 @@ export default class EditUserRolesDialog extends React.Component {
                     this.state.operationInProgress ||
                     readOnly
                   }>
-                  <Icon type="plus" /> Add
+                  <PlusOutlined /> Add
                 </Button>
               </div>
             </Row>

@@ -16,13 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {
-  Alert,
-  Button,
-  Icon,
-  message,
-  Modal
-} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
+import {Alert, Button, message, Modal} from 'antd';
 import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
@@ -257,7 +252,7 @@ class HotCluster extends React.Component {
               type="primary"
               onClick={this.openEditPoolModal({isNew: true})}
             >
-              <Icon type="plus" />
+              <PlusOutlined />
               Create
             </Button>
             <Button

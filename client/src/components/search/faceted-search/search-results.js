@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Icon, Spin} from 'antd';
+import {CloseOutlined, InfoCircleOutlined} from '@ant-design/icons';
+import {Alert, Spin} from 'antd';
 import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
@@ -179,15 +180,13 @@ class SearchResults extends React.Component {
         className={styles.resultItemContainer}
         onClick={this.navigate(resultItem)}
       >
-        <Icon
-          type="info-circle-o"
+        <InfoCircleOutlined
           className={styles.previewBtn}
           onClick={(e) => {
             e && e.stopPropagation();
             e && e.preventDefault();
             this.setPreview(resultItem);
-          }}
-        />
+          }} />
         {this.renderResultsItemActions(resultItem)}
         <div
           id={`search-result-item-${resultItem.elasticId}`}
@@ -276,11 +275,7 @@ class SearchResults extends React.Component {
             item={preview}
             lightMode
           />
-          <Icon
-            type="close"
-            className={styles.closePreview}
-            onClick={this.onPreviewWrapperClick}
-          />
+          <CloseOutlined className={styles.closePreview} onClick={this.onPreviewWrapperClick} />
         </div>
       </div>
     );

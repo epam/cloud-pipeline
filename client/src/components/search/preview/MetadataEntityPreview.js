@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -77,7 +79,7 @@ export default class MetadataEntityPreview extends React.Component {
     if (this.props.metadataEntity.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -141,7 +143,7 @@ export default class MetadataEntityPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
           {

@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, message, Table} from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
+import {Button, message, Table} from 'antd';
 import displayDate from '../../../utils/displayDate';
 import SystemLogsFilter from '../../../models/system-logs/filter';
 import styles from './logs.css';
@@ -192,7 +193,7 @@ class Logs extends React.Component {
             disabled={!this.canNavigateToPreviousPage}
             onClick={this.navigateToPreviousPage}
           >
-            <Icon type="caret-left" />
+            <CaretLeftOutlined />
           </Button>
           <Button
             className={styles.button}
@@ -200,7 +201,7 @@ class Logs extends React.Component {
             disabled={!this.canNavigateToNextPage}
             onClick={this.navigateToNextPage}
           >
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
           </Button>
         </div>
       </div>

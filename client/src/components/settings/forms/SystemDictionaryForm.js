@@ -16,12 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Icon,
-  Input,
-  Modal
-} from 'antd';
+import {ArrowRightOutlined, DeleteOutlined, LinkOutlined, PlusOutlined} from '@ant-design/icons';
+import {Button, Input, Modal} from 'antd';
 import classNames from 'classnames';
 import SystemDictionaryLinksForm from './SystemDictionaryLinksForm';
 import EditSystemDictionaryPermissions from './EditSystemDictionaryPermissions';
@@ -367,9 +363,7 @@ class SystemDictionaryForm extends React.Component {
                     type="danger"
                     onClick={this.onItemRemove(index)}
                   >
-                    <Icon
-                      type="delete"
-                    />
+                    <DeleteOutlined />
                   </Button>
                 </div>
                 {
@@ -386,7 +380,7 @@ class SystemDictionaryForm extends React.Component {
                         className={styles.add}
                         onClick={() => this.openLinksForm(index)}
                       >
-                        <Icon type="plus" />
+                        <PlusOutlined />
                         Add linked dictionary item
                       </span>
                     )
@@ -405,9 +399,9 @@ class SystemDictionaryForm extends React.Component {
                                 margin: '2px 0'
                               }}
                             >
-                              <Icon type="link" />
+                              <LinkOutlined />
                               {link.key}
-                              <Icon type="arrow-right" />
+                              <ArrowRightOutlined />
                               {link.value}
                             </div>
                           ))
@@ -425,7 +419,7 @@ class SystemDictionaryForm extends React.Component {
             disabled={disabled}
             onClick={this.onItemAdd}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             <span>Add value</span>
           </Button>
         </div>

@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider as MobxProvider} from 'mobx-react';
-import {Button, Icon} from 'antd';
+import {ExportOutlined} from '@ant-design/icons';
+import {Button} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import ExportConsumer from './export-consumer';
@@ -90,7 +91,7 @@ class ExportReports extends React.Component {
           id="export-reports"
           className={className}
         >
-          <Icon type="export" />
+          <ExportOutlined />
           Export
         </Button>
       </Dropdown>

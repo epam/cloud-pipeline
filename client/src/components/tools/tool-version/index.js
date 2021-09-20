@@ -19,14 +19,8 @@ import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../models/tools/LoadTool';
-import {
-  Alert,
-  Button,
-  Icon,
-  Row,
-  Tabs,
-  Card
-} from 'antd';
+import {ArrowLeftOutlined} from '@ant-design/icons';
+import {Alert, Button, Row, Tabs, Card} from 'antd';
 import LoadingView from '../../special/LoadingView';
 import Owner from '../../special/owner';
 import roleModel from '../../../utils/roleModel';
@@ -107,7 +101,7 @@ class ToolVersion extends React.Component {
               onClick={this.navigateBack}
               size="small"
               style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
-              <Icon type="arrow-left" />
+              <ArrowLeftOutlined />
             </Button>
             <ToolLink link={this.props.tool.value.link} style={{marginLeft: 5}} />
             <span style={{marginLeft: 5}}>{this.props.tool.value.image}:{this.props.version}</span>

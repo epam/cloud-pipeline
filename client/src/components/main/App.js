@@ -92,6 +92,7 @@ class App extends Component {
       content = (
         <Layout id="root-layout">
           <Layout.Sider
+            className={styles.layoutSider}
             collapsible
             collapsed={this.state.navigationCollapsed}
             trigger={null} >

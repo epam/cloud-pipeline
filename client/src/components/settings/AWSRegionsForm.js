@@ -21,20 +21,35 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
+
+import {
+  CloseOutlined,
+  DeleteOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  UsergroupAddOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+
 import {
   Alert,
   Button,
   Checkbox,
-  Icon,
   Input,
   InputNumber,
   Modal,
   message,
-  Form,
   Row,
   Select,
   Table,
-  Tooltip, Col, AutoComplete
+  Tooltip,
+  Col,
+  AutoComplete
 } from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -663,7 +678,7 @@ class AWSRegionsForm extends React.Component {
     const [defaultRegion] = this.regions.filter(r => r.default);
     this.selectRegion(defaultRegion || this.regions[0]);
   };
-};
+}
 
 @inject(() => {
   const roles = new Roles();
@@ -1302,9 +1317,9 @@ class AWSRegionForm extends React.Component {
         className: `${styles.permissionIcon} ${styles.permissionCell}`,
         render: (item) => {
           if (item.sid.principal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
@@ -1322,7 +1337,7 @@ class AWSRegionForm extends React.Component {
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
               size="small">
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         )
@@ -1336,10 +1351,10 @@ class AWSRegionForm extends React.Component {
         <Col span={12} style={{textAlign: 'right', paddingRight: 8}}>
           <span className={styles.permissionTableActions}>
             <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog}>
-              <Icon type="user-add" />
+              <UserAddOutlined />
             </Button>
             <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog}>
-              <Icon type="usergroup-add" />
+              <UsergroupAddOutlined />
             </Button>
           </span>
         </Col>
@@ -1946,7 +1961,7 @@ class AWSRegionForm extends React.Component {
                   disabled={this.props.region.default}
                   size="small"
                   type="danger"
-                  style={{marginRight: 10}}><Icon type="info-circle" /> Remove</Button>
+                  style={{marginRight: 10}}><InfoCircleOutlined /> Remove</Button>
               </Tooltip>
             }
             {
@@ -2331,7 +2346,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             type="danger"
             size="small"
             onClick={this.props.onDelete}>
-            <Icon type="close" />
+            <CloseOutlined />
           </Button>
         </Row>
         {
@@ -2511,7 +2526,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
             disabled={this.props.disabled}
             size="small"
             onClick={this.onAddFileShareMount}>
-            <Icon type="plus" />Add file share mount
+            <PlusOutlined />Add file share mount
           </Button>
         </Row>
       </Row>

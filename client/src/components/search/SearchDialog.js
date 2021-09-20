@@ -19,13 +19,9 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
 import classNames from 'classnames';
-import {
-  Icon,
-  Input,
-  message,
-  Tooltip,
-  Row
-} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {FilterOutlined, LoadingOutlined, QuestionOutlined} from '@ant-design/icons';
+import {Input, message, Tooltip, Row} from 'antd';
 import Preview from './preview';
 import {PreviewIcons} from './preview/previewIcons';
 import {SearchItemTypes} from '../../models/search';
@@ -261,7 +257,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   renderIcon = (resultItem) => {
     if (PreviewIcons[resultItem.type]) {
       return (
-        <Icon
+        <LegacyIcon
           className={styles.searchResultItemIcon}
           type={PreviewIcons[resultItem.type]} />
       );
@@ -624,7 +620,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             placement={hintsTooltipPlacement}
             title={this.renderHints()}>
             <div className={styles.hintIconContainer}>
-              <Icon type="question" />
+              <QuestionOutlined />
             </div>
           </Tooltip>
         </div>
@@ -647,7 +643,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                     }
                     onClick={this.enableDisableSearchGroup(type.key, disabled)}
                     key={index}>
-                    <Icon type={type.icon} />
+                    <LegacyIcon type={type.icon} />
                     <span className={styles.typeTitle}>
                       {
                         type.title(this.localizedString)(
@@ -707,7 +703,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 align="middle"
                 justify="center"
               >
-                <Icon type="loading" />
+                <LoadingOutlined />
               </Row>
             )
           }
@@ -716,7 +712,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           className={advancedSearchClassNames.join(' ')}
           onClick={this.navigateToAdvancedFilter}
         >
-          <Icon className={styles.icon} type="filter" />
+          <FilterOutlined className={styles.icon} />
           <span className={styles.buttonText}>Advanced search</span>
         </div>
       </div>

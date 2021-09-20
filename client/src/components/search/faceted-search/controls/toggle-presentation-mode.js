@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Icon, Button} from 'antd';
+import {BarsOutlined, LayoutOutlined} from '@ant-design/icons';
+import {Button} from 'antd';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './controls.css';
@@ -54,7 +55,7 @@ function TogglePresentationMode (
               {[styles.toggleBtnActive]: mode === Modes.list}
             )}
           >
-            <Icon type="bars" />
+            <BarsOutlined />
             List
           </Button>
           <Button
@@ -64,7 +65,7 @@ function TogglePresentationMode (
               {[styles.toggleBtnActive]: mode === Modes.table}
             )}
           >
-            <Icon type="layout" />
+            <LayoutOutlined />
             Table
           </Button>
         </Button.Group>

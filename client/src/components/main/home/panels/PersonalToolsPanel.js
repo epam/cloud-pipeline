@@ -31,7 +31,8 @@ import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
-import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
+import {CaretRightOutlined} from '@ant-design/icons';
+import {Alert, Button, Col, message, Modal, Row} from 'antd';
 import {
   getInputPaths,
   getOutputPaths,
@@ -543,7 +544,7 @@ export default class PersonalToolsPanel extends React.Component {
         <Row key="group">
           <span style={{fontSize: 'smaller'}}>
             <span>{tool.registry.description || tool.registry.path}</span>
-            <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+            <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
             <span>{highlightText(group, search)}</span>
           </span>
         </Row>

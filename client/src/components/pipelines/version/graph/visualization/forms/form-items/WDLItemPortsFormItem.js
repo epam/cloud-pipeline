@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Button, Icon, Row} from 'antd';
+import {DownCircleOutlined, UpCircleOutlined} from '@ant-design/icons';
+import {Button, Row} from 'antd';
 import {
   LockOptions,
   WDLItemPortFormItem,
@@ -246,8 +247,8 @@ export class WDLItemPortsFormItem extends React.Component {
             <Row type="flex" align="middle">
               {
                 this.state.collapsed
-                  ? <Icon type="down-circle-o" />
-                  : <Icon type="up-circle-o" />
+                  ? <DownCircleOutlined />
+                  : <UpCircleOutlined />
               }
               <span>
                 {this.props.portType === PortTypes.input ? 'Inputs' : 'Outputs'}

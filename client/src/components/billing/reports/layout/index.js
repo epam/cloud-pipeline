@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer, Provider as MobxProvider} from 'mobx-react';
 import {action, observable} from 'mobx';
 import GridLayout from 'react-grid-layout';
-import {Icon} from 'antd';
+import {ArrowsAltOutlined} from '@ant-design/icons';
 import * as GeneralReportLayout from './general-report';
 import * as InstanceReportLayout from './instance-report';
 import * as StorageReportLayout from './storage-report';
@@ -56,7 +56,7 @@ function LayoutPanel ({children, containerClassName, containerStyle, className, 
       >
         {children}
         <div className={styles.panelMove}>
-          <Icon type="arrows-alt" />
+          <ArrowsAltOutlined />
         </div>
       </div>
     </div>

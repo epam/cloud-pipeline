@@ -17,11 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Icon,
-  Menu,
-  Dropdown
-} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
+import {Menu, Dropdown} from 'antd';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './tool-selector.css';
 
@@ -115,12 +112,25 @@ class ToolsSelector extends React.Component {
     if (tools.length === 0) {
       return null;
     }
-    return (
-      singleMode || tools.length === 1 ? (
+    return singleMode || tools.length === 1 ? (
+      <span
+        className={classNames(styles.link, className)}
+        style={style}
+        onClick={(e) => this.onClick(tools[0].id, e)}
+      >
+        <ButtonTitle
+          toolId={tools[0].id}
+          iconId={tools[0].iconId}
+          toolName={tools[0].image}
+          titleStyle={titleStyle}
+        />
+      </span>
+    ) : (
+      <Dropdown overlay={this.renderDropdownMenu()}>
         <span
-          className={classNames(styles.link, className)}
-          style={style}
+          className={classNames(styles.selectorBtn, className)}
           onClick={(e) => this.onClick(tools[0].id, e)}
+          style={style}
         >
           <ButtonTitle
             toolId={tools[0].id}
@@ -128,27 +138,9 @@ class ToolsSelector extends React.Component {
             toolName={tools[0].image}
             titleStyle={titleStyle}
           />
+          <DownOutlined style={{marginLeft: '10px'}} />
         </span>
-      ) : (
-        <Dropdown overlay={this.renderDropdownMenu()}>
-          <span
-            className={classNames(styles.selectorBtn, className)}
-            onClick={(e) => this.onClick(tools[0].id, e)}
-            style={style}
-          >
-            <ButtonTitle
-              toolId={tools[0].id}
-              iconId={tools[0].iconId}
-              toolName={tools[0].image}
-              titleStyle={titleStyle}
-            />
-            <Icon
-              type="down"
-              style={{marginLeft: '10px'}}
-            />
-          </span>
-        </Dropdown>
-      )
+      </Dropdown>
     );
   }
 }

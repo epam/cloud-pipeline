@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Input, message, Tooltip} from 'antd';
+import {EditOutlined} from '@ant-design/icons';
+import {Input, message, Tooltip} from 'antd';
 
 export default class EditableField extends React.Component {
 
@@ -197,7 +198,7 @@ export default class EditableField extends React.Component {
               : 'initial',
             color: this.state.hovered ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.5)'
           }}>
-          <Icon type="edit" style={{marginRight: 10}} />
+          <EditOutlined style={{marginRight: 10}} />
         </span>
         </div>
       </Tooltip>

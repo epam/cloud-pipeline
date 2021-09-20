@@ -21,7 +21,8 @@ import connect from '../../../../utils/connect';
 import localization from '../../../../utils/localization';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Modal, Button, Row, Col, Alert, Icon, Tree, Input} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Modal, Button, Row, Col, Alert, Tree, Input} from 'antd';
 import Folder from '../../browser/Folder';
 import Pipeline from '../../browser/Pipeline';
 import FireCloudBrowser from '../../browser/FireCloudBrowser';
@@ -193,7 +194,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} style={style} />}{name}
+        {icon && <LegacyIcon type={icon} style={style} />}{name}
       </span>
     );
   }

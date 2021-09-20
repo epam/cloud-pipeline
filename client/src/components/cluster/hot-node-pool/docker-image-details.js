@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {RightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import ToolImage from '../../../models/tools/ToolImage';
 import styles from './docker-image-details.css';
@@ -59,19 +59,13 @@ function DockerImageDetails ({
       >
         {registry}
       </span>
-      <Icon
-        className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
-        type="right"
-      />
+      <RightOutlined className={classNames(styles.sub, {[styles.hidden]: onlyImage})} />
       <span
         className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
       >
         {g}
       </span>
-      <Icon
-        className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
-        type="right"
-      />
+      <RightOutlined className={classNames(styles.sub, {[styles.hidden]: onlyImage})} />
       {
         id && iconId && (
           <img

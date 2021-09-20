@@ -19,7 +19,8 @@ import {inject, observer} from 'mobx-react';
 import {withRouter} from 'react-router-dom';
 import connect from '../../../../utils/connect';
 import {computed, observable} from 'mobx';
-import {Row, Tabs, Modal, Button, Alert, Icon, message} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
+import {Row, Tabs, Modal, Button, Alert, message} from 'antd';
 import {names} from '../../../../models/utils/ContextualPreference';
 import pipelines from '../../../../models/pipelines/Pipelines';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -423,7 +424,7 @@ class PipelineConfiguration extends React.Component {
           id="add-configuration-button"
           size="small"
           onClick={this.openCreateConfigurationFormDialog}>
-          <Icon type="plus" /> ADD
+          <PlusOutlined /> ADD
         </Button>
       );
     }

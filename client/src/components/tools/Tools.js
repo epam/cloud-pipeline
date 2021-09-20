@@ -31,7 +31,8 @@ import {
   ISSUES_PANEL_KEY
 } from '../special/splitPanel';
 import Issues from '../special/issues/Issues';
-import {Alert, Row, Button, Card, Icon, Col} from 'antd';
+import {InfoCircleOutlined} from '@ant-design/icons';
+import {Alert, Row, Button, Card, Col} from 'antd';
 import roleModel from '../../utils/roleModel';
 import styles from './Tools.css';
 import ToolsGroupListWithIssues from '../../models/tools/ToolsGroupListWithIssues';
@@ -386,9 +387,7 @@ class ToolsNew extends React.Component {
           justify="center"
           className={styles.privateToolNotFoundContainer}>
           <Row style={{fontSize: 'large', margin: 10}}>
-            <Icon
-              type="info-circle-o"
-              style={{fontSize: 'x-large', verticalAlign: 'middle'}} />
+            <InfoCircleOutlined style={{fontSize: 'x-large', verticalAlign: 'middle'}} />
             <span
               style={{marginLeft: 10, marginRight: 10}}>
               Personal tool group was not found in registry.

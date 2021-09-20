@@ -16,7 +16,8 @@
 
 import React from 'react';
 import getDocumentName from '../utilities/get-document-name';
-import {Icon} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {UserOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './document-list-presentation.css';
 import UserName from '../../../../special/UserName';
@@ -34,7 +35,7 @@ export default function GeneralPresentation (
   const renderIcon = () => {
     if (PreviewIcons[document?.type]) {
       return (
-        <Icon
+        <LegacyIcon
           className={styles.icon}
           type={PreviewIcons[document?.type]} />
       );
@@ -80,7 +81,7 @@ export default function GeneralPresentation (
           <div className={styles.author}>
             {
               document?.owner && (
-                <Icon type="user" />
+                <UserOutlined />
               )
             }
             <UserName userName={document?.owner} />

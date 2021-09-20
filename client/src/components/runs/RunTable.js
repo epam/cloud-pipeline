@@ -19,17 +19,8 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Link} from 'react-router-dom';
-import {
-  Alert,
-  Checkbox,
-  Icon,
-  Input,
-  message,
-  Modal,
-  Popover,
-  Row,
-  Table
-} from 'antd';
+import {DatabaseOutlined, ExclamationCircleOutlined, ExportOutlined, RightOutlined} from '@ant-design/icons';
+import {Alert, Checkbox, Input, message, Modal, Popover, Row, Table} from 'antd';
 import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
 import PausePipeline from '../../models/pipelines/PausePipeline';
@@ -525,9 +516,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
                           onChange={onChange(image.value)}
                           checked={this.state.dockerImages.value.indexOf(image.value) >= 0}>
                           <span>{image.registry}</span>
-                          <Icon type="right" />
+                          <RightOutlined />
                           <span>{image.group}</span>
-                          <Icon type="right" />
+                          <RightOutlined />
                           <span>{image.image}</span>
                         </Checkbox>
                       </Row>
@@ -755,13 +746,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
                         </div>
                       }
                     >
-                      <Icon
-                        type="exclamation-circle-o"
+                      <ExclamationCircleOutlined
                         style={{
                           marginRight: 5,
                           color: 'orange'
-                        }}
-                      />
+                        }} />
                     </Popover>
                   )
                   : null
@@ -934,7 +923,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       render: (text, run) => {
         let clusterIcon;
         if (run.nodeCount > 0) {
-          clusterIcon = <Icon type="database" />;
+          clusterIcon = <DatabaseOutlined />;
         }
         const style = {
           display: 'inline-table',
@@ -1000,7 +989,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 }
                 trigger={['hover']}
               >
-                {clusterIcon} <Icon type="export" /> {name}
+                {clusterIcon} <ExportOutlined /> {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
                   instanceOrSensitiveFlag &&

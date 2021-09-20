@@ -17,12 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {
-  Alert,
-  Button,
-  Icon,
-  Row
-} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Alert, Button, Row} from 'antd';
 import displaySize from '../../../utils/displaySize';
 import DataStorageItemSize from '../../../models/dataStorage/DataStorageItemSize';
 
@@ -119,7 +115,7 @@ class EstimatedDiskSizeWarning extends React.Component {
           message={(
             <div>
               <p>
-                <Icon type="loading" />
+                <LoadingOutlined />
                 <span>Estimating required disk size...</span>
               </p>
             </div>

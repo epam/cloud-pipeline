@@ -19,7 +19,8 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
-import {Alert, Card, Col, Icon, Row} from 'antd';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
+import {Alert, Card, Col, Row} from 'antd';
 import displayDate from '../../../../utils/displayDate';
 import NotificationView from '../../../special/notifications/controls/NotificationView';
 import styles from './Panel.css';
@@ -43,23 +44,11 @@ export default class NotificationsPanel extends React.Component {
   renderSeverityIcon = (notification) => {
     switch (notification.severity) {
       case 'INFO':
-        return (
-          <Icon
-            className={styles[notification.severity.toLowerCase()]}
-            type="info-circle-o" />
-        );
+        return <InfoCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
       case 'WARNING':
-        return (
-          <Icon
-            className={styles[notification.severity.toLowerCase()]}
-            type="exclamation-circle-o" />
-        );
+        return <ExclamationCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
       case 'CRITICAL':
-        return (
-          <Icon
-            className={styles[notification.severity.toLowerCase()]}
-            type="close-circle-o" />
-        );
+        return <CloseCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
       default: return undefined;
     }
   };

@@ -19,7 +19,8 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router-dom';
-import {Icon} from 'antd';
+import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
 import EditableField from './EditableField';
 import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
@@ -129,7 +130,7 @@ export default class Breadcrumbs extends React.Component {
 
   render () {
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
-      return <Icon type="loading" />;
+      return <LoadingOutlined />;
     }
     if (this.props.pipelinesLibrary.error) {
       return null;
@@ -155,7 +156,7 @@ export default class Breadcrumbs extends React.Component {
                   }}>
                   {
                     item.icon ? (
-                      <Icon
+                      <LegacyIcon
                         type={item.icon}
                         className={item.iconClassName}
                         style={
@@ -169,16 +170,14 @@ export default class Breadcrumbs extends React.Component {
                   }
                   {
                     item.lock ? (
-                      <Icon
-                        type="lock"
+                      <LockOutlined
                         className={item.lockClassName}
                         style={
                           Object.assign(
                             {marginRight: 5},
                             item.sensitive ? {color: '#ff5c33'} : {}
                           )
-                        }
-                      />
+                        } />
                     ) : null
                   }
                   <EditableField
@@ -215,7 +214,7 @@ export default class Breadcrumbs extends React.Component {
                     }}>
                     {
                       item.icon ? (
-                        <Icon
+                        <LegacyIcon
                           type={item.icon}
                           className={item.iconClassName}
                           style={
@@ -229,23 +228,20 @@ export default class Breadcrumbs extends React.Component {
                     }
                     {
                       item.lock ? (
-                        <Icon
-                          type="lock"
+                        <LockOutlined
                           className={item.lockClassName}
                           style={
                             Object.assign(
                               {marginRight: 5},
                               item.sensitive ? {color: '#ff5c33'} : {}
                             )
-                          }
-                        />
+                          } />
                       ) : null
                     }
                     {item.name}
                   </div>,
-                  <Icon
+                  <CaretRightOutlined
                     key={`divider-${index}`}
-                    type="caret-right"
                     style={{
                       lineHeight: 2,
                       verticalAlign: 'middle',
@@ -264,7 +260,7 @@ export default class Breadcrumbs extends React.Component {
                   }}>
                   {
                     item.icon ? (
-                      <Icon
+                      <LegacyIcon
                         type={item.icon}
                         className={item.iconClassName}
                         style={
@@ -278,23 +274,20 @@ export default class Breadcrumbs extends React.Component {
                   }
                   {
                     item.lock ? (
-                      <Icon
-                        type="lock"
+                      <LockOutlined
                         className={item.lockClassName}
                         style={
                           Object.assign(
                             {marginRight: 5},
                             item.sensitive ? {color: '#ff5c33'} : {}
                           )
-                        }
-                      />
+                        } />
                     ) : null
                   }
                   {item.name}
                 </Link>,
-                <Icon
+                <CaretRightOutlined
                   key={`divider-${index}`}
-                  type="caret-right"
                   style={{
                     lineHeight: 2,
                     verticalAlign: 'middle',

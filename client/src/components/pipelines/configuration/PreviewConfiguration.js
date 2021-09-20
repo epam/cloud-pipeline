@@ -18,7 +18,8 @@ import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Alert, Collapse, Icon, Row} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Alert, Collapse, Row} from 'antd';
 import LoadingView from '../../special/LoadingView';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import connect from '../../../utils/connect';
@@ -88,7 +89,7 @@ export default class PreviewConfiguration extends Component {
     return (
       <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
         <span className={styles.itemHeader}>
-          <Icon type={icon} /> {title}
+          <LegacyIcon type={icon} /> {title}
         </span>
       </Row>
     );

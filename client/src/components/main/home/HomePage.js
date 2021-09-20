@@ -20,7 +20,8 @@ import GridLayout from 'react-grid-layout';
 import HomePagePanel from './HomePagePanel';
 import ConfigureHomePage from './ConfigureHomePage';
 import {AsyncLayout, GridStyles, userLayout} from './layout';
-import {Button, Icon, Row} from 'antd';
+import {SettingOutlined} from '@ant-design/icons';
+import {Button, Row} from 'antd';
 import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 import PipelineRunServices from '../../../models/pipelines/PipelineRunServices';
 import roleModel from '../../../utils/roleModel';
@@ -140,7 +141,7 @@ export default class HomePage extends React.Component {
           <h1>{this.props.preferences.deploymentName || ''} Dashboard</h1>
           <div className={styles.stickyHeaderBackground}>{'\u00A0'}</div>
           <Button onClick={this.openConfigureModal}>
-            <Icon type="setting" />Configure
+            <SettingOutlined />Configure
           </Button>
         </Row>
         <div

@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Dropdown, Icon, Input, Menu, Popover, Row} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
+import {Button, Dropdown, Input, Menu, Popover, Row} from 'antd';
 
 const CloneOption = {
   https: 'https',
@@ -27,8 +28,8 @@ const CloneOption = {
 
 const CLOSE_POPOVER_DELAY_MS = 200;
 
-export default @observer
-class GitRepositoryControl extends React.Component {
+@observer
+export default class GitRepositoryControl extends React.Component {
   static propTypes = {
     cloneType: PropTypes.oneOf([CloneOption.https, CloneOption.ssh]),
     https: PropTypes.string,
@@ -84,7 +85,7 @@ class GitRepositoryControl extends React.Component {
         <b style={{marginRight: 5}}>Clone repository via</b>
         <Dropdown overlay={menu}>
           <a style={{lineHeight: 1}}>
-            <b>{cloneType.toUpperCase()}<Icon type="down" /></b>
+            <b>{cloneType.toUpperCase()}<DownOutlined /></b>
           </a>
         </Dropdown>
       </Row>

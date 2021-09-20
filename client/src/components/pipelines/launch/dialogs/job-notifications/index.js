@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Icon, Modal} from 'antd';
+import {PlusOutlined, SettingOutlined} from '@ant-design/icons';
+import {Button, Checkbox, Modal} from 'antd';
 import {notificationArraysAreEqual} from './notifications-equal';
 import JobNotification from './job-notification';
 import notificationValidationError from './notification-validation-error';
@@ -151,7 +152,7 @@ class JobNotifications extends React.Component {
         className={styles.link}
         onClick={this.openConfigurationDialog}
       >
-        <Icon type="setting" />
+        <SettingOutlined />
         {title}
       </div>
     );
@@ -321,7 +322,7 @@ class JobNotifications extends React.Component {
                   size="small"
                   onClick={this.addNotification}
                 >
-                  <Icon type="plus" /> Add notification
+                  <PlusOutlined /> Add notification
                 </Button>
               </div>
             )

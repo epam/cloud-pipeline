@@ -16,14 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Icon,
-  Input,
-  InputNumber,
-  Modal,
-  Row
-} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
+import {Button, Input, InputNumber, Modal, Row} from 'antd';
 import QuotaThreshold from './quotas-threshold';
 import styles from './quotas.css';
 
@@ -196,7 +190,7 @@ class QuotaTemplateEditDialog extends React.Component {
           }
           <div className={styles.add}>
             <Button disabled={disabled} size="small" onClick={onAddAction}>
-              <Icon type="plus" /> Add action
+              <PlusOutlined /> Add action
             </Button>
           </div>
           {

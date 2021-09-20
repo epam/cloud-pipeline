@@ -17,17 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {
-  Alert,
-  Button,
-  Icon,
-  Input,
-  message,
-  Modal,
-  Spin,
-  Table,
-  Tree
-} from 'antd';
+import {FolderOutlined, SolutionOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Alert, Button, Input, message, Modal, Spin, Table, Tree} from 'antd';
 import {
   generateTreeData,
   getExpandedKeys,
@@ -147,9 +139,9 @@ class CopyMetadataEntitiesDialog extends React.Component {
         render: (item) => {
           if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
             (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-            return (<Icon type="solution" />);
+            return <SolutionOutlined />;
           } else {
-            return (<Icon type="folder" />);
+            return <FolderOutlined />;
           }
         }
       },
@@ -183,7 +175,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
         className={styles.treeContainer}
       >
         <div style={{fontSize: 'large', marginLeft: 5}}>
-          <Icon type={icon} />
+          <LegacyIcon type={icon} />
           <b style={{marginLeft: 5}}>{selectedFolder.name}</b>
         </div>
         <Table
@@ -299,8 +291,8 @@ class CopyMetadataEntitiesDialog extends React.Component {
       }
       return (
         <span>
-          {icon && <Icon type={icon} />}
-          {subIcon && <Icon type={subIcon} />}
+          {icon && <LegacyIcon type={icon} />}
+          {subIcon && <LegacyIcon type={subIcon} />}
           <span className={styles.treeItemName}>{name}</span>
         </span>
       );

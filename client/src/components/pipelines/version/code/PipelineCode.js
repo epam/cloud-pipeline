@@ -23,15 +23,8 @@ import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpd
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
 import PipelineCodeForm from './forms/PipelineCodeForm';
 import PipelineCodeSourceNameDialog from './forms/PipelineCodeSourceNameDialog';
-import {
-  Breadcrumb,
-  Button,
-  Col,
-  Table,
-  Icon,
-  Row,
-  Modal,
-  message} from 'antd';
+import {DeleteOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
+import {Breadcrumb, Button, Col, Table, Row, Modal, message} from 'antd';
 import styles from './PipelineCode.css';
 import parseQueryParameters from '../../../../utils/queryParameters';
 import roleModel from '../../../../utils/roleModel';
@@ -92,7 +85,7 @@ class PipelineCode extends Component {
 
   renderSourceItemType = (item) => {
     return item.type.toLowerCase() === 'tree'
-      ? <Icon type="folder" className={styles.sourceItemType} />
+      ? <FolderOutlined className={styles.sourceItemType} />
       : <div />;
   };
 
@@ -107,7 +100,7 @@ class PipelineCode extends Component {
             <Button className={styles.sourceItemAction}
                     onClick={(event) => this.deleteFolderConfirm(item, event)}
                     type="danger"
-                    size="small"><Icon type="delete" /> Delete</Button>
+                    size="small"><DeleteOutlined /> Delete</Button>
           </Row>
         );
       } else {
@@ -119,7 +112,7 @@ class PipelineCode extends Component {
             <Button className={styles.sourceItemAction}
                     onClick={(event) => this.deleteFileConfirm(item, event)}
                     type="danger"
-                    size="small"><Icon type="delete" /> Delete</Button>
+                    size="small"><DeleteOutlined /> Delete</Button>
           </Row>
         );
       }
@@ -482,7 +475,7 @@ class PipelineCode extends Component {
           } else if (part.isCreateNewFolder) {
             breadcrumbContent = (
               <Button onClick={() => this.openCreateFolderDialog()} size="small">
-                <Icon type="plus" />
+                <PlusOutlined />
               </Button>
             );
           }
@@ -550,7 +543,7 @@ class PipelineCode extends Component {
               <Button
                 type="primary"
                 onClick={this.openCreateFileDialog} size="small">
-                <Icon type="plus" />NEW FILE
+                <PlusOutlined />NEW FILE
               </Button>
               <UploadButton
                 multiple={true}

@@ -16,10 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Icon,
-  Popover
-} from 'antd';
+import {ExclamationCircleOutlined } from '@ant-design/icons';
+import {Popover} from 'antd';
 import DockerImageDetails from '../../../../../cluster/hot-node-pool/docker-image-details';
 import styles from './restricted-images-info.css';
 
@@ -69,10 +67,7 @@ function RestrictedImagesInfo ({
         title="Storage is automatically mounted to:"
         overlayClassName={styles.overlay}
       >
-        <Icon
-          type="exclamation-circle-o"
-          className={styles.popoverIcon}
-        />
+        <ExclamationCircleOutlined className={styles.popoverIcon} />
       </Popover>
     </div>
   );

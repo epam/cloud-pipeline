@@ -16,9 +16,15 @@
 
 import React from 'react';
 import classNames from 'classnames';
+
 import {
-  Icon
-} from 'antd';
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  FileOutlined,
+  FolderOutlined,
+} from '@ant-design/icons';
+
 import DOCUMENT_TYPES from '../document-types';
 import UserName from '../../../../special/UserName';
 import roleModel from '../../../../../utils/roleModel';
@@ -27,9 +33,9 @@ import displayDate from '../../../../../utils/displayDate';
 import styles from './table.css';
 
 const FILES = {
-  [DOCUMENT_TYPES.blob]: <Icon type="file" />,
-  [DOCUMENT_TYPES.tree]: <Icon type="folder" />,
-  navback: <Icon type="folder" />
+  [DOCUMENT_TYPES.blob]: <FileOutlined />,
+  [DOCUMENT_TYPES.tree]: <FolderOutlined />,
+  navback: <FolderOutlined />
 };
 
 const renderActions = (item) => {
@@ -39,55 +45,36 @@ const renderActions = (item) => {
   const actions = [];
   if (item.type === DOCUMENT_TYPES.blob) {
     actions.push((
-      <Icon
-        key="download"
-        type="download"
-        className={styles.action}
-        data-action="download"
-      />
+      <DownloadOutlined key="download" className={styles.action} data-action="download" />
     ));
     if (roleModel.writeAllowed(item)) {
       actions.push((
-        <Icon
-          key="edit"
-          type="edit"
-          className={styles.action}
-          data-action="edit"
-        />
+        <EditOutlined key="edit" className={styles.action} data-action="edit" />
       ));
       actions.push((
-        <Icon
+        <DeleteOutlined
           key="delete"
-          type="delete"
           className={classNames(
             styles.action,
             styles.actionDelete
           )}
-          data-action="delete"
-        />
+          data-action="delete" />
       ));
     }
   }
   if (item.type === DOCUMENT_TYPES.tree) {
     if (roleModel.writeAllowed(item)) {
       actions.push((
-        <Icon
-          key="edit"
-          type="edit"
-          className={styles.action}
-          data-action="edit"
-        />
+        <EditOutlined key="edit" className={styles.action} data-action="edit" />
       ));
       actions.push((
-        <Icon
+        <DeleteOutlined
           key="delete"
-          type="delete"
           className={classNames(
             styles.action,
             styles.actionDelete
           )}
-          data-action="delete"
-        />
+          data-action="delete" />
       ));
     }
   }

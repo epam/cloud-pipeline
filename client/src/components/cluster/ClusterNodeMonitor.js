@@ -17,15 +17,8 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {
-  Alert,
-  Button,
-  Checkbox,
-  DatePicker,
-  Icon,
-  message,
-  Row
-} from 'antd';
+import {DownOutlined, ExportOutlined} from '@ant-design/icons';
+import {Alert, Button, Checkbox, DatePicker, message, Row} from 'antd';
 import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import FileSaver from 'file-saver';
@@ -594,7 +587,7 @@ class ClusterNodeMonitor extends React.Component {
               </Menu>
             )}>
             <Button>
-              Set range <Icon type="down" />
+              Set range <DownOutlined />
             </Button>
           </Dropdown>
           <Divider />
@@ -648,7 +641,7 @@ class ClusterNodeMonitor extends React.Component {
                   disabled={!start || exporting}
                   onClick={() => this.onExportClicked()}
                 >
-                  <Icon type="export" />Export
+                  <ExportOutlined />Export
                 </Button>
               </Dropdown>
             )

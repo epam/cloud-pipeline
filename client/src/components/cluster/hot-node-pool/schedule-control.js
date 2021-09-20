@@ -16,12 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Icon,
-  Select,
-  TimePicker
-} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
+import {Button, Select, TimePicker} from 'antd';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
 import formStyles from './edit-hot-node-pool.css';
@@ -294,7 +290,7 @@ class ScheduleControl extends React.Component {
           type="danger"
           onClick={onRemove}
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       </div>
     );

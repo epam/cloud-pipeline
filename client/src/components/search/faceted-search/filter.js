@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Icon, Input} from 'antd';
+import {CaretRightOutlined, CloseCircleOutlined} from '@ant-design/icons';
+import {Checkbox, Input} from 'antd';
 import classNames from 'classnames';
 import {FilterControl} from './controls';
 import highlightText from '../../special/highlightText';
@@ -142,11 +143,7 @@ class FacetedFilter extends React.Component {
           )
         }
         suffix={searchString ? (
-          <Icon
-            type="close-circle-o"
-            onClick={this.clearSearch}
-            className={styles.clearBtn}
-          />) : null
+          <CloseCircleOutlined onClick={this.clearSearch} className={styles.clearBtn} />) : null
         }
       />
     );
@@ -185,7 +182,7 @@ class FacetedFilter extends React.Component {
                 {[styles.expanded]: filterGroupExpanded})
             }
           >
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
           </div>
           <span className={styles.title}>{name}</span>
         </div>

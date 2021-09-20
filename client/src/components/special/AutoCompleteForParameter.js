@@ -16,11 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Select,
-  Icon,
-  Input
-} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Select, Input} from 'antd';
 import styles from './AutoCompleteForParameter.css';
 
 export default class AutoCompleteForParameter extends React.Component {
@@ -135,7 +132,7 @@ export default class AutoCompleteForParameter extends React.Component {
               this.props.onButtonClick(this.props.parameterKey, this.state.value)}
           >
             <div style={{padding: '5px', cursor: 'pointer'}}>
-              <Icon type={this.props.buttonIcon} />
+              <LegacyIcon type={this.props.buttonIcon} />
             </div>
           </span>
         }

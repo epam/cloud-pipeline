@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Col, Icon, Input, Modal, Row, Select, Tree} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Alert, Button, Col, Input, Modal, Row, Select, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
@@ -166,7 +167,7 @@ export default class MetadataBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}{name}
+        {icon && <LegacyIcon type={icon} />}{name}
       </span>
     );
   }

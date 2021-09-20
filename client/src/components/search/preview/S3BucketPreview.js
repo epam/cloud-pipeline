@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
+import {FileOutlined, FolderOutlined, LoadingOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -55,7 +57,7 @@ export default class S3BucketPreview extends React.Component {
       return null;
     }
     if (this.props.items.pending) {
-      return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+      return <Row className={styles.contentPreview} type="flex" justify="center"><LoadingOutlined /></Row>;
     }
     if (this.props.items.error) {
       return (
@@ -89,8 +91,8 @@ export default class S3BucketPreview extends React.Component {
                     <td style={firstCellStyle}>
                       {
                         item.type.toLowerCase() === 'folder'
-                          ? <Icon type="folder" />
-                          : <Icon type="file" />
+                          ? <FolderOutlined />
+                          : <FileOutlined />
                       }
                       <span style={{paddingLeft: 5}}>{item.name}</span>
                     </td>
@@ -130,7 +132,7 @@ export default class S3BucketPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
             {
               this.props.dataStorageInfo && this.props.dataStorageInfo.loaded &&

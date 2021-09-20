@@ -16,7 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox, message} from 'antd';
+
+import {
+  DeleteOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  UsergroupAddOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+
+import {Table, Row, Col, Button, AutoComplete, Modal, Checkbox, message} from 'antd';
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
@@ -103,10 +112,10 @@ export default class ShareWithForm extends React.Component {
     return (
       <span className={styles.actions}>
         <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog}>
-          <Icon type="user-add" />
+          <UserAddOutlined />
         </Button>
         <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog}>
-          <Icon type="usergroup-add" />
+          <UsergroupAddOutlined />
         </Button>
       </span>
     );
@@ -267,9 +276,9 @@ export default class ShareWithForm extends React.Component {
         className: styles.userIcon,
         render: (item) => {
           if (item.isPrincipal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
@@ -300,7 +309,7 @@ export default class ShareWithForm extends React.Component {
               disabled={this.props.pending}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         )

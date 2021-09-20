@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {AutoComplete, Icon, Input, Row, Button} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
+import {AutoComplete, Input, Row, Button} from 'antd';
 import {PortTypes, Primitives, reservedRegExp, quotesFn} from '../utilities';
 import styles from '../WDLItemProperties.css';
 
@@ -285,7 +286,7 @@ export class WDLItemPortFormItem extends React.Component {
               disabled={this.props.disabled}
               style={{lineHeight: 'initial'}}
               onClick={this.onRemoveClicked}>
-              <Icon type="close" />
+              <CloseOutlined />
             </Button>
           }
           {

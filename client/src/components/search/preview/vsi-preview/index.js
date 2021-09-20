@@ -17,11 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {
-  Button,
-  Tabs,
-  Icon
-} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {CameraOutlined, ExportOutlined} from '@ant-design/icons';
+import {Button, Tabs} from 'antd';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import FileSaver from 'file-saver';
@@ -567,7 +565,7 @@ class VSIPreview extends React.Component {
                 className={styles.vsiPreviewButton}
                 onClick={goFullScreen}
               >
-                <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
+                <LegacyIcon type={fullscreen ? 'shrink' : 'arrows-alt'} />
               </Button>
             )
           }
@@ -576,7 +574,7 @@ class VSIPreview extends React.Component {
             className={styles.vsiPreviewButton}
             onClick={capture}
           >
-            <Icon type="camera" />
+            <CameraOutlined />
           </Button>
           {
             shareAvailable && (
@@ -585,7 +583,7 @@ class VSIPreview extends React.Component {
                 className={styles.vsiPreviewButton}
                 onClick={this.shareButtonClicked}
               >
-                <Icon type="export" />
+                <ExportOutlined />
               </Button>
             )
           }

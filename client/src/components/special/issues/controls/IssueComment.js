@@ -18,8 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
-// todo Mention deprecated since 3.19.0
-import {Mention, Row, Tabs, Icon} from 'antd';
+import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
+// todo Mention deprecated since 3.19.0 -> we should use new Mentions
+import {Mention} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Row, Tabs} from 'antd';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';
 import FileDropContainer from './FileDropContainer';
@@ -97,11 +100,11 @@ export default class IssueComment extends React.Component {
       });
       const renderIcon = (type) => {
         switch (type) {
-          case ItemTypes.pipeline: return <Icon type="fork" />;
-          case ItemTypes.versionedStorage: return <Icon type="inbox" style={{color: '#2696dd'}} />;
-          case ItemTypes.configuration: return <Icon type="setting" />;
-          case ItemTypes.storage: return <Icon type="hdd" />;
-          case 'tool': return <Icon type="tool" />;
+          case ItemTypes.pipeline: return <ForkOutlined />;
+          case ItemTypes.versionedStorage: return <InboxOutlined style={{color: '#2696dd'}} />;
+          case ItemTypes.configuration: return <SettingOutlined />;
+          case ItemTypes.storage: return <HddOutlined />;
+          case 'tool': return <ToolOutlined />;
         }
         return undefined;
       };

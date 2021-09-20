@@ -27,18 +27,18 @@ import MetadataDeleteKeys from '../../../models/metadata/MetadataDeleteKeys';
 import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageTagsUpdate';
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+
 import {
-  Alert,
-  AutoComplete,
-  Button,
-  Col,
-  Icon,
-  Input,
-  message,
-  Modal,
-  Row,
-  Select
-} from 'antd';
+  ArrowsAltOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  LeftOutlined,
+  PlusOutlined
+} from '@ant-design/icons';
+
+import {Alert, AutoComplete, Button, Col, Input, message, Modal, Row, Select} from 'antd';
 import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel';
@@ -640,7 +640,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           colSpan={6}
           className={styles.key}
           style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
-          <Icon type={icon} /> {title}
+          <LegacyIcon type={icon} /> {title}
         </td>
       </tr>,
       <tr key={`${key}_value`} className={styles.readOnlyValueRow}>
@@ -951,7 +951,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
                     type="danger"
                     size="small"
                     onClick={() => this.confirmDeleteKey(metadataItem)}>
-                    <Icon type="delete" />
+                    <DeleteOutlined />
                   </Button>
                 </td>
               )
@@ -1288,13 +1288,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
               onClick={this.saveMetadata({})}
               disabled={readOnly}
             >
-              <Icon type="check" /> Add
+              <CheckOutlined /> Add
             </Button>
             <Button
               id="cancel-add-metadata-item-button"
               size="small"
               onClick={addKeyCancelClicked}>
-              <Icon type="close" /> Cancel
+              <CloseOutlined /> Cancel
             </Button>
           </td>
         </tr>
@@ -1357,7 +1357,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             <Button
               onClick={this.props.openEditFileForm}
               size="small" style={{border: 'none'}}>
-              <Icon type="arrows-alt" />
+              <ArrowsAltOutlined />
             </Button>
           </Col>
         </Row>
@@ -1460,7 +1460,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             style={{marginRight: 5}}
             size="small"
             onClick={this.props.onNavigateBack}>
-            <Icon type="left" />
+            <LeftOutlined />
           </Button>
         );
         titleParts.push(<b key="entity name">{this.props.entityName}</b>);
@@ -1483,7 +1483,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             key="add button"
             size="small"
             onClick={addKeyClicked}>
-            <Icon type="plus" /> Add
+            <PlusOutlined /> Add
           </Button>
         );
       }
@@ -1499,7 +1499,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             size="small"
             type="danger"
             onClick={this.confirmDeleteMetadata}>
-            <Icon type="delete" /> Remove all
+            <DeleteOutlined /> Remove all
           </Button>
         );
       }

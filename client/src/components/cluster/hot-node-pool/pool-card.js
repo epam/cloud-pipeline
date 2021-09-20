@@ -16,11 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {
-  Button,
-  Icon,
-  Progress
-} from 'antd';
+import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
+import {Button, Progress} from 'antd';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {getSpotTypeName} from '../../special/spot-instance-names';
@@ -201,7 +198,7 @@ function PoolCard ({
                 size="small"
                 onClick={onEdit}
               >
-                <Icon type="edit" />
+                <EditOutlined />
               </Button>
               <Button
                 disabled={disabled}
@@ -209,7 +206,7 @@ function PoolCard ({
                 type="danger"
                 onClick={onRemove}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           </div>

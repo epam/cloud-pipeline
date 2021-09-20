@@ -24,18 +24,9 @@ import localization from '../../../utils/localization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {
-  Alert,
-  Button,
-  Col,
-  Icon,
-  Input,
-  message,
-  Popover,
-  Row,
-  Table,
-  Tooltip
-} from 'antd';
+import {ForkOutlined, HddOutlined, InboxOutlined, LockOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Alert, Button, Col, Input, message, Popover, Row, Table, Tooltip} from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
@@ -109,17 +100,17 @@ class Folder extends localization.LocalizedReactComponent {
 
   renderTreeItemType = (item) => {
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="inbox" style={{color: '#2696dd'}} />;
+      case ItemTypes.pipeline: return <ForkOutlined />;
+      case ItemTypes.versionedStorage: return <InboxOutlined style={{color: '#2696dd'}} />;
       case ItemTypes.storage:
         const style = {};
         if (item.sensitive) {
           style.color = '#ff5c33';
         }
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          return <Icon type="inbox" style={style} />;
+          return <InboxOutlined style={style} />;
         } else {
-          return <Icon type="hdd" style={style} />;
+          return <HddOutlined style={style} />;
         }
       default: return <div />;
     }
@@ -258,7 +249,7 @@ class Folder extends localization.LocalizedReactComponent {
           if (item.locked) {
             nameComponent = (
               <span>
-                <Icon type="lock" />
+                <LockOutlined />
                 {
                   item.type === ItemTypes.storage && (
                     <AWSRegionTag
@@ -368,7 +359,7 @@ class Folder extends localization.LocalizedReactComponent {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon
+            <LegacyIcon
               className={styles.editableControl}
               style={{marginRight: 5}}
               type={isStorages ? 'hdd' : 'fork'}

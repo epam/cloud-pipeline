@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Popover} from 'antd';
+import {LinkOutlined} from '@ant-design/icons';
+import {Popover} from 'antd';
 
 function ToolLink ({link, style}) {
   if (!link) {
@@ -30,7 +31,7 @@ function ToolLink ({link, style}) {
         </div>
       )}
     >
-      <Icon type="link" style={style} />
+      <LinkOutlined style={style} />
     </Popover>
   );
 }

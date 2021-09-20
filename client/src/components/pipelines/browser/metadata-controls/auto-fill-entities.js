@@ -16,10 +16,8 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {
-  Button,
-  Icon
-} from 'antd';
+import {DownOutlined, EditOutlined} from '@ant-design/icons';
+import {Button} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import styles from './auto-fill-entities.css';
@@ -584,8 +582,8 @@ class AutoFillEntitiesActions extends React.Component {
               onMouseDown={e => e.stopPropagation()}
               onClick={e => e.stopPropagation()}
             >
-              <Icon type="edit" />
-              <Icon type="down" />
+              <EditOutlined />
+              <DownOutlined />
             </Button>
           </Dropdown>
         </div>

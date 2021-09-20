@@ -26,16 +26,21 @@ import MetadataEntityFilter from '../../../models/folderMetadata/MetadataEntityF
 import MetadataEntityKeys from '../../../models/folderMetadata/MetadataEntityKeys';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataEntityLoadExternal';
+
 import {
-  Button,
-  Checkbox,
-  Icon,
-  Input,
-  message,
-  Modal,
-  Pagination,
-  Row
-} from 'antd';
+  CaretDownOutlined,
+  CaretUpOutlined,
+  CloseOutlined,
+  CloudUploadOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  SettingOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
+
+import {Button, Checkbox, Input, message, Modal, Pagination, Row} from 'antd';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {
@@ -549,7 +554,7 @@ class Metadata extends React.Component {
           )
         }}
       >
-        <Icon type="filter" />
+        <FilterOutlined />
       </Button>);
 
     if (key === 'createdDate') {
@@ -1760,10 +1765,7 @@ class Metadata extends React.Component {
           key={Actions.addMetadata}
           className={classNames(styles.menuItem, Actions.addMetadata)}
         >
-          <Icon
-            type="plus"
-            style={{marginRight: 5}}
-          />
+          <PlusOutlined style={{marginRight: 5}} />
           Add instance
         </MenuItem>
       ));
@@ -1772,10 +1774,7 @@ class Metadata extends React.Component {
           key={Actions.upload}
           className={classNames(styles.menuItem, Actions.upload)}
         >
-          <Icon
-            type="upload"
-            style={{marginRight: 5}}
-          />
+          <UploadOutlined style={{marginRight: 5}} />
           Upload metadata
         </MenuItem>
       ));
@@ -1789,10 +1788,7 @@ class Metadata extends React.Component {
             key={Actions.transfer}
             className={classNames(styles.menuItem, Actions.transfer)}
           >
-            <Icon
-              type="cloud-upload-o"
-              style={{marginRight: 5}}
-            />
+            <CloudUploadOutlined style={{marginRight: 5}} />
             Transfer to the cloud
           </MenuItem>
         ));
@@ -1806,10 +1802,7 @@ class Metadata extends React.Component {
           className={classNames(styles.menuItem, Actions.deleteClass)}
           style={{color: 'red'}}
         >
-          <Icon
-            type="delete"
-            style={{marginRight: 5}}
-          />
+          <DeleteOutlined style={{marginRight: 5}} />
           Delete class
         </MenuItem>
       ));
@@ -1844,9 +1837,7 @@ class Metadata extends React.Component {
             size="small"
             style={{lineHeight: 1, margin: '0 0 0 5px'}}
           >
-            <Icon
-              type="setting"
-            />
+            <SettingOutlined />
           </Button>
         </Dropdown>
       );
@@ -1893,9 +1884,9 @@ class Metadata extends React.Component {
           orderNumber = <sup style={{marginRight: 5}}>{number}</sup>;
         }
         if (orderBy.desc) {
-          icon = <Icon style={iconStyle} type="caret-down" />;
+          icon = <CaretDownOutlined style={iconStyle} />;
         } else {
-          icon = <Icon style={iconStyle} type="caret-up" />;
+          icon = <CaretUpOutlined style={iconStyle} />;
         }
       }
       return (
@@ -2071,9 +2062,7 @@ class Metadata extends React.Component {
             onClick={this.onClearFilters}
             style={{marginLeft: 5, marginRight: 5}}
           >
-            <Icon
-              type="close"
-            />
+            <CloseOutlined />
             Clear filters
           </Button>
         );
@@ -2177,7 +2166,7 @@ class Metadata extends React.Component {
             <Button
               size="small"
             >
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
         </Button.Group>

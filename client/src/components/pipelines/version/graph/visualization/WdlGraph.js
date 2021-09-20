@@ -29,19 +29,24 @@ import {
   ResizablePanel,
   ResizeAnchors
 } from '../../../../special/resizablePanel';
+
 import {
-  Alert,
-  AutoComplete,
-  Row,
-  Button,
-  Icon,
-  Input,
-  message,
-  Modal,
-  Popover,
-  Form,
-  Tooltip
-} from 'antd';
+  AppstoreOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  MinusCircleOutlined,
+  PlusCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+  ScanOutlined,
+  SearchOutlined,
+  SwapOutlined,
+} from '@ant-design/icons';
+
+import {Form, Icon as LegacyIcon} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Alert, AutoComplete, Row, Button, Input, message, Modal, Popover, Tooltip} from 'antd';
 import {prepareTask, WDLItemProperties} from './forms/WDLItemProperties';
 import {
   generatePipelineCommand,
@@ -799,7 +804,7 @@ export default class WdlGraph extends Graph {
           type="danger"
           style={{width: '100%'}}
           onClick={this.confirmDeleteTask}>
-          <Icon type="delete" /> DELETE <b>{
+          <DeleteOutlined /> DELETE <b>{
           this.state.selectedElement.type
             ? this.state.selectedElement.type.toUpperCase()
             : undefined
@@ -814,7 +819,7 @@ export default class WdlGraph extends Graph {
           type="danger"
           style={{width: '100%'}}
           onClick={this.confirmDeleteTask}>
-          <Icon type="delete" /> DELETE <b>{
+          <DeleteOutlined /> DELETE <b>{
           this.state.selectedElement.name
             ? this.state.selectedElement.name.toUpperCase()
             : undefined
@@ -842,14 +847,14 @@ export default class WdlGraph extends Graph {
           key="add scatter"
           size="small"
           onClick={addNewScatter}>
-          <Icon type="plus" /> ADD SCATTER
+          <PlusOutlined /> ADD SCATTER
         </Button>,
         <Button
           id="wdl-graph-workflow-add-task-button"
           key="add task"
           size="small"
           onClick={addNewTask}>
-          <Icon type="plus" /> ADD TASK
+          <PlusOutlined /> ADD TASK
         </Button>
       ];
     } else if (this.isScatter) {
@@ -870,7 +875,7 @@ export default class WdlGraph extends Graph {
               key="add task"
               size="small"
               onClick={addNewTask}>
-              <Icon type="plus" /> ADD TASK
+              <PlusOutlined /> ADD TASK
             </Button>
           )
           : undefined
@@ -944,10 +949,7 @@ export default class WdlGraph extends Graph {
         <span>{title}</span>
         {
           onPanelClose &&
-          <Icon
-            type="close"
-            onClick={onPanelClose}
-            style={{cursor: 'pointer'}} />
+          <CloseOutlined onClick={onPanelClose} style={{cursor: 'pointer'}} />
         }
       </Row>
     );
@@ -1273,7 +1275,7 @@ export default class WdlGraph extends Graph {
             className={styles.wdlAppearanceButton}
             shape="circle"
           >
-            <Icon type="search" />
+            <SearchOutlined />
           </Button>
         </Popover>
       </Tooltip>
@@ -1293,7 +1295,7 @@ export default class WdlGraph extends Graph {
               type="primary"
               shape="circle"
               onClick={this.openCommitFormDialog}>
-              <Icon type="save" />
+              <SaveOutlined />
             </Button>
           </Tooltip>
         }
@@ -1306,7 +1308,7 @@ export default class WdlGraph extends Graph {
               disabled={!this.state.modified}
               shape="circle"
               onClick={() => this.revertChanges()}>
-              <Icon type="reload" />
+              <ReloadOutlined />
             </Button>
           </Tooltip>
         }
@@ -1320,7 +1322,7 @@ export default class WdlGraph extends Graph {
             id="wdl-graph-layout-button"
             shape="circle"
             onClick={this.layoutGraph}>
-            <Icon type="appstore-o" />
+            <AppstoreOutlined />
           </Button>
         </Tooltip>
         <Tooltip title="Fit to screen" placement="right">
@@ -1329,7 +1331,7 @@ export default class WdlGraph extends Graph {
             id="wdl-graph-fit-button"
             shape="circle"
             onClick={this.fitGraph}>
-            <Icon type="scan" />
+            <ScanOutlined />
           </Button>
         </Tooltip>
         <Tooltip
@@ -1341,7 +1343,7 @@ export default class WdlGraph extends Graph {
             id={`wdl-graph-${this.state.showAllLinks ? 'hide-links' : 'show-links'}-button`}
             shape="circle"
             onClick={this.toggleLinks}>
-            <Icon type="swap" />
+            <SwapOutlined />
           </Button>
         </Tooltip>
         <Tooltip title="Zoom out" placement="right">
@@ -1351,7 +1353,7 @@ export default class WdlGraph extends Graph {
             shape="circle"
             onClick={this.zoomOut}
             disabled={!this.state.canZoomOut}>
-            <Icon type="minus-circle-o" />
+            <MinusCircleOutlined />
           </Button>
         </Tooltip>
         <Tooltip title="Zoom in" placement="right">
@@ -1361,7 +1363,7 @@ export default class WdlGraph extends Graph {
             shape="circle"
             onClick={this.zoomIn}
             disabled={!this.state.canZoomIn}>
-            <Icon type="plus-circle-o" />
+            <PlusCircleOutlined />
           </Button>
         </Tooltip>
         {
@@ -1373,7 +1375,7 @@ export default class WdlGraph extends Graph {
             id="wdl-graph-fuulscreen-button"
             shape="circle"
             onClick={this.toggleFullScreen}>
-            <Icon type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
+            <LegacyIcon type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
           </Button>
         </Tooltip>
       </div>

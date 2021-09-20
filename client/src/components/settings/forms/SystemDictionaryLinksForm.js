@@ -16,12 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Modal,
-  Icon,
-  Select
-} from 'antd';
+import {CaretRightOutlined} from '@ant-design/icons';
+import {Button, Modal, Select} from 'antd';
 
 class SystemDictionaryLinksForm extends React.Component {
   state = {
@@ -200,7 +196,7 @@ class SystemDictionaryLinksForm extends React.Component {
         >
           {selectedDictionary.key}
         </span>
-        <Icon type="caret-right" />
+        <CaretRightOutlined />
         <Select
           showSearch
           disabled={!selectedDictionary}

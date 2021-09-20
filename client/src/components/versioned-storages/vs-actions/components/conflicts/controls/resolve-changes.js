@@ -17,10 +17,8 @@
 import React from 'react';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {
-  Button,
-  Icon
-} from 'antd';
+import {ArrowLeftOutlined, ArrowRightOutlined, RollbackOutlined} from '@ant-design/icons';
+import {Button} from 'antd';
 import ChangeStatuses from '../utilities/changes/statuses';
 import {HeadBranch, RemoteBranch} from '../utilities/conflicted-file/branches';
 import styles from './resolve-changes.css';
@@ -111,7 +109,7 @@ function ResolveChanges (
         className={styles.button}
         onClick={() => conflictedFile.undoOperation()}
       >
-        <Icon type="rollback" />
+        <RollbackOutlined />
       </Button>
       <Button
         size="small"
@@ -120,7 +118,7 @@ function ResolveChanges (
         className={styles.button}
         onClick={() => conflictedFile.redoOperation()}
       >
-        <Icon type="rollback" style={{transform: 'scaleX(-1)'}} />
+        <RollbackOutlined style={{transform: 'scaleX(-1)'}} />
       </Button>
       <Divider />
       <span>
@@ -133,7 +131,7 @@ function ResolveChanges (
         disabled={!canApplyYours}
         onClick={() => applyNonConflictingChanges(HeadBranch)}
       >
-        Yours<Icon type="arrow-right" />
+        Yours<ArrowRightOutlined />
       </Button>
       <Button
         size="small"
@@ -142,9 +140,9 @@ function ResolveChanges (
         disabled={!canApplyAll}
         onClick={() => applyNonConflictingChanges(HeadBranch, RemoteBranch)}
       >
-        <Icon type="arrow-right" />
+        <ArrowRightOutlined />
         All
-        <Icon type="arrow-left" />
+        <ArrowLeftOutlined />
       </Button>
       <Button
         size="small"
@@ -153,7 +151,7 @@ function ResolveChanges (
         disabled={!canApplyTheirs}
         onClick={() => applyNonConflictingChanges(RemoteBranch)}
       >
-        <Icon type="arrow-left" />Theirs
+        <ArrowLeftOutlined />Theirs
       </Button>
       <Divider />
       <Button

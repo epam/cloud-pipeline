@@ -16,15 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Table,
-  Spin,
-  Button,
-  Icon,
-  Input,
-  Modal,
-  Row
-} from 'antd';
+import {DownOutlined, FileOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
+import {Table, Spin, Button, Input, Modal, Row} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
@@ -289,13 +282,13 @@ class VersionedStorageTable extends React.Component {
                     key={TABLE_MENU_KEYS.folder}
                     disabled={!controlsEnabled}
                   >
-                    <Icon type="folder" /> Folder
+                    <FolderOutlined /> Folder
                   </MenuItem>
                   <MenuItem
                     key={TABLE_MENU_KEYS.file}
                     disabled={!controlsEnabled}
                   >
-                    <Icon type="file" /> File
+                    <FileOutlined /> File
                   </MenuItem>
                 </Menu>
               }
@@ -307,9 +300,9 @@ class VersionedStorageTable extends React.Component {
                 className={styles.tableControl}
                 disabled={!controlsEnabled}
               >
-                <Icon type="plus" />
+                <PlusOutlined />
                 Create
-                <Icon type="down" />
+                <DownOutlined />
               </Button>
             </Dropdown>
             <UploadButton

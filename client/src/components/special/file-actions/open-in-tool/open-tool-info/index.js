@@ -17,11 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Button,
-  Icon,
-  message
-} from 'antd';
+import {CopyOutlined, LoadingOutlined} from '@ant-design/icons';
+import {Button, message} from 'antd';
 import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';
 
@@ -119,7 +116,7 @@ class OpenToolInfo extends React.Component {
           className={classNames(styles.part, styles.button)}
           onClick={copy}
         >
-          <Icon type="copy" />
+          <CopyOutlined />
         </div>
       </div>
     );
@@ -142,7 +139,7 @@ class OpenToolInfo extends React.Component {
     return (
       <span>
         {
-          activeJobsFetching && (<Icon type="loading" />)
+          activeJobsFetching && (<LoadingOutlined />)
         }
         {
           !activeJobsFetching && !!activeJob && (

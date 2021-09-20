@@ -15,6 +15,7 @@
  */
 
 import React, {Component} from 'react';
+import {ArrowLeftOutlined} from '@ant-design/icons';
 import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link, Route, Switch, withRouter} from 'react-router-dom';
@@ -226,7 +227,7 @@ class ClusterNode extends Component {
       >
         <Row align="middle">
           <Col span={1}>
-            <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
+            <Link id="back-button" to="/cluster"><Button type="link" icon={<ArrowLeftOutlined />} /></Link>
           </Col>
           <Col span={18}>
             <span className={parentStyles.nodeMainInfo}>

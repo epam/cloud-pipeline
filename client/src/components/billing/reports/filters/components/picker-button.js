@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon} from 'antd';
+import {CalendarOutlined, CloseCircleOutlined, LeftOutlined, RightOutlined} from '@ant-design/icons';
+import {Button} from 'antd';
 import styles from './pickers.css';
 
 class PickerButton extends React.Component {
@@ -83,7 +84,7 @@ class PickerButton extends React.Component {
               disabled={!canNavigateBack}
               onClick={onNavigateBack}
             >
-              <Icon type="left" />
+              <LeftOutlined />
             </Button>
           )
         }
@@ -99,14 +100,10 @@ class PickerButton extends React.Component {
               valueIsSet &&
               onRemoveIsSet &&
               hovered && (
-                <Icon
-                  className={styles.close}
-                  type="close-circle"
-                  onClick={this.onRemove}
-                />
+                <CloseCircleOutlined className={styles.close} onClick={this.onRemove} />
               )
             }
-            {(!valueIsSet || !hovered || !onRemoveIsSet) && <Icon type="calendar" />}
+            {(!valueIsSet || !hovered || !onRemoveIsSet) && <CalendarOutlined />}
           </div>
         </Button>
         {
@@ -116,7 +113,7 @@ class PickerButton extends React.Component {
               disabled={!canNavigateForward}
               onClick={onNavigateForward}
             >
-              <Icon type="right" />
+              <RightOutlined />
             </Button>
           )
         }

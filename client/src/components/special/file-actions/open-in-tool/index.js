@@ -19,12 +19,8 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
-import {
-  message,
-  Popover,
-  Row,
-  Icon
-} from 'antd';
+import {CaretLeftOutlined} from '@ant-design/icons';
+import {message, Popover, Row} from 'antd';
 import ToolsSelector, {ToolIcon} from './tools-selector';
 import OpenToolInfo from './open-tool-info';
 import FileTools from './file-tools';
@@ -315,7 +311,7 @@ class OpenInToolAction extends React.Component {
                 onClick={this.clearToolSelection}
                 className={styles.tabHeadingBtn}
               >
-                <Icon type="caret-left" />
+                <CaretLeftOutlined />
               </div>
               <span className={styles.tabHeading}>
                 <ToolIcon

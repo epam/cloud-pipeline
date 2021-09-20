@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Card, Icon, Input, Popover, Row} from 'antd';
+import {StarOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Card, Input, Popover, Row} from 'antd';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
@@ -139,8 +141,8 @@ export default class CardsPanel extends React.Component {
         type="flex"
         align="middle"
         justify="center">
-        <Icon className={styles.notFavouriteSelector} type="star-o" style={{fontSize: 'large'}} />
-        <Icon className={styles.favouriteSelector} type="star" style={{fontSize: 'large'}} />
+        <StarOutlined className={styles.notFavouriteSelector} style={{fontSize: 'large'}} />
+        <StarOutlined className={styles.favouriteSelector} style={{fontSize: 'large'}} />
       </Row>
     );
   };
@@ -227,7 +229,7 @@ export default class CardsPanel extends React.Component {
                       {
                         icon
                           ? (
-                            <Icon
+                            <LegacyIcon
                               style={style}
                               type={getIconType(action)}
                             />
@@ -254,7 +256,7 @@ export default class CardsPanel extends React.Component {
                   <Row type="flex" align="middle">
                     {
                       icon
-                        ? <Icon style={style} type={getIconType(action)} />
+                        ? <LegacyIcon style={style} type={getIconType(action)} />
                         : undefined
                     }
                     {
@@ -274,8 +276,10 @@ export default class CardsPanel extends React.Component {
                       )
                     }
                   </Row>
-                </Row>);
-            })}</div>);
+                </Row>
+              );
+            })}</div>
+      );
     }
     return null;
   };

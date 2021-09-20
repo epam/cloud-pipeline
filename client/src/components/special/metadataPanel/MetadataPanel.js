@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 // todo: move MetadataStyles file
 import MetadataStyles from '../metadata/Metadata.css';
-import {Button, Icon, Input, message, Modal, Row} from 'antd';
+import {CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
+import {Button, Input, message, Modal, Row} from 'antd';
 import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEntityDeleteKey';
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
@@ -343,13 +344,13 @@ export default class MetadataPanel extends React.Component {
               size="small"
               type="primary"
               onClick={this.saveMetadata('key', this.state.addKey.key, this.state.addKey.value)}>
-              <Icon type="check" /> Add
+              <CheckOutlined /> Add
             </Button>
             <Button
               id="cancel-add-metadata-item-button"
               size="small"
               onClick={addKeyCancelClicked}>
-              <Icon type="close" /> Cancel
+              <CloseOutlined /> Cancel
             </Button>
           </td>
         </tr>
@@ -381,7 +382,7 @@ export default class MetadataPanel extends React.Component {
             size="small"
             onClick={this.onCancelChanges}
           >
-            <Icon type="reload" /> Undo
+            <ReloadOutlined /> Undo
           </Button>
         );
       }
@@ -393,7 +394,7 @@ export default class MetadataPanel extends React.Component {
             size="small"
             onClick={addKeyClicked}
           >
-            <Icon type="plus" /> Add
+            <PlusOutlined /> Add
           </Button>
         );
       }
@@ -406,7 +407,7 @@ export default class MetadataPanel extends React.Component {
             type="danger"
             onClick={this.confirmDeleteMetadata}
           >
-            <Icon type="delete" /> Remove all
+            <DeleteOutlined /> Remove all
           </Button>
         );
       }
@@ -506,7 +507,7 @@ export default class MetadataPanel extends React.Component {
                         type="danger"
                         size="small"
                         onClick={() => this.confirmDeleteKey(key)}>
-                        <Icon type="delete" />
+                        <DeleteOutlined />
                       </Button>
                     </td>
                   )

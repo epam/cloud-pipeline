@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {withRouter} from 'react-router-dom';
-import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
+import {PlusOutlined, SettingOutlined} from '@ant-design/icons';
+import {Row, Col, Modal, Button, Alert, Tabs, message} from 'antd';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -474,7 +475,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
       }
       return {
         ...extractEndpointNameAndStopAfter(this.state.overriddenConfiguration),
-        ...this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration,
+        ...(this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration),
         parameters
       };
     }
@@ -509,7 +510,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
 
     return {
       ...extractEndpointNameAndStopAfter(configuration),
-      ...configuration.configuration || configuration,
+      ...(configuration.configuration || configuration),
       parameters
     };
   };
@@ -960,7 +961,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
           id="add-configuration-button"
           size="small"
           onClick={this.openCreateConfigurationFormDialog}>
-          <Icon type="plus" style={{lineHeight: 'inherit'}} /> ADD
+          <PlusOutlined style={{lineHeight: 'inherit'}} /> ADD
         </Button>
       );
     }
@@ -1033,7 +1034,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
               configurationId={this.props.configurationId}
             />
             <Button onClick={this.openEditConfigurationForm} size="small">
-              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Col>
         </Row>

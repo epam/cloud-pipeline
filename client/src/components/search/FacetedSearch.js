@@ -17,12 +17,8 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
-import {
-  Alert,
-  Button,
-  Icon,
-  Input
-} from 'antd';
+import {CloseCircleOutlined, SearchOutlined} from '@ant-design/icons';
+import {Alert, Button, Input} from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
@@ -583,11 +579,7 @@ class FacetedSearch extends React.Component {
             suffix={
               query
                 ? (
-                  <Icon
-                    type="close-circle"
-                    className={styles.clearQuery}
-                    onClick={this.onClearQuery}
-                  />
+                  <CloseCircleOutlined className={styles.clearQuery} onClick={this.onClearQuery} />
                 )
                 : undefined
             }
@@ -611,7 +603,7 @@ class FacetedSearch extends React.Component {
             type="primary"
             onClick={this.onChangeQuery}
           >
-            <Icon type="search" />
+            <SearchOutlined />
             Search
           </Button>
         </div>

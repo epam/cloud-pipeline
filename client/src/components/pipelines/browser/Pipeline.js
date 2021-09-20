@@ -31,7 +31,19 @@ import {
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import GitRepositoryControl from '../../special/git-repository-control';
-import {Alert, Button, Col, Icon, message, Row, Select, Table} from 'antd';
+
+import {
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  CopyOutlined,
+  EditOutlined,
+  FolderOutlined,
+  ForkOutlined,
+  SettingOutlined,
+  TagOutlined,
+} from '@ant-design/icons';
+
+import {Alert, Button, Col, message, Row, Select, Table} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
@@ -256,9 +268,9 @@ class Pipeline extends localization.LocalizedReactComponent {
       style.color = '#999';
     }
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" style={style} />;
-      case ItemTypes.folder: return <Icon type="folder" style={style} />;
-      case ItemTypes.version: return <Icon type="tag" style={style} />;
+      case ItemTypes.pipeline: return <ForkOutlined style={style} />;
+      case ItemTypes.folder: return <FolderOutlined style={style} />;
+      case ItemTypes.version: return <TagOutlined style={style} />;
       default: return <div />;
     }
   };
@@ -283,7 +295,7 @@ class Pipeline extends localization.LocalizedReactComponent {
     ) {
       return (
         <Row type="flex" justify="end">
-          <Icon type="check-circle" />
+          <CheckCircleOutlined />
         </Row>
       );
     }
@@ -608,7 +620,7 @@ class Pipeline extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
-            <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
+            <CheckCircleOutlined style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
       );
@@ -620,14 +632,12 @@ class Pipeline extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
-            <Icon
-              type="check-circle"
+            <CheckCircleOutlined
               style={{
                 display: this.state.showIssuesPanel
                   ? 'inherit'
                   : 'none'
-              }}
-            />
+              }} />
           </Row>
         </MenuItem>
       );
@@ -650,7 +660,7 @@ class Pipeline extends localization.LocalizedReactComponent {
             id="display-attributes"
             style={{lineHeight: 1}}
             size="small">
-            <Icon type="appstore" />
+            <AppstoreOutlined />
           </Button>
         </Dropdown>
       );
@@ -673,7 +683,7 @@ class Pipeline extends localization.LocalizedReactComponent {
           key="edit"
           className={styles.menuItem}
         >
-          <Icon type="edit" /> Edit
+          <EditOutlined /> Edit
         </MenuItem>
       );
     }
@@ -684,7 +694,7 @@ class Pipeline extends localization.LocalizedReactComponent {
           id="clone-pipeline-button"
           className={styles.menuItem}
         >
-          <Icon type="copy" /> Clone
+          <CopyOutlined /> Clone
         </MenuItem>
       );
     }
@@ -706,7 +716,7 @@ class Pipeline extends localization.LocalizedReactComponent {
           id="edit-pipeline-menu-button"
           style={{lineHeight: 1}}
           size="small">
-          <Icon type="setting" />
+          <SettingOutlined />
         </Button>
       </Dropdown>
     );

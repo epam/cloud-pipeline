@@ -19,16 +19,8 @@ import PropTypes from 'prop-types';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import styles from './filters.css';
-import {
-  Button,
-  Checkbox,
-  DatePicker,
-  Icon,
-  Input,
-  Row,
-  Select,
-  Tooltip
-} from 'antd';
+import {InfoCircleOutlined} from '@ant-design/icons';
+import {Button, Checkbox, DatePicker, Input, Row, Select, Tooltip} from 'antd';
 import moment from 'moment-timezone';
 import SystemLogsFilterDictionaries from '../../../models/system-logs/filter-dictionaries';
 
@@ -241,10 +233,7 @@ class Filters extends React.Component {
                   </div>
                 )}
               >
-                <Icon
-                  type="info-circle"
-                  style={{marginRight: 5, color: 'orange'}}
-                />
+                <InfoCircleOutlined style={{marginRight: 5, color: 'orange'}} />
               </Tooltip>
             )
           }

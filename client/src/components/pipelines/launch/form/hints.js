@@ -15,13 +15,14 @@
  */
 
 import React from 'react';
-import {Icon, Popover, Row} from 'antd';
+import {QuestionCircleOutlined} from '@ant-design/icons';
+import {Popover, Row} from 'antd';
 import styles from './LaunchPipelineForm.css';
 
 function renderHint (localizedStringFn, hint, placement, style) {
   return (
     <Popover placement={placement || 'right'} content={hint(localizedStringFn)} trigger="hover">
-      <Icon type="question-circle" className={styles.hint} style={style || {marginLeft: 5}} />
+      <QuestionCircleOutlined className={styles.hint} style={style || {marginLeft: 5}} />
     </Popover>
   );
 }

@@ -17,14 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {
-  Alert,
-  Row,
-  Button,
-  Icon,
-  Spin,
-  Input
-} from 'antd';
+import {ArrowsAltOutlined, LeftOutlined} from '@ant-design/icons';
+import {Alert, Row, Button, Spin, Input} from 'antd';
 import Papa from 'papaparse';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import localization from '../../../../../utils/localization';
@@ -267,7 +261,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             disabled={!fileEditable}
             className={styles.previewHeaderBtn}
           >
-            <Icon type="arrows-alt" />
+            <ArrowsAltOutlined />
           </Button>
         </Row>
       );
@@ -286,7 +280,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
               className={styles.goBackHeaderBtn}
               onClick={this.handleGoBackClick}
             >
-              <Icon type="left" />
+              <LeftOutlined />
             </Button>
             <b>{file.name}</b>
           </div>

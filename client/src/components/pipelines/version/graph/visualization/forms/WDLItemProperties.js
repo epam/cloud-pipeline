@@ -18,10 +18,9 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {observable} from 'mobx';
 import PropTypes from 'prop-types';
-import {
-  Form,
-  Input
-} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Input} from 'antd';
 import CodeEditorFormItem from '../../../../../special/CodeEditorFormItem';
 import {LockOptions} from './form-items/WDLItemPortFormItem';
 import {WDLItemPortsFormItem, validatePorts} from './form-items/WDLItemPortsFormItem';

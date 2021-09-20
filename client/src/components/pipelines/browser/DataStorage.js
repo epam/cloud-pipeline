@@ -19,12 +19,28 @@ import {inject, observer} from 'mobx-react';
 import connect from '../../../utils/connect';
 import {Link, withRouter} from 'react-router-dom';
 import {computed, observable} from 'mobx';
+
+import {
+  CaretLeftOutlined,
+  CaretRightOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  EditOutlined,
+  FileOutlined,
+  FolderOutlined,
+  InboxOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+
+import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {
   Alert,
   Button,
   Checkbox,
   Col,
-  Icon,
   Input,
   message,
   Modal,
@@ -847,7 +863,7 @@ class DataStorage extends React.Component {
           download={item.name}
           onClick={(e) => this.downloadSingleFile(e, item)}
         >
-          <Icon type="download" />
+          <DownloadOutlined />
         </a>
       );
     }
@@ -858,14 +874,14 @@ class DataStorage extends React.Component {
           key="rename"
           size="small"
           onClick={(event) => this.openRenameItemDialog(event, item)}>
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       );
     }
     if (this.canRestoreItem(item)) {
       actions.push(
         <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
-          <Icon type="reload" />
+          <ReloadOutlined />
         </Button>
       );
     }
@@ -878,7 +894,7 @@ class DataStorage extends React.Component {
           type="danger"
           size="small"
           onClick={(event) => this.removeItemConfirm(event, item)}>
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       );
     }
@@ -1051,7 +1067,7 @@ class DataStorage extends React.Component {
       onCell: item => ({
         onClick: () => this.didSelectDataStorageItem(item)
       }),
-      render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
+      render: (text, item) => <LegacyIcon className={styles.itemType} type={item.type.toLowerCase()} />
     };
     const appsColumn = {
       key: 'apps',
@@ -1401,14 +1417,14 @@ class DataStorage extends React.Component {
                 className="edit-storage-button"
                 key="edit"
               >
-                <Icon type="edit" /> Edit
+                <EditOutlined /> Edit
               </MenuItem>
               <MenuItem
                 id="convert-storage-button"
                 className="convert-storage-action-button"
                 key="convert"
               >
-                <Icon type="inbox" style={{color: '#2696dd'}} /> Convert to Versioned Storage
+                <InboxOutlined style={{color: '#2696dd'}} /> Convert to Versioned Storage
               </MenuItem>
             </Menu>
           }
@@ -1418,13 +1434,11 @@ class DataStorage extends React.Component {
             id="edit-storage-button"
             size="small"
           >
-            <Icon
-              type="setting"
+            <SettingOutlined
               style={{
                 lineHeight: 'inherit',
                 verticalAlign: 'middle'
-              }}
-            />
+              }} />
           </Button>
         </Dropdown>
       );
@@ -1434,13 +1448,11 @@ class DataStorage extends React.Component {
         id="edit-storage-button"
         size="small"
         onClick={() => this.openEditDialog()}>
-        <Icon
-          type="setting"
+        <SettingOutlined
           style={{
             lineHeight: 'inherit',
             verticalAlign: 'middle'
-          }}
-        />
+          }} />
       </Button>
     );
   };
@@ -1556,13 +1568,13 @@ class DataStorage extends React.Component {
                         id="create-folder-button"
                         className="create-folder-button"
                         key={folderKey}>
-                        <Icon type="folder" /> Folder
+                        <FolderOutlined /> Folder
                       </MenuItem>
                       <MenuItem
                         id="create-file-button"
                         className="create-file-button"
                         key={fileKey}>
-                        <Icon type="file" /> File
+                        <FileOutlined /> File
                       </MenuItem>
                     </Menu>
                   }
@@ -1571,7 +1583,7 @@ class DataStorage extends React.Component {
                     type="primary"
                     id="create-button"
                     size="small">
-                    <Icon type="plus" /> Create <Icon type="down" />
+                    <PlusOutlined /> Create <DownOutlined />
                   </Button>
                 </Dropdown>
               }
@@ -1626,12 +1638,12 @@ class DataStorage extends React.Component {
             id="prev-page-button"
             onClick={this.prevPage}
             disabled={this.state.currentPage === 0}
-            style={{margin: 3}} size="small"><Icon type="caret-left" /></Button>
+            style={{margin: 3}} size="small"><CaretLeftOutlined /></Button>
           <Button
             id="next-page-button"
             onClick={this.nextPage}
             disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-            style={{margin: 3}} size="small"><Icon type="caret-right" /></Button>
+            style={{margin: 3}} size="small"><CaretRightOutlined /></Button>
         </Row>
       ];
     } else if (this.props.storage.error) {

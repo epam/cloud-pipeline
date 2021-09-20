@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, InputNumber, Modal, Row, Select, TimePicker} from 'antd';
+import {DeleteOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
+import {Button, InputNumber, Modal, Row, Select, TimePicker} from 'antd';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
@@ -408,7 +409,7 @@ export default class RunScheduleDialog extends React.Component {
                 <Button
                   onClick={() => { this.onRuleRemove(i); }}
                   shape="circle"
-                  icon="delete"
+                  icon={<DeleteOutlined />}
                   size="small"
                   style={{marginRight: 15}}
                   type="danger"
@@ -417,7 +418,7 @@ export default class RunScheduleDialog extends React.Component {
                 <Button
                   onClick={() => { this.onRuleRestore(i); }}
                   shape="circle"
-                  icon="reload"
+                  icon={<ReloadOutlined />}
                   size="small"
                 />
               )
@@ -444,7 +445,7 @@ export default class RunScheduleDialog extends React.Component {
           {rules.map(this.renderRule)}
         </Row>
         <Row type="flex" style={{padding: 5}}>
-          <Button size="small" onClick={this.onAddRow}><Icon type="plus" /> Add rule</Button>
+          <Button size="small" onClick={this.onAddRow}><PlusOutlined /> Add rule</Button>
         </Row>
       </Modal>
     );

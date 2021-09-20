@@ -16,7 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Col, Spin, Select, Icon, Checkbox, Tabs} from 'antd';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Modal, Input, Row, Col, Spin, Select, Checkbox, Tabs} from 'antd';
 import NotificationView from '../../special/notifications/controls/NotificationView';
 import styles from './EditSystemNotificationForm.css';
 
@@ -139,13 +142,13 @@ export default class EditSystemNotificationForm extends React.Component {
           })(
           <Select>
             <Select.Option key="INFO" value="INFO" title="Info">
-              <Icon type="info-circle-o" className={styles.info} /> Info
+              <InfoCircleOutlined className={styles.info} /> Info
             </Select.Option>
             <Select.Option key="WARNING" value="WARNING" title="Warning">
-              <Icon type="exclamation-circle-o" className={styles.warning} /> Warning
+              <ExclamationCircleOutlined className={styles.warning} /> Warning
             </Select.Option>
             <Select.Option key="CRITICAL" value="CRITICAL" title="Critical">
-              <Icon type="close-circle-o" className={styles.critical} /> Critical
+              <CloseCircleOutlined className={styles.critical} /> Critical
             </Select.Option>
           </Select>
         )}

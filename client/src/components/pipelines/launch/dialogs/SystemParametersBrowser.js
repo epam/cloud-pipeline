@@ -18,16 +18,8 @@ import React, {Component} from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {
-  Alert,
-  Button,
-  Icon,
-  Input,
-  Modal,
-  Popover,
-  Row,
-  Table
-} from 'antd';
+import {CheckCircleOutlined} from '@ant-design/icons';
+import {Alert, Button, Input, Modal, Popover, Row, Table} from 'antd';
 import styles from './Browser.css';
 
 @inject('runDefaultParameters')
@@ -126,7 +118,7 @@ export default class SystemParametersBrowser extends Component {
                 }}>
                   {
                     this.isParameterSelected(parameter) &&
-                    <Icon type="check-circle" style={{width: 20}} />
+                    <CheckCircleOutlined style={{width: 20}} />
                   }
                   {name}
                 </Row>
@@ -145,7 +137,7 @@ export default class SystemParametersBrowser extends Component {
             }}>
               {
                 this.isParameterSelected(parameter) &&
-                <Icon type="check-circle" style={{width: 20}} />
+                <CheckCircleOutlined style={{width: 20}} />
               }
               {name}
             </span>

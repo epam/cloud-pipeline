@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as diff2html from 'diff2html';
-import {Collapse, Icon} from 'antd';
+import {FileTextOutlined} from '@ant-design/icons';
+import {Collapse} from 'antd';
 import classNames from 'classnames';
 import rawTemplates from './raw-templates';
 import styles from './diff.css';
@@ -123,7 +124,7 @@ class FileDiffPresenter extends React.PureComponent {
       return (
         <div key="description">
           <div className={styles.fileDiffHeader}>
-            <Icon type="file-text" />
+            <FileTextOutlined />
             <span>{file}</span>
             <span
               className={classNames(styles.type, styles[type.toLowerCase()])}

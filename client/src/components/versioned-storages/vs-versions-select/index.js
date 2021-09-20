@@ -16,11 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Alert,
-  Icon,
-  Select
-} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Alert, Select} from 'antd';
 import LoadVSCommits from '../../../models/versioned-storage/load-commits';
 import styles from './vs-versions-select.css';
 import UserName from '../../special/UserName';
@@ -246,7 +243,7 @@ class VSVersions extends React.Component {
               >
                 {
                   pending && (
-                    <Icon type="loading" />
+                    <LoadingOutlined />
                   )
                 }
                 <i>

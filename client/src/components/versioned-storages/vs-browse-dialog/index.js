@@ -18,14 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {
-  Alert,
-  Button,
-  Icon,
-  Input,
-  Modal,
-  Table
-} from 'antd';
+import {CheckOutlined} from '@ant-design/icons';
+import {Alert, Button, Input, Modal, Table} from 'antd';
 import VSVersions from '../vs-versions-select';
 import styles from './vs-browse-dialog.css';
 
@@ -44,7 +38,7 @@ class VSBrowseDialog extends React.Component {
   vsTableColumns = [{
     key: 'selection',
     className: styles.checkCell,
-    render: () => (<Icon type="check" className={styles.check} />),
+    render: () => (<CheckOutlined className={styles.check} />),
     onCell: storage => ({
       onClick: () => this.wrapPromiseAction(this.onSelectStorage)(storage)
     })

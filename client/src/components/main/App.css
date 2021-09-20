@@ -28,6 +28,13 @@
   background-color: #fafafa;
 }
 
+.layout-sider {
+  flex-basis: 64px !important;
+  max-width: 64px !important;
+  min-width: 64px !important;
+  width: 64px !important;
+}
+
 .content-wrapper {
   padding: 5px;
   text-align: left;

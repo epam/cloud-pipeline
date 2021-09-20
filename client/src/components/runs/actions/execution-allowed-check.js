@@ -17,13 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {
-  Button,
-  Icon,
-  Popover,
-  Row,
-  Dropdown
-} from 'antd';
+import {DownOutlined, ExclamationCircleOutlined} from '@ant-design/icons';
+import {Button, Popover, Row, Dropdown} from 'antd';
 import roleModel from '../../../utils/roleModel';
 
 const SCHEMAS = /^(gs:\/\/|s3:\/\/|az:\/\/|cp:\/\/)/i;
@@ -297,7 +292,7 @@ export async function performAsyncCheck (props, state = undefined) {
 export function PermissionErrorsTitle () {
   return (
     <Row style={{fontWeight: 'bold'}}>
-      <Icon type="exclamation-circle-o" style={{marginRight: 5, color: 'orange'}} />
+      <ExclamationCircleOutlined style={{marginRight: 5, color: 'orange'}} />
       <span>Permission issues</span>
     </Row>
   );
@@ -392,7 +387,7 @@ class SubmitButton extends React.Component {
           style={style}
           disabled={pending || errors.length > 0}
         >
-          {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+          {errors.length > 0 ? <ExclamationCircleOutlined /> : null}
           {children}
         </Button>
         <Dropdown
@@ -408,12 +403,10 @@ class SubmitButton extends React.Component {
             }}
             type="primary"
           >
-            <Icon
-              type="down"
+            <DownOutlined
               style={{
                 lineHeight: 'inherit'
-              }}
-            />
+              }} />
           </Button>
         </Dropdown>
       </Button.Group>
@@ -427,7 +420,7 @@ class SubmitButton extends React.Component {
         onClick={onClick}
         size={size}
       >
-        {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+        {errors.length > 0 ? <ExclamationCircleOutlined /> : null}
         {children}
       </Button>
     );

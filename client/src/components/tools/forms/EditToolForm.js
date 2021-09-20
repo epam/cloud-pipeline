@@ -18,19 +18,10 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Checkbox,
-  Col,
-  Collapse,
-  Form,
-  Icon,
-  Input,
-  Modal,
-  Row,
-  Select,
-  Tag
-} from 'antd';
+import {SettingOutlined} from '@ant-design/icons';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Checkbox, Col, Collapse, Input, Modal, Row, Select, Tag} from 'antd';
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
 import CodeEditor from '../../special/CodeEditor';
 import {getSpotTypeName} from '../../special/spot-instance-names';
@@ -1244,7 +1235,7 @@ export default class EditToolForm extends React.Component {
                         <a
                           onClick={this.openConfigureClusterDialog}
                           style={{color: '#777', textDecoration: 'underline'}}>
-                          <Icon type="setting" /> {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
+                          <SettingOutlined /> {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>
                       </Row>
                     </Col>

@@ -20,7 +20,9 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row} from 'antd';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {renderAttributes} from './renderAttributes';
@@ -87,7 +89,7 @@ export default class FolderPreview extends React.Component {
     if (this.props.folder.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -192,10 +194,10 @@ export default class FolderPreview extends React.Component {
                       <td style={firstCellStyle}>
                         {
                           PreviewIcons[item.type]
-                            ? <Icon
+                            ? <LegacyIcon
                               className={styles.searchResultItemIcon}
                               type={PreviewIcons[item.type]} />
-                            : item.icon && <Icon
+                            : item.icon && <LegacyIcon
                               className={styles.searchResultItemIcon}
                               type={item.icon} />
                         }
@@ -235,7 +237,7 @@ export default class FolderPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
         </div>

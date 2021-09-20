@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
-import {Button, Modal, Form, Input, Row, Spin, Tabs} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Modal, Input, Row, Spin, Tabs} from 'antd';
 import {inject} from 'mobx-react';
 import PropTypes from 'prop-types';
 import PermissionsForm from '../../../roleModel/PermissionsForm';

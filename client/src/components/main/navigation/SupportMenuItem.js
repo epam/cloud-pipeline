@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, Popover} from 'antd';
+import {CustomerServiceOutlined} from '@ant-design/icons';
+import {Button, Popover} from 'antd';
 
 function replaceLineBreaks (text) {
   if (!text) {
@@ -73,7 +74,7 @@ class SupportMenuItem extends React.Component {
           className={className}
           style={style}
         >
-          <Icon type="customer-service" />
+          <CustomerServiceOutlined />
         </Button>
       </Popover>
     );

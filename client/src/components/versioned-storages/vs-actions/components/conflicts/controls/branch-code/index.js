@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {CloseOutlined} from '@ant-design/icons';
 import Caret from './caret';
 import getClassNameForChange from './utilities/class-name-for-change';
 import getStyleForChange from './utilities/style-for-change';
@@ -914,7 +915,7 @@ function renderLineNumberWithActions (line, props) {
     )
       ? [
         (
-          <Icon
+          <LegacyIcon
             className={styles.action}
             key="apply"
             type={rtl ? 'double-left' : 'double-right'}
@@ -924,14 +925,12 @@ function renderLineNumberWithActions (line, props) {
           />
         ),
         (
-          <Icon
+          <CloseOutlined
             className={styles.action}
             key="omit"
-            type="close"
             onMouseDown={e => e.stopPropagation()}
             onClick={wrapAction(modification, modification.discard, onRefresh)}
-            tabIndex={0}
-          />
+            tabIndex={0} />
         )
       ]
       : [];

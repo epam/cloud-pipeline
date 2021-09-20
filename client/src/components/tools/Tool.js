@@ -18,12 +18,26 @@ import React from 'react';
 import {withRouter} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CameraOutlined,
+  CheckCircleOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  ExclamationCircleOutlined,
+  LinkOutlined,
+  LoadingOutlined,
+  SettingOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
+
 import {
   Alert,
   Button,
   Card,
   Col,
-  Icon,
   Input,
   Menu as MenuHorizontal,
   message,
@@ -382,9 +396,7 @@ class Tool extends localization.LocalizedReactComponent {
     } else {
       image = (
         <Row type="flex" align="middle" justify="center" className={styles.noImageContainer}>
-          <Icon
-            className={styles.noImage}
-            type="camera-o" />
+          <CameraOutlined className={styles.noImage} />
         </Row>
       );
     }
@@ -439,8 +451,7 @@ class Tool extends localization.LocalizedReactComponent {
             showUploadList={false}
             beforeUpload={doUpload}>
             <Row type="flex" align="middle" justify="center" className={styles.uploadToolImage}>
-              <Icon
-                type="upload"
+              <UploadOutlined
                 style={
                   this.props.tool.value.iconId
                     ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'}
@@ -569,7 +580,7 @@ class Tool extends localization.LocalizedReactComponent {
     if (registry && roleModel.readAllowed(this.props.tool.value) && registry.pipelineAuth) {
       const renderPullCommand = () => {
         if (!registry) {
-          return <Icon type="loading" />;
+          return <LoadingOutlined />;
         }
         return `docker pull ${registry.externalUrl || registry.path}/${this.props.tool.value.image}`;
       };
@@ -999,7 +1010,7 @@ class Tool extends localization.LocalizedReactComponent {
                     e.stopPropagation();
                     this.deleteToolVersionConfirm(version.name);
                   }}>
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               )
             }
@@ -1557,7 +1568,7 @@ class Tool extends localization.LocalizedReactComponent {
             }}>
             {
               tooltip && !notLoaded
-                ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                ? <ExclamationCircleOutlined style={{marginRight: 5}} />
                 : undefined
             }
             Run
@@ -1585,7 +1596,7 @@ class Tool extends localization.LocalizedReactComponent {
             }}>
             {
               tooltip && !notLoaded
-                ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                ? <ExclamationCircleOutlined style={{marginRight: 5}} />
                 : undefined
             }
             Run
@@ -1656,7 +1667,7 @@ class Tool extends localization.LocalizedReactComponent {
                 }}>
                 {
                   tooltip && !notLoaded
-                    ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                    ? <ExclamationCircleOutlined style={{marginRight: 5}} />
                     : undefined
                 }
                 <span style={{verticalAlign: 'middle', lineHeight: 'inherit'}}>Run</span>
@@ -1674,7 +1685,7 @@ class Tool extends localization.LocalizedReactComponent {
                 }}
                 size="small"
                 type="primary">
-                <Icon type="down" style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
+                <DownOutlined style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
               </Button>
             </Dropdown>
           </Button.Group>
@@ -1698,7 +1709,7 @@ class Tool extends localization.LocalizedReactComponent {
         key="metadata">
         <Row type="flex" justify="space-between" align="middle">
           <span>Attributes</span>
-          <Icon type="check-circle" style={{display: this.state.metadata ? 'inherit' : 'none'}} />
+          <CheckCircleOutlined style={{display: this.state.metadata ? 'inherit' : 'none'}} />
         </Row>
       </MenuItem>
     );
@@ -1708,7 +1719,7 @@ class Tool extends localization.LocalizedReactComponent {
         key="issues">
         <Row type="flex" justify="space-between" align="middle">
           <span>{this.localizedString('Issue')}s</span>
-          <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
+          <CheckCircleOutlined style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
         </Row>
       </MenuItem>
     );
@@ -1723,8 +1734,7 @@ class Tool extends localization.LocalizedReactComponent {
           key="instanceTypeManagement">
           <Row type="flex" justify="space-between" align="middle">
             <span>Instance management</span>
-            <Icon
-              type="check-circle"
+            <CheckCircleOutlined
               style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
@@ -1747,7 +1757,7 @@ class Tool extends localization.LocalizedReactComponent {
         <Button
           id="display-attributes"
           size="small">
-          <Icon type="appstore" style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
+          <AppstoreOutlined style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -1816,7 +1826,7 @@ class Tool extends localization.LocalizedReactComponent {
           size="small"
           onClick={this.openCreateLinkForm}
         >
-          <Icon type="link" />
+          <LinkOutlined />
         </Button>
       );
     }
@@ -1839,18 +1849,18 @@ class Tool extends localization.LocalizedReactComponent {
         selectedKeys={[]}
       >
         <MenuItem key={permissionsKey}>
-          <Icon type="setting" /> Permissions
+          <SettingOutlined /> Permissions
         </MenuItem>
         <Divider />
         <MenuItem key={deleteKey} style={{color: 'red'}}>
-          <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
+          <DeleteOutlined /> Delete tool {this.link ? 'link' : false}
         </MenuItem>
       </Menu>
     );
     return (
       <Dropdown overlay={menu} placement="bottomRight">
         <Button id="setting-button" size="small">
-          <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+          <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         </Button>
       </Dropdown>
     );
@@ -1892,7 +1902,7 @@ class Tool extends localization.LocalizedReactComponent {
                   onClick={this.navigateBack}
                   size="small"
                   style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
-                  <Icon type="arrow-left" />
+                  <ArrowLeftOutlined />
                 </Button>
                 <ToolLink link={this.link} style={{marginLeft: 5}} />
                 <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>

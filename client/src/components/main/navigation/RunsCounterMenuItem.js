@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row, Button, Tooltip} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row, Button, Tooltip} from 'antd';
 import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 
@@ -48,7 +49,7 @@ export default class RunsCounterMenuItem extends React.Component {
             justify="center"
             align="middle"
             style={{height: '100%'}}>
-            <Icon
+            <LegacyIcon
               type={this.props.icon}
               className={
                 this.props.counter &&

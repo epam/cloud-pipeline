@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
-import {Dropdown, Icon} from 'antd';
+import {DoubleLeftOutlined, DoubleRightOutlined} from '@ant-design/icons';
+import {Dropdown} from 'antd';
 import PickerButton from './picker-button';
 import styles from './pickers.css';
 
@@ -188,19 +189,15 @@ class QuarterPicker extends React.Component {
     return (
       <div className={styles.overlay}>
         <div className={styles.yearsContainer}>
-          <Icon
+          <DoubleLeftOutlined
             role="button"
             className={leftClassNames.join(' ')}
-            type="double-left"
-            onClick={(e) => canNavigateLeft ? navigateLeft(e) : undefined}
-          />
+            onClick={(e) => canNavigateLeft ? navigateLeft(e) : undefined} />
           <span role="button">{selectedYear}</span>
-          <Icon
+          <DoubleRightOutlined
             role="button"
             className={rightClassNames.join(' ')}
-            type="double-right"
-            onClick={(e) => canNavigateRight ? navigateRight(e) : undefined}
-          />
+            onClick={(e) => canNavigateRight ? navigateRight(e) : undefined} />
         </div>
         <div>
           <div className={styles.row}>

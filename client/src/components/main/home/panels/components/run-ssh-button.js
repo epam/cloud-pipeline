@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Tooltip} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
+import {Tooltip} from 'antd';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../special/multizone-url';
 
@@ -124,10 +126,10 @@ class RunSSHButton extends React.Component {
             style={style}
           >
             {
-              icon && (<Icon type={icon} />)
+              icon && (<LegacyIcon type={icon} />)
             }
             SSH
-            <Icon type="exclamation-circle-o" />
+            <ExclamationCircleOutlined />
           </div>
         </Tooltip>
       );
@@ -142,7 +144,7 @@ class RunSSHButton extends React.Component {
           visibilityChanged={visibilityChanged}
         >
           {
-            icon && (<Icon type={icon} />)
+            icon && (<LegacyIcon type={icon} />)
           }
           <span>SSH</span>
         </MultizoneUrl>
@@ -157,15 +159,12 @@ class RunSSHButton extends React.Component {
         onMouseLeave={this.clearLoadRunSSHConfigurationTimer}
       >
         {
-          icon && (<Icon type={icon} />)
+          icon && (<LegacyIcon type={icon} />)
         }
         <span>SSH</span>
         {
           pending && (
-            <Icon
-              type="loading"
-              style={{marginLeft: 5}}
-            />
+            <LoadingOutlined style={{marginLeft: 5}} />
           )
         }
       </div>

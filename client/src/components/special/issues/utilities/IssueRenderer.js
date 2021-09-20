@@ -24,7 +24,7 @@ import ReactDOMServer from 'react-dom/server';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
-import {Icon} from 'antd';
+import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
 
 const ELEMENT_LINK_STYLE = {
   whiteSpace: 'nowrap',
@@ -167,13 +167,13 @@ export default class IssueRenderer {
         const {linkType, elementName, identifier} = token;
         let icon;
         switch (linkType) {
-          case ItemTypes.pipeline: icon = <Icon type="fork" />; break;
+          case ItemTypes.pipeline: icon = <ForkOutlined />; break;
           case ItemTypes.versionedStorage:
-            icon = <Icon type="inbox" style={{color: '#2796dd'}} />;
+            icon = <InboxOutlined style={{color: '#2796dd'}} />;
             break;
-          case ItemTypes.configuration: icon = <Icon type="setting" />; break;
-          case ItemTypes.storage: icon = <Icon type="hdd" />; break;
-          case 'tool': icon = <Icon type="tool" />; break;
+          case ItemTypes.configuration: icon = <SettingOutlined />; break;
+          case ItemTypes.storage: icon = <HddOutlined />; break;
+          case 'tool': icon = <ToolOutlined />; break;
         }
         const [realLink] = (renderer.pipelineLinks || []).filter(link => {
           return `${link.id}` === `${identifier}` && link.type === linkType;

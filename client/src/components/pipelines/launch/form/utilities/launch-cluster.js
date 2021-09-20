@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, InputNumber, Icon, Modal, Radio, Row, Select} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
+import {Checkbox, InputNumber, Modal, Radio, Row, Select} from 'antd';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
@@ -541,7 +542,7 @@ class ConfigureClusterDialog extends React.Component {
             <a
               onClick={onUnsetChildNodes}
               style={{color: '#666', textDecoration: 'underline', marginLeft: 5}}>
-              <Icon type="close" /> Reset
+              <CloseOutlined /> Reset
             </a>
           </Row>
         ];

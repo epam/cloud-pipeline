@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Icon, Row} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row} from 'antd';
 import classNames from 'classnames';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import renderHighlights from './renderHighlights';
@@ -380,7 +382,7 @@ export default class PipelineRunPreview extends React.Component {
             type="flex"
             justify="center"
           >
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }
@@ -484,7 +486,7 @@ export default class PipelineRunPreview extends React.Component {
             type="flex"
             justify="center"
           >
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }
@@ -551,7 +553,7 @@ export default class PipelineRunPreview extends React.Component {
                   />
                 )
                 : (
-                  <Icon
+                  <LegacyIcon
                     type={PreviewIcons[this.props.item.type]}
                     style={{fontSize: 'smaller'}}
                   />

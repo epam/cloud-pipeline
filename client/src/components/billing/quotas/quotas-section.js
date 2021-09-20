@@ -17,7 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Alert, Button, Icon, message} from 'antd';
+
+import {
+  PlusOutlined,
+  SettingOutlined,
+  SolutionOutlined,
+  TeamOutlined,
+  UserOutlined
+} from '@ant-design/icons';
+
+import {Alert, Button, message} from 'antd';
 import QuotaDescription from './quota-description';
 import EditQuotaDialog from './quota-edit-dialog';
 import QuotaTemplatesDialog from './templates-dialog';
@@ -171,9 +180,9 @@ class QuotasSection extends React.Component {
       }
       let icon;
       switch (type) {
-        case billing.quotas.keys.billingCenters: icon = (<Icon type="solution" />); break;
-        case billing.quotas.keys.user: icon = (<Icon type="user" />); break;
-        case billing.quotas.keys.group: icon = (<Icon type="team" />); break;
+        case billing.quotas.keys.billingCenters: icon = (<SolutionOutlined />); break;
+        case billing.quotas.keys.user: icon = (<UserOutlined />); break;
+        case billing.quotas.keys.group: icon = (<TeamOutlined />); break;
       }
       const {name} = quotaTarget;
       return (
@@ -228,7 +237,7 @@ class QuotasSection extends React.Component {
                     size="small"
                     onClick={this.addNewQuota}
                   >
-                    <Icon type="plus" />
+                    <PlusOutlined />
                   </Button>
                 )
               }
@@ -240,7 +249,7 @@ class QuotasSection extends React.Component {
                     size="small"
                     onClick={this.openQuotaTemplatesDialog}
                   >
-                    <Icon type="setting" />
+                    <SettingOutlined />
                   </Button>
                 )
               }

@@ -18,7 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Alert, Button, Icon, message, Modal, Row, Tooltip} from 'antd';
+
+import {
+  ArrowLeftOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
+
+import {Alert, Button, message, Modal, Row, Tooltip} from 'antd';
 import IssueCommentPreview from './controls/IssueCommentPreview';
 import IssueComment from './controls/IssueComment';
 import styles from './Issues.css';
@@ -274,12 +283,12 @@ export default class Issue extends localization.LocalizedReactComponent {
             disabled={this.state.editableCommentText === this.state.editableCommentOriginalText}
             key="apply"
             onClick={this.onApplyEditCommentClicked}>
-            <Icon type="check" />
+            <CheckOutlined />
           </a>
         );
         actions.push(
           <a key="cancel" onClick={this.onCancelEditCommentClicked}>
-            <Icon type="close" />
+            <CloseOutlined />
           </a>
         );
       } else {
@@ -290,7 +299,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               key="edit"
               disabled={disabled}
               onClick={() => this.onEditCommentClicked(comment)}>
-              <Icon type="edit" />
+              <EditOutlined />
             </a>
           );
         }
@@ -300,7 +309,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               key="delete"
               disabled={disabled}
               onClick={() => this.onDeleteCommentClicked(comment)}>
-              <Icon type="delete" />
+              <DeleteOutlined />
             </a>
           );
         }
@@ -450,7 +459,7 @@ export default class Issue extends localization.LocalizedReactComponent {
                   size="small"
                   onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
                   style={{marginRight: 5}}>
-                  <Icon type="arrow-left" />
+                  <ArrowLeftOutlined />
                 </Button>
                 <EditableField
                   inputId="issue-name"
@@ -477,7 +486,7 @@ export default class Issue extends localization.LocalizedReactComponent {
                   disabled={this.state.operationInProgress || this.editCommentInAction}
                   type="danger"
                   onClick={this.deleteIssueConfirm}>
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </a>
               }
             </td>

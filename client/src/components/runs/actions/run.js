@@ -18,16 +18,8 @@ import React from 'react';
 import {inject, observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
-import {
-  Alert,
-  Button,
-  Icon,
-  message,
-  Modal,
-  Row,
-  Select,
-  Tooltip
-} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import {Alert, Button, message, Modal, Row, Select, Tooltip} from 'antd';
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeServices';
@@ -1102,7 +1094,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             style={{margin: 2}}
             message={
               this._estimatedPriceType.pending
-                ? <Row>Estimated price: <Icon type="loading" /></Row>
+                ? <Row>Estimated price: <LoadingOutlined /></Row>
                 : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
                 (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
                   .toFixed(2)

@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Row} from 'antd';
+import {LoadingOutlined, SettingOutlined} from '@ant-design/icons';
+import {Row} from 'antd';
 import daysOfWeek from './days-of-week';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 import RunScheduleDialog from './run-scheduling-dialog';
@@ -81,7 +82,7 @@ export default class RunSchedulingList extends React.Component {
         key="configure scheduling trigger"
         onClick={this.openRunSchedulingDialog}
         style={{color: '#777', textDecoration: 'underline'}}>
-        <Icon type="setting" />
+        <SettingOutlined />
         Configure
       </a>
     );
@@ -129,7 +130,7 @@ export default class RunSchedulingList extends React.Component {
   render () {
     const {pending} = this.props;
     if (pending) {
-      return <Icon type="loading" />;
+      return <LoadingOutlined />;
     }
 
     return (

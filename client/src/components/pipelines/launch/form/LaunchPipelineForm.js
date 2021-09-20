@@ -18,14 +18,26 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {action, computed, observable} from 'mobx';
+
+import {
+  CodeOutlined,
+  DownOutlined,
+  ExportOutlined,
+  InfoCircleOutlined,
+  MinusCircleOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+
+import {Form, Icon as LegacyIcon} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
 import {
   Alert,
   Button,
   Checkbox,
   Col,
   Collapse,
-  Form,
-  Icon,
   Input,
   message,
   Modal,
@@ -1668,9 +1680,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           placement="bottom"
           content={this.renderEstimatedPriceTable(this.multiplyValueBy)}
           trigger="hover">
-          <Icon
-            className={styles.hint}
-            type="info-circle" />
+          <InfoCircleOutlined className={styles.hint} />
         </Popover>
       );
       const {pricePerHour} = this.state.estimatedPrice;
@@ -2039,7 +2049,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     onClick={() =>
                       !(this.props.readOnly && !this.props.canExecute) &&
                       this.openBucketBrowser(sectionName, key, value, type)}>
-                    <Icon type={icon} />
+                    <LegacyIcon type={icon} />
                   </div>}
                 placeholder="Path"
               />
@@ -2266,7 +2276,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               className={styles.pathType}
               onClick={!(this.props.readOnly && !this.props.canExecute) &&
               this.openPipelineBrowser}>
-              <Icon type="export" />
+              <ExportOutlined />
             </div>
           } />
       </FormItem>
@@ -2362,7 +2372,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <Col key="reload" style={{textAlign: 'center', width: 30}}>
         <Button
           shape="circle"
-          icon="reload"
+          icon={<ReloadOutlined />}
           size="small"
           onClick={this.loadDtsClusterInfo} />
       </Col>
@@ -2722,7 +2732,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         disabled={this.props.readOnly && !this.props.canExecute}
                         style={{padding: '0px 8px'}}
                       >
-                        <Icon type="down" />
+                        <DownOutlined />
                       </Button>
                     </Dropdown>
                   ) : undefined
@@ -3048,13 +3058,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   !(this.props.readOnly && !this.props.canExecute) &&
                   !(this.state.pipeline && this.props.detached)
                     ? (
-                      <Icon
+                      <MinusCircleOutlined
                         id="remove-parameter-button"
                         className="dynamic-delete-button"
-                        type="minus-circle-o"
                         onClick={() => this.removeParameter(sectionName, key)}
-                        style={{marginLeft: 15, width: 15}}
-                      />
+                        style={{marginLeft: 15, width: 15}} />
                     ) : (
                       <div
                         style={{
@@ -4315,7 +4323,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.currentUserName() !== this.props.parameters.run_as
             }
             dockerImage={this.dockerImage}>
-            Run <Icon type="down" />
+            Run <DownOutlined />
           </SubmitButton>
         </Dropdown>
       );
@@ -4379,7 +4387,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
         <span className={styles.itemHeader}>
-          <Icon type={icon} /> {title}
+          <LegacyIcon type={icon} /> {title}
         </span>
         {
           this.getPanelShortDescription(key)
@@ -4799,7 +4807,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     style={{marginRight: 5}}
                     onClick={this.showLaunchCommands}
                   >
-                    <Icon type="code" />
+                    <CodeOutlined />
                   </Button>
                 )
               }
@@ -4922,9 +4930,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
         return [
           <td key="header" className={styles.itemHeader} style={{width: 1, whiteSpace: 'nowrap'}}>
-            <Icon
-              type="play-circle-o"
-              style={{color: '#2282bf'}} />
+            <PlayCircleOutlined style={{color: '#2282bf'}} />
             Launch <b id="launch-form-pipeline-name">{pipelineName}</b> {
               pipelineVersion && <span id="launch-form-pipeline-version">{pipelineVersion}</span>}.
           </td>,
@@ -4993,7 +4999,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         <a
                           onClick={this.openConfigureClusterDialog}
                           style={{color: '#777', textDecoration: 'underline'}}>
-                          <Icon type="setting" />
+                          <SettingOutlined />
                           {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>
                       </Row>

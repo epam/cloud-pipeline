@@ -17,7 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observable} from 'mobx';
-import {Row, Col, Icon, message} from 'antd';
+import {MinusCircleOutlined, PlusCircleOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row, Col, message} from 'antd';
 import styles from './Graph.css';
 import CodeFileCommitForm from '../../code/forms/CodeFileCommitForm';
 import PipelineFilesUpdate from '../../../../../models/pipelines/PipelineFilesUpdate';
@@ -213,17 +215,17 @@ export default class Graph extends React.Component {
     return (
       <Row type="flex" justify="end" className={styles.graphInterface}>
         <Col className={styles.graphInterfaceButton}>
-          <Icon
+          <MinusCircleOutlined
             onClick={() => this.zoomOut()}
-            className={getIconClassName(this.state.canZoomOut)} type="minus-circle-o" />
+            className={getIconClassName(this.state.canZoomOut)} />
         </Col>
         <Col className={styles.graphInterfaceButton}>
-          <Icon
+          <PlusCircleOutlined
             onClick={() => this.zoomIn()}
-            className={getIconClassName(this.state.canZoomIn)} type="plus-circle-o" />
+            className={getIconClassName(this.state.canZoomIn)} />
         </Col>
         <Col className={styles.graphInterfaceButton}>
-          <Icon
+          <LegacyIcon
             onClick={this.toggleFullScreen}
             className={getIconClassName(true)}
             type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />

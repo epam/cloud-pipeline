@@ -16,15 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Input,
-  Modal,
-  Form,
-  Spin,
-  Row,
-  Checkbox
-} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Input, Modal, Spin, Row, Checkbox} from 'antd';
 
 const formItemLayout = {
   labelCol: {

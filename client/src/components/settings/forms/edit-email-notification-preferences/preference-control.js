@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
-import {Icon, Input, InputNumber, Select, Popover} from 'antd';
+import {QuestionCircleOutlined} from '@ant-design/icons';
+import {Input, InputNumber, Select, Popover} from 'antd';
 import styles from './preference-control.css';
 
 function wrapValue (value) {
@@ -111,15 +112,13 @@ class PreferenceControl extends React.Component {
         content={preference.hint}
         placement="left"
       >
-        <Icon
+        <QuestionCircleOutlined
           style={{
             marginLeft: 5,
             marginRight: 10,
             fontSize: 'larger',
             cursor: 'pointer'
-          }}
-          type="question-circle"
-        />
+          }} />
       </Popover>
     );
   };

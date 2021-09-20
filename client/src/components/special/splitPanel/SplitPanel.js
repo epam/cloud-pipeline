@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Row, Icon} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
+import {Row} from 'antd';
 import localization from '../../../utils/localization';
 
 const RESIZER_SIZE = 6;
@@ -217,8 +218,7 @@ export class SplitPanel extends React.Component {
             <span>{info.title || ''}</span>
             {
               info.closable &&
-              <Icon
-                type="close"
+              <CloseOutlined
                 onClick={() => this.props.onPanelClose && info && this.props.onPanelClose(info.key)}
                 style={{cursor: 'pointer'}} />
             }

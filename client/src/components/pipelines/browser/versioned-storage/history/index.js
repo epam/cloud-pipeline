@@ -16,13 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Alert,
-  Badge,
-  Button,
-  Icon,
-  Spin
-} from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined, FilterOutlined} from '@ant-design/icons';
+import {Alert, Badge, Button, Spin} from 'antd';
 import classNames from 'classnames';
 import CommitCard from './commit-card';
 import HistoryFilter from './history-filter';
@@ -248,7 +243,7 @@ class VSHistory extends React.Component {
               disabled={pending}
               onClick={this.openFilters}
             >
-              <Icon type="filter" />
+              <FilterOutlined />
             </Button>
           </Badged>
           <HistoryFilter
@@ -303,7 +298,7 @@ class VSHistory extends React.Component {
             size="small"
             onClick={this.navigateToPreviousPage}
           >
-            <Icon type="caret-left" />
+            <CaretLeftOutlined />
           </Button>
           <Button
             className={styles.paginationButton}
@@ -311,7 +306,7 @@ class VSHistory extends React.Component {
             size="small"
             onClick={this.navigateToNextPage}
           >
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
           </Button>
         </div>
       </div>

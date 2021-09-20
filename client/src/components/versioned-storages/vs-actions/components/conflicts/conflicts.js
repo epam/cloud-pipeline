@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observable} from 'mobx';
 import {observer, Provider} from 'mobx-react';
-import {Icon, Table} from 'antd';
+import {CheckCircleOutlined} from '@ant-design/icons';
+import {Table} from 'antd';
 import classNames from 'classnames';
 import ConflictsSession from './session';
 import Conflict from './conflict';
@@ -176,12 +177,7 @@ class Conflicts extends React.Component {
         dataIndex: 'resolved',
         render: resolved => {
           if (resolved) {
-            return (
-              <Icon
-                className={styles.resolved}
-                type="check-circle"
-              />
-            );
+            return <CheckCircleOutlined className={styles.resolved} />;
           }
           return null;
         }

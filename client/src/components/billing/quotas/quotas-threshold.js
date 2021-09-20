@@ -16,12 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Icon,
-  InputNumber,
-  Select
-} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
+import {Button, InputNumber, Select} from 'antd';
 import * as billing from '../../../models/billing';
 import styles from './quotas.css';
 
@@ -117,7 +113,7 @@ class Threshold extends React.Component {
               type="danger"
               style={{marginLeft: 5}}
             >
-              <Icon type="close" />
+              <CloseOutlined />
             </Button>
           )
         }

@@ -16,14 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Icon,
-  InputNumber,
-  Modal,
-  Row,
-  Select
-} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
+import {Button, InputNumber, Modal, Row, Select} from 'antd';
 import {inject, observer} from 'mobx-react';
 import QuotaThreshold from './quotas-threshold';
 import * as billing from '../../../models/billing';
@@ -312,7 +306,7 @@ class EditQuotaDialog extends React.Component {
           }
           <div className={styles.add}>
             <Button disabled={disabled} size="small" onClick={onAddAction}>
-              <Icon type="plus" /> Add action
+              <PlusOutlined /> Add action
             </Button>
           </div>
           {

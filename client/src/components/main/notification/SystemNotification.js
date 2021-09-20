@@ -17,7 +17,15 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Row, Icon} from 'antd';
+
+import {
+  CloseCircleOutlined,
+  CloseOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+} from '@ant-design/icons';
+
+import {Row} from 'antd';
 import NotificationView from '../../special/notifications/controls/NotificationView';
 import styles from './SystemNotification.css';
 import displayDate from '../../../utils/displayDate';
@@ -95,23 +103,11 @@ export default class SystemNotification extends React.Component {
   renderSeverityIcon = () => {
     switch (this.props.notification.severity) {
       case 'INFO':
-        return (
-          <Icon
-            className={styles[this.props.notification.severity.toLowerCase()]}
-            type="info-circle-o" />
-        );
+        return <InfoCircleOutlined className={styles[this.props.notification.severity.toLowerCase()]} />;
       case 'WARNING':
-        return (
-          <Icon
-            className={styles[this.props.notification.severity.toLowerCase()]}
-            type="exclamation-circle-o" />
-        );
+        return <ExclamationCircleOutlined className={styles[this.props.notification.severity.toLowerCase()]} />;
       case 'CRITICAL':
-        return (
-          <Icon
-            className={styles[this.props.notification.severity.toLowerCase()]}
-            type="close-circle-o" />
-        );
+        return <CloseCircleOutlined className={styles[this.props.notification.severity.toLowerCase()]} />;
       default: return undefined;
     }
   };
@@ -133,9 +129,8 @@ export default class SystemNotification extends React.Component {
             flexDirection: 'row'
           }}>
             <span className={styles.title} style={{flex: 1}}>{this.props.notification.title}</span>
-            <Icon
+            <CloseOutlined
               id="notification-close-button"
-              type="close"
               onClick={this.onClose}
               style={{cursor: 'pointer', marginLeft: 5, marginTop: 5}} />
           </Row>

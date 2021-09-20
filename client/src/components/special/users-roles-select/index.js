@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Select, Icon} from 'antd';
+import {TeamOutlined} from '@ant-design/icons';
+import {Select} from 'antd';
 import Roles from '../../../models/user/Roles';
 import UserName from '../UserName';
 
@@ -201,7 +202,7 @@ class UsersRolesSelect extends React.Component {
                   value={getDataSourceItemValue(role)}
                   title={role.name}
                 >
-                  <Icon type="team" /> {role.displayName}
+                  <TeamOutlined /> {role.displayName}
                 </Select.Option>
               ))
           }

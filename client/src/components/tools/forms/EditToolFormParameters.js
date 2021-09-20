@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
+import {DownOutlined, MinusCircleOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Button, Checkbox, Col, Input, Row, Select} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
@@ -128,7 +130,7 @@ export default class EditToolFormParameters extends React.Component {
                 <Button
                   id="add-parameter-dropdown-button"
                   disabled={this.props.readOnly}>
-                  <Icon type="down" />
+                  <DownOutlined />
                 </Button>
               </Dropdown>
             ) : undefined
@@ -203,7 +205,7 @@ export default class EditToolFormParameters extends React.Component {
         onChange={onChange}
         addonBefore={
           <div style={{cursor: 'pointer'}} onClick={() => this.openBucketBrowser(index)}>
-            <Icon type={icon} />
+            <LegacyIcon type={icon} />
           </div>}
         placeholder="Path"
       />
@@ -287,13 +289,11 @@ export default class EditToolFormParameters extends React.Component {
         <Col>
           {
             !this.props.readOnly &&
-            <Icon
+            <MinusCircleOutlined
               id="remove-parameter-button"
               className="dynamic-delete-button"
-              type="minus-circle-o"
               style={{cursor: 'pointer', marginLeft: 20, marginTop: 7}}
-              onClick={onRemoveParameter}
-            />
+              onClick={onRemoveParameter} />
           }
         </Col>
       </Row>

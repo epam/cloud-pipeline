@@ -17,13 +17,8 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Row,
-  Checkbox,
-  Icon,
-  Popover
-} from 'antd';
+import {BarsOutlined} from '@ant-design/icons';
+import {Button, Row, Checkbox, Popover} from 'antd';
 import {
   SortableContainer,
   SortableElement,
@@ -86,7 +81,7 @@ export default class DropdownWithMultiselect extends React.Component {
       columnNameFn = (o) => o;
     }
     const columns = this.state.columns;
-    const DragHandle = SortableHandle(() => <span><Icon type="bars" /></span>);
+    const DragHandle = SortableHandle(() => <span><BarsOutlined /></span>);
     const SortableItem = SortableElement(({value}) => {
       return (
         <Row className={styles.row}>
@@ -145,7 +140,7 @@ export default class DropdownWithMultiselect extends React.Component {
           onClick={this.openMenu}
           size={size}
         >
-          <Icon type="bars" />
+          <BarsOutlined />
         </Button>
       </Popover>
     );

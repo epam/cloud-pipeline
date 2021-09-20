@@ -18,7 +18,9 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Form, Icon, Input, Row} from 'antd';
+import {Form, Icon as LegacyIcon} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Checkbox, Input, Row} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
 import styles from './PreferenceGroup.css';
@@ -290,7 +292,7 @@ class PreferenceInput extends React.Component {
         className={className}
         style={{width: '100%'}}>
         <Row type="flex" align="middle">
-          <Icon
+          <LegacyIcon
             type={this.state.visible ? 'eye' : 'eye-o'}
             onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
             style={{

@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
-import {Card, Icon, Input, message, Row, Tree} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Card, Input, message, Row, Tree} from 'antd';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
 import {observable} from 'mobx';
@@ -397,7 +398,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
         className={treeItemTitleClassName}>
         {
           icon && (
-            <Icon
+            <LegacyIcon
               type={icon}
               style={
                 Object.assign(
@@ -413,7 +414,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
         }
         {
           subIcon && (
-            <Icon
+            <LegacyIcon
               type={subIcon}
               style={
                 Object.assign(

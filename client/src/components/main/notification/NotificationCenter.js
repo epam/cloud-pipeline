@@ -19,7 +19,8 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import SystemNotification from './SystemNotification';
-import {message, Modal, Button, Row, Icon} from 'antd';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
+import {message, Modal, Button, Row} from 'antd';
 import moment from 'moment-timezone';
 import NotificationView from '../../special/notifications/controls/NotificationView';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
@@ -194,23 +195,11 @@ export default class NotificationCenter extends React.Component {
   renderSeverityIcon = (notification) => {
     switch (notification.severity) {
       case 'INFO':
-        return (
-          <Icon
-            className={styles[notification.severity.toLowerCase()]}
-            type="info-circle-o" />
-        );
+        return <InfoCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
       case 'WARNING':
-        return (
-          <Icon
-            className={styles[notification.severity.toLowerCase()]}
-            type="exclamation-circle-o" />
-        );
+        return <ExclamationCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
       case 'CRITICAL':
-        return (
-          <Icon
-            className={styles[notification.severity.toLowerCase()]}
-            type="close-circle-o" />
-        );
+        return <CloseCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
       default: return undefined;
     }
   };

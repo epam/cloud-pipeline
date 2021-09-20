@@ -19,19 +19,8 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link, withRouter} from 'react-router-dom';
 import FileSaver from 'file-saver';
-import {
-  Alert,
-  Card,
-  Col,
-  Collapse,
-  Icon,
-  Menu,
-  message,
-  Modal,
-  Popover,
-  Row,
-  Spin
-} from 'antd';
+import {ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
+import {Alert, Card, Col, Collapse, Menu, message, Modal, Popover, Row, Spin} from 'antd';
 import SplitPane from 'react-split-pane';
 import {
   PipelineRunCommitCheck,
@@ -1499,13 +1488,11 @@ class Logs extends localization.LocalizedReactComponent {
                   <span>{this.localizedString('Pipeline')} <b>{pipeline.name}</b> has been removed</span>
                 )}
               >
-                <Icon
-                  type="exclamation-circle"
+                <ExclamationCircleOutlined
                   style={{
                     marginLeft: 5,
                     fontSize: 'smaller'
-                  }}
-                />
+                  }} />
               </Popover>
             </span>
           );
@@ -1800,7 +1787,7 @@ class Logs extends localization.LocalizedReactComponent {
             case 'committing':
               previousStatus = (
                 <span>
-                  <Icon type="loading" /> COMMITTING...
+                  <LoadingOutlined /> COMMITTING...
                 </span>
               );
               break;
@@ -1821,7 +1808,7 @@ class Logs extends localization.LocalizedReactComponent {
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
-            case 'committing': CommitStatusButton = <span><Icon type="loading" /> COMMITTING...</span>; break;
+            case 'committing': CommitStatusButton = <span><LoadingOutlined /> COMMITTING...</span>; break;
             case 'failure': CommitStatusButton = <span>COMMIT FAILURE ({commitDate})</span>; break;
             case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;

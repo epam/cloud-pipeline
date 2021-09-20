@@ -20,7 +20,8 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER, VERSION} from '../../../config';
-import {Button, Icon, message, Popover, Row, Tooltip} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Button, message, Popover, Row, Tooltip} from 'antd';
 import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
@@ -158,7 +159,7 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <Icon
+                <LegacyIcon
                   style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
                   type={navigationItem.icon}
                 />
@@ -191,7 +192,7 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <Icon
+                <LegacyIcon
                   style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
                   type={navigationItem.icon}
                 />
@@ -212,7 +213,7 @@ export default class Navigation extends React.Component {
                 className={this.menuItemClassSelector(navigationItem, activeTabPath)}
                 onClick={() => this.navigate({key: navigationItem.key})}
               >
-                <Icon
+                <LegacyIcon
                   style={navigationItem.iconStyle}
                   type={navigationItem.icon}
                 />
@@ -238,7 +239,7 @@ export default class Navigation extends React.Component {
           )
         }
       >
-        <div className={`${styles.navigationInsideContainer} ${searchStyle.join(' ')}`}>
+        <div className={`${searchStyle.join(' ')}`}>
           {
             VERSION &&
             <Popover
@@ -282,7 +283,7 @@ export default class Navigation extends React.Component {
               onClick={this.props.onLibraryCollapsedChange}
               className={styles.navigationMenuItem}
               style={{position: 'absolute', left: 0, bottom: 0, right: 0}}>
-              <Icon type={this.props.collapsed ? 'right' : 'left'} />
+              <LegacyIcon type={this.props.collapsed ? 'right' : 'left'} />
             </Button>
           }
         </div>

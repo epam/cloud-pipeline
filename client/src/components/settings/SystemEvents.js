@@ -1,14 +1,16 @@
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
+
 import {
-  Button,
-  Checkbox,
-  Icon,
-  message,
-  Row,
-  Modal,
-  Table, Alert
-} from 'antd';
+  CloseCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+
+import {Button, Checkbox, message, Row, Modal, Table, Alert} from 'antd';
 import EditSystemNotificationForm from './forms/EditSystemNotificationForm';
 import Notifications from '../../models/notifications/Notifications';
 import UpdateNotification from '../../models/notifications/UpdateNotification';
@@ -99,24 +101,21 @@ export default class SystemEvents extends Component {
     switch (notification.severity) {
       case 'INFO':
         return (
-          <Icon
+          <InfoCircleOutlined
             style={{fontSize: 'larger'}}
-            className={styles[notification.severity.toLowerCase()]}
-            type="info-circle-o" />
+            className={styles[notification.severity.toLowerCase()]} />
         );
       case 'WARNING':
         return (
-          <Icon
+          <ExclamationCircleOutlined
             style={{fontSize: 'larger'}}
-            className={styles[notification.severity.toLowerCase()]}
-            type="exclamation-circle-o" />
+            className={styles[notification.severity.toLowerCase()]} />
         );
       case 'CRITICAL':
         return (
-          <Icon
+          <CloseCircleOutlined
             style={{fontSize: 'larger'}}
-            className={styles[notification.severity.toLowerCase()]}
-            type="close-circle-o" />
+            className={styles[notification.severity.toLowerCase()]} />
         );
       default: return undefined;
     }
@@ -220,14 +219,14 @@ export default class SystemEvents extends Component {
                 id="edit-notification-button"
                 size="small"
                 onClick={() => this.openUpdateNotificationForm(notification)}>
-                <Icon type="edit" />
+                <EditOutlined />
               </Button>
               <Button
                 id="delete-notification-button"
                 size="small"
                 type="danger"
                 onClick={() => this.deleteNotificationConfirm(notification)}>
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </Row>
           );
@@ -254,7 +253,7 @@ export default class SystemEvents extends Component {
                   id="add-notification-button"
                   size="small"
                   onClick={this.openCreateNotificationForm}>
-                  <Icon type="plus" /> ADD
+                  <PlusOutlined /> ADD
                 </Button>
               </Row>
             );
@@ -292,4 +291,4 @@ export default class SystemEvents extends Component {
       </div>
     );
   }
-};
+}

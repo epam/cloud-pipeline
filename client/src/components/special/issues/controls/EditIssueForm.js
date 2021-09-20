@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Form, Input, message, Modal, Row} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Input, message, Modal, Row} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 import styles from './EditIssueForm.css';

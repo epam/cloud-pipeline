@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Alert, Button, Icon, message, Modal, Row} from 'antd';
+import {LoadingOutlined, PlusOutlined} from '@ant-design/icons';
+import {Alert, Button, message, Modal, Row} from 'antd';
 import QuotaTemplateEditDialog from './quota-template-edit-dialog';
 import QuotaDescription from './quota-description';
 import * as billing from '../../../models/billing';
@@ -113,7 +114,7 @@ class TemplatesDialog extends React.Component {
               disabled={disabled}
               onClick={this.onAddTemplateClicked}
             >
-              <Icon type="plus" /> Add template
+              <PlusOutlined /> Add template
             </Button>
           </Row>
         )}
@@ -125,7 +126,7 @@ class TemplatesDialog extends React.Component {
           pending &&
           (
             <Row type="flex" justify="space-around">
-              <Icon type="loading" />
+              <LoadingOutlined />
             </Row>
           )
         }

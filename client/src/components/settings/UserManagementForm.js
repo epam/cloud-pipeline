@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {withRouter} from 'react-router-dom';
+import {BarsOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import {
   Alert,
   Tabs,
@@ -28,7 +29,6 @@ import {
   Input,
   Dropdown,
   Card,
-  Icon,
   Button,
   Modal,
   message,
@@ -334,11 +334,11 @@ export default class UserManagementForm extends React.Component {
         style={{cursor: 'pointer'}}
       >
         <MenuItem key="default">
-          <Icon type="download" style={{marginRight: 10}} />
+          <DownloadOutlined style={{marginRight: 10}} />
           Default configuration
         </MenuItem>
         <MenuItem key="custom">
-          <Icon type="bars" style={{marginRight: 10}} />
+          <BarsOutlined style={{marginRight: 10}} />
           Custom configuration
         </MenuItem>
       </Menu>
@@ -359,7 +359,7 @@ export default class UserManagementForm extends React.Component {
               style={{marginLeft: 5}}
               onClick={this.openCreateUserDialog}
             >
-              <Icon type="plus" />Create user
+              <PlusOutlined />Create user
             </Button>
           )
         }
@@ -379,7 +379,7 @@ export default class UserManagementForm extends React.Component {
               style={{marginLeft: 5}}
               onClick={() => doExport()}
               overlay={exportUserMenu}
-              icon={<Icon type="download" />}
+              icon={<DownloadOutlined />}
             >
               Export users
             </Dropdown.Button>
@@ -506,7 +506,7 @@ export default class UserManagementForm extends React.Component {
                   size="small"
                   onClick={() => this.openEditUserRolesDialog(user)}
                 >
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
               </Row>
             );
@@ -606,7 +606,7 @@ export default class UserManagementForm extends React.Component {
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditRoleDialog(role)}>
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
               </Row>
             );
@@ -674,10 +674,10 @@ export default class UserManagementForm extends React.Component {
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
                 <Button size="small" type="danger" onClick={(e) => this.deleteRoleConfirm(e, role)}>
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               </Row>
             );
@@ -899,7 +899,7 @@ export default class UserManagementForm extends React.Component {
               this.isAdmin && (
                 <div style={{paddingLeft: 10}}>
                   <Button size="small" type="primary" onClick={this.openCreateGroupDialog}>
-                    <Icon type="plus" /> Create group
+                    <PlusOutlined /> Create group
                   </Button>
                 </div>
               )

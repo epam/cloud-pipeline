@@ -17,14 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Icon,
-  Input,
-  Dropdown,
-  Checkbox,
-  Tag,
-  Spin
-} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
+import {Input, Dropdown, Checkbox, Tag, Spin} from 'antd';
 import styles from './styles.css';
 
 class MultiSelect extends React.Component {
@@ -175,14 +169,12 @@ class MultiSelect extends React.Component {
               size="small"
             />) : this.renderTags()
           }
-          <Icon
+          <DownOutlined
             className={classNames(
               styles.inputArrow,
               {[styles.expanded]: dropdownVisible}
             )}
-            type="down"
-            style={{fontSize: '10px'}}
-          />
+            style={{fontSize: '10px'}} />
         </div>
       </Dropdown>
     );

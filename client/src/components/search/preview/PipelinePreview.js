@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Icon, Row} from 'antd';
+import {DatabaseOutlined, LoadingOutlined, TagOutlined} from '@ant-design/icons';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -90,7 +92,7 @@ export default class PipelinePreview extends React.Component {
   renderVersions = () => {
     if (this.props.versions) {
       if (this.props.versions.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+        return <Row className={styles.contentPreview} type="flex" justify="center"><LoadingOutlined /></Row>;
       }
       if (this.props.versions.error) {
         return (
@@ -119,7 +121,7 @@ export default class PipelinePreview extends React.Component {
                 versions.map((version, index) => {
                   return (
                     <tr key={index}>
-                      <td style={cellStyle}><Icon type="tag" /> {version.name}</td>
+                      <td style={cellStyle}><TagOutlined /> {version.name}</td>
                       <td style={cellStyle}>{version.message}</td>
                       <td style={cellStyle}>{displayDate(version.createdDate, 'LL')}</td>
                     </tr>
@@ -137,7 +139,7 @@ export default class PipelinePreview extends React.Component {
   renderRunHistory = () => {
     if (this.props.history) {
       if (this.props.history.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+        return <Row className={styles.contentPreview} type="flex" justify="center"><LoadingOutlined /></Row>;
       }
       if (this.props.history.error) {
         return (
@@ -164,7 +166,7 @@ export default class PipelinePreview extends React.Component {
         } = run;
         let clusterIcon;
         if (run.nodeCount > 0) {
-          clusterIcon = <Icon type="database" />;
+          clusterIcon = <DatabaseOutlined />;
         }
         return (
           <span><StatusIcon run={run} small /> {clusterIcon} {podId}</span>
@@ -227,7 +229,7 @@ export default class PipelinePreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
           {

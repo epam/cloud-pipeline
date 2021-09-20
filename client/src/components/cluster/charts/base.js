@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Icon} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
 import styles from './chart.css';
 
 const TITLE_HEIGHT = 26;
@@ -119,7 +119,7 @@ class Chart extends React.Component {
         className={styles.title}
         style={{height}}
       >
-        <Icon
+        <LegacyIcon
           type={'loading'}
           style={{opacity: data && data.pending ? 1 : 0, marginRight: 5}}
         />
@@ -213,12 +213,12 @@ class Chart extends React.Component {
       <div
         className={styles.zoomControls}
       >
-        <Icon
+        <LegacyIcon
           className={zoomInClassNames.join(' ')}
           type={'plus-circle-o'}
           onClick={zoomIn}
         />
-        <Icon
+        <LegacyIcon
           className={zoomOutClassNames.join(' ')}
           type={'minus-circle-o'}
           onClick={zoomOut}

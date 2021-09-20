@@ -17,11 +17,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+
+import {
+  CaretRightOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  LockOutlined,
+} from '@ant-design/icons';
+
 import {
   Alert,
   Button,
   Checkbox,
-  Icon,
   Input,
   message,
   Modal,
@@ -511,7 +518,7 @@ class UserIntegrityCheck extends React.Component {
               >
                 <span className={styles.userNameCell}>
                   {
-                    blocked && (<Icon type="lock" />)
+                    blocked && (<LockOutlined />)
                   }
                   <UserName userName={user.userName} />
                 </span>
@@ -530,10 +537,7 @@ class UserIntegrityCheck extends React.Component {
                         </ul>
                       )}
                     >
-                      <Icon
-                        type="exclamation-circle-o"
-                        className={styles.issues}
-                      />
+                      <ExclamationCircleOutlined className={styles.issues} />
                     </Tooltip>
                   )
                 }
@@ -607,19 +611,14 @@ class UserIntegrityCheck extends React.Component {
                                   <div>This is linked value</div>
                                   <div className={styles.linkDescription}>
                                     <span>{fieldParentLink.from}:{fieldParentLink.fromValue}</span>
-                                    <Icon
-                                      type="caret-right"
-                                    />
+                                    <CaretRightOutlined />
                                     <span>{fieldParentLink.to}:{fieldParentLink.toValue}</span>
                                   </div>
                                 </div>
                               )}
                               getPopupContainer={node => node.parentNode}
                             >
-                              <Icon
-                                className={styles.cellInfo}
-                                type="info-circle"
-                              />
+                              <InfoCircleOutlined className={styles.cellInfo} />
                             </Tooltip>
                           )
                         }

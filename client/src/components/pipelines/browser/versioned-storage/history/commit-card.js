@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {TagOutlined} from '@ant-design/icons';
 import CommitDiffButton from './commit-diff-button';
 import UserName from '../../../../special/UserName';
 import displayDate from '../../../../../utils/displayDate';
@@ -79,7 +79,7 @@ function CommitCard (
               <span
                 className={styles.sha}
               >
-                <Icon type="tag" />
+                <TagOutlined />
                 {commit.commit.slice(0, 7)}
               </span>
             )

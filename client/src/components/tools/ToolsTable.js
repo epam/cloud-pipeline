@@ -17,7 +17,8 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Button, Col, Row, Icon} from 'antd';
+import {ExportOutlined, MessageOutlined} from '@ant-design/icons';
+import {Button, Col, Row} from 'antd';
 import ToolLink from './elements/ToolLink';
 import ToolImage from '../../models/tools/ToolImage';
 import highlightText from '../special/highlightText';
@@ -95,7 +96,7 @@ export default class ToolsTable extends React.Component {
               <ToolLink link={tool.link} style={{margin: '0px 3px', fontSize: 'larger'}} />
               {
                 tool.endpoints && tool.endpoints.length > 0
-                  ? (<Icon type="export" style={{margin: '0px 3px', fontSize: 'larger'}} />)
+                  ? (<ExportOutlined style={{margin: '0px 3px', fontSize: 'larger'}} />)
                   : undefined
               }
               {highlightText(tool.image, this.props.searchString)}
@@ -128,7 +129,7 @@ export default class ToolsTable extends React.Component {
               }}
               key="issues"
               size="small">
-              <Icon type="message" />{tool.issuesCount > 0 ? ` ${tool.issuesCount}` : undefined}
+              <MessageOutlined />{tool.issuesCount > 0 ? ` ${tool.issuesCount}` : undefined}
             </Button>
           </Row>
         }

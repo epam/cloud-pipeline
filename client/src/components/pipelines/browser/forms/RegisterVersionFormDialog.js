@@ -15,7 +15,9 @@
  */
 
 import React, {Component} from 'react';
-import {Button, Form, Input, Modal, Row, Spin} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Input, Modal, Row, Spin} from 'antd';
 import {inject} from 'mobx-react';
 
 @Form.create()

@@ -18,7 +18,9 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import styles from './HomePage.css';
-import {Row, Icon, Tooltip} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {CloseOutlined, QuestionCircleOutlined} from '@ant-design/icons';
+import {Row, Tooltip} from 'antd';
 import {
   Panels,
   PanelIcons,
@@ -89,7 +91,7 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
     let icon;
     if (PanelIcons[this.props.panelKey]) {
       icon = (
-        <Icon
+        <LegacyIcon
           type={PanelIcons[this.props.panelKey]}
           style={{
             fontSize: 'larger',
@@ -113,13 +115,12 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
           {
             info &&
             <Tooltip title={info} placement="left">
-              <Icon type="question-circle" style={{fontSize: 'larger'}} />
+              <QuestionCircleOutlined style={{fontSize: 'larger'}} />
             </Tooltip>
           }
           {
             this.props.closable &&
-            <Icon
-              type="close"
+            <CloseOutlined
               onClick={this.onCloseClicked}
               style={{fontSize: 'larger'}}
               className={styles.panelHeaderCloseIcon} />

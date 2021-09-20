@@ -16,13 +16,21 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+
+import {
+  DeleteOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  UsergroupAddOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+
 import {
   Alert,
   AutoComplete,
   Button,
   Checkbox,
   Col,
-  Icon,
   message,
   Modal,
   Popover,
@@ -205,10 +213,10 @@ export default class PermissionsForm extends React.Component {
     return (
       <span className={styles.actions}>
         <Button disabled={this.props.readonly} size="small" onClick={this.openFindUserDialog}>
-          <Icon type="user-add" />
+          <UserAddOutlined />
         </Button>
         <Button disabled={this.props.readonly} size="small" onClick={this.openFindGroupDialog}>
-          <Icon type="usergroup-add" />
+          <UsergroupAddOutlined />
         </Button>
       </span>
     );
@@ -638,9 +646,9 @@ export default class PermissionsForm extends React.Component {
         className: styles.userIcon,
         render: (item) => {
           if (item.sid.principal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
@@ -657,7 +665,7 @@ export default class PermissionsForm extends React.Component {
               disabled={this.state.operationInProgress || this.props.readonly}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         )

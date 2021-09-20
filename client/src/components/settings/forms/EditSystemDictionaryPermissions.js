@@ -1,6 +1,7 @@
 import React from 'react';
 import PermissionsForm from '../../roleModel/PermissionsForm';
-import {Modal, Button, Icon} from 'antd';
+import {SettingOutlined} from '@ant-design/icons';
+import {Modal, Button} from 'antd';
 
 export default class EditSystemDictionaryPermissions extends React.Component {
     state = {
@@ -38,7 +39,7 @@ export default class EditSystemDictionaryPermissions extends React.Component {
             size="small"
             onClick={() => this.showModalWindow()}
           >
-            <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+            <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             {this.renderModalWindow()}
           </Button>
         );

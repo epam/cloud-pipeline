@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Row, Tooltip} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row, Tooltip} from 'antd';
 import {getRunStatusIcon} from './run-status-iconset';
 import DefaultStyles from './run-status-styles';
 import StatusTooltips from './run-status-tooltips';
@@ -42,7 +43,7 @@ const StatusIcon = (props) => {
   }
 
   const result = (
-    <Icon
+    <LegacyIcon
       className={className}
       type={icon}
       style={iconStyle} />

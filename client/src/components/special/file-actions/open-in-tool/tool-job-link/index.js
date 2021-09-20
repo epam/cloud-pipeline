@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router-dom';
-import {Icon} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import MultizoneUrl from '../../../multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
@@ -119,7 +119,7 @@ class ToolJobLink extends React.Component {
     } = this.props;
     const {jobInfo} = this.state;
     if (!job || !jobInfo) {
-      return (<Icon type="loading" />);
+      return <LoadingOutlined />;
     }
     if ((!job.isService && !jobInfo.initialized) || !this.url) {
       return (

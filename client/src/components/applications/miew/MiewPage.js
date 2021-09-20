@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Row, Col, Select, Icon} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {Row, Col, Select} from 'antd';
 import parseQueryParameters from '../../../utils/queryParameters';
 import EmbeddedMiew from './EmbeddedMiew';
 import $ from 'jquery';
@@ -183,7 +184,7 @@ export default class MiewPage extends React.Component {
         <Row className={styles.miewToolbar} type="flex" align="middle">
           <div className={styles.miewToolbarOverlay} />
           <Col span={4} style={{textAlign: 'left', paddingLeft: 15}}>
-            <Icon
+            <LegacyIcon
               onClick={this.changeTerminalVisibility}
               type={this.state.terminalVisible ? 'code' : 'code-o'}
               style={{

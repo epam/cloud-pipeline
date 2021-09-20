@@ -22,7 +22,8 @@ import {computed} from 'mobx';
 import IssueCommentPreview from '../../../special/issues/controls/IssueCommentPreview';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
-import {Alert, Card, Icon, Row} from 'antd';
+import {FolderOutlined, ForkOutlined, HddOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
+import {Alert, Card, Row} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 import moment from 'moment-timezone';
@@ -200,23 +201,23 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
       let name, type;
       switch (event.entity.type) {
         case 'PIPELINE':
-          name = <span><Icon type="fork" /> {event.entity.name}</span>;
+          name = <span><ForkOutlined /> {event.entity.name}</span>;
           type = this.localizedString('pipeline');
           break;
         case 'TOOL':
-          name = <span><Icon type="tool" /> {event.entity.name}</span>;
+          name = <span><ToolOutlined /> {event.entity.name}</span>;
           type = this.localizedString('tool');
           break;
         case 'FOLDER':
-          name = <span><Icon type="folder" /> {event.entity.name}</span>;
+          name = <span><FolderOutlined /> {event.entity.name}</span>;
           type = this.localizedString('folder');
           break;
         case 'DATA_STORAGE':
-          name = <span><Icon type="hdd" /> {event.entity.name}</span>;
+          name = <span><HddOutlined /> {event.entity.name}</span>;
           type = this.localizedString('storage');
           break;
         case 'CONFIGURATION':
-          name = <span><Icon type="setting" /> {event.entity.name}</span>;
+          name = <span><SettingOutlined /> {event.entity.name}</span>;
           type = this.localizedString('configuration');
           break;
       }

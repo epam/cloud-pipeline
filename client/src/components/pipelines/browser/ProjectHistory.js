@@ -22,7 +22,8 @@ import pipelines from '../../../models/pipelines/Pipelines';
 import RunTable from '../../runs/RunTable';
 import LoadingView from '../../special/LoadingView';
 import EditableField from '../../special/EditableField';
-import {Alert, Icon, Row} from 'antd';
+import {ClockCircleOutlined, LockOutlined} from '@ant-design/icons';
+import {Alert, Row} from 'antd';
 import connect from '../../../utils/connect';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import {openReRunForm} from '../../runs/actions';
@@ -124,12 +125,10 @@ class ProjectHistory extends React.Component {
             <tr>
               <td>
                 <Row type="flex" className={styles.itemHeader} align="middle">
-                  <Icon type="clock-circle-o" className={`${styles.editableControl} ${folderTitleClassName}`} />
+                  <ClockCircleOutlined className={`${styles.editableControl} ${folderTitleClassName}`} />
                   {
                     this.props.folder.value.locked &&
-                    <Icon
-                      className={`${styles.editableControl} ${folderTitleClassName}`}
-                      type="lock" />
+                    <LockOutlined className={`${styles.editableControl} ${folderTitleClassName}`} />
                   }
                   <EditableField
                     readOnly={true}

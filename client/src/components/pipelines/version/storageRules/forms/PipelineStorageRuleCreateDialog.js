@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
-import {Checkbox, Button, Modal, Form, Input, Row, Select, Spin} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Checkbox, Button, Modal, Input, Row, Select, Spin} from 'antd';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../../utils/connect';
 import localization from '../../../../../utils/localization';

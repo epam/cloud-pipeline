@@ -18,19 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
 import {computed} from 'mobx';
-import {
-  Button,
-  Checkbox,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Row,
-  Select,
-  Spin,
-  Tabs
-} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Checkbox, Col, Input, InputNumber, Modal, Row, Select, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import RestrictDockerImages from './restrict-docker-images';
 import roleModel from '../../../../utils/roleModel';

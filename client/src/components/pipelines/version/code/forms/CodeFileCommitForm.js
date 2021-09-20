@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Col, Spin, Select, Checkbox} from 'antd';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Modal, Input, Row, Col, Spin, Select, Checkbox} from 'antd';
 import connect from '../../../../../utils/connect';
 import localization from '../../../../../utils/localization';
 import pipelines from '../../../../../models/pipelines/Pipelines';

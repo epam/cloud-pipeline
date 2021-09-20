@@ -18,7 +18,10 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Table, Icon, Select, message} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
+import {Form} from '@ant-design/compatible';
+import '@ant-design/compatible/assets/index.css';
+import {Button, Modal, Input, Row, Table, Select, message} from 'antd';
 import styles from './UserManagement.css';
 import roleModel from '../../../utils/roleModel';
 
@@ -139,7 +142,7 @@ export default class CreateUserForm extends React.Component {
         return (
           <Row type="flex" justify="end">
             <Button id="delete-role-button" size="small" type="danger" onClick={() => this.removeRole(role.id)}>
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         );

@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
-import {Input, Icon} from 'antd';
+import {ToolOutlined} from '@ant-design/icons';
+import {Input} from 'antd';
 import DockerImageBrowser from '../dialogs/DockerImageBrowser';
 import styles from './LaunchPipelineForm.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
@@ -89,7 +90,7 @@ export default class DockerImageInput extends React.Component {
             <div
               className={styles.pathType}
               onClick={!this.props.disabled && this.openBrowser}>
-              <Icon type="tool" />
+              <ToolOutlined />
             </div>
           }
           size="large"

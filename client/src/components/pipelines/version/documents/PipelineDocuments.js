@@ -18,7 +18,8 @@ import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
 import {withRouter} from 'react-router-dom';
-import {Input, Row, Button, Icon, Table, message, Modal} from 'antd';
+import {DeleteOutlined, DownloadOutlined, EditOutlined, FileTextOutlined} from '@ant-design/icons';
+import {Input, Row, Button, Table, message, Modal} from 'antd';
 import FileSaver from 'file-saver';
 import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import VersionFile from '../../../../models/pipelines/VersionFile';
@@ -175,11 +176,11 @@ class PipelineDocuments extends Component {
                 size="small"
                 type="danger"
                 onClick={(e) => this.deleteFileConfirm(file, e)}>
-                <Icon type="delete" />Delete
+                <DeleteOutlined />Delete
               </Button>
               <Button
                 size="small" onClick={(e) => this.openRenameFileDialog(file, e)}>
-                <Icon type="edit" />Rename
+                <EditOutlined />Rename
               </Button>
               <span className="ant-divider" />
             </span>
@@ -189,7 +190,7 @@ class PipelineDocuments extends Component {
           onClick={(e) => this.downloadPipelineFile(file, e)}
           size="small"
         >
-          <Icon type="download" />Download
+          <DownloadOutlined />Download
         </Button>
         {
           docx &&
@@ -197,7 +198,7 @@ class PipelineDocuments extends Component {
             disabled={!graphReady}
             onClick={() => this.generateDocument(file)}
             size="small">
-            <Icon type="file-text" />Generate
+            <FileTextOutlined />Generate
           </Button>
         }
       </span>

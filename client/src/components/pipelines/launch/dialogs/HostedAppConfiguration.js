@@ -16,13 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Button,
-  Icon,
-  Input,
-  InputNumber,
-  Modal
-} from 'antd';
+import {DeleteOutlined, PlusOutlined, SettingOutlined} from '@ant-design/icons';
+import {Button, Input, InputNumber, Modal} from 'antd';
 import classNames from 'classnames';
 import styles from './HostedAppConfiguration.css';
 
@@ -336,7 +331,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 type="danger"
                 onClick={this.onRemovePorts(index)}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           ), portsErrors && portsErrors[index] && (
@@ -376,7 +371,7 @@ class HostedAppConfigurationDialog extends React.Component {
           <Button
             onClick={this.onAddPorts}
           >
-            <Icon type="plus" /> Add ports configuration
+            <PlusOutlined /> Add ports configuration
           </Button>
         </div>
         {
@@ -439,7 +434,7 @@ class HostedAppConfiguration extends React.Component {
     if (!value) {
       return (
         <span className={styles.configure}>
-          <Icon type="setting" />Configure
+          <SettingOutlined />Configure
         </span>
       );
     }
@@ -479,7 +474,7 @@ class HostedAppConfiguration extends React.Component {
         }
         <span style={{marginRight: 5}}>)</span>
         <span className={styles.configure}>
-          <Icon type="setting" />Configure
+          <SettingOutlined />Configure
         </span>
       </div>
     );

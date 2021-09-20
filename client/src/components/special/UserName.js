@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Icon, Row, Tooltip} from 'antd';
+import {UserOutlined} from '@ant-design/icons';
+import {Row, Tooltip} from 'antd';
 
 @inject('usersInfo')
 @observer
@@ -84,7 +85,7 @@ export default class UserName extends React.Component {
             className={className}
             style={Object.assign({cursor: 'default'}, style)}
           >
-            {showIcon && <Icon type="user" />}
+            {showIcon && <UserOutlined />}
             {this.renderUserName(this.user)}
           </span>
         </Tooltip>
@@ -95,7 +96,7 @@ export default class UserName extends React.Component {
         className={className}
         style={Object.assign({cursor: 'default'}, style)}
       >
-        {showIcon && <Icon type="user" />}
+        {showIcon && <UserOutlined />}
         {(this.props.userName || '').toLowerCase()}
       </span>
     );

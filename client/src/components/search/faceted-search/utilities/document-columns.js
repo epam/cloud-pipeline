@@ -16,7 +16,8 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
 import SearchItemTypes from '../../../../models/search/search-item-types';
@@ -76,7 +77,7 @@ function parseExtraColumns (preferences) {
 const renderIcon = (resultItem) => {
   if (PreviewIcons[resultItem.type]) {
     return (
-      <Icon
+      <LegacyIcon
         className={styles.icon}
         type={PreviewIcons[resultItem.type]} />
     );
@@ -90,8 +91,7 @@ const DocumentColumns = [
     name: 'Name',
     renderFn: (value, document, onClick) => (
       <span className={styles.cellValue}>
-        <Icon
-          type="info-circle-o"
+        <InfoCircleOutlined
           className={classNames(
             styles.previewBtn,
             styles.previewBtnTable
@@ -100,8 +100,7 @@ const DocumentColumns = [
             e.stopPropagation();
             e.preventDefault();
             onClick && onClick(document);
-          }}
-        />
+          }} />
         <OpenInToolAction
           file={document.path}
           storageId={document.parentId}

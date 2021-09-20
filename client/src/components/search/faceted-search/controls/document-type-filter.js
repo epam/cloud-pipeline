@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
 import classNames from 'classnames';
 import {SearchGroupTypes} from '../../searchGroupTypes';
 import localization from '../../../../utils/localization';
@@ -73,7 +73,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
               key={f.types.join('-')}
               onClick={this.handleFilterClick(f)}
             >
-              <Icon
+              <LegacyIcon
                 className={styles.icon}
                 type={f.icon}
               />

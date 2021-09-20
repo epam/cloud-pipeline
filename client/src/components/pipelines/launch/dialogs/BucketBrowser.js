@@ -20,7 +20,9 @@ import connect from '../../../../utils/connect';
 import {observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree} from 'antd';
+import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
+import {Alert, Button, Checkbox, Col, Input, Modal, Row, Table, Tree} from 'antd';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DTSRequest from '../../../../models/dts/DTSItemsPage';
@@ -336,7 +338,7 @@ export default class BucketBrowser extends React.Component {
         key: 'type',
         title: '',
         className: styles.itemTypeCell,
-        render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />,
+        render: (text, item) => <LegacyIcon className={styles.itemType} type={item.type.toLowerCase()} />,
         onCell: (item) => ({
           onClick: () => this.didSelectDataStorageItem(item)
         })
@@ -508,7 +510,7 @@ export default class BucketBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}<span className="storage-name">{name}</span>{subTitle}
+        {icon && <LegacyIcon type={icon} />}<span className="storage-name">{name}</span>{subTitle}
       </span>
     );
   }
@@ -708,12 +710,12 @@ export default class BucketBrowser extends React.Component {
                     id="prev-page-button"
                     onClick={this.prevPage}
                     disabled={this.state.currentPage === 0}
-                    style={{margin: 3}} size="small"><Icon type="caret-left" /></Button>
+                    style={{margin: 3}} size="small"><CaretLeftOutlined /></Button>
                   <Button
                     id="next-page-button"
                     onClick={this.nextPage}
                     disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-                    style={{margin: 3}} size="small"><Icon type="caret-right" /></Button>
+                    style={{margin: 3}} size="small"><CaretRightOutlined /></Button>
                 </Row>
               </div>
           }

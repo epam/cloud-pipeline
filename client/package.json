@@ -3,8 +3,10 @@
   "version": "0.15.0",
   "private": true,
   "dependencies": {
+    "@ant-design/compatible": "^1.0.8",
+    "@ant-design/icons": "^4.6.4",
     "ansi_up": "^2.0.2",
-    "antd": "^3.26.20",
+    "antd": "^4.16.13",
     "aws-sdk": "^2.983.0",
     "chart.js": "^2.9.3",
     "classnames": "^2.2.6",

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {inject, observer} from 'mobx-react';
@@ -113,12 +113,10 @@ export default class MultizoneUrl extends React.Component {
               getPopupContainer={getPopupContainer}
               onClick={(e) => e.stopPropagation()}
             >
-              <Icon
+              <DownOutlined
                 className={styles.expander}
-                type="down"
                 onClick={e => e.stopPropagation()}
-                style={dropDownIconStyle}
-              />
+                style={dropDownIconStyle} />
             </Dropdown>)
         }
       </div>
