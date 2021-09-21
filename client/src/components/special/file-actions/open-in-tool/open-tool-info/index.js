@@ -51,6 +51,10 @@ const MarkdownRenderer = new Remarkable('full', {
   }
 });
 
+function processLinks (html) {
+  return (html || '').replace(/<a href/ig, '<a target="_blank" href');
+}
+
 const STORAGE_PREFIX = 'cloud-data';
 const DEFAULT_TEMPLATE = `Copy file path: {FILE_PATH}
 Open {APP_NAME}: {APP_LINK}
@@ -200,7 +204,7 @@ class OpenToolInfo extends React.Component {
       'APP_NAME': this.renderAppName,
       'APP_LINK': this.renderAppLink
     };
-    const html = MarkdownRenderer.render(this.template);
+    const html = processLinks(MarkdownRenderer.render(this.template));
     const {tool} = this.props;
     if (tool && tool.image) {
       html.replace(/\{app_name\}/g, tool.image);

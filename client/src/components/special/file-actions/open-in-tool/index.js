@@ -220,8 +220,7 @@ class OpenInToolAction extends React.Component {
 
   closeModal = () => {
     this.setState({
-      modalVisible: false,
-      activeTool: undefined
+      modalVisible: false
     });
   };
 
@@ -233,6 +232,8 @@ class OpenInToolAction extends React.Component {
         activeJobsFetching: true,
         activeJob: undefined
       }, this.fetchJobs);
+    } else {
+      this.clearToolSelection();
     }
   };
 
@@ -269,7 +270,7 @@ class OpenInToolAction extends React.Component {
     let content;
     if (!activeTool) {
       content = (
-        <div className={styles.selectionTabContainer}>
+        <div className={styles.toolTabContainer}>
           <Row
             type="flex"
             align="middle"
@@ -277,9 +278,15 @@ class OpenInToolAction extends React.Component {
           >
             <span
               className={styles.tabHeading}
+              style={{marginLeft: 5}}
             >
               Select tool to open:
             </span>
+            <Icon
+              type="close"
+              className={styles.close}
+              onClick={() => this.modalVisibilityChanged(false)}
+            />
           </Row>
           <div className={styles.toolSelectionContainer}>
             {this.filteredFileTools.map(tool => (
@@ -304,30 +311,44 @@ class OpenInToolAction extends React.Component {
       );
     } else {
       content = (
-        <div className={styles.toolTabContainer}>
+        <div
+          className={styles.toolTabContainer}
+          style={
+            this.filteredFileTools.length > 1
+              ? {}
+              : {paddingTop: 5}
+          }
+        >
           {this.filteredFileTools.length > 1 && (
             <Row
               type="flex"
               align="middle"
               className={styles.tabHeaderRow}
             >
-              <div
-                onClick={this.clearToolSelection}
-                className={styles.tabHeadingBtn}
-              >
-                <Icon type="caret-left" />
+              <div style={{display: 'inline-flex'}}>
+                <div
+                  onClick={this.clearToolSelection}
+                  className={styles.tabHeadingBtn}
+                >
+                  <Icon type="caret-left" />
+                </div>
+                <span className={styles.tabHeading}>
+                  <ToolIcon
+                    iconId={activeTool.iconId}
+                    toolId={activeTool.id}
+                    style={{
+                      height: '22px',
+                      marginRight: '5px'
+                    }}
+                  />
+                  {activeTool.image}
+                </span>
               </div>
-              <span className={styles.tabHeading}>
-                <ToolIcon
-                  iconId={activeTool.iconId}
-                  toolId={activeTool.id}
-                  style={{
-                    height: '22px',
-                    marginRight: '5px'
-                  }}
-                />
-                {activeTool.image}
-              </span>
+              <Icon
+                type="close"
+                className={styles.close}
+                onClick={() => this.modalVisibilityChanged(false)}
+              />
             </Row>
           )}
           {this.renderToolInfo()}
@@ -336,6 +357,7 @@ class OpenInToolAction extends React.Component {
     }
     return (
       <div
+        className={styles.container}
         onClick={e => e.stopPropagation()}
       >
         {content}
@@ -361,10 +383,12 @@ class OpenInToolAction extends React.Component {
         title={false}
         content={this.renderModalContent()}
         placement="left"
-        overlayClassName={classNames(
-          styles.modalOverlay,
-          {[styles.overlayVisible]: !!modalVisible}
-        )}
+        overlayStyle={{
+          width: '35vw',
+          height: '35vh',
+          minWidth: 200
+        }}
+        overlayClassName={styles.modalOverlay}
       >
         <ToolsSelector
           className={classNames(styles.link, className)}
@@ -373,8 +397,9 @@ class OpenInToolAction extends React.Component {
           onSelectTool={() => {
             if (this.filteredFileTools.length === 1) {
               this.onSelectTool(this.filteredFileTools[0].id);
-              this.openModal();
+              this.openModal(this.filteredFileTools[0].id);
             } else {
+              this.onSelectTool(undefined);
               this.openModal();
             }
           }}
