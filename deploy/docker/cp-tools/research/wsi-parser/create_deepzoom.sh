@@ -110,7 +110,7 @@ if [[ -z "$WSI_PARSER_AWS_CLI_FINALIZATION" ]]; then
     pipe storage mv -r -f "$dz_tmp" "$dz_final_cloud"
 else
     log_info "Moving DZ to the final location [$dz_final_cloud] using AWS CLI..."
-    aws s3 cp --recursive --quiet "$dz_tmp" "$(get_cloud_path $dz_final s3)"
+    aws s3 cp --recursive --quiet --profile "$WSI_PARSER_AWS_OPS_PROFILE" "$dz_tmp" "$(get_cloud_path $dz_final s3)"
 fi
 if [ $? -ne 0 ]; then
     log_warn "Errors during deep zoom finalization, exiting..."
