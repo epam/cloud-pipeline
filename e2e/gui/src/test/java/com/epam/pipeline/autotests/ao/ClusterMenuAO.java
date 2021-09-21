@@ -73,6 +73,16 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         };
     }
 
+    public static Condition windows() {
+        return new Condition("windows node") {
+            @Override
+            public boolean apply(final WebElement element) {
+                return contains(nodeLabel("WINDOWS"))
+                        .test(element);
+            }
+        };
+    }
+
     public enum HeaderColumn {
         DATE("cluster__cluster-node-row-created"),
         NAME("cluster__cluster-node-row-name"),

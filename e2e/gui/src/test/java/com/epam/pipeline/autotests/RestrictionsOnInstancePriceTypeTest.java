@@ -82,7 +82,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String secondConfiguration = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String configurationName = "customConfig";
-    private final String testRole = C.ROLE_USER;
+    private final String testGroup = C.ROLE_USER;
     private final String instanceTypesMask = "Allowed instance types mask";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String onDemandPrice = "On demand";
@@ -106,7 +106,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         loginAs(admin);
         setMaskForUser(user.login, instanceTypesMask, "");
         setMaskForUser(user.login, toolInstanceTypesMask, "");
-        setMaskForRole(testRole, instanceTypesMask, "");
+        setMaskForGroup(testGroup, instanceTypesMask, "");
         setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
         setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker, defaultClusterAllowedInstanceTypes);
         setClusterAllowedStringPreference(clusterAllowedPriceTypes, defaultClusterAllowedPriceTypes);
@@ -116,8 +116,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
-                .switchToRoles()
-                .editRole(testRole)
+                .switchToGroups()
+                .editGroup(testGroup)
                 .clearAllowedPriceTypeField()
                 .ok();
         tools()
@@ -245,13 +245,13 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         try {
             loginAs(admin);
-            setMaskForRole(testRole, instanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForGroup(testGroup, instanceTypesMask, format("%s.*", instanceFamilyName));
             logout();
             validationOfInstanceTypesRestrictions();
         } finally {
             logout();
             loginAs(admin);
-            setMaskForRole(testRole, instanceTypesMask, "");
+            setMaskForGroup(testGroup, instanceTypesMask, "");
         }
     }
 
@@ -279,7 +279,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
         try {
             loginAs(admin);
-            setMaskForRole(testRole, toolInstanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForGroup(testGroup, toolInstanceTypesMask, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);
             tools()
@@ -289,7 +289,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         } finally {
             logout();
             loginAs(admin);
-            setMaskForRole(testRole, toolInstanceTypesMask, "");
+            setMaskForGroup(testGroup, toolInstanceTypesMask, "");
         }
     }
 
@@ -348,7 +348,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .setValue(DISK, customDisk)
                                     .sleep(3, SECONDS)
                                     .click(SAVE))
-                                    .sleep(2, SECONDS);
+                    .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);
@@ -422,7 +422,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             String[] masks = clusterAllowedMasks.split(",");
             loginAs(admin);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
-            setMaskForRole(testRole, instanceTypesMask, format("%s*", masks[1]));
+            setMaskForGroup(testGroup, instanceTypesMask, format("%s*", masks[1]));
             setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
             setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
             logout();
@@ -459,7 +459,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             logout();
             loginAs(admin);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
-            setMaskForRole(testRole, instanceTypesMask, "");
+            setMaskForGroup(testGroup, instanceTypesMask, "");
             setMaskForUser(user.login, instanceTypesMask, "");
             setMaskForUser(user.login, toolInstanceTypesMask, "");
         }
@@ -537,8 +537,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             navigationMenu()
                     .settings()
                     .switchToUserManagement()
-                    .switchToRoles()
-                    .editRole(testRole)
+                    .switchToGroups()
+                    .editGroup(testGroup)
                     .setAllowedPriceType(onDemandPrice)
                     .ok();
             logout();
@@ -550,8 +550,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             navigationMenu()
                     .settings()
                     .switchToUserManagement()
-                    .switchToRoles()
-                    .editRole(testRole)
+                    .switchToGroups()
+                    .editGroup(testGroup)
                     .clearAllowedPriceTypeField()
                     .ok();
         }
@@ -668,12 +668,12 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .ok();
     }
 
-    private void setMaskForRole(String role, String mask, String value) {
+    private void setMaskForGroup(String group, String mask, String value) {
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
-                .switchToRoles()
-                .editRole(role)
+                .switchToGroups()
+                .editGroup(group)
                 .addAllowedLaunchOptions(mask, value)
                 .ok();
     }

@@ -910,6 +910,18 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
+            public EditGroupPopup editGroup(final String group) {
+                sleep(1, SECONDS);
+                searchGroupBySubstring(group);
+                context().$$(byText(group))
+                        .filterBy(visible)
+                        .first()
+                        .closest(".ant-table-row-level-0")
+                        .find(byClassName("ant-btn-sm"))
+                        .click();
+                return new EditGroupPopup(this);
+            }
+
             public class CreateGroupPopup extends PopupAO<CreateGroupPopup, GroupsTabAO> implements AccessObject<CreateGroupPopup> {
                 private final GroupsTabAO parentAO;
 
@@ -948,6 +960,57 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public GroupsTabAO cancel() {
                     click(CANCEL);
                     return parentAO;
+                }
+            }
+
+            public class EditGroupPopup extends PopupAO<EditGroupPopup, GroupsTabAO>
+                    implements AccessObject<EditGroupPopup> {
+                private final GroupsTabAO parentAO;
+                public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                        entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(PRICE_TYPE, context().find(byXpath(
+                                format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                );
+
+                public EditGroupPopup(final GroupsTabAO parentAO) {
+                    super(parentAO);
+                    this.parentAO = parentAO;
+                }
+
+                @Override
+                public Map<Primitive, SelenideElement> elements() {
+                    return elements;
+                }
+
+                @Override
+                public GroupsTabAO ok() {
+                    click(OK);
+                    return parentAO;
+                }
+
+                public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
+                    SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                    return this;
+                }
+
+                public EditGroupPopup setAllowedPriceType(final String priceType) {
+                    click(PRICE_TYPE);
+                    context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
+                            .shouldBe(visible)
+                            .click();
+                    click(byText("Allowed price types"));
+                    return this;
+                }
+
+                public EditGroupPopup clearAllowedPriceTypeField() {
+                    ensureVisible(PRICE_TYPE);
+                    SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
+                    while (type.isDisplayed()) {
+                        type.click();
+                        sleep(1, SECONDS);
+                    }
+                    click(byText("Allowed price types"));
+                    return this;
                 }
             }
         }
@@ -1020,31 +1083,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public RolesTabAO ok() {
                     click(OK);
                     return parentAO;
-                }
-
-                public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
-                    SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
-                    return this;
-                }
-
-                public EditRolePopup setAllowedPriceType(final String priceType) {
-                    click(PRICE_TYPE);
-                    context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
-                            .shouldBe(visible)
-                            .click();
-                    click(byText("Allowed price types"));
-                    return this;
-                }
-
-                public EditRolePopup clearAllowedPriceTypeField() {
-                    ensureVisible(PRICE_TYPE);
-                    SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
-                    while (type.isDisplayed()) {
-                        type.click();
-                        sleep(1, SECONDS);
-                    }
-                    click(byText("Allowed price types"));
-                    return this;
                 }
             }
         }
