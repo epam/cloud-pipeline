@@ -385,28 +385,13 @@
   align-items: flex-start;
 }
 
-.share-url-container .input-row {
-  background-color: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  width: 100%;
-  max-width: 50vw;
-  display: flex;
-  align-items: center;
+.share-url-action {
+  cursor: pointer;
+  width: 20px;
 }
 
-.share-url {
-  overflow-x: auto;
-  resize: none;
-  height: 45px;
-  border: none;
-  background: transparent;
-  padding: 5px;
-  flex-grow: 1;
-}
-
-.share-url:focus {
-  outline: none;
+.share-url-action:hover {
+  color: #0e77ca;
 }
 
 .share-url-button {

@@ -21,6 +21,7 @@ import {
   Button,
   Tabs,
   Icon,
+  Input,
   Popover,
   message
 } from 'antd';
@@ -443,17 +444,15 @@ class VSIPreview extends React.Component {
       `x=${x}`,
       `y=${y}`
     ];
-    return `${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`;
+    return new URL(`${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`, document.location.origin).href;
   };
 
   openShareUrlModal = (e) => {
     e && e.stopPropagation();
     const url = this.generateShareUrl();
-    window.open(url, '_blank');
-    return;
-    // if (url) {
-    //   this.setState({shareUrl: url});
-    // }
+    if (url) {
+      this.setState({shareUrl: url});
+    }
   };
 
   closeShareUrlModal = () => {
@@ -480,35 +479,48 @@ class VSIPreview extends React.Component {
     const copy = (e) => {
       e.stopPropagation();
       e.preventDefault();
-      if (this.pathElement) {
-        const range = document.createRange();
-        window.getSelection().removeAllRanges();
-        range.selectNode(this.pathElement);
-        window.getSelection().addRange(range);
+      if (
+        this.pathElement &&
+        this.pathElement.refs &&
+        this.pathElement.refs.input &&
+        this.pathElement.refs.input.select
+      ) {
+        this.pathElement.refs.input.select();
         if (document.execCommand('copy')) {
           message.info('Copied to clipboard', 3);
           window.getSelection().removeAllRanges();
         }
       }
     };
+    const open = () => {
+      if (shareUrl) {
+        window.open(shareUrl, '_blank');
+      }
+    };
     return (
       <div className={styles.shareUrlContainer}>
-        <span>Copy file path:</span>
-        <div className={styles.inputRow}>
-          <textarea
-            wrap="off"
-            className={styles.shareUrl}
-            ref={initializePathElement}
-            value={shareUrl}
-            onChange={this.onChangeShareUrl}
-          />
-          <div
-            className={styles.shareUrlButton}
-            onClick={copy}
-          >
-            <Icon type="copy" />
-          </div>
-        </div>
+        <Input
+          ref={initializePathElement}
+          value={shareUrl}
+          style={{width: '100%'}}
+          readOnly
+          addonAfter={(
+            <div>
+              <Icon
+                title="Copy to clipboard"
+                className={styles.shareUrlAction}
+                type="copy"
+                onClick={copy}
+              />
+              <Icon
+                title="Open in separate tab"
+                className={styles.shareUrlAction}
+                type="export"
+                onClick={open}
+              />
+            </div>
+          )}
+        />
       </div>
     );
   };
