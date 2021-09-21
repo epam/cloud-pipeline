@@ -18,8 +18,6 @@ _TILES_SIZE="$3"
 _TILES_PARENT_DIR="$4"
 _PARSER_LOCAL_TMP_DIR="$5"
 
-# 2^32 / 8^2 / 2
-BFTOOL_CONVERTER_LIMIT=${WSI_PARSING_CONVERSION_LIMIT:-33554432}
 WSI_PROCESSING_TASK_NAME="WSI processing"
 
 function log_info() {
@@ -105,12 +103,13 @@ rm -rf "$dz_tmp"
 generate_deepzoom "$_PARSER_LOCAL_TMP_DIR/$_FILE_BASENAME.tiff" "$dz_tmp"
 
 dz_final_cloud="$(get_cloud_path $dz_final)"
-log_info "Moving DZ to the final location [$dz_final_cloud]..."
 pipe storage rm -r -y "$dz_final_cloud"
 if [[ -z "$WSI_PARSER_AWS_CLI_FINALIZATION" ]]; then
+    log_info "Moving DZ to the final location [$dz_final_cloud] using PIPE CLI..."
     pipe storage mkdir "$dz_final_cloud"
     pipe storage mv -r -f "$dz_tmp" "$dz_final_cloud"
 else
+    log_info "Moving DZ to the final location [$dz_final_cloud] using AWS CLI..."
     aws s3 cp --recursive --quiet "$dz_tmp" "$(get_cloud_path $dz_final s3)"
 fi
 if [ $? -ne 0 ]; then

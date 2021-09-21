@@ -340,7 +340,7 @@ class WsiFileParser:
         file_name = WsiParsingUtils.get_basename_without_extension(self.file_path)
         image = os.path.join(service_directory, '{}.jpeg'.format(file_name))
         if os.path.exists(image):
-            tiles_dir = os.path.join(os.path.dirname(self.file_path), file_name, WsiParsingUtils.TILES_DIR_SUFFIX)
+            tiles_dir = os.path.join(os.path.dirname(self.file_path), file_name + WsiParsingUtils.TILES_DIR_SUFFIX)
             max_zoom = self._max_zoom_level(tiles_dir)
             if max_zoom < 0:
                 self.log_processing_info('Unable to determine DZ depth calculation, skipping json file creation')
@@ -351,6 +351,8 @@ class WsiFileParser:
                                         max_zoom)
 
     def _is_same_series_selected(self, stat_file, selected_series):
+        if not os.path.isfile(stat_file):
+            return False
         with open(WsiParsingUtils.get_stat_file_name(stat_file)) as last_sync_stats:
             json_stats = json.load(last_sync_stats)
             if 'target_series' in json_stats and json_stats['target_series'] == selected_series:
