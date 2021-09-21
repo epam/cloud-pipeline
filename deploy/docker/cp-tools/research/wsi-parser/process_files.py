@@ -363,7 +363,7 @@ class WsiFileParser:
     def _max_zoom_level(self, tiles_dir):
         dz_layers_folders = 0
         for dz_layer_folder in os.listdir(tiles_dir):
-            if os.path.isdir(os.path.join(tiles_dir, dz_layer_folder)) and dz_layer_folder.isnumeric():
+            if os.path.isdir(os.path.join(tiles_dir, dz_layer_folder)) and dz_layer_folder.isdigit():
                 dz_layers_folders += 1
         return dz_layers_folders - 1
 
