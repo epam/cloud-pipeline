@@ -107,7 +107,8 @@ tzlocal==2.1
 boto3==1.9.129
 luigi==2.8.3
 pyasn1-modules==0.2.4
-pyasn1==0.4.5"
+pyasn1==0.4.5
+watchdog==0.10.4"
 download_list "$pypi_packages" /srv/pypi/web/
 
 pypi_packages="boto3==1.10.50
