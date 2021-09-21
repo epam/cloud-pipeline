@@ -79,7 +79,7 @@ fi
 function generate_deepzoom() {
     _src_img="$1"
     _dz_location="$2"
-    vips dzsave "$_src_img" "$_dz_location" --background 0 --centre --layout google --suffix .jpg[Q=100] --tile-size=$_TILES_SIZE
+    vips dzsave "$_src_img" "$_dz_location" --background 0 --layout google --suffix .jpg[Q=100] --tile-size=$_TILES_SIZE
     if [ $? -ne 0 ]; then
         log_warn "Errors during deep zoom generation, exiting..."
         exit 1

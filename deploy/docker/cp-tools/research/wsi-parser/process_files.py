@@ -364,23 +364,7 @@ class WsiFileParser:
                 dz_layers_folders += 1
         return dz_layers_folders - 1
 
-    def _calculate_dz_bounds(self, original_height, original_width):
-        width = original_width
-        height = original_height
-        while True:
-            if height < DZ_TILES_SIZE and width < DZ_TILES_SIZE:
-                break
-            else:
-                width = width / 2
-                height = height / 2
-        height_ratio = float(height) / DZ_TILES_SIZE
-        width_ratio = float(width) / DZ_TILES_SIZE
-        height_bound = int(original_height / height_ratio)
-        width_bound = int(original_width / width_ratio)
-        return height_bound, width_bound
-
     def _write_dz_info_to_file(self, dz_info_file_path, width, height, max_dz_level):
-        width_bound, height_bound = self._calculate_dz_bounds(width, height)
         details = {
             'width': width,
             'height': height,
@@ -388,7 +372,7 @@ class WsiFileParser:
             'maxLevel': max_dz_level,
             'tileWidth': DZ_TILES_SIZE,
             'tileHeight': DZ_TILES_SIZE,
-            'bounds': [0, width_bound, 0, height_bound]
+            'bounds': [0, width, 0, height]
         }
         with open(dz_info_file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
@@ -423,7 +407,7 @@ class WsiFileParser:
                     current_group_name = name
                 series_mapping[current_group_name] = current_group_details_list
                 current_group_name = name
-                current_group_details_list = []
+                current_group_details_list = [details]
             elif not current_group_name:
                 series_mapping[name] = [details]
         if current_group_name:
