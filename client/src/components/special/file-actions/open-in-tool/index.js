@@ -351,6 +351,13 @@ class OpenInToolAction extends React.Component {
               />
             </Row>
           )}
+          {this.filteredFileTools.length === 1 && (
+            <Icon
+              type="close"
+              className={classNames(styles.close, styles.absolute)}
+              onClick={() => this.modalVisibilityChanged(false)}
+            />
+          )}
           {this.renderToolInfo()}
         </div>
       );

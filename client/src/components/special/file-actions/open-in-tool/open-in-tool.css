@@ -50,13 +50,19 @@
   justify-content: space-between;
 }
 
-.tab-header-row .close {
+.close {
   font-size: larger;
   cursor: pointer;
   margin-right: 5px;
 }
 
-.tab-header-row .close:hover {
+.close.absolute {
+  position: absolute;
+  top: 10px;
+  right: 0;
+}
+
+.close:hover {
   color: black;
 }
 
