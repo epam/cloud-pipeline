@@ -22,7 +22,7 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
-import com.epam.pipeline.manager.pipeline.ToolGroupApiService;
+import com.epam.pipeline.acl.docker.ToolGroupApiService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;

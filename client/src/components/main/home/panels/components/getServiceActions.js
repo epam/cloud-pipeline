@@ -13,46 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {message} from 'antd';
-import PipelineRunSSH from '../../../../../models/pipelines/PipelineRunSSH';
 import {AccessTypes} from '../../../../../models/pipelines/PipelineRunUpdateSids';
 import roleModel from '../../../../../utils/roleModel';
 
-export default function (authenticatedUserInfo, callbacks) {
+export default function (authenticatedUserInfo, multiZone, callbacks) {
   return function (service) {
     if (!authenticatedUserInfo.loaded) {
       authenticatedUserInfo.fetchIfNeededOrWait();
       return [];
     } else {
       const {userName} = authenticatedUserInfo.value;
-      const {run} = service;
+      const {run, url, sameTab} = service;
       const {id, runSids} = run || {};
       const {ssh} = callbacks || {};
       const [accessType] = (runSids || [])
         .filter(s => s.name === userName && s.isPrincipal)
         .map(s => s.accessType);
+      const actions = [];
+      if (Object.values(url || {}).length > 1) {
+        actions.push({
+          title: 'OPEN',
+          target: sameTab ? '_top' : '_blank',
+          multiZoneUrl: url
+        });
+      }
       if (ssh &&
         (
           accessType === AccessTypes.ssh ||
           roleModel.isOwner(run)
         )
       ) {
-        const callback = async () => {
-          const hide = message.loading('Fetching SSH endpoint...', 0);
-          const request = new PipelineRunSSH(id);
-          await request.fetch();
-          hide();
-          if (request.error) {
-            message.error(request.error, 5);
-          } else {
-            ssh(request.value);
-          }
-        };
-        return [{
+        actions.push({
           title: 'SSH',
-          action: callback
-        }];
+          runId: id,
+          runSSH: true
+        });
       }
+      return actions;
     }
     return [];
   };

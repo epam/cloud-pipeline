@@ -81,37 +81,45 @@ function setup_swap_device {
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
-UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
-DRIVE_NUM=0
-for DRIVE_NAME in $UNMOUNTED_DRIVES
-do
-  MOUNT_POINT="/ebs"
+FS_TYPE="@FS_TYPE@"
 
+UNMOUNTED_DRIVES=($(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }'))
+if [[ ${#UNMOUNTED_DRIVES[@]} > 1 ]]; then
+  pvcreate ${UNMOUNTED_DRIVES[@]}
+  vgcreate nvmevg ${UNMOUNTED_DRIVES[@]}
+  lvcreate -l 100%FREE nvmevg -n nvmelv
+  DRIVE_NAME=/dev/nvmevg/nvmelv
+elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
+  DRIVE_NAME=${UNMOUNTED_DRIVES[0]}
   PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
   if [[ $PARTITION_RESULT == "" ]]; then
       (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
       DRIVE_NAME="${DRIVE_NAME}1"
   elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
-      continue
+      echo "Cannot create partition for ${DRIVE_NAME}, falling back to root volume"
+      unset DRIVE_NAME
   fi
+else
+  echo "No unmounted drives found. Root volume is used as for the /ebs"
+fi
 
-  DRIVE_NUM=$((DRIVE_NUM+1))
-
-  if [[ $DRIVE_NUM != 1 ]]
-  then
-    MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
+MOUNT_POINT="/ebs"
+mkdir -p $MOUNT_POINT
+if [ "$DRIVE_NAME" ]; then
+  if [[ $FS_TYPE == "ext4" ]]; then
+      mkfs -t ext4 $DRIVE_NAME
+      mount $DRIVE_NAME $MOUNT_POINT
+      echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  else
+    mkfs.btrfs -f -d single $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+    echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
   fi
-
-  mkfs.btrfs -f -d single $DRIVE_NAME
-  mkdir $MOUNT_POINT
-  mount $DRIVE_NAME $MOUNT_POINT
-  DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
-  echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
-  mkdir -p $MOUNT_POINT/runs
-  mkdir -p $MOUNT_POINT/reference
-  rm -rf $MOUNT_POINT/lost+found/
-
-done
+fi
+mkdir -p $MOUNT_POINT/runs
+mkdir -p $MOUNT_POINT/reference
+rm -rf $MOUNT_POINT/lost+found
 
 systemctl stop docker
 
@@ -134,6 +142,15 @@ if [ $? -ne 0 ]; then
 fi
 
 mkdir -p /etc/docker
+
+if [[ $FS_TYPE == "ext4" ]]; then
+  DOCKER_STORAGE_DRIVER="overlay2"
+  DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
+else
+  DOCKER_STORAGE_DRIVER="btrfs"
+  DOCKER_STORAGE_OPTS=""
+fi
+
 if check_installed "nvidia-smi"; then
   nvidia-persistenced --persistence-mode
 
@@ -141,7 +158,8 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -157,7 +175,8 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1
 }
 EOT
@@ -261,6 +280,8 @@ EOL
 
 fi
 
+sed -i "s/--default-ulimit nofile=1024:4096/--default-ulimit nofile=65535:65535/g" /etc/sysconfig/docker
+
 _KUBE_NODE_INSTANCE_LABELS="--node-labels=cloud_provider=$_CLOUD_PROVIDER,cloud_region=$_CLOUD_REGION,cloud_ins_id=$_CLOUD_INSTANCE_ID,cloud_ins_type=$_CLOUD_INSTANCE_TYPE"
 
 if [[ $_CLOUD_INSTANCE_AZ != "" ]]; then
@@ -290,8 +311,8 @@ _KUBE_NODE_MEM_TOTAL_MB=$(awk '/MemTotal/ { printf "%.0f", $2/1024 }' /proc/memi
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO / 100 / 2 ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
-_KUBE_RESERVED_ARGS="--kube-reserved cpu=350m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
-_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=350m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
+_KUBE_RESERVED_ARGS="--kube-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
+_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
@@ -312,11 +333,27 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
-_API_URL="@API_URL@"
-_API_TOKEN="@API_TOKEN@"
-_MOUNT_POINT="/ebs"
-_CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+if [[ $FS_TYPE == "btrfs" ]]; then
+  _API_URL="@API_URL@"
+  _API_TOKEN="@API_TOKEN@"
+  _MOUNT_POINT="/ebs"
+  _FS_AUTOSCALE_PRESENT=0
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  if [ -f "$_CURRENT_DIR/fsautoscale" ]; then
+    cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+    _FS_AUTOSCALE_PRESENT=1
+  else
+    _FS_AUTO_URL="$(dirname $_API_URL)/fsautoscale.sh"
+    echo "Cannot find $_CURRENT_DIR/fsautoscale, downloading from $_FS_AUTO_URL"
+    curl -skf "$_FS_AUTO_URL" > /usr/bin/fsautoscale
+    if [ $? -ne 0 ]; then
+      echo "Error while downloading fsautoscale script"
+    else
+      _FS_AUTOSCALE_PRESENT=1
+    fi
+  fi
+  if [ $_FS_AUTOSCALE_PRESENT -eq 1 ]; then
+    chmod +x /usr/bin/fsautoscale
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
@@ -334,8 +371,10 @@ ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
 [Install]
 WantedBy=multi-user.target
 EOL
-systemctl enable fsautoscale
-systemctl start fsautoscale
+    systemctl enable fsautoscale
+    systemctl start fsautoscale
+  fi
+fi
 
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF
@@ -348,5 +387,17 @@ systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 EOF
+
+_PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
+_API_USER="@API_USER@"
+if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
+  echo "Pre-pulling requested docker images ${_PRE_PULL_DOCKERS}"
+  IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
+  for _DOCKER in "${DOCKERS[@]}"; do
+    _REGISTRY="${_DOCKER%%/*}"
+    docker login -u "$_API_USER" -p "$_API_TOKEN" "${_REGISTRY}"
+    docker pull "$_DOCKER"
+  done
+fi
 
 nc -l -k 8888 &

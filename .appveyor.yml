@@ -4,18 +4,44 @@ branches:
   only:
     - develop
     - /release\/.*/
+    - /stage\/.*/
 
 skip_tags: true
 max_jobs: 1
-image: Ubuntu1604
 stack: node 10, jdk 8
+matrix:
+  fast_finish: true
 
-build_script:
-- |-
-  sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
-  sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
-  sudo -E bash -s <<EOF
-    python2 -m pip install awscli==1.14.56 mkdocs
-    bash deploy/appveyor/appveyor_pack_dist.sh
-  EOF
+environment:
+  matrix:
+    - job_name: CLI_MacOS
+      appveyor_build_worker_image: macOS
+    - job_name: Build_All
+      job_depends_on: CLI_MacOS
+      appveyor_build_worker_image: Ubuntu1604
+for:
+
+  -
+    matrix:
+      only:
+        - job_name: CLI_MacOS
+
+    build_script:
+    - |-
+      bash deploy/appveyor/appveyor_build_macos.sh
+  
+  -
+    matrix:
+      only:
+        - job_name: Build_All
+
+    build_script:
+    - |-
+      sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
+      sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
+      sudo -E bash -s <<EOF
+        python2 -m pip install awscli==1.14.56 mkdocs
+        bash deploy/appveyor/appveyor_pack_dist.sh
+      EOF
+
 test: off

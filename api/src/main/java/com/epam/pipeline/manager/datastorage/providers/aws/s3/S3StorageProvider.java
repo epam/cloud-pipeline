@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -161,7 +162,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public DataStorageItemContent getFile(S3bucketDataStorage dataStorage, String path,
-            String version, Long maxDownloadSize) {
+                                          String version, Long maxDownloadSize) {
         return getS3Helper(dataStorage).getFileContent(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version, maxDownloadSize);
     }
@@ -179,6 +180,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return getS3Helper(dataStorage).getItems(datastoragePath.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
                 ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()));
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final S3bucketDataStorage dataStorage,
+                                              final String path,
+                                              final String version) {
+        return getS3Helper(dataStorage)
+                .findFile(dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), version);
     }
 
     @Override
@@ -226,6 +235,13 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final S3bucketDataStorage dataStorage,
+                                                        final String path) {
+        return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path));
+    }
+
+    @Override
     public void deleteFile(S3bucketDataStorage dataStorage, String path, String version, Boolean totally) {
         getS3Helper(dataStorage).deleteFile(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version,
@@ -252,6 +268,17 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return getS3Helper(dataStorage).moveFolder(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
+    }
+
+    @Override
+    public DataStorageFile copyFile(final S3bucketDataStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final S3bucketDataStorage dataStorage, final String oldPath,
+                                        final String newPath) {
+        throw new UnsupportedOperationException();
     }
 
     @Override public boolean checkStorage(S3bucketDataStorage dataStorage) {

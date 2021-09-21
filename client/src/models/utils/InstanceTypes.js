@@ -17,7 +17,6 @@
 import Remote from '../basic/Remote';
 
 class InstanceTypes extends Remote {
-
   constructor (isSpot) {
     super();
     if (isSpot !== undefined && isSpot !== null) {
@@ -26,7 +25,6 @@ class InstanceTypes extends Remote {
       this.url = '/cluster/instance/loadAll';
     }
   }
-
 }
 
 export default InstanceTypes;

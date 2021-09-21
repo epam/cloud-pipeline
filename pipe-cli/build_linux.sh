@@ -65,6 +65,20 @@ cd $PIPE_MOUNT_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
+                                --hidden-import=commands \
+                                --hidden-import=ConfigParser \
+                                --hidden-import=UserDict \
+                                --hidden-import=itertools \
+                                --hidden-import=collections \
+                                --hidden-import=future.backports.misc \
+                                --hidden-import=commands \
+                                --hidden-import=base64 \
+                                --hidden-import=__builtin__ \
+                                --hidden-import=math \
+                                --hidden-import=reprlib \
+                                --hidden-import=functools \
+                                --hidden-import=re \
+                                --hidden-import=subprocess \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \

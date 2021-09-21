@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
+import com.epam.pipeline.controller.vo.search.ScrollingParameters;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -29,25 +31,30 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,6 +73,9 @@ public class SearchRequestBuilder {
     private static final String SIZE_FIELD = "size";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
+    private static final String ES_DOC_ID_FIELD = "_id";
+    private static final String ES_DOC_SCORE_FIELD = "_score";
+    private static final String SEARCH_HIDDEN = "is_hidden";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -73,20 +83,22 @@ public class SearchRequestBuilder {
 
     public SearchRequest buildRequest(final ElasticSearchRequest searchRequest,
                                       final String typeFieldName,
-                                      final String aggregation) {
-        final QueryBuilder query = getQuery(searchRequest);
+                                      final String aggregation,
+                                      final Set<String> metadataSourceFields) {
+        final QueryBuilder query = getQuery(searchRequest.getQuery());
         log.debug("Search query: {} ", query.toString());
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(query)
-                .storedFields(Arrays.asList("id", typeFieldName, "name", "parentId", "description"))
-                .size(searchRequest.getPageSize())
-                .from(searchRequest.getOffset());
-
+                .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
+                .size(searchRequest.getPageSize());
+        if (Objects.isNull(searchRequest.getScrollingParameters())) {
+            searchSource.from(searchRequest.getOffset());
+            applyDefaultSorting(searchSource);
+        } else {
+            applyScrollingParameters(searchSource, searchRequest.getScrollingParameters());
+        }
         if (searchRequest.isHighlight()) {
-            searchSource.highlighter(SearchSourceBuilder.highlight()
-                    .field("*")
-                    .postTags("</highlight>")
-                    .preTags("<highlight>"));
+            addHighlighterToSource(searchSource);
         }
 
         if (searchRequest.isAggregate()) {
@@ -116,9 +128,82 @@ public class SearchRequestBuilder {
                 .source(sizeSumSearch);
     }
 
-    private QueryBuilder getQuery(final ElasticSearchRequest searchRequest) {
-        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                .must(getBasicQuery(searchRequest));
+    public SearchRequest buildFacetedRequest(final FacetedSearchRequest facetedSearchRequest,
+                                             final String typeFieldName, final Set<String> metadataSourceFields) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+
+        final QueryBuilder queryBuilder = prepareFacetedQuery(facetedSearchRequest.getQuery());
+        boolQueryBuilder.must(queryBuilder);
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        MapUtils.emptyIfNull(facetedSearchRequest.getFilters())
+                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
+
+        log.debug("Search query: {} ", boolQueryBuilder.toString());
+
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                .query(boolQueryBuilder)
+                .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
+                .size(facetedSearchRequest.getPageSize());
+
+        if (Objects.isNull(facetedSearchRequest.getScrollingParameters())) {
+            searchSource.from(facetedSearchRequest.getOffset());
+            applyDefaultSorting(searchSource);
+        } else {
+            applyScrollingParameters(searchSource, facetedSearchRequest.getScrollingParameters());
+        }
+
+        if (facetedSearchRequest.isHighlight()) {
+            addHighlighterToSource(searchSource);
+        }
+
+        ListUtils.emptyIfNull(facetedSearchRequest.getFacets())
+                .forEach(facet -> addTermAggregationToSource(searchSource, facet));
+
+        return new SearchRequest()
+                .indices(buildAllIndexTypes())
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .source(searchSource);
+    }
+
+    private void applyScrollingParameters(final SearchSourceBuilder searchSource,
+                                          final ScrollingParameters scrollingParameters) {
+        applySorting(searchSource, scrollingParameters.isScrollingBackward());
+        searchSource.searchAfter(Arrays.asList(scrollingParameters.getDocScore(), scrollingParameters.getDocId())
+                                     .toArray(new Object[0]));
+    }
+
+    private void applyDefaultSorting(final SearchSourceBuilder searchSource) {
+        applySorting(searchSource, false);
+    }
+
+    private void applySorting(final SearchSourceBuilder searchSource, final boolean isScrollingBackward) {
+        final SortOrder order = isScrollingBackward ? SortOrder.ASC : SortOrder.DESC;
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_SCORE_FIELD).order(order));
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(order));
+    }
+
+    private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
+        final List<String> storedFields = Arrays.stream(SearchSourceFields.values())
+                .map(SearchSourceFields::getFieldName)
+                .collect(Collectors.toList());
+        storedFields.add(typeFieldName);
+        storedFields.addAll(metadataSourceFields);
+        return storedFields.toArray(Strings.EMPTY_ARRAY);
+    }
+
+    private void addHighlighterToSource(final SearchSourceBuilder searchSource) {
+        searchSource.highlighter(SearchSourceBuilder.highlight()
+                .field("*")
+                .postTags("</highlight>")
+                .preTags("<highlight>"));
+    }
+
+    private QueryBuilder getQuery(final String query) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(query));
+        return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder prepareAclFiltersOrAdmin(final BoolQueryBuilder queryBuilder) {
         final PipelineUser pipelineUser = userManager.loadUserByName(authManager.getAuthorizedUser());
         if (pipelineUser == null) {
             throw new IllegalArgumentException("Failed to find currently authorized user");
@@ -132,8 +217,8 @@ public class SearchRequestBuilder {
         return queryBuilder;
     }
 
-    private QueryBuilder getBasicQuery(final ElasticSearchRequest searchRequest) {
-        QueryStringQueryBuilder query = QueryBuilders.queryStringQuery(searchRequest.getQuery());
+    private QueryBuilder getBasicQuery(final String searchQuery) {
+        QueryStringQueryBuilder query = QueryBuilders.queryStringQuery(searchQuery);
         ListUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SEARCH_FIELDS))
                 .forEach(query::field);
         return query;
@@ -171,16 +256,48 @@ public class SearchRequestBuilder {
 
     private String[] buildIndexNames(final List<SearchDocumentType> filterTypes) {
         if (CollectionUtils.isEmpty(filterTypes)) {
-            return new String[]{preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_CP_INDEX_PREFIX)};
+            return buildAllIndexTypes();
         }
+        final Map<SearchDocumentType, String> typeIndexPrefixes = getSearchIndexPrefixes();
+        return filterTypes.stream()
+                .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
+                        .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
+                .toArray(String[]::new);
+    }
+
+    private String[] buildAllIndexTypes() {
+        return getSearchIndexPrefixes().values().toArray(Strings.EMPTY_ARRAY);
+    }
+
+    private Map<SearchDocumentType, String> getSearchIndexPrefixes() {
         final Map<SearchDocumentType, String> typeIndexPrefixes = preferenceManager
                 .getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_INDEX_PREFIX);
         if (MapUtils.isEmpty(typeIndexPrefixes)) {
             throw new SearchException("Index filtering is not configured");
         }
-        return filterTypes.stream()
-                .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
-                        .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
-                .toArray(String[]::new);
+        return typeIndexPrefixes;
+    }
+
+    private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
+        return QueryBuilders.termsQuery(buildKeywordName(fieldName), values);
+    }
+
+    private QueryBuilder prepareFacetedQuery(final String requestQuery) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        if (StringUtils.isNotBlank(requestQuery)) {
+            queryBuilder.must(getBasicQuery(requestQuery));
+        }
+        return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
+        final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
+                .size(preferenceManager.getPreference(SystemPreferences.SEARCH_AGGS_MAX_COUNT))
+                .field(buildKeywordName(facet));
+        searchSource.aggregation(aggregationBuilder);
+    }
+
+    private String buildKeywordName(final String fieldName) {
+        return String.format("%s.keyword", fieldName);
     }
 }

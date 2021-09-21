@@ -74,7 +74,7 @@ class NetworkUsageChart extends Base {
     );
   }
 
-  renderPlot (data, width, height) {
+  renderPlot (data, width, height, disableTooltips) {
     const selectedInterface = this.selectedInterface;
     if (!selectedInterface) {
       return null;
@@ -86,6 +86,7 @@ class NetworkUsageChart extends Base {
         data={data}
         dataGroup={this.selectedInterface}
         dataType={AxisDataType.networkUsage}
+        disableTooltips={disableTooltips}
         {...this.plotProperties}
         plots={[{
           name: 'rx',

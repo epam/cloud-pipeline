@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public class C {
         ENDPOINT_INITIALIZATION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.endpoint.initialization.timeout"));
         SEARCH_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.search.timeout.in.minutes"));
         LOGIN_DELAY_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.login.delay.timeout"));
+        SHARING_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.run.sharing.timeout.in.seconds"));
         VALID_ENDPOINT = conf.getProperty("e2e.ui.valid.endpoint");
         LOGIN = conf.getProperty("e2e.ui.login");
         PASSWORD = conf.getProperty("e2e.ui.password");
@@ -87,6 +88,17 @@ public class C {
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
         ANOTHER_CLOUD_REGION = conf.getProperty("e2e.ui.another.cloud.region");
+        SYNC_STORAGE_NAME = conf.getProperty("e2e.ui.sync.storage.name");
+        SYNC_STORAGE_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.sync.storage.timeout.in.seconds"));
+        SYNC_STORAGE_PERMISSION_NAME = conf.getProperty("e2e.ui.sync.storage.permission.name");
+        SYNC_STORAGE_PERMISSIONS = conf.getProperty("e2e.ui.sync.storage.permissions");
+        ROLE_USER = conf.getProperty("e2e.ui.role.user");
+        SUPPORT_CONTENT = conf.getProperty("e2e.ui.help.content");
+        LUSTRE_MOUNT_OPTIONS = conf.getProperty("e2e.ui.lustre.fs.mount.options");
+        LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH = conf.getProperty("e2e.ui.launch.system.parameters.path");
+        PIPE_OPERATION_SYSTEM = conf.getProperty("e2e.ui.pipe.operation.system");
+        PIPE_INSTALLATION_CONTENT = conf.getProperty("e2e.ui.pipe.installation.content");
+        PIPE_CONFIG_CONTENT_PATH = conf.getProperty("e2e.ui.pipe.config.content.path");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -98,6 +110,7 @@ public class C {
     public static final int ENDPOINT_INITIALIZATION_TIMEOUT;
     public static final int LOGIN_DELAY_TIMEOUT;
     public static final int SEARCH_TIMEOUT;
+    public static final int SHARING_TIMEOUT;
 
     public static final String LOGIN;
     public static final String PASSWORD;
@@ -111,6 +124,7 @@ public class C {
     public static final String DEFAULT_REGISTRY_IP;
     public static final String DEFAULT_GROUP;
     public static final String ANOTHER_GROUP;
+    public static final String ROLE_USER;
 
     public static final String CLEAN_HISTORY_LOGIN;
     public static final String CLEAN_HISTORY_PASSWORD;
@@ -153,4 +167,16 @@ public class C {
     public static final String ANONYMOUS_NAME;
     public static final String ANONYMOUS_TOKEN;
     public static final String ANOTHER_ADMIN_TOKEN;
+
+    public static final String SYNC_STORAGE_NAME;
+    public static final int SYNC_STORAGE_TIMEOUT;
+    public static final String SYNC_STORAGE_PERMISSION_NAME;
+    public static final String SYNC_STORAGE_PERMISSIONS;
+
+    public static final String SUPPORT_CONTENT;
+    public static final String LUSTRE_MOUNT_OPTIONS;
+    public static final String LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH;
+    public static final String PIPE_OPERATION_SYSTEM;
+    public static final String PIPE_INSTALLATION_CONTENT;
+    public static final String PIPE_CONFIG_CONTENT_PATH;
 }

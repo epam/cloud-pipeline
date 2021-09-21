@@ -5,12 +5,13 @@ import defer from './utilities/defer';
 export default class UploadToBucket extends Remote {
   @observable percent = 0;
 
-  constructor(id, url, tagValue, file) {
+  constructor(id, url, tagValue, cannedACLValue, file) {
     super();
     this.url = url;
     this.file = file;
     this.name = file.name;
     this.tagValue = tagValue;
+    this.cannedACLValue = cannedACLValue;
   }
 
   @action
@@ -67,6 +68,9 @@ export default class UploadToBucket extends Remote {
           request.open('PUT', this.url, true);
           if (this.tagValue) {
             request.setRequestHeader('x-amz-tagging', this.tagValue);
+          }
+          if (this.cannedACLValue) {
+            request.setRequestHeader('x-amz-acl', this.cannedACLValue);
           }
           request.send(this.file);
         } catch (e) {

@@ -117,7 +117,11 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         final Map<GCPResourceType, GCPResourcePrice> objectPrices = prices.stream()
                 .filter(price -> price.getRequest().getObject().equals(object))
                 .filter(price -> price.getRequest().getBilling().equals(billing))
-                .collect(Collectors.toMap(price -> price.getRequest().getType(), Function.identity()));
+                .collect(Collectors.toMap(price -> price.getRequest().getType(), Function.identity(),
+                    (p1, p2) -> {
+                        log.debug("Duplicate prices {} and {}", p1, p2);
+                        return p1;
+                    }));
         final Optional<GCPResourceType> typeWithMissingPrice = requiredTypes.stream()
                 .filter(type -> !objectPrices.keySet().contains(type))
                 .findFirst();

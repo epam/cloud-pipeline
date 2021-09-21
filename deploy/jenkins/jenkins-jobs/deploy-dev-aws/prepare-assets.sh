@@ -30,7 +30,10 @@ fi
 
 echo "Deploying using $PIPECTL_DIST_URL to $AWS_HOST"
 
+set -o allexport
 source "${JENKINS_ENV}"
+set +o allexport
+
 export DEPLOY_DIR="$WORKSPACE/assets"
 rm -rf "$DEPLOY_DIR"
 mkdir -p "$DEPLOY_DIR"
@@ -48,26 +51,6 @@ aws s3 cp "$AWS_SSH_KEY_S3" "$AWS_SSH_KEY_PATH_TMP" &>/dev/null &&
 ###########################
 # Prepare installation command
 ###########################
-
-# Full list of services available for pipectl
-# cp-api-db
-# cp-api-srv
-# cp-git
-# cp-git-sync
-# cp-idp
-# cp-edge
-# cp-notifier
-# cp-docker-registry
-# cp-docker-comp
-# cp-clair
-# cp-search
-# cp-heapster
-# cp-dav
-
-# For incremental deploys - we do not clear the DBs, restart only cloud pipeline's services and repush changed docker images
-export CP_SERVICES_LIST="-s cp-api-srv -s cp-git-sync -s cp-edge -s cp-notifier -s cp-docker-comp -s cp-docker-registry -s cp-dav"
-# And do not clear the data
-unset CP_ERASE_DATA
 
 # Substitute parameters and write command to the file
 export DOLLAR="$"

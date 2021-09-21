@@ -880,6 +880,7 @@ function api_setup_base_preferences {
 
     ## Git
     api_set_preference "git.repository.indexing.enabled" "false" "false"
+    api_set_preference "git.fsbrowser.workdir" "${CP_FSBROWSER_VS_WD:-"/git-workdir"}" "true"
 
     ## Launch
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
@@ -906,6 +907,14 @@ function api_setup_base_preferences {
     api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
     api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
 
+    ## Storage
+    api_set_preference "storage.allow.signed.urls" "${CP_PREF_STORAGE_ALLOW_SIGNED_URLS:-"true"}" "true"
+    api_set_preference "storage.version.storage.ignored.files" ".gitkeep" "true"
+
+    ## Metadata
+    api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"
+    api_set_preference "misc.groups.ui.preferences" "{}" "true"
+
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
     if [ "$CP_PREF_COMMIT_DEPLOY_KEY" ]; then
@@ -914,6 +923,9 @@ function api_setup_base_preferences {
         print_warn "\"commit.deploy.key\" preference is NOT set. Runs COMMIT will NOT be available. Specify it using \"-env CP_PREF_COMMIT_DEPLOY_KEY=\" option"
     fi
     api_set_preference "commit.timeout" "${CP_PREF_COMMIT_TIMEOUT:-18000}" "true"
+
+    # EDGE
+    api_set_preference "default.edge.region" "${CP_CLOUD_REGION_ID:-"eu-central-1"}" "true"
 
     # Set "file-based" preferences
     ### General
@@ -948,7 +960,7 @@ function api_setup_base_preferences {
     ## Set cluster.networks.config preference
     local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
     if [ -f "$cloud_config_network_file" ]; then
-        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
+        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
         
         # cluster.networks.config shall be visible, or otherwise node_up.py will NOT be able to get the information from the API Services
         api_set_preference "cluster.networks.config" "$cluster_networks_config_json" "true"
@@ -956,6 +968,10 @@ function api_setup_base_preferences {
         print_err "Configuration for the Cloud network is not found at ${cloud_config_network_file}. \"cluster.networks.config\" preference WILL NOT be set"
     fi
 
+}
+
+function api_register_git_reader {
+      api_set_preference "git.reader.service.host" "http://${CP_GITLAB_READER_INTERNAL_HOST:-cp-gitlab-reader.default.svc.cluster.local}:${CP_GITLAB_READER_INTERNAL_PORT:-35800}" "false"
 }
 
 function api_register_search {
@@ -991,7 +1007,7 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     "CONFIGURATION": "cp-run-configuration",
     "PIPELINE": "cp-pipeline",
     "ISSUE": "cp-issue",
-    "PIPELINE_CODE": "cp-code*"
+    "PIPELINE_CODE": "cp-pipeline-code*"
 }
 EOF
 

@@ -21,19 +21,17 @@ import java.util.Map;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @EqualsAndHashCode
+@RequiredArgsConstructor
 public class MetadataHeader {
-    private String className;
-    private Map<Integer, EntityTypeField> fields;
-
-    public MetadataHeader(String className) {
-        this.className = className;
-        this.fields = new HashMap<>();
-    }
+    private final String className;
+    private final boolean classColumnPresent;
+    private final Map<Integer, EntityTypeField> fields = new HashMap<>();
 
     public void addField(Integer index, EntityTypeField field) {
         fields.put(index, field);

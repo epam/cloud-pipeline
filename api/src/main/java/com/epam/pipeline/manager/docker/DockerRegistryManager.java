@@ -69,6 +69,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -497,7 +498,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
                     toolGroup.getName()));
             toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
                     ToolScanStatus.NOT_SCANNED, DateUtils.now(), event.getTarget().getTag(),
-                    null, event.getTarget().getDigest());
+                    null, event.getTarget().getDigest(), new HashMap<>());
             return toolInGroup;
         }
         if (!permissionManager.isActionAllowedForUser(toolGroup, actor, AclPermission.WRITE)) {

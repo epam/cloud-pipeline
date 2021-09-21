@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,25 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.MasterPodInfo;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
-import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.EndpointAddress;
+import io.fabric8.kubernetes.api.model.EndpointPort;
+import io.fabric8.kubernetes.api.model.EndpointSubset;
+import io.fabric8.kubernetes.api.model.Endpoints;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretList;
@@ -65,7 +74,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -81,7 +89,6 @@ public class KubernetesManager {
     private static final int ATTEMPTS_STATUS_NODE = 60;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
-    private static final String DEFAULT_SVC_SCHEME = "http";
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String NEW_LINE = "\n";
 
@@ -90,17 +97,11 @@ public class KubernetesManager {
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private PreferenceManager preferenceManager;
+
     @Value("${kube.namespace}")
     private String kubeNamespace;
-
-    @Value("${kube.edge.ip.label}")
-    private String kubeEdgeIpLabel;
-
-    @Value("${kube.edge.port.label}")
-    private String kubeEdgePortLabel;
-
-    @Value("${kube.edge.scheme.label:cloud-pipeline/external-scheme}")
-    private String kubeEdgeSchemeLabel;
 
     @Value("${kube.master.pod.check.url}")
     private String kubePodLeaderElectionUrl;
@@ -108,24 +109,23 @@ public class KubernetesManager {
     @Value("${kube.current.pod.name}")
     private String kubePodName;
 
-    public ServiceDescription getServiceByLabel(String label) {
+    public List<Service> getServicesByLabel(final String label) {
         try (KubernetesClient client = getKubernetesClient()) {
-            List<Service> items =
-                    client.services().withLabel(SERVICE_ROLE_LABEL, label).list().getItems();
-            if (CollectionUtils.isEmpty(items)) {
-                return null;
-            }
-            if (items.size() > 1) {
-                LOGGER.error("More than one service was found for label {}={}.", SERVICE_ROLE_LABEL, label);
-            }
-            Service service = items.get(0);
-            return getServiceDescription(service);
+            return findServicesByLabel(client, SERVICE_ROLE_LABEL, label);
+        }
+    }
+
+    public List<Service> getServicesByLabels(final Map<String, String> labels, final String serviceNameLabel) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            labels.put(SERVICE_ROLE_LABEL, serviceNameLabel);
+            return findServicesByLabels(client, labels);
         }
     }
 
     /**
      * Returns docker container id for specified podId and docker image name
-     * @param podId id of a kubernetes pod
+     *
+     * @param podId       id of a kubernetes pod
      * @param dockerImage docker image name from the pod
      * @return docker container id
      */
@@ -156,8 +156,8 @@ public class KubernetesManager {
             dockerRegistrySecret = client.secrets()
                     .createNew()
                     .withNewMetadata()
-                        .withName(secretName)
-                        .withNamespace(kubeNamespace)
+                    .withName(secretName)
+                    .withNamespace(kubeNamespace)
                     .endMetadata()
                     .withType("kubernetes.io/dockercfg")
                     .withData(Collections.singletonMap(".dockercfg", encodedSecret))
@@ -262,8 +262,9 @@ public class KubernetesManager {
 
     /**
      * Updates current status with node statuses that indicate node failure.
+     *
      * @param status current status
-     * @param node corresponding node
+     * @param node   corresponding node
      * @return status updated with node conditions failure statuses
      */
     public String updateStatusWithNodeConditions(StringBuilder status, Node node) {
@@ -298,7 +299,7 @@ public class KubernetesManager {
     }
 
     public Optional<Node> findNodeByRunId(final String runIdLabel) {
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             final NodeList list = client.nodes()
                     .withLabel(KubernetesConstants.RUN_ID_LABEL, runIdLabel).list();
             return Optional.ofNullable(list)
@@ -319,8 +320,8 @@ public class KubernetesManager {
         final PodMasterStatusApi client = buildMasterStatusClient();
         try {
             final MasterPodInfo info = client.getMasterName()
-                .execute()
-                .body();
+                    .execute()
+                    .body();
             if (info != null) {
                 return info.getName();
             }
@@ -341,15 +342,15 @@ public class KubernetesManager {
 
     private PodMasterStatusApi buildMasterStatusClient() {
         return new Retrofit.Builder()
-            .baseUrl(kubePodLeaderElectionUrl)
-            .addConverterFactory(JacksonConverterFactory.create())
-            .client(new OkHttpClient())
-            .build()
-            .create(PodMasterStatusApi.class);
+                .baseUrl(kubePodLeaderElectionUrl)
+                .addConverterFactory(JacksonConverterFactory.create())
+                .client(new OkHttpClient())
+                .build()
+                .create(PodMasterStatusApi.class);
     }
 
     public Optional<Node> findNodeByName(final String nodeName) {
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             return Optional.ofNullable(client.nodes().withName(nodeName).get());
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
@@ -381,11 +382,12 @@ public class KubernetesManager {
 
     /**
      * Waits until node will be removed from Kubernetes cluster.
+     *
      * @param nodeName
      * @param attempts
      */
     public void waitNodeDown(final String nodeName, final int attempts) {
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             int tries = 0;
             while (tries < attempts) {
                 final Node node = client.nodes().withName(nodeName).get();
@@ -410,7 +412,7 @@ public class KubernetesManager {
         if (StringUtils.isBlank(nodeName) || StringUtils.isBlank(labelName)) {
             return;
         }
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             Node node = client.nodes().withName(nodeName).get();
             Assert.notNull(node, messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND,
                     node.getMetadata().getName()));
@@ -499,7 +501,7 @@ public class KubernetesManager {
         final Node node = nodes.get(0);
         final Map<String, String> labels = node.getMetadata().getLabels();
         if (MapUtils.isEmpty(labels) || (!labels.containsKey(KubernetesConstants.CLOUD_REGION_LABEL)
-                        && !labels.containsKey(KubernetesConstants.AWS_REGION_LABEL))) {
+                && !labels.containsKey(KubernetesConstants.AWS_REGION_LABEL))) {
             throw new IllegalArgumentException(String.format("Node %s is not labeled with Cloud Region",
                     node.getMetadata().getName()));
         }
@@ -549,47 +551,74 @@ public class KubernetesManager {
                 .orElse(true);
     }
 
-    private ServiceDescription getServiceDescription(final Service service) {
-        final Map<String, String> labels = service.getMetadata().getLabels();
-        final String scheme = getValueFromLabelsOrDefault(labels, kubeEdgeSchemeLabel, () -> DEFAULT_SVC_SCHEME);
-        final String ip = getValueFromLabelsOrDefault(labels, kubeEdgeIpLabel, () -> getExternalIp(service));
-        final Integer port = getServicePort(service);
-        return new ServiceDescription(scheme, ip, port);
+    public List<Node> getNodes(KubernetesClient client) {
+        return getAvailableNodes(client).getItems();
     }
 
-    private String getExternalIp(final Service service) {
-        return ListUtils.emptyIfNull(service.getSpec().getExternalIPs())
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                        MessageConstants.ERROR_KUBE_SERVICE_IP_UNDEFINED, service.getMetadata().getName())));
+    public NodeList getAvailableNodes(KubernetesClient client) {
+        return client.nodes().withLabel(KubernetesConstants.RUN_ID_LABEL)
+                .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
+                .list();
     }
 
-    private Integer getServicePort(final Service service) {
-        final String portLabelValue = getValueFromLabelsOrDefault(service.getMetadata().getLabels(),
-            kubeEdgePortLabel, () -> {
-                final Integer port = ListUtils.emptyIfNull(service.getSpec().getPorts())
-                    .stream()
-                    .findFirst()
-                    .map(ServicePort::getPort)
-                    .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                            MessageConstants.ERROR_KUBE_SERVICE_PORT_UNDEFINED, service.getMetadata().getName())));
-                return String.valueOf(port);
-            });
-        if (org.apache.commons.lang3.math.NumberUtils.isDigits(portLabelValue)) {
-            return Integer.parseInt(portLabelValue);
+    public Set<String> getAvailableNodesIds(KubernetesClient client) {
+        NodeList nodeList = getAvailableNodes(client);
+        return convertKubeItemsToRunIdSet(nodeList.getItems());
+    }
+
+    public Set<String> getAllPodIds(KubernetesClient client) {
+        PodList podList = getPodList(client);
+        return convertKubeItemsToRunIdSet(podList.getItems());
+    }
+
+    public Set<String> convertKubeItemsToRunIdSet(List<? extends HasMetadata> items) {
+        if (CollectionUtils.isEmpty(items)) {
+            return Collections.emptySet();
         }
-        throw new IllegalArgumentException(messageHelper.getMessage(
-                MessageConstants.ERROR_KUBE_SERVICE_PORT_UNDEFINED, service.getMetadata().getName()));
+        return items.stream()
+                .map(item -> item.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL))
+                .collect(Collectors.toSet());
     }
 
-    private String getValueFromLabelsOrDefault(final Map<String, String> labels,
-                                               final String labelName,
-                                               final Supplier<String> defaultSupplier) {
-        if (StringUtils.isBlank(labelName) || StringUtils.isBlank(MapUtils.emptyIfNull(labels).get(labelName))) {
-            return defaultSupplier.get();
+    public PodList getPodList(KubernetesClient client) {
+        return client.pods()
+                .inNamespace(kubeNamespace)
+                .withLabel("type", "pipeline")
+                .withLabel(KubernetesConstants.RUN_ID_LABEL).list();
+    }
+
+    public boolean isPodUnscheduled(Pod pod) {
+        String phase = pod.getStatus().getPhase();
+        if (KubernetesConstants.POD_SUCCEEDED_PHASE.equals(phase)
+                || KubernetesConstants.POD_FAILED_PHASE.equals(phase)) {
+            return false;
         }
-        return labels.get(labelName);
+        List<PodCondition> conditions = pod.getStatus().getConditions();
+        return !CollectionUtils.isEmpty(conditions) && KubernetesConstants.POD_UNSCHEDULABLE
+                .equals(conditions.get(0).getReason());
+    }
+
+    public void getOrCreatePodDnsService() {
+        final String name = preferenceManager.getPreference(SystemPreferences.KUBE_POD_SERVICE);
+        try(KubernetesClient client = getKubernetesClient()) {
+            final Optional<Service> service = findServiceByName(client, name);
+            if (service.isPresent()) {
+                return;
+            }
+            final Service newService = client.services().createNew()
+                    .withNewMetadata()
+                    .withName(name)
+                    .withNamespace(kubeNamespace)
+                    .endMetadata()
+                    .withNewSpec()
+                    .withClusterIP("None")
+                    .withType("ClusterIP")
+                    .withSelector(Collections.singletonMap(KubernetesConstants.TYPE_LABEL,
+                            KubernetesConstants.PIPELINE_TYPE))
+                    .endSpec()
+                    .done();
+            Assert.notNull(newService, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, name));
+        }
     }
 
     private void updateStatus(StringBuilder status, NodeCondition condition) {
@@ -629,5 +658,227 @@ public class KubernetesManager {
     private boolean isConfigOKFailure(NodeCondition condition) {
         return condition.getType().equals(KubernetesConstants.CONFIG_OK)
                 && condition.getStatus().equals(KubernetesConstants.FALSE);
+    }
+
+    public boolean isNodeAvailable(final KubernetesClient client, final String nodeId) {
+        return client.nodes()
+                .withLabel(KubernetesConstants.RUN_ID_LABEL, nodeId)
+                .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
+                .list().getItems()
+                .stream()
+                .findFirst()
+                .filter(this::isNodeAvailable)
+                .isPresent();
+    }
+
+    public boolean isNodeAvailable(final Node node) {
+        if (node == null) {
+            return false;
+        }
+        List<NodeCondition> conditions = node.getStatus().getConditions();
+        if (CollectionUtils.isEmpty(conditions)) {
+            return true;
+        }
+        String lastReason = conditions.get(0).getReason();
+        for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
+            if (lastReason.contains(reason)) {
+                log.debug("Node is out of order: {}", conditions);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isNodeUnavailable(final Node node) {
+        return !isNodeAvailable(node);
+    }
+
+    public void createNodeService(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final Integer port = preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_WINDOWS_SERVICE_PORT);
+            if (port == null) {
+                log.debug("Kubernetes Windows service port is not specified. No service will be created.");
+                return;
+            }
+            final String serviceName = resolveNodeServiceName(instance.getNodeIP());
+            createServiceIfNotExists(serviceName, port, port);
+            createEndpointsIfNotExists(serviceName, instance.getNodeIP(), port);
+        }
+    }
+
+    public void deleteNodeService(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final String serviceName = resolveNodeServiceName(instance.getNodeIP());
+            deleteServiceIfExists(serviceName);
+            deleteEndpointsIfExist(serviceName);
+        }
+    }
+
+    private String resolveNodeServiceName(final String ip) {
+        return "ip-" + ip.replace(".", "-");
+    }
+
+    private Service createServiceIfNotExists(final String name, final int port, final int targetPort) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Service> service = findServiceByName(client, name);
+            if (service.isPresent()) {
+                LOGGER.debug("Service with name '{}' already exists", name);
+                return service.get();
+            }
+            return createService(client, name, port, targetPort);
+        }
+    }
+
+    private Service createService(final KubernetesClient client, final String name, final int port, 
+                                  final int targetPort) {
+        final ServicePort servicePort = new ServicePort();
+        servicePort.setPort(port);
+        servicePort.setTargetPort(new IntOrString(targetPort));
+        return createService(client, name, Collections.emptyMap(), Collections.singletonList(servicePort));
+    }
+    
+    public Service createService(final String serviceName, final Map<String, String> labels,
+                                 final List<ServicePort> ports) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return createService(client, serviceName, labels, ports);
+        }
+    }
+
+    private Service createService(final KubernetesClient client, final String serviceName, 
+                                  final Map<String, String> labels, final List<ServicePort> ports) {
+        final Service service = client.services().createNew()
+                .withNewMetadata()
+                .withName(serviceName)
+                .withNamespace(kubeNamespace)
+                .withLabels(labels)
+                .endMetadata()
+                .withNewSpec()
+                .withPorts(ports)
+                .withSelector(labels)
+                .endSpec()
+                .done();
+        Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
+        return service;
+    }
+
+    public Optional<Service> getService(final String labelName, final String labelValue) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return findServiceByLabel(client, labelName, labelValue);
+        }
+    }
+
+    public boolean deleteService(final Service service) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return deleteService(client, service);
+        }
+    }
+
+    public void deleteServiceIfExists(final String name) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Service> service = findServiceByName(client, name);
+            if (!service.isPresent()) {
+                LOGGER.debug("Failed to find service with name '{}'", name);
+                return;
+            }
+            deleteService(client, service.get());
+        }
+    }
+
+    private boolean deleteService(final KubernetesClient client, final Service service) {
+        final boolean deleted = Optional.ofNullable(client.services().delete(service)).orElse(false);
+        if (!deleted) {
+            LOGGER.debug("Failed to delete service '{}'", service.getMetadata().getName());
+        }
+        return deleted;
+    }
+
+    private Optional<Service> findServiceByLabel(final KubernetesClient client, final String labelName,
+                                                 final String labelValue) {
+        final List<Service> items = findServicesByLabel(client, labelName, labelValue);
+        if (CollectionUtils.isEmpty(items)) {
+            return Optional.empty();
+        }
+        if (items.size() > 1) {
+            LOGGER.error("More than one service was found for label {}={}.", labelName, labelValue);
+        }
+        return Optional.of(items.get(0));
+    }
+
+    private Optional<Service> findServiceByName(final KubernetesClient client, final String name) {
+        return Optional.ofNullable(client.services()
+                .inNamespace(kubeNamespace)
+                .withName(name)
+                .get());
+    }
+
+    private Endpoints createEndpointsIfNotExists(final String name, final String ip, final Integer port) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Endpoints> endpoints = findEndpointsByName(client, name);
+            if (endpoints.isPresent()) {
+                LOGGER.debug("Endpoints with name '{}' already exist", name);
+                return endpoints.get();
+            }
+            return createEndpoints(client, name, ip, port);
+        }
+    }
+
+    private Endpoints createEndpoints(final KubernetesClient client, final String name, final String ip, 
+                                      final int port) {
+        final EndpointAddress endpointAddress = new EndpointAddress();
+        endpointAddress.setIp(ip);
+        final EndpointPort endpointPort = new EndpointPort();
+        endpointPort.setPort(port);
+        final EndpointSubset endpointSubset = new EndpointSubset(Collections.singletonList(endpointAddress), 
+                Collections.emptyList(), Collections.singletonList(endpointPort));
+        final Endpoints endpoints = client.endpoints().createNew()
+                .withNewMetadata()
+                .withName(name)
+                .withNamespace(kubeNamespace)
+                .endMetadata()
+                .withSubsets(endpointSubset)
+                .done();
+        Assert.notNull(endpoints, messageHelper.getMessage(MessageConstants.ERROR_KUBE_ENDPOINTS_CREATE, name));
+        return endpoints;
+    }
+
+    public void deleteEndpointsIfExist(final String name) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Endpoints> endpoints = findEndpointsByName(client, name);
+            if (!endpoints.isPresent()) {
+                LOGGER.debug("Failed to find endpoints with name '{}'", name);
+                return;
+            }
+            deleteEndpoints(client, endpoints.get());
+        }
+    }
+
+    private boolean deleteEndpoints(final KubernetesClient client, final Endpoints endpoints) {
+        final boolean deleted = Optional.ofNullable(client.endpoints().delete(endpoints)).orElse(false);
+        if (!deleted) {
+            LOGGER.debug("Failed to delete endpoints '{}'", endpoints.getMetadata().getName());
+        }
+        return deleted;
+    }
+
+    private Optional<Endpoints> findEndpointsByName(final KubernetesClient client, final String name) {
+        return Optional.ofNullable(client.endpoints()
+                .inNamespace(kubeNamespace)
+                .withName(name)
+                .get());
+    }
+
+    private List<Service> findServicesByLabel(final KubernetesClient client, final String labelName,
+                                              final String labelValue) {
+        return client.services()
+                .withLabel(labelName, labelValue)
+                .list()
+                .getItems();
+    }
+
+    private List<Service> findServicesByLabels(final KubernetesClient client, final Map<String, String> labels) {
+        return client.services()
+                .withLabels(labels)
+                .list()
+                .getItems();
     }
 }

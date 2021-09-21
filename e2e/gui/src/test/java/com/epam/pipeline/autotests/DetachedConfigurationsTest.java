@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -359,7 +359,6 @@ public class DetachedConfigurationsTest
                     .ensure(PRICE_TYPE, text(defaultPriceType))
                     .ensure(DISK, value(defaultDisk))
                     .ensureVisible(DELETE, SET_AS_DEFAULT)
-                    .ensure(RUN, contains(byClassName("anticon-down")))
             );
     }
 
@@ -616,7 +615,7 @@ public class DetachedConfigurationsTest
             );
     }
 
-    @Test(priority = 3, dependsOnMethods = "checkPipelineConfigAfterChangesInDetachedConfig")
+    @Test(priority = 3, dependsOnMethods = "checkPipelineConfigAfterChangesInDetachedConfig", enabled = false)
     @TestCase("EPMCMBIBPC-1151")
     public void validateDetachConfigBehaviorIfUserChangesBasePipelineConfig() {
         library()
@@ -657,7 +656,7 @@ public class DetachedConfigurationsTest
                 .stopRun(getLastRunId());
     }
 
-    @Test(priority = 3, dependsOnMethods = "validateDetachConfigBehaviorIfUserChangesBasePipelineConfig")
+    @Test(priority = 3, dependsOnMethods = "checkPipelineConfigAfterChangesInDetachedConfig")
     @TestCase("EPMCMBIBPC-1146")
     public void validateRunSingleConfigFromDetachedConfiguration() {
         library()
@@ -670,14 +669,14 @@ public class DetachedConfigurationsTest
                     .showLog(getLastRunId())
                     .expandTab(INSTANCE)
                     .instanceParameters(p ->
-                            p.ensure(DISK, text(configurationDefaultProfileDiskSize)));
+                            p.ensure(TYPE, text(defaultInstanceType)));
                 library();
             });
         runsMenu()
             .stopRun(getLastRunId());
     }
 
-    @Test(priority = 3, dependsOnMethods = "validateRunSingleConfigFromDetachedConfiguration")
+    @Test(priority = 3, dependsOnMethods = "validateRunSingleConfigFromDetachedConfiguration", enabled = false)
     @TestCase("EPMCMBIBPC-1147")
     public void validateRunClusterFromDetachConfiguration() {
         library()
@@ -699,7 +698,7 @@ public class DetachedConfigurationsTest
             .stopRun(getLastRunId());
     }
 
-    @Test(priority = 3, dependsOnMethods = "validateRunClusterFromDetachConfiguration")
+    @Test(priority = 3, dependsOnMethods = "validateRunSingleConfigFromDetachedConfiguration", enabled = false)
     @TestCase("EPMCMBIBPC-1545")
     public void validationPriceTypeFieldForClusterRun() {
         final String onDemandPriceType = ON_DEMAND;

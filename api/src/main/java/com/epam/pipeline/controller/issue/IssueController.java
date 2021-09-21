@@ -34,7 +34,7 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
-import com.epam.pipeline.manager.issue.IssueApiService;
+import com.epam.pipeline.acl.issue.IssueApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

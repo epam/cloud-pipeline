@@ -20,15 +20,13 @@ import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import {Input, Icon} from 'antd';
 import DockerImageBrowser from '../dialogs/DockerImageBrowser';
-import dockerRegistries from '../../../../models/tools/DockerRegistriesTree';
 import styles from './LaunchPipelineForm.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject(() => ({
-  registries: dockerRegistries
-}))
+@inject('dockerRegistries')
+@HiddenObjects.injectToolsFilters
 @observer
 export default class DockerImageInput extends React.Component {
-
   static propTypes = {
     onChange: PropTypes.func,
     value: PropTypes.string,
@@ -73,8 +71,9 @@ export default class DockerImageInput extends React.Component {
 
   @computed
   get registries () {
-    if (this.props.registries.loaded) {
-      return (this.props.registries.value.registries || []).map(r => r);
+    if (this.props.dockerRegistries.loaded) {
+      return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+        .registries;
     }
     return [];
   }
@@ -94,18 +93,26 @@ export default class DockerImageInput extends React.Component {
             </div>
           }
           size="large"
-          disabled={this.props.disabled || this.props.registries.pending || this.registries.length === 0}
+          disabled={
+            this.props.disabled ||
+            this.props.dockerRegistries.pending ||
+            this.registries.length === 0
+          }
           ref={this.refInput}
           onFocus={this.openBrowser}
           value={this.state.value} />
         {
-          this.registries.length > 0 ?
-          <DockerImageBrowser
-            registries={this.registries}
-            visible={this.state.browserVisible}
-            onCancel={this.closeBrowser}
-            onChange={this.selectDockerImage}
-            dockerImage={this.state.value}/> : undefined
+          this.registries.length > 0
+            ? (
+              <DockerImageBrowser
+                registries={this.registries}
+                visible={this.state.browserVisible}
+                onCancel={this.closeBrowser}
+                onChange={this.selectDockerImage}
+                dockerImage={this.state.value}
+              />
+            )
+            : undefined
         }
       </div>
     );

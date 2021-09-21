@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
 
 import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
@@ -104,8 +106,8 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .completedRuns()
                 .validateColumnName("Run", "Parent run", "Pipeline", "Docker image",
                         "Started", "Completed", "Elapsed", "Owner")
-                .validateAllRunsHaveButton("RERUN")
                 .validateAllRunsHaveButton("Log")
+                .validateRunsHaveButton(Arrays.asList(pipelineRunID, secondToolRunID), "RERUN")
                 .validateAllRunsHaveCost()
                 .validateRowsCount(sizeGreaterThanOrEqual(3));
     }
@@ -121,7 +123,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .validateRowsCount(size(1))
                 .assertLatestPipelineHasRunID(pipelineRunID)
                 .validateStatus(pipelineRunID, SUCCESS)
-                .validatePipelineOwner(pipelineRunID, user.login.toLowerCase());
+                .validatePipelineOwner(pipelineRunID, user.login);
     }
 
     @Test(dependsOnMethods = {"platformUsageInfo"})
@@ -134,12 +136,12 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(firstToolRunID)
                 .validateStatus(firstToolRunID, STOPPED)
-                .validatePipelineOwner(firstToolRunID, user.login.toLowerCase())
+                .validatePipelineOwner(firstToolRunID, user.login)
                 .resetFiltering(DOCKER_IMAGE)
                 .filterBy(DOCKER_IMAGE, nameWithoutGroup(anotherTool))
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(secondToolRunID)
                 .validateStatus(secondToolRunID, STOPPED)
-                .validatePipelineOwner(secondToolRunID, user.login.toLowerCase());
+                .validatePipelineOwner(secondToolRunID, user.login);
     }
 }

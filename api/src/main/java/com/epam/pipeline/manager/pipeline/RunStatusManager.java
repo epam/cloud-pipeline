@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,10 +59,5 @@ public class RunStatusManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteRunStatus(final Long runId) {
         runStatusDao.deleteRunStatus(runId);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteRunStatusForPipeline(final Long pipelineId) {
-        runStatusDao.deleteRunStatusForPipeline(pipelineId);
     }
 }

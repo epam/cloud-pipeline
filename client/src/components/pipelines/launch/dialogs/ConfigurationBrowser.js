@@ -20,7 +20,6 @@ import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {Alert, Button, Col, Icon, Modal, Row, Select, Tree} from 'antd';
 import Folder from '../../browser/Folder';
-import FolderLoad from '../../../../models/folders/FolderLoad';
 import LoadingView from '../../../special/LoadingView';
 import {
   expandItem,
@@ -32,14 +31,19 @@ import {
 
 import styles from './Browser.css';
 import roleModel from '../../../../utils/roleModel';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject(({routing}, params) => ({
-  tree: new FolderLoad(params.initialFolderId ? params.initialFolderId : null)
+@inject('folders')
+@inject(({routing, folders}, params) => ({
+  folders,
+  folderId: params.initialFolderId,
+  tree: params.initialFolderId
+    ? folders.loadWithoutMetadata(params.initialFolderId)
+    : null
 }))
-
+@HiddenObjects.injectTreeFilter
 @observer
 export default class ConfigurationBrowser extends React.Component {
-
   static propTypes = {
     initialFolderId: PropTypes.number,
     visible: PropTypes.bool,
@@ -307,7 +311,7 @@ export default class ConfigurationBrowser extends React.Component {
         null,
         [],
         [ItemTypes.configuration],
-        this.filterConfigurations
+        this.props.hiddenObjectsTreeFilter(this.filterConfigurations)
       );
     }
     return (
@@ -315,7 +319,7 @@ export default class ConfigurationBrowser extends React.Component {
         className={styles.libraryTree}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         expandedKeys={this.state.expandedKeys}
         selectedKeys={this.state.selectedKeys} >
         {this.generateTreeItems(this.rootItems)}
@@ -325,7 +329,7 @@ export default class ConfigurationBrowser extends React.Component {
 
   render () {
     let content = <LoadingView />;
-    if (!this.props.tree.pending && this.props.tree.error) {
+    if (!this.props.tree || (!this.props.tree.pending && this.props.tree.error)) {
       content = <Alert message="Error retrieving configurations" type="error" />;
     } else if (!this.props.tree.pending) {
       content = (
@@ -357,10 +361,10 @@ export default class ConfigurationBrowser extends React.Component {
               id={this.state.folderId}
               treatAsRootId={this.props.initialFolderId}
               onSelectItem={this.onSelectItem}
-              listingMode={true}
-              showConfigurationPreview={true}
-              readOnly={true}
-              highlightByClick={true}
+              listingMode
+              showConfigurationPreview
+              readOnly
+              highlightByClick
               supportedTypes={[ItemTypes.configuration]}
               filterItems={this.filterConfigurations} />
           </Row>
@@ -427,4 +431,9 @@ export default class ConfigurationBrowser extends React.Component {
     }
   }
 
+  componentWillUnmount () {
+    if (this.props.folderId) {
+      this.props.folders.invalidateFolder(this.props.folderId);
+    }
+  }
 }

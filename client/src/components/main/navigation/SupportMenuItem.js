@@ -28,6 +28,10 @@ function replaceLineBreaks (text) {
     .replace(/\\t/g, '\t');
 }
 
+function processLinks (html) {
+  return (html || '').replace(/<a href/ig, '<a target="_blank" href');
+}
+
 @inject('preferences', 'issuesRenderer')
 @observer
 class SupportMenuItem extends React.Component {
@@ -54,10 +58,11 @@ class SupportMenuItem extends React.Component {
     if (!source) {
       return null;
     }
+    const html = processLinks(issuesRenderer.render(source));
     return (
       <Popover
         content={
-          <div dangerouslySetInnerHTML={{__html: issuesRenderer.render(source)}} />
+          <div dangerouslySetInnerHTML={{__html: html}} />
         }
         placement="rightBottom"
         trigger="click"

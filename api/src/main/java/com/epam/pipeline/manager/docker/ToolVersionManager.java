@@ -33,6 +33,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -93,7 +94,21 @@ public class ToolVersionManager {
      * @param version tool version (tag)
      */
     public ToolVersion loadToolVersion(final Long toolId, final String version) {
-        return toolVersionDao.loadToolVersion(toolId, version).orElse(null);
+        return findToolVersion(toolId, version).orElse(null);
+    }
+    
+    public Optional<ToolVersion> findToolVersion(final Long toolId, final String version) {
+        return toolVersionDao.loadToolVersion(toolId, version);
+    }
+
+    /**
+     * Loads tool version attributes for a tool ID and list of versions
+     * @param toolId
+     * @param versions
+     * @return
+     */
+    public Map<String, ToolVersion> loadToolVersions(final Long toolId, final List<String> versions) {
+        return toolVersionDao.loadToolVersions(toolId, versions);
     }
 
     /**
@@ -152,4 +167,5 @@ public class ToolVersionManager {
         Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
     }
+
 }

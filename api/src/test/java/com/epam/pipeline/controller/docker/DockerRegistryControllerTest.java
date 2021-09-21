@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.JwtRawToken;
-import com.epam.pipeline.manager.docker.DockerRegistryApiService;
+import com.epam.pipeline.acl.docker.DockerRegistryApiService;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;

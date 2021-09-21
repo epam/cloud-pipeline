@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.manager.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -26,6 +24,7 @@ import com.epam.pipeline.app.TestApplication;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import org.junit.Assert;
 import org.junit.Test;

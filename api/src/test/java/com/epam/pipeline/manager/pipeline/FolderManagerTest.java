@@ -99,6 +99,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     private static final int BACKUP_DURATION = 1;
     private static final String TEST_MOUNT_POINT = "testMountPoint";
     private static final String TEST_MOUNT_OPTIONS = "testMountOptions";
+    private static final String TEST_EXTERNAL_ID = "external-id";
 
     private static final String TEST_USER = "Test";
     private static final String DATA_KEY_1 = "tag";
@@ -490,6 +491,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         metadata.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
         MetadataClass metadataClass = metadataEntityManager.createMetadataClass(TEST_NAME);
         MetadataEntityVO metadataEntity = new MetadataEntityVO();
+        metadataEntity.setExternalId(TEST_EXTERNAL_ID);
         metadataEntity.setParentId(sourceFolder.getId());
         metadataEntity.setClassName(metadataClass.getName());
         metadataEntity.setClassId(metadataClass.getId());

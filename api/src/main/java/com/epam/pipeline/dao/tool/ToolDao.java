@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -51,6 +52,7 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
 
 public class ToolDao extends NamedParameterJdbcDaoSupport {
+    private static final String LIST_PARAMETER = "list";
 
     private String toolSequence;
     private String toolIconSequence;
@@ -65,6 +67,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     private String deleteToolQuery;
     private String loadToolByRegistryAndImageQuery;
     private String loadToolsFromOtherRegistriesByImageQuery;
+    private String loadAllByRegistryAndImageInQuery;
     private String loadToolByGroupAndImageQuery;
 
     private String deleteToolIconQuery;
@@ -219,6 +222,13 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         return getNamedParameterJdbcTemplate().query(loadToolsFromOtherRegistriesByImageQuery, params, getRowMapper());
     }
 
+    public List<Tool> loadAllByRegistryAndImageIn(final Long registryId, final Set<String> images) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(ToolParameters.REGISTRY_ID.name(), registryId);
+        params.addValue(LIST_PARAMETER, images);
+        return getNamedParameterJdbcTemplate().query(loadAllByRegistryAndImageInQuery, params, getRowMapper());
+    }
+
     enum ToolParameters {
         ID,
         IMAGE,
@@ -232,6 +242,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         ENDPOINTS,
         DESCRIPTION,
         SHORT_DESCRIPTION,
+        PLATFORM,
         DEFAULT_COMMAND,
         LABELS_TO_SEARCH,
         OWNER,
@@ -312,6 +323,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setSecretName(rs.getString(ToolParameters.SECRET_NAME.name()));
         tool.setDescription(rs.getString(ToolParameters.DESCRIPTION.name()));
         tool.setShortDescription(rs.getString(ToolParameters.SHORT_DESCRIPTION.name()));
+        tool.setPlatform(rs.getString(ToolParameters.PLATFORM.name()));
         tool.setDefaultCommand(rs.getString(ToolParameters.DEFAULT_COMMAND.name()));
         tool.setOwner(rs.getString(ToolParameters.OWNER.name()));
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
@@ -410,6 +422,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadToolsWithIssueCountByGroupQuery(String loadToolsWithIssueCountByGroupQuery) {
         this.loadToolsWithIssueCountByGroupQuery = loadToolsWithIssueCountByGroupQuery;
+    }
+
+    @Required
+    public void setLoadAllByRegistryAndImageInQuery(final String loadAllByRegistryAndImageInQuery) {
+        this.loadAllByRegistryAndImageInQuery = loadAllByRegistryAndImageInQuery;
     }
 
     @Required

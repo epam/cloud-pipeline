@@ -90,6 +90,8 @@ In the "Preview" window user can see:
 - block with indication and highlighting of the object's concrete part, where inputted word was found
 - preview of the found object (*if it's available*)
 
+More details see [here](../../manual/19_Search/19._Global_search.md#simple-search).
+
 ## Default values (restrictions) on instance types for the users (groups) and tools
 
 Users may make a mistake while selecting instance types and storages when launching a run.

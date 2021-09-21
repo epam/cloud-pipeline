@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package com.epam.pipeline.manager.security;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityPermissionVO;
-import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
+import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
@@ -36,7 +36,6 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
-import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -54,6 +53,7 @@ import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -64,9 +64,11 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.security.metadata.MetadataPermissionManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
+import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -74,6 +76,7 @@ import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -101,7 +104,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -183,6 +185,12 @@ public class GrantPermissionManager {
 
     @Autowired private RunPermissionManager runPermissionManager;
 
+    @Autowired private PermissionGrantVOMapper permissionGrantVOMapper;
+
+    @Autowired private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
+
+    @Autowired private MetadataPermissionManager metadataPermissionManager;
+
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
     }
@@ -216,6 +224,19 @@ public class GrantPermissionManager {
             return false;
         }
         return true;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setPermissionsToEntity(final List<PermissionVO> permissions, final Long entityId,
+                                       final AclClass entityClass) {
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            permissions.forEach(permission -> {
+                PermissionGrantVO permissionGrantVO = permissionGrantVOMapper.toPermissionGrantVO(permission);
+                permissionGrantVO.setId(entityId);
+                permissionGrantVO.setAclClass(entityClass);
+                setPermissions(permissionGrantVO);
+            });
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -411,13 +432,6 @@ public class GrantPermissionManager {
         return permissionsHelper.isOwner(entity);
     }
 
-    public boolean hasMetadataOwnerPermission(final Long id, final AclClass aclClass) {
-        if (aclClass.isSupportsEntityManager()) {
-            return ownerPermission(id, aclClass);
-        }
-        return hasPipelineUserOrRolePermission(id, aclClass);
-    }
-
     public boolean isOwnerOrAdmin(String owner) {
         String user = authManager.getAuthorizedUser();
         if (user == null || user.equals(AuthManager.UNAUTHORIZED_USER)) {
@@ -437,7 +451,7 @@ public class GrantPermissionManager {
 
     public boolean storagePermissions(Long storageId, List<String> permissionNames) {
         return Optional.ofNullable(permissionNames)
-                .filter(org.apache.commons.collections4.CollectionUtils::isNotEmpty)
+                .filter(CollectionUtils::isNotEmpty)
                 .orElseGet(() -> Collections.singletonList("READ"))
                 .stream()
                 .allMatch(permissionName -> storagePermission(storageId, permissionName));
@@ -562,51 +576,6 @@ public class GrantPermissionManager {
         return true;
     }
 
-    public boolean metadataPermission(Long entityId, AclClass entityClass, String permissionName) {
-        if (!entityClass.isSupportsEntityManager()) {
-            return hasPipelineUserOrRolePermission(entityId, entityClass);
-        }
-        final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(securedEntity.getOwner());
-        } else {
-            return permissionsHelper.isAllowed(permissionName, securedEntity);
-        }
-    }
-
-    public boolean metadataPermission(final MetadataEntry metadataEntry, final String permissionName) {
-        final EntityVO entity = metadataEntry.getEntity();
-        return metadataPermission(entity.getEntityId(), entity.getEntityClass(), permissionName);
-    }
-
-    public boolean listMetadataPermissions(final List<EntityVO> entities, final String permissionName) {
-        for (EntityVO entity : entities) {
-            if (!entity.getEntityClass().isSupportsEntityManager()) {
-                if (!hasPipelineUserOrRolePermission(entity.getEntityId(), entity.getEntityClass())) {
-                    return false;
-                }
-            } else if (!metadataPermission(entity.getEntityId(), entity.getEntityClass(), permissionName)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean hasPipelineUserOrRolePermission(final Long entityId, final AclClass entityClass) {
-        if (entityClass.equals(AclClass.ROLE)) {
-            return isAdmin(getSids());
-        }
-        if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            final PipelineUser user = userManager.loadUserById(entityId);
-            return isOwnerOrAdmin(user.getUserName());
-        }
-        return false;
-    }
-
-    public boolean entityPermission(AbstractSecuredEntity entity, String permissionName) {
-        return entity == null || metadataPermission(entity.getId(), entity.getAclClass(), permissionName);
-    }
-
     public boolean modifyIssuePermission(Long issueId) {
         Issue issue = issueManager.loadIssue(issueId);
         return issue.getAuthor().equalsIgnoreCase(authManager.getAuthorizedUser());
@@ -619,7 +588,9 @@ public class GrantPermissionManager {
 
     public boolean issuePermission(Long issueId, String permissionName) {
         Issue issue = issueManager.loadIssue(issueId);
-        return metadataPermission(issue.getEntity().getEntityId(), issue.getEntity().getEntityClass(), permissionName);
+        return metadataPermissionManager.metadataPermission(
+                issue.getEntity().getEntityId(), issue.getEntity().getEntityClass(),
+                permissionName);
     }
 
     public boolean nodePermission(NodeInstance node, String permissionName) {
@@ -813,6 +784,12 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, securedEntity);
     }
 
+    public boolean hasPipelinePermissionToRunAs(final PipelineStart startVO, final String permissionName) {
+        final AbstractSecuredEntity pipeline = entityManager.load(AclClass.PIPELINE, startVO.getPipelineId());
+        Assert.notNull(pipeline, "Pipeline must be provided");
+        return runPermissionManager.hasEntityPermissionToRunAs(startVO, pipeline, permissionName);
+    }
+
     /**
      * Checks if at least one group from input groups is registered and refer to some entity.
      * @param groups the list of groups
@@ -828,6 +805,12 @@ public class GrantPermissionManager {
         }
         final Integer entriesCount = aclService.loadEntriesBySidsCount(sidIds);
         return entriesCount != null && entriesCount != 0;
+    }
+
+    public boolean hasCloudProfilePermissions(final Long profileId) {
+        final PipelineUser currentUser = authManager.getCurrentUser();
+        return cloudProfileCredentialsManagerProvider.hasAssignedUserOrRole(profileId, currentUser.getId(),
+                currentUser.getRoles());
     }
 
     private List<Sid> convertUserToSids(String user) {

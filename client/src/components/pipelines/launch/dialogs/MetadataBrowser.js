@@ -33,11 +33,13 @@ import {
 } from '../../model/treeStructureFunctions';
 
 import styles from './Browser.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 @inject('folders')
 @inject(({routing, folders}, params) => ({
   tree: folders.loadWithoutMetadata(params.initialFolderId ? params.initialFolderId : null)
 }))
+@HiddenObjects.injectTreeFilter
 @observer
 export default class MetadataBrowser extends React.Component {
   static propTypes = {
@@ -232,7 +234,8 @@ export default class MetadataBrowser extends React.Component {
         false,
         folder,
         [],
-        [ItemTypes.metadata]
+        [ItemTypes.metadata],
+        this.props.hiddenObjectsTreeFilter()
       );
       folder.isLeaf = folder.children.length === 0;
       folder.expanded = true;

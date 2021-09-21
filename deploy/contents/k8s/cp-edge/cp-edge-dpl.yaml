@@ -11,9 +11,11 @@ spec:
       labels:
         cloud-pipeline/cp-edge: "true"
         cloud-pipeline/role: "EDGE"
+        cloud-pipeline/region: $CP_CLOUD_REGION_ID
     spec:
       nodeSelector:
         cloud-pipeline/cp-edge: "true"
+        cloud-pipeline/region: $CP_CLOUD_REGION_ID
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
@@ -25,6 +27,8 @@ spec:
           env:
           - name: NODE_OPTIONS
             value: "--max_old_space_size=4096"
+          - name: CP_EDGE_REGION
+            value: $CP_CLOUD_REGION_ID
           envFrom:
           - configMapRef:
               name: cp-config-global
@@ -49,16 +53,21 @@ spec:
             - mountPath: /opt/docker-registry/pki
               name: docker-pki
               readOnly: true
+            - mountPath: /opt/idp/pki
+              name: idp-pki
+              readOnly: true
             - mountPath: /opt/edge/pki
               name: edge-pki
               readOnly: true
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
+            - mountPath: /etc/nginx/external-apps
+              name: edge-external-apps
       volumes:
         - name: edge-logs
           hostPath:
-            path: /opt/edge/logs
+            path: /opt/edge/logs/$CP_CLOUD_REGION_ID
         - name: api-pki
           hostPath:
             path: /opt/api/pki
@@ -68,11 +77,17 @@ spec:
         - name: docker-pki
           hostPath:
             path: /opt/docker-registry/pki/
+        - name: idp-pki
+          hostPath:
+            path: /opt/idp/pki/
         - name: edge-pki
           hostPath:
             path: /opt/edge/pki
         - name: common-pki
           hostPath:
             path: /opt/common/pki
+        - name: edge-external-apps
+          hostPath:
+            path: /opt/edge/external-apps
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

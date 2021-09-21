@@ -150,6 +150,12 @@ public class AzureStorageHelper {
         unwrap(getContainerURL(storage).delete());
     }
 
+    public Stream<DataStorageFile> listDataStorageFiles(final AzureBlobStorage dataStorage, final String path) {
+        return listFilesRecursively(dataStorage, path)
+                .filter(DataStorageFile.class::isInstance)
+                .map(DataStorageFile.class::cast);
+    }
+
     public DataStorageListing getItems(final AzureBlobStorage storage, final String path, final Integer pageSize,
                                        final String marker) {
         final String prefix = Optional.ofNullable(path).map(ProviderUtils::withTrailingDelimiter).orElse("");
@@ -165,6 +171,13 @@ public class AzureStorageHelper {
 
     private boolean isNotTokenFile(final AbstractDataStorageItem item) {
         return !StringUtils.endsWithIgnoreCase(item.getName(), ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase());
+    }
+
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage storage, final String path) {
+        return list(AbstractListingIterator.flat(getContainerURL(storage), path, null, 1))
+                .findFirst()
+                .filter(DataStorageFile.class::isInstance)
+                .map(DataStorageFile.class::cast);
     }
 
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
@@ -588,10 +601,7 @@ public class AzureStorageHelper {
     }
 
     private DataStorageFile getDataStorageFile(final AzureBlobStorage storage, final String path) {
-        return list(AbstractListingIterator.flat(getContainerURL(storage), path, null, 1))
-                .findFirst()
-                .filter(DataStorageFile.class::isInstance)
-                .map(DataStorageFile.class::cast)
+        return findFile(storage, path)
                 .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_AZURE_CREATE_FILE, storage.getPath())));
     }

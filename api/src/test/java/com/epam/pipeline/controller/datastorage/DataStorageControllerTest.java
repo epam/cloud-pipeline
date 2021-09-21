@@ -21,13 +21,18 @@ import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -39,7 +44,6 @@ import org.springframework.util.MultiValueMap;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_TYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -183,7 +187,26 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
         final MvcResult mvcResult = performRequest(get(String.format(SHARED_LINK_URL, ID)));
 
         Mockito.verify(mockStorageApiService).getDataStorageSharedLink(ID);
-        assertResponse(mvcResult, TEST, STRING_TYPE);
+        assertResponse(mvcResult, TEST, CommonCreatorConstants.STRING_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailConvertDataStorageForUnauthorizedUser() {
+        performUnauthorizedRequest(get(String.format(CONVERT_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldConvertDataStorage() throws Exception {
+        final DataStorageConvertRequest request = new DataStorageConvertRequest(
+                DataStorageConvertRequestType.VERSIONED_STORAGE, DataStorageConvertRequestAction.LEAVE);
+        final String content = getObjectMapper().writeValueAsString(request);
+        Mockito.doReturn(pipeline).when(mockStorageApiService).convert(ID, request);
+
+        final MvcResult mvcResult = performRequest(post(String.format(CONVERT_URL, ID)).content(content));
+
+        Mockito.verify(mockStorageApiService).convert(ID, request);
+        assertResponse(mvcResult, pipeline, PipelineCreatorUtils.PIPELINE_INSTANCE_TYPE);
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,9 @@ public final class ObjectCreatorUtils {
     private static final String TEST_NAME = "TEST";
     private static final String TEST_POD_ID = "pod1";
     private static final String TEST_SERVICE_URL = "service_url";
+    private static final String TEST_REGION = "region";
     public static final int TEST_DISK_SIZE = 100;
+    private static final String TEST_PLATFORM = "linux";
 
     private ObjectCreatorUtils() {
     }
@@ -213,13 +216,15 @@ public final class ObjectCreatorUtils {
     }
 
     public static MetadataEntity createMetadataEntity(Folder folder, MetadataClass metadataClass, String name,
-                                                      String externalId, Map<String, PipeConfValue> data) {
+                                                      String externalId, Map<String, PipeConfValue> data,
+                                                      Date createdDate) {
         MetadataEntity metadataEntity = new MetadataEntity();
         metadataEntity.setName(name);
         metadataEntity.setClassEntity(metadataClass);
         metadataEntity.setExternalId(externalId);
         metadataEntity.setParent(folder);
         metadataEntity.setData(data);
+        metadataEntity.setCreatedDate(createdDate);
         return metadataEntity;
     }
 
@@ -279,13 +284,15 @@ public final class ObjectCreatorUtils {
         run.setPodId(TEST_POD_ID);
         run.setOwner(TEST_NAME);
         run.setParentRunId(parentRunId);
-        run.setServiceUrl(TEST_SERVICE_URL);
+        run.setServiceUrl(Collections.singletonMap(TEST_REGION, TEST_SERVICE_URL));
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setSpot(true);
         instance.setNodeId("1");
         instance.setCloudRegionId(regionId);
         instance.setCloudProvider(CloudProvider.AWS);
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         return run;
     }

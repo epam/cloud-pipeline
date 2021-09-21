@@ -70,6 +70,15 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
       volumes:
         - name: search-logs
           hostPath:

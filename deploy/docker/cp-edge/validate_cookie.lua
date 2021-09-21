@@ -14,6 +14,16 @@
 
 
 -- Common functions
+function arr_concat(t1,t2)
+    if t2 == nil then
+        return t1
+    end
+    for i=1,#t2 do
+        t1[#t1+1] = t2[i]
+    end
+    return t1
+end
+
 local function arr_has_value (tab, val)
     for index, value in ipairs(tab) do
         if value:lower() == val:lower() then
@@ -41,6 +51,9 @@ local function arr_length(T)
 end
 
 local function split_str(inputstr, sep)
+    if inputstr == nil then
+        return {}
+    end
     if sep == nil then
         sep = "%s"
     end
@@ -52,8 +65,8 @@ local function split_str(inputstr, sep)
     return t
 end
 
--- Check if request alread contains a cookie "bearer"
-local token = ngx.var.cookie_bearer
+-- Check if request alread contains a cookie or a header named "bearer"
+local token = ngx.var.cookie_bearer or ngx.var.http_bearer
 if token then
 
     -- If cookie present - validate it
@@ -84,7 +97,7 @@ if token then
                 "; User: " .. username .. "; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
-    local user_roles = jwt_obj["payload"]["roles"]
+    local user_roles = arr_concat(jwt_obj["payload"]["roles"], jwt_obj["payload"]["groups"])
     local shared_with_users = split_str(ngx.var.shared_with_users, ',')
     local shared_with_groups = split_str(ngx.var.shared_with_groups, ',')
 
@@ -115,6 +128,9 @@ if token then
     if ngx.var.route_location_root == ngx.var.request_uri then
         ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
                 "; User: " .. username .. "; Status: Successfully authenticated.")
+    end
+    if ngx.var.auth_user_name ~= nil then
+        ngx.var.auth_user_name = username
     end
     ngx.req.set_header('X-Auth-User', username)
     return

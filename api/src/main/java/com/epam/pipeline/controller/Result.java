@@ -17,9 +17,11 @@
 package com.epam.pipeline.controller;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
+@EqualsAndHashCode
 public final class Result<T> {
 
     private T payload;

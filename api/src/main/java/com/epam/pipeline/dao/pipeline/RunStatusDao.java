@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     private String loadRunStatusQuery;
     private String loadRunStatusByListQuery;
     private String deleteRunStatusQuery;
-    private String deleteRunStatusForPipelineQuery;
-
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void saveStatus(RunStatus runStatus) {
@@ -57,10 +55,6 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteRunStatus(Long runId) {
         getJdbcTemplate().update(deleteRunStatusQuery, runId);
-    }
-
-    public void deleteRunStatusForPipeline(final Long pipelineId) {
-        getJdbcTemplate().update(deleteRunStatusForPipelineQuery, pipelineId);
     }
 
     enum RunStatusParameters {
@@ -114,10 +108,5 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRunStatusQuery(final String deleteRunStatusQuery) {
         this.deleteRunStatusQuery = deleteRunStatusQuery;
-    }
-
-    @Required
-    public void setDeleteRunStatusForPipelineQuery(final String deleteRunStatusForPipelineQuery) {
-        this.deleteRunStatusForPipelineQuery = deleteRunStatusForPipelineQuery;
     }
 }

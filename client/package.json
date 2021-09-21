@@ -13,6 +13,7 @@
     "cytoscape": "^2.7.16",
     "cytoscape-dagre": "^1.5.0",
     "dagre": "^0.7.4",
+    "diff2html": "3.4.2",
     "highlight.js": "^9.12.0",
     "history": "^3.3.0",
     "html2canvas": "^1.0.0-rc.5",
@@ -27,6 +28,8 @@
     "papaparse": "^4.3.6",
     "pipeline-builder": "0.3.10-dev.313",
     "prop-types": "^15.5.8",
+    "rc-dropdown": "^2.2.0",
+    "rc-menu": "^6.0.1",
     "react": "^15.4.2",
     "react-day-picker": "^5.5.3",
     "react-dom": "^15.4.2",
@@ -112,6 +115,8 @@
     "postcss-safe-parser": "4.0.1",
     "promise": "^8.0.2",
     "react-dev-utils": "^7.0.3",
+    "serve": "^12.0.0",
+    "string-replace-loader": "^2.3.0",
     "style-loader": "0.14.1",
     "stylelint": "^7.10.1",
     "stylelint-config-standard": "^16.0.0",
@@ -130,6 +135,7 @@
     "lint": "eslint src",
     "lint:fix": "npm run lint -- --fix",
     "stylelint": "stylelint src/**/*.css",
-    "stylelint:fix": "npm run stylelint -- --fix"
+    "stylelint:fix": "npm run stylelint -- --fix",
+    "serve-build": "serve"
   }
 }

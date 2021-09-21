@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,10 +97,10 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     private void showMetadata(final By attribute) {
-        hover(SHOW_METADATA);
+        click(SHOW_METADATA);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
-                page -> click(attribute),
+                page -> click(attribute).resetMouse(),
                 page -> resetMouse()
         );
     }
@@ -153,6 +153,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
 
         public InstanceManagementSectionAO clickApply() {
             click(APPLY);
+            ensureDisable(APPLY);
             return this;
         }
 

@@ -87,6 +87,10 @@
   font-weight: bolder;
 }
 
+.parameters-menu {
+  cursor: pointer
+}
+
 .parameter-name {
   margin-left: -10px;
   text-align: right;

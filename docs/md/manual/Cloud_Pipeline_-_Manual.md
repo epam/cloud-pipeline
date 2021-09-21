@@ -36,6 +36,7 @@
     - [8.8. Data sharing](08_Manage_Data_Storage/8.8._Data_sharing.md)
     - [8.9. Mapping storages](08_Manage_Data_Storage/8.9._Mapping_storages.md)
 - [9. Manage Cluster nodes](09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md)
+    - [9.1. Manage hot node pools](09_Manage_Cluster_nodes/9.1._Hot_node_pools.md)
 - [10. Manage Tools](10_Manage_Tools/10._Manage_Tools.md)
     - [10.1. Add/Edit a Docker registry](10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md)
     - [10.2. Add/Edit a Tool group](10_Manage_Tools/10.2._Add_Edit_a_Tool_group.md)
@@ -74,6 +75,8 @@
     - [14.6. View cluster nodes via CLI](14_CLI/14.6._View_cluster_nodes_via_CLI.md)
     - [14.7. View and manage Permissions via CLI](14_CLI/14.7._View_and_manage_Permissions_via_CLI.md)
     - [14.8. View tools definitions via CLI](14_CLI/14.8._View_tools_definitions_via_CLI.md)
+    - [14.9. User management via CLI](14_CLI/14.9._User_management_via_CLI.md)
+    - [14.10. SSH tunnel to the running compute instance](14_CLI/14.10._SSH_tunnel.md)
 - [15. Interactive services](15_Interactive_services/15._Interactive_services.md)
     - [15.1. Starting an Interactive application](15_Interactive_services/15.1._Starting_an_Interactive_application.md)
     - [15.2. Using Terminal access](15_Interactive_services/15.2._Using_Terminal_access.md)
@@ -81,7 +84,9 @@
     - [15.4. Interactive service examples](15_Interactive_services/15.4._Interactive_service_examples.md)
 - [16. Issues](16_Issues/16._Issues.md)
 - [17. CP objects tagging by additional attributes](17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes.md)
+    - [17.1. Faceted filters search using tags](17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md)
 - [18. Home page](18_Home_page/18._Home_page.md)
+- [19. Global search](19_Search/19._Global_search.md)
 - [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)
 - [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)
 - [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
@@ -142,6 +147,9 @@ Learn how to manage custom sets of "key-values" attributes for data storage 
 
 [18. Home page](18_Home_page/18._Home_page.md)  
 Get details about homepage widgets, how to configure homepage view.
+
+[19. Global search](19_Search/19._Global_search.md)
+How to search objects over the Platform.
 
 [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)  
 Learn basics about instance and Docker container lifecycle.

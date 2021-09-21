@@ -10,7 +10,7 @@
   {
     "name": "CP_CAP_DESKTOP_NM",
     "endpoint_env": "CP_CAP_NM_PROXY_PORT",
-    "endpoint_default" : "8888",
+    "endpoint_default" : "8089",
     "endpoint_num_env": "CP_CAP_NM_PROXY_ENDPOINT_ID",
     "endpoint_num_default" : "0",
     "friendly_name" : "NoMachine"

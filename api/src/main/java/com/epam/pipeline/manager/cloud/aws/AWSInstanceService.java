@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,16 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
@@ -61,6 +63,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
 
+    // This InstanceDNSRecord used when no operation is required, f.e.
+    // when DNS record that doesn't exist asked to be deleted
+    private static final InstanceDNSRecord NO_OP_INSTANCE_DNS_RECORD = new InstanceDNSRecord(
+            "", "", InstanceDNSRecord.DNSRecordStatus.NO_OP);
+
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
     private final InstanceOfferManager instanceOfferManager;
@@ -70,6 +77,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
+    private final Route53Helper route53Helper;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
@@ -80,6 +88,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                               final @Lazy InstanceOfferManager instanceOfferManager,
                               final CommonCloudInstanceService instanceService,
                               final ClusterCommandService commandService,
+                              final Route53Helper route53Helper,
                               @Value("${cluster.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.nodedown.script}") final String nodeDownScript,
                               @Value("${cluster.reassign.script}") final String nodeReassignScript,
@@ -89,6 +98,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         this.instanceOfferManager = instanceOfferManager;
         this.instanceService = instanceService;
         this.commandService = commandService;
+        this.route53Helper = route53Helper;
         this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
@@ -99,8 +109,17 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     public RunInstance scaleUpNode(final AwsRegion region,
                                    final Long runId,
                                    final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, runId, instance);
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars());
+    }
+
+    @Override
+    public RunInstance scaleUpPoolNode(final AwsRegion region,
+                                       final String nodeIdLabel,
+                                       final NodePool node) {
+        final RunInstance instance = node.toRunInstance();
+        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, getPoolLabels(node));
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars());
     }
 
     @Override
@@ -109,13 +128,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars());
     }
 
-    //TODO: This code won't work for current scripts
     @Override
-    public void scaleUpFreeNode(final AwsRegion region, final String nodeId) {
-        String command = buildNodeUpDefaultCommand(region, nodeId);
-        log.debug("Creating default free node. Command: {}.", command);
-        //TODO: issue token for some default user???
-        executeCmd(command, buildScriptEnvVars());
+    public void scaleDownPoolNode(final AwsRegion region, final String nodeLabel) {
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
+        instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars());
     }
 
     @Override
@@ -123,6 +139,14 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         final String command = commandService.buildNodeReassignCommand(
                 nodeReassignScript, oldId, newId, getProvider().name());
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId, buildScriptEnvVars());
+    }
+
+    @Override
+    public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId) {
+        final String command = commandService.buildNodeReassignCommand(
+                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
+                String.valueOf(newId), buildScriptEnvVars());
     }
 
     @Override
@@ -190,7 +214,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
             final Instance ec2Instance = supplier.get();
             instance.setNodeId(ec2Instance.getInstanceId());
             instance.setNodeIP(ec2Instance.getPrivateIpAddress());
-            instance.setNodeName(ec2Instance.getPrivateDnsName().split("\\.")[0]);
+            instance.setNodeName(ec2Instance.getInstanceId());
             return instance;
         } catch (AwsEc2Exception e) {
             log.debug("Instance for label {} not found", nodeLabel);
@@ -254,17 +278,51 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         return null;
     }
 
+    @Override
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        if (dnsRecord.getDnsRecord().contains(
+                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
+            return route53Helper
+                    .createDNSRecord(preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
+                    );
+        } else {
+            return NO_OP_INSTANCE_DNS_RECORD;
+        }
+    }
+
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        if (dnsRecord.getDnsRecord().contains(
+                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
+            return route53Helper
+                    .removeDNSRecord(preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
+                    );
+        } else {
+            return NO_OP_INSTANCE_DNS_RECORD;
+        }
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final AwsRegion region, final String imageName) {
+        return ec2Helper.getInstanceImageDescription(region.getRegionCode(), imageName);
+    }
+
     private String buildNodeUpCommand(final AwsRegion region,
-                                      final Long runId,
-                                      final RunInstance instance) {
+                                      final String nodeLabel,
+                                      final RunInstance instance,
+                                      final Map<String, String> labels) {
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance, getProviderName())
+                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
                                .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
         }
         addSpotArguments(instance, commandBuilder, region.getId());
+        commandBuilder.prePulledImages(instance.getPrePulledDockerImages());
+        commandBuilder.additionalLabels(labels);
         return commandBuilder.build().getCommand();
     }
 
@@ -299,22 +357,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         }
     }
 
-    private String buildNodeUpDefaultCommand(final AwsRegion region, final String nodeId) {
-
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildDefaultNodeUpCommand(nodeUpScript, region, nodeId, getProviderName())
-                               .sshKey(region.getSshKeyName());
-
-        if (StringUtils.isNotBlank(region.getKmsKeyId())) {
-            commandBuilder.encryptionKey(region.getKmsKeyId());
-        }
-        if (preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)) {
-            setBidPrice(commandBuilder, preferenceManager.getPreference(
-                    SystemPreferences.CLUSTER_INSTANCE_TYPE), region.getId());
-        }
-        return commandBuilder.build().getCommand();
-    }
-
     private void setBidPrice(final NodeUpCommand.NodeUpCommandBuilder commandBuilder,
                              final String preference,
                              final Long id) {
@@ -322,14 +364,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         commandBuilder.isSpot(true);
         commandBuilder.bidPrice(Optional.ofNullable(bidPrice)
                 .map(p -> String.valueOf(bidPrice)).orElse(StringUtils.EMPTY));
-    }
-
-    private void executeCmd(final String command, final Map<String, String> envVars) {
-        try {
-            cmdExecutor.executeCommandWithEnvVars(command, envVars);
-        } catch (CmdExecutionException e) {
-            log.error(e.getMessage(), e);
-        }
     }
 
     private Map<String, String> buildScriptEnvVars() {

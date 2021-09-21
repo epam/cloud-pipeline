@@ -16,15 +16,35 @@
 
 package com.epam.pipeline.test.creator.security;
 
+import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
+import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.security.acl.AclSid;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.UserContext;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class SecurityCreatorUtils {
 
+    public static final TypeReference<Result<Map<AclClass, List<S3bucketDataStorage>>>> ACL_SECURED_ENTITY_MAP_TYPE =
+            new TypeReference<Result<Map<AclClass, List<S3bucketDataStorage>>>>() {};
     public static final TypeReference<JwtRawToken> JWT_RAW_TOKEN_INSTANCE_TYPE = new TypeReference<JwtRawToken>() {};
+    public static final TypeReference<Result<JwtRawToken>> JWT_RAW_TOKEN_TYPE =
+            new TypeReference<Result<JwtRawToken>>() {};
 
     private SecurityCreatorUtils() {
 
@@ -40,7 +60,71 @@ public final class SecurityCreatorUtils {
         return context;
     }
 
+    public static UserContext getUserContext(final Long userId, final String userName,
+                                             final Long roleId, final String roleName) {
+        final UserContext context = new UserContext();
+        context.setUserId(userId);
+        context.setUserName(userName);
+        final Role role = new Role();
+        role.setId(roleId);
+        role.setName(roleName);
+        role.setUserDefault(true);
+        role.setPredefined(true);
+        context.setRoles(Collections.singletonList(role));
+        return context;
+
+    }
+
+    private static AclSid getAclSid(final String name) {
+        final AclSid sid = getAclSid();
+        sid.setName(name);
+        return sid;
+    }
+
+    public static AclSid getAclSid() {
+        return new AclSid();
+    }
+
     public static JwtRawToken getJwtRawToken() {
         return new JwtRawToken(TEST_STRING);
+    }
+
+    public static EntityVO getEntityVO(final Long id, final AclClass aclClass) {
+        return new EntityVO(id, aclClass);
+    }
+
+    public static AbstractSecuredEntity getEntity(final Long id, final AclClass aclClass) {
+        return new SimpleSecuredEntity(id, aclClass);
+    }
+
+    public static AclSecuredEntry getAclSecuredEntry(final AbstractSecuredEntity entity) {
+        final AclSecuredEntry entry = new AclSecuredEntry(entity);
+        entry.setPermissions(Collections.singletonList(getAclPermissionEntry()));
+        return entry;
+    }
+
+    private static AclPermissionEntry getAclPermissionEntry() {
+        return new AclPermissionEntry(getAclSid(TEST_NAME), TEST_INT);
+    }
+
+    @RequiredArgsConstructor
+    private static class SimpleSecuredEntity extends AbstractSecuredEntity {
+        private final Long id;
+        private final AclClass aclClass;
+
+        @Override
+        public Long getId() {
+            return id;
+        }
+
+        @Override
+        public AbstractSecuredEntity getParent() {
+            return null;
+        }
+
+        @Override
+        public AclClass getAclClass() {
+            return aclClass;
+        }
     }
 }

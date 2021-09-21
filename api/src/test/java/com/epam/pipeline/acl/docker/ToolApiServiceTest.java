@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,6 @@ import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.EXECUTE_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -77,7 +76,10 @@ public class ToolApiServiceTest extends AbstractAclTest {
     private final ToolSymlinkRequest toolSymlinkRequest = DockerCreatorUtils.getToolSymlinkRequest();
     private final ToolScanResult toolScanResult = DockerCreatorUtils.getToolScanResult();
     private final ToolScanResultView toolScanResultView = new ToolScanResultView(toolScanResult.getToolId(),
-            Collections.singletonMap(TEST_STRING, ToolVersionScanResultView.builder().version(TEST_STRING).build()));
+            Collections.singletonMap(TEST_STRING, ToolVersionScanResultView.builder()
+                    .version(TEST_STRING)
+                    .vulnerabilitiesCount(Collections.emptyMap())
+                    .build()));
     private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
 
     @Autowired
@@ -237,35 +239,6 @@ public class ToolApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.loadTool(StringUtils.EMPTY, TEST_STRING));
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldLoadToolForExecutionForAdmin() {
-        doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
-
-        assertThat(toolApiService.loadToolForExecution(TEST_STRING)).isEqualTo(tool);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldLoadToolForExecutionWhenPermissionIsGranted() {
-        initAclEntity(tool, AclPermission.EXECUTE);
-        doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
-
-        final Tool returnedTool = toolApiService.loadToolForExecution(TEST_STRING);
-
-        assertThat(returnedTool.getMask()).isEqualTo(EXECUTE_PERMISSION);
-        assertThat(returnedTool).isEqualTo(tool);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyLoadToolForExecutionWhenPermissionIsNotGranted() {
-        initAclEntity(tool);
-        doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
-
-        assertThrows(AccessDeniedException.class, () -> toolApiService.loadToolForExecution(TEST_STRING));
     }
 
     @Test

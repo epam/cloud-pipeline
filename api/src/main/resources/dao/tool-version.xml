@@ -29,14 +29,16 @@
                         version,
                         digest,
                         size,
-                        modified_date
+                        modified_date,
+                        platform
                     ) VALUES (
                         :ID,
                         :TOOL_ID,
                         :VERSION,
                         :DIGEST,
                         :SIZE,
-                        :MODIFIED_DATE
+                        :MODIFIED_DATE,
+                        :PLATFORM
                     )
                 ]]>
             </value>
@@ -47,7 +49,8 @@
                     UPDATE pipeline.tool_version AS tv SET
                         digest = :DIGEST,
                         size = :SIZE,
-                        modified_date = :MODIFIED_DATE
+                        modified_date = :MODIFIED_DATE,
+                        platform = :PLATFORM
                     WHERE
                         tv.tool_id = :TOOL_ID AND tv.version = :VERSION
                 ]]>
@@ -82,7 +85,8 @@
                         tv.version,
                         tv.digest,
                         tv.size,
-                        tv.modified_date
+                        tv.modified_date,
+                        tv.platform
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
@@ -99,7 +103,8 @@
                         tv.tool_id,
                         tv.version,
                         tv.settings,
-                        tv.size
+                        tv.size,
+                        tv.platform
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
@@ -116,11 +121,30 @@
                         tv.tool_id,
                         tv.version,
                         tv.settings,
-                        tv.size
+                        tv.size,
+                        tv.platform
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
                     WHERE ? IN (t.id, tl.id)
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolVersionListSettingsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        DISTINCT tv.id,
+                        tv.tool_id,
+                        tv.version,
+                        tv.digest,
+                        tv.size,
+                        tv.modified_date,
+                        tv.platform
+                    FROM pipeline.tool_version AS tv
+                    INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
+                    LEFT JOIN pipeline.tool t ON (t.link = tl.id)
+                    WHERE :TOOL_ID IN (t.id, tl.id) AND tv.version IN (:VERSIONS)
                 ]]>
             </value>
         </property>
@@ -131,11 +155,13 @@
                         id,
                         tool_id,
                         version,
+                        platform,
                         settings
                     ) VALUES (
                         :ID,
                         :TOOL_ID,
                         :VERSION,
+                        :PLATFORM,
                         to_jsonb(:SETTINGS::jsonb)
                     )
                 ]]>

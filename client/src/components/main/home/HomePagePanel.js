@@ -23,7 +23,7 @@ import {
   PanelIcons,
   PanelInfos,
   PanelTitles,
-  Layout
+  AsyncLayout
 } from './layout';
 import {
   ActivitiesPanel,
@@ -51,8 +51,8 @@ const PanelComponent = {
 };
 
 @localization.localizedComponent
+@AsyncLayout.use
 export default class HomePagePanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onInitialize: PropTypes.func,
     panelKey: PropTypes.string,
@@ -71,7 +71,7 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
     if (e) {
       e.preventDefault();
     }
-    Layout.removePanel(this.props.panelKey);
+    this.props.layout.removePanel(this.props.panelKey);
     this.props.onPanelRemoved && this.props.onPanelRemoved(this.props.panelKey);
   };
 

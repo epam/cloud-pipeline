@@ -27,7 +27,7 @@ RUN conda install -c anaconda nodejs -y
 ARG WITH_GIT_PLUGIN="YES"
 RUN if [ "$WITH_GIT_PLUGIN" == "YES" ]; then \
         jupyter labextension install @jupyterlab/git && \
-        pip install --upgrade jupyterlab-git && \
+        pip install --upgrade jupyterlab-git==0.22.1 && \
         jupyter serverextension enable --py jupyterlab_git; \
     fi
 

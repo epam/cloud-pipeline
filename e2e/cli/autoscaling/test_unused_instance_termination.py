@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@ import logging
 
 import pytest
 
-from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from ..common_utils.entity_managers import PipelineManager
+from ..common_utils.test_utils import format_name
+from ..utils.pipeline_utils import *
 
 MAX_REP_COUNT = 150
 
@@ -28,13 +29,13 @@ class TestUnusedInstanceTermination(object):
     node_name = None
     pipeline_id = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-177'
+    test_case = 'TC-SCALING-6'
 
     @classmethod
     def setup_class(cls):
         logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
-        pipeline_name = "unused_instance_termination_test"
+        pipeline_name = format_name("unused_instance_termination_test")
         pipeline_id = PipelineManager.create(pipeline_name)
         logging.info("Pipeline {} with ID {} created.".format(pipeline_name, pipeline_id))
         cls.pipeline_id = pipeline_id

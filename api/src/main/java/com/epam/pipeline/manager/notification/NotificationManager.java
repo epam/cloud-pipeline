@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationGroup;
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import com.epam.pipeline.entity.notification.NotificationGroup;
+import com.epam.pipeline.entity.notification.NotificationType;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -76,7 +76,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 @Service
-public class NotificationManager { // TODO: rewrite with Strategy pattern?
+public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
     private static final double PERCENT = 100.0;
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationManager.class);
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
@@ -92,6 +92,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
     @Autowired
     private NotificationSettingsManager notificationSettingsManager;
+
+    @Autowired
+    private ContextualNotificationManager contextualNotificationManager;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -114,6 +117,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @param duration Running duration of a run in seconds.
      * @param settings defines, if a long initialization or long running message template should be used
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
@@ -150,6 +154,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @param issue an issue to notify about
      * @param entity an entity for wich issue was created
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIssue(Issue issue, AbstractSecuredEntity entity, String htmlText) {
         NotificationSettings newIssueSettings = notificationSettingsManager.load(NotificationType.NEW_ISSUE);
@@ -175,6 +180,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.createMonitoringNotification(message);
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIssueComment(IssueComment comment, Issue issue, String htmlText) {
         NotificationSettings newIssueCommentSettings = notificationSettingsManager
@@ -218,10 +224,12 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.createMonitoringNotification(message);
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyRunStatusChanged(PipelineRun pipelineRun) {
-        NotificationSettings runStatusSettings = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
+        contextualNotificationManager.notifyRunStatusChanged(pipelineRun);
 
+        NotificationSettings runStatusSettings = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
         if (runStatusSettings == null || !runStatusSettings.isEnabled()) {
             LOGGER.info("No template configured for pipeline run status changes notifications or it was disabled!");
             return;
@@ -237,7 +245,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(runStatusSettings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(pipelineRun, null));
+        message.setTemplateParameters(PipelineRunMapper.map(pipelineRun));
 
         message.setCopyUserIds(getCCUsers(runStatusSettings));
 
@@ -257,6 +265,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      *                         IDLE_RUN_STOPPED
      * @throws IllegalArgumentException if notificationType is not from IDLE_RUN group
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIdleRuns(List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
                                NotificationType notificationType) {
@@ -297,6 +306,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         }
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyHighResourceConsumingRuns(
             final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
@@ -331,7 +341,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final List<NotificationMessage> messages = filtered.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
             message.getTemplateParameters().put("memoryThreshold", memThreshold);
             message.getTemplateParameters().put("memoryRate",
                     pair.getRight().getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
@@ -351,6 +361,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyStuckInStatusRuns(final List<PipelineRun> runs) {
         final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_STATUS);
@@ -386,6 +397,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * Creates notifications for long paused runs.
      * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyLongPausedRuns(final List<PipelineRun> pausedRuns) {
         final List<PipelineRun> longPausedRuns = createNotificationsForLongPausedRuns(pausedRuns,
@@ -406,6 +418,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
      * @return the list of the {@link PipelineRun} objects that in long paused state
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public List<PipelineRun> notifyLongPausedRunsBeforeStop(final List<PipelineRun> pausedRuns) {
         return createNotificationsForLongPausedRuns(pausedRuns, NotificationType.LONG_PAUSED_STOPPED);
@@ -462,11 +475,6 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     @Transactional(propagation = Propagation.REQUIRED)
     public void removeNotificationTimestamps(final Long runId) {
         monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void removeNotificationTimestampsByPipelineId(final Long id) {
-        monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
     }
 
     public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId,
@@ -626,7 +634,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         LOGGER.debug("Sending idle run notification for run '{}'.", pair.getLeft().getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+        message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
         message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
         message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
         if (idleRunSettings.isKeepInformedOwner()) {

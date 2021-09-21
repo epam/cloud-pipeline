@@ -134,6 +134,10 @@ public class FolderManager {
         return crudManager.load(id);
     }
 
+    public boolean exists(final Long id) {
+        return crudManager.searchById(id).isPresent();
+    }
+
     public Folder loadByNameOrId(String pathOrIdentifier) {
         return crudManager.loadByNameOrId(pathOrIdentifier);
     }

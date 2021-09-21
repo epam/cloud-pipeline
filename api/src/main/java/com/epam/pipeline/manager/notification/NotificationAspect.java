@@ -16,11 +16,9 @@
 
 package com.epam.pipeline.manager.notification;
 
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -39,9 +37,6 @@ import org.springframework.stereotype.Component;
 public class NotificationAspect {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationAspect.class);
     public static final String RESUME_RUN_FAILED = "Resume run failed.";
-
-    @Autowired
-    private PipelineManager pipelineManager;
 
     @Autowired
     private NotificationManager notificationManager;
@@ -78,20 +73,9 @@ public class NotificationAspect {
                           run.getVersion(), run.getStatus());
             return;
         }
-
-        if (run.getPipelineName() == null) {
-            if (run.getPipelineId() != null) {
-                Pipeline pipeline = pipelineManager.load(run.getPipelineId());
-                run.setPipelineName(pipeline.getName());
-            } else {
-                run.setPipelineName("pipeline");
-            }
-        }
-
         LOGGER.debug("Notify all about pipelineRun status changed {} {} {}: {}",
                      run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
         notificationManager.notifyRunStatusChanged(run);
     }
-
 }
 

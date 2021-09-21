@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType.*;
+import com.epam.pipeline.entity.notification.NotificationType;
+import static com.epam.pipeline.entity.notification.NotificationType.*;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -45,7 +45,6 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -113,6 +112,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final int LONG_STATUS_THRESHOLD = 100;
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
     private static final Long LONG_PAUSED_SECONDS = 10L;
+    private static final String TEST_PLATFORM = "linux";
 
     @Autowired
     private NotificationManager notificationManager;
@@ -125,9 +125,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
-
-    @Autowired
-    private PipelineManager pipelineManager;
 
     @MockBean
     private KubernetesManager kubernetesManager;
@@ -221,8 +218,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         noAdmins.setUsers(Collections.emptyList());
 
         Pod mockPod = mock(Pod.class);
-        PodStatus podStatus = new PodStatus(null, null, "hostIp", "", "",
-                                            "podIp", "bla-bla", "5 o'clock");
+        PodStatus podStatus = new PodStatus(null, null, "hostIp", null, "", "",
+                                            "podIp", "bla-bla", "5 o'clock",  "");
         podMetadata = new ObjectMeta();
         podMetadata.setLabels(Collections.emptyMap());
 
@@ -473,23 +470,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testRemoveNotificationTimestampWhenDelete() {
-        Pipeline pipeline = createPipeline(testOwner);
-        PipelineRun run1 = createTestPipelineRun(pipeline.getId());
-        notificationManager.notifyHighResourceConsumingRuns(Collections.singletonList(
-                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE))),
-                HIGH_CONSUMED_RESOURCES);
-
-        Assert.assertTrue(notificationManager.loadLastNotificationTimestamp(run1.getId(),
-                HIGH_CONSUMED_RESOURCES).isPresent());
-
-        pipelineManager.delete(pipeline.getId(), true);
-
-        Assert.assertFalse(notificationManager.loadLastNotificationTimestamp(run1.getId(),
-                HIGH_CONSUMED_RESOURCES).isPresent());
-    }
-
-    @Test
     public void notifyHighConsumingRunOnlyOnceIfItIsSetup() {
         highConsuming.setResendDelay(-1L);
         notificationSettingsDao.updateNotificationSettings(highConsuming);
@@ -737,6 +717,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         run.setLastChangeCommitTime(new Date());
         run.setPodId("pod");
         run.setOwner(testOwner.getUserName());
+        run.setPlatform(TEST_PLATFORM);
 
         Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
         PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
@@ -755,6 +736,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         final RunInstance runInstance = new RunInstance();
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(1L);
+        runInstance.setNodePlatform(TEST_PLATFORM);
         return runInstance;
     }
 

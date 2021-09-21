@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,12 +39,11 @@ def is_frozen():
     return getattr(sys, 'frozen', False)
 
 
-def silent_print_config_info():
+def silent_print_creds_info():
     config = Config.instance(raise_config_not_found_exception=False)
     if config is not None and config.initialized:
         click.echo()
         config.validate(print_info=True)
-
 
 class ConfigNotFoundError(Exception):
     def __init__(self):
@@ -182,7 +181,7 @@ class Config(object):
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
-              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
+              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec, config_store):
         check_token(access_key, timezone)
         if proxy == PROXY_TYPE_PAC and proxy_ntlm:
             raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
@@ -205,7 +204,29 @@ class Config(object):
                   'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass),
                   'codec': codec
                   }
-        config_file = cls.config_path()
+        config_store_mode = config_store.lower()
+        install_dir_config = cls.get_install_dir_config_path()
+        if 'install-dir' == config_store_mode:
+            if not install_dir_config:
+                click.echo('`install-dir` configuration mode is not available for SOURCE distribution'
+                           ' and interactive mode'.format(config_store), err=True)
+                sys.exit(1)
+            config_file = install_dir_config
+        elif 'home-dir' == config_store_mode:
+            if install_dir_config and os.path.exists(install_dir_config):
+                try:
+                    os.remove(install_dir_config)
+                except OSError:
+                    click.echo("Unable to cleanup existing config in the installation directory")
+                    sys.exit(1)
+            config_file = cls.get_home_dir_config_path()
+        else:
+            click.echo('Unknown storing mode for CLI config: `{}`, valid types are [home-dir, install-dir].'
+                       .format(config_store),
+                       err=True)
+            sys.exit(1)
+        click.echo('Config storing mode is `{}`, target path `{}`'.format(config_store_mode, config_file))
+
         # create file
         with open(config_file, 'w+'):
             os.utime(config_file, None)
@@ -226,6 +247,20 @@ class Config(object):
 
     @classmethod
     def config_path(cls):
+        config_path = cls.get_install_dir_config_path()
+        if config_path and os.path.isfile(config_path):
+            return config_path
+        return cls.get_home_dir_config_path()
+
+    @classmethod
+    def get_install_dir_config_path(cls):
+        pipe_binary_path = sys.executable
+        if not pipe_binary_path or 'python' in os.path.basename(pipe_binary_path):
+            return None
+        return os.path.join(os.path.dirname(pipe_binary_path), 'config.json')
+
+    @classmethod
+    def get_home_dir_config_path(cls):
         home = os.path.expanduser("~")
         config_folder = os.path.join(home, '.pipe')
         if not os.path.exists(config_folder):

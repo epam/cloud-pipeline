@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,10 @@ import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
+import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesRequest;
+import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesResult;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
 import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
@@ -36,6 +39,7 @@ import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.NetworkInterface;
 import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
@@ -52,6 +56,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -101,6 +106,15 @@ public class EC2Helper {
         AmazonEC2ClientBuilder builder = AmazonEC2ClientBuilder.standard();
         builder.setRegion(awsRegion);
         return builder.build();
+    }
+
+    public Optional<NetworkInterface> getNetworkInterface(final String interfaceId, final String region) {
+        final DescribeNetworkInterfacesResult result = getEC2Client(region).describeNetworkInterfaces(
+                new DescribeNetworkInterfacesRequest().withNetworkInterfaceIds(interfaceId));
+        return ListUtils.emptyIfNull(result.getNetworkInterfaces())
+                .stream()
+                .filter(networkInterface -> interfaceId.equals(networkInterface.getNetworkInterfaceId()))
+                .findFirst();
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {
@@ -259,6 +273,21 @@ public class EC2Helper {
                 .map(List::stream)
                 .orElseGet(Stream::empty)
                 .findFirst();
+    }
+
+    public InstanceImage getInstanceImageDescription(final String awsRegion, final String instanceImage) {
+        return getEC2Client(awsRegion)
+            .describeImages(new DescribeImagesRequest().withImageIds(Collections.singletonList(instanceImage)))
+            .getImages()
+            .stream()
+            .findFirst()
+            .map(awsImage -> InstanceImage.builder()
+                .imageId(awsImage.getImageId())
+                .name(awsImage.getName())
+                .platform(awsImage.getPlatform())
+                .build())
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_IMAGE_NOT_FOUND, instanceImage, awsRegion)));
     }
 
     public void createAndAttachVolume(final String runId, final Long size,

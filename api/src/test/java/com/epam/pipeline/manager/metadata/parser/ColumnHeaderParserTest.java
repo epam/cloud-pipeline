@@ -21,6 +21,8 @@ import static org.junit.Assert.*;
 import com.epam.pipeline.exception.MetadataReadingException;
 import org.junit.Test;
 
+import java.util.Optional;
+
 public class ColumnHeaderParserTest {
     private static final String VALID_CLASS_COLUMN = "Sample:ID";
     private static final String INVALID_CLASS_COLUMN = "Sample";
@@ -35,13 +37,16 @@ public class ColumnHeaderParserTest {
     private ColumnHeaderParser parser = new ColumnHeaderParser();
 
     @Test
-    public void readClassColumn() throws Exception {
-        assertEquals(CLASS_NAME, parser.readClassColumn(VALID_CLASS_COLUMN));
+    public void readClassColumn() {
+        final Optional<String> parsedClassColumn = parser.readClassColumn(VALID_CLASS_COLUMN);
+        assertTrue(parsedClassColumn.isPresent());
+        assertEquals(CLASS_NAME, parsedClassColumn.get());
     }
 
-    @Test(expected = MetadataReadingException.class)
-    public void readInvalidClassColumn() throws Exception {
-        parser.readClassColumn(INVALID_CLASS_COLUMN);
+    @Test
+    public void readInvalidClassColumn() {
+        final Optional<String> parsedClassColumn = parser.readClassColumn(INVALID_CLASS_COLUMN);
+        assertFalse(parsedClassColumn.isPresent());
     }
 
     @Test

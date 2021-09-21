@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,17 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.manager.cluster.AutoscalerServiceImpl;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +35,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +47,10 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     int TIME_DELIMITER = 60;
     int TIME_TO_SHUT_DOWN_NODE = 1;
 
+    default Map<String, String> getPoolLabels(final NodePool pool) {
+        return Collections.singletonMap(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
+    }
+
     /**
      * Creates new instance using specified cloud and adds it to cluster
      * @param runId
@@ -51,19 +60,15 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      */
     RunInstance scaleUpNode(T region, Long runId, RunInstance instance);
 
+    RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
+
     /**
      * Terminates instances in the cloud and removes it from cluster
      * @param region
      * @param runId
      */
     void scaleDownNode(T region, Long runId);
-
-    /**
-     * Creates new idle node without assignment to any existing run
-     * @param region
-     * @param nodeId
-     */
-    void scaleUpFreeNode(T region, String nodeId);
+    void scaleDownPoolNode(T region, String nodeLabel);
 
     /**
      * Terminates instances in the cloud and removes it from the cluster
@@ -135,6 +140,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @return {@code true} if operation was successful
      */
     boolean reassignNode(T region, Long oldId, Long newId);
+    boolean reassignPoolNode(T region, String nodeLabel, Long newId);
 
     /**
      * Builds environment variables required for running a container in provided region
@@ -193,4 +199,10 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     List<InstanceDisk> loadDisks(T region, Long runId);
 
     CloudInstanceState getInstanceState(T region, String nodeLabel);
+
+    InstanceDNSRecord getOrCreateInstanceDNSRecord(InstanceDNSRecord dnsRecord);
+
+    InstanceDNSRecord deleteInstanceDNSRecord(InstanceDNSRecord dnsRecord);
+
+    InstanceImage getInstanceImageDescription(T region, String imageName);
 }

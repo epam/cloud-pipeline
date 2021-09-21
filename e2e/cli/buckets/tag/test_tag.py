@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ from buckets.utils.tag_assertion_utils import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.listing import *
 from common_utils.entity_managers import EntityManager
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
@@ -25,7 +26,7 @@ class TestTagging(object):
     test_file2 = "test-tag2.txt"
     test_file_in_folder = "tags/" + test_file
     test_file2_in_folder = "tags/" + test_file2
-    bucket = 'epmcmbibpc-storage-tagging-{}'.format(get_test_prefix()).lower()
+    bucket = format_name('tagging{}'.format(get_test_prefix()).lower())
     path_to_bucket = 'cp://{}'.format(bucket)
     tag1 = ("key1", "value1")
     tag2 = ("key2", "value2")
@@ -63,12 +64,12 @@ class TestTagging(object):
         manager.delete(folder_id)
 
     """
-        1. epam test case
+        1. test case
         2. path
     """
     test_case_for_tagging = [
-        ("epmcmbibpc-982", 'cp://{}/{}'.format(bucket, test_file)),
-        ("epmcmbibpc-983", 'cp://{}/{}'.format(bucket, test_file_in_folder)),
+        ("TC-PIPE-TAG-18", 'cp://{}/{}'.format(bucket, test_file)),
+        ("TC-PIPE-TAG-19", 'cp://{}/{}'.format(bucket, test_file_in_folder)),
     ]
 
     @pytest.mark.parametrize("test_case,path", test_case_for_tagging)
@@ -81,12 +82,12 @@ class TestTagging(object):
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
 
     """
-          1. epam test case
+          1. test case
           2. path
       """
     test_case_for_tagging_owner = [
-        ("epmcmbibpc-987", 'cp://{}/{}'.format(bucket, test_file)),
-        ("epmcmbibpc-988", 'cp://{}/{}'.format(bucket, test_file_in_folder))
+        ("TC-PIPE-TAG-22", 'cp://{}/{}'.format(bucket, test_file)),
+        ("TC-PIPE-TAG-23", 'cp://{}/{}'.format(bucket, test_file_in_folder))
     ]
 
     @pytest.mark.parametrize("test_case,path", test_case_for_tagging_owner)
@@ -99,12 +100,12 @@ class TestTagging(object):
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
 
     """
-        1. epam test case
+        1. test case
         2. path
     """
     test_case_for_tagging_version = [
-        ("epmcmbibpc-984", 'cp://{}/{}'.format(bucket, test_file2)),
-        ("epmcmbibpc-985", 'cp://{}/{}'.format(bucket, test_file2_in_folder))
+        ("TC-PIPE-TAG-20", 'cp://{}/{}'.format(bucket, test_file2)),
+        ("TC-PIPE-TAG-21", 'cp://{}/{}'.format(bucket, test_file2_in_folder))
     ]
 
     @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name,
@@ -114,17 +115,17 @@ class TestTagging(object):
         try:
             self.assert_tag_command_version(path)
         except AssertionError as e:
-             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
         except BaseException as e:
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
 
     """
-        1. epam test case
+        1. test case
         2. path
     """
     test_case_for_tagging_version_owner = [
-        ("epmcmbibpc-989", 'cp://{}/{}'.format(bucket, test_file2)),
-        ("epmcmbibpc-990", 'cp://{}/{}'.format(bucket, test_file2_in_folder))
+        ("TC-PIPE-TAG-24", 'cp://{}/{}'.format(bucket, test_file2)),
+        ("TC-PIPE-TAG-25", 'cp://{}/{}'.format(bucket, test_file2_in_folder))
     ]
 
     @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name,
@@ -150,7 +151,8 @@ class TestTagging(object):
 
     @pytest.mark.parametrize("path,message", test_case_for_non_existing)
     def test_non_existing(self, path, message):
-        test_case = "epmcmbibpc-1011"
+        """TC-PIPE-TAG-28"""
+        test_case = "TC-PIPE-TAG-28"
         try:
             stderr = set_storage_tags(path, [self.tag1], expected_status=1)[1]
             assert_error_message_is_present(stderr, message)
@@ -164,7 +166,8 @@ class TestTagging(object):
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
 
     def test_delete_non_existing_tag(self):
-        test_case = "epmcmbibpc-1013"
+        """TC-PIPE-TAG-30"""
+        test_case = "TC-PIPE-TAG-30"
         try:
             path = 'cp://{}/{}'.format(self.bucket, self.test_file)
             pipe_storage_cp(self.test_file, path, force=True)
@@ -173,7 +176,7 @@ class TestTagging(object):
             stderr = delete_storage_tags(path, [self.tag2[1]], expected_status=1)[1]
             assert_error_message_is_present(stderr, "Tag '%s' does not exist" % self.tag2[1])
 
-            assert_tags_listing(self.bucket, path, [self.tag1])
+            assert_tags_listing(path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())
         except AssertionError as e:
             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
@@ -181,7 +184,8 @@ class TestTagging(object):
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
 
     def test_set_wrong_format(self):
-        test_case = "epmcmbibpc-1012"
+        """TC-PIPE-TAG-29"""
+        test_case = "TC-PIPE-TAG-29"
         try:
             path = 'cp://{}/{}'.format(self.bucket, self.test_file)
             pipe_storage_cp(self.test_file, path, force=True)
@@ -199,32 +203,32 @@ class TestTagging(object):
         version = get_non_latest_version(get_pipe_listing(path, versioning=True, show_details=True))
         mutable_tag = list(self.tag1)
         set_storage_tags(path, [mutable_tag], version=version, token=token)
-        assert_tags_listing(self.bucket, path, [], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], version=version, token=token)
+        assert_tags_listing(path, [], token=token)
+        assert_tags_listing(path, [mutable_tag], version=version, token=token)
         set_storage_tags(path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], version=version, token=token)
+        assert_tags_listing(path, [self.tag2], token=token)
+        assert_tags_listing(path, [mutable_tag], version=version, token=token)
         mutable_tag[1] = 'newvalue'
         set_storage_tags(path, [mutable_tag], version=version, token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], version=version, token=token)
+        assert_tags_listing(path, [self.tag2], token=token)
+        assert_tags_listing(path, [mutable_tag], version=version, token=token)
         delete_storage_tags(path, [mutable_tag[0]], version=version, token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [], version=version, token=token)
+        assert_tags_listing(path, [self.tag2], token=token)
+        assert_tags_listing(path, [], version=version, token=token)
         pipe_storage_rm(path, args=self.rm_arguments())
 
     def assert_tag_commands(self, path, token=None):
         pipe_storage_cp(self.test_file, path, force=True)
         mutable_tag = list(self.tag1)
         set_storage_tags(path, [mutable_tag], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], token=token)
+        assert_tags_listing(path, [mutable_tag], token=token)
         set_storage_tags(path, [self.tag2, self.tag3], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag, self.tag2, self.tag3], token=token)
+        assert_tags_listing(path, [mutable_tag, self.tag2, self.tag3], token=token)
         mutable_tag[1] = 'newvalue'
         set_storage_tags(path, [mutable_tag], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag, self.tag2, self.tag3], token=token)
+        assert_tags_listing(path, [mutable_tag, self.tag2, self.tag3], token=token)
         delete_storage_tags(path, [mutable_tag[0]], token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2, self.tag3], token=token)
+        assert_tags_listing(path, [self.tag2, self.tag3], token=token)
         pipe_storage_rm(path, args=self.rm_arguments())
 
     def rm_arguments(self):

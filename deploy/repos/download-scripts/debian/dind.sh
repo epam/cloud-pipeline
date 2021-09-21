@@ -5,7 +5,7 @@ set -e
 # Common packages
 apt-get update
 apt-get install --download-only -y \
-    btrfs-tools \
+    btrfs-progs \
     e2fsprogs \
     iptables \
     iproute2 \

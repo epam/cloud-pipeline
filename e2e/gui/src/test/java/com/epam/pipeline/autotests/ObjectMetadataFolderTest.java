@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         navigationMenu()
                 .library()
                 .clickOnFolder(folder)
-                .showMetadata()
+                .showAttributes()
                 .ensure(ADD_KEY, visible);
     }
 
@@ -145,13 +145,13 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
                 .library()
                 .cd(folder)
                 .clickOnFolder(subfolder)
-                .showMetadata()
+                .showAttributes()
                 .addKeyWithValue(key1, value1)
                 .assertNumberOfKeysIs(1);
         navigationMenu()
                 .library()
                 .clickOnFolder(folder)
-                .showMetadata()
+                .showAttributes()
                 .assertNumberOfKeysIs(0);
     }
 
@@ -180,6 +180,6 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         return navigationMenu()
                 .library()
                 .clickOnFolder(folder)
-                .showMetadata();
+                .showAttributes();
     }
 }

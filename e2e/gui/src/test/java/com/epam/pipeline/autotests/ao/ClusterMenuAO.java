@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -92,7 +93,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 nodeLine(runId)
                         .shouldBe(visible)
                         .findAll("td")
-                        .get(1)
+                        .get(2)
                         .text()
                         .contains(pipelineName)
         );
@@ -157,9 +158,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     public ClusterMenuAO removeNode(String runId) {
         $(byText(runIdLabelText(runId)))
                 .closest("tr")
-                .findAll("td")
-                .get(5)
-                .find(".ant-btn")
+                .find(byId("terminate-node-button"))
                 .click();
 
         $$(button("OK")).find(visible).click();
@@ -192,7 +191,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 .should(exist)
                 .closest("tr")
                 .findAll("td")
-                .get(0)
+                .get(1)
                 .text();
     }
 
@@ -221,12 +220,18 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO validateSortedByIncrease(HeaderColumn column) {
-        validateSortedBy(column, Comparator.naturalOrder());
+        final Comparator<String> comparator = column == HeaderColumn.NAME
+                ? Comparator.naturalOrder()
+                : NaturalOrderComparators.createNaturalOrderRegexComparator();
+        validateSortedBy(column, comparator);
         return this;
     }
 
     public ClusterMenuAO validateSortedByDecrease(HeaderColumn column) {
-        validateSortedBy(column, Comparator.reverseOrder());
+        final Comparator<String> comparator = column == HeaderColumn.NAME
+                ? Comparator.reverseOrder()
+                : NaturalOrderComparators.createNaturalOrderRegexComparator().reversed();
+        validateSortedBy(column, comparator);
         return this;
     }
 
@@ -234,7 +239,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         return $(byText(runIdLabelText(runId)))
                 .closest("tr")
                 .findAll("td")
-                .get(3)
+                .get(4)
                 .text()
                 .replaceAll(", .+", "");
     }

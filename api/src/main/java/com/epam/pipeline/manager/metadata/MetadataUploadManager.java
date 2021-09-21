@@ -73,13 +73,16 @@ public class MetadataUploadManager {
         try {
             final Folder parent = folderManager.load(parentId);
             String delimiter = MetadataParsingUtils.getDelimiterFromFileExtension(file.getOriginalFilename());
+            String fallbackMetadataClass = 
+                    MetadataParsingUtils.getMetadataClassFromFileName(file.getOriginalFilename());
             byte[] inputData = file.getBytes();
-            MetadataHeader header = new MetadataEntityHeaderParser(delimiter)
+            MetadataHeader header = new MetadataEntityHeaderParser(delimiter, fallbackMetadataClass)
                     .readHeader(ByteSource.wrap(inputData).openStream());
             validateTypes(header, parentId);
             MetadataClass metadataClass = getOrCreateClass(header.getClassName());
             return new MetadataEntityReader(delimiter, parent, metadataClass)
-                    .readData(ByteSource.wrap(inputData).openStream(), header.getFields());
+                    .readData(ByteSource.wrap(inputData).openStream(), header.getFields(), 
+                            header.isClassColumnPresent());
         } catch (IOException e) {
             throw new MetadataReadingException(e.getMessage(), e);
         }

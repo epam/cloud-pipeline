@@ -45,7 +45,9 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @SuppressWarnings("unchecked")
@@ -102,6 +104,18 @@ public class StorageProviderManager {
     public DataStorageListing getItems(AbstractDataStorage dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker) {
         return getStorageProvider(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
+    }
+
+    public Optional<DataStorageFile> findFile(AbstractDataStorage dataStorage, String path) {
+        return getStorageProvider(dataStorage).findFile(dataStorage, path, null);
+    }
+
+    public Optional<DataStorageFile> findFile(AbstractDataStorage dataStorage, String path, String version) {
+        return getStorageProvider(dataStorage).findFile(dataStorage, path, version);
+    }
+
+    public Stream<DataStorageFile> listFiles(AbstractDataStorage dataStorage, String path) {
+        return getStorageProvider(dataStorage).listDataStorageFiles(dataStorage, path);
     }
 
     @SensitiveStorageOperation
@@ -165,6 +179,16 @@ public class StorageProviderManager {
     public DataStorageFolder moveFolder(AbstractDataStorage dataStorage, String oldPath, String newPath)
             throws DataStorageException {
         return getStorageProvider(dataStorage).moveFolder(dataStorage, oldPath, newPath);
+    }
+
+    @StorageWriteOperation
+    public DataStorageFile copyFile(AbstractDataStorage dataStorage, String oldPath, String newPath) {
+        return getStorageProvider(dataStorage).copyFile(dataStorage, oldPath, newPath);
+    }
+
+    @StorageWriteOperation
+    public DataStorageFolder copyFolder(AbstractDataStorage dataStorage, String oldPath, String newPath) {
+        return getStorageProvider(dataStorage).copyFolder(dataStorage, oldPath, newPath);
     }
 
     public boolean checkStorage(AbstractDataStorage dataStorage) {

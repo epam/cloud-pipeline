@@ -27,6 +27,7 @@ import projects from '../../models/folders/FolderProjects';
 import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
 import runDefaultParameters from '../../models/pipelines/PipelineRunDefaultParameters';
 import configurations from '../../models/configuration/Configurations';
+import AllConfigurations from '../../models/configuration/ConfigurationsLoadAll';
 import pipelinesLibrary from '../../models/folders/FolderLoadTree';
 import folders from '../../models/folders/Folders';
 import dataStorages from '../../models/dataStorage/DataStorages';
@@ -55,12 +56,24 @@ import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDic
 import GetMetadataKeys from '../../models/metadata/GetMetadataKeys';
 import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
+import {cloudCredentialProfiles} from '../../models/cloudCredentials';
+import HiddenObjects from '../../utils/hidden-objects';
+import multiZoneManager from '../../utils/multizone';
+import UINavigation from '../../utils/ui-navigation';
+import {VsActionsAvailable} from '../versioned-storages/vs-actions';
+import impersonation from '../../models/user/impersonation';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
-const issuesRenderer = new IssuesRenderer(pipelinesLibrary, dockerRegistries, preferences);
+const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
+const issuesRenderer = new IssuesRenderer(
+  pipelinesLibrary,
+  dockerRegistries,
+  preferences,
+  hiddenObjects
+);
 const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
@@ -72,11 +85,18 @@ const searchEngine = new Search();
 
 const spotInstanceTypes = new InstanceTypes(true);
 const onDemandInstanceTypes = new InstanceTypes(false);
+const allInstanceTypes = new InstanceTypes();
 const spotToolInstanceTypes = new ToolInstanceTypes(true);
 const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 
 const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
+
+const allConfigurations = new AllConfigurations();
+
+const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
+
+const vsActions = new VsActionsAvailable(pipelines);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -101,6 +121,7 @@ const Root = () =>
       runDefaultParameters,
       counter,
       configurations,
+      allConfigurations,
       pipelinesLibrary,
       dataStorages,
       awsRegions,
@@ -110,10 +131,12 @@ const Root = () =>
       folders,
       spotInstanceTypes,
       onDemandInstanceTypes,
+      allInstanceTypes,
       spotToolInstanceTypes,
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
       dataStorageAvailable,
@@ -130,7 +153,12 @@ const Root = () =>
       quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
-      userMetadataKeys
+      userMetadataKeys,
+      cloudCredentialProfiles,
+      [HiddenObjects.injectionName]: hiddenObjects,
+      multiZoneManager,
+      uiNavigation,
+      vsActions
     }}>
     <AppRouter />
   </Provider>;

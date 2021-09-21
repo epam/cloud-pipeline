@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.controller.cluster;
 
+import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -27,6 +29,8 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -37,6 +41,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -59,9 +64,14 @@ public class ClusterController extends AbstractRestController {
     private static final String FROM = "from";
     private static final String TO = "to";
     private static final String INTERVAL = "interval";
+    private static final String REPORT_TYPE = "type";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    private static final String REPORT_NAME_TEMPLATE = "%s_%s-%s-%s.%s";
+    private static final char TIME_SEPARATION_CHAR = ':';
+    private static final char UNDERSCORE = '_';
 
     private final ClusterApiService clusterApiService;
+    private final InfrastructureApiService infrastructureApiService;
 
     @GetMapping(value = "/cluster/master")
     @ResponseBody
@@ -75,6 +85,17 @@ public class ClusterController extends AbstractRestController {
     )
     public Result<List<MasterNode>> loadMasterNodes() {
         return Result.success(clusterApiService.getMasterNodes());
+    }
+
+    @GetMapping("/cluster/edge/externalUrl")
+    @ResponseBody
+    @ApiOperation(
+            value = "Return EDGE external URL.",
+            notes = "Return EDGE external URL.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<String> buildEdgeExternalUrl(@RequestParam(required = false) final String region) {
+        return Result.success(clusterApiService.buildEdgeExternalUrl(region));
     }
 
     @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)
@@ -117,6 +138,20 @@ public class ClusterController extends AbstractRestController {
             })
     public Result<NodeInstance> loadNode(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.getNode(name));
+    }
+
+    @RequestMapping(value = "/cluster/node/{name}/run", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns run id associated with nodename.",
+            notes = "Returns run id associated with nodename.",
+            produces = MediaType.APPLICATION_JSON_VALUE
+        )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<RunInfo> loadRunIdForNode(@PathVariable(value = NAME) final String name) {
+        return Result.success(clusterApiService.loadRunIdForNode(name));
     }
 
     @RequestMapping(value = "/cluster/node/{name}/load", method = RequestMethod.POST)
@@ -220,10 +255,13 @@ public class ClusterController extends AbstractRestController {
         @DateTimeFormat(pattern = DATE_TIME_FORMAT)
         @RequestParam(value = TO, required = false) final LocalDateTime to,
         @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
+        @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
         final HttpServletResponse response) throws IOException {
-        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval);
-        final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
-        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, "csv"));
+        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type);
+        final String reportName =
+            String.format(REPORT_NAME_TEMPLATE, name, from, to, interval, type.name().toLowerCase())
+                .replace(TIME_SEPARATION_CHAR, UNDERSCORE);
+        writeStreamToResponse(response, inputStream, reportName);
     }
 
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
@@ -235,5 +273,17 @@ public class ClusterController extends AbstractRestController {
     @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
+    }
+
+    @PostMapping("/cluster/dnsrecord")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates dns record.",
+            notes = "Creates dns record.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<InstanceDNSRecord> requestDnsRecord(@RequestParam final Long regionId,
+                                                      @RequestBody final InstanceDNSRecord dnsRecord) {
+        return Result.success(infrastructureApiService.createInstanceDNSRecord(regionId, dnsRecord));
     }
 }

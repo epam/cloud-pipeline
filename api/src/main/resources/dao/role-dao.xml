@@ -64,7 +64,8 @@
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
-                        r.default_storage_id as role_default_storage_id
+                        r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id
                     FROM
                         pipeline.role r
                     WHERE
@@ -81,7 +82,8 @@
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
-                        r.default_storage_id as role_default_storage_id
+                        r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id
                     FROM
                         pipeline.role r
                     WHERE
@@ -98,7 +100,8 @@
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
-                        r.default_storage_id as role_default_storage_id
+                        r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id
                     FROM
                         pipeline.role r
                     WHERE
@@ -115,7 +118,8 @@
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
-                        r.default_storage_id as role_default_storage_id
+                        r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id
                     FROM
                         pipeline.role r
                     WHERE
@@ -133,6 +137,7 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id,
                         g.blocked as group_blocked
                     FROM
                         pipeline.role r
@@ -148,7 +153,8 @@
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
-                        r.default_storage_id as role_default_storage_id
+                        r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id
                     FROM
                         pipeline.role r
                     WHERE
@@ -165,11 +171,13 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
+                      r.default_profile_id as role_default_profile_id,
                       u.id as user_id,
                       u.name as user_name,
                       u.groups as user_groups,
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
+                      u.default_profile_id as user_default_profile_id,
                       u.registration_date,
                       u.first_login_date,
                       u.blocked as user_blocked,
@@ -190,11 +198,13 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
+                      r.default_profile_id as role_default_profile_id,
                       u.id as user_id,
                       u.name as user_name,
                       u.groups as user_groups,
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
+                      u.default_profile_id as user_default_profile_id,
                       u.blocked as user_blocked,
                       u.registration_date,
                       u.first_login_date,

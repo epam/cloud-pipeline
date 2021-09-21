@@ -71,20 +71,26 @@ RUN yum install -y cronie \
                    cifs-utils \
                    python blobfuse fuse
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
-ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
-ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
-RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
-    wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
-    yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
-    rm -f *lustre-client.rpm
-RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+RUN cd /tmp && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    package-cleanup --cleandupes -y && \
+    rm -rf lustre-client*
+
+RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I requests==2.21.0 && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
+
 ENV SYNC_HOME=/opt/sync
 ENV SYNC_LOG_DIR=/var/log/dav/sync
 COPY sync/crontab /tmp/sync
 COPY sync/sync-nfs.sh ${SYNC_HOME}/
+COPY sync/nfs-watcher.sh ${SYNC_HOME}/
 # "nfs-roles-management" shall be copied to the docker build folder from "(repo-root)/scripts/nfs-roles-management"
 # E.g.: cp cp ../../../scripts/nfs-roles-management ./ -r && docker build ...
 COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management

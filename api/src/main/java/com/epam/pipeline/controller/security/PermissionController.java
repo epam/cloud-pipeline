@@ -22,7 +22,7 @@ import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
-import com.epam.pipeline.manager.security.AclPermissionApiService;
+import com.epam.pipeline.acl.security.AclPermissionApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

@@ -30,25 +30,27 @@ import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import io.fabric8.kubernetes.api.model.DoneableNode;
+import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -57,13 +59,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -94,9 +98,12 @@ public class NodesManager {
 
     @Autowired
     private KubernetesManager kubernetesManager;
-    
+
     @Autowired
     private NodeDiskManager nodeDiskManager;
+
+    @Autowired
+    private PipelineRunCRUDService runCRUDService;
 
     @Value("${kube.protected.node.labels:}")
     private String protectedNodesString;
@@ -129,22 +136,26 @@ public class NodesManager {
     }
 
     public List<NodeInstance> getNodes() {
-        List<NodeInstance> result;
-        Config config = new Config();
-        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
-            result = client.nodes().list().getItems().stream().map(NodeInstance::new).collect(Collectors.toList());
-            this.attachRunsInfo(result);
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            final List<NodeInstance> result = ListUtils.emptyIfNull(client.nodes().list().getItems())
+                    .stream()
+                    .map(NodeInstance::new)
+                    .collect(Collectors.toList());
+            attachRunsInfo(result);
+            return result;
         }
-        return result;
     }
 
     public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
         List<NodeInstance> result;
         Config config = new Config();
-        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient(config)) {
             Map<String, String> labelsMap = new HashedMap<>();
             if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
                 labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
+            }
+            if (MapUtils.isNotEmpty(filterNodesVO.getLabels())) {
+                labelsMap.putAll(filterNodesVO.getLabels());
             }
             Predicate<NodeInstance> addressFilter = node -> true;
             if (StringUtils.isNotBlank(filterNodesVO.getAddress())) {
@@ -153,8 +164,7 @@ public class NodesManager {
                         address.getAddress().equalsIgnoreCase(filterNodesVO.getAddress());
                 addressFilter = node ->
                         node.getAddresses() != null && node.getAddresses()
-                                .stream()
-                                .filter(addressEqualsPredicate).count() > 0;
+                                .stream().anyMatch(addressEqualsPredicate);
             }
             result = client.nodes()
                     .withLabels(labelsMap)
@@ -183,14 +193,15 @@ public class NodesManager {
     }
 
     public Optional<NodeInstance> findNode(final String name, final FilterPodsRequest request) {
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
-            final Resource<Node, DoneableNode> nodeSearchResult = client.nodes().withName(name);
-            final Node node = nodeSearchResult.get();
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            final Node node = client.nodes().withName(name).get();
             if (node != null) {
                 final List<String> statuses = request != null ? request.getPodStatuses() : null;
                 final NodeInstance nodeInstance = new NodeInstance(node);
-                this.attachRunsInfo(Collections.singletonList(nodeInstance));
-                nodeInstance.setPods(PodInstance.convertToInstances(client.pods().list(),
+                attachRunsInfo(Collections.singletonList(nodeInstance));
+                nodeInstance.setPods(PodInstance.convertToInstances(client.pods()
+                                .inAnyNamespace()
+                                .withField("spec.nodeName", nodeInstance.getName()).list(),
                         FilterPodsRequest.getPodsByNodeNameAndStatusPredicate(name, statuses))
                 );
                 return Optional.of(nodeInstance);
@@ -211,16 +222,41 @@ public class NodesManager {
         return nodeInstance;
     }
 
+    public NodeInstance terminateNode(final String name, final boolean updateRunStatus) {
+        final NodeInstance nodeInstance = getNode(name);
+        terminateNode(nodeInstance, updateRunStatus);
+        return nodeInstance;
+    }
+
     public List<MasterNode> getMasterNodes() {
         final String defMasterPort =
                 String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             return client.nodes().withLabel(MASTER_LABEL).list().getItems()
                     .stream()
                     .filter(this::nodeIsReady)
                     .map(node -> MasterNode.fromNode(node, defMasterPort))
                     .collect(Collectors.toList());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public RunInfo loadRunIdForNode(final String nodeName) {
+        final List<PipelineRun> runs = runCRUDService.loadRunsForNodeName(nodeName);
+        return CommonUtils.first(
+                //first active
+            () -> runs.stream()
+                        .filter(run -> !run.getStatus().isFinal() && Objects.isNull(run.getEndDate()))
+                        .findFirst(),
+                //latest finished
+            () -> runs.stream()
+                        .max(Comparator.comparing(PipelineRun::getEndDate)),
+                //try to fetch run from node
+            () -> findNode(nodeName)
+                        .filter(node -> Objects.nonNull(node.getPipelineRun()))
+                        .map(NodeInstance::getPipelineRun))
+            .map(run -> new RunInfo(run.getId()))
+            .orElse(null);
     }
 
     private boolean nodeIsReady(final Node node) {
@@ -273,10 +309,14 @@ public class NodesManager {
     }
 
     private void terminateNode(final NodeInstance nodeInstance) {
+        terminateNode(nodeInstance, true);
+    }
+
+    private void terminateNode(final NodeInstance nodeInstance, final boolean updateRunStatus) {
         Assert.isTrue(!isNodeProtected(nodeInstance),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, nodeInstance.getName()));
 
-        if (nodeInstance.getPipelineRun() != null) {
+        if (updateRunStatus && nodeInstance.getPipelineRun() != null) {
             PipelineRun run = nodeInstance.getPipelineRun();
             pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
         }
@@ -343,29 +383,29 @@ public class NodesManager {
         });
     }
 
-    private void attachRunsInfo(List<NodeInstance> nodeInstances) {
-        List<Long> ids = new ArrayList<>();
-        nodeInstances.forEach(i -> {
-            try {
-                ids.add(Long.parseLong(i.getRunId()));
-            } catch (NumberFormatException exception) {
-                i.setRunId(null);
-                i.setPipelineRun(null);
-            }
-        });
-        if (ids.isEmpty()) {
+    private void attachRunsInfo(final List<NodeInstance> nodeInstances) {
+        if (CollectionUtils.isEmpty(nodeInstances)) {
             return;
         }
-        List<PipelineRun> runs = pipelineRunManager.loadPipelineRuns(ids);
-        nodeInstances.forEach(i -> {
-            Predicate<? super PipelineRun> filter = r -> r.getId().toString().equals(i.getRunId());
-            Optional<PipelineRun> oPipelineRun = runs.stream().filter(filter).findFirst();
-            oPipelineRun.ifPresent(i::setPipelineRun);
-        });
+        final List<Long> runIds = nodeInstances
+                .stream()
+                .map(NodeInstance::getRunId)
+                .filter(runId -> StringUtils.isNotBlank(runId) &&
+                        NumberUtils.isDigits(runId))
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(runIds)) {
+            return;
+        }
+        final Map<String, PipelineRun> runs = ListUtils.emptyIfNull(pipelineRunManager.loadPipelineRuns(runIds))
+                .stream()
+                .collect(Collectors.toMap(run -> run.getId().toString(), Function.identity(), (r1, r2) -> r1));
+        nodeInstances.forEach(node -> node.setPipelineRun(runs.get(node.getRunId())));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public Long getNextFreeNodeId() {
         return clusterDao.createNextFreeNodeId();
     }
+
 }

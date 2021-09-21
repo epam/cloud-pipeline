@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,13 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.KubernetesService;
+import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -39,28 +43,36 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
-import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.security.acl.AclMaskPage;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
@@ -71,8 +83,8 @@ import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
 @RequiredArgsConstructor
 public class RunApiService {
 
-    private final ToolApiService toolApiService;
     private final PipelineRunManager runManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final FilterManager filterManager;
     private final RunLogManager logManager;
     private final InstanceOfferManager offerManager;
@@ -80,21 +92,38 @@ public class RunApiService {
     private final UtilsManager utilsManager;
     private final ConfigurationRunner configurationLauncher;
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    private final PipelineRunKubernetesManager pipelineRunKubernetesManager;
+    private final PipelineRunAsManager pipelineRunAsManager;
+    private final RunPermissionManager runPermissionManager;
+    private final EdgeServiceManager edgeServiceManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
-        //check that tool execution is allowed
         Assert.notNull(runVO.getDockerImage(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "docker_image"));
-        toolApiService.loadToolForExecution(runVO.getDockerImage());
-        return runVO.getUseRunId() == null ? runManager.runCmd(runVO) : runManager.runPod(runVO);
+        runPermissionManager.checkToolRunPermission(runVO.getDockerImage());
+
+        if (Objects.nonNull(runVO.getUseRunId())) {
+            return runManager.runPod(runVO);
+        }
+
+        final String runAsUserName = pipelineRunAsManager.getRunAsUserName(runVO);
+        if (StringUtils.isEmpty(runAsUserName)) {
+            return runManager.runCmd(runVO);
+        }
+
+        runPermissionManager.checkToolRunPermissionToRunAs(runVO.getDockerImage(), runAsUserName);
+        return pipelineRunAsManager.runTool(runVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE')")
+    @PreAuthorize("(hasRole('ADMIN') OR "
+            + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE'))"
+            + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
-    public PipelineRun runPipeline(PipelineStart runVO) {
-        return runManager.runPipeline(runVO);
+    public PipelineRun runPipeline(final PipelineStart runVO) {
+        return pipelineRunAsManager.runAsAnotherUser(runVO)
+                ? pipelineRunAsManager.runPipeline(runVO)
+                : runManager.runPipeline(runVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "
@@ -123,7 +152,7 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_READ)
     public String downloadLogs(Long runId) {
-        return logManager.downloadLogs(runManager.loadPipelineRun(runId));
+        return logManager.downloadLogs(runCRUDService.loadRunById(runId));
     }
 
     @PreAuthorize(RUN_ID_READ)
@@ -162,8 +191,9 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun updateServiceUrl(Long runId, PipelineRunServiceUrlVO serviceUrl) {
-        return runManager.updateServiceUrl(runId, serviceUrl);
+    public PipelineRun updateServiceUrl(final Long runId, final String region,
+                                        final PipelineRunServiceUrlVO serviceUrl) {
+        return runManager.updateServiceUrl(runId, region, serviceUrl);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
@@ -213,13 +243,13 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_SSH)
-    public String buildSshUrl(Long runId) {
-        return utilsManager.buildSshUrl(runId);
+    public Map<String, String> buildSshUrl(final Long runId) {
+        return edgeServiceManager.buildSshUrl(runId);
     }
 
     @PreAuthorize(RUN_ID_SSH)
-    public String buildFSBrowserUrl(Long runId) {
-        return utilsManager.buildFSBrowserUrl(runId);
+    public Map<String, String> buildFSBrowserUrl(final Long runId) {
+        return edgeServiceManager.buildFSBrowserUrl(runId);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
@@ -290,5 +320,26 @@ public class RunApiService {
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.hasPermissionToRun(#runVO.pipelineStart, 'EXECUTE')")
     public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
         return runManager.generateLaunchCommand(runVO);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PipelineRunWithTool> getRunsWithTools(final List<Long> runIds) {
+        return runManager.loadRunsWithTools(runIds);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public KubernetesService createKubernetesService(final String serviceName, final Long runId,
+                                                     final List<KubernetesServicePort> ports) {
+        return pipelineRunKubernetesManager.createKubernetesService(serviceName, runId, ports);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public KubernetesService getKubernetesService(final Long runId) {
+        return pipelineRunKubernetesManager.getKubernetesService(runId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<ServiceDescription> loadEdgeServices() {
+        return edgeServiceManager.getEdgeServices();
     }
 }

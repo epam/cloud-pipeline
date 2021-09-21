@@ -18,18 +18,17 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingMeter;
-import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingResult;
+import com.epam.pipeline.billingreportagent.model.pricing.*;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-import retrofit2.Response;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -41,23 +40,33 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public abstract class AbstractAzureStoragePriceListLoader implements StoragePriceListLoader {
 
-    protected static final String GB_MONTH_UNIT = "1 GB/Month";
+    protected static final String GB_MONTH_UNIT = "GB/Month";
+    protected static final int HRS_PER_MONTH = 730;
+    protected static final String GB_HOUR_DIMENSION = "GB/Hour";
+    protected static final String GIB_HOUR_DIMENSION = "GiB/Hour";
     protected static final String STORAGE_CATEGORY = "Storage";
     protected static final String DATA_STORE_METER_TEMPLATE = "%s Data Stored";
+    private final static Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)\\s([\\w/]+)");
 
     private CloudRegionLoader regionLoader;
-    private AzureRawPriceLoader rawPriceLoader;
+    private AzureRateCardRawPriceLoader rawRateCardPriceLoader;
+    private AzureEARawPriceLoader rawEAPriceLoader;
+
     private final Logger logger;
 
     public AbstractAzureStoragePriceListLoader(final CloudRegionLoader regionLoader,
-                                               final AzureRawPriceLoader rawPriceLoader) {
+                                               final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
+                                               AzureEARawPriceLoader rawEAPriceLoader) {
         this.regionLoader = regionLoader;
-        this.rawPriceLoader = rawPriceLoader;
+        this.rawRateCardPriceLoader = rawRateCardPriceLoader;
+        this.rawEAPriceLoader = rawEAPriceLoader;
         this.logger = LoggerFactory.getLogger(this.getClass());
     }
 
@@ -81,15 +90,15 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
             .collect(Collectors.toMap(AbstractCloudRegion::getRegionCode, this::getPricingForSpecificRegion));
     }
 
-    protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingMeter> pricingMeters);
+    protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingEntity> pricingMeters);
 
-    protected StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing) {
-        return convertAzurePricing(azurePricing, 1);
+    protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing) {
+        return convertAzurePricing(azurePricing, 1L);
     }
 
-    protected StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing, final int scaleFactor) {
+    protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing, final double scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
-        logger.debug("Reading price from {}", azurePricing);
+        logger.debug("Converting price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
         final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
             .map(e -> {
@@ -111,7 +120,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     private void assertOffersAndRegionMetersAreUnique(final List<AzureRegion> activeAzureRegions) {
         final Map<String, Set<String>> regionOfferMapping =
-            mapRegionsOnFunctionResult(activeAzureRegions, rawPriceLoader::getRegionOfferAndSubscription);
+            mapRegionsOnFunctionResult(activeAzureRegions, rawRateCardPriceLoader::getRegionOfferAndSubscription);
         final Map<String, Set<String>> regionMeterMapping =
             mapRegionsOnFunctionResult(activeAzureRegions, AzureRegion::getMeterRegionName);
         for (final String regionName : regionOfferMapping.keySet()) {
@@ -141,12 +150,11 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
                                                Function.identity())));
     }
 
-    private StoragePricing getStoragePricingForRegion(final Response<AzurePricingResult> pricingResponse,
+    private StoragePricing getStoragePricingForRegion(final List<AzurePricingEntity> pricingResponse,
                                                       final String meterRegion) {
-        final List<AzurePricingMeter> azurePricingMeters = Optional.ofNullable(pricingResponse.body())
-            .map(AzurePricingResult::getMeters)
+        final List<AzurePricingEntity> azureRateCardPricingMeters = Optional.ofNullable(pricingResponse)
             .orElse(Collections.emptyList());
-        final Map<String, StoragePricing> fullStoragePricingMap = extractPrices(azurePricingMeters);
+        final Map<String, StoragePricing> fullStoragePricingMap = extractPrices(azureRateCardPricingMeters);
         final StoragePricing storagePricing = fullStoragePricingMap
             .computeIfAbsent(meterRegion, region -> {
                 logger.warn(String.format("No price is found for [%s], searching for the default value.", meterRegion));
@@ -161,12 +169,35 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     private StoragePricing getPricingForSpecificRegion(final AzureRegion region) {
         try {
-            final Response<AzurePricingResult> azureRegionPricing =
-                rawPriceLoader.getRawPricesUsingPipelineRegion(region);
-            logger.info("Reading prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
-            return getStoragePricingForRegion(azureRegionPricing, region.getMeterRegionName());
+            List<AzurePricingEntity> priceList;
+            if (BooleanUtils.isTrue(region.getEnterpriseAgreements())) {
+                logger.info("Reading EA prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
+                priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
+            } else {
+                logger.info("Reading RateCard prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
+                priceList = rawRateCardPriceLoader.getRawPricesUsingPipelineRegion(region);
+            }
+            return getStoragePricingForRegion(priceList, region.getMeterRegionName());
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Error during prices loading: %s", e.getMessage()));
         }
     }
+    protected double getScaleFactor(String unit) {
+        double scaleFactor = 1d;
+        Matcher match = AZURE_UNIT_PATTERN.matcher(unit);
+        if (match.matches()) {
+            int amount = Integer.parseInt(match.group(1));
+            if (amount > 1) {
+                scaleFactor = scaleFactor / amount;
+            }
+
+            if (match.group(2).contains(GB_HOUR_DIMENSION) || match.group(2).contains(GIB_HOUR_DIMENSION)) {
+                scaleFactor = scaleFactor * HRS_PER_MONTH;
+            }
+            return scaleFactor;
+        } else {
+            throw new IllegalArgumentException("Wrong Azure Unit string: " + unit);
+        }
+    }
+
 }

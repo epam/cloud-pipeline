@@ -38,16 +38,25 @@ public class LustreRunCleaner implements RunCleaner {
         if (!isLustreRequested(run)) {
             return;
         }
-        log.debug("Clearing lustre fs for run {}.", run.getId());
+        deleteLustreFs(run.getId());
+    }
+
+    @Override
+    public void cleanResources(final Long runId) {
+        deleteLustreFs(runId);
+    }
+
+    private void deleteLustreFs(final Long runId) {
+        log.debug("Clearing lustre fs for run {}.", runId);
         try {
-            lustreFSManager.deleteLustreFs(run.getId());
+            lustreFSManager.deleteLustreFs(runId);
         } catch (LustreFSException e) {
-            log.error("Failed to clean up lustre for run {}.", run.getId());
+            log.error("Failed to clean up lustre for run {}.", runId);
             log.error(e.getMessage(), e);
         }
     }
 
-    public boolean isLustreRequested(PipelineRun run) {
+    private boolean isLustreRequested(PipelineRun run) {
         return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
                 .anyMatch(param -> SHARED_FS_ENV_VAR.equals(param.getName()) && LUSTRE_TYPE.equals(param.getValue()));
     }

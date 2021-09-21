@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -166,6 +167,10 @@ public class RoleManager {
         return roleDao.loadRoleByName(name)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_ROLE_NAME_NOT_FOUND, name)));
+    }
+
+    public Optional<Role> findRoleByName(final String name) {
+        return roleDao.loadRoleByName(name);
     }
 
     public ExtendedRole loadRoleWithUsers(Long roleId) {

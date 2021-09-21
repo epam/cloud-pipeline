@@ -201,6 +201,9 @@ function init_cloud_config {
                 if [[ "$cloud_image_name" == *"GPU" ]]; then
                     export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU="$cloud_image_id"
                 fi
+                if [[ "$cloud_image_name" == *"Common_Win" ]]; then
+                    export CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN="$cloud_image_id"
+                fi
             fi
         done < $CP_CLOUD_IMAGES_MANIFEST_FILE
 
@@ -210,6 +213,10 @@ function init_cloud_config {
 
         if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
             print_warn "GPU image is not defined in the manifest: $CP_CLOUD_IMAGES_MANIFEST_FILE"
+        fi
+
+        if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN" ]; then
+            print_warn "Common Windows image is not defined in the manifest: $CP_CLOUD_IMAGES_MANIFEST_FILE"
         fi
     else
         print_warn "Cloud images manifest file not found at $CP_CLOUD_IMAGES_MANIFEST_FILE"
@@ -223,6 +230,7 @@ function init_cloud_config {
     echo    "External host address: $CP_CLOUD_EXTERNAL_HOST"
     echo    "Common image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE"
     echo    "GPU image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU"
+    echo    "Common Windows image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN"
 
 }
 
@@ -369,6 +377,10 @@ EOF
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
         print_warn "Default GPU cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=\" option"
         export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=$CP_PREF_CLUSTER_INSTANCE_IMAGE
+    fi
+    if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN" ]; then
+        print_warn "Default Windows cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN=\" option"
+        export CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN=$CP_PREF_CLUSTER_INSTANCE_IMAGE
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ]; then
         if [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
@@ -821,43 +833,112 @@ function prepare_kube_dns {
     local static_names="$1"
 
     if ! is_kube_dns_configured_for_custom_entries; then
-        # 1. Mount hosts config map into dnsmasq
+        # 1. Grant "kube-dns" permissions to list the pods
+        print_info "Granting 'clusterrole view' permissions to 'system:serviceaccount:kube-system:kube-dns'"
+        kubectl create clusterrolebinding kube-dns-viewer-binding \
+                                            --clusterrole view \
+                                            --user system:serviceaccount:kube-system:kube-dns
+        if [ $? -ne 0 ]; then
+            print_warn "Unable to create clusterrolebinding for the kube-dns cluster viewer role. Deployment will proceed, but the pods DNS sync process won't work properly"
+        fi
+
+        # 2. Mount hosts config map into dnsmasq
         print_info "Configuring kube-dns for custom entries support"
         kubectl patch deployment kube-dns \
             --namespace kube-system \
             --type='json' \
-            -p='[
+            -p="[
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/volumes/-",
-                        "value": {
-                            "configMap": {
-                                "name": "cp-dnsmasq-hosts",
-                                "optional": true
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/shareProcessNamespace\",
+                        \"value\": true
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/volumes/-\",
+                        \"value\": {
+                            \"configMap\": {
+                                \"name\": \"cp-dnsmasq-hosts\",
+                                \"optional\": true
                             },
-                            "name": "cp-dnsmasq-hosts"
+                            \"name\": \"cp-dnsmasq-hosts\"
                         }
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
-                        "value": {
-                            "mountPath": "/etc/hosts.d",
-                            "name": "cp-dnsmasq-hosts"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/volumes/-\",
+                        \"value\": {
+                            \"emptyDir\": {},
+                            \"name\": \"cp-dnsmasq-pods\"
                         }
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--hostsdir=/etc/hosts.d"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/volumeMounts/-\",
+                        \"value\": {
+                            \"mountPath\": \"/etc/hosts.d/hosts\",
+                            \"name\": \"cp-dnsmasq-hosts\"
+                        }
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/volumeMounts/-\",
+                        \"value\": {
+                            \"mountPath\": \"/etc/hosts.d/pods\",
+                            \"name\": \"cp-dnsmasq-pods\"
+                        }
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--dns-forward-max=5000\"
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--hostsdir=/etc/hosts.d/hosts\"
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--hostsdir=/etc/hosts.d/pods\"
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--bind-interfaces\"
+                    },
+                    {
+                        \"op\": \"replace\",
+                        \"path\": \"/spec/template/spec/containers/2/image\",
+                        \"value\": \"gcr.io/google-containers/k8s-dns-sidecar:1.15.11\"
+                    },
+                    {
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/-\",
+                        \"value\": {
+                            \"command\": [
+                                \"python\",
+                                \"/sync-hosts.py\"
+                            ],
+                            \"image\": \"${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:dns-hosts-sync-$CP_VERSION\",
+                            \"imagePullPolicy\": \"IfNotPresent\",
+                            \"name\": \"pods\",
+                            \"volumeMounts\": [
+                                {
+                                    \"mountPath\": \"/etc/hosts.d/pods\",
+                                    \"name\": \"cp-dnsmasq-pods\"
+                                }
+                            ]
+                        }
                     }
-                ]'
+                ]"
         if [ $? -ne 0 ]; then
             print_err "Unable to patch kube-dns deployment"
             return 1
         fi
 
-        # Wait for the pods restart
+        # 3. Wait for the pods restart
         kubectl rollout status deployment/kube-dns -n kube-system -w
         # Just in case...
         sleep 10
@@ -991,8 +1072,8 @@ function register_custom_name_in_dns {
             return 1
         fi
         # Delete existing entry
-        if grep -q "$custom_name" <<< "$current_custom_names"; then
-            current_custom_names="$(sed "/$custom_name/d" <<< "$current_custom_names")"
+        if grep -q " $custom_name" <<< "$current_custom_names"; then
+            current_custom_names="$(sed "/ $custom_name/d" <<< "$current_custom_names")"
         fi
         # And add an update one
         current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
@@ -1087,7 +1168,7 @@ function check_pod_exists {
 function wait_for_deletion {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         print_info "Waiting for pod \"$p\" final deletion and cleanup..."
         while check_pod_exists "$p"; do
@@ -1104,7 +1185,7 @@ function wait_for_deployment {
     print_info "Waiting for deployment/pod $DEPLOYMENT_NAME creation..."
     set -o pipefail
     while "true"; do
-        pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+        pods=$(get_deployment_pods $DEPLOYMENT_NAME)
         [ $? -eq 0 ] && [ "$pods" ] && break
     done
     set +o pipefail
@@ -1146,7 +1227,7 @@ function execute_deployment_command {
         CONTAINER_NAME=
     fi
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done
@@ -1155,10 +1236,18 @@ function execute_deployment_command {
 function delete_deployment_pods {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         kubectl delete po $p --grace-period=0 --force
     done
+}
+
+function get_deployment_pods() {
+    DEPLOYMENT_NAME=$1
+    # Since pod name is: {deployment-name}-{replica-set-hash}-{pod-hash} we can assume that all pods that have such
+    # name is related to the specific deployment
+    _pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ' | grep -E "^${DEPLOYMENT_NAME}-[a-zA-Z0-9]+-[a-zA-Z0-9]+$")
+    echo $_pods
 }
 
 function create_user_and_db {
@@ -1249,7 +1338,7 @@ function generate_self_signed_ca {
                 -subj "/CN=Cloud-Pipeline-$CP_DEPLOYMENT_ID" \
                 -keyout $ca_key_path \
                 -out $ca_cert_path \
-                -days 7300
+                -days ${CP_COMMON_PKI_DURATION:-7300}
 }
 
 function generate_self_signed_key_pair {
@@ -1311,7 +1400,7 @@ function generate_self_signed_key_pair {
             openssl req -x509 -new -newkey rsa:2048 -nodes -subj "/CN=$subject" \
                             -keyout $key_path \
                             -out $cert_path \
-                            -days 7300 \
+                            -days ${CP_COMMON_PKI_DURATION:-7300} \
                             -reqexts SAN \
                             -extensions SAN \
                             -config <(cat $openssl_config_file \
@@ -1331,7 +1420,7 @@ function generate_self_signed_key_pair {
             openssl x509 -req \
                             -in $csr_path  \
                             -out $cert_path \
-                            -days 7300 \
+                            -days ${CP_COMMON_PKI_DURATION:-7300} \
                             -CA "$CP_COMMON_CERT_DIR/ca-public-cert.pem" \
                             -CAkey "$CP_COMMON_CERT_DIR/ca-private-key.pem" \
                             -CAcreateserial \
@@ -1359,7 +1448,7 @@ function generate_rsa_key_pair {
 
         if [ "$cert_path" ]; then
             openssl req -x509 -new -nodes -subj "/CN=Cloud pipeline" \
-                        -days 7300 \
+                        -days ${CP_COMMON_PKI_DURATION:-7300} \
                         -sha256 \
                         -extensions v3_ca \
                         -key $key_path.tmp \

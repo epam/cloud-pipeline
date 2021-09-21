@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
+import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -26,8 +27,10 @@ import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -39,16 +42,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static java.lang.String.format;
 
 public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
@@ -58,7 +66,9 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private Pattern orderPattern = Pattern.compile("@ORDER_CLAUSE@");
     private Pattern searchPattern = Pattern.compile("@QUERY@");
     private static final String AND = " AND ";
+    private static final String OR = " OR ";
     private static final int BATCH_SIZE = 1000;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -101,14 +111,16 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     @SuppressWarnings("unchecked")
     public Collection<MetadataEntity> batchInsert(List<MetadataEntity> entitiesToCreate) {
+        final Date now = DateUtils.now();
         for (int i = 0; i < entitiesToCreate.size(); i += BATCH_SIZE) {
             final List<MetadataEntity> batchList = entitiesToCreate.subList(i,
-                    i + BATCH_SIZE > entitiesToCreate.size() ? entitiesToCreate.size() : i + BATCH_SIZE);
+                    Math.min(i + BATCH_SIZE, entitiesToCreate.size()));
             List<Long> ids = daoHelper.createIds(metadataEntitySequence, batchList.size());
             Map<String, Object>[] batchValues = new Map[batchList.size()];
             for (int j = 0; j < batchList.size(); j++) {
                 MetadataEntity entity = batchList.get(j);
                 entity.setId(ids.get(j));
+                entity.setCreatedDate(now);
                 batchValues[j] = MetadataEntityParameters.getParameters(entity).getValues();
             }
             getNamedParameterJdbcTemplate().batchUpdate(this.createMetadataEntityQuery, batchValues);
@@ -127,7 +139,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     public Collection<MetadataEntity> batchUpdate(List<MetadataEntity> entitiesToUpdate) {
         for (int i = 0; i < entitiesToUpdate.size(); i += BATCH_SIZE) {
             final List<MetadataEntity> batchList = entitiesToUpdate.subList(i,
-                    i + BATCH_SIZE > entitiesToUpdate.size() ? entitiesToUpdate.size() : i + BATCH_SIZE);
+                    Math.min(i + BATCH_SIZE, entitiesToUpdate.size()));
             Map<String, Object>[] batchValues = new Map[batchList.size()];
             for (int j = 0; j < batchList.size(); j++) {
                 MetadataEntity entity = batchList.get(j);
@@ -141,9 +153,9 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateMetadataEntityDataKey(MetadataEntity metadataEntity, String key, String value, String type) {
         String query = dataKeyPattern.matcher(updateMetadataEntityDataKeyQuery)
-                .replaceFirst(String.format("'{%s}'", key));
+                .replaceFirst(format("'{%s}'", key));
         query = dataValuePatten.matcher(query)
-                .replaceFirst(String.format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, value));
+                .replaceFirst(format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, value));
         getNamedParameterJdbcTemplate().update(query, MetadataEntityParameters.getParameters(metadataEntity));
     }
 
@@ -191,7 +203,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteMetadataItemKey(Long id, String key) {
         String query = dataKeyPattern.matcher(deleteMetadataEntityDataKeyQuery)
-                .replaceFirst(String.format("'%s'", key));
+                .replaceFirst(format("'%s'", key));
         getJdbcTemplate().update(query, id);
     }
 
@@ -258,10 +270,15 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
 
     public Set<MetadataEntity> loadExisting(Long folderId, String className, Set<String> externalIds) {
-        String idClause = externalIds.stream().map(s -> String.format("('%s')", s))
+        String idClause = externalIds.stream().map(s -> format("('%s')", s))
                 .collect(Collectors.joining(","));
-        return new HashSet<>(getJdbcTemplate().query(String.format(loadByExternalIdsQuery, idClause),
+        return new HashSet<>(getJdbcTemplate().query(format(loadByExternalIdsQuery, idClause),
                 MetadataEntityParameters.getRowMapper(), folderId, className));
+    }
+
+    public Optional<MetadataEntity> loadByExternalId(Long folderId, String className, String externalId) {
+        return loadExisting(folderId, className, new HashSet<>(Collections.singletonList(externalId))).stream()
+                .findAny();
     }
 
     public List<MetadataEntity> loadAllReferences(List<Long> entitiesIds, Long parentId) {
@@ -273,9 +290,9 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     }
 
     public Set<MetadataEntity> loadByIds(Set<Long> ids) {
-        String idClause = ids.stream().map(id -> String.format("(%d)", id))
+        String idClause = ids.stream().map(id -> format("(%d)", id))
                 .collect(Collectors.joining(","));
-        return new HashSet<>(getJdbcTemplate().query(String.format(loadBylIdsQuery, idClause),
+        return new HashSet<>(getJdbcTemplate().query(format(loadBylIdsQuery, idClause),
                 MetadataEntityParameters.getRowMapper()));
     }
 
@@ -306,7 +323,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 } else {
                     clause.append(" ORDER BY ");
                 }
-                clause.append(getFieldName(orderBy.getField()));
+                clause.append(getFieldName(orderBy));
                 if (orderBy.isDesc()) {
                     clause.append(" DESC");
                 }
@@ -318,8 +335,9 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private String makeWhereClause(MetadataFilter filter) {
         StringBuilder clause = new StringBuilder();
         addFilterConditions(clause, filter.getFilters());
-        addSearchConditions(clause, filter.getSearchQueries());
+        addSearchConditions(clause, filter.getSearchQueries(), filter.getLogicalSearchOperator());
         addExternalIdsConditions(clause, filter.getExternalIdQueries());
+        addDateConditions(clause, filter);
         return clause.toString();
     }
 
@@ -334,15 +352,14 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         });
     }
 
-    private void addSearchConditions(StringBuilder clause, List<String> searchQueries) {
+    private void addSearchConditions(StringBuilder clause, List<String> searchQueries, LogicalSearchOperator operator) {
         if (CollectionUtils.isEmpty(searchQueries)) {
             return;
         }
-        searchQueries.forEach(query -> {
-            String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
-            clause.append(AND);
-            clause.append(searchPattern.matcher(searchClauseQuery).replaceFirst(formattedQuery));
-        });
+        String clauses = searchQueries.stream()
+                .map(this::applySearchClause)
+                .collect(Collectors.joining(format(" %s ", operator.getOperator())));
+        clause.append(AND).append(format("( %s )", clauses));
     }
 
     private void addFilterConditions(StringBuilder clause, List<MetadataFilter.FilterQuery> filters) {
@@ -351,22 +368,59 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         filters.forEach(filter -> {
             clause.append(AND);
-            MetadataField field = MetadataEntityParameters.getFieldNames().get(filter.getKey().toUpperCase());
-            if (field != null) {
-                clause.append(String.format("%s::text = '%s'", field.getDbName(), filter.getValue()));
-            } else {
-                clause.append(String.format("e.data -> '%s' @> '{\"value\":\"%s\"}'", filter.getKey(),
-                        filter.getValue()));
-            }
+            final String filterClause = filter.isPredefined()
+                    ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
+                    : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey());
+            clause.append(filterClause);
         });
     }
 
-    private String getFieldName(String field) {
-        MetadataField fieldValue = MetadataEntityParameters.getFieldNames().get(field.toUpperCase());
-        if (fieldValue != null) {
-            return fieldValue.getDbName();
+    private String getDBName(final String filterKey) {
+        MetadataField field = MetadataEntityParameters.getFieldNames().get(filterKey.toUpperCase());
+        if (field == null) {
+            throw new IllegalArgumentException(format("Predefined field name '%s' isn't supported!", filterKey));
         }
-        return String.format("e.data ->> '%s'", field);
+        return field.getDbName();
+    }
+
+    private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
+        if (CollectionUtils.isEmpty(filter.getValues())) {
+            return StringUtils.EMPTY;
+        }
+        String clauses = filter.getValues()
+                .stream()
+                .map(value -> format(template, dbName, value))
+                .collect(Collectors.joining(OR));
+        return format("( %s )", clauses);
+    }
+
+    private void addDateConditions(StringBuilder clause, MetadataFilter metadataFilter) {
+        if (metadataFilter.getStartDateFrom() == null && metadataFilter.getEndDateTo() == null) {
+            return;
+        }
+        MetadataField field = MetadataEntityParameters.getFieldNames().get("CREATEDDATE");
+        if (field == null) {
+            return;
+        }
+        if (metadataFilter.getStartDateFrom() != null) {
+            clause.append(AND);
+            clause.append(format("%s >= '%s'", field.getDbName(), metadataFilter.getStartDateFrom().format(FORMATTER)));
+        }
+        if (metadataFilter.getEndDateTo() != null) {
+            clause.append(AND);
+            clause.append(format("%s <= '%s'", field.getDbName(), metadataFilter.getEndDateTo().format(FORMATTER)));
+        }
+    }
+
+    private String getFieldName(MetadataFilter.OrderBy orderBy) {
+        return orderBy.isPredefined()
+                ? getDBName(orderBy.getField())
+                : format("e.data ->> '%s'", orderBy.getField());
+    }
+
+    private String applySearchClause(String query) {
+        String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
+        return searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery);
     }
 
     enum MetadataEntityParameters {
@@ -377,6 +431,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         EXTERNAL_ID,
         CLASS_NAME,
         DATA,
+        CREATED_DATE,
         EXTERNAL_IDS,
         KEY,
         TYPE,
@@ -390,6 +445,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             fieldNames.put("ID", new MetadataField("id", "e.entity_id", true));
             fieldNames.put("NAME", new MetadataField("name", "e.entity_name", true));
             fieldNames.put("EXTERNALID", new MetadataField("externalId", "e.external_id", true));
+            fieldNames.put("CREATEDDATE", new MetadataField("createdDate", "e.created_date", true));
             fieldNames.put("PARENT.ID", new MetadataField("parent.id", "e.parent_id", true));
             fieldNames.put("CLASSENTITY.ID", new MetadataField("classEntity.id", "c.class_id", true));
             fieldNames.put("CLASSENTITY.NAME", new MetadataField("classEntity.name", "c.class_name", true));
@@ -414,6 +470,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             params.addValue(ENTITY_NAME.name(), metadataEntity.getName());
             params.addValue(EXTERNAL_ID.name(), metadataEntity.getExternalId());
             params.addValue(DATA.name(), convertDataToJsonStringForQuery(metadataEntity.getData()));
+            params.addValue(CREATED_DATE.name(), metadataEntity.getCreatedDate());
             return params;
         }
 
@@ -482,6 +539,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             entity.setName(rs.getString(ENTITY_NAME.name()));
             entity.setExternalId(rs.getString(EXTERNAL_ID.name()));
             entity.setData(MetadataDao.MetadataParameters.parseData(rs.getString(DATA.name())));
+            entity.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             return entity;
         }
 

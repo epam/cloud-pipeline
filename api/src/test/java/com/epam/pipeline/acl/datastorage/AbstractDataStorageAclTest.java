@@ -17,16 +17,19 @@
 package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
@@ -41,12 +44,19 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
             DatastorageCreatorUtils.getS3bucketDataStorage(ID, SIMPLE_USER, false);
     protected final UserContext context = SecurityCreatorUtils.getUserContext();
     protected final UserContext externalContext = SecurityCreatorUtils.getUserContext(true);
+    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline();
 
     @Autowired
     protected DataStorageApiService dataStorageApiService;
 
     @Autowired
     protected DataStorageManager mockDataStorageManager;
+
+    @Autowired
+    protected DataStorageTagBatchManager mockDataStorageTagBatchManager;
+
+    @Autowired
+    protected DataStorageConvertManager mockDataStorageConvertManager;
 
     @Autowired
     protected AuthManager mockAuthManager;
@@ -62,15 +72,11 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
         mockUserContext(context);
     }
 
-    protected void mockAuthUser(final String user) {
-        doReturn(user).when(mockAuthManager).getAuthorizedUser();
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
-    }
-
     protected void mockS3bucket(final AbstractDataStorage entity) {
         doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, ID);
     }
 
+    @Override
     protected void mockUserContext(final UserContext context) {
         doReturn(context).when(mockAuthManager).getUserContext();
     }

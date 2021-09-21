@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, PipelineRunFormAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(CANCEL, context().find(byText("Cancel"))),
+            entry(CANCEL, context().find(byText("Cancel")).parent()),
             entry(OK, context().find(byClassName("ant-btn-primary"))),
             entry(CLEAR_SELECTION, context().find(byClassName("ant-btn-danger"))),
             entry(SELECT_ALL, context().find(byXpath("//button/span[.='Select all']")).closest("button")),
@@ -73,6 +73,10 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
 
     public SelectLimitMountsPopupAO selectAllNonSensitive() {
         return click(SELECT_ALL_NON_SENSITIVE).sleep(1, SECONDS);
+    }
+
+    public SelectLimitMountsPopupAO selectAll() {
+        return click(SELECT_ALL).sleep(1, SECONDS);
     }
 
     @Override
@@ -122,5 +126,20 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
         SelenideElements.of(columnHeader)
                 .shouldHave(texts(names));
         return this;
+    }
+
+    public int countObjectStorages() {
+        return $$(byXpath("//tbody[@class='ant-table-tbody']//span[@class='ant-checkbox ant-checkbox-checked']")).size() -
+                            countStoragesWithType("NFS");
+    }
+
+    private int countStoragesWithType(String type) {
+        int listTypeSize = (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
+                .stream()
+                .map(e -> e.find(byXpath("./td[3]")))
+                .filter(e -> e.text().equals(type))
+                .count();
+        click(CANCEL);
+        return listTypeSize;
     }
 }

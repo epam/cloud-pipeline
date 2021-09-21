@@ -23,7 +23,8 @@ export default class AdaptedLink extends Component {
     to: PropTypes.string,
     children: PropTypes.any.isRequired,
     location: PropTypes.object,
-    id: PropTypes.string
+    id: PropTypes.string,
+    ignoreCurrentPath: PropTypes.bool
   };
 
   get currentPath () {
@@ -34,7 +35,7 @@ export default class AdaptedLink extends Component {
   }
 
   render () {
-    const {to, children} = this.props;
+    const {to, children, ignoreCurrentPath} = this.props;
     const additionalProps = {};
     const linkStyle = {
       height: '46px'
@@ -42,17 +43,20 @@ export default class AdaptedLink extends Component {
     if (this.props.id) {
       additionalProps.id = this.props.id;
     }
+    if (!ignoreCurrentPath && (!to || (this.currentPath && to === this.currentPath))) {
+      return (
+        <span {...additionalProps} style={linkStyle}>{children}</span>
+      );
+    }
     return (
-      !to || (this.currentPath && to === this.currentPath)
-        ? <span {...additionalProps} style={linkStyle}>{children}</span>
-        : (<Link
-          {...additionalProps}
-          style={linkStyle}
-          to={to}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {children}
-        </Link>)
+      <Link
+        {...additionalProps}
+        style={linkStyle}
+        to={to}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </Link>
     );
   }
 }

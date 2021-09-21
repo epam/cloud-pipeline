@@ -24,8 +24,10 @@ import EditableField from '../../special/EditableField';
 import {Alert, Icon, Row} from 'antd';
 import connect from '../../../utils/connect';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
+import {openReRunForm} from '../../runs/actions';
 import moment from 'moment-timezone';
 import styles from './Browser.css';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const PAGE_SIZE = 20;
 
@@ -33,6 +35,7 @@ const PAGE_SIZE = 20;
   folders,
   pipelines
 })
+@HiddenObjects.checkFolders(p => (p.params ? p.params.id : p.id))
 @inject(({folders}, {params}) => {
   const filterParams = {
     page: 1,
@@ -52,16 +55,8 @@ const PAGE_SIZE = 20;
 @observer
 export default class ProjectHistory extends React.Component {
 
-  launchPipeline = ({pipelineId, version, id, configName}) => {
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+  launchPipeline = (run) => {
+    return openReRunForm(run, this.props);
   };
   onSelectRun = ({id}) => {
     this.props.router.push(`/run/${id}`);

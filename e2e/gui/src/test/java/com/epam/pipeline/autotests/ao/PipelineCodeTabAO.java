@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
@@ -95,7 +96,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
 
         $$(".pipeline-code-form__button").findBy(text("Save")).click();
-        $("#message").setValue("pretty commit message");
+        $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
 
         return this;
@@ -168,6 +169,20 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return new EditFilePopupAO();
     }
 
+    public PipelineCodeTabAO deleteFile(final String fileName) {
+        $$(tagName("tr"))
+                .find(text(fileName))
+                .find(button("Delete"))
+                .click();
+        click(button("OK"));
+        return this;
+    }
+
+    public PipelineCodeTabAO shouldContainFile(final String fileName) {
+        $(".ant-table-tbody").shouldHave(text(fileName));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
@@ -203,7 +218,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        public FileEditingPopupAO deleteExtraBrackets() {
+        private FileEditingPopupAO deleteExtraBrackets() {
             return deleteExtraBrackets(100);
         }
 
@@ -217,7 +232,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        public FileEditingPopupAO fillWith(String newText) {
+        private FileEditingPopupAO fillWith(String newText) {
             Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
             return this;
         }
@@ -226,12 +241,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return openCommitDialog().typeInField(message).ok();
         }
 
-        public CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
+        private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
             click(SAVE);
             return new CommitPopupAO<>(parentAO);
         }
 
-        public FileEditingPopupAO clear() {
+        private FileEditingPopupAO clear() {
             final SelenideElement editor = $(byClassName("CodeMirror-code"));
             final int codeLength = editor.innerText().length();
             final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
@@ -243,12 +258,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        public FileEditingPopupAO clickEdit() {
+        private FileEditingPopupAO clickEdit() {
             return click(EDIT);
         }
 
         public FileEditingPopupAO editFile(final UnaryOperator<String> action) {
-            click(EDIT);
+            clickEdit();
             final SelenideElement editor = $(className("code-editor__editor")).should(appear);
             sleep(1, SECONDS);
             editor.click();
@@ -265,7 +280,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
         public FileEditingPopupAO shouldContainInCode(final String expectedCode) {
             final Function<String, SelenideElement> lineWithText =
-                    text -> $x(String.format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
+                    text -> $x(format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
             Arrays.stream(expectedCode.split("\n"))
                     .map(String::trim)
                     .map(lineWithText)

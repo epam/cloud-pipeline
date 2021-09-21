@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.security.run;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -31,16 +33,21 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -60,6 +67,7 @@ public class RunPermissionManager {
     private static final RunVisibilityPolicy DEFAULT_POLICY = RunVisibilityPolicy.INHERIT;
 
     private final PipelineRunManager runManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final PipelineApiService pipelineApiService;
     private final CheckPermissionHelper permissionsHelper;
     private final AuthManager authManager;
@@ -67,6 +75,7 @@ public class RunPermissionManager {
     private final ToolGroupManager toolGroupManager;
     private final ToolManager toolManager;
     private final ContextualPreferenceManager preferenceManager;
+    private final PipelineRunAsManager runAsManager;
 
     /**
      * Run permissions: owner and admin have full access to PipelineRun
@@ -85,19 +94,19 @@ public class RunPermissionManager {
     }
 
     public boolean runPermission(final Long runId, final String permissionName) {
-        return runPermission(runManager.loadPipelineRun(runId), permissionName);
+        return runPermission(runCRUDService.loadRunById(runId), permissionName);
     }
 
     public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
-        final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
+        final PipelineRun pipelineRun = runCRUDService.loadRunById(runId);
         if (taskStatus.isFinal()) {
-            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner());
+            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner()) || isRunSshAllowed(pipelineRun);
         }
         return runPermission(pipelineRun, permissionName);
     }
 
     public boolean isRunSshAllowed(Long runId) {
-        return isRunSshAllowed(runManager.loadPipelineRun(runId));
+        return isRunSshAllowed(runCRUDService.loadRunById(runId));
     }
 
     public boolean isRunSshAllowed(PipelineRun pipelineRun) {
@@ -154,6 +163,35 @@ public class RunPermissionManager {
                             .map(BaseEntity::getId)
                             .collect(toList());
             filter.setAllowedPipelines(allowedPipelinesList);
+        }
+    }
+
+    public boolean hasEntityPermissionToRunAs(final PipelineStart runVO, final AbstractSecuredEntity entity,
+                                              final String permissionName) {
+        final String runAsUserName = runAsManager.getRunAsUserName(runVO);
+        return hasEntityPermissionToRunAs(entity, runAsUserName, permissionName);
+    }
+
+    public boolean hasEntityPermissionToRunAs(final AbstractSecuredEntity entity, final String runAsUserName,
+                                              final String permissionName) {
+        if (StringUtils.isEmpty(runAsUserName)) {
+            return true;
+        }
+        return permissionsHelper.isAllowed(permissionName, entity, runAsUserName)
+                && runAsManager.hasCurrentUserAsRunner(runAsUserName);
+    }
+
+    public void checkToolRunPermission(final String image) {
+        final AbstractSecuredEntity tool = toolManager.loadByNameOrId(image);
+        if (!permissionsHelper.isAllowed(AclPermission.EXECUTE_NAME, tool)) {
+            throw new AccessDeniedException("Access is denied");
+        }
+    }
+
+    public void checkToolRunPermissionToRunAs(final String image, final String runAsUserName) {
+        final AbstractSecuredEntity tool = toolManager.loadByNameOrId(image);
+        if (!hasEntityPermissionToRunAs(tool, runAsUserName, AclPermission.EXECUTE_NAME)) {
+            throw new AccessDeniedException("Access is denied");
         }
     }
 

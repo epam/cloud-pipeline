@@ -17,8 +17,10 @@
 package com.epam.pipeline.test.creator;
 
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.ontology.OntologyEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,24 +36,37 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<Long>>() {};
     public static final TypeReference<Result<Map<String, String>>> STRING_MAP_INSTANCE_TYPE =
             new TypeReference<Result<Map<String, String>>>() {};
+    public static final TypeReference<Result<Set<String>>> STRING_SET_INSTANCE_TYPE =
+            new TypeReference<Result<Set<String>>>() {};
+    public static final TypeReference<Result<List<String>>> STRING_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<String>>>() {};
+    public static final TypeReference<Result<Set<Long>>> LONG_SET_INSTANCE_TYPE =
+            new TypeReference<Result<Set<Long>>>() {};
+    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
+    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
 
     public static final long ID = 1L;
     public static final long ID_2 = 2L;
+    public static final long ID_3 = 3L;
+    public static final long TEST_LONG = 4L;
     public static final int TEST_INT = 4;
+    public static final int NO_PERMISSION = 0;
     public static final int READ_PERMISSION = 1;
     public static final int WRITE_PERMISSION = 2;
     public static final int EXECUTE_PERMISSION = 4;
+    public static final int ALL_PERMISSIONS = 15;
     public static final String TEST_STRING = "TEST";
+    public static final byte[] TEST_BYTES = TEST_STRING.getBytes();
+    public static final String TEST_NAME = "TEST_NAME";
+    public static final String TEST_NAME_2 = "TEST_NAME_2";
     public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
     public static final byte[] TEST_ARRAY = {1, 1, 1};
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);
     public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
-
-    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
-    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
-    public static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() {};
-    public static final TypeReference<Result<Map<String, String>>> STRING_STRING_MAP_TYPE =
-            new TypeReference<Result<Map<String, String>>>() {};
+    public static final List<Long> TEST_LONG_LIST = Collections.singletonList(ID);
+    public static final Set<Long> TEST_LONG_SET = Collections.singleton(ID);
+    public static final Iterable<OntologyEntity> EMPTY_ITERABLE = Collections::emptyIterator;
+    public static final LocalDateTime TEST_LOCAL_DATE_TIME = LocalDateTime.now();
 
     private CommonCreatorConstants() {
 

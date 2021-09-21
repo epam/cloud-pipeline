@@ -50,6 +50,7 @@ public abstract class AbstractDataStorageFactory {
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
         storage.setSensitive(vo.isSensitive());
+        storage.setToolsToMount(vo.getToolsToMount());
         return storage;
     }
 

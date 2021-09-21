@@ -2,6 +2,7 @@
 CP_COMMON_SSL_SELF_SIGNED=false
 CP_COMMON_CERT_DIR=/opt/common/pki
 CP_COMMON_ROOT_FS_MIN_DISK_MB=20480
+CP_COMMON_PKI_DURATION=7300
 
 
 # Kubernetes
@@ -118,6 +119,8 @@ CP_PREF_SECURITY_TOOLS_POLICY_MAX_CRITICAL_VULNERABILITIES=50
 # cp-search-elk
 CP_SEARCH_ELK_INTERNAL_HOST=cp-search-elk.default.svc.cluster.local
 CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT=30091
+CP_SEARCH_ELK_ULIMIT=65536
+CP_SEARCH_ELK_HEAP_SIZE=4g
 
 CP_SEARCH_KIBANA_INTERNAL_HOST=cp-search-kibana.default.svc.cluster.local
 CP_SEARCH_KIBANA_INTERNAL_PORT=45601
@@ -191,6 +194,12 @@ CP_SP_INTERNAL_HOST=cp-sensitive-proxy.default.svc.cluster.local
 # cp-redis
 CP_REDIS_INTERNAL_HOST=cp-redis.default.svc.cluster.local
 CP_REDIS_INTERNAL_PORT=30097
+
+# cp-gitlab-reader
+CP_GITLAB_READER_WORKER_COUNT=2
+CP_GITLAB_READER_INTERNAL_PORT=35800
+CP_GITLAB_READER_INTERNAL_HOST=cp-gitlab-reader.default.svc.cluster.local
+CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
 
 # Other params, specified on command line
 #

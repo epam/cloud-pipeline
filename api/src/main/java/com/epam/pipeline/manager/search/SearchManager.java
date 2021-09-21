@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -26,6 +28,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -51,9 +55,12 @@ public class SearchManager {
         validateRequest(searchRequest);
         try {
             final String typeFieldName = getTypeFieldName();
+            final Set<String> metadataSourceFields =
+                    new HashSet<>(ListUtils.emptyIfNull(searchRequest.getMetadataFields()));
             final SearchResponse searchResult = globalSearchElasticHelper.buildClient().search(
-                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION));
-            return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields());
+                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields));
+            return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields(),
+                    metadataSourceFields, searchRequest.getScrollingParameters());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -65,6 +72,25 @@ public class SearchManager {
             final SearchResponse searchResponse = globalSearchElasticHelper.buildClient().search(requestBuilder
                     .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path));
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    public FacetedSearchResult facetedSearch(final FacetedSearchRequest searchRequest) {
+        Assert.notNull(searchRequest.getPageSize(), "Page Size is required");
+        if (Objects.isNull(searchRequest.getScrollingParameters()) && Objects.isNull(searchRequest.getOffset())) {
+            searchRequest.setOffset(0);
+        }
+        try {
+            final String typeFieldName = getTypeFieldName();
+            final Set<String> metadataSourceFields =
+                    new HashSet<>(ListUtils.emptyIfNull(searchRequest.getMetadataFields()));
+            final SearchResponse response = globalSearchElasticHelper.buildClient()
+                    .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName, metadataSourceFields));
+            return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields(),
+                    metadataSourceFields, searchRequest.getScrollingParameters());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -87,7 +113,9 @@ public class SearchManager {
     private void validateRequest(final ElasticSearchRequest request) {
         Assert.isTrue(StringUtils.isNotBlank(request.getQuery()), "Search Query is required");
         Assert.notNull(request.getPageSize(), "Page Size is required");
-        Assert.notNull(request.getOffset(), "Offset is required");
+        if (Objects.isNull(request.getScrollingParameters()) && Objects.isNull(request.getOffset())) {
+            request.setOffset(0);
+        }
     }
 
     private String getTypeFieldName() {

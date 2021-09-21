@@ -48,7 +48,9 @@ class UploadButton extends React.Component {
     path: PropTypes.string,
     storageInfo: PropTypes.object,
     region: PropTypes.string,
-    owner: PropTypes.string
+    owner: PropTypes.string,
+    onInitialized: PropTypes.func,
+    style: PropTypes.object
   };
 
   state = {
@@ -60,9 +62,12 @@ class UploadButton extends React.Component {
 
   @observable s3Storage;
   @observable s3StorageError;
+  uploadButton;
 
   componentDidMount () {
     this.createS3Storage();
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this);
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -76,6 +81,19 @@ class UploadButton extends React.Component {
       this.createS3Storage();
     }
   }
+
+  triggerClick = () => {
+    if (
+      this.uploadButton &&
+      this.uploadButton.refs &&
+      this.uploadButton.refs.upload &&
+      this.uploadButton.refs.upload.uploader &&
+      this.uploadButton.refs.upload.uploader.fileInput &&
+      this.uploadButton.refs.upload.uploader.fileInput.click
+    ) {
+      this.uploadButton.refs.upload.uploader.fileInput.click();
+    }
+  };
 
   createS3Storage = () => {
     const {storageId, uploadToS3, path: prefix, storageInfo, region} = this.props;
@@ -142,6 +160,9 @@ class UploadButton extends React.Component {
     if (!this.state.uploadInfoClosable) {
       return;
     }
+    const {
+      uploadingFiles = []
+    } = this.state;
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,
@@ -149,18 +170,38 @@ class UploadButton extends React.Component {
       synchronousUploadingFiles: []
     }, async () => {
       if (this.props.onRefresh) {
-        this.props.onRefresh();
+        this.props.onRefresh(uploadingFiles.map(f => f.name));
       }
     });
   };
 
   onUploadStatusChangedSynchronous = async () => {
+    const {validate, validateAndFilter} = this.props;
+    const {synchronousUploadingFiles} = this.state;
     if (this.uploadTimeout) {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    if (this.props.validate) {
-      const validationResult = await this.props.validate(this.state.synchronousUploadingFiles);
+    if (validateAndFilter) {
+      const validationResult = await validateAndFilter(synchronousUploadingFiles);
+      if (validationResult && Array.isArray(validationResult) && validationResult.length) {
+        this.setState({
+          uploadInfoVisible: false,
+          uploadInfoClosable: false,
+          uploadingFiles: validationResult,
+          synchronousUploadingFiles: validationResult
+        });
+      } else {
+        this.setState({
+          uploadInfoVisible: false,
+          uploadInfoClosable: false,
+          uploadingFiles: [],
+          synchronousUploadingFiles: []
+        });
+        return;
+      }
+    } else if (validate) {
+      const validationResult = await validate(this.state.synchronousUploadingFiles);
       if (!validationResult) {
         this.setState({
           uploadInfoVisible: false,
@@ -537,7 +578,14 @@ class UploadButton extends React.Component {
 
     return (
       <div style={{display: 'inline'}}>
-        <Upload {...uploadProps} disabled={this.props.uploadToS3 && !!this.s3StorageError}>
+        <Upload
+          {...uploadProps}
+          disabled={this.props.uploadToS3 && !!this.s3StorageError}
+          ref={component => {
+            this.uploadButton = component;
+          }}
+          style={this.props.style}
+        >
           {
             this.props.uploadToS3 && this.s3StorageError && !this.props.uploadToNFS &&
             <Tooltip

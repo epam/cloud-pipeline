@@ -23,10 +23,12 @@ import PropTypes from 'prop-types';
 import Folder from '../Folder';
 import {generateTreeData, getTreeItemByKey, ItemTypes} from '../../model/treeStructureFunctions';
 import pipelinesLibrary from '../../../../models/folders/FolderLoadTree';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 @connect({
   pipelinesLibrary
 })
+@HiddenObjects.injectTreeFilter
 @inject(({pipelinesLibrary}) => {
   return {
     pipelinesLibrary
@@ -70,7 +72,8 @@ export default class CloneForm extends React.Component {
         false,
         null,
         [],
-        [ItemTypes.folder]
+        [ItemTypes.folder],
+        this.props.hiddenObjectsTreeFilter()
       );
       const foundFolder = getTreeItemByKey(folder.key, tree);
       this.setState({
@@ -159,7 +162,8 @@ export default class CloneForm extends React.Component {
         false,
         null,
         [],
-        [ItemTypes.folder]
+        [ItemTypes.folder],
+        this.props.hiddenObjectsTreeFilter()
       );
       const folder = getTreeItemByKey(`${ItemTypes.folder}_${props.parentId}`, tree);
       this.setState({

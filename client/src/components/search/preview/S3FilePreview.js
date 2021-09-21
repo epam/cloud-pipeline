@@ -20,8 +20,10 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
+import HTMLRenderer from './HTMLRenderer';
 import {metadataLoad, renderAttributes} from './renderAttributes';
 import {PreviewIcons} from './previewIcons';
 import {SearchItemTypes} from '../../../models/search';
@@ -31,6 +33,7 @@ import Papa from 'papaparse';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import VSIPreview from './vsi-preview';
 
 const MarkdownRenderer = new Remarkable('commonmark', {
   html: true,
@@ -82,7 +85,9 @@ const downloadUrlLoad = (params, dataStorageCache) => {
   return {
     preview: previewLoad(params, dataStorageCache),
     downloadUrl: downloadUrlLoad(params, dataStorageCache),
-    dataStorageInfo: params.item && params.item.parentId ? dataStorages.load(params.item.parentId) : null,
+    dataStorageInfo: params.item && params.item.parentId
+      ? dataStorages.load(params.item.parentId)
+      : null,
     metadata: metadataLoad(params, 'DATA_STORAGE_ITEM', stores)
   };
 })
@@ -93,8 +98,9 @@ export default class S3FilePreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string,
-    })
+      description: PropTypes.string
+    }),
+    lightMode: PropTypes.bool
   };
 
   state = {
@@ -115,12 +121,14 @@ export default class S3FilePreview extends React.Component {
       const noContent = !preview;
       const mayBeBinary = this.props.preview.value.mayBeBinary;
       const error = this.props.preview.error;
+      const extension = this.props.preview.path?.split('.').pop().toLowerCase();
       return {
         preview,
         truncated,
         noContent,
         error,
-        mayBeBinary
+        mayBeBinary,
+        extension
       };
     }
     return null;
@@ -239,7 +247,15 @@ export default class S3FilePreview extends React.Component {
             <span style={{color: '#ff556b'}}>Error loading .csv visualization: {this.structuredTableData.message}</span>
           </div>
         }
-        <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
+        {
+          this.filePreview.extension === 'html' ? (
+            <HTMLRenderer
+              htmlString={this.filePreview.preview}
+            />
+          ) : (
+            <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
+          )
+        }
       </div>
     );
   };
@@ -318,6 +334,16 @@ export default class S3FilePreview extends React.Component {
     return null;
   };
 
+  renderVSIPreview = () => {
+    return (
+      <VSIPreview
+        className={styles.contentPreview}
+        file={this.props.item.id}
+        storageId={this.props.item.parentId}
+      />
+    );
+  };
+
   renderPDBPreview = () => {
     const onError = (message) => {
       this.setState({
@@ -338,6 +364,16 @@ export default class S3FilePreview extends React.Component {
   };
 
   renderPreview = () => {
+    if (this.props.dataStorageInfo && !this.props.dataStorageInfo.loaded) {
+      return;
+    }
+    if (
+      this.props.dataStorageInfo &&
+      this.props.dataStorageInfo.value &&
+      this.props.dataStorageInfo.value.sensitive
+    ) {
+      return null;
+    }
     const extension = this.props.item.id.split('.').pop().toLowerCase();
     const previewRenderers = {
       pdb: this.renderPDBPreview,
@@ -349,7 +385,9 @@ export default class S3FilePreview extends React.Component {
       tiff: this.renderImagePreview,
       svg: this.renderImagePreview,
       pdf: this.renderImagePreview,
-      md: this.renderMDPreview
+      md: this.renderMDPreview,
+      vsi: this.renderVSIPreview,
+      mrxs: this.renderVSIPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();
@@ -369,7 +407,16 @@ export default class S3FilePreview extends React.Component {
     const attributes = renderAttributes(this.props.metadata, true);
     const preview = this.renderPreview();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title}>
             <Icon type={PreviewIcons[this.props.item.type]} />

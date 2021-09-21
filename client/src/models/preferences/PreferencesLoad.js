@@ -17,10 +17,18 @@
 import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
+const FETCH_ID_SYMBOL = Symbol('Fetch id');
+
 class PreferencesLoad extends Remote {
   constructor () {
     super();
     this.url = '/preferences';
+    this[FETCH_ID_SYMBOL] = 0;
+  }
+
+  update (value) {
+    this[FETCH_ID_SYMBOL] += 1;
+    super.update(value);
   }
 
   postprocess (value) {
@@ -107,6 +115,103 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
+  @computed
+  get nfsSensitivePolicy () {
+    return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
+  }
+
+  @computed
+  get facetedFiltersDictionaries () {
+    const value = this.getPreferenceValue('faceted.filter.dictionaries');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "faceted.filter.dictionaries" preference:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get metadataSystemKeys () {
+    const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.sensitive.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get storageAllowSignedUrls () {
+    return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
+  }
+
+  @computed
+  get hiddenObjects () {
+    const value = this.getPreferenceValue('ui.hidden.objects');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.hidden.objects" preference:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get searchExtraFieldsConfiguration () {
+    const value = this.getPreferenceValue('search.elastic.index.metadata.fields');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "search.elastic.index.metadata.fields" preference:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get versionStorageIgnoredFiles () {
+    const value = this.getPreferenceValue('storage.version.storage.ignored.files');
+    if (!value) {
+      return ['.gitkeep'];
+    }
+    return (value || '').split(',').map(o => o.trim());
+  }
+
+  @computed
+  get metadataMandatoryKeys () {
+    const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.mandatory.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get groupsUIPreferences () {
+    const value = this.getPreferenceValue('misc.groups.ui.preferences');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.groups.ui.preferences" preference:', e);
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
@@ -133,4 +238,5 @@ class PreferencesLoad extends Remote {
   };
 }
 
+export {FETCH_ID_SYMBOL};
 export default new PreferencesLoad();

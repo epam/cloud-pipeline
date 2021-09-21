@@ -23,7 +23,7 @@ import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes'
 import {names} from '../../../../models/utils/ContextualPreference';
 import ToolImage from '../../../../models/tools/ToolImage';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
-import LoadToolScanTags from '../../../../models/tools/LoadToolScanTags';
+import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../../../models/tools/LoadToolScanPolicy';
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import {getVersionRunningInfo} from '../../../tools/utils';
@@ -44,9 +44,12 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
+import PlatformIcon from '../../../tools/platform-icon';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -57,7 +60,15 @@ const findGroupByName = (groups, name) => {
 
 @roleModel.authenticationInfo
 @submitsRun
-@inject('awsRegions', 'dataStorageAvailable', 'dockerRegistries', 'preferences', 'authenticatedUserInfo')
+@inject(
+  'awsRegions',
+  'dataStorageAvailable',
+  'dockerRegistries',
+  'preferences',
+  'authenticatedUserInfo',
+  'hiddenObjects'
+)
+@HiddenObjects.injectToolsFilters
 @runPipelineActions
 @observer
 export default class PersonalToolsPanel extends React.Component {
@@ -135,10 +146,19 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   @computed
+  get registries () {
+    if (this.props.dockerRegistries.loaded) {
+      return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+        .registries;
+    }
+    return [];
+  }
+
+  @computed
   get tools () {
     if (this.props.dockerRegistries.loaded) {
       const result = [];
-      const registries = (this.props.dockerRegistries.value.registries || []).map(r => r);
+      const registries = this.registries;
       for (let i = 0; i < registries.length; i++) {
         const registry = registries[i];
         const groups = (registry.groups || []).map(g => g);
@@ -246,20 +266,20 @@ export default class PersonalToolsPanel extends React.Component {
     const hide = message.loading('Fetching tool info...', 0);
     const toolRequest = new LoadTool(tool.id);
     await toolRequest.fetch();
-    const toolTagRequest = new LoadToolScanTags(tool.id);
-    await toolTagRequest.fetch();
+    const toolTagsInfo = new LoadToolInfo(tool.id);
+    await toolTagsInfo.fetch();
     const scanPolicy = new LoadToolScanPolicy();
     const toolSettings = new LoadToolVersionSettings(tool.id);
     await toolSettings.fetch();
     await this.props.dockerRegistries.fetchIfNeededOrWait();
-    const [registry] = (this.props.dockerRegistries.value.registries || [])
-      .filter(r => r.id === tool.registryId);
+    const registry = this.registries
+      .find(r => r.id === tool.registryId);
     if (toolRequest.error) {
       hide();
       message.error(toolRequest.error);
-    } else if (toolTagRequest.error) {
+    } else if (toolTagsInfo.error) {
       hide();
-      message.error(toolTagRequest.error);
+      message.error(toolTagsInfo.error);
     } else if (scanPolicy.error) {
       hide();
       message.error(scanPolicy.error);
@@ -268,7 +288,9 @@ export default class PersonalToolsPanel extends React.Component {
       message.error(toolSettings.error);
     } else {
       const toolValue = toolRequest.value;
-      const versions = toolTagRequest.value.toolVersionScanResults;
+      const versions = (toolTagsInfo.value.versions || [])
+        .map(v => ({[v.version]: v}))
+        .reduce((r, c) => ({...r, ...c}), {});
 
       let defaultTag;
       let anyTag;
@@ -410,6 +432,39 @@ export default class PersonalToolsPanel extends React.Component {
             : undefined,
           cloudRegionId: cloudRegionIdValue
         }, allowedInstanceTypesRequest);
+        if (
+          this.props.dataStorageAvailable &&
+          this.props.preferences &&
+          this.props.preferences.loaded &&
+          /^skip$/i.test(this.props.preferences.nfsSensitivePolicy) &&
+          defaultPayload.params &&
+          defaultPayload.params[CP_CAP_LIMIT_MOUNTS] &&
+          defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value &&
+          !/^none$/i.test(defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value)
+        ) {
+          await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+          if (this.props.dataStorageAvailable.loaded) {
+            const ids = new Set(
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
+                .split(',').map(i => +i)
+            );
+            const selection = (this.props.dataStorageAvailable.value || [])
+              .filter(s => ids.has(+s.id));
+            const hasSensitive = !!selection.find(s => s.sensitive);
+            const filtered = selection
+              .filter(
+                filterNFSStorages(
+                  this.props.preferences.nfsSensitivePolicy,
+                  hasSensitive
+                )
+              );
+            if (filtered.length) {
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+            } else {
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+            }
+          }
+        }
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
         const {
@@ -471,10 +526,14 @@ export default class PersonalToolsPanel extends React.Component {
         [group, name] = imageParts;
       }
       return [
-        <Row key="name">
+        <Row key="name" type="flex" align="middle">
           <span type="main" style={{fontSize: 'larger', fontWeight: 'bold'}}>
             {highlightText(name, search)}
           </span>
+          <PlatformIcon
+            platform={tool.platform}
+            style={{marginLeft: 5}}
+          />
         </Row>,
         <Row key="description">
           <span style={{fontSize: 'smaller'}}>
@@ -739,6 +798,7 @@ export default class PersonalToolsPanel extends React.Component {
                 parameters={this.state.runToolInfo.payload.params}
                 permissionErrors={this.state.runToolInfo.permissionErrors}
                 preferences={this.props.preferences}
+                platform={this.state.runToolInfo.tool.platform}
               />
           }
           {

@@ -118,6 +118,17 @@ class WaitForNode(Task):
                 return False
         return True
 
+def check_if_self_master(run_id):
+    if os.getenv('RUN_ID', '') != str(run_id):
+        return None
+    try:
+        import socket
+        host_name = socket.gethostname()
+        host_ip = socket.gethostbyname(host_name)
+        return (host_name, host_ip)
+    except:
+        return None
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--parameter', type=str, default=None, nargs='*')
@@ -125,6 +136,14 @@ def main():
     parser.add_argument('--run-id', required=True, type=int)
     args = parser.parse_args()
     status = StatusEntry(TaskStatus.SUCCESS)
+
+    # FIXME: This is a "temp" solution to return self IP and host if the run id matches with the current job
+    # Shall be refactored some day
+    self_info = check_if_self_master(args.run_id)
+    if self_info:
+        print(self_info[0] + " " + self_info[1])
+        exit(0)
+
     try:
         node = WaitForNode().await_node_start(args.task_name, args.run_id, parameters=args.parameter)
         print(node.name + " " + node.ip)

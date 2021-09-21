@@ -22,7 +22,7 @@ import java.util.List;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.preference.Preference;
-import com.epam.pipeline.manager.preference.PreferenceApiService;
+import com.epam.pipeline.acl.preference.PreferenceApiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

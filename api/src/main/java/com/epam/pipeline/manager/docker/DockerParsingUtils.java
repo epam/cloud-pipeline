@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.docker.HistoryEntry;
 import com.epam.pipeline.entity.docker.HistoryEntryV1;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -33,6 +34,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -57,10 +60,20 @@ public final class DockerParsingUtils {
         return getMinElement(getDateStream(rawImage), Comparator.reverseOrder());
     }
 
+    public static Optional<String> getPlatform(final RawImageDescription rawImage) {
+        return getHistoryEntryStream(rawImage)
+                .map(HistoryEntryV1::getOs)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(StringUtils::trim)
+                .map(StringUtils::lowerCase);
+    }
+
     public static List<String> getBuildHistory(final RawImageDescription rawImage) {
         final List<String> commandsHistory = getHistoryEntryStream(rawImage)
             .map(HistoryEntryV1::getContainerConfig)
             .map(ContainerConfig::getCommands)
+            .filter(CollectionUtils::isNotEmpty)
             .map(commands -> String.join(StringUtils.EMPTY, commands))
             .map(DockerParsingUtils::cropNopPrefix)
             .map(command -> command.replaceAll("\\t", StringUtils.EMPTY))

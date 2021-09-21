@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
-import com.amazonaws.util.StringInputStream;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
@@ -26,16 +25,16 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.writer.MonitoringStatsWriter;
+import com.epam.pipeline.manager.cluster.writer.AbstractMonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.utils.CommonUtils;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -48,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "monitoring.backend", havingValue = "elastic")
 public class ESMonitoringManager implements UsageMonitoringManager {
 
@@ -65,6 +63,21 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
+    private final Map<MonitoringReportType, AbstractMonitoringStatsWriter> statsWriters;
+
+    public ESMonitoringManager(final RestHighLevelClient client,
+                               final MonitoringESDao monitoringDao,
+                               final MessageHelper messageHelper,
+                               final PreferenceManager preferenceManager,
+                               final NodesManager nodesManager,
+                               final List<AbstractMonitoringStatsWriter> writers) {
+        this.client = client;
+        this.monitoringDao = monitoringDao;
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
+        this.nodesManager = nodesManager;
+        this.statsWriters = CommonUtils.groupByKey(writers, AbstractMonitoringStatsWriter::getReportType);
+    }
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
@@ -83,7 +96,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     public InputStream getStatsForNodeAsInputStream(final String nodeName,
                                                     final LocalDateTime from,
                                                     final LocalDateTime to,
-                                                    final Duration interval) {
+                                                    final Duration interval,
+                                                    final MonitoringReportType type) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate();
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
@@ -92,14 +106,10 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final Duration adjustedDuration = interval.compareTo(minDuration) < 0
                                           ? minDuration
                                           : interval;
-        final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, adjustedDuration);
-        final MonitoringStatsWriter statsWriter = new MonitoringStatsWriter();
-        try {
-            return new StringInputStream(statsWriter.convertStatsToCsvString(monitoringStats));
-        } catch (IOException e) {
-            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
-                                            e);
-        }
+        final AbstractMonitoringStatsWriter statsWriter = Optional.ofNullable(statsWriters.get(type))
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE)));
+        return statsWriter.convertStatsToFile(getStats(nodeName, start, end, adjustedDuration));
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -122,8 +121,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .selectStorage(storage)
                 .createFolder(storageFolder)
                 .createAndEditFile(storageFile, storageFileContent);
-        home()
-                .globalSearch()
+        home().sleep(2, SECONDS);
+        search()
                 .ensureVisible(FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES, SEARCH, QUESTION_MARK)
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .close();
@@ -174,9 +173,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .clear(DISK).setValue(DISK, configurationDisk)
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
-                                .sleep(3, SECONDS)
+                                .sleep(5, SECONDS)
                                 .click(SAVE)
-                                .sleep(3, SECONDS)
+                                .waitUntilSaveEnding(configurationName)
+                                .sleep(10, SECONDS)
                 );
         draftVersionName = library()
                 .cd(folder)
@@ -222,7 +222,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .moveToSearchResultItem(configVar, () -> new PipelineCodeTabAO(pipeline))
-                .ensure(byText(configVar), visible);
+                .sleep(5, SECONDS)
+                .shouldContainFile(configVar);
     }
 
     @Test(dependsOnMethods = {"searchForPipeline"})
@@ -346,7 +347,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickEditStorageButton()
                 .setAlias(storageAlias)
                 .ok();
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .search(storageAlias)
                 .enter()
@@ -497,6 +498,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668));
+        home();
         search()
                 .click(RUNS)
                 .search(testRunID_2668)
@@ -513,34 +515,42 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test(dependsOnMethods = {"searchForToolRun"})
     @TestCase(value = {"EPMCMBIBPC-2669"})
     public void searchForCompletedToolRun() {
-        runsMenu()
-                .activeRuns()
-                .stopRun(testRunID_2668);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(1, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
-                        text(String.format("%s:%s", toolEndpoint, toolVersion)))
-                .parent()
-                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
-                .ensure(STATUS, text(testRunID_2668))
-                .shouldHaveStatus(STOPPED);
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(1, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .assertPageTitleIs("404 Not Found")
-                .closeTab();
+        ToolPageAO endpointPage = null;
+        try {
+            runsMenu()
+                    .activeRuns()
+                    .stopRun(testRunID_2668);
+            home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+            search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(1, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
+                            text(String.format("%s:%s", toolEndpoint, toolVersion)))
+                    .parent()
+                    .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                    .ensure(STATUS, text(testRunID_2668))
+                    .shouldHaveStatus(STOPPED);
+            home();
+            endpointPage = search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(1, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .clickOnEndpointLink();
+            endpointPage
+                    .sleep(3, SECONDS)
+                    .assertPageTitleIs("404 Not Found");
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test
@@ -748,7 +758,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         search()
                 .search(pipeline)
                 .enter()
-                .validateSearchResults(0, "")
+                .sleep(2, SECONDS)
+                .ensure(RUNS, enabled)
+                .validateCountSearchResults(1)
                 .search(configuration)
                 .enter()
                 .validateSearchResults(0, "")

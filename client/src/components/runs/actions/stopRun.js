@@ -33,12 +33,16 @@ export function canStopRun (run) {
   return status.toLowerCase() === 'running' && (commitStatus || '').toLowerCase() !== 'committing';
 }
 
+export function runIsCommittable (run) {
+  // Checks only run state, not user permissions
+  const {podIP, platform} = run;
+  return podIP && !(run.nodeCount > 0) &&
+    !(run.parentRunId && run.parentRunId > 0) && !/^windows$/i.test(platform);
+}
+
 export function canCommitRun (run) {
   // Checks only run state, not user permissions
-  const {podIP} = run;
-  return canStopRun(run) &&
-    podIP && !(run.nodeCount > 0) &&
-    !(run.parentRunId && run.parentRunId > 0);
+  return canStopRun(run) && runIsCommittable(run);
 }
 
 export function canPauseRun (run) {
@@ -60,9 +64,13 @@ export function stopRun (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"stopRun" function should be called with parent component passed to arguments:');
   }
-  const {localization, dockerRegistries} = parent.props;
+  const {
+    localization,
+    dockerRegistries,
+    hiddenObjects
+  } = parent.props;
   return function (run) {
-    return stopRunFn(run, callback, {localization, dockerRegistries});
+    return stopRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
   };
 }
 
@@ -73,9 +81,13 @@ export function terminateRun (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
   }
-  const {localization, dockerRegistries} = parent.props;
+  const {
+    localization,
+    dockerRegistries,
+    hiddenObjects
+  } = parent.props;
   return function (run) {
-    return terminateRunFn(run, callback, {localization, dockerRegistries});
+    return terminateRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
   };
 }
 

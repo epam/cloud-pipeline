@@ -64,21 +64,21 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 ######################################################
 
 [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
-export DOCKER_CHANNEL="stable"
-export DOCKER_VERSION="18.09.6"
-export DOCKER_ARCH="x86_64"
+export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-18.09.6}"
+export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
+export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
 
-wget -q -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz"
+wget -q -O docker.tgz "https://download.docker.com/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
 
 if [ $? -ne 0 ]; then
-    pipe_log_fail "Unable to install download docker distribution ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
+    pipe_log_fail "Unable to install download docker distribution ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
     exit 1
 fi
 
 tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/
 rm -f docker.tgz
 
-pipe_log_info "Docker installed: ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
+pipe_log_info "Docker installed: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
 
 nvidia-smi
 REQUIRES_GPU_DIND=$?
@@ -86,12 +86,15 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
     distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
     if [ $IS_RPM_BASED -eq 0 ]; then
+        export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-2.0.0-3.docker18.09.6}"
+
         curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
         tee /etc/yum.repos.d/nvidia-container-runtime.repo
-        yum install -y -q nvidia-container-runtime-2.0.0-3.docker18.09.6*
+        yum install -y -q nvidia-container-runtime-$CP_CAP_DIND_GPU_VERSION
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
+        export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-2.0.0+docker18.09.6-3}"
         os=$(. /etc/os-release;echo $ID)
         os_release=$(. /etc/os-release;echo $VERSION_CODENAME)
         sources_list=/etc/apt/sources.list
@@ -99,7 +102,7 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
         curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list \
         | tee /etc/apt/sources.list.d/nvidia-docker.list
         apt-get update -yq && \
-        apt-get install -yq nvidia-container-runtime=2.0.0+docker18.09.6-3
+        apt-get install -yq nvidia-container-runtime=$CP_CAP_DIND_GPU_VERSION
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         rm /etc/apt/sources.list.d/nvidia-docker.list
     fi

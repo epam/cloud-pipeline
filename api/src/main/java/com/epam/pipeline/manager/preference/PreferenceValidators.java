@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,6 +166,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) > x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isNullOrValidLocalPath() {
+        return (pref, dependencies) -> StringUtils.isBlank(pref) || Files.exists(Paths.get(pref)) ;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(float x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) > x;
     }
@@ -186,6 +190,15 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> EnumUtils.isValidEnum(enumClass, pref);
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isNullOrValidEnum(final Class<? extends Enum>
+                                                                                         enumClass) {
+        return (pref, dependencies) -> {
+            if (StringUtils.isBlank(pref)) {
+                return true;
+            }
+            return EnumUtils.isValidEnum(enumClass, pref);
+        };
+    }
     /**
      * A no-op validator, that is always true
      */

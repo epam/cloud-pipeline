@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -159,18 +159,6 @@
                     WHERE
                         run_id = ? AND instance = ?
                     LIMIT 1
-                ]]>
-            </value>
-        </property>
-        <property name="deleteLogsByPipelineQuery">
-            <value>
-                <![CDATA[
-                    DELETE FROM
-                        pipeline.pipeline_run_log as log
-                    USING
-                        pipeline.pipeline_run AS run
-                    WHERE
-                        run.run_id = log.run_id AND run.pipeline_id = ?
                 ]]>
             </value>
         </property>

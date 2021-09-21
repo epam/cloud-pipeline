@@ -19,7 +19,7 @@ import Base from './base';
 import {ChartRenderer, Plot} from './controls';
 
 class CPUUsageChart extends Base {
-  renderPlot (data, width, height) {
+  renderPlot (data, width, height, disableTooltips) {
     return (
       <Plot
         width={width}
@@ -27,6 +27,7 @@ class CPUUsageChart extends Base {
         data={data}
         minimum={0}
         valueFrom={0}
+        disableTooltips={disableTooltips}
         {...this.plotProperties}
         plots={
           [

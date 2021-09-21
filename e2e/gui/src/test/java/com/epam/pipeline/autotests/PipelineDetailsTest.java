@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -271,11 +271,11 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .clickOnPipeline(draftPipelineName)
                 .firstVersion()
                 .codeTab()
-                .clickOnFile(Utils.getFileNameFromPipelineName(draftPipelineName, "sh"))
-                .clickEdit()
+                .clearAndFillPipelineFile(
+                        Utils.getFileNameFromPipelineName(draftPipelineName, "sh"),
+                        " this is a new text to set new version"
+                )
                 .sleep(1, SECONDS)
-                .fillWith(" this is a new text to set new version")
-                .saveAndCommitWithMessage("new version commit")
                 .documentsTab()
                 .getVersion();
 
@@ -296,6 +296,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     private void runPipeline(String pipelineName, PipelineDetailsTest pipelineDetailsTest) {
         library()
                 .clickOnPipeline(pipelineName)
+                .sleep(2, SECONDS)
                 .firstVersion()
                 .runPipeline()
                 .launch(pipelineDetailsTest);

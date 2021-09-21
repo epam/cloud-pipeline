@@ -45,7 +45,9 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -87,9 +89,21 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).listDataStorageFiles(dataStorage, path);
+    }
+
+    @Override
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
         return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage dataStorage,
+                                              final String path,
+                                              final String version) {
+        return getAzureStorageHelper(dataStorage).findFile(dataStorage, path);
     }
 
     @Override
@@ -196,6 +210,17 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public DataStorageFolder moveFolder(final AzureBlobStorage dataStorage, final String oldRawPath,
                                         final String newRawPath) {
         return getAzureStorageHelper(dataStorage).moveFolder(dataStorage, oldRawPath, newRawPath);
+    }
+
+    @Override
+    public DataStorageFile copyFile(final AzureBlobStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final AzureBlobStorage dataStorage, final String oldPath,
+                                        final String newPath) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

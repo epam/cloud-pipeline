@@ -1,0 +1,84 @@
+Returns commits and its diffs are related to specific path, author, dates.
+---
+parameters:
+ - name: repo
+   in: path
+   type: string
+   required: true
+ - name: include_diff
+   in: query
+   type: boolean
+   required: false
+   default: true
+ - name: filters
+   in: request
+   type: object
+   properties:
+       authors:
+         type: array
+         items: string
+       date_from:
+         type: string
+       date_to:
+         type: string
+       path_masks:
+         type: array
+         items: string
+   required: false
+definitions:
+  DiffListing:
+     type: object
+     properties:
+       entries:
+         type: array
+         items:
+           $ref: '#/definitions/DiffEntry'
+       filters:
+         type: object
+         properties:
+           authors:
+             type: array
+             items: string
+           date_from:
+             type: string
+           date_to:
+             type: string
+           path_masks:
+             type: array
+             items: string
+  DiffEntry:
+    type: object
+    properties:
+        commit:
+          type: object
+          $ref: '#/definitions/GitCommit'
+        diff:
+          type: string
+  GitCommit:
+     type: object
+     properties:
+       commit:
+         type: string
+       parent_shas:
+         type: array
+         items:
+           type: string
+       author_date:
+         type: string
+       author:
+         type: string
+       author_email:
+         type: string
+       committer_date:
+         type: string
+       committer:
+         type: string
+       committer_email:
+         type: string
+       commit_message:
+         type: string
+responses:
+ 200:
+   description: A listing of commits and its diffs filtered by dates, authors, paths
+   schema:
+     $ref: '#/definitions/DiffListing'

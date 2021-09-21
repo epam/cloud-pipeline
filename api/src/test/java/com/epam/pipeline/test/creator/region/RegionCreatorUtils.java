@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.ArrayList;
@@ -60,6 +61,18 @@ public final class RegionCreatorUtils {
         region.setRegionCode(TEST_STRING);
         region.setName(TEST_STRING);
         region.setDefault(TRUE);
+        return region;
+    }
+
+    public static AwsRegion getDefaultAwsRegion(final Long id) {
+        final AwsRegion region = ObjectCreatorUtils.getDefaultAwsRegion();
+        region.setId(id);
+        return region;
+    }
+
+    public static AwsRegion getNonDefaultAwsRegion(final Long id) {
+        final AwsRegion region = getDefaultAwsRegion(id);
+        region.setDefault(false);
         return region;
     }
 

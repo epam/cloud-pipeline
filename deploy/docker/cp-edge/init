@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,6 +72,20 @@ export CP_DAV_EXTERNAL_MAPPING_URL="${CP_DAV_EXTERNAL_MAPPING_URL:-$EDGE_EXTERNA
 export CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}"
 export CP_EDGE_SSL_PROTOCOLS="${CP_EDGE_SSL_PROTOCOLS:-TLSv1.1 TLSv1.2}"
 export CP_EDGE_SSL_CIPHERS="EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
+
+if [ -z "$CP_API_SRV_EXTERNAL_HOST" ] || [ -z "$CP_API_SRV_EXTERNAL_PORT" ]; then
+    export CP_EDGE_FSBROWSER_CORS="*"
+else
+    if [ "$CP_API_SRV_EXTERNAL_PORT" == "443" ]; then
+        _fsbrowser_cors_schema="https"
+    elif [ "$CP_API_SRV_EXTERNAL_PORT" == "80" ]; then
+        _fsbrowser_cors_schema="http"
+    else
+        _fsbrowser_cors_schema="https"
+        _fsbrowser_cors_port=":$CP_API_SRV_EXTERNAL_PORT"
+    fi
+    export CP_EDGE_FSBROWSER_CORS="${_fsbrowser_cors_schema}://${CP_API_SRV_EXTERNAL_HOST}${_fsbrowser_cors_port}"
+fi
 # FIXME: !!! WebDAV tips For Windows Drive Mapping: 
 #        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
 #        !!! - File size/timout restrictions which require registry to be modified !!!
@@ -87,7 +101,7 @@ echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
 NGINX_COMMON_CONF="$(envsubst '${CP_EDGE_SSL_PROTOCOLS} ${CP_EDGE_SSL_CIPHERS}' < /etc/nginx/endpoints-config/server.common.conf)"
 echo "$NGINX_COMMON_CONF" > /etc/nginx/endpoints-config/server.common.conf
 
-NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
+NGINX_CONF="$(envsubst '${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 # Add the "ingress" configuration to the nginx, which will force all the client traffic to flow via EDGE
@@ -111,9 +125,10 @@ WETTY_PID="$!"
 env > /etc/sync-routes/env.sh
 
 # Start cron
-crond
+nohup bash /etc/sync-routes/crontab.sh &> /dev/null &
+CRON_PID="$!"
 
-#Run Filebeat
+# Run Filebeat
 envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
 nohup filebeat &
 
@@ -124,10 +139,14 @@ sleep 5
 
 # Workaround the container hanging when being terminated
 function sig_handler {
-    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), quitting nginx and exiting"
+    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), stopping cron (PID $CRON_PID) quitting nginx and exiting"
     if [ $WETTY_PID -ne 0 ]; then
         kill -SIGTERM "$WETTY_PID"
         wait "$WETTY_PID"
+    fi
+    if [ $CRON_PID -ne 0 ]; then
+        kill -SIGTERM "$CRON_PID"
+        wait "$CRON_PID"
     fi
     nginx -s quit
     exit 143

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,30 +25,38 @@ import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
+import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.UserApiService;
+import com.epam.pipeline.acl.user.UserApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -230,7 +238,22 @@ public class UserController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<UserInfo>> loadUsersInfo() {
-        return Result.success(userApiService.loadUsersInfo());
+        return Result.success(userApiService.loadUsersInfo(Collections.emptyList()));
+    }
+
+    @PostMapping(value = "/users/info")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads all users' brief information. Allows to filter users by list of usernames.",
+            notes = "Loads all registered users, but instead of providing detailed description only the general "
+                    + "information is returned. Allows to filter users by list of usernames.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<UserInfo>> loadUsersInfo(
+            @RequestBody(required = false) final List<String> userNames) {
+        return Result.success(userApiService.loadUsersInfo(userNames));
     }
 
     @RequestMapping(value = "/user/controls", method = RequestMethod.GET)
@@ -366,5 +389,55 @@ public class UserController extends AbstractRestController {
         })
     public Result<List<GroupStatus>> loadGroupsBlockingStatuses() {
         return Result.success(userApiService.loadAllGroupsBlockingStatuses());
+    }
+
+    @PostMapping("/users/import")
+    @ResponseBody
+    @ApiOperation(
+            value = "Imports users from csv file.",
+            notes = "Imports users from csv file.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineUserEvent>> importUsersFromCsv(
+            @RequestParam(defaultValue = "false") final boolean createUser,
+            @RequestParam(defaultValue = "false") final boolean createGroup,
+            @RequestParam(required = false) final List<String> createMetadata,
+            final HttpServletRequest request) throws FileUploadException {
+        final MultipartFile file = consumeMultipartFile(request);
+        return Result.success(userApiService.importUsersFromCsv(createUser, createGroup, createMetadata, file));
+    }
+
+    @PostMapping("/users/{id}/runners")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates runners to user",
+            notes = "Updates runners to user",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunnerSid>> updateRunners(@PathVariable final Long id,
+                                                 @RequestBody final List<RunnerSid> runners) {
+        return Result.success(userApiService.updateRunners(id, runners));
+    }
+
+    @GetMapping("/users/{id}/runners")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads runners for user",
+            notes = "Loads runners for user",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunnerSid>> getRunners(@PathVariable final Long id) {
+        return Result.success(userApiService.getRunners(id));
+    }
+
+    @GetMapping("/user/impersonation")
+    @ResponseBody
+    @ApiOperation(
+        value = "Loads impersonation status",
+        notes = "Loads impersonation status: show original user and impersonated one if present",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<ImpersonationStatus> getImpersonationStatus() {
+        return Result.success(userApiService.getImpersonationStatus());
     }
 }

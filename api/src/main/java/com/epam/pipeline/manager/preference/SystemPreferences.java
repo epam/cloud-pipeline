@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,16 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
@@ -77,7 +81,9 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreate
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -108,6 +114,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
+    private static final String FACETED_FILTER_GROUP = "Faceted Filter";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -128,8 +135,29 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference PROFILE_TEMP_CREDENTIALS_DURATION = new IntPreference(
+            "profile.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
             "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
+    public static final BooleanPreference DEFAULT_USER_DATA_STORAGE_ENABLED =
+        new BooleanPreference("storage.user.home.auto", false, DATA_STORAGE_GROUP, pass);
+    public static final ObjectPreference<DataStorageTemplate> DEFAULT_USER_DATA_STORAGE_TEMPLATE =
+        new ObjectPreference<>("storage.user.home.template",
+                               null,
+                               new TypeReference<DataStorageTemplate>() {},
+                               DATA_STORAGE_GROUP,
+                               isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
+    public static final IntPreference DATA_STORAGE_OPERATIONS_BULK_SIZE = new IntPreference(
+            "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
+            "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+    public static final StringPreference VERSION_STORAGE_BINARY_FILE_EXTS = new StringPreference(
+            "storage.version.storage.report.binary.file.exts",
+            "pdf", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference VERSION_STORAGE_IGNORED_FILES = new StringPreference(
+            "storage.version.storage.ignored.files",
+            ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
+
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -138,6 +166,16 @@ public class SystemPreferences {
             "storage.mount.black.list",
             "/,/etc,/runs,/common,/bin,/opt,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/tmp",
             DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
+
+    /**
+     * Defines NFS mounting policy for sensitive runs. Can take SKIP, TIMEOUT, NONE values.
+     * */
+    public static final StringPreference DATA_STORAGE_NFS_MOUNT_SENSITIVE_POLICY = new StringPreference(
+            "storage.mounts.nfs.sensitive.policy",
+            null,
+            DATA_STORAGE_GROUP,
+            isNullOrValidEnum(NFSMountPolicy.class));
+
     /**
      * Configures a system data storage for storing attachments and etc.
      */
@@ -161,6 +199,11 @@ public class SystemPreferences {
     public static final IntPreference STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS =
             new IntPreference("storage.incomplete.upload.clean.days", 5, DATA_STORAGE_GROUP,
                     isNullOrGreaterThan(0));
+    public static final BooleanPreference STORAGE_ALLOW_SIGNED_URLS =
+            new BooleanPreference("storage.allow.signed.urls", true, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_CONVERT_SOURCE_ACTION =
+            new StringPreference("storage.convert.source.action", DataStorageConvertRequestAction.LEAVE.name(),
+                    DATA_STORAGE_GROUP, (v, ignored) -> DataStorageConvertRequestAction.isValid(v));
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
@@ -180,6 +223,8 @@ public class SystemPreferences {
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
+    public static final StringPreference GIT_READER_HOST =
+            new StringPreference("git.reader.service.host", null, GIT_GROUP, pass);
     public static final StringPreference GIT_EXTERNAL_URL =
             new StringPreference("git.external.url", null, GIT_GROUP, pass);
     public static final StringPreference GIT_TOKEN = new StringPreference("git.token", null, GIT_GROUP, null);
@@ -195,6 +240,8 @@ public class SystemPreferences {
             GIT_GROUP, isGreaterThan(0));
     public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
             GIT_GROUP, isGreaterThan(0));
+    public static final StringPreference GIT_FSBROWSER_WD =
+            new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -331,6 +378,11 @@ public class SystemPreferences {
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
+    public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
+            100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
+    public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
+            5, CLUSTER_GROUP, isGreaterThan(0));
+
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
      * otherwise - the lowest
@@ -370,13 +422,50 @@ public class SystemPreferences {
             CLUSTER_GROUP, isGreaterThan(0L));
     public static final IntPreference CLUSTER_KUBE_MASTER_PORT =
             new IntPreference("cluster.kube.master.port", 6443, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_KUBE_WINDOWS_SERVICE_PORT =
+            new IntPreference("cluster.kube.windows.service.port", 22, CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_WINDOWS_NODE_LOOPBACK_ROUTE =
+            new BooleanPreference("cluster.windows.node.loopback.route", false, CLUSTER_GROUP, pass);
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
+    public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_ID = new StringPreference(
+            "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
+    public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
+            "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+    public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
+            "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
+
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
+    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_LINUX = new StringPreference(
+            "launch.pod.cmd.template.linux", "set -o pipefail; "
+            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
+            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
+            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'",
+            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
+            "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
+            "using System.Net;\n" +
+            "using System.Security.Cryptography.X509Certificates;\n" +
+            "public class TrustAllCertsPolicy : ICertificatePolicy {\n" +
+            "    public bool CheckValidationResult(\n" +
+            "        ServicePoint srvPoint, X509Certificate certificate,\n" +
+            "        WebRequest request, int certificateProblem) {\n" +
+            "            return true;\n" +
+            "        }\n" +
+            " }\n" +
+            "\"@\n" +
+            "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
+            "Invoke-WebRequest %s -Outfile .\\launch.py\n" +
+            "@\"\n" +
+            "%s\n" +
+            "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
+            "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
+            "python .\\launch.py",
+            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
@@ -409,6 +498,19 @@ public class SystemPreferences {
             "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
+    public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
+            "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
+            "svc.cluster.local", LAUNCH_GROUP, pass);
+
+    public static final BooleanPreference KUBE_POD_DOMAINS_ENABLED = new BooleanPreference(
+            "launch.kube.pod.domains.enabled", true, LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SERVICE = new StringPreference("launch.kube.pod.service",
+            "pods", LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SUBDOMAIN = new StringPreference("launch.kube.pod.subdomain",
+            "pods", LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
+            "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -417,6 +519,10 @@ public class SystemPreferences {
             "", DTS_GROUP, pass);
     public static final StringPreference DTS_DISTRIBUTION_URL = new StringPreference("dts.dist.url",
             "", DTS_GROUP, pass);
+    public static final IntPreference DTS_MONITORING_PERIOD_SECONDS = new IntPreference("dts.monitoring.period.seconds",
+            (int) TimeUnit.MINUTES.toSeconds(1), DTS_GROUP, isGreaterThan(10));
+    public static final IntPreference DTS_OFFLINE_TIMEOUT_SECONDS = new IntPreference("dts.offline.timeout.seconds",
+            (int) TimeUnit.MINUTES.toSeconds(5), DTS_GROUP, isGreaterThan(0));
 
     /**
      * Controls maximum number of scheduled at once runs
@@ -470,6 +576,14 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
+            "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    // Facet Filters
+    public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
+            "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
+            FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -600,6 +714,12 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
             "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> MISC_METADATA_MANDATORY_KEYS = new ObjectPreference<>(
+            "misc.metadata.mandatory.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<Map<String, Object>> MISC_GROUPS_UI_PREF = new ObjectPreference<>(
+            "misc.groups.ui.preferences", null, new TypeReference<Map<String, Object>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
@@ -634,6 +754,15 @@ public class SystemPreferences {
 
     public static final StringPreference SEARCH_ELASTIC_DENIED_GROUPS_FIELD = new StringPreference(
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
+            20, SEARCH_GROUP, pass);
+
+    public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
+        "search.storage.elements.hide.mask",
+        Collections.emptyList(),
+        new TypeReference<List<StorageFileSearchMask>>() {},
+        SEARCH_GROUP,
+        isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
@@ -680,6 +809,8 @@ public class SystemPreferences {
     public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
             "lustre.fs.deployment.type", LustreDeploymentType.SCRATCH_2.name(), LUSTRE_GROUP,
             isValidEnum(LustreDeploymentType.class));
+    public static final BooleanPreference LUSTRE_FS_MOUNT_IP = new BooleanPreference(
+            "lustre.fs.mount.ip", false, LUSTRE_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

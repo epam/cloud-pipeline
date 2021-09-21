@@ -24,6 +24,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,7 +32,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "sync.az-blob.disable", matchIfMissing = true, havingValue = "false")
 public class AzureFileSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
@@ -42,6 +42,9 @@ public class AzureFileSyncConfiguration {
 
     @Value("${sync.az-blob.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
+    
+    @Value("${sync.az-blob.bulk.load.tags.size:100}")
+    private Integer bulkLoadTagsSize;
 
     @Value("${sync.az-blob.index.name}")
     private String indexName;
@@ -52,6 +55,7 @@ public class AzureFileSyncConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "sync.az-blob.disable", matchIfMissing = true, havingValue = "false")
     public ObjectStorageIndex azFileSynchronizer(
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
@@ -59,6 +63,8 @@ public class AzureFileSyncConfiguration {
             final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 azFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.AZ);
+                indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
+                DataStorageType.AZ,
+                SearchDocumentType.AZ_BLOB_FILE);
     }
 }

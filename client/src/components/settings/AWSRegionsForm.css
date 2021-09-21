@@ -35,8 +35,17 @@
   font-weight: bold;
 }
 
+.region-row .region {
+  margin-left: 20px;
+}
+
+.region-row .provider {
+  font-size: larger;
+  font-weight: bold;
+}
+
 .actions {
-  margin-top: 10px;
+  margin: 10px;
 }
 
 .actions button,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
@@ -37,19 +40,22 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class PipelineManagerTest {
 
     private static final String REPOSITORY_NAME = "repository";
+    private static final String NEW_REPOSITORY_NAME = "new-repository";
     private static final String REPOSITORY_HTTPS = "https://example.com:repository/repository.git";
     private static final String REPOSITORY_SSH = "git@example.com:repository/repository.git";
     private static final String REPOSITORY_TOKEN = "token";
@@ -78,6 +84,9 @@ public class PipelineManagerTest {
     @Mock
     private DataStorageRuleDao dataStorageRuleDao;
 
+    @Mock
+    private PipelineRunDao pipelineRunDao;
+
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
 
@@ -88,7 +97,10 @@ public class PipelineManagerTest {
         gitProject.setRepoUrl(REPOSITORY_HTTPS);
         gitProject.setRepoSsh(REPOSITORY_SSH);
         when(gitManager.createRepository(any(), eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
+        when(gitManager.createRepository(eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
         when(gitManager.createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
+                .thenReturn(gitProject);
+        when(gitManager.createEmptyRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
                 .thenReturn(gitProject);
         when(gitManager.getRepository(eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN))).thenReturn(gitProject);
         when(gitManager.checkProjectExists(eq(REPOSITORY_NAME))).thenReturn(false);
@@ -104,6 +116,27 @@ public class PipelineManagerTest {
         pipelineManager.create(pipelineVO);
 
         verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
+    }
+
+    @Test
+    public void createShouldCreateVersionedStorageRepositoryIfItIsSpecifiedInVO() throws GitClientException {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(REPOSITORY_NAME);
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
+        Pipeline pipeline = pipelineManager.create(pipelineVO);
+
+        verify(gitManager).createRepository(eq(REPOSITORY_NAME), any());
+        Assert.assertEquals(pipeline.getPipelineType(), PipelineType.VERSIONED_STORAGE);
+    }
+
+    @Test
+    public void createShouldCreatePipelineTypeRepositoryIfItIsNotSpecifiedInVO() throws GitClientException {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(REPOSITORY_NAME);
+        Pipeline pipeline = pipelineManager.create(pipelineVO);
+
+        verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
+        Assert.assertEquals(pipeline.getPipelineType(), PipelineType.PIPELINE);
     }
 
     @Test
@@ -128,6 +161,20 @@ public class PipelineManagerTest {
         pipelineManager.create(pipelineVO);
 
         verify(gitManager).createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN));
+    }
+
+    @Test
+    public void createShouldCreateVSRepositoryInExternalGitlabIfItDoesNotExists() throws GitClientException {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(REPOSITORY_NAME);
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
+        pipelineVO.setRepository(REPOSITORY_HTTPS);
+        pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
+        when(gitManager.getPipelineRevisions(any())).thenThrow(new IllegalArgumentException(REPOSITORY_NAME));
+
+        pipelineManager.create(pipelineVO);
+
+        verify(gitManager).createEmptyRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN));
     }
 
     @Test
@@ -204,6 +251,32 @@ public class PipelineManagerTest {
         final ArgumentCaptor<DataStorageRule> ruleCaptor = ArgumentCaptor.forClass(DataStorageRule.class);
         verify(dataStorageRuleDao).createDataStorageRule(ruleCaptor.capture());
         Assert.assertEquals(storageRuleMask, ruleCaptor.getValue().getFileMask());
+    }
+
+    @Test
+    public void shouldUpdatePipelineNameForPipelineRuns() {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setId(ID);
+        pipelineVO.setName(NEW_REPOSITORY_NAME);
+
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setPipelineName(REPOSITORY_NAME);
+        doReturn(Collections.singletonList(pipelineRun)).when(pipelineRunDao).loadAllRunsForPipeline(any());
+
+        final Pipeline pipeline = new Pipeline();
+        pipeline.setName(REPOSITORY_NAME);
+        pipeline.setRepository(REPOSITORY_HTTPS);
+        pipeline.setRepositoryToken(REPOSITORY_TOKEN);
+        pipeline.setRepositorySsh(REPOSITORY_SSH);
+        doReturn(pipeline).when(pipelineDao).loadPipeline(any());
+
+        pipelineManager.update(pipelineVO);
+
+        final ArgumentCaptor<List<PipelineRun>> runsCaptor = ArgumentCaptor.forClass((Class) List.class);
+        verify(pipelineRunDao).updateRuns(runsCaptor.capture());
+        assertThat(runsCaptor.getValue().size(), is(1));
+        assertThat(runsCaptor.getValue().get(0).getPipelineName(), is(NEW_REPOSITORY_NAME));
+        verify(pipelineRunDao).loadAllRunsForPipeline(ID);
     }
 
     private DataStorageRule buildStorageRule(final Long pipelineId, final String mask) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,14 @@ import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -70,7 +71,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
-            entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+            entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
+            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
+            entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -81,6 +85,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     @Deprecated
     public PipelineRunFormAO(final String pipelineName) {
         this.pipelineName = pipelineName;
+        ensure(LAUNCH_COMMANDS, appears);
         expandTab(EXEC_ENVIRONMENT);
         expandTab(ADVANCED_PANEL);
         expandTab(PARAMETERS_PANEL);
@@ -105,7 +110,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .closest(".launch-pipeline-form__form-item")
                 .find(className("ant-select-selection"))
                 .shouldBe(visible)
-                .doubleClick();
+                .click();
 
         $(byClassName("ant-select-dropdown-menu"))
                 .findAll(byClassName("ant-select-dropdown-menu-item"))
@@ -120,11 +125,19 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO setDisk(String disk) {
-        $(byId("exec.disk"))
-                .shouldBe(enabled)
-                .setValue(String.valueOf(disk));
+    public PipelineRunFormAO checkWarningMessage(String message, boolean isVisible) {
+        sleep(5, SECONDS);
+        screenshot("check" + Utils.randomSuffix());
+        assertEquals(context().findAll(byClassName("ant-alert-message"))
+                .stream()
+                .map(SelenideElement::getText)
+                .filter(e -> e.contains(message))
+                .count() == 1, isVisible, format("Message '%s' isn't [%s] visible", message, isVisible));
         return this;
+    }
+
+    public PipelineRunFormAO setDisk(String disk) {
+        return setValue(DISK, disk);
     }
 
     public PipelineRunFormAO setCommand(String command) {
@@ -243,6 +256,37 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         );
     }
 
+    public PipelineRunFormAO checkLaunchMessage(final String typeMessage,
+                                                final String message,
+                                                final boolean isVisible) {
+        assertEquals(checkMessage(typeMessage, message), isVisible,
+                format("%s '%s' should be %s on Launch form: ", typeMessage, message,
+                        isVisible ? "visible" : "not visible"));
+        return this;
+    }
+
+    private boolean checkMessage(final String typeMessage, final String message) {
+        $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
+        $$(byClassName("ant-modal-body"))
+                .findBy(text("Launch"))
+                .find(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible);
+        boolean messageExist = context().$(byClassName("ant-modal-body"))
+                .findAll(byClassName(format("ant-alert-%s", typeMessage)))
+                .stream()
+                .map(SelenideElement::getText)
+                .filter(e -> e.contains(message))
+                .count() == 1;
+        if (messageExist) {
+            screenshot("check_launch_message" + Utils.randomSuffix());
+        }
+        $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
+                .find(button("Cancel"))
+                .shouldBe(enabled)
+                .click();
+        return messageExist;
+    }
+
     public PipelineRunFormAO checkLaunchItemName(String name) {
         context().find(launchItemName()).shouldHave(text(name));
         return this;
@@ -252,10 +296,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return byClassName("launch-pipeline-form__layout-header");
     }
 
-    private void launch() {
+    public PipelineRunFormAO launch() {
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
+        return this;
     }
 
     public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
@@ -352,6 +397,42 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
         click(LIMIT_MOUNTS);
         return new SelectLimitMountsPopupAO(this).sleep(2, SECONDS);
+    }
+
+    public int minNodeTypeRAM() {
+        sleep(1, SECONDS);
+        get(INSTANCE_TYPE).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).texts()
+                .stream()
+                .map(e -> e.substring(e.indexOf("RAM: ")))
+                .map(e -> e.replaceAll("[^0-9 ]", ""))
+                .map(e -> e.split(" ")[1])
+                .mapToInt(Integer::parseInt)
+                .min().getAsInt();
+    }
+
+    public String getNodeType(final int minRAM) {
+        sleep(1, SECONDS);
+        get(INSTANCE_TYPE).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).texts()
+                .stream()
+                .filter(n -> n.contains("RAM: " + minRAM))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchWindowException(String.format(
+                        "No such node type with RAM {%s}.", minRAM)));
+    }
+
+    public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
+        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+            click(DO_NOT_MOUNT_STORAGES);
+        }
+        return this;
+    }
+
+    public PipelineRunFormAO assertDoNotMountStoragesIsChecked() {
+        get(DO_NOT_MOUNT_STORAGES).shouldHave(cssClass("ant-checkbox-checked"));
+        return this;
     }
 
     @Override

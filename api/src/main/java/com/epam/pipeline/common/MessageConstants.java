@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_REPO_EXISTS = "error.pipeline.name.exists";
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
+    public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";
@@ -126,6 +127,7 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_DISK_NOT_ENOUGH = "error.run.instance.disk.not.enough";
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
     public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
+    public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
@@ -156,9 +158,16 @@ public final class MessageConstants {
     public static final String ERROR_RUN_DISK_ATTACHING_MISSING_NODE_ID = "error.run.disk.attaching.missing.node.id";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
     public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
+    public static final String ERROR_UNSUPPORTED_STATS_FILE_TYPE = "error.run.stats.file.unsupported.type";
+    public static final String ERROR_STATS_FILE_XLS_CONVERSION = "error.run.stats.file.xls";
+    public static final String ERROR_STATS_EMPTY_XLS_TEMPLATE_PATH = "error.run.stats.xls.template.empty.path";
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
+    public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
+    public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
+            "error.image.not.found.for.versioned.storage";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -199,6 +208,9 @@ public final class MessageConstants {
     public static final String ERROR_KUBE_SERVICE_PORT_UNDEFINED = "error.kube.service.port.undefined";
     public static final String ERROR_NODE_DOWN_TIMEOUT = "error.kube.node.down.timeout";
     public static final String LOG_WAS_TRUNCATED = "log.truncated";
+    public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
+    public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
+    public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
 
     // Data storage messages
     public static final String ERROR_DATASTORAGE_NOT_FOUND = "error.datastorage.not.found";
@@ -239,6 +251,11 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
     public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
     public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
+    public static final String ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID =
+            "error.datastorage.convert.target.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
+            "error.datastorage.convert.source.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -259,6 +276,7 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_FOLDER_NOT_FOUND = "error.repository.folder.not.found";
     public static final String ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS =
             "error.repository.folder.already.exists";
+    public static final String ERROR_REPOSITORY_FILE_ALREADY_EXISTS = "error.repository.file.already.exists";
     public static final String ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED =
             "error.repository.root.folder.cannot.be.removed";
     public static final String ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED =
@@ -311,7 +329,10 @@ public final class MessageConstants {
     public static final String INFO_UPDATE_USER_DATASTORAGE = "info.update.user.datastorage";
     public static final String INFO_UPDATE_USER_BLOCK_STATUS= "info.update.user.block.status";
     public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
-
+    public static final String ERROR_DEFAULT_STORAGE_CREATION = "user.storage.home.auto.fails";
+    public static final String DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS = "user.storage.home.auto.exists";
+    public static final String ERROR_SELF_IMPERSONATION_NOT_ALLOWED = "impersonation.self.not.allowed";
+    public static final String ERROR_IMPERSONATION_EMPTY_USER = "impersonation.validation.empty.user";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
@@ -331,6 +352,7 @@ public final class MessageConstants {
     public static final String ERROR_INVALID_METADATA_ENTITY_CLASS_ID = "error.invalid.metadata.entity.class.id";
     public static final String ERROR_METADATA_ENTITY_CLASS_NOT_FOUND = "error.metadata.entity.class.not.found";
     public static final String ERROR_METADATA_ENTITY_NOT_FOUND = "error.metadata.entity.not.found";
+    public static final String ERROR_METADATA_ENTITY_ALREADY_EXIST = "error.metadata.entity.already.exists";
     public static final String ERROR_METADATA_UPDATE_KEY_NOT_FOUND = "error.metadata.update.key.not.found";
     public static final String ERROR_INVALID_METADATA_FILTER = "error.invalid.metadata.filter";
     public static final String ERROR_METADATA_UPLOAD_CHANGED_TYPE = "error.metadata.upload.changed.type";
@@ -372,6 +394,20 @@ public final class MessageConstants {
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
     public static final String ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED = "error.notification.receiver.not.specified";
+
+    //Contextual notifications
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TYPE_MISSING =
+            "error.contextual.notification.type.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TRIGGER_ID_MISSING =
+            "error.contextual.notification.trigger.id.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_RECIPIENTS_MISSING =
+            "error.contextual.notification.recipients.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_GLOBAL_TEMPLATE_NOT_FOUND =
+            "error.contextual.notification.global.template.not.found";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_SUBJECT_MISSING =
+            "error.contextual.notification.subject.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_BODY_MISSING =
+            "error.contextual.notification.body.missing";
 
     //Parameters mapping
     public static final String ERROR_PARAMETER_MISSING_REFERENCE = "error.parameter.missing.reference";
@@ -435,13 +471,22 @@ public final class MessageConstants {
     public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
 
     //DTS
-    public static final String ERROR_DTS_REGISTRY_DOES_NOT_EXIST = "error.dts.registry.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_IS_EMPTY = "error.dts.registry.is.empty";
     public static final String ERROR_DTS_REGISTRY_URL_IS_EMPTY = "error.dts.registry.url.is.empty";
     public static final String ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY = "error.dts.registry.prefixes.are.empty";
     public static final String ERROR_DTS_REGISTRY_ID_IS_EMPTY = "error.dts.registry.id.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_IS_EMPTY = "error.dts.registry.name.is.empty";
+    public static final String ERROR_DTS_REGISTRY_NAME_CONSIST_OF_NUMBERS = "error.dts.registry.name.numbers.only";
+    public static final String ERROR_DTS_REGISTRY_NAME_ALREADY_EXISTS = "error.dts.registry.name.already.exists";
     public static final String ERROR_DTS_NOT_SCHEDULABLE = "error.dts.registry.not.schedulable";
+    public static final String ERROR_DTS_PREFERENCES_DOESNT_EXIST = "error.dts.preferences.not.exist";
+    public static final String ERROR_DTS_PREFERENCES_UPDATE_EMPTY = "error.dts.preferences.update.empty";
+    public static final String ERROR_DTS_PREFERENCES_DELETE_EMPTY = "error.dts.preferences.delete.empty";
+    public static final String INFO_DTS_MONITORING_STATUS = "info.dts.monitoring.status";
+    public static final String INFO_DTS_MONITORING_STATUS_MISSING_HEARTBEAT =
+            "info.dts.monitoring.status.missing.heartbeat";
 
     //Cloud region
     public static final String ERROR_REGION_NOT_FOUND = "error.region.not.found";
@@ -449,6 +494,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
     public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
+    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING = "error.region.mont.credentials.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
@@ -522,15 +568,18 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
-    //Disks    
+    //Disks
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
     public static final String ERROR_DISK_DATE_MISSING = "error.disk.date.missing";
     public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //System dictionaries
-    public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_KEY_DOESNT_EXIST = "categorical.attribute.key.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_ID_DOESNT_EXIST = "categorical.attribute.id.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY = "categorical.attribute.exists.already";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME = "categorical.attribute.null.name.key";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
@@ -541,6 +590,45 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
+    public static final String ERROR_LUSTRE_MISSING_NETWORK = "error.lustre.missing.network";
+
+    //Node Schedule
+    public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM = "error.node.schedule.missing.from";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM_TIME = "error.node.schedule.missing.from.time";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO = "error.node.schedule.missing.to";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO_TIME = "error.node.schedule.missing.to.time";
+    public static final String ERROR_NODE_SCHEDULE_NOT_FOUND = "error.node.schedule.not.found";
+
+    //Persistent Nodes
+    public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
+    public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
+    public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
+    public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
+    public static final String ERROR_NODE_POOL_PRICE_TYPE_NOT_ALLOWED = "error.node.pool.price.type.not.allowed";
+    public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
+    public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
+    public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
+    public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
+    public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
+    public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
+    public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
+    public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
+        "error.node.pool.win.instance.not.allowed";
+
+    // Users import events
+    public static final String EVENT_USER_CREATED = "user.import.event.user.created";
+    public static final String EVENT_USER_CREATION_NOT_ALLOWED = "user.import.event.user.creation.not.allowed";
+    public static final String EVENT_ROLE_CREATED = "user.import.event.role.created";
+    public static final String EVENT_ROLE_CREATION_NOT_ALLOWED = "user.import.event.role.creation.not.allowed";
+    public static final String EVENT_ROLE_ASSIGNED = "user.import.event.role.assigned";
+    public static final String EVENT_METADATA_ASSIGNED = "user.import.event.metadata.assigned";
+
+    // Cloud profiles
+    public static final String ERROR_PROFILE_ID_NOT_FOUND = "error.profile.id.not.found";
+    public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
+    public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
+    public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
 
     private MessageConstants() {
         // no-op

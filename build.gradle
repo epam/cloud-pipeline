@@ -75,18 +75,22 @@ task buildDoc(type: Tar) {
 task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
-                          ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar", ":vm-monitor:bootJar",
+                          ":elasticsearch-agent:bootJar", ":vm-monitor:bootJar",
+                          ":data-transfer-service:bootJar", ":data-transfer-service:bundleWindows",
                           ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar",
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux"]) {
+                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
+                          ":git-reader:build"]) {
     group = 'build'
 }
 
 task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
-                          ":elasticsearch-agent:build", ":data-transfer-service:build", ":vm-monitor:build",
+                          ":elasticsearch-agent:build", ":vm-monitor:build",
+                          ":data-transfer-service:build", ":data-transfer-service:bundleWindows",
                           ":data-sharing-service:buildAll", ":fs-browser:build", ":billing-report-agent:build",
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux"]) {
+                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
+                          ":git-reader:build"]) {
     group = 'build'
 }
 
@@ -106,10 +110,16 @@ task installDist() {
 
         // copy various scripts
         def scriptsFolder = "$distFolder/scripts"
+        def pipelineScriptsFolder = "$scriptsFolder/pipeline"
 
         copy {
             from "$rootDir/scripts/autoscaling"
             into scriptsFolder
+        }
+
+        copy {
+            from "$rootDir/scripts/pipeline-scripts"
+            into pipelineScriptsFolder
         }
 
         def distDirs = files(
@@ -149,9 +159,11 @@ task installDist() {
                 "$rootDir/dist/cloud-pipeline-docs.tar.gz",
                 "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
+                "$rootDir/data-transfer-service/build/distributions/data-transfer-service-windows.zip",
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
-                "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar"
+                "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
+                "$rootDir/git-reader/dist/gitreader.tar.gz"
         )
 
         distFiles.each {

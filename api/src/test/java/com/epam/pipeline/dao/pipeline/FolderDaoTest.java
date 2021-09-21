@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
@@ -40,6 +39,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class FolderDaoTest extends AbstractSpringTest {
+public class FolderDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";

@@ -69,6 +69,8 @@ export default class ToolEndpointsFormItem extends React.Component {
           newItem.isDefault = false;
           newItem.nginx = itemJson.nginx;
           newItem.sslBackend = itemJson.sslBackend;
+          newItem.customDNS = itemJson.customDNS;
+          newItem.sameTab = itemJson.sameTab;
           array[i] = JSON.stringify(newItem);
         } catch (__) {}
       }

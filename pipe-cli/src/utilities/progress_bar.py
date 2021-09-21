@@ -35,6 +35,7 @@ class ProgressPercentage(object):
     def __init__(self, filename, size):
         self._filename = filename
         self._seen_so_far = 0.0
+        self._seen_so_far_in_bytes = 0
         self._lock = threading.Lock()
         self._size_in_bytes = size
         self._size = float(size)
@@ -78,6 +79,7 @@ class ProgressPercentage(object):
         with self._lock:
             if int(bytes_amount) <= 0:
                 return
+            self._seen_so_far_in_bytes += bytes_amount
             self._seen_so_far += float(bytes_amount) / self.unit_divider
             if self._size == 0:
                 percentage = 100.00

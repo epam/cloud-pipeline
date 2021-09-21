@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 package com.epam.pipeline.manager.metadata.parser;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.metadata.MetadataClass;
@@ -30,36 +31,27 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.exception.MetadataReadingException;
 import com.google.common.io.LineProcessor;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EntityLineProcessor implements LineProcessor<MetadataParsingResult> {
 
-    private String delimiter;
-    private Folder parent;
-    private MetadataClass metadataClass;
-    private Map<Integer, EntityTypeField> fields;
-    private boolean headerProcessed = false;
-    private Map<String, MetadataEntity> currentResults;
-    private Map<String, Set<String>> referenceTypes;
-
+    private static final String NAME_FIELD = "name";
+    private final String delimiter;
+    private final Folder parent;
+    private final MetadataClass metadataClass;
+    private final Map<Integer, EntityTypeField> fields;
+    private final boolean classColumnPresent;
+    private final Map<String, MetadataEntity> currentResults = new HashMap<>();
+    private final Map<String, Set<String>> referenceTypes = new HashMap<>();
     //externalId - field - array values
-    private Map<String, Map<String, Set<String>>> arrayValues;
+    private final Map<String, Map<String, Set<String>>> arrayValues = new HashMap<>();
 
-    public EntityLineProcessor(String delimiter, Folder parent, MetadataClass metadataClass,
-            Map<Integer, EntityTypeField> fields) {
-        this.delimiter = delimiter;
-        this.parent = parent;
-        this.metadataClass = metadataClass;
-        this.fields = fields;
-        this.currentResults = new HashMap<>();
-        this.referenceTypes = new HashMap<>();
-        this.arrayValues = new HashMap<>();
-    }
+    private boolean headerProcessed = false;
 
     @Override
-    public boolean processLine(String line) throws IOException {
+    public boolean processLine(String line) {
         if (StringUtils.isBlank(line)) {
             return false;
         }
@@ -68,10 +60,10 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
             return true;
         }
         String[] chunks = StringUtils.splitPreserveAllTokens(line, delimiter);
-        if (chunks.length != fields.size() + 1) {
+        if (chunks.length != fields.size() + (classColumnPresent ? 1 : 0)) {
             throw new MetadataReadingException("Size of line doesn't match header");
         }
-        MetadataEntity entity = getOrCreateEntity(chunks[0]);
+        MetadataEntity entity = getOrCreateEntity(classColumnPresent ? chunks[0] : null);
         fields.forEach((index, field) -> {
             String value = chunks[index];
             if (StringUtils.isNotBlank(value)) {
@@ -84,7 +76,11 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
                 }
                 PipeConfValue previousValue = entity.getData().get(field.getName());
                 Map<String, Set<String>> currentArrayValue = arrayValues.get(entity.getExternalId());
-                entity.getData().put(field.getName(), getValue(field, value, previousValue, currentArrayValue));
+                PipeConfValue currentValue = getValue(field, value, previousValue, currentArrayValue);
+                entity.getData().put(field.getName(), currentValue);
+                if (NAME_FIELD.equalsIgnoreCase(field.getName())) {
+                    entity.setName(currentValue.getValue());
+                }
             }
         });
         return true;
@@ -116,15 +112,19 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
     }
 
     private MetadataEntity getOrCreateEntity(String id) {
-        MetadataEntity entity = currentResults.get(id);
-        if (entity == null) {
-            entity = new MetadataEntity();
-            entity.setExternalId(id);
-            entity.setParent(parent);
-            entity.setClassEntity(metadataClass);
-            entity.setData(new HashMap<>());
-            currentResults.put(id, entity);
-        }
+        MetadataEntity entity = StringUtils.isBlank(id) 
+                ? createEntity(UUID.randomUUID().toString())
+                : Optional.ofNullable(currentResults.get(id)).orElseGet(() -> createEntity(id));
+        currentResults.put(entity.getExternalId(), entity);
+        return entity;
+    }
+
+    private MetadataEntity createEntity(String id) {
+        MetadataEntity entity = new MetadataEntity();
+        entity.setExternalId(id);
+        entity.setParent(parent);
+        entity.setClassEntity(metadataClass);
+        entity.setData(new HashMap<>());
         return entity;
     }
 

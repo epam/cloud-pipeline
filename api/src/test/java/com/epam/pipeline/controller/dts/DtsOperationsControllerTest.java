@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.dts;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsSubmission;
-import com.epam.pipeline.manager.dts.DtsOperationsApiService;
+import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;

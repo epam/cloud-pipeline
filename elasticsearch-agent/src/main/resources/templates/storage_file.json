@@ -2,24 +2,45 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": {"type": "keyword", "store": true},
         "parentId": {"type": "keyword", "store": true, "index": false },
         "name": {"type": "text", "store": true, "index": false},
         "lastModified": { "type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss'Z'" },
         "size": { "type": "long" },
-        "path": { "type": "text", "analyzer": "file_path_analyzer", "copy_to": ["id", "name"]},
-        "storage_id": { "type": "long", "copy_to": "parentId"},
+        "path": { "type": "text", "analyzer": "file_path_analyzer" },
+        "storage_id": { "type": "long" },
         "storage_name": { "type": "text" },
         "storage_region": { "type": "keyword" },
-        "tags": { "type": "text" },
+        "ownerUserName": { "type": "keyword" },
+        "metadata": { "type": "text" },
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },
         "allowed_groups": { "type": "keyword" },
-        "denied_groups": { "type": "keyword" }
+        "denied_groups": { "type": "keyword" },
+        "is_hidden": { "type":  "boolean" }
       }
     }
   },
+  "dynamic_templates": [
+    {
+      "metadata": {
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type":  "keyword"
+            }
+          }
+        }
+      }
+    }
+  ],
   "settings": {
     "index": {
       "number_of_shards" : 1,

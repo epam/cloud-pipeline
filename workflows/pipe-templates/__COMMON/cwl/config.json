@@ -1,0 +1,31 @@
+[
+  {
+    "name": "default",
+    "default": true,
+    "description": "Initial default configuration",
+    "configuration": {
+      "main_file": "@.cwl",
+      "instance_size": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+      "instance_disk": "20",
+      "docker_image": "library/cwl-runner:latest",
+      "cmd_template": "cwl-runner ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
+      "parameters": {
+        "message": {
+          "value": "Running CWL pipeline"
+        },
+        "CP_CAP_SGE": {
+          "value": "true"
+        },
+        "CP_CAP_AUTOSCALE" : {
+          "value": "true"
+        },
+        "CP_CAP_AUTOSCALE_WORKERS": {
+          "value": "2"
+        },
+        "CP_CAP_DIND_CONTAINER": {
+          "value": "true"
+        }
+      }
+    }
+  }
+]

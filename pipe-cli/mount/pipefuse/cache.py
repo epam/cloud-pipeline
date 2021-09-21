@@ -18,7 +18,7 @@ import time
 from datetime import datetime
 from threading import RLock
 
-import pytz
+from dateutil.tz import tzlocal
 
 from fsclient import File, FileSystemClientDecorator
 import fuseutils
@@ -204,7 +204,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
     def _root(self):
         return File(name='root',
                     size=0,
-                    mtime=time.mktime(datetime.now(tz=pytz.utc).timetuple()),
+                    mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype=None,
                     is_dir=True)

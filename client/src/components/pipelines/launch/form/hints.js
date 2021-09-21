@@ -133,6 +133,12 @@ const limitMountsHint = (localizedStringFn) => (
   </Row>
 );
 
+const doNotMountStoragesHint = () => (
+  <Row style={{maxWidth: 300}}>
+    If enabled, no storages will be mounted to the job
+  </Row>
+);
+
 const prettyUrlHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     This value will be used in the <b>Endpoint URL</b> instead of the general
@@ -165,6 +171,21 @@ const executionEnvironmentSummaryHint = (localizedStringFn) => (
   </Row>
 );
 
+const hostedApplicationHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    You can specify an internal DNS name for the job
+  </Row>
+);
+
+const jobNotificationsHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    Allows to enable job status notifications over the email.<br />
+    If enabled - job owner will get email, once the job succeeds or fails.<br />
+    It is also possible to override the default statuses, recipients
+    and email body using "Configure" hyperlink.
+  </Row>
+);
+
 const hints = {
   renderHint,
   pipelineHint,
@@ -180,10 +201,13 @@ const hints = {
   autoPauseHint,
   timeOutHint,
   limitMountsHint,
+  doNotMountStoragesHint,
   prettyUrlHint,
   executionEnvironmentSummaryHint,
   endpointNameHint,
-  stopAfterHint
+  stopAfterHint,
+  hostedApplicationHint,
+  jobNotificationsHint
 };
 
 export default hints;

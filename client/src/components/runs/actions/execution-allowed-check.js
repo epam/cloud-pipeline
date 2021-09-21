@@ -17,7 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, Popover, Row} from 'antd';
+import {
+  Button,
+  Icon,
+  Popover,
+  Row,
+  Dropdown
+} from 'antd';
 import roleModel from '../../../utils/roleModel';
 
 const SCHEMAS = /^(gs:\/\/|s3:\/\/|az:\/\/|cp:\/\/)/i;
@@ -232,7 +238,8 @@ function checkOutputs (props) {
 export async function performAsyncCheck (props, state = undefined) {
   const {
     dataStorages,
-    dockerRegistries
+    dockerRegistries,
+    skipCheck
   } = props;
   await Promise.all([
     dataStorages ? dataStorages.fetchIfNeededOrWait() : null,
@@ -256,15 +263,15 @@ export async function performAsyncCheck (props, state = undefined) {
   if (!outputsErrors) {
     outputsErrors = [];
   }
-  if (!dockerImageChecked || props.dockerImage !== dockerImageChecked) {
+  if (!skipCheck && (!dockerImageChecked || props.dockerImage !== dockerImageChecked)) {
     dockerImageErrors = (await checkDockerImage(props)).filter(Boolean);
     dockerImageChecked = props.dockerImage;
   }
-  if (!inputsChecked || parametersChanged(props.inputs, inputsChecked)) {
+  if (!skipCheck && (!inputsChecked || parametersChanged(props.inputs, inputsChecked))) {
     inputsErrors = checkInputs(props).filter(Boolean);
     inputsChecked = props.inputs;
   }
-  if (!outputsChecked || parametersChanged(props.outputs, outputsChecked)) {
+  if (!skipCheck && (!outputsChecked || parametersChanged(props.outputs, outputsChecked))) {
     outputsErrors = checkOutputs(props).filter(Boolean);
     outputsChecked = props.outputs;
   }
@@ -308,7 +315,7 @@ export function PermissionErrors ({errors}) {
   );
 }
 
-@inject('dataStorages', 'dockerRegistries')
+@inject('dataStorages', 'dockerRegistries', 'hiddenObjects')
 @observer
 class SubmitButton extends React.Component {
   static propTypes = {
@@ -320,7 +327,8 @@ class SubmitButton extends React.Component {
     type: PropTypes.string,
     htmlType: PropTypes.string,
     size: PropTypes.string,
-    style: PropTypes.object
+    style: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   state = {
@@ -333,14 +341,20 @@ class SubmitButton extends React.Component {
     return this.performAsyncCheck(this.props);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
-    return this.performAsyncCheck(nextProps, this.props);
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.skipCheck !== this.props.skipCheck) {
+      this.performAsyncCheck(this.props);
+    }
   }
 
-  performAsyncCheck = async (nextProps) => {
+  componentWillReceiveProps (nextProps, nextContext) {
+    return this.performAsyncCheck(nextProps, true);
+  }
+
+  performAsyncCheck = async (nextProps, useState = false) => {
     this.asyncCheckIdentifier += 1;
     const identifier = this.asyncCheckIdentifier;
-    const {state} = await performAsyncCheck(nextProps, this.state);
+    const {state} = await performAsyncCheck(nextProps, useState ? this.state : undefined);
     if (identifier === this.asyncCheckIdentifier) {
       this.setState(state);
     }
@@ -356,14 +370,54 @@ class SubmitButton extends React.Component {
       onClick,
       size,
       style,
-      type
+      type,
+      dropdown,
+      dropdownRenderer,
+      dropdownId
     } = this.props;
     const {
       errors
     } = this.state;
     const pending = (dataStorages.pending && !dataStorages.loaded) ||
       (dockerRegistries.pending && !dockerRegistries.loaded);
-    const submitButton = (
+    const submitButton = dropdown && dropdownRenderer ? (
+      <Button.Group
+        size={size}
+      >
+        <Button
+          id={id}
+          type={type}
+          htmlType={htmlType}
+          onClick={onClick}
+          style={style}
+          disabled={pending || errors.length > 0}
+        >
+          {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+          {children}
+        </Button>
+        <Dropdown
+          overlay={dropdownRenderer()}
+          placement="bottomRight"
+          disabled={pending || errors.length > 0}
+        >
+          <Button
+            id={dropdownId || null}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            type="primary"
+          >
+            <Icon
+              type="down"
+              style={{
+                lineHeight: 'inherit'
+              }}
+            />
+          </Button>
+        </Dropdown>
+      </Button.Group>
+    ) : (
       <Button
         id={id}
         type={type}

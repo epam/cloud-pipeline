@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -59,6 +60,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -126,6 +128,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final GitToken USER_TOKEN = GitToken.builder().id(1L).token("token-123").expires(new Date()).build();
     private static final String PROJECTS_ROOT = "/api/v3/projects/";
     private static final String PROJECT_ROOT_V4 = "/api/v4/projects/";
+    private static final String GITKEEP = ".gitkeep";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -150,6 +153,7 @@ public class GitManagerTest extends AbstractManagerTest {
     @Before
     public void describePreferenceManager() {
         when(preferenceManager.getPreference(SystemPreferences.GIT_HOST)).thenReturn(gitHost.asString());
+        when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(gitHost.asString());
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID)).thenReturn(ROOT_USER_ID);
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME)).thenReturn(ROOT_USER_NAME);
     }
@@ -454,10 +458,10 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withQueryParam(PATH, equalTo(DOCS))
                 .willReturn(okJson(with(tree)))
         );
-        mockFileContentRequest(DOCS + File.separator + ".gitkeep", GIT_MASTER_REPOSITORY, FILE_CONTENT);
+        mockFileContentRequest(DOCS + File.separator + GITKEEP, GIT_MASTER_REPOSITORY, FILE_CONTENT);
         givenThat(
             get(urlPathEqualTo(api(REPOSITORY_FILES)))
-                .withQueryParam(FILE_PATH, equalTo("doc" + File.separator + ".gitkeep"))
+                .withQueryParam(FILE_PATH, equalTo("doc" + File.separator + GITKEEP))
                 .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                 .willReturn(notFound())
         );
@@ -467,8 +471,8 @@ public class GitManagerTest extends AbstractManagerTest {
         assertThat(resultingCommit, is(expectedCommit));
     }
 
-    @Test
-    public void shouldCreateFolder() throws GitClientException {
+    @Test(expected = IllegalArgumentException.class)
+    public void createFolderShouldFailIfDirectoryExists() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
         final PipelineSourceItemVO folder = new PipelineSourceItemVO();
         folder.setPath(DOCS);
@@ -479,12 +483,54 @@ public class GitManagerTest extends AbstractManagerTest {
         bla.setPath(DOCS + "/" + README_FILE);
         final List<GitRepositoryEntry> tree = singletonList(bla);
         givenThat(
-            get(urlPathEqualTo(api(REPOSITORY_TREE)))
-                .withQueryParam(REF_NAME, equalTo(GIT_MASTER_REPOSITORY))
+            get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(PATH, equalTo(DOCS))
                 .willReturn(okJson(with(tree)))
         );
-        mockFileContentRequest(DOCS + File.separator + ".gitkeep", GIT_MASTER_REPOSITORY, FILE_CONTENT);
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
+                        .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
+                        .willReturn(notFound())
+        );
+        gitManager.createOrRenameFolder(pipeline.getId(), folder);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void createFolderShouldFailIfFileWithTheSameNameExists() throws GitClientException {
+        final Pipeline pipeline = testingPipeline();
+        final PipelineSourceItemVO folder = new PipelineSourceItemVO();
+        folder.setPath(DOCS);
+        folder.setLastCommitId(pipeline.getCurrentVersion().getCommitId());
+        final GitRepositoryEntry bla = new GitRepositoryEntry();
+        bla.setName(README_FILE);
+        bla.setType(BLOB_TYPE);
+        bla.setPath(DOCS + "/" + README_FILE);
+        final List<GitRepositoryEntry> tree = singletonList(bla);
+        givenThat(
+                get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
+                        .withQueryParam(PATH, equalTo(DOCS))
+                        .willReturn(okJson(with(tree)))
+        );
+        mockFileContentRequest(DOCS, GIT_MASTER_REPOSITORY, FILE_CONTENT);
+        gitManager.createOrRenameFolder(pipeline.getId(), folder);
+    }
+
+    @Test
+    public void shouldCreateFolderIfDirectoryDoesntExist() throws GitClientException {
+        final Pipeline pipeline = testingPipeline();
+        final PipelineSourceItemVO folder = new PipelineSourceItemVO();
+        folder.setPath(DOCS);
+        folder.setLastCommitId(pipeline.getCurrentVersion().getCommitId());
+        givenThat(
+                get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
+                        .withQueryParam(PATH, equalTo(DOCS))
+                        .willReturn(notFound())
+        );
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
+                        .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
+                        .willReturn(notFound())
+        );
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final GitCommitEntry resultingCommit = gitManager.createOrRenameFolder(pipeline.getId(), folder);
         assertThat(resultingCommit, is(expectedCommit));
@@ -565,6 +611,46 @@ public class GitManagerTest extends AbstractManagerTest {
         final GitProject updatedProject = gitManager.updateRepositoryName(projectName, newProjectName);
         assertThat(updatedProject, is(expectedProject));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void gitLsTreeShouldFailIfRepoVersionDoesntExists() {
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_TAGS + "/doesnt_exist")))
+                        .willReturn(notFound())
+        );
+        givenThat(
+                get(urlPathEqualTo("/git/" + getUrlEncodedNamespacePath(REPOSITORY_NAME) + "/ls_tree"))
+                        .willReturn(WireMock.ok())
+        );
+        Pipeline pipeline = new Pipeline();
+        pipeline.setName(REPOSITORY_NAME);
+        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME
+                + "/" + REPOSITORY_NAME + ".git");
+        when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
+        gitManager.lsTreeRepositoryContent(1L, "doesnt_exist", null, null, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void gitLsTreeShouldFailIfPrefGitReaderHostIsNotSpecified() {
+        when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(null);
+        final GitTagEntry tag = new GitTagEntry();
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + TEST_REVISION)))
+                        .willReturn(okJson(with(tag)))
+        );
+        givenThat(
+                get(urlPathEqualTo("/git/" + getUrlEncodedNamespacePath(REPOSITORY_NAME) + "/ls_tree"))
+                        .willReturn(WireMock.ok())
+        );
+        Pipeline pipeline = new Pipeline();
+        pipeline.setName(REPOSITORY_NAME);
+        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME +
+                "/" + REPOSITORY_NAME + ".git");
+        when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
+        gitManager.lsTreeRepositoryContent(1L, "v1.0.0", null, null, null);
+    }
+
+
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNonExistentProject() {
@@ -659,7 +745,8 @@ public class GitManagerTest extends AbstractManagerTest {
 
     private String encodeUrlPath(final String filePath) {
         try {
-            return URLEncoder.encode(filePath, "UTF8");
+            return URLEncoder.encode(filePath, StandardCharsets.UTF_8.toString())
+                    .replace(GitlabClient.DOT_CHAR, GitlabClient.DOT_CHAR_URL_ENCODING_REPLACEMENT);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeIOException(e.getMessage());
         }

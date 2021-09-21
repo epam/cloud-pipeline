@@ -21,6 +21,7 @@ import VersionParameters from './VersionParameters';
 import Source from './Source';
 import PipelineLanguage from './PipelineLanguage';
 import PipelineConfigurations from './PipelineConfigurations';
+import PipelineLatestConfigurations from './PipelineLatestConfigurations';
 import Docs from './Docs';
 
 class Pipelines extends Remote {
@@ -28,9 +29,9 @@ class Pipelines extends Remote {
   url = '/pipeline/loadAll';
 
   /* eslint-disable */
-  static getCache (cache, id, model) {
+  static getCache (cache, id, model, ...opts) {
     if (!cache.has(+id)) {
-      cache.set(+id, new model(id));
+      cache.set(+id, new model(id, ...opts));
     }
 
     return cache.get(+id);
@@ -119,12 +120,32 @@ class Pipelines extends Remote {
   }
 
   _configurationsCache = new Map();
+
+  _latestConfigurationsCache = new Map();
+
   getConfiguration (id, version) {
-    return this.constructor.getIdVersionCache(this._configurationsCache, id, version, PipelineConfigurations);
+    if (!version) {
+      return this.constructor.getCache(
+        this._latestConfigurationsCache,
+        id,
+        PipelineLatestConfigurations,
+        this.getPipeline(id)
+      );
+    }
+    return this.constructor.getIdVersionCache(
+      this._configurationsCache,
+      id,
+      version,
+      PipelineConfigurations
+    );
   }
 
   invalidateConfiguration (id, version) {
-    this.constructor.invalidateIdVersionCache(this._configurationsCache, id, version);
+    if (!version) {
+      this.constructor.invalidateCache(this._latestConfigurationsCache, id);
+    } else {
+      this.constructor.invalidateIdVersionCache(this._configurationsCache, id, version);
+    }
   }
 
   _docsCache = new Map();

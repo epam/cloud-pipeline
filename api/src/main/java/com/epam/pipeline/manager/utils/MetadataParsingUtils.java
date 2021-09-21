@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.utils;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 
 public final class MetadataParsingUtils {
@@ -35,5 +36,9 @@ public final class MetadataParsingUtils {
             return TAB_DELIMITER;
         }
         throw new IllegalArgumentException(String.format("Unsupported extension for file %s", fileName));
+    }
+
+    public static String getMetadataClassFromFileName(String fileName) {
+        return FilenameUtils.getBaseName(fileName);
     }
 }

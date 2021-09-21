@@ -19,7 +19,7 @@ import moment from 'moment-timezone';
 import {
   Alert,
   Button,
-  Card,
+  Checkbox,
   Col,
   Input,
   message,
@@ -30,14 +30,17 @@ import {
 } from 'antd';
 import clusterNodes from '../../models/cluster/ClusterNodes';
 import nodesFilter from '../../models/cluster/FilterClusterNodes';
+import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import styles from './Cluster.css';
 import {renderNodeLabels} from './renderers';
+import parseQueryParameters from '../../utils/queryParameters';
 import {
   getRoles,
   nodeRoles,
@@ -50,9 +53,17 @@ import {
 })
 @localization.localizedComponent
 @inject('clusterNodes', 'nodesFilter')
+@inject((stores) => {
+  const {routing} = stores;
+  const query = parseQueryParameters(routing);
+  return {
+    ...stores,
+    pools,
+    filter: query
+  };
+})
 @observer
 export default class Cluster extends localization.LocalizedReactComponent {
-
   state = {
     appliedFilter: {
       runId: null,
@@ -75,21 +86,72 @@ export default class Cluster extends localization.LocalizedReactComponent {
         value: null,
         finalValue: null
       }
-    }
+    },
+    selection: []
   };
 
+  @computed
+  get currentNodePool () {
+    const {filter, pools} = this.props;
+    if (filter && filter.pool_id && pools.loaded) {
+      return (pools.value || []).find(p => `${p.id}` === `${filter.pool_id}`);
+    }
+    return undefined;
+  }
+
+  get nodes () {
+    const {clusterNodes, nodesFilter, filter} = this.props;
+    if (filter && Object.keys(filter).length > 0) {
+      if (clusterNodes.loaded) {
+        const nodes = this.props.clusterNodes.value || [];
+        const nodeMatchesLabel = (label) => (node) => node.labels &&
+          node.labels.hasOwnProperty(label) &&
+          `${node.labels[label] || ''}` === `${filter[label]}`;
+        const nodeMatchesLabels = (node) => !Object.keys(filter)
+          .find(label => !nodeMatchesLabel(label)(node));
+        return (nodes || [])
+          .filter(nodeMatchesLabels);
+      }
+    } else if (nodesFilter.loaded) {
+      return nodesFilter.value || [];
+    }
+    return [];
+  }
+
+  get filteredNodes () {
+    const {filter} = this.props;
+    const {appliedFilter} = this.state;
+    if (filter && Object.keys(filter).length > 0) {
+      const {runId, address} = appliedFilter;
+      const matchesRunId = node => node.labels &&
+        node.labels.hasOwnProperty('runid') &&
+        `${node.labels.runid}` === `${runId}`;
+      const matchesAddress = node => node.addresses &&
+        node.addresses.map(a => a.address).find(a => a === address);
+      const matches = node =>
+        (!runId || matchesRunId(node)) &&
+        (!address || matchesAddress(node));
+      return this.nodes.filter(matches);
+    }
+    return this.nodes;
+  }
+
   refreshCluster = () => {
+    if (!this.props.clusterNodes.pending) {
+      this.props.clusterNodes.fetch();
+    }
     if (!this.props.nodesFilter.pending) {
       this.props.nodesFilter.send({
         runId: this.state.appliedFilter.runId,
         address: this.state.appliedFilter.address
       });
     }
+    this.props.pools.fetch();
   };
 
   isFilterChanged = () => {
     return this.state.filter.runId.finalValue !== this.state.appliedFilter.runId ||
-        this.state.filter.address.finalValue !== this.state.appliedFilter.address;
+      this.state.filter.address.finalValue !== this.state.appliedFilter.address;
   };
 
   applyFilter = () => {
@@ -111,18 +173,19 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
   }
 
-  renderLabels = (labels, item) => {
+  renderLabels = (labels, item, pools) => {
     const {router: {location}} = this.props;
     return renderNodeLabels(
       labels,
       {
         className: styles.nodeLabel,
         location,
-        pipelineRun: item.pipelineRun
+        pipelineRun: item.pipelineRun,
+        pools
       });
   };
 
-  terminateNode = async(item) => {
+  terminateNode = async (item) => {
     const hide = message.loading('Processing...', 0);
     const request = new TerminateNodeRequest(item.name);
     await request.fetch();
@@ -136,6 +199,38 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
   };
 
+  terminateNodes = async () => {
+    const hide = message.loading('Terminating...', 0);
+    const requests = this.state.selection.map(name => new TerminateNodeRequest(name));
+    const promises = requests.map(r => new Promise((resolve) => {
+      r.fetch()
+        .then(() => {
+          resolve(r.message);
+        })
+        .catch(e => resolve(e.message));
+    }));
+    Promise.all(promises)
+      .then(results => {
+        hide();
+        const errors = results.filter(Boolean);
+        if (errors.length > 0) {
+          message.error(
+            (
+              <div>
+                {errors.map(e => (<div>{e}</div>))}
+              </div>
+            ),
+            5
+          );
+        } else {
+          this.refreshCluster();
+        }
+      })
+      .then(() => {
+        this.setState({selection: []});
+      });
+  };
+
   nodeTerminationConfirm = (item, event) => {
     event.stopPropagation();
     const terminateNode = this.terminateNode;
@@ -145,8 +240,25 @@ export default class Cluster extends localization.LocalizedReactComponent {
         wordWrap: 'break-word'
       },
       onOk () {
-        (async() => {
+        (async () => {
           await terminateNode(item);
+        })();
+      }
+    });
+  };
+
+  nodesTerminationConfirm = (event) => {
+    const {selection} = this.state;
+    event.stopPropagation();
+    const terminateNodes = this.terminateNodes;
+    Modal.confirm({
+      title: `Are you sure you want to terminate ${selection.length} node${selection.length > 1 ? 's' : ''}?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        (async () => {
+          await terminateNodes();
         })();
       }
     });
@@ -163,6 +275,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
     return null;
   };
+
+  canTerminateNode = (node) => {
+    return roleModel.executeAllowed(node) && roleModel.isOwner(node) && this.nodeIsSlave(node);
+  }
 
   renderTerminateButton = (item) => {
     if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
@@ -185,7 +301,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     } else {
       return -1;
     }
-  }
+  };
 
   runSorter = (a, b) => {
     const runA = +(a.runId || 0);
@@ -293,11 +409,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
         />
         {
           this.state.filter[parameter].validationError !== undefined
-          ? (
-            <Row style={{color: '#f00'}}>
-              {this.state.filter[parameter].validationError}
-            </Row>
-          ) : undefined
+            ? (
+              <Row style={{color: '#f00'}}>
+                {this.state.filter[parameter].validationError}
+              </Row>
+            ) : undefined
         }
         <Row type="flex" justify="space-between" className={styles.filterActionsButtonsContainer}>
           <a onClick={validateAndSubmit}>OK</a>
@@ -315,7 +431,37 @@ export default class Cluster extends localization.LocalizedReactComponent {
     };
   };
 
-  generateNodeInstancesTable (nodes, isLoading) {
+  generateNodeInstancesTable = (nodes, isLoading, pools) => {
+    const {selection = []} = this.state;
+    const nodesAllowedToTerminate = nodes
+      .filter(node => this.canTerminateNode(node));
+    const nodeIsSelected = node => selection.indexOf(node.name) >= 0;
+    const toggleNode = node => {
+      const index = selection.indexOf(node.name);
+      if (index >= 0) {
+        selection.splice(index, 1);
+      } else {
+        selection.push(node.name);
+      }
+      this.setState({selection});
+    };
+    const selectAll = (select = true) => {
+      if (select) {
+        this.setState({
+          selection: nodesAllowedToTerminate.map(node => node.name)
+        });
+      } else {
+        this.setState({selection: []});
+      }
+    };
+    const allSelected = nodesAllowedToTerminate.length > 0 &&
+      nodesAllowedToTerminate
+        .filter(nodeIsSelected)
+        .length === nodesAllowedToTerminate.length;
+    const indeterminate = nodesAllowedToTerminate.length > 0 &&
+      nodes
+        .filter(node => this.canTerminateNode(node) && nodeIsSelected(node))
+        .length > 0 && !allSelected;
     const createdCellContent = (date) => (
       <div className={styles.clusterNodeCellCreated}>
         <span className={styles.clusterNodeContentCreated}>
@@ -343,27 +489,55 @@ export default class Cluster extends localization.LocalizedReactComponent {
     );
     const columns = [
       {
+        key: 'selection',
+        className: styles.clusterNodeSelection,
+        title: (
+          <span>
+            <Checkbox
+              disabled={nodesAllowedToTerminate.length === 0}
+              checked={allSelected}
+              indeterminate={indeterminate}
+              onChange={e => selectAll(e.target.checked)}
+            />
+          </span>
+        ),
+        render: (item) => {
+          if (this.canTerminateNode(item)) {
+            return (
+              <Checkbox
+                checked={nodeIsSelected(item)}
+                onChange={e => toggleNode(item)}
+              />
+            );
+          }
+          return null;
+        }
+      },
+      {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
         sorter: this.alphabeticNameSorter,
-        className: styles.clusterNodeRowName
+        className: styles.clusterNodeRowName,
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'pipelineRun',
         key: 'pipelineRun',
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
-        className: styles.clusterNodeRowPipeline
+        className: styles.clusterNodeRowPipeline,
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'labels',
         key: 'labels',
         title: 'Labels',
-        render: this.renderLabels,
+        render: (labels, item) => this.renderLabels(labels, item, pools),
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: this.runSorter,
-        className: styles.clusterNodeRowLabels
+        className: styles.clusterNodeRowLabels,
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'addresses',
@@ -371,7 +545,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Addresses',
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
-        render: (addresses) => addressesCellContent(addresses)
+        render: (addresses) => addressesCellContent(addresses),
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'created',
@@ -379,7 +554,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Created',
         sorter: this.dateSorter,
         className: styles.clusterNodeRowCreated,
-        render: (date) => createdCellContent(date)
+        render: (date) => createdCellContent(date),
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         key: 'terminate',
@@ -410,8 +586,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         loading={isLoading}
         pagination={{pageSize: 25}}
         rowClassName={(item) => `cluster-row-${item.name}`}
-        onRowClick={this.onNodeInstanceSelect}
-        size="small" />
+        size="small"
+      />
     );
   }
 
@@ -425,13 +601,15 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
   };
 
-  render () {
+  getDescription = () => {
     let total = 1;
     let totalWithRunId = 0;
     let description;
-    if (this.props.nodesFilter.loaded) {
-      total = this.props.nodesFilter.value.filter(this.nodeIsSlave).length;
-      totalWithRunId = this.props.nodesFilter.value.map(n => n).filter(n => n.runId > 0).length;
+    if (this.filteredNodes.length > 0) {
+      total = this.filteredNodes.filter(this.nodeIsSlave).length;
+      totalWithRunId = this.filteredNodes
+        .filter(n => n.labels && n.labels.runid)
+        .length;
       if (total > 0) {
         let totalPart = `${total} nodes`;
         if (total === 1) {
@@ -448,35 +626,66 @@ export default class Cluster extends localization.LocalizedReactComponent {
         }
       }
     }
+    return description;
+  };
+
+  render () {
+    let description = this.getDescription();
+    const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
     return (
-      <Card className={styles.clusterCard} bodyStyle={{padding: 15}}>
+      <div>
         <Row type="flex" align="middle">
-          <Col span={22}>
-            <span className={styles.nodeMainInfo}>Cluster nodes {description}</span>
+          <Col span={19}>
+            <span className={styles.nodeMainInfo}>
+              {
+                this.currentNodePool
+                  ? `${this.currentNodePool.name} nodes `
+                  : 'Cluster nodes '
+              }
+              {description}
+            </span>
           </Col>
-          <Col span={2} className={styles.refreshButtonContainer}>
+          <Col span={5} className={styles.refreshButtonContainer}>
+            {
+              this.state.selection.length > 0 && (
+                <Button
+                  id="cluster-batch-terminate-button"
+                  type="danger"
+                  disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
+                  style={{marginRight: 5}}
+                  onClick={this.nodesTerminationConfirm}
+                >
+                  Terminate {this.state.selection.length} node{this.state.selection.length > 1 ? 's' : ''}
+                </Button>
+              )
+            }
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
-              disabled={this.props.nodesFilter.pending}>Refresh</Button>
+              disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}>
+              Refresh
+            </Button>
           </Col>
         </Row>
         {
-          this.props.nodesFilter.error &&
+          error && (
             <Row>
               <br />
               <Alert
-                message={`Error retrieving cluster nodes: ${this.props.nodesFilter.error}`}
+                message={`Error retrieving cluster nodes: ${error}`}
                 type="error" />
             </Row>
+          )
         }
         <br />
-        {this.generateNodeInstancesTable(
-          this.props.nodesFilter.value,
-          this.props.nodesFilter.pending
-        )}
-      </Card>
+        {
+          this.generateNodeInstancesTable(
+            this.filteredNodes,
+            this.props.nodesFilter.pending || this.props.clusterNodes.pending,
+            this.props.pools.loaded ? (this.props.pools.value || []) : []
+          )
+        }
+      </div>
     );
   }
-
-}
+};

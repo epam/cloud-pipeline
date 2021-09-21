@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -46,6 +49,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +76,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String nodeTerminateScript;
     private final String kubeMasterIP;
     private final String kubeToken;
+    private final String kubeCertHash;
+    private final String kubeNodeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final ClusterCommandService commandService,
@@ -84,7 +90,9 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
                                 @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
                                 @Value("${kube.master.ip}") final String kubeMasterIP,
-                                @Value("${kube.kubeadm.token}") final String kubeToken) {
+                                @Value("${kube.kubeadm.token}") final String kubeToken,
+                                @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
+                                @Value("${kube.node.token}") final String kubeNodeToken) {
         this.instanceService = instanceService;
         this.commandService = commandService;
         this.cloudRegionManager = regionManager;
@@ -97,29 +105,41 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         this.nodeTerminateScript = nodeTerminateScript;
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
+        this.kubeCertHash = kubeCertHash;
+        this.kubeNodeToken = kubeNodeToken;
     }
 
     @Override
     public RunInstance scaleUpNode(final AzureRegion region,
                                    final Long runId,
                                    final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, runId, instance);
-        final Map<String, String> envVars = buildScriptAzureEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptAzureEnvVars(region));
+    }
+
+    @Override
+    public RunInstance scaleUpPoolNode(final AzureRegion region,
+                                       final String nodeId,
+                                       final NodePool nodePool) {
+        final RunInstance instance = nodePool.toRunInstance();
+        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(nodePool));
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptAzureEnvVars(region));
     }
 
     @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
-        final String command = buildNodeDownCommand(runId);
+        final String command = buildNodeDownCommand(String.valueOf(runId));
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
     }
 
-    //TODO: This code won't work for current scripts
     @Override
-    public void scaleUpFreeNode(final AzureRegion region, final String nodeId) {
-        throw new UnsupportedOperationException();
+    public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
+        final String command = buildNodeDownCommand(nodeLabel);
+        final Map<String, String> envVars = buildScriptAzureEnvVars(region);
+        CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
+                                   executorService.getExecutorService());
     }
 
     @Override
@@ -128,6 +148,14 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 nodeReassignScript, oldId, newId, getProvider().name());
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptAzureEnvVars(region));
+    }
+
+    @Override
+    public boolean reassignPoolNode(final AzureRegion region, final String nodeLabel, final Long newId) {
+        final String command = commandService.
+            buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
+                                                     String.valueOf(newId), buildScriptAzureEnvVars(region));
     }
 
     @Override
@@ -213,7 +241,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
-        throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
+        vmService.createAndAttachVolume(String.valueOf(runId), request.getSize(), region);
     }
 
     @Override
@@ -243,6 +271,20 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         }
     }
 
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Creation of DNS record doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final AzureRegion region, final String imageName) {
+        return InstanceImage.EMPTY;
+    }
+
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
         final Map<String, String> envVars = new HashMap<>();
         if (StringUtils.isNotBlank(region.getAuthFile())) {
@@ -252,19 +294,24 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         return envVars;
     }
 
-    private String buildNodeUpCommand(final AzureRegion region, final Long runId, final RunInstance instance) {
+    private String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,
+                                      final Map<String, String> labels) {
 
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .sshKey(region.getSshPublicKeyPath())
                 .instanceImage(instance.getNodeImage())
                 .instanceType(instance.getNodeType())
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
-                .region(region.getRegionCode());
+                .kubeCertHash(kubeCertHash)
+                .kubeNodeToken(kubeNodeToken)
+                .region(region.getRegionCode())
+                .prePulledImages(instance.getPrePulledDockerImages())
+                .additionalLabels(labels);
 
         final Boolean clusterSpotStrategy = instance.getSpot() == null
                 ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)
@@ -276,11 +323,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         return commandBuilder.build().getCommand();
     }
 
-    private String buildNodeDownCommand(final Long runId) {
+    private String buildNodeDownCommand(final String nodeLabel) {
         return RunIdArgCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .build()
                 .getCommand();
     }

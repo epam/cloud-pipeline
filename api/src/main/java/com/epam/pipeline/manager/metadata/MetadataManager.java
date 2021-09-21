@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
@@ -40,6 +41,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -61,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -91,6 +95,9 @@ public class MetadataManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private CategoricalAttributeManager categoricalAttributeManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -232,6 +239,17 @@ public class MetadataManager {
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateEntityMetadata(final Map<String, PipeConfValue> data, final Long entityId,
+                                     final AclClass entityClass) {
+        if (!MapUtils.isEmpty(data)) {
+            MetadataVO metadataVO = new MetadataVO();
+            metadataVO.setData(data);
+            metadataVO.setEntity(new EntityVO(entityId, entityClass));
+            updateMetadataItemKeys(metadataVO);
+        }
+    }
+
     public List<String> loadUniqueValuesFromEntityClassMetadata(final AclClass entityClass, final String attributeKey) {
         if (StringUtils.isEmpty(attributeKey)) {
             throw new IllegalArgumentException(
@@ -277,8 +295,30 @@ public class MetadataManager {
 
     public List<EntityVO> searchMetadataByClassAndKeyValue(final AclClass entityClass, final String key,
                                                            final String value) {
-        Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
-        return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+        if (value == null) {
+            return metadataDao.searchMetadataByClassAndKey(entityClass, key);
+        } else {
+            final Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
+            return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void syncWithCategoricalAttributes() {
+        final List<CategoricalAttribute> fullMetadataDict = buildFullMetadataDict();
+        final Map<String, CategoricalAttribute> existingAttributes = categoricalAttributeManager.loadAll().stream()
+            .collect(Collectors.toMap(BaseEntity::getName, Function.identity()));
+        fullMetadataDict.forEach(attributeFromMetadata -> {
+            final String name = attributeFromMetadata.getName();
+            if (existingAttributes.containsKey(name)) {
+                final CategoricalAttribute existingAttribute = existingAttributes.get(name);
+                attributeFromMetadata.setId(existingAttribute.getId());
+                attributeFromMetadata.setOwner(existingAttribute.getOwner());
+                categoricalAttributeManager.update(attributeFromMetadata);
+            } else {
+                categoricalAttributeManager.create(attributeFromMetadata);
+            }
+        });
     }
 
     public List<CategoricalAttribute> buildFullMetadataDict() {

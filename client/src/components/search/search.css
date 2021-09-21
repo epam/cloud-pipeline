@@ -278,7 +278,7 @@
   position: absolute;
   top: 120px;
   right: 5vw;
-  width: 44vw;
+  width: calc(44vw - 30px);
   bottom: 100px;
   padding: 0;
   -webkit-transition: opacity 250ms, top 250ms, left 250ms;
@@ -295,4 +295,56 @@
 
 .preview.not-available {
   opacity: 0;
+}
+
+.advanced {
+  position: absolute;
+  top: 50vh;
+  margin-top: -20px;
+  height: 38px;
+  left: 72vw;
+  margin-left: 10px;
+  -webkit-transition: margin 250ms, top 250ms, right 250ms;
+  -moz-transition: margin 250ms, top 250ms, right 250ms;
+  -ms-transition: margin 250ms, top 250ms, right 250ms;
+  -o-transition: margin 250ms, top 250ms, right 250ms;
+  transition: margin 250ms, top 250ms, right 250ms;
+  color: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 10px;
+  border-radius: 20px;
+}
+
+.advanced .icon {
+  font-size: 25px;
+  margin-right: 5px;
+}
+
+.advanced:hover {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.advanced.results-available {
+  margin-top: 0;
+  top: 120px;
+}
+
+.advanced.results-available.preview-available {
+  left: 49vw;
+  padding: 0;
+  width: 38px;
+}
+
+.advanced.results-available.preview-available .icon {
+  margin-right: 0;
+}
+
+.advanced.results-available.preview-available .button-text {
+  display: none;
 }

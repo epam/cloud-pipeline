@@ -50,11 +50,13 @@ public class ToolMapper implements EntityMapper<ToolWithDescription> {
                     .field("registry", tool.getRegistry())
                     .field("registryId", tool.getRegistryId())
                     .field("image", tool.getImage())
+                    .field("name", tool.getImage())
                     .field("createdDate", parseDataToString(tool.getCreatedDate()))
                     .field("description", tool.getDescription())
                     .field("shortDescription", tool.getShortDescription())
                     .field("defaultCommand", tool.getDefaultCommand())
-                    .field("toolGroupId", tool.getToolGroupId());
+                    .field("toolGroupId", tool.getToolGroupId())
+                    .field("parentId", tool.getToolGroupId());
 
             buildLabels(tool.getLabels(), jsonBuilder);
             buildVersions(toolDescription, jsonBuilder);

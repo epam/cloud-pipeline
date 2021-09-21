@@ -2,7 +2,11 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": {"type": "keyword", "store": true},
         "name": {"type": "text", "store": true},
         "parentId": {"type": "keyword", "store": true, "index": false },
@@ -13,7 +17,7 @@
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "updatedDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "comments": { "type": "text" },
-        "entityId": { "type": "long", "copy_to": "parentId"},
+        "entityId": { "type": "long" },
         "entityClass": { "type": "keyword" },
         "ownerUserId": { "type": "keyword" },
         "ownerUserName": { "type": "keyword" },

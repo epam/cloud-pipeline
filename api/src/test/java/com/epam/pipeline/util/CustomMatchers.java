@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,22 @@
 
 package com.epam.pipeline.util;
 
-import java.util.Collection;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.anyMapOf;
+
 public final class CustomMatchers {
 
-    private CustomMatchers() {}
+    private CustomMatchers() {
+    }
 
     public static <T> Matcher<Collection<T>> isEmpty() {
         return new BaseMatcher<Collection<T>>() {
@@ -38,5 +46,33 @@ public final class CustomMatchers {
                 description.appendText("collection is empty");
             }
         };
+    }
+
+    public static <T> BaseMatcher<T> matches(final Predicate<T> test) {
+        return new BaseMatcher<T>() {
+
+            @Override
+            public void describeTo(final Description description) {
+                description.appendText("custom matcher");
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public boolean matches(final Object item) {
+                return test.test((T) item);
+            }
+        };
+    }
+
+    public static List<Long> anyLongList() {
+        return anyListOf(Long.class);
+    }
+
+    public static List<String> anyStringList() {
+        return anyListOf(String.class);
+    }
+
+    public static Map<String, String> anyStringMap() {
+        return anyMapOf(String.class, String.class);
     }
 }

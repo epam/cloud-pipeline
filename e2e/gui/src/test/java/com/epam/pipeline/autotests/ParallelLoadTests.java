@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -32,7 +31,6 @@ import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.stream.IntStream;
@@ -84,7 +82,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         loginAs(admin);
         Arrays.stream(userList)
             .forEach(this::addUser);
-        final String userRoleGroup = "ROLE_USER";
+        final String userRoleGroup = C.ROLE_USER;
         library()
                 .createFolder(PARALLEL_TEST_FOLDER)
                 .clickOnFolder(PARALLEL_TEST_FOLDER)
@@ -112,7 +110,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         Configuration.startMaximized = true;
         setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
-        Selenide.open(C.ROOT_ADDRESS);
+        open(C.ROOT_ADDRESS);
     }
 
     @AfterClass(alwaysRun=true)
@@ -147,6 +145,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
             startTime = currentTimeMillis();
             tools()
                     .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
+                    .setTimeOut("3")
                     .launch(this)
                     .showLog(runId = getLastRunId())
                     .shouldHaveRunningStatus();

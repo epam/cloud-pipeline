@@ -26,10 +26,11 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -81,9 +82,6 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     private NodesManager mockNodesManager;
 
     @Autowired
-    private PipelineRunManager mockPipelineRunManager;
-
-    @Autowired
     private AuthManager mockAuthManager;
 
     @Autowired
@@ -94,6 +92,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private InstanceOfferManager mockInstanceOfferManager;
+
+    @Autowired
+    private PipelineRunCRUDService mockRunCrudService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -321,10 +322,10 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnUsageStatisticsFileForAdmin() {
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
 
         final InputStream returnedInputStream = clusterApiService.getUsageStatisticsFile(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
+            nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
 
         assertThat(returnedInputStream).isEqualTo(inputStream);
     }
@@ -334,13 +335,13 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnUsageStatisticsFileWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
         mockUser();
 
         final InputStream returnedInputStream = clusterApiService.getUsageStatisticsFile(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
 
         assertThat(returnedInputStream).isEqualTo(inputStream);
     }
@@ -350,12 +351,12 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldDenyAccessToUsageStatisticsFileWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.getUsageStatisticsFile(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO));
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV));
     }
 
     @Test
@@ -434,7 +435,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     }
 
     private void mockRun(final PipelineRun pipelineRun) {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        doReturn(pipelineRun).when(mockRunCrudService).loadRunById(eq(pipelineRun.getId()));
     }
 
     private void mockUser() {

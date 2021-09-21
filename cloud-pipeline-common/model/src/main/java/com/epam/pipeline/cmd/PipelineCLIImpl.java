@@ -40,8 +40,8 @@ import java.util.stream.Collectors;
 @Builder
 public class PipelineCLIImpl implements PipelineCLI {
 
-    private static final String PIPE_CP_TEMPLATE = "%s storage cp '%s' '%s' %s";
-    private static final String PIPE_LS_TEMPLATE = "%s storage ls '%s' -l";
+    private static final String PIPE_CP_TEMPLATE = "'%s' storage cp '%s' '%s' %s";
+    private static final String PIPE_LS_TEMPLATE = "'%s' storage ls '%s' -l";
     private static final String SPACE = " ";
     private static final String FOLDER = "Folder";
     private static final String SEPARATOR = "/";

@@ -30,16 +30,18 @@ from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
 from src.utilities.du_format_type import DuFormatType
 from src.utilities.patterns import PatternMatcher
+from src.utilities.storage.common import TransferResult, UploadResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 ALL_ERRORS = Exception
+FOLDER_MARKER = '.DS_Store'
 
 
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           clean=False, skip_existing=False):
+           clean=False, skip_existing=False, verify_destination=False):
         try:
             source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
             destination_wrapper = DataStorageWrapper.get_wrapper(destination)
@@ -72,8 +74,10 @@ class DataStorageOperations(object):
                 click.echo('-n (--threads) is not supported for Windows OS', err=True)
                 sys.exit(1)
             relative = os.path.basename(source) if source_wrapper.is_file() else None
-            if not force and not destination_wrapper.is_empty(relative=relative):
-                click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
+            if not force and not verify_destination and not destination_wrapper.is_empty(relative=relative):
+                click.echo('The destination already exists. Specify --force (-f) flag to overwrite data or '
+                           '--verify-destination (-vd) flag to enable existence check for each destination path.',
+                           err=True)
                 sys.exit(1)
 
             # append slashes to path to correctly determine file/folder type
@@ -93,43 +97,92 @@ class DataStorageOperations(object):
             permission_to_check = os.R_OK if command == 'cp' else os.W_OK
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
+            items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                      include, exclude, force, quiet, skip_existing, verify_destination)
             sorted_items = list()
+            transfer_results = []
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
                 size = item[3]
-                # check that we have corresponding permission for the file before take action
-                if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
-                    continue
-                if not include and not exclude:
-                    if source_wrapper.is_file() and not source_wrapper.path == full_path:
-                        continue
-                    if not source_wrapper.is_file():
-                        possible_folder_name = source_wrapper.path_with_trailing_separator()
-                        if not full_path.startswith(possible_folder_name):
-                            continue
-                if not PatternMatcher.match_any(relative_path, include):
-                    if not quiet:
-                        click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
-                                   .format(full_path, ",".join(include)))
-                    continue
-                if PatternMatcher.match_any(relative_path, exclude, default=False):
-                    if not quiet:
-                        click.echo("Skipping file {} since it matches exclude patterns [{}]."
-                                   .format(full_path, ",".join(exclude)))
-                    continue
                 if threads:
                     sorted_items.append(item)
                 else:
-                    manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                     relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                     tags=tags, skip_existing=skip_existing)
+                    transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                       relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                       tags=tags)
+                    if not destination_wrapper.is_local() and transfer_result:
+                        transfer_results.append(transfer_result)
+                        transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                                       transfer_results, clean=clean)
             if threads:
                 cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                                 clean, quiet, tags, skip_existing)
+                                                 clean, quiet, tags)
+            else:
+                if not destination_wrapper.is_local():
+                    cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                transfer_results, clean=clean, flush_size=1)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
+
+    @classmethod
+    def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                      include, exclude, force, quiet, skip_existing, verify_destination):
+        filtered_items = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            source_size = item[3]
+
+            if relative_path.endswith(FOLDER_MARKER):
+                filtered_items.append(item)
+                continue
+
+            # check that we have corresponding permission for the file before take action
+            if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
+                continue
+            if not include and not exclude:
+                if source_wrapper.is_file() and not source_wrapper.path == full_path:
+                    continue
+                if not source_wrapper.is_file():
+                    possible_folder_name = source_wrapper.path_with_trailing_separator()
+                    if not full_path.startswith(possible_folder_name):
+                        continue
+            if not PatternMatcher.match_any(relative_path, include):
+                if not quiet:
+                    click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
+                               .format(full_path, ",".join(include)))
+                continue
+            if PatternMatcher.match_any(relative_path, exclude, default=False):
+                if not quiet:
+                    click.echo("Skipping file {} since it matches exclude patterns [{}]."
+                               .format(full_path, ",".join(exclude)))
+                continue
+
+            if not skip_existing and (force or not verify_destination):
+                filtered_items.append(item)
+                continue
+
+            destination_key = manager.get_destination_key(destination_wrapper, relative_path)
+            destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+            destination_is_empty = destination_size is None
+            if destination_is_empty:
+                filtered_items.append(item)
+                continue
+            if skip_existing:
+                source_key = manager.get_source_key(source_wrapper, full_path)
+                need_to_overwrite = not manager.skip_existing(source_key, source_size, destination_key,
+                                                              destination_size, quiet)
+                if need_to_overwrite and not force:
+                    cls._force_required()
+                if need_to_overwrite:
+                    filtered_items.append(item)
+                continue
+            if not force:
+                cls._force_required()
+            filtered_items.append(item)
+        return filtered_items
 
     @classmethod
     def storage_remove_item(cls, path, yes, version, hard_delete, recursive, exclude, include):
@@ -545,19 +598,8 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
-                        lock):
-        for item in items:
-            full_path = item[1]
-            relative_path = item[2]
-            size = item[3]
-            manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                             relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                             tags=tags, skip_existing=skip_existing, lock=lock)
-
-    @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, skip_existing):
+                                     quiet, tags):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -573,11 +615,68 @@ class DataStorageOperations(object):
                                                     clean,
                                                     quiet,
                                                     tags,
-                                                    skip_existing,
                                                     lock))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
+
+    @classmethod
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, lock):
+        transfer_results = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                               tags=tags, lock=lock)
+            if not destination_wrapper.is_local() and transfer_result:
+                transfer_results.append(transfer_result)
+                transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                               transfer_results, clean=clean)
+        if not destination_wrapper.is_local():
+            cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                        transfer_results, clean=clean, flush_size=1)
+
+    @classmethod
+    def _flush_transfer_results(cls, source_wrapper, destination_wrapper, transfer_results,
+                                clean=False, flush_size=100):
+        if len(transfer_results) < flush_size:
+            return transfer_results
+        tag_objects = []
+        source_tags_map = {}
+        if transfer_results and isinstance(transfer_results[0], TransferResult):
+            source_tags = DataStorage.batch_load_object_tags(source_wrapper.bucket.identifier,
+                                                             [{'path': transfer_result.source_key}
+                                                              for transfer_result in transfer_results])
+            for source_tag in source_tags:
+                source_object_path = source_tag.get('object', {}).get('path', '')
+                source_object_tags = source_tags_map.get(source_object_path, {})
+                source_object_tags[source_tag.get('key', '')] = source_tag.get('value', '')
+                source_tags_map[source_object_path] = source_object_tags
+        for transfer_result in transfer_results:
+            all_tags = {}
+            all_tags.update(source_tags_map.get(transfer_result.source_key, {}))
+            all_tags.update(transfer_result.tags)
+            for key, value in all_tags.items():
+                tag_objects.append({
+                    'path': transfer_result.destination_key,
+                    'key': key,
+                    'value': value
+                })
+                if destination_wrapper.bucket.policy.versioning_enabled and transfer_result.destination_version:
+                    tag_objects.append({
+                        'path': transfer_result.destination_key,
+                        'version': transfer_result.destination_version,
+                        'key': key,
+                        'value': value
+                    })
+        DataStorage.batch_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
+        if clean and not source_wrapper.is_local() and not source_wrapper.bucket.policy.versioning_enabled:
+            DataStorage.batch_delete_all_object_tags(source_wrapper.bucket.identifier,
+                                                     [{'path': transfer_result.source_key}
+                                                      for transfer_result in transfer_results])
+        return []
 
     @staticmethod
     def _handle_keyboard_interrupt(workers):
@@ -588,3 +687,8 @@ class DataStorageOperations(object):
             for worker in workers:
                 worker.terminate()
                 worker.join()
+
+    @staticmethod
+    def _force_required():
+        click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
+        sys.exit(1)

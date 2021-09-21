@@ -24,7 +24,8 @@ function OOMCheck (
     limitMounts,
     dataStorages,
     preferences,
-    style
+    style,
+    platform
   }
 ) {
   if (
@@ -38,14 +39,14 @@ function OOMCheck (
     return null;
   }
   const allNonSensitive = !limitMounts;
-  const ids = limitMounts
+  const ids = limitMounts && !/^none$/i.test(limitMounts)
     ? (new Set(limitMounts.split(',').map(id => +id)))
     : new Set();
   const storages = (dataStorages || [])
     .filter(storage => (allNonSensitive && !storage.sensitive) || ids.has(storage.id))
     .filter(storage => !/^nfs$/i.test(storage.type))
     .length;
-  if (preferences.storageMountsPerGBRatio * instance.memory <= storages) {
+  if (preferences.storageMountsPerGBRatio * instance.memory <= storages && platform !== 'windows') {
     return (
       <Alert
         type="warning"

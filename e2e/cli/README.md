@@ -51,12 +51,17 @@ $PIPE_CLI_DOWNLOAD_URL - path to download Cloud Pipeline CLI. If this envvar is 
 $GIT_BRANCH - git branch with source code
 $WORKSPACE - path to Cloud Pipeline project source code
 $CP_TEST_REGION_ID - the created Cloud Pipeline region ID
+$CP_TEST_SHARE_ID - the created Cloud Pipeline share ID
+$CP_TEST_SHARE_ROOT - the created Cloud Pipeline share root
 ```
 
 Launch command examples:
 ```
 $RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
+$RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-object-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object --logs-level INFO --logs-path /home/logs/mount-object"
+$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="pytest --html=/home/results/mount-object-prefix-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object --prefix --small --logs-level INFO --logs-path /home/logs/mount-object-prefix"
+$RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-webdav-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav --logs-level INFO --logs-path /home/logs/mount-webdav"
 ```
 
 #### Aws
@@ -77,12 +82,19 @@ docker run --rm --env API=$API \
 --env TEST_PREFIX=$TEST_PREFIX \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
+--env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
+--env CP_TEST_SHARE_ROOT=$CP_TEST_SHARE_ROOT \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_TESTS_CMD="$RUN_MOUNT_OBJECT_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD" \
+--env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
 -v $AWS_CREDS_PATH:/root/.aws \
 -v $WORKSPACE/results:/home/results \
+-v $WORKSPACE/logs:/home/logs \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
+--privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
 ```
 
@@ -104,13 +116,20 @@ docker run --rm --env API=$API \
 --env TEST_PREFIX=$TEST_PREFIX \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
+--env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
+--env CP_TEST_SHARE_ROOT=$CP_TEST_SHARE_ROOT \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_TESTS_CMD="$RUN_MOUNT_OBJECT_TESTS_CMD" \
+--env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD" \
 --env AZURE_STORAGE_ACCOUNT=$AZURE_STORAGE_ACCOUNT \
 --env AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
 -v $WORKSPACE/results:/home/results \
+-v $WORKSPACE/logs:/home/logs \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
+--privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
 ```
 
@@ -132,12 +151,19 @@ docker run --rm --env API=$API \
 --env TEST_PREFIX=$TEST_PREFIX \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
+--env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
+--env CP_TEST_SHARE_ROOT=$CP_TEST_SHARE_ROOT \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_TESTS_CMD="$RUN_MOUNT_OBJECT_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD" \
+--env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
 --env GOOGLE_APPLICATION_CREDENTIALS=/root/gcp-creds.json \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/root/gcp-creds.json \
 -v $WORKSPACE/results:/home/results \
+-v $WORKSPACE/logs:/home/logs \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
+--privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
 ```

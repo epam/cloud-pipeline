@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,6 +196,9 @@ public enum Primitive {
     SYSTEM_TAB,
     DOCKER_SECURITY_TAB,
     AUTOSCALING_TAB,
+    USER_INTERFACE_TAB,
+    LUSTRE_FS_TAB,
+    LAUNCH_TAB,
     TABLE,
     EDIT_GROUP,
     DELETE_GROUP,
@@ -275,5 +278,14 @@ public enum Primitive {
     SENSITIVE_STORAGE,
     ALL_PIPELINES,
     ALL_STORAGES,
-    CLOUD_REGION
+    CLOUD_REGION,
+    FRIENDLY_URL,
+    SERVICES,
+    NODE_IMAGE,
+    GIT_REPOSITORY,
+    ADD_INSTANCE,
+    DO_NOT_MOUNT_STORAGES,
+    LAUNCH_COMMANDS,
+    CONFIGURE,
+    GENERATE_URL
 }

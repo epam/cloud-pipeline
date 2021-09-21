@@ -15,31 +15,15 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-
-export const SearchItemTypes = {
-  run: 'PIPELINE_RUN',
-  s3Bucket: 'S3_STORAGE',
-  s3File: 'S3_FILE',
-  NFSFile: 'NFS_FILE',
-  NFSBucket: 'NFS_STORAGE',
-  gsFile: 'GS_FILE',
-  gsStorage: 'GS_STORAGE',
-  azFile: 'AZ_BLOB_FILE',
-  azStorage: 'AZ_BLOB_STORAGE',
-  pipeline: 'PIPELINE',
-  tool: 'TOOL',
-  toolGroup: 'TOOL_GROUP',
-  dockerRegistry: 'DOCKER_REGISTRY',
-  issue: 'ISSUE',
-  metadataEntity: 'METADATA_ENTITY',
-  folder: 'FOLDER',
-  configuration: 'CONFIGURATION',
-  pipelineCode: 'PIPELINE_CODE'
-};
+import SearchItemTypes from './search-item-types';
+import mapElasticDocument from './map-elastic-document';
+export {default as FacetedSearch} from './facet';
+export {mapElasticDocument};
+export {SearchItemTypes};
 
 export class Search extends RemotePost {
   query;
-  page;
+  scrollingParameters;
   pageSize;
 
   constructor () {
@@ -47,14 +31,14 @@ export class Search extends RemotePost {
     this.url = '/search';
   }
 
-  async send (query, page, pageSize, types = []) {
+  async send (query, scrollingParameters, pageSize, types = []) {
     if (query) {
       this.query = query;
-      this.page = page;
+      this.scrollingParameters = scrollingParameters;
       this.pageSize = pageSize;
       return super.send({
         query,
-        offset: page * pageSize,
+        scrollingParameters,
         pageSize,
         highlight: true,
         aggregate: true,
@@ -64,21 +48,7 @@ export class Search extends RemotePost {
   }
 
   postprocess (value) {
-    value.payload.documents = (value.payload.documents || []).map(processItem);
+    value.payload.documents = (value.payload.documents || []).map(mapElasticDocument);
     return value.payload;
   }
-}
-
-export function processItem (item) {
-  switch (item.type) {
-    case SearchItemTypes.azFile:
-    case SearchItemTypes.s3File:
-    case SearchItemTypes.NFSFile:
-    case SearchItemTypes.gsFile:
-      return {
-        ...item,
-        name: item.name.split('/')[item.name.split('/').length - 1]
-      };
-  }
-  return item;
 }

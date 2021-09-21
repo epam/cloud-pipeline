@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,12 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum DefaultRoles {
 
-    ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null, null)),
-    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null)),
-    ROLE_BILLING_MANAGER(new Role(null, "ROLE_BILLING_MANAGER", true, false, null, null)),
-    ROLE_ANONYMOUS_USER(new Role(null, "ROLE_ANONYMOUS_USER", true, false, null, null));
+    ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null, null, null, null)),
+    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null, null, null)),
+    ROLE_BILLING_MANAGER(new Role(null, "ROLE_BILLING_MANAGER", true, false, null, null, null, null)),
+    ROLE_ANONYMOUS_USER(new Role(null, "ROLE_ANONYMOUS_USER", true, false, null, null, null, null)),
+    ROLE_ADVANCED_USER(new Role(null, "ROLE_ADVANCED_USER", true, false, null, null, null, null)),
+    ROLE_DTS_MANAGER(new Role(null, "ROLE_DTS_MANAGER", true, false, null, null, null, null));
 
     private Role role;
 

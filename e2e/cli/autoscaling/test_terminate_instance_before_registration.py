@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@ import logging
 
 import pytest
 
-from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from ..common_utils.entity_managers import PipelineManager
+from ..common_utils.test_utils import format_name
+from ..utils.pipeline_utils import *
 
 MAX_REP_COUNT = 150
 
@@ -27,13 +28,13 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
     pipeline_id = None
     run_id = None
     state = FailureIndicator()
-    test_case = "EPMCMBIBPC-176"
+    test_case = "TC-SCALING-7"
 
     @classmethod
     def setup_class(cls):
         logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
-        pipeline_name = "test_terminate_instance_before_registration"
+        pipeline_name = format_name("test_terminate_instance_before_registration")
         cls.pipeline_id = PipelineManager.create(pipeline_name)
         logging.info("Pipeline {} with ID {} created.".format(pipeline_name, cls.pipeline_id))
 

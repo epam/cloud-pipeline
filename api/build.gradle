@@ -1,5 +1,5 @@
 buildscript {
-    repositories { jcenter() }
+    repositories { mavenCentral() }
 }
 
 plugins {
@@ -35,6 +35,16 @@ task copyCommitRunScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/commit-run-scripts"
 }
 
+task copyFsAutoscalerScripts(type: Copy) {
+    from "$rootDir/scripts/autoscaling/fsautoscale.sh"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
+task copyLocalDtsStartupScripts(type: Copy) {
+    from "$rootDir/scripts/dts/DeployDts.ps1"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
 jar {
     archiveName "pipeline.jar"
     manifest {
@@ -61,7 +71,7 @@ test {
 sourceCompatibility = 1.8
 
 repositories {
-    jcenter()
+    mavenCentral()
     maven {
         url System.getProperty("user.dir") + "/api/common"
 
@@ -89,6 +99,7 @@ dependencies {
     }
     compile("org.springframework.boot:spring-boot-starter-actuator")
     compile group: "org.springframework.boot", name: "spring-boot-starter-web", version: project.ext.versionSpringBoot
+    compile group: "org.springframework.boot", name: "spring-boot-starter-data-jpa", version: project.ext.versionSpringSession
     compile group: "org.springframework.session", name: "spring-session-jdbc", version: project.ext.versionSpringSession
     compile("org.springframework.boot:spring-boot-starter-tomcat")
     compile("org.aspectj:aspectjweaver:1.8.8")
@@ -136,7 +147,7 @@ dependencies {
 
     //Kubernetes
     compile "io.fabric8:kubernetes-client:2.2.7"
-    compile "io.fabric8:kubernetes-model:1.0.67"
+    compile "io.fabric8:kubernetes-model:2.1.2"
 
     //Lombok
     compileOnly "org.projectlombok:lombok:1.16.16"
@@ -155,6 +166,7 @@ dependencies {
     compile group: "org.apache.commons", name: "commons-math3", version: "3.6.1"
 
     // https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
+    compile group: "org.apache.poi", name: "poi", version: "3.16"
     compile group: "org.apache.poi", name: "poi-ooxml", version: "3.16"
 
     // https://mvnrepository.com/artifact/com.opencsv/opencsv
@@ -178,6 +190,7 @@ dependencies {
     compile group: "com.amazonaws", name: "aws-java-sdk-iam", version: "1.11.211"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-fsx
     compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.11.880'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.880'
 
 
     // https://mvnrepository.com/artifact/com.microsoft.azure/azure-mgmt-resources
@@ -221,7 +234,10 @@ dependencies {
     //ShedLock
     compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: '3.0.0'
     compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: '3.0.0'
+
+    compile('io.reflectoring.diffparser:diffparser:1.4')
 }
 
 // >>>>> processes profiles
-processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts])
+processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
+                                   copyLocalDtsStartupScripts])

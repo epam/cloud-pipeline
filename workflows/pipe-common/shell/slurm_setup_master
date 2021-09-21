@@ -133,6 +133,9 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
     mkdir -p /var/run/munge
     chown munge: /var/run/munge
+    mkdir -p /run/munge
+    chown munge: /run/munge
+    chmod +t /run/munge
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 
     if [ -z $CP_SLURM_PACKAGE_URL ]; then

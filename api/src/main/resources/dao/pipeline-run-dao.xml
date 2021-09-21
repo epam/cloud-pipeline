@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -40,13 +40,14 @@
                         node_name,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         ssh_password,
                         commit_status,
@@ -71,7 +72,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive)
+                        sensitive,
+                        pipeline_name)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -89,13 +91,14 @@
                         :NODE_NAME,
                         :NODE_IMAGE,
                         :NODE_CLOUD_REGION,
+                        :NODE_PLATFORM,
                         :DOCKER_IMAGE,
                         :ACTUAL_DOCKER_IMAGE,
+                        :PLATFORM,
                         :CMD_TEMPLATE,
                         :ACTUAL_CMD,
                         :TIMEOUT,
                         :OWNER,
-                        :SERVICE_URL,
                         :POD_IP,
                         :SSH_PASSWORD,
                         :COMMIT_STATUS,
@@ -120,7 +123,8 @@
                         :NODE_REAL_DISK,
                         :NODE_CLOUD_PROVIDER,
                         to_jsonb(:TAGS::jsonb),
-                        :SENSITIVE)
+                        :SENSITIVE,
+                        :PIPELINE_NAME)
                 ]]>
             </value>
         </property>
@@ -144,13 +148,14 @@
                         r.node_name,
                         r.node_image,
                         r.node_cloud_region,
+                        r.node_platform,
                         r.docker_image,
                         r.actual_docker_image,
+                        r.platform,
                         r.cmd_template,
                         r.actual_cmd,
                         r.timeout,
                         r.owner,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.last_change_commit_time,
@@ -175,6 +180,8 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
+                        r.pipeline_name,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -189,11 +196,9 @@
 				                WHERE nodeup_tasks.run_id = :RUN_ID AND nodeup_tasks.task_name = :NODEUP_TASK)
 				            THEN FALSE
 				            ELSE TRUE
-				        END AS queued,
-                        pipelines.pipeline_name
+				        END AS queued
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     WHERE
                         r.run_id = :RUN_ID
                     ORDER BY
@@ -235,13 +240,14 @@
                         node_name,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -265,7 +271,9 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -295,13 +303,14 @@
                         node_name,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -325,7 +334,9 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -355,13 +366,14 @@
                         node_id,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -385,7 +397,9 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -454,13 +468,14 @@
                         node_name = :NODE_NAME,
                         node_image = :NODE_IMAGE,
                         node_cloud_region = :NODE_CLOUD_REGION,
+                        node_platform = :NODE_PLATFORM,
                         docker_image = :DOCKER_IMAGE,
                         actual_docker_image = :ACTUAL_DOCKER_IMAGE,
+                        platform = :PLATFORM,
                         cmd_template = :CMD_TEMPLATE,
                         actual_cmd = :ACTUAL_CMD,
                         timeout = :TIMEOUT,
                         owner = :OWNER,
-                        service_url = :SERVICE_URL,
                         pod_ip = :POD_IP,
                         commit_status = :COMMIT_STATUS,
                         last_change_commit_time = :LAST_CHANGE_COMMIT_TIME,
@@ -483,17 +498,9 @@
                         non_pause = :NON_PAUSE,
                         node_real_disk =:NODE_REAL_DISK,
                         tags = to_jsonb(:TAGS::jsonb),
-                        sensitive = :SENSITIVE
-                    WHERE
-                        run_id = :RUN_ID
-                ]]>
-            </value>
-        </property>
-        <property name="updateServiceUrlQuery">
-            <value>
-                <![CDATA[
-                    UPDATE pipeline.pipeline_run SET
-                        service_url = :SERVICE_URL
+                        sensitive = :SENSITIVE,
+                        kube_service_enabled = :KUBE_SERVICE_ENABLED,
+                        pipeline_name = :PIPELINE_NAME
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -561,13 +568,14 @@
                       r.node_name,
                       r.node_image,
                       r.node_cloud_region,
+                      r.node_platform,
                       r.docker_image,
                       r.actual_docker_image,
+                      r.platform,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -593,11 +601,12 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
-                      p.pipeline_name
+                      r.pipeline_name
                     FROM
-                      pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
+                      pipeline.pipeline_run r
                     WHERE
                     r.status = 2 or r.terminating
                 ]]>
@@ -624,13 +633,14 @@
                       r.node_name,
                       r.node_image,
                       r.node_cloud_region,
+                      r.node_platform,
                       r.docker_image,
                       r.actual_docker_image,
+                      r.platform,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -655,11 +665,12 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
-                      p.pipeline_name
+                      r.pipeline_name
                     FROM
-                      pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
+                      pipeline.pipeline_run r
                     WHERE
                     r.status = 2
                 ]]>
@@ -686,13 +697,14 @@
                       r.node_name,
                       r.node_image,
                       r.node_cloud_region,
+                      r.node_platform,
                       r.docker_image,
                       r.actual_docker_image,
+                      r.platform,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -716,7 +728,16 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
-                      r.sensitive
+                      r.sensitive,
+                      r.kube_service_enabled,
+                      r.pipeline_name,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = r.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -739,13 +760,14 @@
                       active_run.node_name,
                       active_run.node_image,
                       active_run.node_cloud_region,
+                      active_run.node_platform,
                       active_run.docker_image,
                       active_run.actual_docker_image,
+                      active_run.platform,
                       active_run.cmd_template,
                       active_run.actual_cmd,
                       active_run.timeout,
                       active_run.owner,
-                      active_run.service_url,
                       active_run.pod_ip,
                       active_run.commit_status,
                       active_run.last_change_commit_time,
@@ -769,7 +791,16 @@
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
-                      active_run.sensitive
+                      active_run.sensitive,
+                      active_run.kube_service_enabled,
+                      active_run.pipeline_name,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = active_run.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -778,7 +809,7 @@
                     ) AS u ON (active_run.run_id = u.run_id)
                     UNION
                         SELECT * FROM active_run
-                        WHERE active_run.owner = :NAME AND active_run.service_url IS NOT NULL
+                        WHERE active_run.owner = :NAME AND service_urls_enabled
                     ORDER BY run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
                 ]]>
@@ -805,13 +836,14 @@
                       r.node_name,
                       r.node_image,
                       r.node_cloud_region,
+                      r.node_platform,
                       r.docker_image,
                       r.actual_docker_image,
+                      r.platform,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -835,7 +867,15 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
-                      r.sensitive
+                      r.sensitive,
+                      r.pipeline_name,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = r.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -857,13 +897,14 @@
                       active_run.node_name,
                       active_run.node_image,
                       active_run.node_cloud_region,
+                      active_run.node_platform,
                       active_run.docker_image,
                       active_run.actual_docker_image,
+                      active_run.platform,
                       active_run.cmd_template,
                       active_run.actual_cmd,
                       active_run.timeout,
                       active_run.owner,
-                      active_run.service_url,
                       active_run.pod_ip,
                       active_run.commit_status,
                       active_run.last_change_commit_time,
@@ -887,7 +928,15 @@
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
-                      active_run.sensitive
+                      active_run.sensitive,
+                      active_run.pipeline_name,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = active_run.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -896,7 +945,8 @@
                         ) AS u ON (active_run.run_id = u.run_id)
                     UNION
                         SELECT * FROM active_run
-                        WHERE active_run.owner = :NAME AND active_run.service_url IS NOT NULL) AS run_count
+                        WHERE active_run.owner = :NAME AND service_urls_enabled)
+                    AS run_count
                 ]]>
             </value>
         </property>
@@ -920,13 +970,14 @@
                         r.node_name,
                         r.node_image,
                         r.node_cloud_region,
+                        r.node_platform,
                         r.docker_image,
                         r.actual_docker_image,
+                        r.platform,
                         r.cmd_template,
                         r.actual_cmd,
                         r.owner,
                         r.timeout,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.config_name,
@@ -950,7 +1001,9 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        r.sensitive
+                        r.sensitive,
+                        r.kube_service_enabled,
+                        r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -978,13 +1031,14 @@
                         r.node_name,
                         r.node_image,
                         r.node_cloud_region,
+                        r.node_platform,
                         r.docker_image,
                         r.actual_docker_image,
+                        r.platform,
                         r.cmd_template,
                         r.actual_cmd,
                         r.owner,
                         r.timeout,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.config_name,
@@ -1008,7 +1062,9 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        r.sensitive
+                        r.sensitive,
+                        r.kube_service_enabled,
+                        r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1036,13 +1092,14 @@
                         r.node_name,
                         r.node_image,
                         r.node_cloud_region,
+                        r.node_platform,
                         r.docker_image,
                         r.actual_docker_image,
+                        r.platform,
                         r.timeout,
                         r.cmd_template,
                         r.actual_cmd,
                         r.owner,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.last_change_commit_time,
@@ -1067,6 +1124,8 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
+                        r.pipeline_name,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1081,11 +1140,9 @@
 				                WHERE nodeup_tasks.run_id = r.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
 				            THEN FALSE
 				            ELSE TRUE
-				        END AS queued,
-                        pipelines.pipeline_name
+				        END AS queued
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -1100,13 +1157,6 @@
                     FROM
                         pipeline.pipeline_run r
                     @WHERE@
-                ]]>
-            </value>
-        </property>
-        <property name="deleteRunsByPipelineQuery">
-            <value>
-                <![CDATA[
-                    DELETE FROM pipeline.pipeline_run WHERE pipeline_id = ?
                 ]]>
             </value>
         </property>
@@ -1130,13 +1180,14 @@
                         runs.node_name,
                         runs.node_image,
                         runs.node_cloud_region,
+                        runs.node_platform,
                         runs.docker_image,
                         runs.actual_docker_image,
+                        runs.platform,
                         runs.cmd_template,
                         runs.actual_cmd,
                         runs.timeout,
                         runs.owner,
-                        runs.service_url,
                         runs.pod_ip,
                         runs.commit_status,
                         runs.last_change_commit_time,
@@ -1161,6 +1212,7 @@
                         runs.node_cloud_provider,
                         runs.tags,
                         runs.sensitive,
+                        runs.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1176,10 +1228,9 @@
 				            THEN FALSE
 				            ELSE TRUE
 				        END AS queued,
-                        pipelines.pipeline_name
+                        runs.pipeline_name
                     FROM
                         pipeline.pipeline_run runs
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
                     WHERE runs.run_id IN (:list)
                 ]]>
             </value>
@@ -1205,13 +1256,14 @@
                             p.node_name,
                             p.node_image,
                             p.node_cloud_region,
+                            p.node_platform,
                             p.docker_image,
                             p.actual_docker_image,
+                            p.platform,
                             p.cmd_template,
                             p.actual_cmd,
                             p.timeout,
                             p.owner,
-                            p.service_url,
                             p.pod_ip,
                             p.commit_status,
                             p.last_change_commit_time,
@@ -1235,7 +1287,9 @@
                             p.node_real_disk,
                             p.node_cloud_provider,
                             p.tags,
-                            p.sensitive
+                            p.sensitive,
+                            p.kube_service_enabled,
+                            p.pipeline_name
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1259,13 +1313,14 @@
                             c.node_name,
                             c.node_image,
                             c.node_cloud_region,
+                            c.node_platform,
                             c.docker_image,
                             c.actual_docker_image,
+                            c.platform,
                             c.cmd_template,
                             c.actual_cmd,
                             c.timeout,
                             c.owner,
-                            c.service_url,
                             c.pod_ip,
                             c.commit_status,
                             c.last_change_commit_time,
@@ -1289,7 +1344,9 @@
                             c.node_real_disk,
                             c.node_cloud_provider,
                             c.tags,
-                            c.sensitive
+                            c.sensitive,
+                            c.kube_service_enabled,
+                            c.pipeline_name
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1311,13 +1368,14 @@
                         runs.node_name,
                         runs.node_image,
                         runs.node_cloud_region,
+                        runs.node_platform,
                         runs.docker_image,
                         runs.actual_docker_image,
+                        runs.platform,
                         runs.cmd_template,
                         runs.actual_cmd,
                         runs.timeout,
                         runs.owner,
-                        runs.service_url,
                         runs.pod_ip,
                         runs.commit_status,
                         runs.last_change_commit_time,
@@ -1342,6 +1400,7 @@
                         runs.node_cloud_provider,
                         runs.tags,
                         runs.sensitive,
+                        runs.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1357,10 +1416,8 @@
 				            THEN FALSE
 				            ELSE TRUE
 				        END AS queued,
-                        pipelines.pipeline_name
-                    FROM
-                        runs
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
+                        runs.pipeline_name
+                    FROM runs
                  ]]>
             </value>
         </property>
@@ -1460,13 +1517,14 @@
                         node_id,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1490,7 +1548,9 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1534,13 +1594,14 @@
                         node_name,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1564,11 +1625,76 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
                         status IN (:list)
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRunsByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        run_id IN (:list)
                     ORDER BY
                         start_date
                 ]]>
@@ -1594,13 +1720,14 @@
                         node_name,
                         node_image,
                         node_cloud_region,
+                        node_platform,
                         docker_image,
                         actual_docker_image,
+                        platform,
                         cmd_template,
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1624,7 +1751,9 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1634,12 +1763,66 @@
                 ]]>
             </value>
         </property>
-        <property name="deleteRunSidsByPipelineIdQuery">
+        <property name="loadRunsByNodeNameQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.run_user ru
-                    USING pipeline.pipeline_run pr, pipeline.pipeline p
-                    WHERE pr.run_id = ru.run_id AND p.pipeline_id = pr.pipeline_id AND p.pipeline_id = ?
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        node_name = ?
+                    ORDER BY
+                        start_date DESC
                 ]]>
             </value>
         </property>

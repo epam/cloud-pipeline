@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,12 +38,16 @@ RUN yum install -y \
                 gettext
 
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
-ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
-ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
-RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
-    wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
-    yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
-    rm -f *lustre-client.rpm
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+RUN cd /tmp && \
+    yum install nfs-utils cifs-utils -y && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    package-cleanup --cleandupes -y && \
+    rm -rf lustre-client*
 
 # Prebuild version of openssl v1.1.x which is required by osslsigncode.
 # As long as its compatibility is proven for osslsigncode tool only
@@ -58,14 +62,16 @@ RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
+RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I  requests==2.21.0 \
                     ipaddress==1.0.22 \
+                    rsa==4.0 \
                     pykube==0.15.0 \
                     psycopg2==2.7.7 \
                     sqlalchemy==1.3.2 \
                     luigi==2.8.3 \
-                    cryptography==2.6.1
+                    cryptography==2.6.1 \
+                    PyJWT==1.6.1
 
 # AWS - specific packages
 RUN pip install -I  awscli==1.16.314 \
@@ -86,11 +92,17 @@ RUN pip install -I google-api-python-client
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
+ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
+
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     rm -rf bin/pipe-templates/__SYSTEM && \
     mkdir -p $CP_API_HOME && \
+    ls -dp bin/* \
+        | grep '\.jar$' \
+        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
+        | xargs rm -f && \
     mv bin/* $CP_API_HOME/ && \
     rm -f cloud-pipeline.tgz && \
     rm -rf bin

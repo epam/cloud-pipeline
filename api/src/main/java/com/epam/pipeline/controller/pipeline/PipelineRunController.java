@@ -31,8 +31,12 @@ import com.epam.pipeline.controller.vo.RunStatusVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.KubernetesService;
+import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -69,6 +73,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @Api(value = "Pipeline runs")
@@ -276,16 +281,17 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.updateCommitRunStatus(runId, commitRunStatusVO.getCommitStatus()));
     }
 
-    @RequestMapping(value = "/run/{runId}/serviceUrl", method= RequestMethod.POST)
+    @PostMapping("/run/{runId}/serviceUrl")
     @ResponseBody
     @ApiOperation(
             value = "Updates pipeline run service url.",
             notes = "Updates pipeline run service url.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) Long runId,
-                                               @RequestBody PipelineRunServiceUrlVO serviceUrlVO) {
-        return Result.success(runApiService.updateServiceUrl(runId, serviceUrlVO));
+    public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) final Long runId,
+                                                   @RequestParam(required = false) final String region,
+                                                   @RequestBody final PipelineRunServiceUrlVO serviceUrlVO) {
+        return Result.success(runApiService.updateServiceUrl(runId, region, serviceUrlVO));
     }
 
     @RequestMapping(value = "/run/{runId}/prettyUrl", method= RequestMethod.POST)
@@ -313,7 +319,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadPipelineRunWithRestartedRuns(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/ssh", method = RequestMethod.GET)
+    @GetMapping(value = "/run/{runId}/ssh")
     @ResponseBody
     @ApiOperation(
             value = "Return URL to access run ssh client.",
@@ -322,11 +328,11 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> buildSshUrl(@PathVariable(value = RUN_ID) Long runId) {
+    public Result<Map<String, String>> buildSshUrl(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/fsbrowser", method = RequestMethod.GET)
+    @GetMapping(value = "/run/{runId}/fsbrowser")
     @ResponseBody
     @ApiOperation(
             value = "Return URL to access run fsbrowser client.",
@@ -335,7 +341,7 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> buildFSBrowserUrl(@PathVariable(value = RUN_ID) Long runId) {
+    public Result<Map<String, String>> buildFSBrowserUrl(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.buildFSBrowserUrl(runId));
     }
 
@@ -529,5 +535,51 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<String> generateLaunchCommand(@RequestBody final PipeRunCmdStartVO runVO) {
         return Result.success(runApiService.generateLaunchCommand(runVO));
+    }
+
+    @GetMapping(value = "/runs")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns runs with associated tools",
+            notes = "Returns runs with associated tools",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRunWithTool>> getRunsWithTools(@RequestParam final List<Long> runIds) {
+        return Result.success(runApiService.getRunsWithTools(runIds));
+    }
+
+    @PostMapping(value = "/run/{runId}/kube/services")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates kubernetes service",
+            notes = "Creates kubernetes service",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<KubernetesService> createKubernetesService(@RequestParam final String serviceName,
+                                                             @PathVariable final Long runId,
+                                                             @RequestBody final List<KubernetesServicePort> ports) {
+        return Result.success(runApiService.createKubernetesService(serviceName, runId, ports));
+    }
+
+    @GetMapping(value = "/run/{runId}/kube/services")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns kubernetes service description",
+            notes = "Returns kubernetes service description",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<KubernetesService> getKubernetesService(@PathVariable final Long runId) {
+        return Result.success(runApiService.getKubernetesService(runId));
+    }
+
+    @GetMapping(value = "/edge/services")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads all edge services",
+            notes = "Loads all edge services",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<ServiceDescription>> loadEdgeServices() {
+        return Result.success(runApiService.loadEdgeServices());
     }
 }

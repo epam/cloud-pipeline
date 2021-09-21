@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,6 @@ import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,6 +50,7 @@ import static com.epam.pipeline.autotests.ao.RunsMenuAO.runOf;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -105,6 +103,7 @@ public class SamplesMetadataTest
     private final String idField = "ID";
     private final String nameField = "Name";
     private final String samplesField = "Samples";
+    private final String createDateField = "Created Date";
 
     private final String fastqR1D710 = "NA12878_D710_L001_R1_001.fastq.gz";
     private final String fastqR1D711 = "NA12878_D711_L001_R1_001.fastq.gz";
@@ -196,7 +195,7 @@ public class SamplesMetadataTest
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
-                .showMetadata()
+                .showAttributes()
                 .addKeyWithValue("type", "project");
     }
 
@@ -270,7 +269,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .cd(metadataFolder)
                 .metadataSamples(sampleSetFolder, metadata -> {
-                            metadata.validateFields(idField, nameField, samplesField)
+                            metadata.validateFields(idField, createDateField, nameField, samplesField)
                                     .getRow(1)
                                     .clickOnRow()
                                     .assertKeysArePresent(idField, nameField, samplesField);
@@ -283,7 +282,7 @@ public class SamplesMetadataTest
                                     .ensure(samplesForKey(samplesField), numberOfSamples(11));
                             libraryContent()
                                     .metadataSamples(sampleFolder)
-                                    .validateFields("ID", "R1_Fastq", "R2_Fastq", "SampleName");
+                                    .validateFields("ID", createDateField, "R1_Fastq", "R2_Fastq", "SampleName");
                         }
                 );
     }
@@ -310,7 +309,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
-                .click(idHeader)
+                .initializeSorting(idField)
                 .ensure(idHeader, contains(decreaseOrderIcon))
                 .validateSortedByDecrease(idField)
                 .click(idHeader)
@@ -483,6 +482,7 @@ public class SamplesMetadataTest
                                 .ensure(rootEntityType(), text(rootEntityTypeSample))
                                 .selectValue(rootEntityType(), rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
+                                .click(save())
                 );
     }
 
@@ -717,22 +717,14 @@ public class SamplesMetadataTest
                 .ensureParameterIsPresent(panel, path(dataStorage, human, bed))
                 .ensureParameterIsPresent(referenceGenomePath, path(dataStorage, reference, bwa))
                 .ensureOnOfManyParametersIsPresent(sampleName, samples)
-                .ensureOnOfManyParametersIsPresent(fastqR1,fastqR1FilesList)
-                .ensureOnOfManyParametersIsPresent(fastqR2,fastqR2FilesList);
+                .ensureOnOfManyParametersIsPresent(fastqR1, fastqR1FilesList)
+                .ensureOnOfManyParametersIsPresent(fastqR2, fastqR2FilesList);
         runsMenu()
                 .stopRun(getLastRunId());
     }
 
     private Runnable ensureSamplesCountIs(final int count) {
         return () -> SelenideElements.of(rows).shouldHaveSize(count);
-    }
-
-    private File getFile(String filename) {
-        try {
-            return Paths.get(ClassLoader.getSystemResource(filename).toURI()).toFile();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Unable to get resource file");
-        }
     }
 
     private Consumer<StorageContentAO> loadFiles(final String... files) {

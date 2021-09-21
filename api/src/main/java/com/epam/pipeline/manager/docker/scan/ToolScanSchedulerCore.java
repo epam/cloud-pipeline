@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -42,7 +43,9 @@ import org.springframework.util.Assert;
 import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -108,19 +111,19 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
                             version, result.getToolOSVersion(),
-                            result.getLastLayerRef(), result.getDigest());
+                            result.getLastLayerRef(), result.getDigest(), result.getVulnerabilitiesCount());
                     updateToolVersion(tool, version, registry, dockerClient);
                 } catch (ToolScanExternalServiceException e) {
                     log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
                             tool.getImage(), version), e);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null);
+                            version, null, null, new HashMap<>());
                 }
             }
         } catch (Exception e) {
             log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                    "latest", null, null);
+                    "latest", null, null, new HashMap<>());
         }
     }
 
@@ -146,8 +149,11 @@ class ToolScanSchedulerCore {
             String digest = toolVersionScanResult
                     .map(ToolVersionScanResult::getDigest)
                     .orElse(null);
+            final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = toolVersionScanResult
+                    .map(ToolVersionScanResult::getVulnerabilitiesCount)
+                    .orElse(new HashMap<>());
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
-                    version, layerRef, digest);
+                    version, layerRef, digest, vulnerabilitiesCount);
             return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
                 log.info(messageHelper.getMessage(
                         MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
@@ -159,11 +165,12 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
                             scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
-                            scanResult.getLastLayerRef(), scanResult.getDigest());
+                            scanResult.getLastLayerRef(), scanResult.getDigest(),
+                            scanResult.getVulnerabilitiesCount());
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null);
+                            version, null, null, new HashMap<>());
                     log.error(messageHelper.getMessage(
                             MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     throw new PipelineException(e);

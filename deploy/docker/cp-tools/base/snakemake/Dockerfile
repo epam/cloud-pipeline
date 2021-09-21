@@ -14,5 +14,5 @@
 
 FROM python:3.7-stretch
 
-RUN python -m pip install snakemake
-RUN echo "python -m snakemake $@" >> /usr/sbin/snakemake
+RUN python3 -m pip install snakemake==6.4.1
+RUN echo "python3 -m snakemake $@" >> /usr/sbin/snakemake

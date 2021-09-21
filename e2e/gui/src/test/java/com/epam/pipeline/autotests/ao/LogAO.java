@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -80,7 +79,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForSshLink() {
-        get(SSH_LINK).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        get(SSH_LINK).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
     }
 
@@ -231,6 +230,10 @@ public class LogAO implements AccessObject<LogAO> {
         return get(ENDPOINT).shouldBe(visible).attr("href");
     }
 
+    public String getEndpointName() {
+        return get(ENDPOINT).shouldBe(visible).text();
+    }
+
     public String getEndpointLink(String link){
         return $(withText("Endpoint")).closest("tr").$(byXpath(format(".//a[.='%s']", link)))
                 .shouldBe(visible).attr("href");
@@ -256,20 +259,38 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public LogAO shareWithUser(final String userName, boolean sshConnection) {
+        click(SHARE_WITH);
+        new ShareWith().addUserToShare(userName, sshConnection);
+        return this;
+    }
+
+    public LogAO setEnableSShConnection(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().selectEnableSShConnection(name);
+        return this;
+    }
+
+    public LogAO removeShareUserGroup(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().removeUserFromShare(name);
+        return this;
+    }
+
     public LogAO validateShareLink(final String link) {
         get(SHARE_WITH).shouldHave(text(link));
         return this;
     }
 
     public LogAO validateException(final String exception) {
-        $(byClassName("ant-alert-error")).has(text(exception));
+        $(byClassName("ant-alert-error")).shouldHave(text(exception));
         return this;
     }
 
     public LogAO waitForLog(final String message) {
         for (int i = 0; i < 70; i++) {
             refresh();
-            if ($(log()).is(matchText(message))) {
+            if ($(log()).shouldBe(visible).is(matchText(message))) {
                 break;
             }
             sleep(20, SECONDS);
@@ -378,6 +399,12 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
+        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage)).click();
+        return new StorageContentAO();
+    }
+
     public static By log() {
         return byClassName("ReactVirtualized__List");
     }
@@ -466,7 +493,7 @@ public class LogAO implements AccessObject<LogAO> {
 
             @Override
             public String actualValue(final WebElement logElement) {
-                final String allMissingMessages = missingMessages.stream().collect(Collectors.joining("\n"));
+                final String allMissingMessages = String.join("\n", missingMessages);
                 return format("Following messages wasn't found in log:%n%s", allMissingMessages);
             }
         };
@@ -480,7 +507,8 @@ public class LogAO implements AccessObject<LogAO> {
                 entry(DEFAULT_COMMAND, context().find(parameterWithName("Cmd template"))),
                 entry(TIMEOUT, context().find(parameterWithName("Timeout"))),
                 entry(PRICE_TYPE, context().find(parameterWithName("Price type"))),
-                entry(IP, context().find(parameterWithName("IP")))
+                entry(IP, context().find(parameterWithName("IP"))),
+                entry(NODE_IMAGE, context().find(parameterWithName("Node image")))
         );
 
         public static By parameterWithName(final String name) {
@@ -551,10 +579,43 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
+            setValue($(byClassName("ant-select-search__field")), groupName).enter();
             click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
                     ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
             click(OK);
+        }
+
+        public void addUserToShare(final String userName, boolean sshConnection) {
+            click(ADD_USER);
+            SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
+            setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName);
+            $(byXpath(format("//div[.='%s']", userName))).click();
+            selectUserPopup.find(button("OK")).shouldBe(visible).click();
+            if (sshConnection) {
+                checkEnableSShConnection(userName);
+            }
+            click(OK);
+        }
+
+        public void selectEnableSShConnection(final String name) {
+            checkEnableSShConnection(name);
+            click(OK);
+        }
+
+        public void checkEnableSShConnection(final String userName) {
+            $(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().closest("td")
+                    .find(By.xpath("following-sibling::td[.='Enable SSH connection']")).parent().click();
+        }
+
+        public void removeUserFromShare(final String userName) {
+            context().$(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().parent().parent()
+                    .parent().find("button").shouldBe(visible).click();
+            click(OK);
+        }
+
+        @Override
+        public SelenideElement context() {
+            return Utils.getPopupByTitle("Share with users and groups");
         }
 
         @Override

@@ -18,56 +18,44 @@ package com.epam.pipeline.manager.cloud.commands;
 
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ClusterCommandService {
 
-    private final PreferenceManager preferenceManager;
     private final String kubeMasterIP;
     private final String kubeToken;
+    private final String kubeCertHash;
+    private final String kubeNodeToken;
 
-    public ClusterCommandService(final PreferenceManager preferenceManager,
-                                 @Value("${kube.master.ip}") final String kubeMasterIP,
-                                 @Value("${kube.kubeadm.token}") final String kubeToken) {
-        this.preferenceManager = preferenceManager;
+    public ClusterCommandService(@Value("${kube.master.ip}") final String kubeMasterIP,
+                                 @Value("${kube.kubeadm.token}") final String kubeToken,
+                                 @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
+                                 @Value("${kube.node.token}") final String kubeNodeToken) {
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
+        this.kubeCertHash = kubeCertHash;
+        this.kubeNodeToken = kubeNodeToken;
     }
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommand(final String nodeUpScript,
                                                                  final AbstractCloudRegion region,
-                                                                 final Long runId,
+                                                                 final String nodeLabel,
                                                                  final RunInstance instance,
                                                                  final String cloud) {
         return NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .instanceImage(instance.getNodeImage())
                 .instanceType(instance.getNodeType())
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
+                .instancePlatform(instance.getNodePlatform())
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
-                .cloud(cloud)
-                .region(region.getRegionCode());
-    }
-
-    public NodeUpCommand.NodeUpCommandBuilder buildDefaultNodeUpCommand(final String nodeUpScript,
-                                                                        final AbstractCloudRegion region,
-                                                                        final String nodeId,
-                                                                        final String cloud) {
-        return NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeId)
-                .instanceType(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TYPE))
-                .instanceDisk(String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_HDD)))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
+                .kubeCertHash(kubeCertHash)
+                .kubeNodeToken(kubeNodeToken)
                 .cloud(cloud)
                 .region(region.getRegionCode());
     }
@@ -75,10 +63,16 @@ public class ClusterCommandService {
     public String buildNodeDownCommand(final String nodeDownScript,
                                        final Long runId,
                                        final String cloud) {
+        return buildNodeDownCommand(nodeDownScript, String.valueOf(runId), cloud);
+    }
+
+    public String buildNodeDownCommand(final String nodeDownScript,
+                                       final String nodeLabel,
+                                       final String cloud) {
         return RunIdArgCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .cloud(cloud)
                 .build()
                 .getCommand();
@@ -88,11 +82,18 @@ public class ClusterCommandService {
                                            final Long oldId,
                                            final Long newId,
                                            final String cloud) {
+        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud);
+    }
+
+    public String buildNodeReassignCommand(final String nodeReassignScript,
+                                           final String oldId,
+                                           final String newId,
+                                           final String cloud) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeReassignScript)
-                .oldRunId(String.valueOf(oldId))
-                .newRunId(String.valueOf(newId))
+                .oldRunId(oldId)
+                .newRunId(newId)
                 .cloud(cloud)
                 .build()
                 .getCommand();

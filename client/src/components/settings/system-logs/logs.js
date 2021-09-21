@@ -16,8 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {observable} from 'mobx';
 import {Button, Icon, message, Table} from 'antd';
 import displayDate from '../../../utils/displayDate';
 import SystemLogsFilter from '../../../models/system-logs/filter';
@@ -64,21 +62,15 @@ const columns = [
   }
 ];
 
-@observer
 class Logs extends React.Component {
   state = {
     pageIndex: 0,
-    pages: [undefined]
+    pages: [undefined],
+    pending: false,
+    logs: [],
+    fitlersToken: undefined,
+    totalHits: 0
   };
-
-  @observable logs = new SystemLogsFilter();
-
-  get logMessages () {
-    if (this.logs.loaded) {
-      return (this.logs.value.logEntries || []);
-    }
-    return [];
-  }
 
   get currentPage () {
     const {pageIndex, pages} = this.state;
@@ -113,21 +105,16 @@ class Logs extends React.Component {
     }, this.onFiltersChanged);
   };
 
-  get pages () {
-    if (this.logs.loaded) {
-      return this.logs.value.totalHits || 0;
-    }
-    return 0;
-  }
-
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
-    this.onFiltersChanged();
+    if (this.props.filters) {
+      this.onFiltersChanged();
+    }
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.filters !== this.props.filters) {
+    if (prevProps.filters !== this.props.filters && this.props.filters) {
       this.clearPagination();
     }
   }
@@ -138,30 +125,40 @@ class Logs extends React.Component {
 
   onFiltersChanged = () => {
     const {pages} = this.state;
-    const {filters} = this.props;
-    this.logs.send(
-      {
+    const {filters = {}} = this.props;
+    const filtersToken = JSON.stringify(filters);
+    this.setState({
+      filtersToken,
+      pending: true
+    }, async () => {
+      const request = new SystemLogsFilter();
+      await request.send({
         ...filters,
         pagination: {
           token: this.currentPage,
           pageSize: PAGE_SIZE
         }
-      }
-    )
-      .then(() => {
-        if (this.logs.error) {
-          message.error(this.logs.error, 5);
+      });
+      if (this.state.filtersToken === filtersToken) {
+        if (request.error) {
+          message.error(request.error, 5);
+          this.setState({
+            pending: false
+          });
         } else {
-          const {token} = this.logs.value;
+          const {token, totalHits = 0, logEntries} = request.value;
           if (token) {
             pages.push(token);
           }
-          this.setState({pages});
+          this.setState({
+            logs: (logEntries || []).map(o => o),
+            pages,
+            pending: false,
+            totalHits
+          });
         }
-      })
-      .catch(error => {
-        message.error(error.toString(), 5);
-      });
+      }
+    });
   };
 
   render () {
@@ -169,13 +166,14 @@ class Logs extends React.Component {
     if (!width) {
       return null;
     }
+    const {pending, logs} = this.state;
     return (
       <div>
         <Table
           className={styles.table}
           columns={columns}
-          dataSource={this.logMessages}
-          loading={this.logs.pending}
+          dataSource={logs}
+          loading={pending}
           rowKey="eventId"
           size="small"
           pagination={false}

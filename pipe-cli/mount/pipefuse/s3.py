@@ -18,11 +18,11 @@ import logging
 import time
 from datetime import datetime
 
-import pytz
 from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
+from dateutil.tz import tzlocal
 
 import fuseutils
 from fsclient import File
@@ -210,7 +210,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
     def get_folder_object(self, name):
         return File(name=name,
                     size=0,
-                    mtime=time.mktime(datetime.now(tz=pytz.utc).timetuple()),
+                    mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
                     is_dir=True)
@@ -221,7 +221,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
     def get_file_object(self, file, name):
         return File(name=name,
                     size=file.get('Size', ''),
-                    mtime=time.mktime(file['LastModified'].astimezone(pytz.utc).timetuple()),
+                    mtime=time.mktime(file['LastModified'].astimezone(tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
                     is_dir=False)
@@ -239,7 +239,10 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
             'Bucket': self.bucket,
             'Key': old_path
         }
-        self._s3.copy(source, self.bucket, path)
+        extra_args = {
+            'ACL': 'bucket-owner-full-control'
+        }
+        self._s3.copy(source, self.bucket, path, ExtraArgs=extra_args)
         self._s3.delete_object(**source)
 
     def download_range(self, fh, buf, path, offset=0, length=0):

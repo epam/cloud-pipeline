@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,8 +31,9 @@ RUN yum install -y python \
                    sshpass \
                    perl && \
     yum group install -y "Development Tools" && \
-    curl https://bootstrap.pypa.io/get-pip.py | python - && \
-    pip install pykube
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
+    pip install rsa==4.0 \
+                pykube==0.15.0
 
 # Openresty + http_connect module
 RUN yum install -y  pcre-devel \
@@ -63,10 +64,9 @@ RUN opm get pintsized/lua-resty-http=0.12
 RUN opm get 3scale/lua-resty-url=0.3.3
 
 # Configure cron and sync routes script
-ADD	crontab /etc/cron.d/sync-routes
+ADD	crontab.sh /etc/sync-routes/crontab.sh
 ADD sync-routes.sh /etc/sync-routes/sync-routes.sh
 ADD	sync-routes.py /etc/sync-routes/sync-routes.py
-RUN	chmod 0644 /etc/cron.d/sync-routes
 RUN touch /var/log/sync-routes.log && \
     touch /var/log/wetty.log
 
@@ -74,6 +74,7 @@ RUN touch /var/log/sync-routes.log && \
 ## Main config file
 ADD	nginx.conf /etc/nginx/nginx.conf
 ADD endpoints-config /etc/nginx/endpoints-config
+ADD mime.types /etc/nginx/mime.types
 
 ## Logs dir
 RUN mkdir -p /etc/nginx/logs/

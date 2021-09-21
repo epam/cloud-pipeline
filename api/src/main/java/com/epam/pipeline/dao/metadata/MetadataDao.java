@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -33,10 +34,12 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String deleteMetadataItemKeyQuery;
     private String loadMetadataItemsWithIssuesQuery;
     private String searchMetadataByClassAndKeyValueQuery;
+    private String searchMetadataByClassAndKeyQuery;
     private String loadUniqueValuesFromEntitiesAttributes;
     private String createMetadataDictionary;
     private String loadMetadataKeysQuery;
@@ -141,6 +145,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         return items.isEmpty() ? null : items;
     }
 
+    public List<EntityVO> searchMetadataByClassAndKey(final AclClass entityClass, final String key) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue(MetadataParameters.ENTITY_CLASS.name(), entityClass.name());
+        parameters.addValue(KEY, key);
+        return getNamedParameterJdbcTemplate().query(searchMetadataByClassAndKeyQuery,
+                parameters, MetadataParameters.getEntityVORowMapper());
+    }
+
     public List<EntityVO> searchMetadataByClassAndKeyValue(final AclClass entityClass,
                                                            final Map<String, PipeConfValue> indicator) {
         return getJdbcTemplate().query(searchMetadataByClassAndKeyValueQuery, MetadataParameters.getEntityVORowMapper(),
@@ -148,11 +160,9 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<CategoricalAttribute> buildFullMetadataDict(final List<String> sensitiveMetadataKeys) {
-        //TODO: fix for case with empty sensitiveMetadataKeys
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(LIST_PARAMETER, ListUtils.emptyIfNull(sensitiveMetadataKeys));
         final List<Pair<String, String>> allAttributeValues = getNamedParameterJdbcTemplate()
-            .query(createMetadataDictionary, params, MetadataParameters.getMetadataKeyValueMapper());
+            .query(createMetadataDictionary, getSensitiveKeysParams(sensitiveMetadataKeys),
+                   MetadataParameters.getMetadataKeyValueMapper());
         return CategoricalAttributeDao.convertPairsToAttributesList(allAttributeValues);
     }
 
@@ -172,6 +182,15 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                 .replaceAll(entities.stream()
                         .map(entityVO -> String.format("(%s,'%s')", entityVO.getEntityId(), entityVO.getEntityClass()))
                         .collect(Collectors.joining(",")));
+    }
+
+    private MapSqlParameterSource getSensitiveKeysParams(final List<String> sensitiveMetadataKeys) {
+        final List<String> sensitiveKeysList = CollectionUtils.isEmpty(sensitiveMetadataKeys)
+                                               ? Collections.singletonList(StringUtils.EMPTY)
+                                               : sensitiveMetadataKeys;
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, sensitiveKeysList);
+        return params;
     }
 
     @Required
@@ -232,6 +251,11 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
         this.loadMetadataKeysQuery = loadMetadataKeysQuery;
+    }
+
+    @Required
+    public void setSearchMetadataByClassAndKeyQuery(String searchMetadataByClassAndKeyQuery) {
+        this.searchMetadataByClassAndKeyQuery = searchMetadataByClassAndKeyQuery;
     }
 
     public enum MetadataParameters {

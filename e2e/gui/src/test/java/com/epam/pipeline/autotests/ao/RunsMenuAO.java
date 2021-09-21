@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
-import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -201,6 +200,16 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO validateRunsHaveButton(final List<String> runIds, final String button) {
+        runIds.forEach(id -> $("tbody")
+                .find(withText(id))
+                .closest(".ant-table-row")
+                .find(byText(button))
+                .shouldBe(visible)
+        );
+        return this;
+    }
+
     public RunsMenuAO validateAllRunsHaveCost() {
         allRuns().forEach(row -> row.$(byClassName("ob-estimated-price-info__info"))
                 .shouldBe(visible)
@@ -319,9 +328,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRunIfPresent(String id) {
         activeRuns();
-        final SelenideElement run = $(tagName("tbody")).findAll(tagName("tr")).findBy(text(id));
         sleep(10, SECONDS);
-        if (run.is(exist)) {
+        if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);
         }
@@ -346,8 +354,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
-        sleep(2, SECONDS);
+        $(withText("Currently viewing")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        if ($(elementWithText(tagName("a"), "View other available active runs")).isDisplayed()) {
+            $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
+            sleep(2, SECONDS);
+        }
         return this;
     }
 

@@ -59,19 +59,10 @@ def pack_script(script_path):
 
 
 def pack_script_contents(script_contents, embedded_scripts=None):
-    import tarfile
-    import io
-    import base64
-    if not embedded_scripts:
-        embedded_scripts = {}
-    compressed_stream = io.BytesIO()
-    with tarfile.open(fileobj=compressed_stream, mode='w:gz') as compressed:
-        compressed.addfile(*_tarfile('init.sh', script_contents))
-        for name, contents in embedded_scripts.items():
-            compressed.addfile(*_tarfile(name, contents))
-    b64_contents = base64.b64encode(compressed_stream.getvalue())
-
-    packed_template = """#!/bin/bash
+    return _pack_script_contents(script_contents,
+                                 embedded_scripts=embedded_scripts,
+                                 init_script_name='init.sh',
+                                 wrapping_script_template="""#!/bin/bash
 o=$(mktemp -d)
 (base64 -d | tar -xzf - -C $o) << EOF
 {payload}
@@ -81,8 +72,42 @@ $o/init.sh
 c=$?
 rm -rf $o
 exit $c
-"""
-    return packed_template.format(payload=b64_contents)
+""")
+
+
+def pack_powershell_script_contents(script_contents, embedded_scripts=None):
+    return _pack_script_contents(script_contents,
+                                 embedded_scripts=embedded_scripts,
+                                 init_script_name='init.ps1',
+                                 wrapping_script_template="""<powershell>
+$encodedPayload=@"
+{payload}
+"@
+$tempDir = Join-Path $Env:Temp $(New-Guid)
+New-Item -Type Directory -Path $tempDir
+$decodedPayloadBytes = [Convert]::FromBase64String($encodedPayload)
+[IO.File]::WriteAllBytes("$tempDir\\payload.tar.gz", $decodedPayloadBytes)
+tar -xzf "$tempDir\\payload.tar.gz" -C "$tempDir"
+& powershell -Command "$tempDir\\init.ps1"
+Remove-Item -Recurse -Path $tempDir
+</powershell>
+<persist>true</persist>
+""")
+
+
+def _pack_script_contents(script_contents, init_script_name, wrapping_script_template, embedded_scripts=None):
+    import tarfile
+    import io
+    import base64
+    if not embedded_scripts:
+        embedded_scripts = {}
+    compressed_stream = io.BytesIO()
+    with tarfile.open(fileobj=compressed_stream, mode='w:gz') as compressed:
+        compressed.addfile(*_tarfile(init_script_name, script_contents))
+        for name, contents in embedded_scripts.items():
+            compressed.addfile(*_tarfile(name, contents))
+    b64_contents = base64.b64encode(compressed_stream.getvalue())
+    return wrapping_script_template.format(payload=b64_contents)
 
 
 def _tarfile(name, string):

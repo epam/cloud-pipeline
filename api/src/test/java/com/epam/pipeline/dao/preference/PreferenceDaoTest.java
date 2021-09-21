@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,23 @@
 
 package com.epam.pipeline.dao.preference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
-import java.util.List;
-
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-public class PreferenceDaoTest extends AbstractSpringTest {
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+public class PreferenceDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_VALUE = "test value";
     private static final String TEST_VALUE_2 = "test value2";
@@ -51,7 +52,7 @@ public class PreferenceDaoTest extends AbstractSpringTest {
     @Before
     public void setup() {
         preference = new Preference(TEST_NAME, TEST_VALUE, TEST_GROUP,
-                TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
+                                    TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
         preference2 = new Preference(TEST_NAME_2, TEST_VALUE_2, TEST_GROUP,
                                      TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
     }
@@ -79,8 +80,8 @@ public class PreferenceDaoTest extends AbstractSpringTest {
         assertEquals(preference, updatedPreference);
 
         Preference loadedByName = preferenceDao.loadPreferenceByName(TEST_NAME);
-        assertEquals(preference, loadedByName);
-        assertEquals(updatedPreference, loadedByName);
+        assertThat(preference).isEqualToIgnoringGivenFields(loadedByName, "createdDate");
+        assertThat(updatedPreference).isEqualToIgnoringGivenFields(loadedByName, "createdDate");
 
         Preference loadedPref2 = preferenceDao.loadPreferenceByName(preference2.getName());
         assertNotNull(loadedPref2);

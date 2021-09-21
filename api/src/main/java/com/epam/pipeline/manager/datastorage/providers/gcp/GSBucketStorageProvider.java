@@ -43,7 +43,9 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -89,9 +91,20 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final GSBucketStorage dataStorage, final String path) {
+        return getHelper(dataStorage).listDataStorageFiles(dataStorage, path);
+    }
+
+    @Override
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, String marker) {
         return getHelper(dataStorage).listItems(dataStorage, path, showVersion, pageSize, marker);
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final GSBucketStorage dataStorage, final String path, 
+                                              final String version) {
+        return getHelper(dataStorage).findFile(dataStorage, path, version);
     }
 
     @Override
@@ -154,6 +167,16 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public DataStorageFolder moveFolder(final GSBucketStorage dataStorage, final String oldPath, final String newPath)
             throws DataStorageException {
         return getHelper(dataStorage).moveFolder(dataStorage, oldPath, newPath);
+    }
+
+    @Override
+    public DataStorageFile copyFile(final GSBucketStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final GSBucketStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

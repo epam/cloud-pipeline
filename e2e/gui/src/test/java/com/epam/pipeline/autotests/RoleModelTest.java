@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class RoleModelTest
         implements Authorization, Tools {
 
     private final String userGroup = "DOMAIN USERS";
-    private final String userRoleGroup = "ROLE_USER";
+    private final String userRoleGroup = C.ROLE_USER;
 
     private final String pipelineName = "role-model-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
@@ -125,6 +125,11 @@ public class RoleModelTest
                     .removePipeline(pipelineName);
 
             Utils.removeStorages(this, bucketForDataStoragesTests, presetBucketForDataStoragesTests);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToGroups()
+                    .deleteGroupIfPresent(userGroup);
         });
     }
 
@@ -266,7 +271,7 @@ public class RoleModelTest
                 .clickOnFolder(folderWithSeveralPipelines)
                 .assertPipelineIsNotEditable(firstOfTheSeveralPipelines)
                 .assertPipelineIsNotEditable(secondOfTheSeveralPipelines)
-                .hover(SETTINGS)
+                .click(SETTINGS)
                 .ensure(EDIT_FOLDER, not(visible));
     }
     @Test(priority = 9)
@@ -345,7 +350,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .historyTab()
-                .rerun()
+                .click(RERUN)
                 .messageShouldAppear("You have no permissions to launch " + pipelineName);
     }
 
@@ -603,15 +608,19 @@ public class RoleModelTest
     @Test(priority = 24)
     @TestCase({"EPMCMBIBPC-572"})
     public void checkToolsPageByReadOnlyUser() {
+        final boolean[] registryExistPermission = new boolean[1];
         try {
             logoutIfNeeded();
             loginAs(admin);
             List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-            tools().editRegistry(registry, edition ->
-                    edition.permissions()
-                            .deleteIfPresent(userWithoutCompletedRuns.login)
-                            .deleteIfPresent(userRoleGroup)
-                            .closeAll());
+            tools().editRegistry(registry, edition -> {
+                PermissionTabAO permissions = edition.permissions();
+                registryExistPermission[0] = permissions.checkPermissionExistence(userRoleGroup);
+                permissions
+                        .deleteIfPresent(userWithoutCompletedRuns.login)
+                        .deleteIfPresent(userRoleGroup)
+                        .closeAll();
+            });
             addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
             givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
             logout();
@@ -625,15 +634,17 @@ public class RoleModelTest
         } finally {
             logoutIfNeeded();
             loginAs(admin);
-            tools().editRegistry(registry, edition ->
-                    edition.permissions()
-                            .addNewGroup(userRoleGroup)
-                            .selectByName(userRoleGroup)
-                            .showPermissions()
-                            .set(READ, ALLOW)
-                            .set(WRITE, DENY)
-                            .set(EXECUTE, ALLOW)
-                            .closeAll());
+            if (registryExistPermission[0]) {
+                tools().editRegistry(registry, edition ->
+                        edition.permissions()
+                                .addNewGroup(userRoleGroup)
+                                .selectByName(userRoleGroup)
+                                .showPermissions()
+                                .set(READ, ALLOW)
+                                .set(WRITE, DENY)
+                                .set(EXECUTE, ALLOW)
+                                .closeAll());
+            }
         }
     }
 
@@ -695,7 +706,9 @@ public class RoleModelTest
                 .typeInField(userGroup)
                 .ok()
                 .validateGroupHasPermissions(userGroup)
-                .validateDeleteButtonIsDisplayedOppositeTo(userGroup);
+                .validateDeleteButtonIsDisplayedOppositeTo(userGroup)
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 28)
@@ -729,6 +742,14 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .assertEditButtonIsDisplayed()
                 .assertRunButtonIsDisplayed();
+        logout();
+        loginAs(admin)
+                .library()
+                .clickOnPipeline(pipelineName)
+                .clickEditButton()
+                .clickOnPermissionsTab()
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 29)
@@ -739,6 +760,7 @@ public class RoleModelTest
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
+                                .deleteIfPresent(userGroup)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );

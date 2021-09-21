@@ -31,9 +31,9 @@ import {
   Button,
   Modal,
   message,
-  Select,
-  Menu
+  Select
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../models/user/Roles';
 import UserFind from '../../models/user/UserFind';
 import RoleCreate from '../../models/user/RoleCreate';
@@ -45,6 +45,7 @@ import ExportUserForm, {doExport, DefaultValues} from './forms/ExportUserForm';
 import CreateUserForm from './forms/CreateUserForm';
 import EditRoleDialog from './forms/EditRoleDialog';
 import LoadingView from '../special/LoadingView';
+import ImportUsersButton from './components/import-users';
 import styles from './UserManagementForm.css';
 import roleModel from '../../utils/roleModel';
 
@@ -172,6 +173,10 @@ export default class UserManagementForm extends React.Component {
     return [];
   }
 
+  onImportDone = () => {
+    return this.reload();
+  };
+
   reload = async () => {
     if (this._findUsers) {
       this._findUsers.fetch();
@@ -239,7 +244,7 @@ export default class UserManagementForm extends React.Component {
   }
 
   onUserSearchChanged = (e) => {
-    let userSearchText = e.target.value.trim();
+    let userSearchText = e.target.value;
     if (userSearchText.length === 0) {
       userSearchText = null;
     }
@@ -265,7 +270,7 @@ export default class UserManagementForm extends React.Component {
   };
 
   onGroupSearchChanged = (e) => {
-    let groupsSearchText = e.target.value.trim();
+    let groupsSearchText = e.target.value;
     if (groupsSearchText.length === 0) {
       groupsSearchText = null;
     }
@@ -323,15 +328,17 @@ export default class UserManagementForm extends React.Component {
     const exportUserMenu = (
       <Menu
         onClick={this.handleExportUsersMenu}
+        selectedKeys={[]}
+        style={{cursor: 'pointer'}}
       >
-        <Menu.Item key="default">
+        <MenuItem key="default">
           <Icon type="download" style={{marginRight: 10}} />
           Default configuration
-        </Menu.Item>
-        <Menu.Item key="custom">
+        </MenuItem>
+        <MenuItem key="custom">
           <Icon type="bars" style={{marginRight: 10}} />
           Custom configuration
-        </Menu.Item>
+        </MenuItem>
       </Menu>
     );
     return (
@@ -352,6 +359,15 @@ export default class UserManagementForm extends React.Component {
             >
               <Icon type="plus" />Create user
             </Button>
+          )
+        }
+        {
+          this.isAdmin && (
+            <ImportUsersButton
+              size="small"
+              style={{marginLeft: 5}}
+              onImportDone={this.onImportDone}
+            />
           )
         }
         {
@@ -742,6 +758,7 @@ export default class UserManagementForm extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
+      await this.props.dataStorages.fetch();
       this.setState({
         createUserDialogVisible: false
       }, this.reload);
@@ -786,6 +803,7 @@ export default class UserManagementForm extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
+      await this.props.dataStorages.fetch();
       this.setState({
         createGroupDialogVisible: false,
         createGroupName: null,

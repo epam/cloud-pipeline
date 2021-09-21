@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
+
 from time import sleep
 
 import boto3
@@ -34,17 +34,6 @@ class S3Client(CloudClient):
 
     def folder_exists(self, bucket_name, key):
         return len(self.list_s3_folder(bucket_name, key)) > 0
-
-    def list_object_tags(self, bucket, key, version=None, args=None):
-        command = ['aws', 's3api', 'get-object-tagging', '--bucket', bucket, '--key', key]
-        if version:
-            command.extend(['--version-id', version])
-        stdout = get_command_output(command, args=args, expected_status=0)[0]
-        tags = json.loads(''.join(stdout).strip())['TagSet']
-        result = {}
-        for tag in tags:
-            result[tag['Key']] = tag['Value']
-        return result
 
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
         sleep(40)

@@ -162,4 +162,47 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Configure singularity credentials
+export CP_ENV_FILE_TO_SOURCE=${CP_ENV_FILE_TO_SOURCE:-/etc/cp_env.sh}
+if [ "$OWNER" ] && [ "$API_TOKEN" ]; then
+    export SINGULARITY_DOCKER_USERNAME="$OWNER"
+    export SINGULARITY_DOCKER_PASSWORD="$API_TOKEN"
+    echo "export SINGULARITY_DOCKER_USERNAME=\"$SINGULARITY_DOCKER_USERNAME\"" >> "$CP_ENV_FILE_TO_SOURCE"
+    echo "export SINGULARITY_DOCKER_PASSWORD=\"$SINGULARITY_DOCKER_PASSWORD\"" >> "$CP_ENV_FILE_TO_SOURCE"
+    pipe_log_info "Credentials are configured via enviroment variables for $SINGULARITY_DOCKER_USERNAME" "$SNGLRT_SETUP_TASK"
+else
+    pipe_log_warn "OWNER or API_TOKEN are not set, can't configure the credentials to the internal registry" "$SNGLRT_SETUP_TASK"
+fi
+
+# Configure singularity certificate
+if [ "$OWNER" ] && [ "$API" ] && [ "$API_TOKEN" ]; then
+    _DIND_REGISTRIES_JSON=$(curl -k -s --fail --header "Authorization: Bearer $API_TOKEN" $API/dockerRegistry/loadCerts)
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "Cannot get the list of the certificates for the docker registries" "$SNGLRT_SETUP_TASK"
+    else
+        _DIND_REGISTRY_CERT_DIR="/etc/ssl/certs"
+        mkdir -p $_DIND_REGISTRY_CERT_DIR
+        _DIND_REGISTRIES_LIST=$(echo "$_DIND_REGISTRIES_JSON" | jq -r '.payload | keys[]')
+        while read _DIND_REGISTRY_NAME; do
+            pipe_log_info "Configuring certificate for $_DIND_REGISTRY_NAME registry" "$SNGLRT_SETUP_TASK"
+            _DIND_REGISTRY_CERT="${_DIND_REGISTRY_CERT_DIR}/${_DIND_REGISTRY_NAME}.pem"
+            echo $_DIND_REGISTRIES_JSON | jq -r ".payload.\"${_DIND_REGISTRY_NAME}\"" > "$_DIND_REGISTRY_CERT"
+            pipe_log_info "Certificate is written to $_DIND_REGISTRY_CERT" "$SNGLRT_SETUP_TASK"
+        done <<<$_DIND_REGISTRIES_LIST
+    fi
+else
+    pipe_log_warn "One of the environment variables OWNER, API, API_TOKEN is not set, can't configure the certificates for the internal registry" "$SNGLRT_SETUP_TASK"
+fi
+
+motd_setup add "This job was launched with 'Singularity' enabled
+It is configured with the credentials for the internal docker registry
+To pull/push from the external docker registry please configure variables:
+
+# 1. For the public registries (e.g. DockerHub):
+$ unset SINGULARITY_DOCKER_USERNAME SINGULARITY_DOCKER_PASSWORD
+
+# 2. For the private registries:
+$ export SINGULARITY_DOCKER_USERNAME=<username>
+$ export SINGULARITY_DOCKER_PASSWORD=<password>"
+
 pipe_log_success "Singularity successfully installed (version: $CP_SNGLRT_VERSION)" "$SNGLRT_SETUP_TASK"

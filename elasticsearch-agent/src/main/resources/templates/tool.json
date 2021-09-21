@@ -2,20 +2,24 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": {"type": "keyword", "store": true },
         "name": {"type": "text", "store": true, "index": false},
         "parentId": {"type": "keyword", "store": true, "index": false },
         "registry": {"type": "text" },
         "registryId": { "type": "long", "index": false },
-        "image": {"type": "text", "analyzer": "file_path_analyzer", "copy_to": "name"},
+        "image": {"type": "text", "analyzer": "file_path_analyzer" },
         "version": {"type": "keyword"},
         "packages": {"type": "keyword" },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "description": { "type": "text", "store": true },
         "defaultCommand": { "type": "text" },
         "labels": { "type": "text" },
-        "toolGroupId": { "type": "long", "copy_to": "parentId" },
+        "toolGroupId": { "type": "long" },
         "ownerUserId": { "type": "keyword" },
         "ownerUserName": { "type": "keyword" },
         "ownerFriendlyName": { "type": "text" },
@@ -28,6 +32,21 @@
       }
     }
   },
+  "dynamic_templates": [
+    {
+      "metadata": {
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type":  "keyword"
+            }
+          }
+        }
+      }
+    }
+  ],
   "settings": {
     "index": {
       "number_of_shards" : 1,

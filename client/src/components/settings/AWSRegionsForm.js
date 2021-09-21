@@ -24,12 +24,10 @@ import {
   Alert,
   Button,
   Checkbox,
-  Dropdown,
   Icon,
   Input,
   InputNumber,
   Modal,
-  Menu,
   message,
   Form,
   Row,
@@ -37,6 +35,8 @@ import {
   Table,
   Tooltip, Col, AutoComplete
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
@@ -51,6 +51,7 @@ import GroupFind from '../../models/user/GroupFind';
 import UserName from '../special/UserName';
 import CodeEditorFormItem from '../special/CodeEditorFormItem';
 import AWSRegionTag from '../special/AWSRegionTag';
+import ProviderForm from './cloud-provider';
 import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
 
@@ -87,7 +88,7 @@ function fromJSON (obj, defaultValue) {
   return defaultValue;
 }
 
-@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router')
+@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
 @observer
 export default class AWSRegionsForm extends React.Component {
 
@@ -116,8 +117,8 @@ export default class AWSRegionsForm extends React.Component {
   };
 
   componentDidUpdate () {
-    const {currentRegionId} = this.state;
-    if (!currentRegionId && this.regions.length > 0) {
+    const {currentRegionId, currentProvider} = this.state;
+    if (!currentRegionId && !currentProvider && this.regions.length > 0) {
       this.selectDefaultRegion();
     }
   };
@@ -213,13 +214,26 @@ export default class AWSRegionsForm extends React.Component {
         dataIndex: 'name',
         key: 'name',
         render: (name, region) => {
+          if (region.isProvider) {
+            return (
+              <span className={styles.provider}>
+                <AWSRegionTag
+                  provider={region.name}
+                  displayFlag={false}
+                  displayName={false}
+                  showProvider
+                />
+                {name}
+              </span>
+            );
+          }
           if (region.isNew) {
-            return <i>{name} ({this.state.newRegion})</i>;
+            return <i className={styles.region}>{name} ({this.state.newRegion})</i>;
           }
           return (
-            <span>
+            <span className={styles.region}>
               <AWSRegionTag
-                showProvider
+                showProvider={false}
                 regionUID={region.regionId}
                 style={{fontSize: 'larger'}}
               />
@@ -229,9 +243,31 @@ export default class AWSRegionsForm extends React.Component {
         }
       }
     ];
-    let data = this.regions;
+    let data = [
+      ...(this.cloudProviders || []).map(o => ({
+        isProvider: true,
+        name: o,
+        id: o,
+        provider: o
+      })),
+      ...this.regions.map(o => o)
+    ];
+    const providers = (this.cloudProviders || []).map(o => o);
+    data.sort((a, b) => {
+      const idx1 = providers.indexOf(a.provider);
+      const idx2 = providers.indexOf(b.provider);
+      return idx1 - idx2;
+    });
     if (this.state.newRegion) {
-      data = [{id: -1, isNew: true, name: 'New cloud region'}, ...data];
+      const providerIndex = data.findIndex(o => o.isProvider && o.name === this.state.newRegion);
+      const newRegionItem = {id: -1, isNew: true, name: 'New cloud region'};
+      if (providerIndex === -1) {
+        data = [newRegionItem, ...data];
+      } else if (providerIndex < data.length) {
+        data.splice(providerIndex + 1, 0, newRegionItem);
+      } else {
+        data.push(newRegionItem);
+      }
     }
     return (
       <Table
@@ -244,6 +280,12 @@ export default class AWSRegionsForm extends React.Component {
         rowClassName={
           (region) =>
             (!this.state.newRegion && region.id === this.state.currentRegionId) ||
+            (
+              !this.state.newRegion &&
+              !this.state.currentRegionId &&
+              region.isProvider &&
+              region.name === this.state.currentProvider
+            ) ||
             (region.isNew && this.state.newRegion)
               ? `${styles.regionRow} ${styles.selected}`
               : styles.regionRow
@@ -429,13 +471,17 @@ export default class AWSRegionsForm extends React.Component {
   renderAddNewRegionButton = () => {
     if (this.cloudProviders.length > 1) {
       const menu = (
-        <Menu onClick={({key}) => this.onAddNewRegionClicked(key)}>
+        <Menu
+          onClick={({key}) => this.onAddNewRegionClicked(key)}
+          selectedKeys={[]}
+          style={{cursor: 'pointer'}}
+        >
           {
             this.cloudProviders.map(c => {
               return (
-                <Menu.Item key={c}>
+                <MenuItem key={c}>
                   {c}
-                </Menu.Item>
+                </MenuItem>
               );
             })
           }
@@ -466,15 +512,58 @@ export default class AWSRegionsForm extends React.Component {
     return null;
   };
 
+  renderProviderForm = () => {
+    const {currentRegionId, currentProvider, newRegion} = this.state;
+    if (currentProvider && !currentRegionId && !newRegion) {
+      return (
+        <ProviderForm
+          provider={currentProvider}
+        />
+      );
+    }
+    return null;
+  };
+
+  renderRegionForm = () => {
+    const {currentRegionId, newRegion} = this.state;
+    if (currentRegionId || newRegion) {
+      const AWSRegionFormComponent = this.awsRegionFormComponent;
+      return (
+        <AWSRegionFormComponent
+          onInitialize={this.onInitializeAWSRegionForm}
+          isNew={!!this.state.newRegion}
+          pending={this.props.awsRegions.pending || this.state.operationInProgress}
+          onSubmit={this.operationWrapper(this.onSaveRegion)}
+          onRemove={this.operationWrapper(this.onRemoveRegionConfirm)}
+          onCreate={this.operationWrapper(this.onCreateRegion)}
+          onCancelCreate={this.onCancelCreate}
+          regionIds={this.availableRegionIds}
+          region={
+            this.state.newRegion
+              ? observable({isNew: true, provider: this.state.newRegion})
+              : this.currentRegion
+          }
+        />
+      );
+    }
+    return null;
+  };
+
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
+    if (!this.props.authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
+    }
     if (this.props.awsRegions.pending && !this.props.awsRegions.loaded) {
       return <LoadingView />;
     }
     if (this.props.awsRegions.error) {
       return <Alert type="error" message={this.props.awsRegions.error} />;
     }
-
-    const AWSRegionFormComponent = this.awsRegionFormComponent;
 
     return (
       <div style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
@@ -491,7 +580,7 @@ export default class AWSRegionsForm extends React.Component {
             {
               key: 'regions',
               size: {
-                pxDefault: 175
+                pxDefault: 200
               }
             }
           ]}
@@ -506,20 +595,8 @@ export default class AWSRegionsForm extends React.Component {
               display: 'flex',
               flexDirection: 'column'
             }}>
-            <AWSRegionFormComponent
-              onInitialize={this.onInitializeAWSRegionForm}
-              isNew={!!this.state.newRegion}
-              pending={this.props.awsRegions.pending || this.state.operationInProgress}
-              onSubmit={this.operationWrapper(this.onSaveRegion)}
-              onRemove={this.operationWrapper(this.onRemoveRegionConfirm)}
-              onCreate={this.operationWrapper(this.onCreateRegion)}
-              onCancelCreate={this.onCancelCreate}
-              regionIds={this.availableRegionIds}
-              region={
-                this.state.newRegion
-                  ? observable({isNew: true, provider: this.state.newRegion})
-                  : this.currentRegion
-              } />
+            {this.renderProviderForm()}
+            {this.renderRegionForm()}
           </div>
         </SplitPanel>
       </div>
@@ -558,7 +635,14 @@ export default class AWSRegionsForm extends React.Component {
   };
 
   selectRegion = (region) => {
-    if (region) {
+    if (region.isProvider) {
+      if (/^aws$/i.test(region.name)) {
+        this.setState({
+          currentRegionId: null,
+          currentProvider: region.name
+        }, this.loadAvailableRegionIds);
+      }
+    } else if (region) {
       this.setState({
         currentRegionId: region.id,
         currentProvider: region.provider
@@ -609,26 +693,16 @@ class AWSRegionForm extends React.Component {
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
-      sm: {span: 3}
+      sm: {span: 5}
     },
     wrapperCol: {
       xs: {span: 24},
-      sm: {span: 21}
+      sm: {span: 19}
     },
     style: {marginBottom: 2}
   };
 
-  formItemLayoutWideLabel = {
-    labelCol: {
-      xs: {span: 24},
-      sm: {span: 8}
-    },
-    wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 16}
-    },
-    style: {marginBottom: 2}
-  };
+  formItemLayoutWideLabel = this.formItemLayout;
 
   defaultCheckBoxFormItemLayout = {
     wrapperCol: {
@@ -637,8 +711,8 @@ class AWSRegionForm extends React.Component {
         offset: 0
       },
       sm: {
-        span: 14,
-        offset: 3
+        span: 19,
+        offset: 5
       }
     },
     style: {marginBottom: 2}
@@ -663,7 +737,8 @@ class AWSRegionForm extends React.Component {
       },
       'versioningEnabled',
       'fileShareMounts',
-      'mountStorageRule'
+      'mountStorageRule',
+      'mountCredentialsRule'
     ],
     AZURE: [
       'regionId',
@@ -682,7 +757,8 @@ class AWSRegionForm extends React.Component {
       'priceOfferId',
       'enterpriseAgreements',
       'fileShareMounts',
-      'mountStorageRule'
+      'mountStorageRule',
+      'mountCredentialsRule'
     ],
     GCP: [
       'regionId',
@@ -697,6 +773,7 @@ class AWSRegionForm extends React.Component {
       'customInstanceTypes',
       'corsRules',
       'mountStorageRule',
+      'mountCredentialsRule',
       'policy',
       {
         key: 'backupDuration',
@@ -817,6 +894,7 @@ class AWSRegionForm extends React.Component {
       check('kmsKeyArn', checkStringValue) ||
       check('corsRules', checkJSONValue) ||
       check('mountStorageRule', checkStringValue) ||
+      check('mountCredentialsRule', checkStringValue) ||
       check('policy', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
@@ -1339,8 +1417,18 @@ class AWSRegionForm extends React.Component {
     };
     return (
       <div style={{width: '100%', flex: 1, display: 'flex', flexDirection: 'column'}}>
-        <div style={{flex: 1, width: '100%', overflowY: 'auto'}}>
-          <Form className="edit-region-form" layout="horizontal">
+        <div
+          style={{
+            flex: 1,
+            width: '100%',
+            overflowY: 'auto',
+            paddingRight: 10
+          }}
+        >
+          <Form
+            className="edit-region-form"
+            layout="horizontal"
+          >
             <Form.Item
               label="Region ID"
               required
@@ -1421,10 +1509,29 @@ class AWSRegionForm extends React.Component {
             <Form.Item
               {...this.formItemLayoutWideLabel}
               className={this.getFieldClassName('mountStorageRule')}
-              label="Mount storages across other regions"
+              label="Mount storages across regions"
             >
               {getFieldDecorator('mountStorageRule', {
                 initialValue: this.props.region.mountStorageRule
+              })(
+                <Select
+                  size="small"
+                  allowClear={false}
+                  style={{marginTop: 4}}
+                >
+                  <Select.Option value="NONE">None</Select.Option>
+                  <Select.Option value="CLOUD">Same cloud</Select.Option>
+                  <Select.Option value="ALL">All</Select.Option>
+                </Select>
+              )}
+            </Form.Item>
+            <Form.Item
+              {...this.formItemLayoutWideLabel}
+              className={this.getFieldClassName('mountCredentialsRule')}
+              label="Mount credentials rule"
+            >
+              {getFieldDecorator('mountCredentialsRule', {
+                initialValue: this.props.region.mountCredentialsRule
               })(
                 <Select
                   size="small"
@@ -1788,8 +1895,8 @@ class AWSRegionForm extends React.Component {
             </Form.Item>
             <Row type="flex">
               <Col
-                xs={24}
-                sm={3}
+                xs={this.formItemLayout.labelCol.xs.span}
+                sm={this.formItemLayout.labelCol.sm.span}
                 style={{
                   textAlign: 'right',
                   paddingRight: 8,
@@ -1799,7 +1906,10 @@ class AWSRegionForm extends React.Component {
                 }}>
                 Permissions:
               </Col>
-              <Col xs={24} sm={21}>
+              <Col
+                xs={this.formItemLayout.wrapperCol.xs.span}
+                sm={this.formItemLayout.wrapperCol.sm.span}
+              >
                 {this.renderPermissionsTable()}
               </Col>
             </Row>
@@ -1869,7 +1979,11 @@ class AWSRegionForm extends React.Component {
       this.rebuild();
     } else if (!prevProps.region && this.props.region) {
       this.rebuild();
-    } else if (prevProps.region && this.props.region && prevProps.region.id !== this.props.region.id) {
+    } else if (
+      prevProps.region &&
+      this.props.region &&
+      prevProps.region.id !== this.props.region.id
+    ) {
       this.rebuild();
     }
   }
@@ -1891,6 +2005,7 @@ class AWSRegionForm extends React.Component {
 
   componentDidMount () {
     this.props.onInitialize && this.props.onInitialize(this);
+    this.rebuild();
   }
 }
 

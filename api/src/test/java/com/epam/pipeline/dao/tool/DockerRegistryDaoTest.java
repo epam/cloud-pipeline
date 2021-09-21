@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package com.epam.pipeline.dao.tool;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
-public class DockerRegistryDaoTest extends AbstractSpringTest {
+public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER = "test";
     private static final String EMPTY = "";

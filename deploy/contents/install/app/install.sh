@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -127,7 +127,7 @@ set -o pipefail
 export CP_KUBE_KUBEADM_TOKEN=$(kubeadm token list | tail -n 1 | cut -f1 -d' ')
 set +o pipefail
 if [ $? -ne 0 ]; then
-    print_err "Errors occured during retrieval of the kubeadm token. Please review any output above, exiting"
+    print_err "Errors occurred during retrieval of the kubeadm token. Please review any output above, exiting"
     exit 1
 else
     print_info "-> kubeadm token retrieved: $CP_KUBE_KUBEADM_TOKEN"
@@ -137,6 +137,41 @@ else
 fi
 echo
 
+set -o pipefail
+export CP_KUBE_KUBEADM_CERT_HASH="$(openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
+set +o pipefail
+if [ $? -ne 0 ]; then
+    print_err "Errors occurred during retrieval of the kubeadm cert hash. Please review any output above, exiting"
+    exit 1
+else
+    print_info "-> kubeadm cert hash retrieved: $CP_KUBE_KUBEADM_CERT_HASH"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_KUBE_KUBEADM_CERT_HASH" \
+                        "$CP_KUBE_KUBEADM_CERT_HASH"
+fi
+echo
+
+# Get kube account token
+print_ok "[Configuring kube node credentials]"
+
+set -o pipefail
+export CP_KUBE_NODE_TOKEN="$(kubectl --namespace=kube-system describe sa canal \
+  | grep Tokens \
+  | cut -d: -f2 \
+  | xargs kubectl --namespace=kube-system get secret -o json \
+  | jq -r '.data.token' \
+  | base64 --decode)"
+set +o pipefail
+if [ $? -ne 0 ]; then
+    print_err "Errors occurred during retrieval of the kube node token. Please review any output above, exiting"
+    exit 1
+else
+    print_info "-> kube node token retrieved: $CP_KUBE_ACCOUNT_TOKEN"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_KUBE_NODE_TOKEN" \
+                        "$CP_KUBE_NODE_TOKEN"
+fi
+echo
 
 ##########
 # Setup config for Kube
@@ -187,6 +222,7 @@ CP_EDGE_KUBE_NODE_NAME=${CP_EDGE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-edge to $CP_EDGE_KUBE_NODE_NAME"
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/cp-edge="true" --overwrite
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/role="EDGE" --overwrite
+kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/region="$CP_CLOUD_REGION_ID" --overwrite
 
 # Allow to schedule notifier to the master
 CP_NOTIFIER_KUBE_NODE_NAME=${CP_NOTIFIER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
@@ -202,6 +238,11 @@ kubectl label nodes "$CP_DOCKER_KUBE_NODE_NAME" cloud-pipeline/cp-docker-registr
 CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_DOCKER_COMP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DOCKER_COMP_KUBE_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
+
+# Allow to schedule GitLab Reader scanner to the master
+CP_GITLAB_READER_NODE_NAME=${CP_GITLAB_READER_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-gitlab-reader to $CP_GITLAB_READER_NODE_NAME"
+kubectl label nodes "$CP_GITLAB_READER_NODE_NAME" cloud-pipeline/cp-gitlab-reader="true" --overwrite
 
 # Allow to schedule Clair scanner to the master
 CP_CLAIR_KUBE_NODE_NAME=${CP_CLAIR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
@@ -258,6 +299,10 @@ CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
 
+# Allow to schedule policy-manager service to the master
+CP_POLICY_MANAGER_KUBE_NODE_NAME=${CP_POLICY_MANAGER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-run-policy-manager to $CP_POLICY_MANAGER_KUBE_NODE_NAME"
+kubectl label nodes "$CP_POLICY_MANAGER_KUBE_NODE_NAME" cloud-pipeline/cp-run-policy-manager="true" --overwrite
 
 echo
 
@@ -881,6 +926,27 @@ if is_service_requested cp-git-sync; then
     echo
 fi
 
+# GitLab Reader
+if is_service_requested cp-gitlab-reader; then
+    print_ok "[Starting GitLab Reader deployment]"
+
+    print_info "-> Deleting existing instance of GitLab Reader"
+    delete_deployment_and_service   "cp-gitlab-reader" \
+                                    "/opt/gitlab-reader"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-gitlab-reader"
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-svc.yaml
+
+        print_info "-> Waiting for GitLab Reader to initialize"
+        wait_for_deployment "cp-gitlab-reader"
+        api_register_git_reader
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-reader: deployed"
+    fi
+    echo
+fi
+
 # Docker comp scanner
 if is_service_requested cp-docker-comp; then
     print_ok "[Starting Docker components scanner deployment]"
@@ -1178,6 +1244,31 @@ if is_service_requested cp-billing-srv; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-billing-srv: http://$CP_BILLING_INTERNAL_HOST:$CP_BILLING_INTERNAL_PORT"
     fi
     echo
+fi
+
+# OOM reporter - monitor and report OOM related events for each pipeline run
+if is_service_requested cp-oom-reporter; then
+  print_ok "[Starting OOM reporter daemonset deployment]"
+
+  print_info "-> Deleting existing instance of OOM reporter daemonset"
+  kubectl delete daemonset cp-oom-reporter
+  if is_install_requested; then
+    print_info "-> Deploying OOM reporter daemonset"
+    create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
+  fi
+fi
+
+# Run-policy manager - monitor and manage network policies to implement restrictions on inter-run connections
+if is_service_requested cp-run-policy-manager; then
+  print_ok "[Starting run-policy manager deployment]"
+  print_info "-> Deleting existing instance of run-policy manager"
+  delete_deployment_and_service "cp-run-policy-manager" \
+                                  "/opt/run-policy-manager"
+  if is_install_requested; then
+    print_info "-> Deploying run-policy manager"
+    create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
+    wait_for_deployment "cp-run-policy-manager"
+  fi
 fi
 
 print_ok "Installation done"

@@ -16,30 +16,24 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import connect from '../../../../utils/connect';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import dockerRegistries from '../../../../models/tools/DockerRegistriesTree';
 import {Modal, Form, Row, Col, Spin, Checkbox, Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
 import CommitRunDockerImageInput from './CommitRunDockerImageInput';
-import {PIPELINE_RUN_COMMIT_CHECK_FAILED} from '../../../../models/pipelines/PipelineRunCommitCheck';
+import {
+  PIPELINE_RUN_COMMIT_CHECK_FAILED
+} from '../../../../models/pipelines/PipelineRunCommitCheck';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 @Form.create()
-@connect({
-  dockerRegistries
-})
 @localization.localizedComponent
-@inject(({dockerRegistries}) => {
-  return {
-    docker: dockerRegistries
-  };
-})
+@inject('dockerRegistries')
+@HiddenObjects.injectToolsFilters
 @observer
 export default class CommitRunForm extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onInitialized: PropTypes.func,
     onPressEnter: PropTypes.func,
@@ -154,11 +148,13 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
     return {newTool: true};
   };
 
+  @computed
   get registries () {
-    if (!this.props.docker.loaded) {
+    if (!this.props.dockerRegistries.loaded) {
       return [];
     }
-    return (this.props.docker.value.registries || []).map(r => r);
+    return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+      .registries;
   }
 
   get canCommitIntoRegistry () {
@@ -170,7 +166,7 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
   }
 
   get dockerImage () {
-    if (!this.props.docker.loaded) {
+    if (!this.props.dockerRegistries.loaded) {
       return null;
     }
     if (this.props.defaultDockerImage) {
@@ -187,6 +183,12 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
           group = selectedRegistry && selectedRegistry.groups
             ? selectedRegistry.groups[0].name : '';
           tool = '';
+        }
+        if (selectedRegistry) {
+          const personalGroup = (selectedRegistry.groups || []).find(group => group.privateGroup);
+          if (personalGroup) {
+            group = personalGroup.name;
+          }
         }
         if (selectedRegistry && group) {
           const [registryGroup] = (selectedRegistry.groups || []).filter(g => g.name === group);

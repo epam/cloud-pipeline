@@ -20,6 +20,7 @@ package com.epam.pipeline.vmmonitor.service.pipeline;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -84,6 +85,10 @@ public class CloudPipelineAPIClient {
 
     public PipelineRun loadRun(final Long runId) {
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineRun(runId));
+    }
+
+    public List<NodePool> loadNodePools() {
+        return QueryUtils.execute(cloudPipelineAPI.loadNodePools());
     }
 
     public static class APIVersion implements Comparable<APIVersion> {

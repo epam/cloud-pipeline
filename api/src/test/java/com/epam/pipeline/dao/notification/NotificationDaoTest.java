@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,17 @@
 
 package com.epam.pipeline.dao.notification;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
+import com.epam.pipeline.entity.notification.SystemNotification;
+import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
+import com.epam.pipeline.entity.notification.SystemNotificationState;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -27,19 +35,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
-import com.epam.pipeline.entity.notification.SystemNotification;
-import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
-import com.epam.pipeline.entity.notification.SystemNotificationState;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
-public class NotificationDaoTest extends AbstractSpringTest {
+public class NotificationDaoTest extends AbstractJdbcTest {
 
     private static final String TITLE_STRING = "Title";
     private static final String BODY_STRING = "Body";

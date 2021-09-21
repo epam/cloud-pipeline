@@ -57,13 +57,4 @@ public class RestartRunManager {
     public List<RestartRun> loadRestartedRunsForInitialRun(Long initialRunId) {
         return restartRunDao.loadAllRestartedRunsForInitialRun(initialRunId);
     }
-
-    /**
-     * Deletes all restart info for runs associated with pipelineId
-     * @param pipelineId
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteRestartedRunsForPipeline(final Long pipelineId) {
-        restartRunDao.deleteRestartedRunsForPipeline(pipelineId);
-    }
 }

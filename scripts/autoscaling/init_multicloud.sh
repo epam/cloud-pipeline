@@ -81,6 +81,8 @@ function setup_swap_device {
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
+FS_TYPE="@FS_TYPE@"
+
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
 DRIVE_NUM=0
 for DRIVE_NAME in $UNMOUNTED_DRIVES
@@ -102,15 +104,22 @@ do
     MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
   fi
 
-  mkfs.btrfs -f -d single $DRIVE_NAME
   mkdir $MOUNT_POINT
-  mount $DRIVE_NAME $MOUNT_POINT
-  DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
-  echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+
+  if [[ $FS_TYPE == "ext4" ]]; then
+    mkfs -t ext4 $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  else
+    mkfs.btrfs -f -d single $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+    echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+  fi
+
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
   rm -rf $MOUNT_POINT/lost+found/   
- 
 done
 
 systemctl stop docker
@@ -119,13 +128,23 @@ if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
 fi
 
 mkdir -p /etc/docker
+
+if [[ $FS_TYPE == "ext4" ]]; then
+  DOCKER_STORAGE_DRIVER="overlay2"
+  DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
+else
+  DOCKER_STORAGE_DRIVER="btrfs"
+  DOCKER_STORAGE_OPTS=""
+fi
+
 if check_installed "nvidia-smi"; then
   nvidia-persistenced --persistence-mode
 
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -140,7 +159,8 @@ else
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1
 }
 EOT
@@ -243,6 +263,8 @@ EOL
 
 fi
 
+sed -i "s/--default-ulimit nofile=1024:4096/--default-ulimit nofile=65535:65535/g" /etc/sysconfig/docker
+
 _KUBE_NODE_INSTANCE_LABELS="--node-labels=cloud_provider=$_CLOUD_PROVIDER,cloud_region=$_CLOUD_REGION,cloud_ins_id=$_CLOUD_INSTANCE_ID,cloud_ins_type=$_CLOUD_INSTANCE_TYPE"
 
 if [[ $_CLOUD_INSTANCE_AZ != "" ]]; then
@@ -272,8 +294,8 @@ _KUBE_NODE_MEM_TOTAL_MB=$(awk '/MemTotal/ { printf "%.0f", $2/1024 }' /proc/memi
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO / 100 / 2 ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
-_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
-_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
+_KUBE_RESERVED_ARGS="--kube-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
+_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
 
 cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
@@ -290,11 +312,27 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
-_API_URL="@API_URL@"
-_API_TOKEN="@API_TOKEN@"
-_MOUNT_POINT="/ebs"
-_CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+if [[ $FS_TYPE == "btrfs" ]]; then
+  _API_URL="@API_URL@"
+  _API_TOKEN="@API_TOKEN@"
+  _MOUNT_POINT="/ebs"
+  _FS_AUTOSCALE_PRESENT=0
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  if [ -f "$_CURRENT_DIR/fsautoscale" ]; then
+    cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+    _FS_AUTOSCALE_PRESENT=1
+  else
+    _FS_AUTO_URL="$(dirname $_API_URL)/fsautoscale.sh"
+    echo "Cannot find $_CURRENT_DIR/fsautoscale, downloading from $_FS_AUTO_URL"
+    curl -skf "$_FS_AUTO_URL" > /usr/bin/fsautoscale
+    if [ $? -ne 0 ]; then
+      echo "Error while downloading fsautoscale script"
+    else
+      _FS_AUTOSCALE_PRESENT=1
+    fi
+  fi
+  if [ $_FS_AUTOSCALE_PRESENT -eq 1 ]; then
+    chmod +x /usr/bin/fsautoscale
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
@@ -312,8 +350,10 @@ ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
 [Install]
 WantedBy=multi-user.target
 EOL
-systemctl enable fsautoscale
-systemctl start fsautoscale
+    systemctl enable fsautoscale
+    systemctl start fsautoscale
+  fi
+fi
 
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF
@@ -326,5 +366,17 @@ systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
 systemctl start kubelet
 EOF
+
+_PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
+_API_USER="@API_USER@"
+if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
+  echo "Pre-pulling requested docker images ${_PRE_PULL_DOCKERS}"
+  IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
+  for _DOCKER in "${DOCKERS[@]}"; do
+    _REGISTRY="${_DOCKER%%_*}"
+    docker login -u "$_API_USER" -p "$_API_TOKEN" "${_REGISTRY}"
+    docker pull "$_DOCKER"
+  done
+fi
 
 nc -l -k 8888 &

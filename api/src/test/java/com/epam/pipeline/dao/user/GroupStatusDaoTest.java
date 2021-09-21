@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.dao.user;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.user.GroupStatus;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Transactional
-public class GroupStatusDaoTest extends AbstractSpringTest {
+public class GroupStatusDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_GROUP_1 = "test_group_1";
     private static final String TEST_GROUP_2 = "test_group_2";

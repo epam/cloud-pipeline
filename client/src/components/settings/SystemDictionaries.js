@@ -143,33 +143,24 @@ class SystemDictionaries extends React.Component {
       return;
     }
     const {router} = this.props;
-    router && router.push(`settings/dictionaries/${name}`);
+    router && router.push(`settings/dictionaries/${encodeURIComponent(name)}`);
   };
 
   onDictionaryChanged = (name, items, changed) => {
     this.setState({modified: changed});
   };
 
-  onDictionarySave = (name, items, previousName) => {
+  onDictionarySave = (id, name, items) => {
     const {currentDictionary} = this.props;
     const hide = message.loading('Saving dictionary...', 0);
     const {systemDictionaries, router} = this.props;
     this.setState({pending: true}, async () => {
-      if (previousName) {
-        const removeRequest = new SystemDictionariesDelete(previousName);
-        await removeRequest.send();
-        if (removeRequest.error) {
-          hide();
-          message.error(removeRequest.error, 5);
-          this.setState({pending: false});
-          return;
-        }
-      }
       const request = new SystemDictionariesUpdate();
-      await request.send([{
+      await request.send({
+        id: id,
         key: name,
         values: items
-      }]);
+      });
       if (request.error) {
         hide();
         message.error(request.error, 5);
@@ -184,7 +175,7 @@ class SystemDictionaries extends React.Component {
           navigating: true
         }, () => {
           if (currentDictionary !== name) {
-            router.push(`/settings/dictionaries/${name}`);
+            router.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
             this.setState({navigating: false});
           }
         });
@@ -276,8 +267,13 @@ class SystemDictionaries extends React.Component {
 
   render () {
     const {authenticatedUserInfo} = this.props;
-    if (!authenticatedUserInfo.loaded || !authenticatedUserInfo.value.admin) {
+    if (!authenticatedUserInfo.loaded && authenticatedUserInfo.pending) {
       return null;
+    }
+    if (!authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
     }
     const {systemDictionaries} = this.props;
     if (!systemDictionaries.loaded && systemDictionaries.pending) {
@@ -336,10 +332,10 @@ class SystemDictionaries extends React.Component {
               <SystemDictionaryForm
                 filter={this.state.filter}
                 disabled={this.state.pending}
-                isNew={this.state.newDictionary}
                 onDelete={this.onDictionaryDelete}
                 onSave={this.onDictionarySave}
                 onChange={this.onDictionaryChanged}
+                id={this.currentDictionary ? this.currentDictionary.id : undefined}
                 name={this.currentDictionary ? this.currentDictionary.key : undefined}
                 items={
                   this.currentDictionary

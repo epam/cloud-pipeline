@@ -34,7 +34,7 @@ yum install -y  nc \
                 btrfs-progs
 
 yum install -y iproute-tc
-curl https://bootstrap.pypa.io/get-pip.py | python -
+curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
@@ -117,9 +117,26 @@ yum install -y \
             kubelet-1.15.4-0.x86_64
 
 # Install nvidia driver
+# - For k80 and v100
 wget http://us.download.nvidia.com/tesla/384.145/NVIDIA-Linux-x86_64-384.145.run && \
 sh NVIDIA-Linux-x86_64-384.145.run --silent && \
 rm -f NVIDIA-Linux-x86_64-384.145.run
+# - For a100
+wget https://us.download.nvidia.com/XFree86/Linux-x86_64/470.57.02/NVIDIA-Linux-x86_64-470.57.02.run && \
+sh NVIDIA-Linux-x86_64-470.57.02.run --silent && \
+rm -f NVIDIA-Linux-x86_64-470.57.02.run
+cat > /etc/yum.repos.d/cuda-rhel7.repo <<EOF
+[cuda-rhel7-x86_64]
+name=cuda-rhel7-x86_64
+baseurl=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub
+EOF
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+yum -y install cuda-drivers-fabricmanager-470 && \
+systemctl enable nvidia-fabricmanager
+# -
 
 # Install nvidia docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 

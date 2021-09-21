@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_KEY;
@@ -37,6 +35,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
 import static com.epam.pipeline.autotests.ao.Primitive.ENLARGE;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_PREVIEW;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL;
+import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -224,14 +223,6 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .sleep(5, SECONDS)
                 .addKeyWithValue(key1, "")
                 .messageShouldAppear(emptyValueErrorMessage);
-    }
-
-    private File getFile(String filename) {
-        try {
-            return Paths.get(ClassLoader.getSystemResource(filename).toURI()).toFile();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Unable to get resource file");
-        }
     }
 
     private String readFromFile(String filename) {

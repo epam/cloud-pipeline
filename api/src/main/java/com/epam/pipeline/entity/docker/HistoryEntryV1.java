@@ -24,6 +24,9 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class HistoryEntryV1 {
 
+    @JsonProperty("os")
+    private String os;
+
     @JsonProperty("created")
     private String created;
 

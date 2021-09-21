@@ -40,6 +40,7 @@ export class SplitPanel extends React.Component {
     onPanelResize: PropTypes.func,
     onPanelResizeDelay: PropTypes.number,
     resizerSize: PropTypes.number,
+    resizerStyle: PropTypes.object,
     contentPadding: PropTypes.number,
     orientation: PropTypes.oneOf(['horizontal', 'vertical']),
     style: PropTypes.object,
@@ -116,11 +117,11 @@ export class SplitPanel extends React.Component {
         key={this.getResizerIndentifier(resizerIndex)}
         style={style}>
         <div
-          style={{
+          style={Object.assign({
             backgroundColor: '#eee',
             height: '100%',
             width: '100%'
-          }}>
+          }, this.props.resizerStyle || {})}>
           {'\u00A0'}
         </div>
       </div>

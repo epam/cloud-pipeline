@@ -14,23 +14,37 @@
  * limitations under the License.
  */
 
+import {isObservableArray} from 'mobx';
 import {SearchItemTypes} from '../../models/search';
+import displayCount from '../../utils/displayCount';
+
+const pluralString = (plural) => plural === undefined ? 's' : plural;
 
 const countString = (key, localizationFn, count = 0, plural) =>
-  count === 0 || count === null
-  ? `${localizationFn(key)}${plural === undefined ? 's' : plural}`
-  : (
-    count > 1
-      ? `${count} ${localizationFn(key.toLowerCase())}${plural === undefined ? 's' : plural}`
-      : `${count} ${localizationFn(key.toLowerCase())}`
-  );
+  !count
+    ? `${localizationFn(key)}${pluralString(plural)}`
+    : (
+      count > 1
+        ? `${displayCount(count, true)} ${localizationFn(key.toLowerCase())}${pluralString(plural)}`
+        : `${count} ${localizationFn(key.toLowerCase())}`
+    );
 
 const titleFn = (key, pluralStr) =>
   (localizationFn) =>
     (count = 0) =>
       countString(key, localizationFn, count, pluralStr);
 
-export const SearchGroupTypes = {
+function test (o) {
+  if (!o) {
+    return false;
+  }
+  const set = Array.isArray(o) || isObservableArray(o)
+    ? new Set(o)
+    : new Set([o]);
+  return !!(this.types || []).find(t => set.has(t));
+}
+
+const SearchGroupTypes = {
   folder: {
     types: [SearchItemTypes.folder, SearchItemTypes.metadataEntity],
     icon: 'folder',
@@ -71,3 +85,9 @@ export const SearchGroupTypes = {
     title: titleFn('Issue')
   }
 };
+
+Object.values(SearchGroupTypes).forEach(value => {
+  value.test = test.bind(value);
+});
+
+export {SearchGroupTypes};

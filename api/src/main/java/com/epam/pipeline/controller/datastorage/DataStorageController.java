@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
@@ -628,7 +629,7 @@ public class DataStorageController extends AbstractRestController {
                                                       @RequestParam(value = PATH) String path,
                                                       @RequestParam(value = VERSION, required = false) String version,
                                                       @RequestBody final Set<String> tags) {
-        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, tags, version));
+        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, version, tags));
     }
 
     @GetMapping(value = "/datastorage/{id}/tags/list")
@@ -660,6 +661,21 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<String> getDataStorageSharedLink(@PathVariable(value = ID) final Long id) {
         return Result.success(dataStorageApiService.getDataStorageSharedLink(id));
+    }
+
+    @PostMapping(value = "/datastorage/{id}/convert")
+    @ResponseBody
+    @ApiOperation(
+            value = "Converts data storage to versioned storage.",
+            notes = "Converts data storage to versioned storage.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<AbstractSecuredEntity> convert(@PathVariable(value = ID) final Long id,
+                                                 @RequestBody(required = false)
+                                                 final DataStorageConvertRequest request) {
+        return Result.success(dataStorageApiService.convert(id, request));
     }
 
     @GetMapping(value = "/datastorage/permission")

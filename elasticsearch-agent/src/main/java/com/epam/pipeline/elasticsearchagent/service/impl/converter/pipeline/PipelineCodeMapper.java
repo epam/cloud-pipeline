@@ -41,9 +41,13 @@ public class PipelineCodeMapper {
                     .startObject()
                     .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_CODE.name())
                     .field("pipelineId", pipeline.getId())
+                    .field("parentId", pipeline.getId())
                     .field("pipelineName", pipeline.getName())
                     .field("pipelineVersion", pipelineVersion)
+                    .field("description", pipelineVersion)
                     .field("path", path)
+                    .field("name", path)
+                    .field("id", path)
                     .field("content", buildDocContent(fileContent));
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());

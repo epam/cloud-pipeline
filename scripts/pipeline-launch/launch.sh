@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -446,7 +446,7 @@ function get_install_command_by_current_distr {
       if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
             _INSTALL_COMMAND_TEXT=
       else
-            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
                   check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
                   if [ "$CP_REPO_ENABLED" == "true" ] && [ -f /etc/yum.repos.d/cloud-pipeline.repo ]; then
@@ -602,6 +602,36 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function configureHyperThreading() {
+    mount -o rw,remount /sys
+    if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
+      _current_processor=-1
+      declare -a used_cores
+      cat /proc/cpuinfo | while read line; do
+        if [[ "$line" == *"processor"* ]]; then
+          _current_processor=`echo "$line" | awk '{ print $3 }'`
+        elif [[ "$line" == *"core id"* ]]; then
+          _current_core=`echo "$line" | awk '{ print $4 }'`
+          if [[  "${used_cores}" == *"${_current_core}"* ]]; then
+            if [ -f /sys/devices/system/cpu/cpu${_current_processor}/online ]; then
+              echo 0 > /sys/devices/system/cpu/cpu${_current_processor}/online
+            else
+              echo "Processor $_current_processor marked as hyper-threaded, but file /sys/devices/system/cpu/cpu${_current_processor}/online doesn't exists"
+            fi
+          else
+              used_cores="${used_cores} ${_current_core}"
+          fi
+        fi
+      done
+    else
+      for cpu in `ls /sys/devices/system/cpu/ | grep -E 'cpu[0-9]+'`; do
+        if [ -f /sys/devices/system/cpu/${cpu}/online ]; then
+          echo 1 > /sys/devices/system/cpu/${cpu}/online
+        fi
+      done
+    fi
+}
+
 ######################################################
 
 
@@ -628,6 +658,12 @@ fi
 
 
 ######################################################
+# Configure Hyperthreading
+######################################################
+configureHyperThreading
+
+
+######################################################
 # Change Time Zone if configured
 ######################################################
 
@@ -638,6 +674,16 @@ if [ ! -z "$CP_TZ" ] && [ -f "$CP_TZ" ]; then
   ln -s "$CP_TZ" /etc/localtime
 else
   echo "CP_TZ variable is not set, or that file doesn't exist, time zone will not be changed."
+fi
+
+######################################################
+# Setup DNS options
+######################################################
+# Check for ndots options
+if [ "$CP_DNS_NDOTS" ]; then
+    \cp /etc/resolv.conf /tmp/resolv.conf
+    sed -i "s/ndots:[[:digit:]]/ndots:$CP_DNS_NDOTS/g" /tmp/resolv.conf
+    \cp /tmp/resolv.conf /etc/resolv.conf
 fi
 
 
@@ -712,7 +758,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
+check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
 
 # Check jq is installed
 if ! jq --version > /dev/null 2>&1; then
@@ -1095,7 +1141,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
                   echo "[ERROR] Main repository install failed. Exiting"
                   exit "$_INSTALL_RESULT"
             fi
-            cd ..
+            cd -
       fi
 fi
 # Init path for shell scripts from common repository
@@ -1104,45 +1150,54 @@ if [ -d $COMMON_REPO_DIR/shell ]; then
       export PATH=$PATH:$COMMON_REPO_DIR/shell
 fi
 
+# Fix /etc/hosts if requested
+CP_ETC_HOSTS_FIXES_ENABLED=${CP_ETC_HOSTS_FIXES_ENABLED:-"true"}
+if [ "$CP_ETC_HOSTS_FIXES_ENABLED" == "true" ]; then
+      etc_hosts_fixes
+fi
+
 # Install pipe CLI
-if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
-      install_pip_package PipelineCLI
-else
-      echo "Installing 'pipe' CLI"
-      echo "-"
-      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+CP_PIPE_CLI_ENABLED=${CP_PIPE_CLI_ENABLED:-"true"}
+if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
+      if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+            install_pip_package PipelineCLI
       else
-        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
-      fi
+            echo "Installing 'pipe' CLI"
+            echo "-"
+            if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+                  CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+            else
+                  CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+            fi
 
-      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
+            download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
 
-      if [ $? -ne 0 ]; then
-            echo "[ERROR] 'pipe' CLI download failed. Exiting"
-            exit 1
-      fi
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] 'pipe' CLI download failed. Exiting"
+                  exit 1
+            fi
 
-      # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
-      rm -f /bin/pipe
-      rm -f /usr/bin/pipe
-      rm -f /usr/local/bin/pipe
-      rm -f /sbin/pipe
-      rm -f /usr/sbin/pipe
-      rm -f /usr/local/sbin/pipe
-      rm -rf ${CP_USR_BIN}/pipe
+            # Clean any known locations, where previous version of the pipe might reside (E.g. committed by the user)
+            rm -f /bin/pipe
+            rm -f /usr/bin/pipe
+            rm -f /usr/local/bin/pipe
+            rm -f /sbin/pipe
+            rm -f /usr/sbin/pipe
+            rm -f /usr/local/sbin/pipe
+            rm -rf ${CP_USR_BIN}/pipe
 
 
-      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
-        rm -f "$CP_PIPELINE_CLI_NAME"
-        ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
-      else
-        # Install into the PATH locationse
-        cp pipe /usr/bin/
-        cp pipe ${CP_USR_BIN}/
-        chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
-        rm -f pipe
+            if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+                  tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
+                  rm -f "$CP_PIPELINE_CLI_NAME"
+                  ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
+            else
+                  # Install into the PATH locations
+                  cp pipe /usr/bin/
+                  cp pipe ${CP_USR_BIN}/
+                  chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+                  rm -f pipe
+            fi
       fi
 fi
 
@@ -1154,19 +1209,31 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo "-"
 
       echo "Installing fsbrowser"
-      install_pip_package fsbrowser
+      CP_FSBROWSER_NAME=${CP_FSBROWSER_NAME:-fsbrowser.tar.gz}
+
+      download_file "${DISTRIBUTION_URL}${CP_FSBROWSER_NAME}"
       if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to install FSBrowser"
             exit 1
       fi
-      # If the "private" python distro was used - symlink fsbrowser to the path, which is exported via PATH
-      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
+
+      rm -f /bin/fsbrowser
+      rm -f /usr/bin/fsbrowser
+      rm -f /usr/local/bin/fsbrowser
+      rm -f /sbin/fsbrowser
+      rm -f /usr/sbin/fsbrowser
+      rm -f /usr/local/sbin/fsbrowser
+
+      tar -xf "$CP_FSBROWSER_NAME" -C ${CP_USR_BIN}/
+      rm -f "$CP_FSBROWSER_NAME"
+
+      CP_FSBROWSER_BIN=${CP_USR_BIN}/fsbrowser-cli/fsbrowser-cli
       if [ -f "$CP_FSBROWSER_BIN" ]; then
             ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
       fi
 
-      fsbrowser_setup
+      fsbrowser_setup "$REPO_REVISION" "$RESUMED_RUN"
       echo "------"
       echo
 fi
@@ -1195,6 +1262,7 @@ else
       else
             git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
       fi
+      cd -
 fi
 
 # Apply MAC/networking tweaks if requested
@@ -1312,29 +1380,28 @@ echo "------"
 echo
 ######################################################
 
+CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
+if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
+      if [ "$RESUMED_RUN" == true ]; then
+            echo "Skipping data localization for resumed run"
+      else
+            ######################################################
+            echo "Checking if remote data needs localizing"
+            echo "-"
+            ######################################################
+            LOCALIZATION_TASK_NAME="InputData"
+            INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
 
-if [ "$RESUMED_RUN" == true ];
-then
-    echo "Skipping data localization for resumed run"
-else
-    ######################################################
-    echo "Checking if remote data needs localizing"
-    echo "-"
-    ######################################################
-    LOCALIZATION_TASK_NAME="InputData"
-    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+            upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
 
-    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+            if [ $? -ne 0 ]; then
+                  echo "Failed to upload input data"
+                  exit 1
+            fi
+            echo
 
-    if [ $? -ne 0 ];
-    then
-        echo "Failed to upload input data"
-        exit 1
-    fi
-    echo
-
-    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
-
+            [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+      fi
 fi
 echo "------"
 echo
@@ -1453,27 +1520,37 @@ echo "$_CP_ENV_ULIMIT" >> /etc/profile
 # umask may be present in the existing file, so we are replacing it the updated value
 sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
 
-if [ -f /etc/bash.bashrc ]; then
-      _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
-elif [ -f /etc/bashrc ]; then
-      _GLOBAL_BASHRC_PATH="/etc/bashrc"
-else
-      _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
-      touch $_GLOBAL_BASHRC_PATH
-      ln -s $_GLOBAL_BASHRC_PATH /etc/bashrc
+_GLOBAL_BASHRC_PATHS=()
+
+if [ -f "/etc/bash.bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bash.bashrc")
 fi
 
-sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_UMASK" $_GLOBAL_BASHRC_PATH
+if [ -f "/etc/bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bashrc")
+fi
 
-sed -i "\|ulimit|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_ULIMIT" $_GLOBAL_BASHRC_PATH
+if [ ! -f "/etc/bash.bashrc" ] && [ ! -f "/etc/bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bash.bashrc")
+    touch "/etc/bash.bashrc"
+    echo >> "/etc/bash.bashrc"
+    ln -s "/etc/bash.bashrc" "/etc/bashrc"
+fi
 
-sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" $_GLOBAL_BASHRC_PATH
-
-sed -i "\|$_CP_ENV_SUDO_ALIAS|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_SUDO_ALIAS" $_GLOBAL_BASHRC_PATH
+for _GLOBAL_BASHRC_PATH in "${_GLOBAL_BASHRC_PATHS[@]}"
+do
+    sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|$_CP_ENV_SUDO_ALIAS|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_SUDO_ALIAS" "$_GLOBAL_BASHRC_PATH"
+done
 
 echo "Finished setting environment variables to /etc/profile"
 
@@ -1628,7 +1705,20 @@ fi
 
 ######################################################
 
+######################################################
+# Setup NoMachine
+######################################################
 
+echo "Setup NoMachine environment"
+echo "-"
+
+if [ "$CP_CAP_DESKTOP_NM" == "true" ]; then
+      nomachine_setup
+else
+    echo "NoMachine support is not requested"
+fi
+
+######################################################
 
 ######################################################
 # Setup "Singularity" support
@@ -1640,7 +1730,60 @@ echo "-"
 if [ "$CP_CAP_SINGULARITY" == "true" ]; then
       singularity_setup
 else
-    echo "Singularity support is not requested"
+      echo "Singularity support is not requested"
+fi
+
+######################################################
+
+
+######################################################
+# Install additional packages
+######################################################
+
+echo "Install additional packages"
+echo "-"
+
+if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
+      EXTRA_PKG_INSTALL_COMMAND=
+      EXTRA_PKG_DISTRO_INSTALL_COMMAND=
+      if [ "$CP_CAP_EXTRA_PKG" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
+      fi
+      if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+      fi
+
+      if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
+            echo "Installing COMMON extra packages: $CP_CAP_EXTRA_PKG"
+            eval "$EXTRA_PKG_INSTALL_COMMAND"
+      fi
+
+      if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
+            echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
+            eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+else
+      echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"
+fi
+
+######################################################
+
+######################################################
+# Enable NFS observer
+######################################################
+
+echo "Setup NFS events observer"
+echo "-"
+
+if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
+    echo "NFS events observer is not requested"
+else
+    inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
+    sysctl -w fs.inotify.max_user_watches=$inotify_watchers
+    sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
 fi
 
 ######################################################
@@ -1652,7 +1795,9 @@ echo "-"
 ######################################################
 
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
-cp_cap_init
+if [ "$CP_CAP_DELAY_SETUP" != "true" ]; then
+      cp_cap_init
+fi
 
 # Configure docker wrapper
 if check_cp_cap CP_CAP_DIND_CONTAINER && ! check_cp_cap CP_CAP_DIND_CONTAINER_NO_VARS
@@ -1660,6 +1805,14 @@ then
     DEFAULT_ENV_FILE="/etc/docker/default.env.file"
     pipe_get_preference "launch.dind.container.vars" | tr ',' '\n' > "$DEFAULT_ENV_FILE"
     initialise_wrappers "docker" "docker_wrapper \"$DEFAULT_ENV_FILE\"" "$CP_USR_BIN"
+fi
+
+echo "Prepare profile credentials"
+$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+_PROFILE_CREDENTIALS_WRITER_RESULT=$?
+if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
+then
+      echo "[ERROR] Failed to write profile credentials"
 fi
 
 # As some environments do not support "sleep infinity" command - it is substituted with "sleep 10000d"
@@ -1735,8 +1888,14 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
       echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
-if [ "$SINGLE_RUN" = true ] ;
-then
+if ! check_cp_cap "CP_CAP_SKIP_UMOUNT" && check_installed "umount"; then
+      CP_CAP_UMOUNT_TYPES="${CP_CAP_UMOUNT_TYPES:-cifs,fuse,nfs,nfs4,lustre}"
+      echo "Unmounting all storage mounts"
+      umount -t "$CP_CAP_UMOUNT_TYPES" -lfa
+      echo "Finished unmounting process"
+fi
+
+if [ "$SINGLE_RUN" = true ] && [ "$cluster_role_type" != "additional" ]; then
     echo "Cleaning any data in a runs root directory at ${RUNS_ROOT}"
     rm -Rf $RUNS_ROOT/*
     echo "Cleaning any data in a common root directory at ${COMMON_ROOT}"
@@ -1746,5 +1905,6 @@ else
     rm -Rf $RUN_DIR
 fi
 
+echo "Exiting with $CP_EXEC_RESULT"
 exit "$CP_EXEC_RESULT"
 ######################################################

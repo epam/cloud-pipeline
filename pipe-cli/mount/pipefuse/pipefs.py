@@ -22,6 +22,7 @@ import stat
 import time
 
 import easywebdav
+from dateutil.tz import tzlocal
 from fuse import FuseOSError, Operations
 from threading import RLock
 
@@ -139,7 +140,7 @@ class PipeFS(Operations):
                 'st_mode': mode | self.mode,
                 'st_gid': os.getgid(),
                 'st_uid': os.getuid(),
-                'st_atime': time.mktime(datetime.datetime.now().timetuple())
+                'st_atime': time.mktime(datetime.datetime.now(tz=tzlocal()).timetuple())
             }
             if props.mtime:
                 attrs['st_mtime'] = props.mtime
@@ -256,8 +257,10 @@ class PipeFS(Operations):
     def release(self, path, fh):
         self.container.release(fh)
 
+    @syncronized
+    @errorlogged
     def fsync(self, path, fdatasync, fh):
-        pass
+        self.client.flush(fh, path)
 
     class FallocateFlag:
         # See http://man7.org/linux/man-pages/man2/fallocate.2.html.

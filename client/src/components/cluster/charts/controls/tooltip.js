@@ -281,8 +281,8 @@ class Tooltip extends React.PureComponent {
   };
 
   render () {
-    const {plot, timeline} = this.props;
-    if (!plot || !timeline || !this.hoveredItem) {
+    const {plot, timeline, disabled} = this.props;
+    if (!plot || !timeline || !this.hoveredItem || disabled) {
       return null;
     }
     const {from} = timeline.state;
@@ -325,7 +325,8 @@ Tooltip.propTypes = {
     field: PropTypes.string,
     title: PropTypes.string,
     formatter: PropTypes.func
-  }))
+  })),
+  disabled: PropTypes.bool
 };
 
 export default Tooltip;

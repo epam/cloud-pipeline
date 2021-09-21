@@ -1,0 +1,120 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.filter {
+  margin-bottom: 4px;
+  padding: 0;
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter .header {
+  border: 1px dashed transparent;
+  padding: 2px 5px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.filter .header.expanded {
+  border-bottom: 1px dashed #dfdfdf;
+}
+
+.filter .header:hover {
+  background: #e6f7ff;
+}
+
+.header .header-caret {
+  color: #595959;
+  transition: all 0.2s ease-in-out;
+  transform-origin: 50% 50%;
+  margin-right: 5px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.header .header-caret.expanded {
+  transform: rotate(90deg);
+}
+
+.filter .title {
+  font-weight: bold;
+  min-width: 125px;
+}
+
+.filter .options-container {
+  display: flex;
+  flex-direction: column;
+  padding: 0 5px;
+}
+
+.filter .option {
+  user-select: none;
+  height: 21px;
+  visibility: visible;
+  transition: all 0.2s ease-in-out;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.filter .option:first-child {
+  margin-top: 5px;
+}
+
+.filter .search-input {
+  height: 21px;
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+  visibility: visible;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0 0 3px 3px;
+}
+
+.filter .search-input input {
+  border-top: 1px solid transparent;
+  border-radius: 0 0 3px 3px;
+}
+
+.filter .search-input:hover input {
+  border-radius: 3px;
+}
+
+.filter .search-input .clear-btn {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.filter .search-input .clear-btn:hover {
+  color: #1890ff;
+}
+
+.filter .option-hidden {
+  transform: scaleY(0);
+  border: 0;
+  padding: 0;
+  margin: 0 !important;
+  visibility: hidden;
+  height: 0;
+}

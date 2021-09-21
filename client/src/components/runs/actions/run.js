@@ -30,6 +30,7 @@ import {
 } from 'antd';
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
+import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeServices';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
@@ -49,6 +50,7 @@ import {
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import SensitiveBucketsWarning from './sensitive-buckets-warning';
 import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
+import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -60,9 +62,106 @@ export function run (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"run" function should be called with parent component passed to arguments:');
   }
-  return function (payload, confirm = true, title, warning, allowedInstanceTypesRequest) {
-    return runFn(payload, confirm, title, warning, parent.props, callback, allowedInstanceTypesRequest);
+  return function (
+    payload,
+    confirm = true,
+    title,
+    warning,
+    allowedInstanceTypesRequest,
+    hostedApplicationConfiguration,
+    platform,
+    skipCheck = false
+  ) {
+    return runFn(
+      payload,
+      confirm,
+      title,
+      warning,
+      parent.props,
+      callback,
+      allowedInstanceTypesRequest,
+      hostedApplicationConfiguration,
+      platform,
+      skipCheck
+    );
   };
+}
+
+export function openReRunForm (run, props) {
+  const {
+    router,
+    pipelines
+  } = props;
+  if (!run || !router) {
+    return Promise.resolve();
+  }
+  const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
+    pipelineRequest
+      .fetch()
+      .then(() => {
+        if (pipelineRequest.error || !pipelineRequest.loaded) {
+          throw new Error();
+        }
+        resolve(pipelineRequest.value);
+      })
+      .catch(reject)
+      .then(() => callback && callback());
+  });
+  return new Promise((resolve) => {
+    const {
+      pipelineId,
+      version: runVersion,
+      id,
+      configName,
+      dockerImage
+    } = run;
+    Promise.resolve()
+      .then(() => {
+        if (pipelines && pipelineId) {
+          const hide = message.loading('Fetching pipeline info...', 0);
+          return wrapPipelineInfoPromise(
+            pipelines.getPipeline(pipelineId),
+            hide
+          );
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then((pipelineInfo) => {
+        if (pipelineInfo) {
+          return Promise.resolve({
+            pipelineInfo,
+            versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
+          });
+        }
+        return Promise.resolve();
+      })
+      .catch(() => Promise.resolve())
+      .then((options) => {
+        const {
+          versionedStorage = false,
+          pipelineInfo
+        } = options || {};
+        let link;
+        const version = versionedStorage && pipelineInfo?.currentVersion?.name
+          ? pipelineInfo.currentVersion.name
+          : runVersion;
+        const query = versionedStorage ? `?vs=true` : '';
+        if (pipelineId && version && id) {
+          link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;
+        } else if (pipelineId && version && configName) {
+          link = `/launch/${pipelineId}/${version}/${configName}${query}`;
+        } else if (pipelineId && version) {
+          link = `/launch/${pipelineId}/${version}/default${query}`;
+        } else if (id) {
+          link = `/launch/${id}${query}`;
+        }
+        if (link) {
+          router.push(link);
+        }
+        resolve(link);
+      });
+  });
 }
 
 export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTypesRequest) {
@@ -113,11 +212,34 @@ async function saveRunSchedule (runId, scheduleRules) {
   }
 }
 
-function runFn (payload, confirm, title, warning, stores, callbackFn, allowedInstanceTypesRequest) {
+async function runHostedApp (runId, configuration) {
+  if (configuration) {
+    const {service, ports = []} = configuration;
+    const request = new PipelineRunKubeServices(runId, service);
+    await request.send(ports);
+    if (request.error) {
+      message.error(request.error);
+    }
+  }
+}
+
+function runFn (
+  payload,
+  confirm,
+  title,
+  warning,
+  stores,
+  callbackFn,
+  allowedInstanceTypesRequest,
+  hostedApplicationConfiguration,
+  platform,
+  skipCheck
+) {
   return new Promise(async (resolve) => {
     let launchName;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
+    const {dataStorageAvailable} = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -145,11 +267,41 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         availableInstanceTypes = (stores[storeName].value || []).map(i => i);
       }
     }
-    if (stores.awsRegions) {
-      await stores.awsRegions.fetchIfNeededOrWait();
-    }
     if (stores.preferences) {
       await stores.preferences.fetchIfNeededOrWait();
+    }
+    if (
+      dataStorageAvailable &&
+      stores.preferences &&
+      stores.preferences.loaded &&
+      /^skip$/i.test(stores.preferences.nfsSensitivePolicy) &&
+      payload &&
+      payload.params &&
+      payload.params[CP_CAP_LIMIT_MOUNTS] &&
+      payload.params[CP_CAP_LIMIT_MOUNTS].value &&
+      !/^none$/i.test(payload.params[CP_CAP_LIMIT_MOUNTS].value)
+    ) {
+      dataStorageAvailable && await dataStorageAvailable.fetchIfNeededOrWait();
+      if (dataStorageAvailable.loaded) {
+        const ids = new Set(payload.params[CP_CAP_LIMIT_MOUNTS].value.split(',').map(i => +i));
+        const selection = (dataStorageAvailable.value || []).filter(s => ids.has(+s.id));
+        const hasSensitive = !!selection.find(s => s.sensitive);
+        const filtered = selection
+          .filter(
+            filterNFSStorages(
+              stores.preferences.nfsSensitivePolicy,
+              hasSensitive
+            )
+          );
+        if (filtered.length) {
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+        } else {
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+        }
+      }
+    }
+    if (stores.awsRegions) {
+      await stores.awsRegions.fetchIfNeededOrWait();
     }
     if (payload.pipelineId) {
       const {pipelines} = stores;
@@ -184,6 +336,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         if (scheduleRules && scheduleRules.length > 0) {
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
+        await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
         resolve(true);
         callbackFn && callbackFn(true);
       }
@@ -191,7 +344,6 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     if (!confirm) {
       await launchFn();
     } else {
-      const {dataStorageAvailable} = stores;
       const inputs = getInputPaths(null, payload.params);
       const outputs = getOutputPaths(null, payload.params);
       const {errors: permissionErrors} = await performAsyncCheck({
@@ -199,7 +351,8 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         dataStorages: dataStorageAvailable,
         inputs,
         outputs,
-        dockerImage: payload.dockerImage
+        dockerImage: payload.dockerImage,
+        skipCheck
       });
       let dataStorages;
       if (dataStorageAvailable) {
@@ -218,6 +371,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         content: (
           <RunSpotConfirmationWithPrice
             ref={ref}
+            platform={platform}
             warning={warning}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
@@ -240,6 +394,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
                 : undefined
             }
             preferences={stores.preferences}
+            skipCheck={skipCheck}
           />
         ),
         style: {
@@ -283,6 +438,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
               if (scheduleRules && scheduleRules.length > 0) {
                 await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
               }
+              await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
               resolve(true);
               callbackFn && callbackFn(true);
             }
@@ -315,6 +471,7 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -333,7 +490,8 @@ export class RunConfirmation extends React.Component {
     hddSize: PropTypes.number,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
-    preferences: PropTypes.object
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -364,6 +522,9 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get initialSelectedDataStorageIndecis () {
+    if (/^none$/i.test(this.props.limitMounts)) {
+      return [];
+    }
     return (
       this.props.limitMounts ||
       this.dataStorages.filter(d => !d.sensitive)
@@ -375,6 +536,9 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get selectedDataStorageIndecis () {
+    if (/^none$/i.test(this.state.limitMounts)) {
+      return [];
+    }
     return (
       this.state.limitMounts ||
       this.dataStorages.filter(d => !d.sensitive)
@@ -752,6 +916,7 @@ export class RunConfirmation extends React.Component {
           dataStorages={this.props.dataStorages}
           preferences={this.props.preferences}
           instance={this.currentInstanceType}
+          platform={this.props.platform}
         />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
@@ -784,6 +949,7 @@ export class RunConfirmation extends React.Component {
           )
         }
         <EstimatedDiskSizeWarning
+          skipCheck={this.props.skipCheck}
           nodeCount={this.props.nodeCount}
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
@@ -814,6 +980,7 @@ export class RunConfirmation extends React.Component {
 export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
@@ -833,7 +1000,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     onChangeLimitMounts: PropTypes.func,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
-    preferences: PropTypes.object
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -902,6 +1070,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
@@ -921,6 +1090,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
             preferences={this.props.preferences}
+            skipCheck={this.props.skipCheck}
           />
         </Row>
         {

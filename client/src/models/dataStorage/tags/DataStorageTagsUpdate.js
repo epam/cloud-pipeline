@@ -18,8 +18,8 @@ import RemotePost from '../../basic/RemotePost';
 import buildUrl from './url-builder';
 
 export default class DataStorageTagsUpdate extends RemotePost {
-  constructor (id, path, version) {
+  constructor (id, path, version, rewrite = true) {
     super();
-    this.url = buildUrl(id, path, version, true);
+    this.url = buildUrl(id, path, version, rewrite);
   }
 }

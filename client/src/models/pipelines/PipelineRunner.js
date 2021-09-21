@@ -22,4 +22,5 @@ class PipelineRunner extends RemotePost {
   url = '/run';
 }
 
+export {PipelineRunner};
 export default new PipelineRunner();

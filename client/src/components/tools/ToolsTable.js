@@ -22,10 +22,10 @@ import ToolLink from './elements/ToolLink';
 import ToolImage from '../../models/tools/ToolImage';
 import highlightText from '../special/highlightText';
 import styles from './Tools.css';
+import PlatformIcon from './platform-icon';
 
 @observer
 export default class ToolsTable extends React.Component {
-
   openIssuesPanel = (tool) => {
     if (this.props.onOpenIssuesPanel) {
       this.props.onOpenIssuesPanel(tool);
@@ -82,12 +82,16 @@ export default class ToolsTable extends React.Component {
         {
           tool.iconId &&
           <div style={{margin: 5, overflow: 'hidden', width: 33, height: 33}}>
-            <img src={ToolImage.url(tool.id, tool.iconId)} style={{width: '100%'}} />
+            <img
+              key={tool.image}
+              src={ToolImage.url(tool.id, tool.iconId)}
+              style={{width: '100%'}}
+            />
           </div>
         }
         <Row type="flex" align="middle" justify="space-between" style={{flex: 1}}>
           <div className={styles.toolRowTitle} style={tool.iconId ? {paddingLeft: 0} : {}}>
-            <span className={styles.toolTitle}>
+            <div className={styles.toolTitle}>
               <ToolLink link={tool.link} style={{margin: '0px 3px', fontSize: 'larger'}} />
               {
                 tool.endpoints && tool.endpoints.length > 0
@@ -95,7 +99,11 @@ export default class ToolsTable extends React.Component {
                   : undefined
               }
               {highlightText(tool.image, this.props.searchString)}
-            </span>
+              <PlatformIcon
+                platform={tool.platform}
+                style={{marginLeft: 5}}
+              />
+            </div>
             <span className={styles.toolDescription}>
               {tool.shortDescription}
             </span>

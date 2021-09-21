@@ -20,6 +20,9 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
@@ -29,7 +32,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
@@ -58,6 +61,8 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     private static final int READ_PERMISSION = 1;
     private static final int WRITE_PERMISSION = 2;
     private static final int READ_AND_WRITE_PERMISSION = 3;
+    private static final DataStorageConvertRequest CONVERT_REQUEST = new DataStorageConvertRequest(
+            DataStorageConvertRequestType.VERSIONED_STORAGE, DataStorageConvertRequestAction.LEAVE);
 
     private final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
     private final DataStorageWithShareMount storageShareMount =
@@ -72,7 +77,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     private GrantPermissionManager grantPermissionManager;
 
     @Autowired
-    private PipelineRunManager mockPipelineRunManager;
+    private PipelineRunCRUDService mockRunCRUDService;
 
     @Autowired
     private RunMountService mockRunMountService;
@@ -506,6 +511,45 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldConvertDataStorageForAdmin() {
+        doReturn(pipeline).when(mockDataStorageConvertManager).convert(ID, CONVERT_REQUEST);
+        mockUserContext(context);
+
+        assertThat(dataStorageApiService.convert(ID, CONVERT_REQUEST)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldConvertDataStorageWhenPermissionIsGranted() {
+        initAclEntity(notSharedS3bucket, AclPermission.OWNER);
+        doReturn(pipeline).when(mockDataStorageConvertManager).convert(ID, CONVERT_REQUEST);
+        initUserAndEntityMocks(SIMPLE_USER, notSharedS3bucket, context);
+
+        assertThat(dataStorageApiService.convert(ID, CONVERT_REQUEST)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyConvertDataStorageWhenPermissionIsNotGranted() {
+        initAclEntity(s3bucket);
+        doReturn(pipeline).when(mockDataStorageConvertManager).convert(ID, CONVERT_REQUEST);
+        initUserAndEntityMocks(ANOTHER_SIMPLE_USER, s3bucket, context);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.convert(ID, CONVERT_REQUEST));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyConvertDataStorageWhenSharedPermissionIsNotGranted() {
+        initAclEntity(notSharedS3bucket, AclPermission.OWNER);
+        doReturn(pipeline).when(mockDataStorageConvertManager).convert(ID, CONVERT_REQUEST);
+        initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.convert(ID, CONVERT_REQUEST));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetStoragePermissionForAdmin() {
         final EntityWithPermissionVO entityWithPermissionVO = grantPermissionManager.loadAllEntitiesPermissions(
                 AclClass.DATA_STORAGE, TEST_INT, TEST_INT, true, TEST_INT);
@@ -568,7 +612,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     public void shouldGetSharedFSSPathWhenPermissionIsGranted() {
         initAclEntity(pipelinerun, AclPermission.OWNER);
         doReturn(storageMountPath).when(mockRunMountService).getSharedFSSPathForRun(ID, true);
-        doReturn(pipelinerun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(pipelinerun).when(mockRunCRUDService).loadRunById(ID);
         mockAuthUser(SIMPLE_USER);
 
         assertThat(dataStorageApiService.getSharedFSSPathForRun(ID, true)).isEqualTo(storageMountPath);
@@ -579,7 +623,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     public void shouldDenyGetSharedFSSPathWhenPermissionIsNotGranted() {
         initAclEntity(pipelinerun);
         doReturn(storageMountPath).when(mockRunMountService).getSharedFSSPathForRun(ID, true);
-        doReturn(pipelinerun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(pipelinerun).when(mockRunCRUDService).loadRunById(ID);
         mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () ->

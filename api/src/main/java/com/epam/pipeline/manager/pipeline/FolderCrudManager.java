@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -102,7 +103,6 @@ public class FolderCrudManager implements SecuredEntityManager {
         folderDao.createFolder(folder);
         return folder;
     }
-
 
     /**
      * Updates a {@link Folder} specified by id. Method checks name uniqueness and
@@ -169,6 +169,10 @@ public class FolderCrudManager implements SecuredEntityManager {
         Assert.notNull(folder, messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NOT_FOUND, id));
         folder.setHasMetadata(metadataManager.hasMetadata(new EntityVO(id, AclClass.FOLDER)));
         return folder;
+    }
+
+    public Optional<Folder> searchById(final Long id) {
+        return Optional.ofNullable(folderDao.loadFolder(id));
     }
 
     /**

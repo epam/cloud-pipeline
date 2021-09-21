@@ -19,6 +19,8 @@ package com.epam.pipeline.controller.search;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.manager.search.SearchManager;
 import io.swagger.annotations.ApiOperation;
@@ -26,6 +28,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -38,7 +41,6 @@ public class SearchController extends AbstractRestController {
 
     private final SearchManager searchManager;
 
-
     @RequestMapping(value = "/search", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
@@ -50,5 +52,18 @@ public class SearchController extends AbstractRestController {
             })
     public Result<SearchResult> search(@RequestBody ElasticSearchRequest searchRequest) {
         return Result.success(searchManager.search(searchRequest));
+    }
+
+    @PostMapping(value = "/search/facet")
+    @ResponseBody
+    @ApiOperation(
+            value = "Search with faceted filters",
+            notes = "Search with faceted filters",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<FacetedSearchResult> facetedSearch(@RequestBody final FacetedSearchRequest searchRequest) {
+        return Result.success(searchManager.facetedSearch(searchRequest));
     }
 }

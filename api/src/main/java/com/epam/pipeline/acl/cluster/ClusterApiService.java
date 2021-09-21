@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,10 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
@@ -51,6 +54,7 @@ public class ClusterApiService {
     private final NodeDiskManager nodeDiskManager;
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
+    private final EdgeServiceManager edgeServiceManager;
 
     @PostFilter(NODE_READ_FILTER)
     public List<NodeInstance> getNodes() {
@@ -66,6 +70,11 @@ public class ClusterApiService {
     @AclMask
     public NodeInstance getNode(final String name) {
         return nodesManager.getNode(name);
+    }
+
+    @PreAuthorize(NODE_READ)
+    public RunInfo loadRunIdForNode(final String name) {
+        return nodesManager.loadRunIdForNode(name);
     }
 
     @PreAuthorize(NODE_READ)
@@ -87,8 +96,8 @@ public class ClusterApiService {
 
     @PreAuthorize(NODE_READ)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
-        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval);
+                                              final Duration interval, final MonitoringReportType type) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
@@ -111,5 +120,9 @@ public class ClusterApiService {
     @PreAuthorize(NODE_READ)
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
+    }
+
+    public String buildEdgeExternalUrl(final String region) {
+        return edgeServiceManager.buildEdgeExternalUrl(region);
     }
 }

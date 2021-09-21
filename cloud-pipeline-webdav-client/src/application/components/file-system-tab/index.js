@@ -29,11 +29,11 @@ function SortingIcon ({sorting, property}) {
   }
   if (index === 0) {
     return (
-      <CaretDownOutlined />
+      <CaretUpOutlined />
     );
   }
   return (
-    <CaretUpOutlined />
+    <CaretDownOutlined />
   );
 }
 
@@ -197,7 +197,7 @@ function FileSystemTab (
   }, [onDropEvent]);
   const onDropParent = useCallback((event) => {
     onDropEvent(event, path);
-  }, [onDropEvent]);
+  }, [onDropEvent, path]);
   const onNameClicked = useCallback((e) => {
     if (e) {
       e.stopPropagation();
