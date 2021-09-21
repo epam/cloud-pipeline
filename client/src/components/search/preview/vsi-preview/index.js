@@ -136,6 +136,7 @@ class VSIPreview extends React.Component {
   };
 
   map;
+  pathElement;
 
   componentDidMount () {
     this.fetchPreviewItems();
