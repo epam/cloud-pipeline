@@ -350,10 +350,11 @@ class WsiFileParser:
                                         original_height,
                                         max_zoom)
 
-    def _is_same_series_selected(self, stat_file, selected_series):
+    def _is_same_series_selected(self, selected_series):
+        stat_file = WsiParsingUtils.get_stat_file_name(self.file_path)
         if not os.path.isfile(stat_file):
             return False
-        with open(WsiParsingUtils.get_stat_file_name(stat_file)) as last_sync_stats:
+        with open(stat_file) as last_sync_stats:
             json_stats = json.load(last_sync_stats)
             if 'target_series' in json_stats and json_stats['target_series'] == selected_series:
                 return True
@@ -468,7 +469,7 @@ class WsiFileParser:
         if target_series is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation... ')
             return 1
-        elif self._is_same_series_selected(self.file_path, target_series):
+        elif self._is_same_series_selected(target_series):
             self.log_processing_info('The same series [{}] is selected for image processing, skipping... '
                                      .format(target_series))
             return 0
