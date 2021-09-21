@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.testng.ITest;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
@@ -29,6 +32,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
 import java.awt.*;
+import java.io.File;
 import java.lang.reflect.Method;
 
 import static com.codeborne.selenide.Condition.visible;
@@ -70,6 +74,14 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     public void restartBrowser(final String address) {
         Selenide.close();
         login(address);
+    }
+
+    public void addExtension(final String extensionPath) {
+        final ChromeOptions options = new ChromeOptions();
+        options.addArguments("--no-sandbox");
+        options.addExtensions(new File(extensionPath));
+        WebDriver webDriver = new ChromeDriver(options);
+        WebDriverRunner.setWebDriver(webDriver);
     }
 
     @Override
@@ -115,6 +127,9 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     private void login(final String address) {
         if ("true".equals(C.AUTH_TOKEN)) {
+            if ("true".equalsIgnoreCase(C.IMPERSONATE_AUTH)) {
+                addExtension(C.EXTENSION_PATH);
+            }
             Selenide.open(address);
             Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
             WebDriverRunner.getWebDriver().manage().addCookie(cookie);

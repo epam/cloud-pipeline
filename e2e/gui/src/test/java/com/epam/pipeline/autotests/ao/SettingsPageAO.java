@@ -241,17 +241,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         private List<SelenideElement> getAllEntries() {
-            return new ArrayList<>(context().find(byClassName("ant-table-content"))
-                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]")));
+            return context().find(byClassName("ant-table-content"))
+                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"));
         }
 
         public List<String> getAllEntriesNames() {
             sleep(2, SECONDS);
-            return new ArrayList<>(context().find(byClassName("ant-table-content"))
+            return context().find(byClassName("ant-table-content"))
                     .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"))
                     .stream()
                     .map(e -> e.find(byClassName("notification-title-column")).text())
-                    .collect(toList()));
+                    .collect(toList());
         }
 
         public SystemEventsAO deleteTestEntries(List<String> initEntries) {

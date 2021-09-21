@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -24,6 +25,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Cookie;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -111,18 +113,24 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
         Selenide.close();
-        Selenide.open(C.ROOT_ADDRESS);
-        if ("false".equals(C.AUTH_TOKEN)) {
+        if ("true".equalsIgnoreCase(C.AUTH_TOKEN)) {
+            if (impersonateMode()) {
+                Selenide.clearBrowserCookies();
+                addExtension(C.INVALID_EXTENSION_PATH);
+                Selenide.open(C.ROOT_ADDRESS);
+                checkFailedAuthentication();
+            } else {
+                Selenide.open(C.ROOT_ADDRESS);
+                validateErrorPage(singletonList("type=Unauthorized, status=401"));
+                Selenide.clearBrowserCookies();
+                sleep(1, SECONDS);
+            }
+        } else {
+            Selenide.open(C.ROOT_ADDRESS);
             new AuthenticationPageAO()
                     .login(C.LOGIN)
                     .password(format("123%s", C.PASSWORD))
                     .signIn();
-        }
-        if ("true".equals(C.AUTH_TOKEN)) {
-            validateErrorPage(singletonList("type=Unauthorized, status=401"));
-            Selenide.clearBrowserCookies();
-            sleep(1, SECONDS);
-        } else {
             validateErrorPage(singletonList("Incorrect user name or password"));
         }
         restartBrowser(C.ROOT_ADDRESS);
@@ -296,10 +304,19 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .waitEndpoint()
                 .attr("href");
         logout();
-        restartBrowser(endpoint);
-        new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
-        open(C.ROOT_ADDRESS);
-        loginAs(admin);
+        if (impersonateMode()) {
+            Selenide.close();
+            Selenide.clearBrowserCookies();
+            addExtension(C.ANONYM_EXTENSION_PATH);
+            Selenide.open(endpoint);
+            checkFailedAuthentication();
+            restartBrowser(C.ROOT_ADDRESS);
+        } else {
+            restartBrowser(endpoint);
+            new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
+            open(C.ROOT_ADDRESS);
+            loginAs(admin);
+        }
         runsMenu()
                 .log(getLastRunId(), log -> log
                         .shareWithGroup("ROLE_ANONYMOUS_USER")
@@ -308,7 +325,16 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         sleep(1, MINUTES);
         logout();
         final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
-        loginAs(anonymousAccount);
+        if (impersonateMode()) {
+            Selenide.close();
+            Selenide.clearBrowserCookies();
+            final String edgeUrl = endpoint.split(format("pipeline-%s-%s-0", getLastRunId(), C.VALID_ENDPOINT))[0];
+            Selenide.open(edgeUrl);
+            Cookie cookie = new Cookie("bearer", anonymousAccount.password);
+            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+        } else {
+            loginAs(anonymousAccount);
+        }
         sleep(2, SECONDS);
         open(endpoint);
         screenshot("Endpoint_page");

@@ -100,6 +100,9 @@ public class C {
         PIPE_INSTALLATION_CONTENT = conf.getProperty("e2e.ui.pipe.installation.content");
         PIPE_CONFIG_CONTENT_PATH = conf.getProperty("e2e.ui.pipe.config.content.path");
         IMPERSONATE_AUTH = conf.getProperty("e2e.ui.impersonate.auth");
+        EXTENSION_PATH = conf.getProperty("e2e.ui.extension.path");
+        INVALID_EXTENSION_PATH = conf.getProperty("e2e.ui.invalid.extension.path");
+        ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -182,4 +185,7 @@ public class C {
     public static final String PIPE_CONFIG_CONTENT_PATH;
 
     public static final String IMPERSONATE_AUTH;
+    public static final String EXTENSION_PATH;
+    public static final String INVALID_EXTENSION_PATH;
+    public static final String ANONYM_EXTENSION_PATH;
 }

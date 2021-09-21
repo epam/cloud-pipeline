@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.codeborne.selenide.Condition.appear;
+import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -36,6 +37,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.sleep;
 import static java.lang.String.format;
+import static org.openqa.selenium.By.tagName;
 
 public interface Authorization extends Navigation {
     Account admin = new Account(C.LOGIN, C.PASSWORD);
@@ -159,6 +161,10 @@ public interface Authorization extends Navigation {
 
     default boolean impersonateMode() {
         return "true".equalsIgnoreCase(C.IMPERSONATE_AUTH);
+    }
+
+    default void checkFailedAuthentication() {
+        $(tagName("body")).shouldBe(empty);
     }
 
     class Account {
