@@ -443,15 +443,17 @@ class VSIPreview extends React.Component {
       `x=${x}`,
       `y=${y}`
     ];
-    return new URL(`${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`, document.location.origin).href;
+    return `${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`;
   };
 
   openShareUrlModal = (e) => {
     e && e.stopPropagation();
     const url = this.generateShareUrl();
-    if (url) {
-      this.setState({shareUrl: url});
-    }
+    window.open(url, '_blank');
+    return;
+    // if (url) {
+    //   this.setState({shareUrl: url});
+    // }
   };
 
   closeShareUrlModal = () => {
