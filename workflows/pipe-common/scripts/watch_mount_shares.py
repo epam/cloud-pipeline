@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import subprocess
+import signal
 import time
 from watchdog.observers.inotify import InotifyObserver
 from watchdog.events import FileSystemEventHandler, FileMovedEvent
@@ -227,12 +228,17 @@ class NFSMountWatcher:
         self._target_path_mapping = dict()
         self._event_handler = CloudBucketDumpingEventHandler()
         self._event_observer = InotifyObserver()
+        self._set_signal_handlers()
         if target_paths:
             self._target_paths = target_paths.split(COMMA)
             self._update_static_paths_mapping()
         else:
             self._target_paths = None
             self._update_target_mount_points()
+
+    def _set_signal_handlers(self):
+        for signal_code in [signal.SIGTERM, signal.SIGINT]:
+            signal.signal(signal_code, self._event_handler.dump_to_storage)
 
     def _process_active_target_path(self, mnt_dest, mnt_src):
         if mnt_dest not in self._target_path_mapping:
