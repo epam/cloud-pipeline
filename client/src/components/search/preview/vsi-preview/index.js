@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {computed, observable} from 'mobx';
 import {
   Button,
   Tabs,
@@ -28,6 +29,7 @@ import {
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import FileSaver from 'file-saver';
+import S3Storage from '../../../../models/s3-upload/s3-storage';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
@@ -122,7 +124,7 @@ function getTiles (storageId, folder) {
   });
 }
 
-@inject('dataStorageCache')
+@inject('dataStorageCache', 'dataStorages')
 @observer
 class VSIPreview extends React.Component {
   state = {
@@ -131,15 +133,19 @@ class VSIPreview extends React.Component {
     preview: undefined,
     active: undefined,
     pending: false,
+    s3storageWrapperPending: true,
+    s3storageWrapperError: undefined,
     fullscreen: false,
     shareUrl: undefined,
     showShareUrlModal: false
   };
 
+  @observable s3Storage;
   map;
   pathElement;
 
   componentDidMount () {
+    this.createS3Storage();
     this.fetchPreviewItems();
   }
 
@@ -149,9 +155,76 @@ class VSIPreview extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.storageId !== this.props.storageId || prevProps.file !== this.props.file) {
+      this.createS3Storage();
       this.fetchPreviewItems();
     }
   }
+
+  @computed
+  get storage () {
+    const {storageId, dataStorages} = this.props;
+    if (storageId && dataStorages.loaded) {
+      return (dataStorages.value || []).find(s => +(s.id) === +storageId);
+    }
+    return undefined;
+  }
+
+  getTileUrl = (storageId, tilesFolder, x, y, z) => {
+    if (this.storage?.type === 'S3' && this.s3Storage) {
+      this.s3Storage.prefix = tilesFolder;
+      const url = this.s3Storage.getSignedUrl(`${z}/${y}/${x}.jpg`);
+      if (url) {
+        return url;
+      }
+    }
+    return generateTileSource(storageId, tilesFolder, x, y, z);
+  };
+
+  createS3Storage = () => {
+    const wrapCreateStorageCredentials = storage => new Promise((resolve, reject) => {
+      storage.updateCredentials()
+        .then(() => {
+          resolve(storage);
+        })
+        .catch(reject);
+    });
+    this.setState({
+      s3storageWrapperError: undefined,
+      s3storageWrapperPending: true
+    }, () => {
+      const {dataStorages, storageId} = this.props;
+      dataStorages.fetchIfNeededOrWait()
+        .then(() => {
+          if (!this.s3Storage && this.storage?.type === 'S3') {
+            const {delimiter, path} = this.storage;
+            const storage = {
+              id: storageId,
+              path,
+              delimiter
+            };
+            return wrapCreateStorageCredentials(new S3Storage(storage));
+          } else {
+            return Promise.resolve(this.s3Storage);
+          }
+        })
+        .then((storage) => {
+          if (storage) {
+            this.s3Storage = storage;
+          }
+          this.setState({
+            s3storageWrapperError: undefined,
+            s3storageWrapperPending: false
+          });
+        })
+        .catch(e => {
+          message.error(e.message, 5);
+          this.setState({
+            s3storageWrapperError: e.message,
+            s3storageWrapperPending: false
+          });
+        });
+    });
+  };
 
   onChangePreview = (path) => {
     if (!path) {
@@ -565,9 +638,7 @@ class VSIPreview extends React.Component {
               minLevel,
               maxLevel,
               ...rest,
-              getTileUrl: function (level, x, y) {
-                return generateTileSource(storageId, tiles.folder, x, y, level);
-              }
+              getTileUrl: (level, x, y) => this.getTileUrl(storageId, tiles.folder, x, y, level)
             }
           });
         this.saViewer = viewers[0].saViewer;
@@ -701,7 +772,11 @@ class VSIPreview extends React.Component {
     const {
       className
     } = this.props;
-    const {pending} = this.state;
+    const {
+      pending: loading,
+      s3storageWrapperPending
+    } = this.state;
+    const pending = loading || s3storageWrapperPending;
     return (
       <div
         className={className}

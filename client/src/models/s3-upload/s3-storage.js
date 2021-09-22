@@ -102,7 +102,7 @@ class S3Storage {
           return Promise.reject(error || new Error('credentials API is not available'));
         }
         return new Promise((resolve, reject) => {
-          fetchTempCredentials(this._storage.id, {write: true})
+          fetchTempCredentials(this._storage.id, {read: true, write: true})
             .then(resolve)
             .catch((e) => {
               updateCredentialsAttempt(attempt + 1, e)
@@ -116,21 +116,22 @@ class S3Storage {
         return Promise.reject(new Error(error));
       }
       if (this._credentials) {
-        this._credentials.accessKeyId = payload.keyID;
-        this._credentials.secretAccessKey = payload.accessKey;
-        this._credentials.sessionToken = payload.token;
-
-        AWS.config.update({
-          region: payload.region || this._storage.region,
-          credentials: this._credentials
-        });
+        this._credentials.update(
+          payload.keyID,
+          payload.accessKey,
+          payload.token,
+          payload.expiration
+        );
       } else {
         this._credentials = new Credentials(
           payload.keyID,
           payload.accessKey,
           payload.token,
-          this.updateCredentials);
-
+          payload.expiration,
+          this.updateCredentials
+        );
+      }
+      if (this._credentials) {
         AWS.config.update({
           region: payload.region || this._storage.region,
           credentials: this._credentials
@@ -142,6 +143,18 @@ class S3Storage {
     }
     this._s3 = new AWS.S3();
     return success;
+  };
+
+  getSignedUrl = (file = '') => {
+    const params = {
+      Bucket: this._storage.path,
+      Key: this.prefix + file
+    };
+    this._credentials.get();
+    if (this._credentials.needsRefresh()) {
+      return undefined;
+    }
+    return this._s3.getSignedUrl('getObject', params);
   };
 
   completeMultipartUploadStorageObject = (name, parts, uploadId) => {
