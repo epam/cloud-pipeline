@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
 import com.epam.pipeline.autotests.ao.Primitive;
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -25,8 +24,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
@@ -41,16 +39,16 @@ import static java.lang.String.format;
 
 public class NotificationsTest extends AbstractBfxPipelineTest implements Authorization {
 
-    private final String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-    private final String infoNotification = "info_notification-" + currentDate;
+    private final String currentDate = LocalDate.now().toString();
+    private final String infoNotification = format("info_notification-%s", currentDate);
     private final String infoNotificationBodyText = "info_notification_body_text";
     private final String infoEditedTitle = "info_edited";
     private final String infoEditedBodyText = "info_edited_body_text";
-    private final String warningNotification = "warning_notification-" + currentDate;
+    private final String warningNotification = format("warning_notification-%s", currentDate);
     private final String warningNotificationBodyText = "warning_notification_body_text";
-    private final String warningActiveNotification = "warning_active-" + currentDate;
+    private final String warningActiveNotification = format("warning_active-%s", currentDate);
     private final String warningActiveNotificationBodyText = "warning_active_body_text";
-    private final String criticalNotification = "critical_notification-" + currentDate;
+    private final String criticalNotification = format("critical_notification-%s", currentDate);
     private final String criticalNotificationBodyText = "critical_notification_body_text";
     private final String deletionMessageFormat = "Are you sure you want to delete notification '%s'?";
     private List<String> initialEntries;

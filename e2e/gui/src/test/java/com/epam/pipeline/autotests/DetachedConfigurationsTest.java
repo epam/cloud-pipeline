@@ -154,6 +154,7 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineDefaultProfile, profile ->
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
+                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
                     .click(SAVE)
             )
             .sleep(5, SECONDS)
@@ -243,6 +244,8 @@ public class DetachedConfigurationsTest
                         .also(confirmConfigurationChange())
                 )
                 .ensure(DISK, value(defaultDisk))
+                .sleep(2, SECONDS)
+                .selectValue(INSTANCE_TYPE, defaultInstanceType)
                 .resetChanges()
         );
     }

@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
+import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
@@ -259,6 +260,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .clear(NAME).setValue(NAME, "conf")
                                .clear(DISK).setValue(DISK, "23")
                                .clear(TIMEOUT).setValue(TIMEOUT, "2")
+                               .selectValue(INSTANCE_TYPE, C.DEFAULT_INSTANCE)
                                .sleep(2, SECONDS)
                                .click(SAVE)
                 )
@@ -356,7 +358,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         );
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
-                .deleteConfiguration(configurationName, popup -> popup.cancel())
+                .deleteConfiguration(configurationName, ConfirmationPopupAO::cancel)
                 .ensure(profileWithName(configurationName), exist.because(deletionWasCancelled))
                 .deleteConfiguration(configurationName, popup -> popup.ensureTitleIs(expectedTitle).ok())
                 .ensure(profileWithName(configurationName), not(exist).because(deletionWasConfirmed))
@@ -372,9 +374,5 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
 
     private static PipelineRunFormAO onLaunchPage() {
         return new PipelineRunFormAO();
-    }
-
-    private String withActualRunId(final String message) {
-        return message.replaceAll("run_id", getLastRunId());
     }
 }

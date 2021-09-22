@@ -254,16 +254,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .collect(toList());
         }
 
-        public SystemEventsAO deleteTestEntries(List<String> initEntries) {
+        public void deleteTestEntries(final List<String> initEntries) {
             sleep(2, SECONDS);
             List<SelenideElement> entries = getAllEntries();
-            if (!entries.isEmpty()) {
-                entries.stream()
-                       .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
-                       .collect(toList())
-                       .forEach(this::removeEntry);
+            if (entries.isEmpty()) {
+                return;
             }
-            return this;
+            entries.stream()
+                    .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
+                    .forEach(this::removeEntry);
         }
 
         private void removeEntry(SelenideElement entry) {
