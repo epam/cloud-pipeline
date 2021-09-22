@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.security.acl.AclEntitySummary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
@@ -49,10 +50,18 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     private static final String CLASS_IDENTITY_QUERY = "SELECT currval('acl_class_id_seq');";
     private static final String SID_IDENTITY_QUERY = "SELECT currval('acl_sid_id_seq');";
-
-    private String deleteSidByIdQuery = "delete from acl_sid where id=?";
-    private String deleteEntriesBySidQuery = "delete from acl_entry where sid=?";
-    private String loadEntriesBySidsCountQuery = "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
+    private static final String DELETE_SID_BY_ID_QUERY = "delete from acl_sid where id=?";
+    private static final String DELETE_ENTRIES_BY_SID_QUERY = "delete from acl_entry where sid=?";
+    private static final String LOAD_ENTRIES_BY_SIDS_COUNT_QUERY =
+        "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
+    private static final String LOAD_ENTRIES_SUMMARY_BY_SID_QUERY =
+        "SELECT entries.acl_object_identity,"
+        + " identities.object_id_identity,"
+        + " classes.class"
+        + " FROM pipeline.acl_entry entries"
+        + " INNER JOIN pipeline.acl_object_identity identities on entries.acl_object_identity=identities.id"
+        + " INNER JOIN pipeline.acl_class classes on classes.id=identities.object_id_class"
+        + " WHERE sid=?";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -116,8 +125,8 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSidById(Long sidId) {
-        jdbcTemplate.update(deleteEntriesBySidQuery, sidId);
-        jdbcTemplate.update(deleteSidByIdQuery, sidId);
+        jdbcTemplate.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
+        jdbcTemplate.update(DELETE_SID_BY_ID_QUERY, sidId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -175,7 +184,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {
-        final String query = DaoHelper.replaceInClause(loadEntriesBySidsCountQuery, sidIds.size());
+        final String query = DaoHelper.replaceInClause(LOAD_ENTRIES_BY_SIDS_COUNT_QUERY, sidIds.size());
         return jdbcTemplate.queryForObject(query, sidIds.toArray(), Integer.class);
+    }
+
+    public List<AclEntitySummary> loadEntriesWithAuthoritySummary(final Long sidId) {
+        return jdbcTemplate.query(LOAD_ENTRIES_SUMMARY_BY_SID_QUERY, new Long[]{sidId},
+            (rs, rowNum) -> new AclEntitySummary(rs.getLong(1),
+                                                 rs.getLong(2),
+                                                 rs.getString(3)));
     }
 }

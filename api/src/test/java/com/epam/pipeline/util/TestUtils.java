@@ -19,6 +19,7 @@ package com.epam.pipeline.util;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -158,6 +159,13 @@ public final class TestUtils {
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);
         return run;
+    }
+
+    public static Folder createFolder(final String name, final String owner) {
+        Folder folder = new Folder();
+        folder.setName(name);
+        folder.setOwner(owner);
+        return folder;
     }
 
     public static Date convertLocalDateTimeToDate(final LocalDateTime dt) {
