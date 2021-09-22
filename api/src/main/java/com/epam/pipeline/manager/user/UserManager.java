@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,9 @@ public class UserManager {
 
     @Autowired
     private DataStorageManager dataStorageManager;
+
+    @Autowired
+    private GrantPermissionHandler permissionHandler;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -210,6 +214,7 @@ public class UserManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser deleteUser(Long id) {
         PipelineUser userContext = loadUserById(id);
+        permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
