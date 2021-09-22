@@ -23,11 +23,13 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
@@ -39,6 +41,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -59,6 +62,9 @@ public class AclCacheTest extends AbstractManagerTest {
     private RoleManager roleManager;
 
     @Autowired
+    private UserManager userManager;
+
+    @Autowired
     private FolderManager folderManager;
 
     @Autowired
@@ -67,11 +73,14 @@ public class AclCacheTest extends AbstractManagerTest {
 
     private Folder folder;
     private Role role;
+    PipelineUser user;
 
     @Before
     public void setUp() {
         folder = folderManager.create(TestUtils.createFolder(TEST_FOLDER1, TEST_OWNER));
         role = roleManager.createRole(TEST_ROLE, false, false, null);
+        user = userManager.createUser("TEST_USER", Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyMap(), null);
 
         AclTestDao.AclSid userSid = new AclTestDao.AclSid(true, TEST_OWNER);
         aclTestDao.createAclSid(userSid);
@@ -87,7 +96,35 @@ public class AclCacheTest extends AbstractManagerTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_OWNER, roles = {ROLE_ADMIN})
-    public void testAuthorityRemoval() {
+    public void roleAuthorityRemovalTest() {
+        grantPermissions(AclPermission.READ.getMask(), role.getName(), AclClass.FOLDER, folder.getId(), false);
+        grantPermissions(AclPermission.READ.getMask(), user.getUserName(), AclClass.FOLDER, folder.getId(), true);
+        final AclSecuredEntry permissions = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
+        final List<AclPermissionEntry> permissionEntries = permissions.getPermissions();
+
+        assertEquals(2, permissionEntries.size());
+        assertTrue(role.getName(),
+                permissions.getPermissions().stream().anyMatch(acl -> acl.getSid().getName().equals(role.getName())));
+        assertTrue(user.getUserName(),
+                permissions.getPermissions().stream().anyMatch(acl ->
+                        acl.getSid().getName().equals(user.getUserName())));
+
+        roleManager.deleteRole(role.getId());
+        AclSecuredEntry permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
+        assertEquals(1, permissionsAfter.getPermissions().size());
+        assertTrue(user.getUserName(),
+                permissionsAfter.getPermissions().stream().allMatch(acl ->
+                        acl.getSid().getName().equals(user.getUserName())));
+
+        userManager.deleteUser(user.getId());
+        permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
+        assertTrue(permissionsAfter.getPermissions().isEmpty());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @WithMockUser(username = TEST_OWNER, roles = {ROLE_ADMIN})
+    public void userAuthorityRemovalTest() {
         grantPermissions(AclPermission.READ.getMask(), role.getName(), AclClass.FOLDER, folder.getId(), false);
         final AclSecuredEntry permissions = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         final List<AclPermissionEntry> permissionEntries = permissions.getPermissions();

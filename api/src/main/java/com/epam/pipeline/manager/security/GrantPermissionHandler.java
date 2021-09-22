@@ -45,8 +45,8 @@ public class GrantPermissionHandler {
     private final CacheManager cacheManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteGrantedAuthority(final String name) {
-        Long sidId = aclService.getSidId(name, false);
+    public void deleteGrantedAuthority(final String name, final boolean isPrincipal) {
+        Long sidId = aclService.getSidId(name, isPrincipal);
         if (sidId == null) {
             log.debug("Granted authority with name {} was not found in ACL", name);
             return;
