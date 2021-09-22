@@ -51,9 +51,9 @@
     </test>
 
     <!--<test name="RegistryAdditionDeletionTest">-->
-    <!--<classes>-->
-    <!--<class name="com.epam.pipeline.autotests.RegistryAdditionDeletionTest"/>-->
-    <!--</classes>-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.RegistryAdditionDeletionTest"/>-->
+        <!--</classes>-->
     <!--</test>-->
 
     <test name="DataStoragesTest">
@@ -75,9 +75,9 @@
     </test>
 
     <!--<test name="RegistryTest">-->
-    <!--<classes>-->
-    <!--<class name="com.epam.pipeline.autotests.RegistryTest"/>-->
-    <!--</classes>-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.RegistryTest"/>-->
+        <!--</classes>-->
     <!--</test>-->
 
     <test name="SshShellTest">
@@ -231,9 +231,9 @@
     </test>
     <!--Disabled. Reason - CP doesn't support new EPAM GitLab 12-->
     <!--<test name="RemotePipelineRepositoryTest">-->
-    <!--<classes>-->
-    <!--<class name="com.epam.pipeline.autotests.RemotePipelineRepositoryTest"/>-->
-    <!--</classes>-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.RemotePipelineRepositoryTest"/>-->
+        <!--</classes>-->
     <!--</test>-->
 
     <test name="ObjectMetadataFolderTest">

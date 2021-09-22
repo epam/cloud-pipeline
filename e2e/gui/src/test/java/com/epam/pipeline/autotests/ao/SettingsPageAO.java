@@ -31,11 +31,11 @@ import org.openqa.selenium.WebElement;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -256,13 +256,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public void deleteTestEntries(final List<String> initEntries) {
             sleep(2, SECONDS);
-            List<SelenideElement> entries = getAllEntries();
-            if (entries.isEmpty()) {
-                return;
-            }
-            entries.stream()
-                    .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
-                    .forEach(this::removeEntry);
+            Optional.ofNullable(getAllEntries())
+                    .ifPresent(entries -> entries.stream()
+                            .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
+                            .forEach(this::removeEntry));
         }
 
         private void removeEntry(SelenideElement entry) {
