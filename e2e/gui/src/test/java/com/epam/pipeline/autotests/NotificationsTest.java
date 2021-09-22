@@ -126,18 +126,19 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
     @TestCase(value = {"EPMCMBIBPC-1209"})
     public void validateActivateNotification() {
-        if(!impersonateMode()) {
-            changeStateOf(infoNotification);
-
-            refresh();
-            new NotificationAO(infoNotification)
-                    .ensureSeverityIs("Info")
-                    .ensureTitleIs(infoNotification)
-                    .ensureBodyIs(infoNotificationBodyText)
-                    .ensureVisible(CLOSE, DATE);
-            closeNotification(infoNotification);
-            changeStateOf(infoNotification);
+        if (impersonateMode()) {
+            return;
         }
+        changeStateOf(infoNotification);
+
+        refresh();
+        new NotificationAO(infoNotification)
+                .ensureSeverityIs("Info")
+                .ensureTitleIs(infoNotification)
+                .ensureBodyIs(infoNotificationBodyText)
+                .ensureVisible(CLOSE, DATE);
+        closeNotification(infoNotification);
+        changeStateOf(infoNotification);
     }
 
     @Test(dependsOnMethods = {"validateSystemEventsMenu"})
@@ -150,33 +151,34 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateCreateInactiveNotificationsWithDifferentSeverity"})
     @TestCase(value = {"EPMCMBIBPC-1213"})
     public void validateDisplaySeveralActiveNotifications() {
-        if(!impersonateMode()) {
-            changeStateOf(infoNotification);
-            changeStateOf(warningNotification);
-            changeStateOf(criticalNotification);
-
-            refresh();
-            validateActiveNotification(infoNotification, infoNotificationBodyText, INFO);
-            validateActiveNotification(warningNotification, warningNotificationBodyText, WARNING);
-            validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
-
-            closeNotification(infoNotification);
-            closeNotification(warningNotification);
-            closeNotification(criticalNotification);
+        if (impersonateMode()) {
+            return;
         }
+        changeStateOf(infoNotification);
+        changeStateOf(warningNotification);
+        changeStateOf(criticalNotification);
+
+        refresh();
+        validateActiveNotification(infoNotification, infoNotificationBodyText, INFO);
+        validateActiveNotification(warningNotification, warningNotificationBodyText, WARNING);
+        validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
+
+        closeNotification(infoNotification);
+        closeNotification(warningNotification);
+        closeNotification(criticalNotification);
     }
 
     @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
     @TestCase(value = {"EPMCMBIBPC-1219"})
     public void validateEditActiveNotification() {
-            navigationMenu()
-                    .settings()
-                    .switchToSystemEvents()
-                    .searchForTableEntry(infoNotification)
-                    .edit()
-                    .titleTo(infoEditedTitle)
-                    .bodyTo(infoEditedBodyText)
-                    .save();
+        navigationMenu()
+                .settings()
+                .switchToSystemEvents()
+                .searchForTableEntry(infoNotification)
+                .edit()
+                .titleTo(infoEditedTitle)
+                .bodyTo(infoEditedBodyText)
+                .save();
         if(!impersonateMode()) {
             refresh();
             validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
@@ -214,16 +216,17 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
     @TestCase(value = {"EPMCMBIBPC-1217"})
     public void validateSeveralInactiveNotifications() {
-        if(!impersonateMode()) {
-            changeStateOf(infoEditedTitle);
-            changeStateOf(warningActiveNotification);
-            changeStateOf(criticalNotification);
-
-            refresh();
-            ensureNotificationIsAbsent(infoEditedTitle);
-            ensureNotificationIsAbsent(warningActiveNotification);
-            ensureNotificationIsAbsent(criticalNotification);
+        if (impersonateMode()) {
+            return;
         }
+        changeStateOf(infoEditedTitle);
+        changeStateOf(warningActiveNotification);
+        changeStateOf(criticalNotification);
+
+        refresh();
+        ensureNotificationIsAbsent(infoEditedTitle);
+        ensureNotificationIsAbsent(warningActiveNotification);
+        ensureNotificationIsAbsent(criticalNotification);
     }
 
     @Test(dependsOnMethods = {"validateSeveralInactiveNotifications"})
@@ -313,7 +316,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     }
 
     private String capitalCase(Primitive severity) {
-        return severity.name().substring(0,1) + severity.name().substring(1).toLowerCase();
+        return severity.name().charAt(0) + severity.name().substring(1).toLowerCase();
     }
 
     private void closeNotification(final String notificationName) {

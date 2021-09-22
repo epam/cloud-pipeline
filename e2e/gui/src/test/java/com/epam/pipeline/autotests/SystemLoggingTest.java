@@ -117,20 +117,21 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .ok();
             logout();
             loginAs(userWithoutCompletedRuns);
-            if (!impersonateMode()) {
+            if (impersonateMode()) {
+                navigationMenu()
+                        .settings()
+                        .switchToMyProfile()
+                        .validateUserName(admin.login);
+            } else {
                 if ("false".equals(C.AUTH_TOKEN)) {
-                    validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
+                    validateErrorPage(Collections.singletonList(format("%s was not able to authorize you",
+                            C.PLATFORM_NAME)));
                     loginBack();
                     return;
                 }
                 validateErrorPage(Collections.singletonList("User is blocked!"));
                 Selenide.clearBrowserCookies();
                 sleep(1, SECONDS);
-            } else {
-                navigationMenu()
-                        .settings()
-                        .switchToMyProfile()
-                        .validateUserName(admin.login);
             }
             loginAs(admin);
             navigationMenu()
@@ -265,10 +266,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(user.login.toUpperCase())
                 .filterByService("edge")
                 .validateRow(format(
-                        ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated.",
+                        ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
                         getLastRunId(), endpoint, user.login), user.login, TYPE)
                 .validateRow(format(
-                        ".*\\[SECURITY\\] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated.",
+                        ".*\\[SECURITY\\] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated",
                         getLastRunId(), user.login), user.login, TYPE);
     }
 
