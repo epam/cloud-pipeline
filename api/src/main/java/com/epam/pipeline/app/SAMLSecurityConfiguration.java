@@ -17,6 +17,8 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.manager.user.ImpersonateFailureHandler;
+import com.epam.pipeline.manager.user.ImpersonateSuccessHandler;
 import com.epam.pipeline.manager.user.ImpersonationManager;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
@@ -569,8 +571,8 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         filter.setUserDetailsChecker(impersonationManager);
         filter.setSwitchUserUrl(getImpersonationStartUrl());
         filter.setExitUserUrl(getImpersonationStopUrl());
-        filter.setTargetUrl("/");
-        filter.setFailureHandler((request, response, exception) -> {});
+        filter.setFailureHandler(new ImpersonateFailureHandler(getImpersonationStartUrl(), getImpersonationStopUrl()));
+        filter.setSuccessHandler(new ImpersonateSuccessHandler(getImpersonationStartUrl(), getImpersonationStopUrl()));
         return filter;
     }
 

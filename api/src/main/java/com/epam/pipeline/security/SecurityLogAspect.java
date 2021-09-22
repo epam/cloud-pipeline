@@ -52,12 +52,18 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.user.RoleManager.assignRole(..))" +
             "|| execution(* com.epam.pipeline.manager.user.RoleManager.removeRole(..))";
 
+    public static final String IMPERSONATE_RELATED_METHODS_POINTCUT =
+            "execution(* com.epam.pipeline.manager.user.ImpersonateSuccessHandler.onAuthenticationSuccess(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.ImpersonateFailureHandler.onAuthenticationFailure(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.ImpersonationManager.check(..))";
+
 
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
 
 
-    @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT)
+    @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
+            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT)
     public void addUserInfoFromSecurityContext() {
         SecurityContext context = SecurityContextHolder.getContext();
         if (context != null) {
