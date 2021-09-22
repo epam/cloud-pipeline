@@ -155,8 +155,8 @@ public class AclAspect {
     @Transactional(propagation = Propagation.REQUIRED)
     public void setMaskForPage(JoinPoint joinPoint, PagedResult<List<PipelineRun>> page) {
         page.getElements().forEach(entity -> {
-                entity.setMask(permissionManager.getPermissionsMask(entity, true, true));
-                ListUtils.emptyIfNull(entity.getChildRuns()).forEach(child -> child.setMask(entity.getMask()));
+            entity.setMask(permissionManager.getPermissionsMask(entity, true, true));
+            ListUtils.emptyIfNull(entity.getChildRuns()).forEach(child -> child.setMask(entity.getMask()));
         });
     }
 

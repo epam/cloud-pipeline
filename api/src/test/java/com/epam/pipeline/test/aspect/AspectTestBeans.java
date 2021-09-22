@@ -102,6 +102,7 @@ import java.util.concurrent.Executor;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -381,4 +382,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @MockBean
+    protected CacheManager cacheManager;
 }
