@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserAccessService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -29,6 +30,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ImpersonationManager implements UserDetailsChecker, UserDetailsService {
@@ -42,6 +44,7 @@ public class ImpersonationManager implements UserDetailsChecker, UserDetailsServ
     public void check(final UserDetails userToImpersonate) {
         Assert.notNull(userToImpersonate, messageHelper.getMessage(MessageConstants.ERROR_IMPERSONATION_EMPTY_USER));
         final String impersonatedName = userToImpersonate.getUsername();
+        log.info("Attempt to impersonate user from: " + authManager.getAuthorizedUser() + " to: " + impersonatedName);
         Assert.isTrue(!impersonatedName.equals(authManager.getAuthorizedUser()),
                       messageHelper.getMessage(MessageConstants.ERROR_SELF_IMPERSONATION_NOT_ALLOWED,
                                                impersonatedName));
