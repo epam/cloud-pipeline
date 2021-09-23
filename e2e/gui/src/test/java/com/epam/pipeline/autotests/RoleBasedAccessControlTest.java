@@ -262,7 +262,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         runsMenu()
                 .activeRuns()
                 .shouldContainRun("pipeline", getLastRunId())
-                .validatePipelineOwner(getLastRunId(), user.login.toLowerCase());
+                .validatePipelineOwner(getLastRunId(), user.login);
     }
 
     @Test
