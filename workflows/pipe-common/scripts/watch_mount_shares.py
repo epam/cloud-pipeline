@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import subprocess
+import signal
 import time
 from watchdog.observers.inotify import InotifyObserver
 from watchdog.events import FileSystemEventHandler, FileMovedEvent
@@ -42,6 +43,7 @@ DELETE_EVENT = 'd'
 
 EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 1000))
 MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_SEC', 10))
+EVENT_DUMPING_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_DUMPING_TIMEOUT_SEC', 30))
 TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre')
 
 logging_format = os.getenv('CP_CAP_NFS_OBSERVER__LOGGING_FORMAT', '%(message)s')
@@ -120,6 +122,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
         self._activity_logging_local_dir = self._configure_logging_local_dir()
         self._activity_logging_bucket_dir = self._configure_logging_bucket_dir()
         self._transfer_template = self._get_available_transfer_template()
+        self.last_dump_time = current_utc_time()
 
     @staticmethod
     def _get_available_transfer_template():
@@ -196,6 +199,10 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
             elif event.event_type != 'closed':
                 self._insert_event(event.src_path, event.event_type[:1])
 
+    def check_timeout_and_dump(self):
+        if (current_utc_time() - self.last_dump_time).total_seconds() > EVENT_DUMPING_TIMEOUT_SEC:
+            self.dump_to_storage()
+
     def dump_to_storage(self):
         if len(self._active_events) == 0:
             return
@@ -211,6 +218,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
         _, result = execute_command(self._transfer_template.format(local_file, bucket_file))
         if result:
             logging.info(format_message('Cleaning activity list'))
+            self.last_dump_time = current_utc_time()
             self._active_events.clear()
 
 
@@ -220,12 +228,17 @@ class NFSMountWatcher:
         self._target_path_mapping = dict()
         self._event_handler = CloudBucketDumpingEventHandler()
         self._event_observer = InotifyObserver()
+        self._set_signal_handlers()
         if target_paths:
             self._target_paths = target_paths.split(COMMA)
             self._update_static_paths_mapping()
         else:
             self._target_paths = None
             self._update_target_mount_points()
+
+    def _set_signal_handlers(self):
+        for signal_code in [signal.SIGTERM, signal.SIGINT]:
+            signal.signal(signal_code, self._event_handler.dump_to_storage)
 
     def _process_active_target_path(self, mnt_dest, mnt_src):
         if mnt_dest not in self._target_path_mapping:
@@ -310,16 +323,28 @@ class NFSMountWatcher:
                             mount_points[mount_point] = mount_source
         return mount_points
 
+    def _get_mnt_resync_timeout(self):
+        if MNT_RESYNC_TIMEOUT_SEC > EVENT_DUMPING_TIMEOUT_SEC:
+            logging.warning(
+                format_message('Mount scanning timeout [{}] is greater, than dumping timeout [{}]. Using the second one'
+                               .format(MNT_RESYNC_TIMEOUT_SEC, EVENT_DUMPING_TIMEOUT_SEC)))
+            resync_timeout = EVENT_DUMPING_TIMEOUT_SEC
+        else:
+            resync_timeout = MNT_RESYNC_TIMEOUT_SEC
+        return resync_timeout
+
     def start(self):
         logging.info(format_message('Start monitoring shares state...'))
         self._event_observer.start()
         try:
+            resync_timeout = self._get_mnt_resync_timeout()
             while True:
-                time.sleep(MNT_RESYNC_TIMEOUT_SEC)
+                time.sleep(resync_timeout)
                 if self._target_paths:
                     self._update_static_paths_mapping()
                 else:
                     self._update_target_mount_points()
+                self._event_handler.check_timeout_and_dump()
 
         finally:
             self._event_observer.stop()
