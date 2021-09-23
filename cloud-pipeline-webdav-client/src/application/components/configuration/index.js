@@ -4,6 +4,7 @@ import {Checkbox, Modal, Input} from 'antd';
 import electron from 'electron';
 import './configuration.css';
 import writeWebDavConfiguration from '../../../write-webdav-configuration';
+import copyPingConfiguration from '../../models/file-systems/copy-ping-configuration';
 
 class Configuration extends React.Component {
   state = {
@@ -12,7 +13,10 @@ class Configuration extends React.Component {
     username: undefined,
     ignoreCertificateErrors: false,
     modified: false,
-    version: undefined
+    version: undefined,
+    pingAfterCopy: false,
+    maxWaitSeconds: undefined,
+    pingTimeoutSeconds: undefined
   };
   componentDidMount() {
     this.updateSettings();
@@ -28,6 +32,24 @@ class Configuration extends React.Component {
     const cfg = electron.remote.getGlobal('webdavClient');
     const {name} = electron.remote.getGlobal('settings') || {};
     const {config: webdavClientConfig = {}} = cfg || {};
+    let {
+      maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
+      pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
+    } = webdavClientConfig;
+    if (
+      Number.isNaN(Number(maxWaitSeconds)) ||
+      Number.isNaN(Number(pingTimeoutSeconds)) ||
+      Number(maxWaitSeconds) <= 0
+    ) {
+      maxWaitSeconds = 0;
+      pingTimeoutSeconds = 0;
+    }
+    if (Number(maxWaitSeconds) > 0 && Number(pingTimeoutSeconds) > Number(maxWaitSeconds)) {
+      pingTimeoutSeconds = maxWaitSeconds;
+    }
+    const pingAfterCopy = !Number.isNaN(Number(maxWaitSeconds)) &&
+      !Number.isNaN(Number(pingTimeoutSeconds)) &&
+      Number(maxWaitSeconds) > 0;
     this.setState({
       server: webdavClientConfig.server,
       password: webdavClientConfig.password,
@@ -36,6 +58,9 @@ class Configuration extends React.Component {
       modified: false,
       version: webdavClientConfig.version,
       name,
+      pingAfterCopy,
+      maxWaitSeconds,
+      pingTimeoutSeconds,
     });
   };
 
@@ -47,6 +72,28 @@ class Configuration extends React.Component {
     const cfg = electron.remote.getGlobal('webdavClient');
     cfg.config[settingName] = e.target.value;
     writeWebDavConfiguration(cfg.config);
+  };
+
+  onPingAfterCopyChanged = (e) => {
+    let {
+      maxWaitSeconds,
+      pingTimeoutSeconds
+    } = copyPingConfiguration;
+    const pingAfterCopy = e.target.checked;
+    if (!pingAfterCopy) {
+      maxWaitSeconds = 0;
+      pingTimeoutSeconds = 0;
+    }
+    const cfg = electron.remote.getGlobal('webdavClient');
+    cfg.config.maxWaitSeconds = maxWaitSeconds;
+    cfg.config.pingTimeoutSeconds = pingTimeoutSeconds;
+    writeWebDavConfiguration(cfg.config);
+    this.setState({
+      pingAfterCopy,
+      maxWaitSeconds,
+      pingTimeoutSeconds,
+      modified: true
+    });
   };
 
   onIgnoreCertificateErrorsSettingChanged = (e) => {
@@ -75,7 +122,10 @@ class Configuration extends React.Component {
       username,
       password,
       version,
-      name = 'Cloud Data'
+      name = 'Cloud Data',
+      maxWaitSeconds,
+      pingTimeoutSeconds,
+      pingAfterCopy
     } = this.state;
     return (
       <Modal
@@ -134,6 +184,50 @@ class Configuration extends React.Component {
               Ignore certificate errors (re-launch is required)
             </Checkbox>
           </div>
+          <div
+            className="row"
+          >
+            <Checkbox
+              checked={pingAfterCopy}
+              onChange={this.onPingAfterCopyChanged}
+            >
+              Check destination file existence after copy operation
+            </Checkbox>
+          </div>
+          {
+            pingAfterCopy && (
+              <div
+                className="row"
+              >
+                <span className="label-small">
+                  Ping duration (seconds):
+                </span>
+                <Input
+                  className="input"
+                  value={maxWaitSeconds}
+                  onChange={this.onSettingChanged('maxWaitSeconds')}
+                  size="small"
+                />
+              </div>
+            )
+          }
+          {
+            pingAfterCopy && (
+              <div
+                className="row"
+              >
+                <span className="label-small">
+                  Ping every (seconds):
+                </span>
+                <Input
+                  className="input"
+                  value={pingTimeoutSeconds}
+                  onChange={this.onSettingChanged('pingTimeoutSeconds')}
+                  size="small"
+                />
+              </div>
+            )
+          }
           {
             version && (
               <div className="app-version">
