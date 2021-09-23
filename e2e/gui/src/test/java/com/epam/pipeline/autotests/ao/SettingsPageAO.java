@@ -206,9 +206,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemEventsAO ensureTableHasNoDateText() {
-            if(getAllEntries() == null) {
-                ensure(TABLE, matchesText("No data"));
+            if (getAllEntries() != null) {
+                return this;
             }
+            ensure(TABLE, matchesText("No data"));
             return this;
         }
 

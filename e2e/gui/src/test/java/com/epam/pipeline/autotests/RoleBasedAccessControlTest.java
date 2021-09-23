@@ -350,25 +350,25 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     }
 
     private void validateWhileErrorPageMessage() {
+        if (impersonateMode()) {
+            navigationMenu()
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(admin.login);
+            return;
+        }
         if ("true".equals(C.AUTH_TOKEN)) {
-            if (impersonateMode()) {
-                navigationMenu()
-                        .settings()
-                        .switchToMyProfile()
-                        .validateUserName(admin.login);
-                return;
-            }
             validateErrorPage(singletonList("User is blocked!"));
             Selenide.clearBrowserCookies();
             sleep(1, SECONDS);
-        } else {
-            validateErrorPage(Arrays.asList(
-                    "Please contact", "Support team", "to request the access",
-                    format("login back to the %s", C.PLATFORM_NAME),
-                    "if you already own an account")
-            );
-            loginBack();
+            return;
         }
+        validateErrorPage(Arrays.asList(
+                "Please contact", "Support team", "to request the access",
+                format("login back to the %s", C.PLATFORM_NAME),
+                "if you already own an account")
+        );
+        loginBack();
     }
 
     private void loginWithToken(final String token) {

@@ -92,7 +92,6 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
             }
             adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login),
                     stopAction, admin);
-            System.out.println(adminInfo.text());
             userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login), startAction,
                     user);
         } catch (NoSuchElementException e) {
