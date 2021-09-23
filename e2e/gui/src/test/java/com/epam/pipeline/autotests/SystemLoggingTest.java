@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,8 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
     @Test
     @TestCase(value = {"EPMCMBIBPC-3162"})
     public void userAuthentication() {
+        final String startAction = "START";
+        final String stopAction = "STOP";
         logoutIfNeeded();
         loginAs(user);
         sleep(30, SECONDS);
@@ -85,18 +87,18 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         SelenideElement adminInfo;
         SelenideElement userInfo;
         try {
-            adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user: %s", admin.login),
-                    admin.login, TYPE);
-            userInfo = systemLogsAO.filterByUser(user.login)
-                    .getInfoRow(format("Successfully authenticate user: %s", user.login), user.login, TYPE);
+            if (impersonateMode()) {
+                systemLogsAO.filterByMessage("impersonation");
+            }
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login),
+                    stopAction, admin);
+            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login), startAction,
+                    user);
         } catch (NoSuchElementException e) {
-            systemLogsAO.clearUserFilters();
-            adminInfo = systemLogsAO.filterByUser(admin.login)
-                    .getInfoRow(format("Successfully authenticate user .*: %s", admin.login),
-                    admin.login, TYPE);
-            systemLogsAO.clearUserFilters();
-            userInfo = systemLogsAO.filterByUser(user.login)
-                    .getInfoRow(format("Successfully authenticate user .*: %s", user.login), user.login, TYPE);
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", admin.login),
+                    stopAction, admin);
+            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", user.login), startAction,
+                    user);
         }
         systemLogsAO.validateTimeOrder(adminInfo, userInfo);
     }
@@ -117,18 +119,35 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .ok();
             logout();
             loginAs(userWithoutCompletedRuns);
-            if ("false".equals(C.AUTH_TOKEN)) {
-                validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
-                loginBack();
+            if (impersonateMode()) {
+                navigationMenu()
+                        .settings()
+                        .switchToMyProfile()
+                        .validateUserName(admin.login);
             } else {
+                if ("false".equals(C.AUTH_TOKEN)) {
+                    validateErrorPage(Collections.singletonList(format("%s was not able to authorize you",
+                            C.PLATFORM_NAME)));
+                    loginBack();
+                    return;
+                }
                 validateErrorPage(Collections.singletonList("User is blocked!"));
                 Selenide.clearBrowserCookies();
                 sleep(1, SECONDS);
             }
             loginAs(admin);
-            navigationMenu()
+            SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                     .settings()
-                    .switchToSystemLogs()
+                    .switchToSystemLogs();
+            if (impersonateMode()) {
+                systemLogsAO
+                        .validateRow(format("Authentication failed! User %s is blocked!",
+                                userWithoutCompletedRuns.login), userWithoutCompletedRuns.login, TYPE)
+                        .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",
+                                userWithoutCompletedRuns.login), userWithoutCompletedRuns.login, TYPE);
+                return;
+            }
+            systemLogsAO
                     .filterByUser(userWithoutCompletedRuns.login.toUpperCase())
                     .validateRow(format("Authentication failed! User %s is blocked!", userWithoutCompletedRuns.login),
                             userWithoutCompletedRuns.login, TYPE);
@@ -192,8 +211,8 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
                 .filterByMessage(format("id=%s", userId))
-                .validateRow(format("Assing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE)
-                .validateRow(format("Unassing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE);
+                .validateRow(format("Assing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login, TYPE)
+                .validateRow(format("Unassing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login, TYPE);
     }
 
     @Test
@@ -285,5 +304,25 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByMessage(USER_NAME)
                 .validateRow(format("Create user with name: %s", USER_NAME), admin.login, TYPE)
                 .validateRow(format("Delete user with name: %s", USER_NAME), admin.login, TYPE);
+    }
+
+    private SelenideElement getInfo(final SettingsPageAO.SystemLogsAO systemLogsAO,
+                                    final String message,
+                                    final String action,
+                                    final Account account) {
+
+        clearFiltersIfNeeded(systemLogsAO);
+        return impersonateMode()
+                ? systemLogsAO.getInfoRow(
+                        format("Successful impersonation action: %s, user: %s", action, account.login), account.login,
+                        TYPE)
+                : systemLogsAO.filterByUser(account.login).getInfoRow(message, account.login, TYPE);
+    }
+
+    private void clearFiltersIfNeeded(final SettingsPageAO.SystemLogsAO systemLogsAO) {
+        if (impersonateMode()) {
+            return;
+        }
+        systemLogsAO.clearUserFilters();
     }
 }

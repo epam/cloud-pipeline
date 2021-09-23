@@ -653,6 +653,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public StorageContentAO removeAllSelected() {
+            StorageContentAO.this.ensureVisible(CLEAR_SELECTION);
             StorageContentAO.this.click(REMOVE_ALL);
 
             $$(byClassName("ant-modal-content"))

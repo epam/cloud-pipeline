@@ -141,6 +141,7 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineCustomProfile, profile ->
                 profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                     .setValue(DISK, customDisk)
+                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
                     .setCommand(command)
                     .clickAddStringParameter()
                     .setName(stringParameterName)
@@ -154,6 +155,7 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineDefaultProfile, profile ->
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
+                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
                     .click(SAVE)
             )
             .sleep(5, SECONDS)

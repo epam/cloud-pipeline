@@ -134,7 +134,7 @@ public class RunToolsInSandBoxTest
         logout();
 
         // in order to avoid caching issue
-        Utils.restartBrowser(C.ROOT_ADDRESS);
+        restartBrowser(C.ROOT_ADDRESS);
 
         loginAs(user)
                 .runs()

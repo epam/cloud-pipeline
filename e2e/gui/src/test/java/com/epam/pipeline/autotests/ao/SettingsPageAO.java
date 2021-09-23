@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,11 +31,11 @@ import org.openqa.selenium.WebElement;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,7 +56,8 @@ import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
-public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
+public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
+        Authorization {
 
     protected PipelinesLibraryAO parentAO;
 
@@ -72,6 +74,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Logs')]"))),
             entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
             entry(CLOUD_REGIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
+            entry(MY_PROFILE, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'My Profile')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -108,6 +111,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
         return new SystemLogsAO();
+    }
+
+    public MyProfileAO switchToMyProfile() {
+        click(MY_PROFILE);
+        return new MyProfileAO();
     }
 
     @Override
@@ -197,6 +205,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public SystemEventsAO ensureTableHasNoDateText() {
+            if (getAllEntries() != null) {
+                return this;
+            }
+            ensure(TABLE, matchesText("No data"));
+            return this;
+        }
+
         public SystemEventsAO ensureTableHasNoText(String text) {
             ensure(TABLE, not(matchesText(text)));
             return this;
@@ -226,8 +242,25 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         private List<SelenideElement> getAllEntries() {
-            return new ArrayList<>(context().find(byClassName("ant-table-content"))
-                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]")));
+            return context().find(byClassName("ant-table-content"))
+                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"));
+        }
+
+        public List<String> getAllEntriesNames() {
+            sleep(2, SECONDS);
+            return context().find(byClassName("ant-table-content"))
+                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"))
+                    .stream()
+                    .map(e -> e.find(byClassName("notification-title-column")).text())
+                    .collect(toList());
+        }
+
+        public void deleteTestEntries(final List<String> initEntries) {
+            sleep(2, SECONDS);
+            Optional.ofNullable(getAllEntries())
+                    .ifPresent(entries -> entries.stream()
+                            .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
+                            .forEach(this::removeEntry));
         }
 
         private void removeEntry(SelenideElement entry) {
@@ -282,7 +315,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public CreateNotificationPopup setActive() {
-                click(STATE_CHECKBOX);
+                if(!impersonateMode()) {
+                    click(STATE_CHECKBOX);
+                }
                 return this;
             }
 
@@ -666,7 +701,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(DELETE, context().$(byId("delete-user-button"))),
                             entry(PRICE_TYPE, context().find(byXpath(
                                     format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
-                            entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a")))
+                            entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
+                            entry(IMPERSONATE, context().$(button("IMPERSONATE")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -784,6 +820,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         new LogAO.ShareWith().click(OK);
                         return this;
                     }
+
+                    public NavigationHomeAO impersonate() {
+                        click(IMPERSONATE);
+                        return new NavigationHomeAO();
+                    }
                 }
             }
 
@@ -866,6 +907,18 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
+            public EditGroupPopup editGroup(final String group) {
+                sleep(1, SECONDS);
+                searchGroupBySubstring(group);
+                context().$$(byText(group))
+                        .filterBy(visible)
+                        .first()
+                        .closest(".ant-table-row-level-0")
+                        .find(byClassName("ant-btn-sm"))
+                        .click();
+                return new EditGroupPopup(this);
+            }
+
             public class CreateGroupPopup extends PopupAO<CreateGroupPopup, GroupsTabAO> implements AccessObject<CreateGroupPopup> {
                 private final GroupsTabAO parentAO;
 
@@ -904,6 +957,57 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public GroupsTabAO cancel() {
                     click(CANCEL);
                     return parentAO;
+                }
+            }
+
+            public class EditGroupPopup extends PopupAO<EditGroupPopup, GroupsTabAO>
+                    implements AccessObject<EditGroupPopup> {
+                private final GroupsTabAO parentAO;
+                public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                        entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(PRICE_TYPE, context().find(byXpath(
+                                format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                );
+
+                public EditGroupPopup(final GroupsTabAO parentAO) {
+                    super(parentAO);
+                    this.parentAO = parentAO;
+                }
+
+                @Override
+                public Map<Primitive, SelenideElement> elements() {
+                    return elements;
+                }
+
+                @Override
+                public GroupsTabAO ok() {
+                    click(OK);
+                    return parentAO;
+                }
+
+                public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
+                    SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                    return this;
+                }
+
+                public EditGroupPopup setAllowedPriceType(final String priceType) {
+                    click(PRICE_TYPE);
+                    context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
+                            .shouldBe(visible)
+                            .click();
+                    click(byText("Allowed price types"));
+                    return this;
+                }
+
+                public EditGroupPopup clearAllowedPriceTypeField() {
+                    ensureVisible(PRICE_TYPE);
+                    SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
+                    while (type.isDisplayed()) {
+                        type.click();
+                        sleep(1, SECONDS);
+                    }
+                    click(byText("Allowed price types"));
+                    return this;
                 }
             }
         }
@@ -976,31 +1080,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public RolesTabAO ok() {
                     click(OK);
                     return parentAO;
-                }
-
-                public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
-                    SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
-                    return this;
-                }
-
-                public EditRolePopup setAllowedPriceType(final String priceType) {
-                    click(PRICE_TYPE);
-                    context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
-                            .shouldBe(visible)
-                            .click();
-                    click(byText("Allowed price types"));
-                    return this;
-                }
-
-                public EditRolePopup clearAllowedPriceTypeField() {
-                    ensureVisible(PRICE_TYPE);
-                    SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
-                    while (type.isDisplayed()) {
-                        type.click();
-                        sleep(1, SECONDS);
-                    }
-                    click(byText("Allowed price types"));
-                    return this;
                 }
             }
         }
@@ -1532,6 +1611,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public SystemLogsAO filterByService(final String service) {
             selectValue(combobox("Service"), service);
+            click(byText("Service"));
             return this;
         }
 
@@ -1548,6 +1628,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
             LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
             LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
+            screenshot(format("SystemLogsValidateTimeOrder-%s", Utils.randomSuffix()));
             assertTrue(td1.isAfter(td2) || td1.isEqual(td2));
         }
 
@@ -1589,6 +1670,21 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
                 $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
             }
+        }
+    }
+
+    public class MyProfileAO implements AccessObject<MyProfileAO> {
+        private final Map<Primitive,SelenideElement> elements = initialiseElements(
+                entry(USER_NAME, $(byClassName("ser-profile__header")))
+        );
+
+        public MyProfileAO validateUserName(String user) {
+            return ensure(USER_NAME, text(user));
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 

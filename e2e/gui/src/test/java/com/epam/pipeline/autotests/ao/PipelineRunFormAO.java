@@ -101,6 +101,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setLaunchOptions(String disk, String type, String timeOut) {
         return setDisk(disk)
+                .sleep(1, SECONDS)
                 .setTypeValue(type)
                 .setTimeOut(timeOut);
     }
@@ -111,8 +112,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .find(className("ant-select-selection"))
                 .shouldBe(visible)
                 .click();
-
+        $(byClassName("ant-select-dropdown-hidden")).shouldNotBe(exist);
         $(byClassName("ant-select-dropdown-menu"))
+                .shouldBe(enabled)
                 .findAll(byClassName("ant-select-dropdown-menu-item"))
                 .find(text(type))
                 .click();
