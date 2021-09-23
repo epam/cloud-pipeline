@@ -13,16 +13,39 @@
 # limitations under the License.
 
 Start-Job {
-    python ${env:NOMACHINE_HOME}\serve_nxs.py --local-port "${env:CP_NM_LOCAL_PORT}" `
-                                              --nomachine-port "${env:CP_NM_NOMACHINE_PORT}" `
-                                              --proxy "${env:CP_NM_PROXY_HOST}" `
-                                              --proxy-port "${env:CP_NM_PROXY_PORT}" `
-                                              --template-path ${env:NOMACHINE_HOME}\template.nxs `
-                                              *>> ${env:NOMACHINE_HOME}\serve_nxs.log
+    python ${env:CP_DESKTOP_DIR}\serve_desktop.py --serving-port "${env:CP_NOMACHINE_SERVING_PORT}" `
+                                                  --desktop-port "${env:CP_NOMACHINE_DESKTOP_PORT}" `
+                                                  --proxy-host "${env:CP_DESKTOP_PROXY_HOST}" `
+                                                  --proxy-port "${env:CP_DESKTOP_PROXY_PORT}" `
+                                                  --template-path ${env:CP_DESKTOP_DIR}\template.nxs `
+                                                  *>> ${env:CP_DESKTOP_DIR}\serve_nxs.log
 }
 
 Start-Job {
-    & ${env:PIPE_DIR}\pipe tunnel start --direct -lp 4000 -rp 4000 --trace -l ${env:NOMACHINE_HOME}\proxy.log $env:NODE_IP
+    python ${env:CP_DESKTOP_DIR}\serve_desktop.py --serving-port "${env:CP_NICE_DCV_SERVING_PORT}" `
+                                                  --desktop-port "${env:CP_NICE_DCV_DESKTOP_PORT}" `
+                                                  --proxy-host "${env:CP_DESKTOP_PROXY_HOST}" `
+                                                  --proxy-port "${env:CP_DESKTOP_PROXY_PORT}" `
+                                                  --template-path ${env:CP_DESKTOP_DIR}\template.dcv `
+                                                  *>> ${env:CP_DESKTOP_DIR}\serve_nice_dcv.log
+}
+
+Start-Job {
+    & ${env:PIPE_DIR}\pipe tunnel start --direct `
+                                        -lp "${env:CP_NM_NOMACHINE_PORT}" `
+                                        -rp "${env:CP_NM_NOMACHINE_PORT}" `
+                                        --trace `
+                                        -l ${env:CP_DESKTOP_DIR}\proxy_nxs.log `
+                                        "${env:NODE_IP}"
+}
+
+Start-Job {
+    & ${env:PIPE_DIR}\pipe tunnel start --direct `
+                                        -lp "${env:CP_NICE_DCV_DESKTOP_PORT}" `
+                                        -rp "${env:CP_NICE_DCV_DESKTOP_PORT}" `
+                                        --trace `
+                                        -l ${env:CP_DESKTOP_DIR}\proxy_nice_dcv.log `
+                                        "${env:NODE_IP}"
 }
 
 while (1) {
