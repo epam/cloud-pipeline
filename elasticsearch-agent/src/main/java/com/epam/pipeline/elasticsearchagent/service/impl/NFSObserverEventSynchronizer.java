@@ -58,7 +58,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -103,9 +102,10 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
-                                        final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
+                                        final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager,
+                                        final NFSStorageMounter nfsMounter) {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, cloudPipelineAPIClient,
-              elasticsearchServiceClient, elasticIndexService);
+              elasticsearchServiceClient, elasticIndexService, nfsMounter);
 
         this.eventsFileChunkSize = eventsFileChunkSize;
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
@@ -187,9 +187,14 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                       final Collection<NFSObserverEvent> events) {
         final Map<String, SearchHit> searchHitMap = findIndexedFiles(dataStorage, events);
         final String indexForNewFiles = createIndexForStorageIfNotExists(dataStorage);
+        final Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
+        if (mountFolder == null) {
+            log.warn("Unable to retrieve mount for [{}], skipping...", dataStorage.getName());
+            return;
+        }
         final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
         events.stream()
-            .map(event -> mapUpdateEventToFile(requestContainer, dataStorage, searchHitMap, event))
+            .map(event -> mapUpdateEventToFile(requestContainer, mountFolder, searchHitMap, event))
             .filter(Objects::nonNull)
             .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file))
             .forEach(requestContainer::add);
@@ -206,14 +211,11 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     }
 
     private DataStorageFile mapUpdateEventToFile(final IndexRequestContainer requestContainer,
-                                                 final AbstractDataStorage dataStorage,
+                                                 final Path mountFolder,
                                                  final Map<String, SearchHit> searchHitMap,
                                                  final NFSObserverEvent event) {
-        final String storageName = getStorageName(dataStorage.getPath());
-        final Path mountFolder = Paths.get(getRootMountPoint(), getMountDirName(dataStorage.getPath()), storageName);
         Assert.isTrue(mountFolder.toFile().exists(),
-                      String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...",
-                                    mountFolder.toString()));
+                      String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...", mountFolder));
         final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
         final boolean fileExists = absoluteFilePath.toFile().exists();
 

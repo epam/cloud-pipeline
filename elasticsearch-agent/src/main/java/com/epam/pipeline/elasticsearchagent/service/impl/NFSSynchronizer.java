@@ -19,6 +19,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
+import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -65,6 +66,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
+    private final NFSStorageMounter nfsMounter;
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                            @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
@@ -73,7 +75,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                            @Value("${sync.nfs-file.bulk.insert.size}") Integer bulkInsertSize,
                            CloudPipelineAPIClient cloudPipelineAPIClient,
                            ElasticsearchServiceClient elasticsearchServiceClient,
-                           ElasticIndexService elasticIndexService) {
+                           ElasticIndexService elasticIndexService,
+                           NFSStorageMounter nfsMounter) {
         this.indexSettingsPath = indexSettingsPath;
         this.rootMountPoint = rootMountPoint;
         this.indexPrefix = indexPrefix;
@@ -82,6 +85,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.elasticIndexService = elasticIndexService;
+        this.nfsMounter = nfsMounter;
     }
 
     @Override
@@ -109,9 +113,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         try {
             String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexSettingsPath);
-
-            String storageName = getStorageName(dataStorage.getPath());
-            Path mountFolder = Paths.get(rootMountPoint, getMountDirName(dataStorage.getPath()), storageName);
+            Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
+            if (mountFolder == null) {
+                log.warn("Unable to retrieve mount for [{}],  skipping...", dataStorage.getName());
+                return;
+            }
 
             createDocuments(indexName, mountFolder, dataStorage, permissionsContainer);
 
@@ -145,6 +151,25 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
         }
+    }
+
+    protected Path getMountFolder(final AbstractDataStorage dataStorage) {
+        final String storageName = getStorageName(dataStorage.getPath());
+        return Paths.get(getRootMountPoint(), getMountDirName(dataStorage.getPath()), storageName);
+    }
+
+    protected Path mountStorageToRootIfNecessary(final AbstractDataStorage dataStorage) {
+        if (!(dataStorage instanceof NFSDataStorage)) {
+            log.warn("An error occurred: storage id={} has type={}", dataStorage.getId(), dataStorage.getType());
+            return null;
+        }
+        final Path mountFolder = getMountFolder(dataStorage);
+        if (mountFolder.toFile().exists()) {
+            return mountFolder;
+        }
+        return nfsMounter.tryToMountStorage((NFSDataStorage) dataStorage, mountFolder.toFile())
+               ? mountFolder
+               : null;
     }
 
     protected DataStorageFile convertToStorageFile(final Path path, final Path mountFolder) {
