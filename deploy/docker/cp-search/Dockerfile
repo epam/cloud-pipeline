@@ -21,6 +21,7 @@ RUN yum install -y \
                 java-1.8.0-openjdk \
                 python \
                 unzip \
+                sudo \
                 nfs-utils \
                 samba \
                 samba-client \
