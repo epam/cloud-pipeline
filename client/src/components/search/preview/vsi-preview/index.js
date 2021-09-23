@@ -132,6 +132,8 @@ class VSIPreview extends React.Component {
     preview: undefined,
     active: undefined,
     pending: false,
+    s3storageWrapperPending: true,
+    s3storageWrapperError: undefined,
     fullscreen: false,
     shareUrl: undefined,
     showShareUrlModal: false
@@ -167,35 +169,60 @@ class VSIPreview extends React.Component {
   }
 
   getTileUrl = (storageId, tilesFolder, x, y, z) => {
-    if (this.storage?.type === 'S3') {
+    if (this.storage?.type === 'S3' && this.s3Storage) {
       this.s3Storage.prefix = tilesFolder;
-      return this.s3Storage.getSignedUrl(`${z}/${y}/${x}.jpg`);
+      const url = this.s3Storage.getSignedUrl(`${z}/${y}/${x}.jpg`);
+      if (url) {
+        return url;
+      }
     }
     return generateTileSource(storageId, tilesFolder, x, y, z);
   };
 
-  createS3Storage = async () => {
-    const {dataStorages, storageId} = this.props;
-    await dataStorages.fetchIfNeededOrWait();
-    if (!this.s3Storage && this.storage?.type === 'S3') {
-      const {delimiter, path} = this.storage;
-      const storage = {
-        id: storageId,
-        path,
-        delimiter
-      };
-      this.setState({pending: true}, () => {
-        this.s3Storage = new S3Storage(storage);
-        this.s3Storage.updateCredentials()
-          .then(() => {
-            this.setState({pending: false});
-          })
-          .catch((err) => {
-            message.error(err, 5);
-            this.setState({pending: false});
+  createS3Storage = () => {
+    const wrapCreateStorageCredentials = storage => new Promise((resolve, reject) => {
+      storage.updateCredentials()
+        .then(() => {
+          resolve(storage);
+        })
+        .catch(reject);
+    });
+    this.setState({
+      s3storageWrapperError: undefined,
+      s3storageWrapperPending: true
+    }, () => {
+      const {dataStorages, storageId} = this.props;
+      dataStorages.fetchIfNeededOrWait()
+        .then(() => {
+          if (!this.s3Storage && this.storage?.type === 'S3') {
+            const {delimiter, path} = this.storage;
+            const storage = {
+              id: storageId,
+              path,
+              delimiter
+            };
+            return wrapCreateStorageCredentials(new S3Storage(storage));
+          } else {
+            return Promise.resolve(this.s3Storage);
+          }
+        })
+        .then((storage) => {
+          if (storage) {
+            this.s3Storage = storage;
+          }
+          this.setState({
+            s3storageWrapperError: undefined,
+            s3storageWrapperPending: false
           });
-      });
-    }
+        })
+        .catch(e => {
+          message.error(e.message, 5);
+          this.setState({
+            s3storageWrapperError: e.message,
+            s3storageWrapperPending: false
+          });
+        });
+    });
   };
 
   onChangePreview = (path) => {
@@ -731,7 +758,11 @@ class VSIPreview extends React.Component {
     const {
       className
     } = this.props;
-    const {pending} = this.state;
+    const {
+      pending: loading,
+      s3storageWrapperPending
+    } = this.state;
+    const pending = loading || s3storageWrapperPending;
     return (
       <div
         className={className}
