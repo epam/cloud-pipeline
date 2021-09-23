@@ -77,7 +77,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         loginAs(admin)
                 .settings()
                 .switchToSystemEvents()
-                .ensureTableHasTextIfNeeded("No data")
+                .ensureTableHasNoDateText()
                 .ensureVisible(REFRESH, ADD);
     }
 

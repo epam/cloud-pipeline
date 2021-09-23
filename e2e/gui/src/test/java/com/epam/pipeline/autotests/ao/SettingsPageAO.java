@@ -205,9 +205,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
-        public SystemEventsAO ensureTableHasTextIfNeeded(String text) {
-            if(!impersonateMode()) {
-                ensure(TABLE, matchesText(text));
+        public SystemEventsAO ensureTableHasNoDateText() {
+            if(getAllEntries() == null) {
+                ensure(TABLE, matchesText("No data"));
             }
             return this;
         }
