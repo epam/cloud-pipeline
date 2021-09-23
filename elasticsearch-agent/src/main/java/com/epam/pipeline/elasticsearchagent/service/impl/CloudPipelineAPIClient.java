@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -215,5 +216,9 @@ public class CloudPipelineAPIClient {
         } catch (IOException e) {
             return Collections.emptyList();
         }
+    }
+
+    public FileShareMount loadFileShareMount(final Long id) {
+        return executor.execute(cloudPipelineAPI.loadShareMount(id));
     }
 }
