@@ -1627,6 +1627,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
             LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
             LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
+            screenshot(format("SystemLogsValidateTimeOrder-%s", Utils.randomSuffix()));
             assertTrue(td1.isAfter(td2) || td1.isEqual(td2));
         }
 
