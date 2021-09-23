@@ -108,6 +108,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     void createIndexAndDocuments(final AbstractDataStorage dataStorage) {
+        mountStorageToRootIfNecessary(dataStorage);
         EntityPermissionVO entityPermission = cloudPipelineAPIClient
                 .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
 
