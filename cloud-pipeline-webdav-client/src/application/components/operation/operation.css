@@ -4,6 +4,11 @@
   align-items: center;
   justify-content: space-between;
   line-height: initial;
+  background-color: white;
+}
+
+.operation-container:not(:last-child) {
+  border-bottom: 1px solid #eee;
 }
 
 .operation-container .close {
@@ -12,12 +17,12 @@
 }
 
 .operation {
-  flex-grow: 1;
+  flex: 1;
   display: inline-flex;
   flex-direction: column;
+  justify-content: center;
   padding: 5px 10px;
   font-size: 9pt;
-  background-color: white;
   min-width: 0;
 }
 

@@ -196,9 +196,7 @@ function Application() {
       <Layout.Footer
         className="footer"
         style={{
-          height: activeOperations.length > 0
-            ? activeOperations.length * OPERATION_HEIGHT + 4
-            : undefined
+          height: 'unset'
         }}
       >
         <Operations
