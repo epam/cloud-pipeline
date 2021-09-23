@@ -22,28 +22,29 @@ class RemoveOperation extends Operation {
         .catch(reject);
     });
   }
-  invoke(preprocessResult) {
+  invoke(fs) {
+    const invokeForElement = (index, array, callback) => {
+      if (index >= array.length) {
+        return Promise.resolve();
+      }
+      if (this.aborted) {
+        return Promise.resolve();
+      }
+      callback(index, 1);
+      return new Promise((resolve) => {
+        fs.remove(array[index].path)
+          .catch(e => array[index].error = e)
+          .then(() => {
+            callback(index, 100);
+            return invokeForElement(index + 1, array, callback);
+          })
+          .then(resolve);
+      });
+    }
     return new Promise((resolve, reject) => {
       if (this.aborted) {
         resolve();
         return;
-      }
-      const fs = preprocessResult;
-      const invokeForElement = async (index, array, callback) => {
-        if (index >= array.length) {
-          return Promise.resolve();
-        }
-        if (this.aborted) {
-          return Promise.resolve();
-        }
-        callback(index, 1);
-        try {
-          await fs.remove(array[index].path)
-          callback(index, 100);
-        } catch (e) {
-          array[index].error = e;
-        }
-        return invokeForElement(index + 1, array, callback);
       }
       invokeForElement(0, this.sources, (idx, progress) => {
         const element = this.sources[idx];
@@ -53,7 +54,7 @@ class RemoveOperation extends Operation {
           `Removing ${element.path}...`,
         );
       })
-        .then(resolve)
+        .then(() => resolve(this.sources))
         .catch(reject);
     });
   }

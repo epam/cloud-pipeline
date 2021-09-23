@@ -5,6 +5,7 @@ import moment from 'moment-timezone';
 import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
+import copyPingConfiguration from './copy-ping-configuration';
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
@@ -25,8 +26,10 @@ class WebdavFileSystem extends FileSystem {
       password,
       certificates,
       ignoreCertificateErrors,
+      maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
+      pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
     } = webdavClientConfig || {};
-    super(server);
+    super(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds});
     this.username = username;
     this.password = password;
     this.certificates = certificates;
@@ -35,6 +38,11 @@ class WebdavFileSystem extends FileSystem {
     this.appName = appName;
     this.separator = '/';
     log(`Initializing webdav client: URL ${server}; IGNORE CERTIFICATE ERRORS: ${ignoreCertificateErrors}; USER: ${username}`);
+    if (this.pingAfterCopy) {
+      log(`Webdav client ping after copy operation config: ping ${pingTimeoutSeconds}sec. for ${maxWaitSeconds}sec.`);
+    } else {
+      log(`Webdav client ping after copy operation config: no ping (parameters: ${JSON.stringify({maxWaitSeconds, pingTimeoutSeconds})})`);
+    }
   }
   reInitialize() {
     return new Promise((resolve, reject) => {
@@ -56,8 +64,10 @@ class WebdavFileSystem extends FileSystem {
         password,
         certificates,
         ignoreCertificateErrors,
+        maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
+        pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
       } = webdavClientConfig || {};
-      super.reInitialize(server)
+      super.reInitialize(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds})
         .then(() => {
           this.username = username;
           this.password = password;
@@ -274,7 +284,7 @@ class WebdavFileSystem extends FileSystem {
         createDirectorySafe()
           .then(() => {
             log(`Copying ${size} bytes to ${destinationPath}...`);
-            this.watchCopyProgress(stream, callback, size);
+            this.watchCopyProgress(stream, callback, size, 99);
             const writeStream = stream.pipe(
               this.webdavClient.createWriteStream(
                 destinationPath,
@@ -332,6 +342,13 @@ class WebdavFileSystem extends FileSystem {
           error(`Creating directory ${name} error: ${e.message || e}`);
           reject(e.message);
         });
+    });
+  }
+  pathExists(path) {
+    return new Promise(resolve => {
+      this.getItemType(path)
+        .then((type) => resolve(!!type))
+        .catch(() => resolve(false));
     });
   }
 }
