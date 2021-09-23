@@ -101,7 +101,9 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .clickCombobox()
                 .selectSeverity(severity)
                 .setActive()
-                .create();
+                .create()
+                .searchForTableEntry(warningActiveNotification)
+                .ensureSeverityIconIs(severity.name());
         if(!impersonateMode()) {
             refresh();
             validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
