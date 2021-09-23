@@ -243,7 +243,7 @@ public interface CloudPipelineAPI {
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
 
-    @GET("/cluster/pool")
+    @GET("cluster/pool")
     Call<Result<List<NodePool>>> loadNodePools();
 
     @GET("dts/{id}")
@@ -259,6 +259,6 @@ public interface CloudPipelineAPI {
     @GET("preferences/{key}")
     Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
 
-    @GET("/filesharemount/{id}")
+    @GET("filesharemount/{id}")
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
 }
