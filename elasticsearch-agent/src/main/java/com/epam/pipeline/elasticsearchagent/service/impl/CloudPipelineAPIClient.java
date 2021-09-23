@@ -21,6 +21,7 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -169,5 +170,9 @@ public class CloudPipelineAPIClient {
 
     public Pipeline loadPipelineByRepositoryUrl(final String repositoryUrl) {
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineByUrl(repositoryUrl));
+    }
+
+    public FileShareMount loadFileShareMount(final Long id) {
+        return QueryUtils.execute(cloudPipelineAPI.loadShareMount(id));
     }
 }
