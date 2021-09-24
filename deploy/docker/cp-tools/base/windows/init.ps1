@@ -32,8 +32,8 @@ Start-Job {
 
 Start-Job {
     & ${env:PIPE_DIR}\pipe tunnel start --direct `
-                                        -lp "${env:CP_NM_NOMACHINE_PORT}" `
-                                        -rp "${env:CP_NM_NOMACHINE_PORT}" `
+                                        -lp "${env:CP_NOMACHINE_DESKTOP_PORT}" `
+                                        -rp "${env:CP_NOMACHINE_DESKTOP_PORT}" `
                                         --trace `
                                         -l ${env:CP_DESKTOP_DIR}\proxy_nxs.log `
                                         "${env:NODE_IP}"
