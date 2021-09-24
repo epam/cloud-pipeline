@@ -2014,8 +2014,8 @@ export default class DataStorage extends React.Component {
           title={this.state.renameItem
             ? (
               this.state.renameItem.type.toLowerCase() === 'file'
-                ? 'Rename file'
-                : 'Rename folder'
+                ? 'Edit file'
+                : 'Edit folder'
             )
             : null
           }

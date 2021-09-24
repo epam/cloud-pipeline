@@ -795,6 +795,9 @@ class PermissionsForm extends React.Component {
   };
 
   renderOwner = () => {
+    if (this.currentMode === MODES.share) {
+      return;
+    }
     if (this.props.grant.pending) {
       return <div style={{height: '32px'}} />;
     }
