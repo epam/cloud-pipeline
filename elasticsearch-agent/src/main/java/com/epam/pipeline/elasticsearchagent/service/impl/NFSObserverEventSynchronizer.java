@@ -23,7 +23,6 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.model.nfsobserver.NFSObserverEvent;
 import com.epam.pipeline.elasticsearchagent.model.nfsobserver.NFSObserverEventType;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
-import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -47,7 +46,6 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -88,7 +86,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private final String eventsBucketFolderPath;
     private final Integer eventsFileChunkSize;
     private final S3FileManager eventBucketFileManager;
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
+    private final StorageFileMapper fileMapper;
 
     public NFSObserverEventSynchronizer(final @Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                                         final @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
@@ -102,7 +100,6 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
-                                        final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager,
                                         final NFSStorageMounter nfsMounter) {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, cloudPipelineAPIClient,
               elasticsearchServiceClient, elasticIndexService, nfsMounter);
@@ -111,7 +108,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
         this.eventsBucketName = eventsBucketURI.getAuthority();
         this.eventsBucketFolderPath = getEventsBucketFolder(eventsBucketURI);
-        this.eventBucketFileManager = mapToS3FileManager(eventsBucketURI, s3FileManager);
+        this.eventBucketFileManager = getS3FileManager(eventsBucketURI);
+        this.fileMapper = new StorageFileMapper();
     }
 
     @Override
@@ -372,15 +370,10 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         return getCloudPipelineAPIClient().generateTemporaryCredentials(Collections.singletonList(action));
     }
 
-    private S3FileManager mapToS3FileManager(final URI eventsBucketURI, final ObjectStorageFileManager manager) {
-        final String bucketScheme = Optional.ofNullable(eventsBucketURI.getScheme())
-            .filter("s3"::equalsIgnoreCase)
-            .orElseThrow(() -> new IllegalArgumentException("Only s3 is supported as events bucket!"));
-
-        return Optional.of(manager)
-            .filter(S3FileManager.class::isInstance)
-            .map(S3FileManager.class::cast)
-            .orElseThrow(() -> new IllegalArgumentException("Cant't find a file manager for scheme " + bucketScheme));
+    private S3FileManager getS3FileManager(final URI eventsBucketURI) {
+        Assert.isTrue(DataStorageType.S3.getId().equalsIgnoreCase(eventsBucketURI.getScheme()),
+                      "Only S3 is supported as events bucket!");
+        return new S3FileManager(false);
     }
 
     private String getEventsBucketFolder(final URI eventsBucketUri) {
