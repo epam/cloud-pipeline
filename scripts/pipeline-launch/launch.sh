@@ -1425,7 +1425,7 @@ echo Checking if remote data storages shall be mounted
 echo "------"
 ######################################################
 MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
-DATA_STORAGE_MOUNT_ROOT="/cloud-data"
+DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
 
 echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
 rm -Rf $DATA_STORAGE_MOUNT_ROOT
@@ -1470,8 +1470,8 @@ echo "Store allowed environment variables to /etc/profile for further reuse when
 echo "-"
 ######################################################
 
-export CP_ENV_FILE_TO_SOURCE="/etc/cp_env.sh"
-export CP_USER_ENV_FILE_TO_SOURCE="/etc/cp_env_user.sh"
+export CP_ENV_FILE_TO_SOURCE="${CP_ENV_FILE_TO_SOURCE:-/etc/cp_env.sh}"
+export CP_USER_ENV_FILE_TO_SOURCE="${CP_USER_ENV_FILE_TO_SOURCE:-/etc/cp_env_user.sh}"
 
 # Clean all previous saved envs, e.g. if container was committed
 rm -f $CP_ENV_FILE_TO_SOURCE $CP_USER_ENV_FILE_TO_SOURCE

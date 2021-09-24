@@ -11,3 +11,4 @@ python-intervals==1.10.0
 google-resumable-media==0.3.2
 google-cloud-storage==1.15.0
 python-dateutil==2.6.1
+future==0.18.2

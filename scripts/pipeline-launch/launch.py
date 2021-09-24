@@ -80,7 +80,7 @@ def _parse_host_and_port(url, default_host, default_port):
     return host, port
 
 
-if __name__ == '__main__':
+try:
     logging_format = _extract_parameter('CP_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
     logging_level = _extract_parameter('CP_LOGGING_LEVEL', default='INFO')
     host_root = _extract_parameter('CP_HOST_ROOT_DIR', default='c:\\host')
@@ -90,6 +90,7 @@ if __name__ == '__main__':
     run_dir = _extract_parameter('RUN_DIR', default=os.path.join(runs_root, pipeline_name + '-' + run_id))
     common_repo_dir = _extract_parameter('COMMON_REPO_DIR', default=os.path.join(run_dir, 'CommonRepo'))
     log_dir = _extract_parameter('LOG_DIR', default=os.path.join(run_dir, 'logs'))
+    tmp_dir = _extract_parameter('TMP_DIR', default=os.path.join(run_dir, 'tmp'))
     pipe_dir = _extract_parameter('PIPE_DIR', default=os.path.join(run_dir, 'pipe'))
     analysis_dir = _extract_parameter('ANALYSIS_DIR', default=os.path.join(run_dir, 'analysis'))
     resources_dir = _extract_parameter('RESOURCES_DIR', default=os.path.join(run_dir, 'resources'))
@@ -100,6 +101,7 @@ if __name__ == '__main__':
     node_owner = _extract_parameter('CP_NODE_OWNER', default='Administrator')
     edge_url = _extract_parameter('EDGE', default='https://cp-edge.default.svc.cluster.local:31081')
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
+    persisted_env_path = _extract_parameter('CP_ENV_FILE_TO_SOURCE', default=os.path.join(host_root, 'cp_env.ps1'))
     owner = _extract_parameter('OWNER', 'USER')
     owner = owner.split('@')[0]
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
@@ -118,17 +120,34 @@ if __name__ == '__main__':
         default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
                                                 default='cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com')
+
+    # Enables network file systems and object storages mounting
+    requires_storage_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_STORAGE')
+
+    # Specifies network file systems and object storages mounting root directory
+    storage_mount_root = _extract_parameter('CP_STORAGE_MOUNT_ROOT_DIR', default='c:\\cloud-data')
+
+    # Specifies Amazon S3 object storages fuse type
+    _extract_parameter('CP_S3_FUSE_TYPE', default='pipefuse')
+
+    # Specifies Google Cloud object storages fuse type
+    _extract_parameter('CP_GCS_FUSE_TYPE', default='pipefuse')
+
+    # Enables Cloud Data App initialization
     requires_cloud_data = _extract_boolean_parameter('CP_CAP_WIN_INSTALL_CLOUD_DATA')
+
     cloud_data_distribution_url = _extract_parameter(
         'CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
         default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
+
+    # Enables network file systems mounting as drives
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')
 
-    # Allows to apply multiple parameters to nomachine server configuration.
+    # Allows to apply multiple parameters to nomachine server configuration
     # For example: ConnectionsLimit=1,ConnectionsUserLimit=1
     nomachine_server_parameters = _extract_parameter('CP_CAP_DESKTOP_NM_SERVER_PARAMETERS')
 
-    # Enables the usage of nomachine specific user connection files rather than run owner connection files.
+    # Enables the usage of nomachine specific user connection files rather than run owner connection files
     _extract_boolean_parameter('CP_CAP_DESKTOP_NM_USER_CONNECTION_FILES', default='true')
 
     logging.basicConfig(level=logging_level, format=logging_format)
@@ -137,6 +156,7 @@ if __name__ == '__main__':
     _mkdir(run_id)
     _mkdir(common_repo_dir)
     _mkdir(log_dir)
+    _mkdir(tmp_dir)
     _mkdir(pipe_dir)
     _mkdir(analysis_dir)
     _mkdir(resources_dir)
@@ -219,6 +239,12 @@ if __name__ == '__main__':
                      f'from pipeline.utils.account import create_user; '
                      f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"')
 
+    logger.info('Persisting environment...')
+    with open(persisted_env_path, 'w') as f:
+        f.write('\n'.join('$env:' + key + '="' + value + '"'
+                          for key, value in os.environ.items()
+                          if key.replace('_', '').isalnum()))
+
     if nomachine_server_parameters:
         logger.info('Configuring and restarting nomachine server...')
         node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
@@ -238,6 +264,24 @@ if __name__ == '__main__':
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.proc import terminate_processes; '
                      f'terminate_processes(\'winlogon.exe\')\\"')
+
+    if requires_storage_mount:
+        task_name = 'MountDataStorages'
+        task_logger = TaskLogger(task=task_name, inner=run_logger)
+        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_logger.info('Mounting data storages...')
+        # Invocation of WmiMethod is required in order to keep background processes running after ssh session is over
+        task_ssh.execute(f'Invoke-WmiMethod -Path \'Win32_Process\' -Name Create -ArgumentList \''
+                         f'powershell.exe -c \". {persisted_env_path}; {python_dir}\\python.exe '
+                         f'{os.path.join(common_repo_dir, "scripts", "mount_storage.py")} '
+                         f'--mount-root {storage_mount_root} '
+                         f'--tmp-dir {tmp_dir} '
+                         f'--task {task_name}\"\' '
+                         f'| ForEach-Object {{ '
+                         f'     $p = get-process -id $_.ProcessId;'
+                         f'     Wait-Process -Id $_.ProcessId;'
+                         f'     exit $p.ExitCode'
+                         f'}}')
 
     if requires_cloud_data:
         task_logger = TaskLogger(task='InstallCloudData', inner=run_logger)
@@ -310,3 +354,17 @@ if __name__ == '__main__':
     logger.info('Finalizing task execution...')
     logger.info(f'Exiting with {exit_code}...')
     sys.exit(exit_code)
+except BaseException as e:
+    if _extract_boolean_parameter('CP_CAP_ZOMBIE'):
+        traceback.print_exc()
+        stacktrace = traceback.format_stack()
+        try:
+            logger.error('Switching to zombie mode because the error occurred: {} {}'.format(e, stacktrace))
+        except:
+            print('Switching to zombie mode because the error occurred...')
+        import time
+
+        while True:
+            time.sleep(1)
+    else:
+        raise

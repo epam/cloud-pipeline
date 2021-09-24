@@ -145,6 +145,15 @@ function InstallChromeIfRequired {
     }
 }
 
+function InstallDokanyIfRequired($DokanyDir) {
+    if (-not (Test-Path "$DokanyDir")) {
+        Write-Host "Installing Dokany..."
+        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
+        & "$workingDir\DokanSetup.exe" /quiet /silent /verysilent
+        WaitForProcess -ProcessName "DokanSetup"
+    }
+}
+
 function GenerateSshKeys($Path) {
     NewDirIfRequired -Path "$Path\.ssh"
     if (!(Test-Path "$Path\.ssh\id_rsa")) {
@@ -223,10 +232,11 @@ function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
 $interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
 
 $homeDir = "$env:USERPROFILE"
-$workingDir="c:\init"
-$kubeDir="c:\ProgramData\Kubernetes"
+$workingDir = "c:\init"
+$kubeDir = "c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
-$initLog="$workingDir\log.txt"
+$dokanyDir = "C:\Program Files\Dokan\Dokan Library-1.5.0"
+$initLog = "$workingDir\log.txt"
 
 $instanceId = Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id
 $region = Invoke-RestMethod -uri http://169.254.169.254/latest/dynamic/instance-identity/document | ForEach-Object { $_.region }
@@ -273,6 +283,9 @@ InstallPythonIfRequired -PythonDir $pythonDir
 
 Write-Host "Installing chrome if required..."
 InstallChromeIfRequired
+
+Write-Host "Installing Dokany if required..."
+InstallDokanyIfRequired -DokanyDir $dokanyDir
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000

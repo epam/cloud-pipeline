@@ -11,13 +11,13 @@ from google.cloud.storage import Bucket, Blob, Client
 from google.cloud.exceptions import GoogleCloudError
 from google.oauth2.credentials import Credentials
 
-import fuseutils
-from fsclient import File
-from fuseutils import MB, TB
-from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
+from pipefuse import fuseutils
+from pipefuse.fsclient import File
+from pipefuse.fuseutils import MB, TB
+from pipefuse.mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
     CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload, OutOfBoundsSplittingMultipartCopyUpload, \
     OutOfBoundsFillingMultipartCopyUpload
-from storage import StorageLowLevelFileSystemClient
+from pipefuse.storage import StorageLowLevelFileSystemClient
 
 
 class TruncatedExponentialBackoffException(RuntimeError):
@@ -193,11 +193,14 @@ class _RetryableBucket(Bucket):
 
 
 class _RefreshingClient(Client):
-    MAX_REFRESH_ATTEMPTS = sys.maxint
 
     def __init__(self, refresh):
+        try:
+            max_refresh_attempts = sys.maxint
+        except:
+            max_refresh_attempts = sys.maxsize
         credentials = _RefreshingCredentials(refresh)
-        session = AuthorizedSession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
+        session = AuthorizedSession(credentials, max_refresh_attempts=max_refresh_attempts)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
     def bucket(self, bucket_name, user_project=None):
