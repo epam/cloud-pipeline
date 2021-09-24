@@ -117,16 +117,16 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             if (impersonateMode()) {
                 Selenide.clearBrowserCookies();
                 addExtension(C.INVALID_EXTENSION_PATH);
-                Selenide.open(C.ROOT_ADDRESS);
+                open(C.ROOT_ADDRESS);
                 checkFailedAuthentication();
             } else {
-                Selenide.open(C.ROOT_ADDRESS);
+                open(C.ROOT_ADDRESS);
                 validateErrorPage(singletonList("type=Unauthorized, status=401"));
                 Selenide.clearBrowserCookies();
                 sleep(1, SECONDS);
             }
         } else {
-            Selenide.open(C.ROOT_ADDRESS);
+            open(C.ROOT_ADDRESS);
             new AuthenticationPageAO()
                     .login(C.LOGIN)
                     .password(format("123%s", C.PASSWORD))
@@ -303,7 +303,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             Selenide.close();
             Selenide.clearBrowserCookies();
             addExtension(C.ANONYM_EXTENSION_PATH);
-            Selenide.open(endpoint);
+            open(endpoint);
             checkFailedAuthentication();
             restartBrowser(C.ROOT_ADDRESS);
         } else {
@@ -324,7 +324,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             Selenide.close();
             Selenide.clearBrowserCookies();
             final String edgeUrl = endpoint.split(format("pipeline-%s-%s-0", getLastRunId(), C.VALID_ENDPOINT))[0];
-            Selenide.open(edgeUrl);
+            open(edgeUrl);
             Cookie cookie = new Cookie("bearer", anonymousAccount.password);
             WebDriverRunner.getWebDriver().manage().addCookie(cookie);
         } else {
