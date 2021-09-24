@@ -14,7 +14,7 @@
 
 import logging
 
-from fsclient import FileSystemClientDecorator
+from pipefuse.fsclient import FileSystemClientDecorator
 
 
 class _WriteBuffer:
