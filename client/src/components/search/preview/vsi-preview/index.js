@@ -45,7 +45,7 @@ const SA_CAMERA_CALLBACK_START_TIMEOUT = 2500;
 
 function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
-  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${tilesFolder}/${z}/${y}/${x}.jpg`;
+  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
 }
 
 function getFolderContents (storageId, folder) {
