@@ -1,5 +1,5 @@
-import fuseutils
-from fsclient import FileSystemClientDecorator
+from pipefuse import fuseutils
+from pipefuse.fsclient import FileSystemClientDecorator
 
 
 class PathExpandingStorageFileSystemClient(FileSystemClientDecorator):

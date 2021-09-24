@@ -15,7 +15,7 @@
 import io
 import logging
 
-from fsclient import FileSystemClientDecorator
+from pipefuse.fsclient import FileSystemClientDecorator
 
 
 _ANY_ERROR = BaseException

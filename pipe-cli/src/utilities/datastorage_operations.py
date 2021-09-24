@@ -547,7 +547,6 @@ class DataStorageOperations(object):
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
-        cls.check_platform("mount")
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
                                mode=mode, timeout=timeout)

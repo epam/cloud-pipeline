@@ -24,13 +24,13 @@ from botocore.config import Config
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
 
-import fuseutils
-from fsclient import File
-from fuseutils import MB, GB
-from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
+from pipefuse import fuseutils
+from pipefuse.fsclient import File
+from pipefuse.fuseutils import MB, GB
+from pipefuse.mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
     TruncatingMultipartCopyUpload, OutOfBoundsSplittingMultipartCopyUpload, \
     OutOfBoundsFillingMultipartCopyUpload
-from storage import StorageLowLevelFileSystemClient
+from pipefuse.storage import StorageLowLevelFileSystemClient
 
 _ANY_ERROR = Exception
 

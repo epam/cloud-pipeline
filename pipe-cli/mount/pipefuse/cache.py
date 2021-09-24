@@ -20,8 +20,8 @@ from threading import RLock
 
 import pytz
 
-from fsclient import File, FileSystemClientDecorator
-import fuseutils
+from pipefuse.fsclient import File, FileSystemClientDecorator
+from pipefuse import fuseutils
 
 
 _ANY_ERROR = BaseException

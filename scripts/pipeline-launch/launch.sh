@@ -256,7 +256,7 @@ function cp_cap_publish {
 
             sed -i "/$_KUBE_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
             echo "$_KUBE_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
-
+            
             sed -i "/$_KUBE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_KUBE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
@@ -414,7 +414,7 @@ function configure_package_manager {
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/apt/sources.list.d/cuda.list \
                               /etc/apt/sources.list.d/nvidia-ml.list \
-                              /etc/apt/sources.list.d/tensorRT.list 
+                              /etc/apt/sources.list.d/tensorRT.list
 
                         apt-get update -qq -y --allow-insecure-repositories && \
                         apt-get install curl apt-transport-https gnupg -y -qq && \
@@ -674,7 +674,7 @@ function self_terminate_on_cleanup_timeout() {
       fi
       if (( "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" < "$_min_terminate_timeout_min" )); then
             pipe_log_info "Cleanup termination timeout is less than a minimal value ${_min_terminate_timeout_min}. It will be adjusted." "CleanupEnvironment"
-            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"  
+            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"
       fi
 
       local _node_name=$(echo $(pipe view-runs $RUN_ID --node-details | grep nodeName) | cut -d' ' -f2)
@@ -1514,8 +1514,8 @@ echo "Store allowed environment variables to /etc/profile for further reuse when
 echo "-"
 ######################################################
 
-export CP_ENV_FILE_TO_SOURCE="/etc/cp_env.sh"
-export CP_USER_ENV_FILE_TO_SOURCE="/etc/cp_env_user.sh"
+export CP_ENV_FILE_TO_SOURCE="${CP_ENV_FILE_TO_SOURCE:-/etc/cp_env.sh}"
+export CP_USER_ENV_FILE_TO_SOURCE="${CP_USER_ENV_FILE_TO_SOURCE:-/etc/cp_env_user.sh}"
 
 # Clean all previous saved envs, e.g. if container was committed
 rm -f $CP_ENV_FILE_TO_SOURCE $CP_USER_ENV_FILE_TO_SOURCE
