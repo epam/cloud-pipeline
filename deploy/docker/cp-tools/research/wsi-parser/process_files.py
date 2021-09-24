@@ -20,6 +20,7 @@ import datetime
 import shutil
 import tempfile
 import time
+import urllib
 import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
@@ -32,22 +33,35 @@ TAGS_MAPPING_KEYS_DELIMITER = '='
 SCHEMA_PREFIX = '{http://www.openmicroscopy.org/Schemas/OME/2016-06}'
 WSI_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('WSI_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
 DZ_TILES_SIZE = int(os.getenv('WSI_PARSING_DZ_TILES_SIZE', 256))
+TAGS_PROCESSING_ONLY = os.getenv('WSI_PARSING_TAGS_ONLY', 'false') == 'true'
+REFR_IND_CAT_ATTR_NAME = os.getenv('WSI_PARSING_REFR_IND_CAT_ATTR_NAME', 'Immersion liquid')
+EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NAME', 'Extended Focus')
+MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
 
 
 class ImageDetails(object):
 
-    def __init__(self, series_id, name, width, height):
+    def __init__(self, series_id, name, width, height, refractive_index, objective_id):
         self.id = series_id
         self.name = name
         self.width = int(width)
         self.height = int(height)
+        self.refractive_index = refractive_index
+        self.objective_id = objective_id
 
     @staticmethod
     def from_xml(i, name, image_xml):
         resolution_details = image_xml.find(SCHEMA_PREFIX + 'Pixels')
         width = resolution_details.get('SizeX')
         height = resolution_details.get('SizeY')
-        details = ImageDetails(i, name, width, height)
+        objective_details = image_xml.find(SCHEMA_PREFIX + 'ObjectiveSettings')
+        if objective_details is not None:
+            refractive_index = float(objective_details.get('RefractiveIndex'))
+            objective_id = objective_details.get('ID')
+        else:
+            refractive_index = -1
+            objective_id = None
+        details = ImageDetails(i, name, width, height, refractive_index, objective_id)
         return details
 
 
@@ -150,7 +164,7 @@ class WsiProcessingFileGenerator:
         return paths
 
     def is_processing_required(self, file_path):
-        if os.getenv('WSI_PARSING_SKIP_DATE_CHECK'):
+        if os.getenv('WSI_PARSING_SKIP_DATE_CHECK') or TAGS_PROCESSING_ONLY:
             return True
         active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
         if os.path.exists(active_stat_file):
@@ -186,25 +200,90 @@ class WsiFileTagProcessor:
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
 
-    def process_tags(self):
+    def process_tags(self, target_image_details):
         existing_attributes_dictionary = self.load_existing_attributes()
         tags_mapping = self.map_tags(existing_attributes_dictionary)
-        if not tags_mapping:
-            self.log_processing_info('No tags to map found, skipping tags processing...')
-            return 0
         metadata = self.xml_info_tree.find(SCHEMA_PREFIX + 'StructuredAnnotations')
         if not metadata:
             self.log_processing_info('No metadata found for file, skipping tags processing...')
             return 0
-        tags_to_push = self.extract_matching_tags_from_metadata(metadata.findall(SCHEMA_PREFIX + 'XMLAnnotation'),
-                                                                tags_mapping)
+        metadata_dict = self.map_to_metadata_dict(metadata)
+        tags_to_push = self.build_tags_dictionary(metadata_dict, tags_mapping, target_image_details)
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
             return 0
         pipe_tags = self.prepare_tags(existing_attributes_dictionary, tags_to_push)
         tags_to_push_str = ' '.join(pipe_tags)
         self.log_processing_info('Following tags will be assigned to the file: {}'.format(tags_to_push_str))
-        return os.system('pipe storage set-object-tags "{}" {}'.format(self.cloud_path, tags_to_push_str))
+        url_encoded_cloud_file_path = WsiParsingUtils.extract_cloud_path(urllib.quote(self.file_path))
+        return os.system('pipe storage set-object-tags "{}" {}'.format(url_encoded_cloud_file_path, tags_to_push_str))
+
+    def map_to_metadata_dict(self, metadata):
+        metadata_entries = metadata.findall(SCHEMA_PREFIX + 'XMLAnnotation')
+        metadata_dict = dict()
+        for entry in metadata_entries:
+            entry_value = entry.find(SCHEMA_PREFIX + 'Value')
+            if entry_value is not None:
+                metadata_record = entry_value.find(SCHEMA_PREFIX + 'OriginalMetadata')
+                if metadata_record is not None:
+                    key = metadata_record.find(SCHEMA_PREFIX + 'Key').text
+                    value = metadata_record.find(SCHEMA_PREFIX + 'Value').text
+                    if key and value:
+                        metadata_dict[key] = value
+        return metadata_dict
+
+    def build_tags_dictionary(self, metadata_dict, tags_mapping, target_image_details):
+        tags_dictionary = dict()
+        if tags_mapping:
+            tags_dictionary.update(self.extract_matching_tags_from_metadata(metadata_dict, tags_mapping))
+        tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
+        return tags_dictionary
+
+    def _get_advanced_mapping_dict(self, target_image_details, metadata_dict):
+        tags = dict()
+        tags[REFR_IND_CAT_ATTR_NAME] = {self._get_refractive_index_substance(target_image_details)}
+        tags[EXTENDED_FOCUS_CAT_ATTR_NAME] = {'Yes' if target_image_details.name.startswith('EFI ') else 'No'}
+        magnification_value = self._get_magnification_attribute_value(target_image_details, metadata_dict)
+        if magnification_value:
+            tags[MAGNIFICATION_CAT_ATTR_NAME] = {magnification_value}
+        return tags
+
+    def _get_refractive_index_substance(self, target_image_details):
+        refractive_index = target_image_details.refractive_index
+        if refractive_index:
+            if refractive_index > 1.5:
+                return 'Oil'
+            elif refractive_index > 1.46:
+                return 'Glycerin'
+            elif refractive_index > 1.3:
+                return 'Water'
+            elif refractive_index >= 0:
+                return 'Dry'
+        return 'Unknown'
+
+    def build_magnification_from_numeric_string(self, magnification):
+        return '{}x'.format(int(float(magnification)))
+
+    def _get_magnification_attribute_value(self, target_image_details, metadata_dict):
+        objective_id = target_image_details.objective_id
+        if objective_id:
+            instrument_details = self.xml_info_tree.find(SCHEMA_PREFIX + 'Instrument')
+            if instrument_details:
+                objectives_details = instrument_details.findall(SCHEMA_PREFIX + 'Objective')
+                for i in range(0, len(objectives_details)):
+                    objectives_detail = objectives_details[i]
+                    if objectives_detail and objectives_details.get('ID') == objective_id:
+                        magnification_value = objectives_details.get('NominalMagnification')
+                        if magnification_value:
+                            return self.build_magnification_from_numeric_string(magnification_value)
+        for key, value in metadata_dict.items():
+            magnitude_key = target_image_details.name + ' Microscope Objective Description'
+            if key.startswith(magnitude_key):
+                return value
+            magnitude_key = target_image_details.name + ' Microscope Magnification'
+            if key.startswith(magnitude_key):
+                return self.build_magnification_from_numeric_string(value)
+        return None
 
     def prepare_tags(self, existing_attributes_dictionary, tags_to_push):
         attribute_updates = list()
@@ -233,30 +312,25 @@ class WsiFileTagProcessor:
         for attribute in attribute_updates:
             self.api.execute_request(self.system_dictionaries_url, method='post', data=json.dumps(attribute))
 
-    def extract_matching_tags_from_metadata(self, metadata_entries, tags_mapping):
+    def extract_matching_tags_from_metadata(self, metadata_dict, tags_mapping):
         tags_to_push = dict()
-        for entry in metadata_entries:
-            entry_value = entry.find(SCHEMA_PREFIX + 'Value')
-            if entry_value is not None:
-                metadata_record = entry_value.find(SCHEMA_PREFIX + 'OriginalMetadata')
-                if metadata_record is not None:
-                    key = metadata_record.find(SCHEMA_PREFIX + 'Key').text
-                    if key and key in tags_mapping:
-                        value = metadata_record.find(SCHEMA_PREFIX + 'Value').text[1:-1]
-                        if value:
-                            if value.startswith('[') and value.endswith(']'):
-                                self.log_processing_info('Processing array value')
-                                value = value[1:-1]
-                                values = list(set(value.split(',')))
-                                if len(values) != 1:
-                                    self.log_processing_info('Empty or multiple metadata values, skipping [{}]'
-                                                             .format(key))
-                                value = values[0]
-                            target_tag = tags_mapping[key]
-                            if target_tag in tags_to_push:
-                                tags_to_push[target_tag].add(value)
-                            else:
-                                tags_to_push[target_tag] = {value}
+        for key in tags_mapping.keys():
+            if key in metadata_dict:
+                value = metadata_dict[key]
+                if value.startswith('[') and value.endswith(']'):
+                    self.log_processing_info('Processing array value')
+                    value = value[1:-1]
+                    values = list(set(value.split(',')))
+                    if len(values) != 1:
+                        self.log_processing_info('Empty or multiple metadata values, skipping [{}]'
+                                                 .format(key))
+                        continue
+                    value = values[0]
+                target_tag = tags_mapping[key]
+                if target_tag in tags_to_push:
+                    tags_to_push[target_tag].add(value)
+                else:
+                    tags_to_push[target_tag] = {value}
         return tags_to_push
 
     def map_tags(self, existing_attributes_dictionary):
@@ -292,7 +366,7 @@ class WsiFileParser:
 
     def __init__(self, file_path, tags_mapping_rules):
         self.file_path = file_path
-        self.tags_mapping_rules = tags_mapping_rules.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules else None
+        self.tags_mapping_rules = tags_mapping_rules.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules else []
         self.log_processing_info('Generating XML description')
         self.xml_info_file = os.path.join(WsiParsingUtils.get_service_directory(file_path),
                                           WsiParsingUtils.get_basename_without_extension(self.file_path) + '_info.xml')
@@ -457,18 +531,15 @@ class WsiFileParser:
                 and not WsiParsingUtils.active_processing_exceed_timeout(self.tmp_stat_file_name):
             log_info('This file is processed by another parser, skipping...')
             return 0
-        if self.tags_mapping_rules:
-            try:
-                if WsiFileTagProcessor(self.file_path, self.xml_info_tree, self.tags_mapping_rules).process_tags() != 0:
-                    self.log_processing_info('Some errors occurred during file tagging')
-            except Exception as e:
-                log_info('An error occurred during tags processing: {}'.format(str(e)))
         target_image_details = self.calculate_target_series()
-        self.create_tmp_stat_file(target_image_details)
         target_series = target_image_details.id
         if target_series is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation... ')
             return 1
+        self.create_tmp_stat_file(target_image_details)
+        tags_processing_result = self.try_process_tags(target_image_details)
+        if TAGS_PROCESSING_ONLY:
+            return tags_processing_result
         elif self._is_same_series_selected(target_series):
             self.log_processing_info('The same series [{}] is selected for image processing, skipping... '
                                      .format(target_series))
@@ -493,6 +564,17 @@ class WsiFileParser:
         else:
             self.log_processing_info('File processing was not successful')
         return conversion_result
+
+    def try_process_tags(self, target_image_details):
+        tags_processing_result = 0
+        try:
+            if WsiFileTagProcessor(self.file_path, self.xml_info_tree, self.tags_mapping_rules).process_tags(target_image_details) != 0:
+                self.log_processing_info('Some errors occurred during file tagging')
+                tags_processing_result = 1
+        except Exception as e:
+            log_info('An error occurred during tags processing: {}'.format(str(e)))
+            tags_processing_result = 1
+        return tags_processing_result
 
 
 def log_success(message):
@@ -536,6 +618,8 @@ def process_wsi_files():
                  .format(processing_threads))
         processing_threads = 1
     log_info('{} threads enabled for WSI processing'.format(processing_threads))
+    if TAGS_PROCESSING_ONLY:
+        log_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
     if processing_threads == 1:
         for file_path in paths_to_wsi_files:
             try_process_file(file_path)
