@@ -37,7 +37,7 @@ public abstract class AbstractDataStorageFactory {
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
             List<String> allowedCidrs, Long regionId, Long fileShareMountId,
-            String kmsKey, String tempRole, boolean useAssumedCreds);
+            String kmsKey, String tempRole, boolean useAssumedCreds, final String mountStatus);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
         DataStorageType type = determineStorageType(vo, provider);
@@ -45,7 +45,8 @@ public abstract class AbstractDataStorageFactory {
                 convertToDataStorage(vo.getId(), vo.getName(), vo.getPath(), type, vo.getStoragePolicy(),
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
                         vo.getRegionId(), vo.getFileShareMountId(),
-                        vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials());
+                        vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
+                        NFSStorageMountStatus.ACTIVE.name());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
@@ -73,7 +74,8 @@ public abstract class AbstractDataStorageFactory {
                                                         final String mountPoint, final List<String> allowedCidrs,
                                                         final Long regionId, final Long fileShareMountId,
                                                         final String kmsKey, final String tempRole,
-                                                        final boolean useAssumedCreds) {
+                                                        final boolean useAssumedCreds,
+                                                        final String mountStatus) {
             switch (type) {
                 case S3:
                     S3bucketDataStorage bucket = new S3bucketDataStorage(id, name, path, policy, mountPoint);
@@ -87,6 +89,7 @@ public abstract class AbstractDataStorageFactory {
                     NFSDataStorage storage = new NFSDataStorage(id, name, path, policy, mountPoint);
                     storage.setMountOptions(mountOptions);
                     storage.setFileShareMountId(fileShareMountId);
+                    storage.setMountStatus(NFSStorageMountStatus.fromName(mountStatus));
                     return storage;
                 case AZ:
                     final AzureBlobStorage blobStorage = new AzureBlobStorage(id, name, path, policy, mountPoint);

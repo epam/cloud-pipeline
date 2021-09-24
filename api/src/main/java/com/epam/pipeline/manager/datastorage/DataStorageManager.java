@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
@@ -47,6 +48,7 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -298,6 +300,21 @@ public class DataStorageManager implements SecuredEntityManager {
         storageProviderManager.applyStoragePolicy(dataStorage);
         dataStorageDao.updateDataStorage(updated);
         return updated;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public AbstractDataStorage updateMountStatus(final AbstractDataStorage storage,
+                                                 final NFSStorageMountStatus status) {
+        final NFSDataStorage existingStorage = Optional.of(load(storage.getId()))
+            .filter(dataStorage -> DataStorageType.NFS.equals(dataStorage.getType()))
+            .map(NFSDataStorage.class::cast)
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_SUPPORTED,
+                                         storage.getName(), storage.getType())));
+        if (!existingStorage.getMountStatus().equals(status)) {
+            dataStorageDao.updateDataStorageMountStatus(existingStorage.getId(), status);
+        }
+        return existingStorage;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
