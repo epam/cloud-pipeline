@@ -251,6 +251,11 @@ try:
                          f'from scripts.configure_nomachine_win import configure_nomachine_win; '
                          f'configure_nomachine_win(\'{nomachine_server_parameters}\')\\"')
 
+    logger.info('Configuring nice dcv server...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_nice_dcv_win import configure_nice_dcv_win; '
+                     f'configure_nice_dcv_win(\'{_escape_backslashes(run_dir)}\', \'{owner}\')\\"')
+
     logger.info('Downloading seamless logon image...')
     _download_file(logon_image_url, logon_image_path)
 

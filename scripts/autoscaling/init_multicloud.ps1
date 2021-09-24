@@ -147,7 +147,7 @@ function InstallPythonIfRequired($PythonDir) {
 function InstallChromeIfRequired {
     if (-not(Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
         Write-Host "Installing chrome..."
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile $workingDir\ChromeSetup.exe
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile "$workingDir\ChromeSetup.exe"
         & $workingDir\ChromeSetup.exe /silent /install
         WaitForProcess -ProcessName "ChromeSetup"
     }
@@ -156,9 +156,19 @@ function InstallChromeIfRequired {
 function InstallDokanyIfRequired($DokanyDir) {
     if (-not (Test-Path "$DokanyDir")) {
         Write-Host "Installing Dokany..."
-        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
         & "$workingDir\DokanSetup.exe" /quiet /silent /verysilent
         WaitForProcess -ProcessName "DokanSetup"
+    }
+}
+
+function InstallNiceDcvIfRequired {
+    $niceDcvInstalled = Get-Service -Name "DCV Server" `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($niceDcvInstalled)) {
+        Invoke-WebRequest "https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/nice-dcv-server-x64-Release-2021.2-11048.msi" -outfile "$workingDir\nice-dcv-server-x64-Release-2021.2-11048.msi"
+        Start-Process -FilePath "$workingDir\nice-dcv-server-x64-Release-2021.2-11048.msi" -ArgumentList "ADDLOCAL=ALL /quiet /norestart /l*v $workingDir\nice_dcv_install.log" -Wait -PassThru
     }
 }
 
@@ -490,6 +500,9 @@ InstallChromeIfRequired
 
 Write-Host "Installing Dokany if required..."
 InstallDokanyIfRequired -DokanyDir $dokanyDir
+
+Write-Host "Installing NICE DCV if required..."
+InstallNiceDcvIfRequired
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
