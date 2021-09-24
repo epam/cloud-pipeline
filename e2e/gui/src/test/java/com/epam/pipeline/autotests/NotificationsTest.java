@@ -180,17 +180,25 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .edit()
                 .titleTo(infoEditedTitle)
                 .bodyTo(infoEditedBodyText)
-                .save();
-        if(!impersonateMode()) {
-            refresh();
-            validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
-            closeNotification(infoEditedTitle);
+                .save()
+                .searchForTableEntry(infoEditedTitle)
+                .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
+                .click(EXPAND)
+                .ensureBodyHasText(infoEditedBodyText);
+        if(impersonateMode()) {
+            return;
         }
+        refresh();
+        validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
+        closeNotification(infoEditedTitle);
     }
 
     @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
     @TestCase(value = {"EPMCMBIBPC-1220"})
     public void validateDeleteActiveNotification() {
+        if (impersonateMode()) {
+            return;
+        }
         navigationMenu()
                 .settings()
                 .switchToSystemEvents()
@@ -201,10 +209,8 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
 
         refresh();
         ensureNotificationIsAbsent(warningNotification);
-        if(!impersonateMode()) {
-            closeNotification(infoNotification);
-            closeNotification(criticalNotification);
-        }
+        closeNotification(infoNotification);
+        closeNotification(criticalNotification);
     }
 
     @Test(dependsOnMethods = {"validateDeleteActiveNotification"}, enabled = false)
@@ -218,12 +224,11 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
     @TestCase(value = {"EPMCMBIBPC-1217"})
     public void validateSeveralInactiveNotifications() {
-        if (impersonateMode()) {
-            return;
+        if (!impersonateMode()) {
+            changeStateOf(infoEditedTitle);
+            changeStateOf(warningActiveNotification);
+            changeStateOf(criticalNotification);
         }
-        changeStateOf(infoEditedTitle);
-        changeStateOf(warningActiveNotification);
-        changeStateOf(criticalNotification);
 
         refresh();
         ensureNotificationIsAbsent(infoEditedTitle);
