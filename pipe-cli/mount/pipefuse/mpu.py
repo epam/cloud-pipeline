@@ -19,7 +19,7 @@ from collections import namedtuple
 
 import intervals
 
-from fuseutils import MB, GB
+from pipefuse.fuseutils import MB, GB
 
 _CopyPart = namedtuple('CopyPart', ['start', 'end', 'offset', 'part_number', 'part_path', 'keep'])
 

@@ -89,18 +89,21 @@ def errorlogged(func):
 class PipeFS(Operations, ChainingService):
 
     def __init__(self, client, lock, mode=0o755):
-        self.client = client
-        if not self.client.is_available():
-            raise RuntimeError("File system server is not available.")
-        self.container = FileHandleContainer()
-        self.mode = mode
-        self.delimiter = '/'
-        self.root = '/'
-        self.is_mac = platform.system() == 'Darwin'
+        self._client = client
+        if not self._client.is_available():
+            raise RuntimeError('File system server is not available.')
+        self._container = FileHandleContainer()
+        self._mode = mode
+        self._delimiter = '/'
+        self._root = '/'
+        self._is_mac = platform.system() == 'Darwin'
+        self._is_win = platform.system() == 'Windows'
+        self._gid = 1 if self._is_win else os.getgid()
+        self._uid = 1 if self._is_win else os.getuid()
         self._lock = lock
 
-    def is_skipped_mac_files(self, path):
-        if not self.is_mac:
+    def _is_skipped_mac_files(self, path):
+        if not self._is_mac:
             return False
         filename = os.path.basename(path)
         return filename in ['.DS_Store', '.localized'] or filename.startswith('._')
@@ -109,10 +112,22 @@ class PipeFS(Operations, ChainingService):
     # ==================
 
     @errorlogged
+    def win_get_attributes(self, path):
+        # See https://docs.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants
+        attrs = self.getattr(path)
+        return 0x10 if attrs['st_mode'] & stat.S_IFDIR == stat.S_IFDIR else 0
+
+    def win_set_attributes(self, path, attrs, fh=None):
+        pass
+
+    def win_set_times(self, path, creation_time, last_access_time, last_write_time, fh=None):
+        pass
+
+    @errorlogged
     def access(self, path, mode):
-        if path == self.root:
+        if path == self._root:
             return
-        if self.is_skipped_mac_files(path) or not self.client.exists(path):
+        if self._is_skipped_mac_files(path) or not self._client.exists(path):
             raise FuseOSError(errno.EACCES)
 
     def chmod(self, path, mode):
@@ -124,22 +139,22 @@ class PipeFS(Operations, ChainingService):
     @errorlogged
     def getattr(self, path, fh=None):
         try:
-            if self.is_skipped_mac_files(path):
+            if self._is_skipped_mac_files(path):
                 raise FuseOSError(errno.ENOENT)
-            props = self.client.attrs(path)
+            props = self._client.attrs(path)
             if not props:
                 raise FuseOSError(errno.ENOENT)
-            if path == self.root or props.is_dir:
+            if path == self._root or props.is_dir:
                 mode = stat.S_IFDIR
             else:
                 mode = stat.S_IFREG
             attrs = {
                 'st_size': props.size,
                 'st_nlink': 1,
-                'st_mode': mode | self.mode,
-                'st_gid': os.getgid(),
-                'st_uid': os.getuid(),
-                'st_atime': time.mktime(datetime.datetime.now().timetuple())
+                'st_mode': mode | self._mode,
+                'st_gid': self._gid,
+                'st_uid': self._uid,
+                'st_atime': time.mktime(datetime.datetime.now(tz=tzlocal()).timetuple())
             }
             if props.mtime:
                 attrs['st_mtime'] = props.mtime
@@ -152,10 +167,10 @@ class PipeFS(Operations, ChainingService):
     @errorlogged
     def readdir(self, path, fh):
         dirents = ['.', '..']
-        prefix = fuseutils.append_delimiter(path, self.delimiter)
-        for f in self.client.ls(prefix):
-            f_name = f.name.rstrip(self.delimiter)
-            if self.is_skipped_mac_files(f_name) or f_name == '.DS_Store':
+        prefix = fuseutils.append_delimiter(path, self._delimiter)
+        for f in self._client.ls(prefix):
+            f_name = f.name.rstrip(self._delimiter)
+            if self._is_skipped_mac_files(f_name) or f_name == '.DS_Store':
                 continue
             if f_name:
                 dirents.append(f_name)
@@ -171,31 +186,39 @@ class PipeFS(Operations, ChainingService):
     @syncronized
     @errorlogged
     def rmdir(self, path):
-        self.client.rmdir(path)
+        self._client.rmdir(path)
 
     @syncronized
     @errorlogged
     def mkdir(self, path, mode):
         try:
-            self.client.mkdir(path)
+            self._client.mkdir(path)
         except easywebdav.OperationFailed:
             raise FuseOSError(errno.EACCES)
 
     @errorlogged
     def statfs(self, path):
         # some magic, check if we need to customize this
-        return {
-            'f_bavail': 2048,
-            'f_blocks': 4096,
-            'f_bsize': 4096,
-            'f_frsize': 4096,
-            'f_namemax': 255
-        }
+        if self._is_win:
+            return {
+                'f_bsize': 1000000,
+                'f_blocks': 1000000,
+                'f_bfree': 1000000,
+                'f_bavail': 1000000
+            }
+        else:
+            return {
+                'f_bavail': 2048,
+                'f_blocks': 4096,
+                'f_bsize': 4096,
+                'f_frsize': 4096,
+                'f_namemax': 255
+            }
 
     @syncronized
     @errorlogged
     def unlink(self, path):
-        self.client.delete(path)
+        self._client.delete(path)
 
     def symlink(self, name, target):
         raise FuseOSError(ENOTSUP)
@@ -203,14 +226,14 @@ class PipeFS(Operations, ChainingService):
     @syncronized
     @errorlogged
     def rename(self, old, new):
-        self.client.mv(old, new)
+        self._client.mv(old, new)
 
     def link(self, target, name):
         raise FuseOSError(ENOTSUP)
 
     @errorlogged
     def utimens(self, path, times=None):
-        self.client.utimens(path, times)
+        self._client.utimens(path, times)
 
     # File methods
     # ============
@@ -218,70 +241,61 @@ class PipeFS(Operations, ChainingService):
     @syncronized
     @errorlogged
     def open(self, path, flags):
-        if self.client.exists(path):
-            return self.container.get()
+        if self._client.exists(path):
+            return self._container.get()
         raise FuseOSError(errno.ENOENT)
 
     @syncronized
     @errorlogged
     def create(self, path, mode, fi=None):
-        self.client.upload([], path)
-        return self.container.get()
+        self._client.upload([], path)
+        return self._container.get()
 
     @syncronized
     @errorlogged
     def read(self, path, length, offset, fh):
         with io.BytesIO() as file_buff:
-            self.client.download_range(fh, file_buff, path, offset=offset, length=length)
+            self._client.download_range(fh, file_buff, path, offset=offset, length=length)
             return file_buff.getvalue()
 
     @syncronized
     @errorlogged
     def write(self, path, buf, offset, fh):
-        self.client.upload_range(fh, buf, path, offset=offset)
+        self._client.upload_range(fh, buf, path, offset=offset)
         return len(buf)
 
     @syncronized
     @errorlogged
     def truncate(self, path, length, fh=None):
-        self.client.truncate(fh, path, length)
+        self._client.truncate(fh, path, length)
 
     @syncronized
     @errorlogged
     def flush(self, path, fh):
-        self.client.flush(fh, path)
+        self._client.flush(fh, path)
 
     @syncronized
     @errorlogged
     def release(self, path, fh):
-        self.container.release(fh)
+        self._container.release(fh)
 
     @syncronized
     @errorlogged
     def fsync(self, path, fdatasync, fh):
-        self.client.flush(fh, path)
-
-    class FallocateFlag:
-        # See http://man7.org/linux/man-pages/man2/fallocate.2.html.
-        # https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/falloc.h
-        FALLOC_FL_KEEP_SIZE = 0x01
-        FALLOC_FL_PUNCH_HOLE = 0x02
-        FALLOC_FL_NO_HIDE_STALE = 0x04
-        FALLOC_FL_COLLAPSE_RANGE = 0x08
-        FALLOC_FL_ZERO_RANGE = 0x10
-        FALLOC_FL_INSERT_RANGE = 0x20
-        FALLOC_FL_UNSHARE_RANGE = 0x40
+        self._client.flush(fh, path)
 
     @syncronized
     @errorlogged
     def fallocate(self, path, mode, offset, length, fh):
-        props = self.client.attrs(path)
+        props = self._client.attrs(path)
         if not props:
             raise FuseOSError(errno.ENOENT)
         if mode:
+            # See http://man7.org/linux/man-pages/man2/fallocate.2.html.
+            # https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/falloc.h
             logging.warn('Fallocate mode (%s) is not supported yet.' % mode)
         if offset + length >= props.size:
-            self.client.truncate(fh, path, offset + length)
+            self._client.truncate(fh, path, offset + length)
 
     @syncronized
     @errorlogged

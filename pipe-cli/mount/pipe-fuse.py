@@ -17,22 +17,31 @@ import ctypes
 import errno
 import logging
 import os
+import platform
 import sys
 import traceback
 
 import future.utils
 from cachetools import TTLCache
 
+
+def is_windows():
+    return platform.system() == 'Windows'
+
+
 is_frozen = getattr(sys, 'frozen', False)
 
 if is_frozen:
     source_path = sys._MEIPASS
-    libfuse_version = 'frozen'
+    libfuse_library = 'libfuse.so.frozen'
+    dokanfuse_library = 'dokanfuse1.dll.frozen'
 else:
     source_path = os.path.dirname(__file__)
-    libfuse_version = '2.9.2'
+    libfuse_library = 'libfuse.so.2.9.2'
+    dokanfuse_library = 'dokanfuse1.dll.1.5.0.3000'
 
-libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.%s' % libfuse_version))
+libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse',
+                                            dokanfuse_library if is_windows() else libfuse_library))
 if os.path.exists(libfuse_path):
     os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
@@ -59,8 +68,8 @@ from pipefuse.webdav import CPWebDavClient
 from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 
-_allowed_logging_level_names = logging._levelNames
-_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
+_allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = 'ERROR'
 _debug_logging_level = 'DEBUG'
@@ -181,41 +190,60 @@ def start(mountpoint, webdav, bucket,
     logging.info('File system processing chain: \n%s', fs.summary())
 
     logging.info('Initializing file system...')
-    enable_fallocate_support()
+    enable_additional_operations()
     ro = client.is_read_only() or mount_options.get('ro', False)
     mount_options.pop('ro', None)
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, **mount_options)
 
 
-def enable_fallocate_support():
+def enable_additional_operations():
     class fuse_pollhandle(ctypes.Structure):
         pass
 
     class fuse_bufvec(ctypes.Structure):
         pass
 
+    # Only the operations required by libfuse are implemented.
+    # Notice that the fields order is important.
+    # https://github.com/libfuse/libfuse/blob/ad38195a88c80d73cb46507851ebb870f3bd588d/include/fuse.h#L88
+    linux_fields = list(fuse_operations._fields_) + [
+        ('poll', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info),
+            ctypes.POINTER(fuse_pollhandle), ctypes.c_uint)),
+
+        ('write_buf', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_bufvec), ctypes.c_longlong,
+            ctypes.POINTER(fuse_file_info))),
+
+        ('read_buf', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_bufvec),
+            ctypes.c_size_t, ctypes.c_longlong, ctypes.POINTER(fuse_file_info))),
+
+        ('flock', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info), ctypes.c_int)),
+
+        ('fallocate', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_longlong, ctypes.c_longlong,
+            ctypes.POINTER(fuse_file_info))),
+    ]
+
+    # Only the operations required by dokany are implemented.
+    # Notice that the fields order is important.
+    # https://github.com/dokan-dev/dokany/blob/6f8a3472dfbb36bd2340b3b59aa4a72e7d8b8795/dokan_fuse/include/fuse.h#L100
+    win_fields = list(fuse_operations._fields_[:-5]) + [
+        ('win_get_attributes', ctypes.CFUNCTYPE(
+            ctypes.c_uint, ctypes.c_char_p)),
+
+        ('win_set_attributes', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.c_uint)),
+
+        ('win_set_times', ctypes.CFUNCTYPE(
+            ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info),
+            ctypes.POINTER(c_utimbuf), ctypes.POINTER(c_utimbuf), ctypes.POINTER(c_utimbuf)))
+    ]
+
     class extended_fuse_operations(ctypes.Structure):
-        _fields_ = list(fuse_operations._fields_) + [
-            # All the missing fields besides fallocate are required for some reason
-            ('poll', ctypes.CFUNCTYPE(
-                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info),
-                ctypes.POINTER(fuse_pollhandle), ctypes.c_uint)),
-
-            ('write_buf', ctypes.CFUNCTYPE(
-                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_bufvec), ctypes.c_longlong,
-                ctypes.POINTER(fuse_file_info))),
-
-            ('read_buf', ctypes.CFUNCTYPE(
-                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_bufvec),
-                ctypes.c_size_t, ctypes.c_longlong, ctypes.POINTER(fuse_file_info))),
-
-            ('flock', ctypes.CFUNCTYPE(
-                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info), ctypes.c_int)),
-
-            ('fallocate', ctypes.CFUNCTYPE(
-                ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_longlong, ctypes.c_longlong,
-                ctypes.POINTER(fuse_file_info))),
-        ]
+        _fields_ = win_fields if is_windows() else linux_fields
 
     fuse.fuse_operations = extended_fuse_operations
 
@@ -223,7 +251,20 @@ def enable_fallocate_support():
         fh = fip.contents if self.raw_fi else fip.contents.fh
         return self.operations('fallocate', path.decode(self.encoding), mode, offset, length, fh)
 
-    setattr(FUSE, 'fallocate', fallocate)
+    def win_get_attributes(self, path):
+        return self.operations('win_get_attributes', path.decode(self.encoding))
+
+    def win_set_attributes(self, path, attrs, fip):
+        fh = fip.contents if self.raw_fi else fip.contents.fh
+        return self.operations('win_set_attributes', path.decode(self.encoding), attrs, fh)
+
+    def win_set_times(self, path, fip, creation_time, last_access_time, last_write_time):
+        fh = fip.contents if self.raw_fi else fip.contents.fh
+        return self.operations('win_set_times', path.decode(self.encoding),
+                               creation_time, last_access_time, last_write_time, fh)
+
+    for operation in [fallocate, win_get_attributes, win_set_attributes, win_set_times]:
+        setattr(FUSE, operation.__name__, operation)
 
 
 def parse_mount_options(options_string):
@@ -310,7 +351,7 @@ if __name__ == '__main__':
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
     recording = args.logging_level in [_info_logging_level, _debug_logging_level]
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
-                        level=_allowed_logging_level_names[args.logging_level])
+                        level=args.logging_level)
     logging.getLogger('botocore').setLevel(logging.ERROR)
 
     if is_frozen:

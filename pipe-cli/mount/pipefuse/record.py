@@ -51,7 +51,7 @@ def _kwargs_string(kwargs):
 def _trimmed(value):
     if isinstance(value, io.BytesIO):
         return 'BYTES'
-    elif isinstance(value, (bytearray, bytes, str)):
+    elif isinstance(value, _BYTE_TYPES):
         return 'BYTES#' + str(len(value))
     else:
         return str(value)

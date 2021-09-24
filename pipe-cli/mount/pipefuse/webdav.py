@@ -25,8 +25,8 @@ import requests
 import urllib3
 from requests import cookies
 
-import fuseutils
-from fsclient import FileSystemClient, File
+from pipefuse import fuseutils
+from pipefuse.fsclient import FileSystemClient, File
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
