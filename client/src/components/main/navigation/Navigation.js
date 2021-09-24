@@ -28,6 +28,7 @@ import RunsCounterMenuItem from './RunsCounterMenuItem';
 import SupportMenuItem from './SupportMenuItem';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
+import {Pages} from '../../../utils/ui-navigation';
 
 @inject('uiNavigation', 'impersonation')
 @observer
@@ -271,12 +272,12 @@ export default class Navigation extends React.Component {
             style={{
               position: 'absolute',
               left: 0,
-              bottom: activeTabPath === 'pipelines' ? 44 : 10,
+              bottom: activeTabPath === Pages.library ? 44 : 10,
               right: 0
             }}
           />
           {
-            activeTabPath === 'pipelines' &&
+            activeTabPath === Pages.library &&
             <Button
               id="expand-collapse-library-tree-button"
               onClick={this.props.onLibraryCollapsedChange}
