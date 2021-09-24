@@ -220,9 +220,9 @@ export default class Issues extends localization.LocalizedReactComponent {
                   id="navigate-back-button"
                   size="small"
                   onClick={this.props.onNavigateBack}
-                  style={{marginLeft: 2, marginRight: 5}}>
-                  <ArrowLeftOutlined />
-                </Button>
+                  style={{marginLeft: 2, marginRight: 5}}
+                  icon={<ArrowLeftOutlined />}
+                />
               }
               {
                 this.props.entityDisplayName &&

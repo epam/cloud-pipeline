@@ -266,7 +266,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 
 .labels-cell span,
 .labels-cell a {
-  vertical-align: middle;
   margin-left: 5px;
 }
 
@@ -497,7 +496,6 @@ tr.table-row-selected {
 
 .configuration-confirm-btn {
   margin-top: 30px;
-  text-align: right;
 }
 
 .configuration-confirm-btn > button {
@@ -505,18 +503,24 @@ tr.table-row-selected {
 }
 
 .configuration-confirm-title {
-  color: rgba(0, 0, 0, .65);
-  font-weight: bold;
-  font-size: 14px;
+  color: #000000d9;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.4;
 }
 
-.configuration-confirm-title  > i {
+.configuration-confirm-title  .configuration-confirm-description {
+  font-size: 14px;
+  color: #000000d9;
+  margin-top: 8px;
+}
+
+.configuration-confirm-title  .configuration-confirm-icon {
   font-size: 24px;
   font-weight: normal;
   margin-right: 16px;
   padding: 0 1px;
-  float: left;
-  color: #ffbf00;
+  color: #faad14;
 }
 
 .storage-region {
@@ -589,18 +593,18 @@ tr.table-row-selected {
 
 .download-button {
   padding: 0 7px;
-  font-size: 12px;
-  border-radius: 4px;
-  height: 22px;
+  font-size: 14px;
+  border-radius: 2px;
+  height: 24px;
   margin-bottom: 0;
-  font-weight: 500;
+  font-weight: 400;
   text-align: center;
   touch-action: manipulation;
   cursor: pointer;
   background-image: none;
   border: 1px solid #d9d9d9;
   white-space: nowrap;
-  line-height: 22px;
+  line-height: 1.5715;
   user-select: none;
   transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
   position: relative;

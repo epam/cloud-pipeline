@@ -658,10 +658,9 @@ class Pipeline extends localization.LocalizedReactComponent {
           overlay={displayOptionsMenu}>
           <Button
             id="display-attributes"
-            style={{lineHeight: 1}}
-            size="small">
-            <AppstoreOutlined />
-          </Button>
+            size="small"
+            icon={<AppstoreOutlined />}
+          />
         </Dropdown>
       );
     }
@@ -714,10 +713,9 @@ class Pipeline extends localization.LocalizedReactComponent {
         <Button
           key="edit"
           id="edit-pipeline-menu-button"
-          style={{lineHeight: 1}}
-          size="small">
-          <SettingOutlined />
-        </Button>
+          size="small"
+          icon={<SettingOutlined />}
+        />
       </Dropdown>
     );
   };

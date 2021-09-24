@@ -260,9 +260,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
             onClick={this.handleFileEdit}
             disabled={!fileEditable}
             className={styles.previewHeaderBtn}
-          >
-            <ArrowsAltOutlined />
-          </Button>
+            icon={<ArrowsAltOutlined />}
+          />
         </Row>
       );
     }
@@ -279,9 +278,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
               size="small"
               className={styles.goBackHeaderBtn}
               onClick={this.handleGoBackClick}
-            >
-              <LeftOutlined />
-            </Button>
+              icon={<LeftOutlined />}
+            />
             <b>{file.name}</b>
           </div>
           {/* button removed until blind/unblind api will be ready */}

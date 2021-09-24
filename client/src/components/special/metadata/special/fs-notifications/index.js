@@ -320,7 +320,7 @@ class FSNotificationsDialog extends React.Component {
           <Button
             disabled={readOnly || recipients.length === 0}
             size="small"
-            type="danger"
+            danger
             onClick={this.clearRecipients}
           >
             <DeleteOutlined /> Clear all recipients
@@ -447,7 +447,7 @@ class FSNotificationsDialog extends React.Component {
                   </Select>
                   <Button
                     size="small"
-                    type="danger"
+                    danger
                     disabled={readOnly}
                     onClick={this.onRemoveNotification(notification.id)}
                   >
@@ -500,7 +500,7 @@ class FSNotificationsDialog extends React.Component {
           </Button>
           <Button
             size="small"
-            type="danger"
+            danger
             onClick={this.clearNotification}
             disabled={readOnly || notifications.length === 0}
           >
@@ -577,16 +577,18 @@ class FSNotifications extends React.Component {
       ].join(', ');
     }
     return (
-      <div
-        className={styles.container}
-        onClick={readOnly && notifications.length === 0 ? undefined : this.onOpenEditDialog}
-      >
-        {
-          empty && !readOnly
-            ? (<SettingOutlined />)
-            : (<NotificationOutlined style={{marginRight: 5}} />)
-        }
-        {title}
+      <>
+        <div
+          className={styles.container}
+          onClick={readOnly && notifications.length === 0 ? undefined : this.onOpenEditDialog}
+        >
+          {
+            empty && !readOnly
+              ? (<SettingOutlined />)
+              : (<NotificationOutlined style={{marginRight: 5}} />)
+          }
+          {title}
+        </div>
         <FSNotificationsDialog
           readOnly={readOnly}
           visible={visible}
@@ -595,7 +597,7 @@ class FSNotifications extends React.Component {
           onClose={this.onCloseEditDialog}
           onChange={this.onChange}
         />
-      </div>
+      </>
     );
   }
 }

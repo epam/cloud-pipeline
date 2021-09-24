@@ -179,7 +179,7 @@ class ClusterNodePods extends Component {
         title: 'Requests',
         children: keys.map(k => {
           return {
-            dataIndex: `requests.${k}`,
+            dataIndex: ['requests', k],
             key: `requests.${k}`,
             title: k.toUpperCase()
           };
@@ -189,7 +189,7 @@ class ClusterNodePods extends Component {
         title: 'Limits',
         children: keys.map(k => {
           return {
-            dataIndex: `limits.${k}`,
+            dataIndex: ['limits', k],
             key: `limits.${k}`,
             title: k.toUpperCase()
           };

@@ -284,6 +284,7 @@ class SystemDictionaryForm extends React.Component {
           style: {
             wordWrap: 'break-word'
           },
+          okType: 'danger',
           onOk () {
             onDelete(name);
           }
@@ -360,7 +361,7 @@ class SystemDictionaryForm extends React.Component {
                   />
                   <Button
                     size="small"
-                    type="danger"
+                    danger
                     onClick={this.onItemRemove(index)}
                   >
                     <DeleteOutlined />

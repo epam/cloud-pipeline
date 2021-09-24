@@ -149,6 +149,7 @@ class VersionedStorageTable extends React.Component {
       title: `Remove ${type}`,
       content: content,
       style: {wordWrap: 'break-word'},
+      okType: 'danger',
       onOk: () => callback && callback(record, comment)
     });
   };
@@ -158,6 +159,7 @@ class VersionedStorageTable extends React.Component {
     if (!record) {
       return;
     }
+    debugger;
     if (event && event.target.dataset.action) {
       const buttonAction = event.target.dataset.action;
       return this.actions[buttonAction] && this.actions[buttonAction](record);
@@ -335,7 +337,7 @@ class VersionedStorageTable extends React.Component {
           Cancel
         </Button>
         <Button
-          type="danger"
+          danger
           onClick={() => {
             onDeleteDocument && onDeleteDocument(deletingDocument, comment);
             this.hideDeleteDialog();
@@ -410,8 +412,8 @@ class VersionedStorageTable extends React.Component {
           rowKey={(record) => record.name}
           dataSource={this.data}
           size="small"
-          onRow={item => ({
-            onClick: () => this.onRowClick(item)
+          onRow={(item, i) => ({
+            onClick: (e) => this.onRowClick(item, i, e)
           })}
           pagination={false}
           rowClassName={() => styles.tableRow}

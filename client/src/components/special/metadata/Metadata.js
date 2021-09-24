@@ -241,6 +241,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       },
       content: null,
       okText: 'OK',
+      okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
         const {error, refresh} = await this.applyRemoveChanges({all: true});
@@ -262,6 +263,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         wordWrap: 'break-word'
       },
       okText: 'OK',
+      okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
         const {error, refresh} = await this.applyRemoveChanges({item});
@@ -948,7 +950,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
                 <td style={{minWidth: 30, textAlign: 'right'}}>
                   <Button
                     id={`delete-metadata-key-${metadataItem.key}-button`}
-                    type="danger"
+                    danger
                     size="small"
                     onClick={() => this.confirmDeleteKey(metadataItem)}>
                     <DeleteOutlined />
@@ -1497,7 +1499,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             id="remove-all-keys-button"
             key="remove all keys button"
             size="small"
-            type="danger"
+            danger
             onClick={this.confirmDeleteMetadata}>
             <DeleteOutlined /> Remove all
           </Button>

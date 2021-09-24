@@ -317,7 +317,6 @@ export default class CommitRunDockerImageInput extends React.Component {
           value={this.state.tool}
           filterOption={false}
           onBlur={this.checkTool}
-          optionLabelProp="text"
           style={{
             width: 200,
             flex: 1,
@@ -329,7 +328,7 @@ export default class CommitRunDockerImageInput extends React.Component {
           {
             this.tools.map(tool => {
               return (
-                <Select.Option key={tool.name} text={tool.name}>
+                <Select.Option key={tool.name} value={tool.name}>
                   {
                     tool.isNew
                       ? `Add new tool '${tool.name}'`
@@ -344,14 +343,13 @@ export default class CommitRunDockerImageInput extends React.Component {
           disabled={this.props.disabled}
           size="large"
           value={this.state.version}
-          optionLabelProp="text"
           style={{width: 200, marginLeft: 10}}
           onChange={this.onVersionChanged}
           placeholder="Version">
           {
             this.tags.map(tag => {
               return (
-                <AutoComplete.Option key={tag.name} text={tag.name}>
+                <AutoComplete.Option key={tag.name} value={tag.name}>
                   {
                     tag.isNew
                       ? `Add new version '${tag.name}'`

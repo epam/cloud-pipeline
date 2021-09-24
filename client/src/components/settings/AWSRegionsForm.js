@@ -381,6 +381,7 @@ class AWSRegionsForm extends React.Component {
       };
       Modal.confirm({
         title: `Are you sure you want to remove region '${this.currentRegion.name}'?`,
+        okType: 'danger',
         onOk: remove,
         onCancel: () => resolve()
       });
@@ -1224,14 +1225,14 @@ class AWSRegionForm extends React.Component {
         .filter(name => !this.addedGroupPermissions.includes(name))
     ) : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
-      return [
+      return [...new Set([
         ...roles,
         ...(this.groupFind.value || [])
           .map(g => g)
           .filter(g => !this.addedGroupPermissions.includes(g.name))
-      ];
+      ])].map(i => ({value: i, label: i}));
     }
-    return [...roles];
+    return [...roles].map(i => ({value: i, label: i}));
   };
 
   onGroupFindInputChanged = (value) => {
@@ -1336,9 +1337,9 @@ class AWSRegionForm extends React.Component {
             <Button
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
-              size="small">
-              <DeleteOutlined />
-            </Button>
+              size="small"
+              icon={<DeleteOutlined />}
+            />
           </Row>
         )
       }
@@ -1350,12 +1351,8 @@ class AWSRegionForm extends React.Component {
         </Col>
         <Col span={12} style={{textAlign: 'right', paddingRight: 8}}>
           <span className={styles.permissionTableActions}>
-            <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog}>
-              <UserAddOutlined />
-            </Button>
-            <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog}>
-              <UsergroupAddOutlined />
-            </Button>
+            <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog} icon={<UserAddOutlined />} />
+            <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog} icon={<UsergroupAddOutlined />} />
           </span>
         </Col>
       </Row>
@@ -1385,14 +1382,13 @@ class AWSRegionForm extends React.Component {
           visible={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
-            optionLabelProp="text"
             style={{width: '100%'}}
             onChange={this.onUserFindInputChanged}
             placeholder="Enter the account name">
             {
               (this.findUserDataSource() || []).map(user => {
                 return (
-                  <AutoComplete.Option key={user.userName} text={user.userName}>
+                  <AutoComplete.Option key={user.userName} value={user.userName}>
                     {this.renderUserName(user)}
                   </AutoComplete.Option>
                 );
@@ -1408,7 +1404,7 @@ class AWSRegionForm extends React.Component {
           <AutoComplete
             value={this.selectedGroup}
             style={{width: '100%'}}
-            dataSource={this.findGroupDataSource()}
+            options={this.findGroupDataSource()}
             onChange={this.onGroupFindInputChanged}
             placeholder="Enter the group name" />
         </Modal>
@@ -1960,7 +1956,7 @@ class AWSRegionForm extends React.Component {
                   id="edit-region-form-remove-button"
                   disabled={this.props.region.default}
                   size="small"
-                  type="danger"
+                  danger
                   style={{marginRight: 10}}><InfoCircleOutlined /> Remove</Button>
               </Tooltip>
             }
@@ -1970,7 +1966,7 @@ class AWSRegionForm extends React.Component {
                 id="edit-region-form-remove-button"
                 disabled={this.props.region.default}
                 size="small"
-                type="danger"
+                danger
                 onClick={onRemove}
                 style={{marginRight: 10}}>Remove</Button>
             }
@@ -2343,7 +2339,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
           <Button
             style={{marginTop: 3, marginLeft: 5}}
             disabled={this.props.disabled}
-            type="danger"
+            danger
             size="small"
             onClick={this.props.onDelete}>
             <CloseOutlined />

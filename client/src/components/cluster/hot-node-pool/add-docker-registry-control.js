@@ -436,14 +436,13 @@ class AddDockerRegistryControl extends React.Component {
           {
             showDelete && (
               <Button
+                danger
                 disabled={disabled}
                 size="small"
-                type="danger"
                 onClick={onRemove}
                 className={styles.action}
-              >
-                <DeleteOutlined />
-              </Button>
+                icon={<DeleteOutlined />}
+              />
             )
           }
         </div>

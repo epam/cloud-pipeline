@@ -100,6 +100,7 @@ export default class PipelineCodeForm extends React.Component {
         style: {
           wordWrap: 'break-word'
         },
+        okType: 'danger',
         onOk () {
           close();
         }

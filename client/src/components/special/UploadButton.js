@@ -563,8 +563,8 @@ class UploadButton extends React.Component {
         id="upload-button"
         disabled={this.props.uploadToS3 && !!this.s3StorageError}
       >
-        <UploadOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-        <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
+        <UploadOutlined />
+        <span>{this.props.title}</span>
       </Button>
     );
 
@@ -657,7 +657,7 @@ class UploadButton extends React.Component {
                             <Button
                               size="small"
                               shape="circle"
-                              type="danger"
+                              danger
                               icon={<CloseOutlined />}
                               onClick={() => f.cancelCb()} />
                           }

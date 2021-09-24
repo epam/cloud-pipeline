@@ -107,14 +107,13 @@ class Threshold extends React.Component {
           onRemove &&
           (
             <Button
+              danger
               size="small"
               disabled={disabled}
               onClick={onRemove}
-              type="danger"
               style={{marginLeft: 5}}
-            >
-              <CloseOutlined />
-            </Button>
+              icon={<CloseOutlined />}
+            />
           )
         }
       </div>

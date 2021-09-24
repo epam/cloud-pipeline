@@ -44,14 +44,15 @@
   filter: none !important;
 }
 
-.owner-container input {
+.owner-container .owner-input {
   font-weight: bold;
   border: 1px solid transparent;
   background-color: transparent;
+  box-shadow: none;
   padding-left: 4px !important;
 }
 
-.owner-container input:focus,
-.owner-container input:hover {
-  border: 1px solid #ccc !important;
+.owner-container .owner-input:focus,
+.owner-container .owner-input:hover {
+  border-color: #d9d9d9;
 }

@@ -14,13 +14,24 @@
  *  limitations under the License.
  */
 
+import {
+  AreaChartOutlined,
+  BarsOutlined,
+  ForkOutlined,
+  HomeOutlined,
+  PlayCircleOutlined,
+  PoweroffOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  ToolOutlined, UserDeleteOutlined
+} from '@ant-design/icons';
 import Pages from './pages';
 
 export default [
   {
     key: Pages.dashboard,
     title: 'Home',
-    icon: 'home',
+    icon: HomeOutlined,
     path: '/dashboard',
     keys: ['dashboard'],
     isDefault: false,
@@ -29,7 +40,7 @@ export default [
   {
     key: Pages.library,
     title: 'Library',
-    icon: 'fork',
+    icon: ForkOutlined,
     path: '/library',
     keys: [
       'library',
@@ -48,7 +59,7 @@ export default [
   {
     key: Pages.cluster,
     title: 'Cluster state',
-    icon: 'bars',
+    icon: BarsOutlined,
     path: '/cluster',
     keys: ['cluster'],
     isDefault: false,
@@ -57,7 +68,7 @@ export default [
   {
     key: Pages.tools,
     title: 'Tools',
-    icon: 'tool',
+    icon: ToolOutlined,
     path: '/tools',
     keys: ['tools', 'tool'],
     isDefault: false,
@@ -66,7 +77,7 @@ export default [
   {
     key: Pages.runs,
     title: 'Runs',
-    icon: 'play-circle',
+    icon: PlayCircleOutlined,
     path: '/runs',
     keys: ['runs'],
     isDefault: false,
@@ -75,7 +86,7 @@ export default [
   {
     key: Pages.settings,
     title: 'Settings',
-    icon: 'setting',
+    icon: SettingOutlined,
     path: '/settings',
     keys: [
       'settings',
@@ -95,14 +106,14 @@ export default [
   {
     key: Pages.search,
     title: 'Search',
-    icon: 'search',
+    icon: SearchOutlined,
     path: '/search/advanced',
     isDefault: false
   },
   {
     key: Pages.billing,
     title: 'Billing',
-    icon: 'area-chart',
+    icon: AreaChartOutlined,
     path: '/billing',
     isDefault: false,
     isLink: true
@@ -116,7 +127,7 @@ export default [
     key: 'logout',
     visible: props => !(props && props.impersonation && props.impersonation.isImpersonated),
     title: 'Log out',
-    icon: 'poweroff',
+    icon: PoweroffOutlined,
     path: '/logout',
     isDefault: false,
     static: true
@@ -127,7 +138,7 @@ export default [
     title: (props) => props && props.impersonation && props.impersonation.isImpersonated
       ? `Stop impersonation as ${props.impersonation.impersonatedUserName}`
       : undefined,
-    icon: 'user-delete',
+    icon: UserDeleteOutlined,
     isDefault: false,
     static: true,
     action: (props) => props && props.impersonation

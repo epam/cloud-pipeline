@@ -229,14 +229,11 @@ class PipelineDetails extends localization.LocalizedReactComponent {
             id="launch-pipeline-button"
             size="small"
             type="primary"
-            style={{lineHeight: 1}}
             onClick={() => this.runPipeline()}>
             RUN
           </Button>
           <Dropdown overlay={configurationsMenu} placement="bottomRight">
-            <Button size="small" id="run-dropdown-button" type="primary">
-              <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-            </Button>
+            <Button size="small" id="run-dropdown-button" type="primary" icon={<DownOutlined />} />
           </Dropdown>
         </Button.Group>
       );
@@ -246,7 +243,6 @@ class PipelineDetails extends localization.LocalizedReactComponent {
           id="launch-pipeline-button"
           size="small"
           type="primary"
-          style={{lineHeight: 1}}
           onClick={() => this.runPipeline()}>
           RUN
         </Button>
@@ -308,10 +304,9 @@ class PipelineDetails extends localization.LocalizedReactComponent {
             <Button
               id="edit-pipeline-button"
               onClick={this.toggleModal}
-              style={{lineHeight: 1}}
-              size="small">
-              <SettingOutlined />
-            </Button>
+              size="small"
+              icon={<SettingOutlined />}
+            />
             <GitRepositoryControl
               overlayClassName={browserStyles.gitRepositoryPopover}
               https={this.props.pipeline.value.repository}

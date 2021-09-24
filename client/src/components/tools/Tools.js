@@ -314,7 +314,7 @@ class ToolsNew extends React.Component {
               size="small"
               id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
               onClick={() => this.setState({metadata: !this.state.metadata})}>
-              <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>
+              <span>
                 {this.state.metadata ? 'Hide attributes' : 'Show attributes'}
               </span>
             </Button>
@@ -359,9 +359,7 @@ class ToolsNew extends React.Component {
         </Link>
       );
       return (
-        <span>
-            You can explore {link} repository
-          </span>
+        <span>You can explore {link} repository</span>
       );
     }
     return null;
@@ -396,8 +394,7 @@ class ToolsNew extends React.Component {
           {navigateToDefaultGroupMessage()}
           {
             this.state.createPrivateGroupError
-              ? <Row
-                style={{fontSize: 'larger', marginBottom: 10, color: 'red'}}>
+              ? <Row style={{fontSize: 'larger', marginBottom: 10, color: 'red'}}>
                 {this.state.createPrivateGroupError}
               </Row>
               : undefined

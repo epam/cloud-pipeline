@@ -140,7 +140,6 @@ export default class UserAutoComplete extends React.Component {
           size={this.props.size || 'default'}
           style={{flex: 1, width: '100%'}}
           placeholder={this.props.placeholder}
-          optionLabelProp="text"
           value={this.state.valueInput !== null ? this.state.valueInput : this.props.value}
           onPressEnter={this.props.onPressEnter}
           onBlur={this.onBlur}
@@ -151,7 +150,7 @@ export default class UserAutoComplete extends React.Component {
               return (
                 <AutoComplete.Option
                   key={user.id}
-                  text={user.userName}>
+                  value={user.userName}>
                   {this.renderUserName(user)}
                 </AutoComplete.Option>
               );

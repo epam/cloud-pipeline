@@ -24,7 +24,7 @@ import {
   CheckOutlined,
   CloseOutlined,
   DeleteOutlined,
-  EditOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 
 import {Alert, Button, message, Modal, Row, Tooltip} from 'antd';
@@ -127,7 +127,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       text,
       htmlText,
       name,
-      status: this.props.issueInfo.loaded ? this.props.issueInfo.value.status : 'OPEN',
+      status: this.props.issueInfo.loaded ? this.props.issueInfo.value.status : 'OPEN'
     };
     const hide = message.loading(`Renaming ${this.localizedString('issue')}...`, 0);
     const request = new IssueUpdate(this.props.issueId);
@@ -251,6 +251,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         onDelete();
       }
@@ -385,6 +386,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         onDelete();
       }
@@ -442,7 +444,7 @@ export default class Issue extends localization.LocalizedReactComponent {
     if (this.props.issueInfo && this.props.issueInfo.pending && !this.props.issueInfo.loaded) {
       content = <LoadingView />;
     } else if (this.props.issueInfo && this.props.issueInfo.error) {
-      content = <Alert type="warning" message={this.props.issueInfo.error} />
+      content = <Alert type="warning" message={this.props.issueInfo.error} />;
     } else {
       content = this.comments.map(this.renderComment);
     }
@@ -450,47 +452,48 @@ export default class Issue extends localization.LocalizedReactComponent {
       <div className={styles.container}>
         <table className={styles.issueNav} style={{width: '100%', tableLayout: 'fixed'}}>
           <tbody>
-          <tr>
-            <td>
-              <Row type="flex" className={styles.itemHeader} align="middle">
-                <Button
-                  id="navigate-back-button"
-                  disabled={this.editCommentInAction}
-                  size="small"
-                  onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
-                  style={{marginRight: 5}}>
-                  <ArrowLeftOutlined />
-                </Button>
-                <EditableField
-                  inputId="issue-name"
-                  displayId="issue-name-input"
-                  style={{
-                    paddingTop: 6,
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    display: 'flex'
-                  }}
-                  readOnly={!this.canEditIssue || this.state.operationInProgress || this.editCommentInAction}
-                  allowEpmty={false}
-                  onSave={this.operationWrapper(this.onRenameIssue)}
-                  editStyle={{flex: 1}}
-                  text={this.props.issueInfo && this.props.issueInfo.loaded ? this.props.issueInfo.value.name : ''} />
-              </Row>
-            </td>
-            <td className={styles.actions} style={{width: 40}}>
-              {
-                this.canRemoveIssue &&
-                <a
-                  disabled={this.state.operationInProgress || this.editCommentInAction}
-                  type="danger"
-                  onClick={this.deleteIssueConfirm}>
-                  <DeleteOutlined />
-                </a>
-              }
-            </td>
-          </tr>
+            <tr>
+              <td>
+                <Row type="flex" className={styles.itemHeader} align="middle">
+                  <Button
+                    id="navigate-back-button"
+                    disabled={this.editCommentInAction}
+                    size="small"
+                    onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
+                    style={{marginRight: 5}}
+                    icon={<ArrowLeftOutlined />}
+                  />
+                  <EditableField
+                    inputId="issue-name"
+                    displayId="issue-name-input"
+                    style={{
+                      paddingTop: 6,
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      display: 'flex'
+                    }}
+                    readOnly={!this.canEditIssue || this.state.operationInProgress || this.editCommentInAction}
+                    allowEpmty={false}
+                    onSave={this.operationWrapper(this.onRenameIssue)}
+                    editStyle={{flex: 1}}
+                    text={this.props.issueInfo && this.props.issueInfo.loaded ? this.props.issueInfo.value.name : ''} />
+                </Row>
+              </td>
+              <td className={styles.actions} style={{width: 40}}>
+                {
+                  this.canRemoveIssue &&
+                  <Button
+                    disabled={this.state.operationInProgress || this.editCommentInAction}
+                    danger
+                    type="text"
+                    size="small"
+                    onClick={this.deleteIssueConfirm}
+                    icon={<DeleteOutlined />} />
+                }
+              </td>
+            </tr>
           </tbody>
         </table>
         <div style={{flex: 1, overflow: 'auto'}}>

@@ -374,7 +374,6 @@ class RunnerFilter extends React.Component {
         onChange={this.changeRunner}
         onFocus={this.onFocus}
         onBlur={this.onBlur}
-        optionLabelProp="text"
         filterOption={false}
         open={open}
       >

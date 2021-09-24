@@ -22,7 +22,7 @@ import {
   DownloadOutlined,
   EditOutlined,
   FileOutlined,
-  FolderOutlined,
+  FolderOutlined
 } from '@ant-design/icons';
 
 import DOCUMENT_TYPES from '../document-types';

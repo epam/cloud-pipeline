@@ -286,12 +286,11 @@ class ScheduleControl extends React.Component {
           />
         </div>
         <Button
+          danger
           size="small"
-          type="danger"
           onClick={onRemove}
-        >
-          <DeleteOutlined />
-        </Button>
+          icon={<DeleteOutlined />}
+        />
       </div>
     );
   }

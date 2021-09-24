@@ -174,7 +174,7 @@ class PipelineDocuments extends Component {
             <span>
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={(e) => this.deleteFileConfirm(file, e)}>
                 <DeleteOutlined />Delete
               </Button>
@@ -340,6 +340,7 @@ class PipelineDocuments extends Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         onDelete();
       }

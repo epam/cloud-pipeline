@@ -209,7 +209,7 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
           <Row type="flex" justify="start">
             {
               this.props.registry &&
-              <Button type="danger" onClick={this.props.onDelete}>DELETE</Button>
+              <Button danger onClick={this.props.onDelete}>DELETE</Button>
             }
           </Row>
         </Col>

@@ -99,7 +99,7 @@ class PipelineCode extends Component {
                     size="small">Rename</Button>
             <Button className={styles.sourceItemAction}
                     onClick={(event) => this.deleteFolderConfirm(item, event)}
-                    type="danger"
+                    danger
                     size="small"><DeleteOutlined /> Delete</Button>
           </Row>
         );
@@ -111,7 +111,7 @@ class PipelineCode extends Component {
                     size="small">Rename</Button>
             <Button className={styles.sourceItemAction}
                     onClick={(event) => this.deleteFileConfirm(item, event)}
-                    type="danger"
+                    danger
                     size="small"><DeleteOutlined /> Delete</Button>
           </Row>
         );
@@ -217,6 +217,7 @@ class PipelineCode extends Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         onDelete();
       }
@@ -233,6 +234,7 @@ class PipelineCode extends Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         onDelete();
       }

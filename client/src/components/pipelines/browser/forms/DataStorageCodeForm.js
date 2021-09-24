@@ -129,6 +129,7 @@ export default class DataStorageCodeForm extends React.Component {
         style: {
           wordWrap: 'break-word'
         },
+        okType: 'danger',
         onOk () {
           close();
         }

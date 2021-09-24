@@ -391,6 +391,7 @@ class RunsFilter extends React.Component {
         style: {
           wordWrap: 'break-word'
         },
+        okType: 'danger',
         onOk () {
           deleteFilter(filter.key);
         },
@@ -409,7 +410,7 @@ class RunsFilter extends React.Component {
       className: styles.savedFiltersActionsRow,
       render: (filter) => (
         <Button
-          type="danger"
+          danger
           onClick={onDelete(filter)}
           size="small">
           <DeleteOutlined />

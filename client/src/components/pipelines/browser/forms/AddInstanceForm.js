@@ -341,7 +341,7 @@ export default class AddInstanceForm extends React.Component {
               disabled={disabled}
               size="small"
               onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
-              type="danger"
+              danger
               style={{marginLeft: 5}}
             >
               <DeleteOutlined />
@@ -403,7 +403,7 @@ export default class AddInstanceForm extends React.Component {
               disabled={disabled}
               size="small"
               onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
-              type="danger"
+              danger
               style={{marginLeft: 5}}>
               <DeleteOutlined />
             </Button>

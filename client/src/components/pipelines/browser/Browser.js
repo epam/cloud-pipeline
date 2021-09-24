@@ -25,7 +25,6 @@ import pipelines from '../../../models/pipelines/Pipelines';
 import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {ForkOutlined, HddOutlined, InboxOutlined, LockOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Alert, Button, Col, Input, message, Popover, Row, Table, Tooltip} from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
@@ -355,14 +354,14 @@ class Folder extends localization.LocalizedReactComponent {
     }
     const {browserLocation} = this.props;
     const isStorages = /^storages$/i.test(browserLocation);
+    const StorageIcon = isStorages ? HddOutlined : ForkOutlined;
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <LegacyIcon
+            <StorageIcon
               className={styles.editableControl}
               style={{marginRight: 5}}
-              type={isStorages ? 'hdd' : 'fork'}
             />
             <span>
               {isStorages ? 'All storages' : `All ${this.localizedString('pipeline')}s`}

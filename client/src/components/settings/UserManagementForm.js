@@ -564,6 +564,7 @@ export default class UserManagementForm extends React.Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         return deleteRole();
       }
@@ -676,7 +677,7 @@ export default class UserManagementForm extends React.Component {
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
                   <EditOutlined />
                 </Button>
-                <Button size="small" type="danger" onClick={(e) => this.deleteRoleConfirm(e, role)}>
+                <Button size="small" danger onClick={(e) => this.deleteRoleConfirm(e, role)}>
                   <DeleteOutlined />
                 </Button>
               </Row>

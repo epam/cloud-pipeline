@@ -188,7 +188,7 @@ export class DataStorageEditDialog extends React.Component {
                 roleModel.manager.storage(
                   <Button
                     id="edit-storage-dialog-delete-button"
-                    type="danger"
+                    danger
                     onClick={this.openDeleteDialog}>Delete</Button>
                 )
               }
@@ -249,11 +249,11 @@ export class DataStorageEditDialog extends React.Component {
           <Row type="flex" justify="end">
             <Button
               id="edit-storage-delete-dialog-unregister-button"
-              type="danger"
+              danger
               onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
             <Button
               id="edit-storage-delete-dialog-delete-button"
-              type="danger"
+              danger
               onClick={() => this.onDeleteClicked(true)}>Delete</Button>
           </Row>
         </Col>

@@ -255,7 +255,7 @@ class TerminateRunDialog extends React.Component {
             </Button>
             <Button
               disabled={this.state.pending}
-              type="danger"
+              danger
               style={{marginLeft: 10}}
               onClick={this.onTerminateClicked}>
               TERMINATE

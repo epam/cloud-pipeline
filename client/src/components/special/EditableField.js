@@ -134,6 +134,7 @@ export default class EditableField extends React.Component {
           id={this.props.inputId}
           disabled={this.state.saving}
           ref={ref}
+          style={{height: '100%'}}
           value={this.state.text}
           onChange={(e) => this.setState({text: e.target.value})}
           onBlur={this.onLeaveEditMode(true)}

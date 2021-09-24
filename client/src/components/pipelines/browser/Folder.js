@@ -47,12 +47,13 @@ import {
   MessageOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
+  RightOutlined,
   SettingOutlined,
+  SolutionOutlined,
   TagOutlined,
-  UnlockOutlined,
+  UnlockOutlined
 } from '@ant-design/icons';
 
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Alert, Button, Checkbox, Col, message, Modal, Popover, Row, Table, Tooltip} from 'antd';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -206,13 +207,12 @@ class Folder extends localization.LocalizedReactComponent {
       case ItemTypes.pipeline: return <ForkOutlined />;
       case ItemTypes.versionedStorage: return <InboxOutlined style={{color: '#2696dd'}} />;
       case ItemTypes.folder:
-        let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
           (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-          icon = 'solution';
+          return <SolutionOutlined />;
         }
 
-        return <LegacyIcon type={icon} />;
+        return <FolderOutlined />;
       case ItemTypes.version: return <TagOutlined />;
       case ItemTypes.storage:
         const style = {};
@@ -397,8 +397,10 @@ class Folder extends localization.LocalizedReactComponent {
         onClick={this.openIssuesPanel(item)}
         key="issues"
         id={`${item.type}-item-${item.key}-issues-button`}
-        size="small">
-        <MessageOutlined />{item.issuesCount > 0 ? ` ${item.issuesCount}` : undefined}
+        size="small"
+        icon={<MessageOutlined />}
+      >
+        {item.issuesCount > 0 ? ` ${item.issuesCount}` : null}
       </Button>
     );
     switch (item.type) {
@@ -415,10 +417,10 @@ class Folder extends localization.LocalizedReactComponent {
                 key="delete"
                 id={`folder-item-${item.key}-delete-button`}
                 size="small"
-                type="danger"
-                onClick={(event) => this.deleteFolderConfirm(item, event)}>
-                <DeleteOutlined />
-              </Button>,
+                danger
+                onClick={(event) => this.deleteFolderConfirm(item, event)}
+                icon={<DeleteOutlined />}
+              />,
               'delete'
             )
           );
@@ -446,9 +448,9 @@ class Folder extends localization.LocalizedReactComponent {
               key="edit"
               id={`folder-item-${item.key}-edit-button`}
               size="small"
-              onClick={(event) => this.openEditPipelineDialog(item, event)}>
-              <EditOutlined />
-            </Button>
+              onClick={(event) => this.openEditPipelineDialog(item, event)}
+              icon={<EditOutlined />}
+            />
           );
         }
         break;
@@ -462,9 +464,9 @@ class Folder extends localization.LocalizedReactComponent {
               key="edit"
               id={`folder-item-${item.key}-edit-button`}
               size="small"
-              onClick={(event) => this.openEditPipelineDialog(item, event)}>
-              <EditOutlined />
-            </Button>
+              onClick={(event) => this.openEditPipelineDialog(item, event)}
+              icon={<EditOutlined />}
+            />
           );
         }
         break;
@@ -475,9 +477,9 @@ class Folder extends localization.LocalizedReactComponent {
               key="edit"
               id={`folder-item-${item.key}-edit-button`}
               size="small"
-              onClick={(event) => this.openEditStorageDialog(item, event)}>
-              <EditOutlined />
-            </Button>
+              onClick={(event) => this.openEditStorageDialog(item, event)}
+              icon={<EditOutlined />}
+            />
           );
         }
         break;
@@ -488,9 +490,9 @@ class Folder extends localization.LocalizedReactComponent {
               key="edit"
               id={`folder-item-${item.key}-edit-button`}
               size="small"
-              onClick={(event) => this.openEditConfigurationDialog(item, event)}>
-              <EditOutlined />
-            </Button>
+              onClick={(event) => this.openEditConfigurationDialog(item, event)}
+              icon={<EditOutlined />}
+            />
           );
         }
         break;
@@ -1282,7 +1284,8 @@ class Folder extends localization.LocalizedReactComponent {
               this.navigate(item);
             }
           })}
-          size="small" />
+          size="small"
+        />
         {
           this.showIssues &&
           <Issues
@@ -1463,6 +1466,7 @@ class Folder extends localization.LocalizedReactComponent {
                   this.openCreatePipelineDialog(null);
                 });
               }}
+              expandIcon={<RightOutlined />}
               key={pipelineKey}
               title={<span><ForkOutlined /> {this.localizedString('Pipeline')}</span>}
               className={classNames(styles.actionsSubMenu, 'create-pipeline-sub-menu-button')}
@@ -1494,6 +1498,7 @@ class Folder extends localization.LocalizedReactComponent {
                 this.openCreateStorageDialog(true);
               });
             }}
+            expandIcon={<RightOutlined />}
             title={<span><HddOutlined /> Storages</span>}
             className={
               classNames(
@@ -1668,9 +1673,9 @@ class Folder extends localization.LocalizedReactComponent {
               size="small"
               className={styles.dropDownTrigger}
             >
-              <PlusOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-              <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}> Create </span>
-              <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <PlusOutlined />
+              <span> Create </span>
+              <DownOutlined />
             </Button>
           </Dropdown>
         </DropDownWrapper>
@@ -1771,9 +1776,8 @@ class Folder extends localization.LocalizedReactComponent {
               id="display-attributes"
               size="small"
               className={styles.dropDownTrigger}
-            >
-              <AppstoreOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-            </Button>
+              icon={<AppstoreOutlined />}
+            />
           </Dropdown>
         </DropDownWrapper>
       );
@@ -1836,7 +1840,7 @@ class Folder extends localization.LocalizedReactComponent {
         roleModel.isManager.folder(this)
       ) {
         if (editActions.length > 0) {
-          editActions.push(<Divider key="divider"/>);
+          editActions.push(<Divider key="divider" />);
         }
         editActions.push(
           <MenuItem
@@ -1897,9 +1901,8 @@ class Folder extends localization.LocalizedReactComponent {
                 id="edit-folder-menu-button"
                 size="small"
                 className={styles.dropDownTrigger}
-              >
-                <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-              </Button>
+                icon={<SettingOutlined />}
+              />
             </Dropdown>
           </DropDownWrapper>
         );
@@ -2157,51 +2160,51 @@ class Folder extends localization.LocalizedReactComponent {
           onSubmit={this.folderOperationWrapper(this.cloneFolder)} />
         <Modal
           visible={!!this.state.folderToDelete}
-          load
           title={false}
           closable={false}
           footer={false}
           width={416}
           onCancel={this.closeDeleteFolderDialog}
           bodyStyle={{
-            wordWrap: 'break-word',
-            padding: '30px 40px'
+            padding: '32px 32px 24px'
           }}>
-          <Row>
+          <Row style={{flexDirection: 'column'}}>
             <Row className={styles.configurationConfirmTitle}>
-              <QuestionCircleOutlined />
-              {
-                this.state.folderToDelete &&
-                (!this.deletingFolderIsEmpty
-                  ? `Folder '${this.state.folderToDelete.name}' contains sub-items, do you want to delete them?`
-                  : `Are you sure you want to delete folder ${this.state.folderToDelete.name}`)
-              }
+              <Col>
+                <QuestionCircleOutlined className={styles.configurationConfirmIcon} />
+              </Col>
+              <Col flex="1">
+                {
+                  this.state.folderToDelete && (
+                    <Row>
+                      {
+                        !this.deletingFolderIsEmpty
+                          ? `Folder '${this.state.folderToDelete.name}' contains sub-items, do you want to delete them?`
+                          : `Are you sure you want to delete folder ${this.state.folderToDelete.name}`
+                      }
+                    </Row>
+                  )
+                }
+                {(!this._folderToDeleteInfo || this._folderToDeleteInfo.pending) && <Row><LoadingView /></Row>}
+                {
+                  !this.deletingFolderIsEmpty &&
+                  <Row className={styles.configurationConfirmDescription}>
+                    <Checkbox
+                      checked={this.state.forceFolderDeletion}
+                      onChange={(e) => {
+                        this.setState({forceFolderDeletion: e.target.checked});
+                      }}>Delete sub-items</Checkbox>
+                  </Row>
+                }
+              </Col>
             </Row>
-            {(!this._folderToDeleteInfo || this._folderToDeleteInfo.pending) && <LoadingView />}
-            {
-              !this.deletingFolderIsEmpty &&
-              <Row style={{
-                marginLeft: '42px',
-                fontSize: '12px',
-                color: 'rgba(0,0,0,.65)',
-                marginTop: '8px'
-              }}>
-                <Checkbox
-                  checked={this.state.forceFolderDeletion}
-                  onChange={(e) => {
-                    this.setState({forceFolderDeletion: e.target.checked});
-                  }}>Delete sub-items</Checkbox>
-              </Row>
-            }
-            <Row className={styles.configurationConfirmBtn}>
+            <Row type="flex" justify="end" className={styles.configurationConfirmBtn}>
               <Button
                 key="cancel"
-                size="large"
                 onClick={this.closeDeleteFolderDialog}>Cancel</Button>
               <Button
+                danger
                 key="ok"
-                type="primary"
-                size="large"
                 disabled={
                   !this._folderToDeleteInfo || this._folderToDeleteInfo.pending ||
                   (!this.deletingFolderIsEmpty && !this.state.forceFolderDeletion)

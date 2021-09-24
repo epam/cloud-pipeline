@@ -1003,15 +1003,15 @@ class Tool extends localization.LocalizedReactComponent {
               (
                 <Button
                   size="small"
-                  type="danger"
+                  danger
                   disabled={this.isLastVersion}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     this.deleteToolVersionConfirm(version.name);
-                  }}>
-                  <DeleteOutlined />
-                </Button>
+                  }}
+                  icon={<DeleteOutlined />}
+                />
               )
             }
           </Row>
@@ -1670,7 +1670,7 @@ class Tool extends localization.LocalizedReactComponent {
                     ? <ExclamationCircleOutlined style={{marginRight: 5}} />
                     : undefined
                 }
-                <span style={{verticalAlign: 'middle', lineHeight: 'inherit'}}>Run</span>
+                <span>Run</span>
               </Button>
             </Tooltip>
             <Dropdown
@@ -1684,9 +1684,9 @@ class Tool extends localization.LocalizedReactComponent {
                   e.stopPropagation();
                 }}
                 size="small"
-                type="primary">
-                <DownOutlined style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
-              </Button>
+                type="primary"
+                icon={<DownOutlined />}
+              />
             </Dropdown>
           </Button.Group>
         </span>
@@ -1756,9 +1756,9 @@ class Tool extends localization.LocalizedReactComponent {
         overlay={displayOptionsMenu}>
         <Button
           id="display-attributes"
-          size="small">
-          <AppstoreOutlined style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
-        </Button>
+          size="small"
+          icon={<AppstoreOutlined />}
+        />
       </Dropdown>
     );
   };
@@ -1825,9 +1825,8 @@ class Tool extends localization.LocalizedReactComponent {
           disabled={!this.props.tool.loaded}
           size="small"
           onClick={this.openCreateLinkForm}
-        >
-          <LinkOutlined />
-        </Button>
+          icon={<LinkOutlined />}
+        />
       );
     }
     return null;
@@ -1859,9 +1858,7 @@ class Tool extends localization.LocalizedReactComponent {
     );
     return (
       <Dropdown overlay={menu} placement="bottomRight">
-        <Button id="setting-button" size="small">
-          <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-        </Button>
+        <Button id="setting-button" size="small" icon={<SettingOutlined />} />
       </Dropdown>
     );
   };
@@ -1901,14 +1898,14 @@ class Tool extends localization.LocalizedReactComponent {
                 <Button
                   onClick={this.navigateBack}
                   size="small"
-                  style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
-                  <ArrowLeftOutlined />
-                </Button>
+                  style={{marginBottom: 3}}
+                  icon={<ArrowLeftOutlined />}
+                />
                 <ToolLink link={this.link} style={{marginLeft: 5}} />
                 <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
                 <PlatformIcon
                   platform={this.defaultVersionPlatform}
-                  style={{verticalAlign: 'middle', marginLeft: 5}}
+                  style={{marginLeft: 5}}
                 />
                 <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
               </td>

@@ -111,12 +111,8 @@ export default class ShareWithForm extends React.Component {
   renderGroupAndUsersActions = () => {
     return (
       <span className={styles.actions}>
-        <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog}>
-          <UserAddOutlined />
-        </Button>
-        <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog}>
-          <UsergroupAddOutlined />
-        </Button>
+        <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog} icon={<UserAddOutlined />} />
+        <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog} icon={<UsergroupAddOutlined />} />
       </span>
     );
   };
@@ -157,9 +153,9 @@ export default class ShareWithForm extends React.Component {
             ...roles,
             ...(this.groupFind.value || []).map(g => g)]
         )
-      ].sort((u1, u2) => sortByOverlap(u1, u2, query));
+      ].sort((u1, u2) => sortByOverlap(u1, u2, query)).map(i => ({value: i, label: i}));
     }
-    return [...roles].sort((u1, u2) => sortByOverlap(u1, u2, query));
+    return [...roles].sort((u1, u2) => sortByOverlap(u1, u2, query)).map(i => ({value: i, label: i}));
   };
 
   openFindUserDialog = () => {
@@ -308,9 +304,9 @@ export default class ShareWithForm extends React.Component {
             <Button
               disabled={this.props.pending}
               onClick={this.removeUserOrGroupClicked(item)}
-              size="small">
-              <DeleteOutlined />
-            </Button>
+              size="small"
+              icon={<DeleteOutlined />}
+            />
           </Row>
         )
       }
@@ -381,14 +377,13 @@ export default class ShareWithForm extends React.Component {
             visible={this.state.findUserVisible}>
             <AutoComplete
               value={this.state.userSearchString}
-              optionLabelProp="text"
               style={{width: '100%'}}
               onChange={this.onUserFindInputChanged}
               placeholder="Enter the account name">
               {
                 (this.findUserDataSource() || []).map(user => {
                   return (
-                    <AutoComplete.Option key={user.userName} text={user.userName}>
+                    <AutoComplete.Option key={user.userName} value={user.userName}>
                       {this.renderUserName(user)}
                     </AutoComplete.Option>
                   );
@@ -404,7 +399,7 @@ export default class ShareWithForm extends React.Component {
             <AutoComplete
               value={this.state.groupSearchString}
               style={{width: '100%'}}
-              dataSource={this.findGroupDataSource()}
+              options={this.findGroupDataSource()}
               onChange={this.onGroupFindInputChanged}
               placeholder="Enter the group name" />
           </Modal>

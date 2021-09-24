@@ -20,7 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER, VERSION} from '../../../config';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import {Button, message, Popover, Row, Tooltip} from 'antd';
 import styles from './Navigation.css';
 import PropTypes from 'prop-types';
@@ -135,6 +135,7 @@ export default class Navigation extends React.Component {
     const menuItems = this.navigationItems
       .filter(item => this.getNavigationItemVisible(item))
       .map((navigationItem, index) => {
+        const ItemIcon = navigationItem.icon;
         if (navigationItem.isDivider) {
           return <div
             key={`divider_${index}`}
@@ -159,9 +160,8 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <LegacyIcon
+                <ItemIcon
                   style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
-                  type={navigationItem.icon}
                 />
               </Tooltip>
             </Link>
@@ -192,9 +192,8 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <LegacyIcon
+                <ItemIcon
                   style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
-                  type={navigationItem.icon}
                 />
               </Tooltip>
             </Link>
@@ -213,9 +212,8 @@ export default class Navigation extends React.Component {
                 className={this.menuItemClassSelector(navigationItem, activeTabPath)}
                 onClick={() => this.navigate({key: navigationItem.key})}
               >
-                <LegacyIcon
+                <ItemIcon
                   style={navigationItem.iconStyle}
-                  type={navigationItem.icon}
                 />
               </Button>
             </Tooltip>
@@ -282,9 +280,9 @@ export default class Navigation extends React.Component {
               id="expand-collapse-library-tree-button"
               onClick={this.props.onLibraryCollapsedChange}
               className={styles.navigationMenuItem}
-              style={{position: 'absolute', left: 0, bottom: 0, right: 0}}>
-              <LegacyIcon type={this.props.collapsed ? 'right' : 'left'} />
-            </Button>
+              style={{position: 'absolute', left: 0, bottom: 0, right: 0}}
+              icon={this.props.collapsed ? <RightOutlined /> : <LeftOutlined />}
+            />
           }
         </div>
       </div>

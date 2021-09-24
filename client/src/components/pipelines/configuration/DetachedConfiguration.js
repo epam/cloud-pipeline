@@ -213,6 +213,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       async onOk () {
         await removeConfiguration();
       },
@@ -961,7 +962,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
           id="add-configuration-button"
           size="small"
           onClick={this.openCreateConfigurationFormDialog}>
-          <PlusOutlined style={{lineHeight: 'inherit'}} /> ADD
+          <PlusOutlined /> ADD
         </Button>
       );
     }
@@ -1034,7 +1035,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
               configurationId={this.props.configurationId}
             />
             <Button onClick={this.openEditConfigurationForm} size="small">
-              <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <SettingOutlined />
             </Button>
           </Col>
         </Row>

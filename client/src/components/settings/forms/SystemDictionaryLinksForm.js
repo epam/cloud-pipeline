@@ -223,7 +223,7 @@ class SystemDictionaryLinksForm extends React.Component {
         </Select>
         <Button
           size="small"
-          type="danger"
+          danger
           style={{
             margin: '0 5px'
           }}

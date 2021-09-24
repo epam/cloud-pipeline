@@ -139,9 +139,8 @@ export default class DropdownWithMultiselect extends React.Component {
           style={Object.assign({lineHeight: 1}, style || {})}
           onClick={this.openMenu}
           size={size}
-        >
-          <BarsOutlined />
-        </Button>
+          icon={<BarsOutlined />}
+        />
       </Popover>
     );
   }

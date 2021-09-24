@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
@@ -87,22 +88,29 @@ const SettingsTabs = [
 @roleModel.authenticationInfo
 @observer
 class SettingsForm extends React.Component {
+  @computed
   get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
       : undefined;
-  };
+  }
+
+  @computed
+  get tabs () {
+    return SettingsTabs.filter(tab => tab.available(this.currentUser));
+  }
 
   renderSettingsNavigation = () => {
-    const {location} = this.props;
-    const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
-    const activeTab = location.pathname.split('/').filter(Boolean)[1];
+    const {location, match} = this.props;
+    // const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
+    const activeTab = match.params.activeTab;
     return (
       <Row
-        gutter={16}
+        // gutter={16}
         type="flex"
-        justify="center"
+        wrap
+        // justify="center"
         className={styles.rowMenu}
       >
         <Menu
@@ -111,7 +119,7 @@ class SettingsForm extends React.Component {
           className={styles.tabsMenu}
         >
           {
-            tabs.map(tab => (
+            this.tabs.map(tab => (
               <Menu.Item key={tab.key}>
                 <AdaptedLink
                   to={tab.path}

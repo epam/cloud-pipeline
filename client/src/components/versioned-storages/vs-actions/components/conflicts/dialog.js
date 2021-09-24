@@ -62,6 +62,7 @@ class ConflictsDialog extends React.Component {
         wordWrap: 'break-word'
       },
       width: 600,
+      okType: 'danger',
       onOk: () => onAbort(),
       okText: 'Abort',
       cancelText: 'Continue resolve conflicts'
@@ -108,7 +109,7 @@ class ConflictsDialog extends React.Component {
             {
               mergeInProgress && (
                 <Button
-                  type="danger"
+                  danger
                   disabled={disabled}
                   onClick={this.onAbortClicked}
                 >

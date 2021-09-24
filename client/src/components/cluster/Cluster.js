@@ -240,6 +240,7 @@ class Cluster extends localization.LocalizedReactComponent {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         (async () => {
           await terminateNode(item);
@@ -257,6 +258,7 @@ class Cluster extends localization.LocalizedReactComponent {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         (async () => {
           await terminateNodes();
@@ -284,8 +286,8 @@ class Cluster extends localization.LocalizedReactComponent {
   renderTerminateButton = (item) => {
     if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
       return <Button
+        danger
         id="terminate-node-button"
-        type="danger"
         size="small"
         onClick={(event) => this.nodeTerminationConfirm(item, event)}>TERMINATE</Button>;
     }
@@ -660,8 +662,8 @@ class Cluster extends localization.LocalizedReactComponent {
             {
               this.state.selection.length > 0 && (
                 <Button
+                  danger
                   id="cluster-batch-terminate-button"
-                  type="danger"
                   disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}

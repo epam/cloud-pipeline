@@ -22,7 +22,7 @@ import {
   TeamOutlined,
   UserAddOutlined,
   UsergroupAddOutlined,
-  UserOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 
 import {
@@ -31,6 +31,7 @@ import {
   Button,
   Checkbox,
   Col,
+  Input,
   message,
   Modal,
   Popover,
@@ -147,7 +148,7 @@ export default class PermissionsForm extends React.Component {
     });
   };
 
-  onUserSelect = (key) => {
+  onUserSelect = (value, {key}) => {
     const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
     if (user) {
       this.setState({
@@ -212,12 +213,8 @@ export default class PermissionsForm extends React.Component {
   renderGroupAndUsersActions = () => {
     return (
       <span className={styles.actions}>
-        <Button disabled={this.props.readonly} size="small" onClick={this.openFindUserDialog}>
-          <UserAddOutlined />
-        </Button>
-        <Button disabled={this.props.readonly} size="small" onClick={this.openFindGroupDialog}>
-          <UsergroupAddOutlined />
-        </Button>
+        <Button disabled={this.props.readonly} size="small" onClick={this.openFindUserDialog} icon={<UserAddOutlined />} />
+        <Button disabled={this.props.readonly} size="small" onClick={this.openFindGroupDialog} icon={<UsergroupAddOutlined />} />
       </span>
     );
   };
@@ -262,9 +259,9 @@ export default class PermissionsForm extends React.Component {
         .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
     ) : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
-      return [...roles, ...(this.groupFind.value || []).map(g => g)];
+      return [...new Set([...roles, ...(this.groupFind.value || []).map(g => g)])].map(g => ({value: g, label: g}));
     }
-    return [...roles];
+    return [...new Set([...roles])].map(g => ({value: g, label: g}));
   };
 
   selectedUser = null;
@@ -652,7 +649,7 @@ export default class PermissionsForm extends React.Component {
         }
       },
       {
-        dataIndex: 'sid.name',
+        dataIndex: ['sid', 'name'],
         key: 'name',
         render: (name, item) => getSidName(name, item.sid.principal)
       },
@@ -664,9 +661,9 @@ export default class PermissionsForm extends React.Component {
             <Button
               disabled={this.state.operationInProgress || this.props.readonly}
               onClick={this.removeUserOrGroupClicked(item)}
-              size="small">
-              <DeleteOutlined />
-            </Button>
+              size="small"
+              icon={<DeleteOutlined />}
+            />
           </Row>
         )
       }
@@ -740,25 +737,24 @@ export default class PermissionsForm extends React.Component {
           <Row className={styles.ownerContainer} type="flex" style={{margin: '0px 5px 10px', height: 22}} align="middle">
             <span style={{marginRight: 5}}>Owner: </span>
             <AutoComplete
-              size="small"
               style={{flex: 1}}
-              placeholder="Change owner"
-              optionLabelProp="text"
               value={this.state.ownerInput !== null ? this.state.ownerInput : this.props.grant.value.entity.owner}
               onBlur={onBlur}
               onSelect={this.onUserSelect}
-              onSearch={this.findUser}>
-              {
-                this.state.fetchedUsers.map(user => {
-                  return (
-                    <AutoComplete.Option
-                      key={user.id}
-                      text={user.userName}>
-                      {this.renderUserName(user)}
-                    </AutoComplete.Option>
-                  );
-                })
+              onSearch={this.findUser}
+              options={
+                this.state.fetchedUsers.map(user => ({
+                  key: user.id,
+                  value: user.userName,
+                  label: this.renderUserName(user)
+                }))
               }
+            >
+              <Input
+                className={styles.ownerInput}
+                placeholder="Change owner"
+                size="small"
+              />
             </AutoComplete>
             {
               this.state.owner && this.props.grant.value.entity.owner !== this.state.owner &&
@@ -798,7 +794,7 @@ export default class PermissionsForm extends React.Component {
 
   render () {
     return (
-      <Row>
+      <Col>
         {this.renderOwner()}
         {this.renderSubObjectsWarnings()}
         {this.renderUsers()}
@@ -826,14 +822,13 @@ export default class PermissionsForm extends React.Component {
           visible={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
-            optionLabelProp="text"
             style={{width: '100%'}}
             onChange={this.onUserFindInputChanged}
             placeholder="Enter the account name">
             {
               (this.findUserDataSource() || []).map(user => {
                 return (
-                  <AutoComplete.Option key={user.userName} text={user.userName}>
+                  <AutoComplete.Option key={user.userName} value={user.userName}>
                     {this.renderUserName(user)}
                   </AutoComplete.Option>
                 );
@@ -866,11 +861,11 @@ export default class PermissionsForm extends React.Component {
           <AutoComplete
             value={this.selectedGroup}
             style={{width: '100%'}}
-            dataSource={this.findGroupDataSource()}
+            options={this.findGroupDataSource()}
             onChange={this.onGroupFindInputChanged}
             placeholder="Enter the group name" />
         </Modal>
-      </Row>
+      </Col>
     );
   }
 

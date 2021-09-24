@@ -242,9 +242,8 @@ class VSHistory extends React.Component {
               size="small"
               disabled={pending}
               onClick={this.openFilters}
-            >
-              <FilterOutlined />
-            </Button>
+              icon={<FilterOutlined />}
+            />
           </Badged>
           <HistoryFilter
             visible={filtersVisible}
@@ -297,9 +296,8 @@ class VSHistory extends React.Component {
             disabled={pending || !this.canNavigateToPreviousPage}
             size="small"
             onClick={this.navigateToPreviousPage}
-          >
-            <CaretLeftOutlined />
-          </Button>
+            icon={<CaretLeftOutlined />}
+          />
           <Button
             className={styles.paginationButton}
             disabled={pending || !this.canNavigateToNextPage}

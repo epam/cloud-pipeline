@@ -64,7 +64,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     return (
       <Button
         id="display-attributes"
-        style={{lineHeight: 1, marginRight: '5px'}}
+        style={{marginRight: '5px'}}
         size="small"
         onClick={this.onHistoryBtnClick}
       >
@@ -132,13 +132,11 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               {
                 roleModel.isOwner(pipeline.value) && (
                   <Button
-                    style={{lineHeight: 1}}
                     size="small"
                     onClick={this.onSettingsClick}
                     disabled={readOnly}
-                  >
-                    <SettingOutlined />
-                  </Button>
+                    icon={<SettingOutlined />}
+                  />
                 )
               }
             </Row>

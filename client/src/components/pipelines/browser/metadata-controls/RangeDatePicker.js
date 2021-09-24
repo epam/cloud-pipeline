@@ -211,7 +211,7 @@ class RangeDatePicker extends React.Component {
             alignItems: 'center'
           }}>
           <Button
-            type="danger"
+            danger
             onClick={() => this.resetRange()}
             disabled={!this.props.from && !this.props.to}
           >

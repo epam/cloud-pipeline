@@ -433,7 +433,7 @@ export default class EndpointInput extends React.Component {
                 disabled={this.props.disabled}
                 onClick={e => this.props.onRemove && this.props.onRemove()}
                 size="small"
-                type="danger">
+                danger>
                 Delete
               </Button>
             </Row>

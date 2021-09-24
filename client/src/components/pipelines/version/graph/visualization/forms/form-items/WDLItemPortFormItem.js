@@ -94,9 +94,10 @@ function autoCompleteTypes (type) {
     return [
       type,
       ...Object.values(Primitives)
-    ].filter((t, i, a) => a.indexOf(t) === i);
+    ].filter((t, i, a) => a.indexOf(t) === i)
+      .map(i => ({value: i, label: i}));
   }
-  return Object.values(Primitives);
+  return Object.values(Primitives).map(i => ({value: i, label: i}));
 }
 
 export const LockOptions = {
@@ -266,7 +267,7 @@ export class WDLItemPortFormItem extends React.Component {
           value={this.state.name}
           onChange={this.onChangeName} />
         <AutoComplete
-          dataSource={this.state.typesDataSource}
+          options={this.state.typesDataSource}
           className={this.getClasses('type', [styles.portsColumn, 'variable-type'])}
           disabled={this.props.disabled || this.props.isRequired || this.isLocked(LockOptions.type)}
           value={this.state.type}

@@ -269,6 +269,7 @@ class MetadataFolder extends React.Component {
     };
     Modal.confirm({
       title: 'Delete metadata?',
+      okType: 'danger',
       onOk: onDeleteMetadata
     });
   };
@@ -311,7 +312,7 @@ class MetadataFolder extends React.Component {
         roleModel.manager.entities(
           <Button
             key="delete-metadata"
-            type="danger"
+            danger
             style={{lineHeight: 1}}
             onClick={this.deleteMetadataConfirm}
             size="small">

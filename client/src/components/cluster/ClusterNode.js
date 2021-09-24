@@ -186,6 +186,7 @@ class ClusterNode extends Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         (async () => {
           await terminateNode();
@@ -237,8 +238,8 @@ class ClusterNode extends Component {
             {
               allowToTerminate && (
                 <Button
+                  danger
                   id="terminate-cluster-node-button"
-                  type="danger"
                   disabled={this.props.node.pending || this.props.chartsData.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodeTerminationConfirm}

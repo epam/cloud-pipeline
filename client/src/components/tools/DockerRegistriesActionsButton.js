@@ -24,7 +24,8 @@ import {
   EditOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
-  SettingOutlined,
+  RightOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 
 import {message, Button} from 'antd';
@@ -449,6 +450,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <SubMenu
           key="registry"
           title="Registry"
+          expandIcon={<RightOutlined />}
           className={styles.actionsSubMenu}
         >
           {registryActions}
@@ -460,6 +462,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <SubMenu
           key="group"
           title="Group"
+          expandIcon={<RightOutlined />}
           className={styles.actionsSubMenu}
         >
           {groupActions}
@@ -524,11 +527,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
             )}
           >
             <Button size="small" style={{zIndex: 2}}>
-              <SettingOutlined
-                style={{
-                  lineHeight: 'inherit',
-                  verticalAlign: 'middle'
-                }} />
+              <SettingOutlined />
               <EditRegistryForm
                 pending={this.state.registryOperationInProgress}
                 onCancel={() => this._closeCreateRegistryForm()}

@@ -205,6 +205,7 @@ class QuotaTemplateEditDialog extends React.Component {
     const {onRemove} = this.props;
     Modal.confirm({
       title: 'Are you sure you want to remove quota template?',
+      okType: 'danger',
       onOk: onRemove
     });
   };
@@ -224,7 +225,7 @@ class QuotaTemplateEditDialog extends React.Component {
         footer={(
           <Row type="flex" justify="space-between">
             <Button
-              type="danger"
+              danger
               disabled={disabled || isNew}
               onClick={this.onRemove}
             >

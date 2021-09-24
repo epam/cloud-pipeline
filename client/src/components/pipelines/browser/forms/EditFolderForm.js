@@ -15,18 +15,14 @@
  */
 
 import React from 'react';
-import {Form} from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.css';
-import {Button, Modal, Input, Row, Spin, Tabs} from 'antd';
+import {Button, Form, Modal, Input, Row, Spin, Tabs} from 'antd';
 import {inject} from 'mobx-react';
 import PropTypes from 'prop-types';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 
 @inject('visible', 'onSubmit', 'onCancel', 'pending', 'title')
-@Form.create()
 export default class EditFolderForm extends React.Component {
-
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -41,6 +37,8 @@ export default class EditFolderForm extends React.Component {
     locked: PropTypes.bool
   };
 
+  formRef = React.createRef();
+
   state = {activeTab: 'info'};
 
   formItemLayout = {
@@ -51,16 +49,18 @@ export default class EditFolderForm extends React.Component {
     wrapperCol: {
       xs: {span: 24},
       sm: {span: 18}
-    },
+    }
   };
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then(values => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(({errorFields}) => {
+        this.formRef.current.scrollToField(errorFields[0].name);
+      });
   };
 
   onSectionChange = (key) => {
@@ -68,7 +68,6 @@ export default class EditFolderForm extends React.Component {
   };
 
   render () {
-    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending || this.state.activeTab !== 'info' ? false : (
       <Row>
         <Button
@@ -82,7 +81,7 @@ export default class EditFolderForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current.resetFields();
       this.setState({activeTab: 'info'});
     };
     const isEditInfo =
@@ -104,21 +103,26 @@ export default class EditFolderForm extends React.Component {
             activeKey={this.state.activeTab}
             onChange={this.onSectionChange}>
             <Tabs.TabPane key="info" tab="Info">
-              <Form className="folder-edit-form">
+              <Form
+                ref={this.formRef}
+                className="folder-edit-form"
+                initialValues={{
+                  name: this.props.name
+                }}
+                scrollToFirstError
+              >
                 <Form.Item
+                  {...this.formItemLayout}
                   className="folder-edit-form-name-container"
-                  {...this.formItemLayout} label="Name">
-                  {getFieldDecorator('name', {
-                    rules: [
-                      {required: true, message: 'Name is required'}
-                    ],
-                    initialValue: this.props.name
-                  })(
-                    <Input
-                      ref={this.initializeNameInput}
-                      onPressEnter={this.handleSubmit}
-                      disabled={this.props.pending || (!isEditInfo && !!this.props.folderId)} />
-                  )}
+                  name="name"
+                  label="Name"
+                  rules={[{required: true, message: 'Name is required'}]}
+                >
+                  <Input
+                    ref={this.initializeNameInput}
+                    onPressEnter={this.handleSubmit}
+                    disabled={this.props.pending || (!isEditInfo && !!this.props.folderId)}
+                  />
                 </Form.Item>
               </Form>
             </Tabs.TabPane>

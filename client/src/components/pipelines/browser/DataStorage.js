@@ -667,6 +667,7 @@ class DataStorage extends React.Component {
           style: {
             wordWrap: 'break-word'
           },
+          okType: 'danger',
           onOk () {
             removeItem();
           }
@@ -692,6 +693,7 @@ class DataStorage extends React.Component {
           style: {
             wordWrap: 'break-word'
           },
+          okType: 'danger',
           onOk () {
             removeItem();
           }
@@ -720,6 +722,7 @@ class DataStorage extends React.Component {
         style: {
           wordWrap: 'break-word'
         },
+        okType: 'danger',
         onOk () {
           removeItem();
         }
@@ -794,6 +797,7 @@ class DataStorage extends React.Component {
         style: {
           wordWrap: 'break-word'
         },
+        okType: 'danger',
         onOk () {
           removeItems();
         }
@@ -873,29 +877,33 @@ class DataStorage extends React.Component {
           id={`edit ${item.name}`}
           key="rename"
           size="small"
-          onClick={(event) => this.openRenameItemDialog(event, item)}>
-          <EditOutlined />
-        </Button>
+          onClick={(event) => this.openRenameItemDialog(event, item)}
+          icon={<EditOutlined />}
+        />
       );
     }
     if (this.canRestoreItem(item)) {
       actions.push(
-        <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
-          <ReloadOutlined />
-        </Button>
+        <Button
+          id={`restore ${item.name}`}
+          key="restore"
+          size="small"
+          onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}
+          icon={<ReloadOutlined />}
+        />
       );
     }
     if (item.deletable) {
       actions.push(separator());
       actions.push(
         <Button
+          danger
           id={`remove ${item.name}`}
           key="remove"
-          type="danger"
           size="small"
-          onClick={(event) => this.removeItemConfirm(event, item)}>
-          <DeleteOutlined />
-        </Button>
+          onClick={(event) => this.removeItemConfirm(event, item)}
+          icon={<DeleteOutlined />}
+        />
       );
     }
     return (
@@ -1433,13 +1441,8 @@ class DataStorage extends React.Component {
           <Button
             id="edit-storage-button"
             size="small"
-          >
-            <SettingOutlined
-              style={{
-                lineHeight: 'inherit',
-                verticalAlign: 'middle'
-              }} />
-          </Button>
+            icon={<SettingOutlined />}
+          />
         </Dropdown>
       );
     }
@@ -1447,13 +1450,9 @@ class DataStorage extends React.Component {
       <Button
         id="edit-storage-button"
         size="small"
-        onClick={() => this.openEditDialog()}>
-        <SettingOutlined
-          style={{
-            lineHeight: 'inherit',
-            verticalAlign: 'middle'
-          }} />
-      </Button>
+        onClick={() => this.openEditDialog()}
+        icon={<SettingOutlined />}
+      />
     );
   };
 
@@ -1543,10 +1542,11 @@ class DataStorage extends React.Component {
                 this.removeAllSelectedItemsEnabled &&
                 roleModel.writeAllowed(this.props.info.value) &&
                 <Button
+                  danger
                   id="remove-all-selected-button"
                   size="small"
                   onClick={(e) => this.removeSelectedItemsConfirm(e)}
-                  type="danger">
+                >
                   Remove all selected
                 </Button>
               }
@@ -1638,12 +1638,18 @@ class DataStorage extends React.Component {
             id="prev-page-button"
             onClick={this.prevPage}
             disabled={this.state.currentPage === 0}
-            style={{margin: 3}} size="small"><CaretLeftOutlined /></Button>
+            style={{margin: 3}}
+            size="small"
+            icon={<CaretLeftOutlined />}
+          />
           <Button
             id="next-page-button"
             onClick={this.nextPage}
             disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-            style={{margin: 3}} size="small"><CaretRightOutlined /></Button>
+            style={{margin: 3}}
+            size="small"
+            icon={<CaretRightOutlined />}
+          />
         </Row>
       ];
     } else if (this.props.storage.error) {
@@ -2014,16 +2020,16 @@ class DataStorage extends React.Component {
               <Col span={16}>
                 <Row type="flex" justify="end">
                   <Button
+                    danger
                     id="delete-bucket-item-modal-set-deletion-marker-button"
-                    type="danger"
                     onClick={() => this.removeItems(this.state.itemsToDelete, false, false, () => {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});
                       this.afterDataStorageEdit();
                     })}>Set deletion marker</Button>
                   <Button
+                    danger
                     id="delete-bucket-item-modal-delete-from-bucket-button"
-                    type="danger"
                     onClick={() => this.removeItems(this.state.itemsToDelete, true, false, () => {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});

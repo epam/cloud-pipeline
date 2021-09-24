@@ -246,7 +246,7 @@ export default class EditUserRolesDialog extends React.Component {
             <Button
               id="delete-role-button"
               size="small"
-              type="danger"
+              danger
               onClick={() => this.removeRole(role.id)}
               disabled={this.state.operationInProgress || readOnly}
             >
@@ -420,6 +420,7 @@ export default class EditUserRolesDialog extends React.Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         deleteUser();
       }
@@ -846,11 +847,11 @@ export default class EditUserRolesDialog extends React.Component {
               <Button
                 disabled={readOnly}
                 id="delete-user-button"
-                type="danger"
+                danger
                 onClick={this.onDelete}>DELETE</Button>
               <Button
                 disabled={readOnly}
-                type="danger"
+                danger
                 onClick={() => this.onBlockUnBlock(!blocked)}
               >
                 {

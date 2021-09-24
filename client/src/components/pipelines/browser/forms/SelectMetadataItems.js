@@ -251,7 +251,7 @@ class SelectMetadataItems extends React.Component {
       ...fields.map(field => ({
         dataIndex: /^externalId$/i.test(field)
           ? field
-          : `data.${field}`,
+          : ['data', field],
         key: field,
         fixed: /^externalId$/i.test(field)
           ? 'left'

@@ -445,6 +445,7 @@ class CloudCredentialsProfileForm extends React.Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       onOk () {
         return onRemove();
       },
@@ -537,7 +538,7 @@ class CloudCredentialsProfileForm extends React.Component {
                   <Button
                     className={styles.button}
                     disabled={loading}
-                    type="danger"
+                    danger
                     onClick={this.onRemoveClicked}
                   >
                     Remove

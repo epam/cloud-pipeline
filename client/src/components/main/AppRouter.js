@@ -83,7 +83,7 @@ export default class AppRouter extends React.Component {
             <Route path="/search/advanced"><FacetedSearchPage /></Route>
             <Route path="/search"><RunsSearch /></Route>
             <Redirect exact from="/settings" to="/settings/cli" />
-            <Route path="/settings">
+            <Route path="/settings/:activeTab">
               <SettingsForm>
                 <Switch>
                   <Route path="/settings/cli"><CLIForm /></Route>

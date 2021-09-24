@@ -412,7 +412,7 @@ export default class RunScheduleDialog extends React.Component {
                   icon={<DeleteOutlined />}
                   size="small"
                   style={{marginRight: 15}}
-                  type="danger"
+                  danger
                 />
               ) : (
                 <Button

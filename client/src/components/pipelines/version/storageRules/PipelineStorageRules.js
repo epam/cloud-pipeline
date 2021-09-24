@@ -79,6 +79,7 @@ class PipelineStorageRules extends React.Component {
       },
       content: null,
       okText: 'OK',
+      okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
         await this.props.rules.deleteRule(rule);

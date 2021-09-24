@@ -32,6 +32,7 @@ import {
 
 import {
   AppstoreOutlined,
+  ArrowsAltOutlined,
   CloseOutlined,
   DeleteOutlined,
   MinusCircleOutlined,
@@ -41,10 +42,11 @@ import {
   SaveOutlined,
   ScanOutlined,
   SearchOutlined,
-  SwapOutlined,
+  ShrinkOutlined,
+  SwapOutlined
 } from '@ant-design/icons';
 
-import {Form, Icon as LegacyIcon} from '@ant-design/compatible';
+import {Form} from '@ant-design/compatible';
 import '@ant-design/compatible/assets/index.css';
 import {Alert, AutoComplete, Row, Button, Input, message, Modal, Popover, Tooltip} from 'antd';
 import {prepareTask, WDLItemProperties} from './forms/WDLItemProperties';
@@ -391,6 +393,7 @@ export default class WdlGraph extends Graph {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       async onOk () {
         onOk();
       },
@@ -530,6 +533,7 @@ export default class WdlGraph extends Graph {
         style: {
           wordWrap: 'break-word'
         },
+        okType: 'danger',
         onOk () {
           deleteTask();
         }
@@ -801,7 +805,7 @@ export default class WdlGraph extends Graph {
         <Button
           id="wdl-graph-scatter-delete-button"
           key="remove"
-          type="danger"
+          danger
           style={{width: '100%'}}
           onClick={this.confirmDeleteTask}>
           <DeleteOutlined /> DELETE <b>{
@@ -816,7 +820,7 @@ export default class WdlGraph extends Graph {
         <Button
           id="wdl-graph-task-delete-button"
           key="remove"
-          type="danger"
+          danger
           style={{width: '100%'}}
           onClick={this.confirmDeleteTask}>
           <DeleteOutlined /> DELETE <b>{
@@ -1213,14 +1217,19 @@ export default class WdlGraph extends Graph {
     } else {
       expression = item.alias;
     }
-    return (
-      <AutoComplete.Option key={item.alias} value={item.alias} step={item.step}>
-        <span className={`${styles.searchItemType} ${styles[(item.type || '').toLowerCase()]}`}>
-          {highlightText(item.type, this.state.graphSearch)}
-        </span>
-        <b>{highlightText(expression, this.state.graphSearch)}</b>
-      </AutoComplete.Option>
-    );
+    return ({
+      key: item.alias,
+      value: item.alias,
+      step: item.step,
+      label: (
+        <>
+          <span className={`${styles.searchItemType} ${styles[(item.type || '').toLowerCase()]}`}>
+            {highlightText(item.type, this.state.graphSearch)}
+          </span>
+          <b>{highlightText(expression, this.state.graphSearch)}</b>
+        </>
+      )
+    });
   };
 
   @computed
@@ -1233,11 +1242,10 @@ export default class WdlGraph extends Graph {
       <div>
         <Row>
           <AutoComplete
-            dataSource={this.graphSearchDataSource}
+            options={this.graphSearchDataSource}
             value={this.state.graphSearch}
             onChange={(graphSearch) => { this.setState({graphSearch}); }}
             placeholder="Element type or name..."
-            optionLabelProp="value"
             style={{minWidth: 300}}
             onSelect={this.selectElement}
           >
@@ -1274,9 +1282,8 @@ export default class WdlGraph extends Graph {
             id="wdl-graph-search-button"
             className={styles.wdlAppearanceButton}
             shape="circle"
-          >
-            <SearchOutlined />
-          </Button>
+            icon={<SearchOutlined />}
+          />
         </Popover>
       </Tooltip>
     );
@@ -1294,9 +1301,9 @@ export default class WdlGraph extends Graph {
               disabled={!this.state.modified}
               type="primary"
               shape="circle"
-              onClick={this.openCommitFormDialog}>
-              <SaveOutlined />
-            </Button>
+              onClick={this.openCommitFormDialog}
+              icon={<SaveOutlined />}
+            />
           </Tooltip>
         }
         {
@@ -1307,9 +1314,9 @@ export default class WdlGraph extends Graph {
               className={`${styles.wdlAppearanceButton} ${styles.noFade}`}
               disabled={!this.state.modified}
               shape="circle"
-              onClick={() => this.revertChanges()}>
-              <ReloadOutlined />
-            </Button>
+              onClick={() => this.revertChanges()}
+              icon={<ReloadOutlined />}
+            />
           </Tooltip>
         }
         {
@@ -1321,18 +1328,18 @@ export default class WdlGraph extends Graph {
             className={styles.wdlAppearanceButton}
             id="wdl-graph-layout-button"
             shape="circle"
-            onClick={this.layoutGraph}>
-            <AppstoreOutlined />
-          </Button>
+            onClick={this.layoutGraph}
+            icon={<AppstoreOutlined />}
+          />
         </Tooltip>
         <Tooltip title="Fit to screen" placement="right">
           <Button
             className={styles.wdlAppearanceButton}
             id="wdl-graph-fit-button"
             shape="circle"
-            onClick={this.fitGraph}>
-            <ScanOutlined />
-          </Button>
+            onClick={this.fitGraph}
+            icon={<ScanOutlined />}
+          />
         </Tooltip>
         <Tooltip
           title={this.state.showAllLinks ? 'Hide links' : 'Show links'}
@@ -1342,9 +1349,9 @@ export default class WdlGraph extends Graph {
             type={this.state.showAllLinks ? 'primary' : 'default'}
             id={`wdl-graph-${this.state.showAllLinks ? 'hide-links' : 'show-links'}-button`}
             shape="circle"
-            onClick={this.toggleLinks}>
-            <SwapOutlined />
-          </Button>
+            onClick={this.toggleLinks}
+            icon={<SwapOutlined />}
+          />
         </Tooltip>
         <Tooltip title="Zoom out" placement="right">
           <Button
@@ -1352,9 +1359,9 @@ export default class WdlGraph extends Graph {
             id="wdl-graph-zoom-out-button"
             shape="circle"
             onClick={this.zoomOut}
-            disabled={!this.state.canZoomOut}>
-            <MinusCircleOutlined />
-          </Button>
+            disabled={!this.state.canZoomOut}
+            icon={<MinusCircleOutlined />}
+          />
         </Tooltip>
         <Tooltip title="Zoom in" placement="right">
           <Button
@@ -1362,9 +1369,9 @@ export default class WdlGraph extends Graph {
             id="wdl-graph-zoom-in-button"
             shape="circle"
             onClick={this.zoomIn}
-            disabled={!this.state.canZoomIn}>
-            <PlusCircleOutlined />
-          </Button>
+            disabled={!this.state.canZoomIn}
+            icon={<PlusCircleOutlined />}
+          />
         </Tooltip>
         {
           this.renderGraphSearch()
@@ -1374,9 +1381,9 @@ export default class WdlGraph extends Graph {
             className={styles.wdlAppearanceButton}
             id="wdl-graph-fuulscreen-button"
             shape="circle"
-            onClick={this.toggleFullScreen}>
-            <LegacyIcon type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
-          </Button>
+            onClick={this.toggleFullScreen}
+            icon={this.state.fullScreen ? <ShrinkOutlined /> : <ArrowsAltOutlined />}
+          />
         </Tooltip>
       </div>
     );
@@ -1447,7 +1454,7 @@ export default class WdlGraph extends Graph {
 
   componentDidMount () {
     this.loadMainFile();
-/*
+/* todo
     this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (this.state.modified && !this._routeChangeConfirm) {

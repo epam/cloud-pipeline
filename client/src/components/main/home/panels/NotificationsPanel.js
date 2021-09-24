@@ -81,7 +81,7 @@ export default class NotificationsPanel extends React.Component {
       return <LoadingView />;
     }
     if (this.props.notifications.error) {
-      return <Alert type="warning" message={this.props.pipelinesLibrary.error} />;
+      return <Alert type="warning" message={this.props.notifications.error} />;
     }
     if (this.notifications.length === 0) {
       return (

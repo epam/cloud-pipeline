@@ -319,11 +319,10 @@ class EditRoleDialog extends React.Component {
                 <Button
                   id="delete-user-button"
                   size="small"
-                  type="danger"
+                  danger
                   onClick={() => this.removeRole(user.id)}
-                >
-                  <DeleteOutlined />
-                </Button>
+                  icon={<DeleteOutlined />}
+                />
               </Row>
             );
           }
@@ -725,7 +724,7 @@ class EditRoleDialog extends React.Component {
             <Button
               disabled={readOnly}
               id="edit-user-form-block-unblock"
-              type="danger"
+              danger
               onClick={this.operationWrapper(this.blockUnblockClicked)}>
               {blocked ? 'UNBLOCK' : 'BLOCK'}
             </Button>
@@ -814,16 +813,15 @@ class EditRoleDialog extends React.Component {
                   size="small"
                   style={{width: '100%'}}
                   placeholder="Search user"
-                  optionLabelProp="text"
                   value={this.state.search}
                   onSelect={this.onUserSelect}
                   onSearch={this.findUser}>
                   {
-                    this.state.fetchedUsers.map(user => {
-                      return <AutoComplete.Option key={user.id} text={user.userName}>
+                    this.state.fetchedUsers.map(user => (
+                      <AutoComplete.Option key={user.id} value={user.userName}>
                         {this.renderUserName(user)}
-                      </AutoComplete.Option>;
-                    })
+                      </AutoComplete.Option>
+                    ))
                   }
                 </AutoComplete>
               </div>

@@ -16,7 +16,6 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row, Button, Tooltip} from 'antd';
 import styles from './Navigation.css';
 import PropTypes from 'prop-types';
@@ -26,12 +25,13 @@ import PropTypes from 'prop-types';
 export default class RunsCounterMenuItem extends React.Component {
   static propTypes = {
     onClick: PropTypes.func,
-    icon: PropTypes.string,
+    icon: PropTypes.object,
     className: PropTypes.string,
     highlightedClassName: PropTypes.string,
     tooltip: PropTypes.string
   };
   render () {
+    const ItemIcon = this.props.icon;
     return (
       <Tooltip overlay={this.props.tooltip} placement="right" mouseEnterDelay={0.5}>
         <Button
@@ -49,12 +49,11 @@ export default class RunsCounterMenuItem extends React.Component {
             justify="center"
             align="middle"
             style={{height: '100%'}}>
-            <LegacyIcon
-              type={this.props.icon}
+            <ItemIcon
               className={
                 this.props.counter &&
                 this.props.counter.value > 0
-                ? styles.highlightedIcon : styles.icon
+                  ? styles.highlightedIcon : styles.icon
               } />
             {
               this.props.counter &&

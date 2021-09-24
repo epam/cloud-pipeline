@@ -197,17 +197,15 @@ function PoolCard ({
                 disabled={disabled}
                 size="small"
                 onClick={onEdit}
-              >
-                <EditOutlined />
-              </Button>
+                icon={<EditOutlined />}
+              />
               <Button
+                danger
                 disabled={disabled}
                 size="small"
-                type="danger"
                 onClick={onRemove}
-              >
-                <DeleteOutlined />
-              </Button>
+                icon={<DeleteOutlined />}
+              />
             </div>
           </div>
           <div className={styles.instance}>

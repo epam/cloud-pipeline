@@ -206,6 +206,7 @@ export default class MetadataPanel extends React.Component {
       },
       content: null,
       okText: 'OK',
+      okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
         const request = new MetadataEntityDelete(
@@ -229,6 +230,7 @@ export default class MetadataPanel extends React.Component {
       },
       content: null,
       okText: 'OK',
+      okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
         const request = new MetadataEntityDeleteKey(
@@ -404,7 +406,7 @@ export default class MetadataPanel extends React.Component {
             id="remove-all-keys-button"
             key="remove all keys button"
             size="small"
-            type="danger"
+            danger
             onClick={this.confirmDeleteMetadata}
           >
             <DeleteOutlined /> Remove all
@@ -504,7 +506,7 @@ export default class MetadataPanel extends React.Component {
                     <td style={{minWidth: 30, textAlign: 'right'}}>
                       <Button
                         id={`delete-metadata-key-${key}-button`}
-                        type="danger"
+                        danger
                         size="small"
                         onClick={() => this.confirmDeleteKey(key)}>
                         <DeleteOutlined />

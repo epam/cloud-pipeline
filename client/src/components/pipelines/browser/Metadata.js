@@ -553,9 +553,8 @@ class Metadata extends React.Component {
               ? '#108ee9' : 'grey'
           )
         }}
-      >
-        <FilterOutlined />
-      </Button>);
+        icon={<FilterOutlined />}
+      />);
 
     if (key === 'createdDate') {
       return (
@@ -634,6 +633,7 @@ class Metadata extends React.Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       async onOk () {
         await removeConfiguration();
       },
@@ -1716,6 +1716,7 @@ class Metadata extends React.Component {
     };
     Modal.confirm({
       title: `Delete class '${this.props.metadataClass}'?`,
+      okType: 'danger',
       onOk: onDeleteMetadataClass
     });
   };
@@ -2489,6 +2490,7 @@ class Metadata extends React.Component {
     if (this.state.selectedItems && this.state.selectedItems.length && !selectedItemsCanBeSkipped) {
       Modal.confirm({
         title: 'All selected items will be reset. Continue?',
+        okType: 'danger',
         onOk () {
           leave(nextLocation);
         },

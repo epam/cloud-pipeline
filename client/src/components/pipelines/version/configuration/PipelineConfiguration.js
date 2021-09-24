@@ -69,7 +69,7 @@ class PipelineConfiguration extends React.Component {
   };
 
   componentDidMount() {
-      /*
+      /* todo
       this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (location.pathname === locationBefore) {
@@ -271,6 +271,7 @@ class PipelineConfiguration extends React.Component {
       style: {
         wordWrap: 'break-word'
       },
+      okType: 'danger',
       async onOk () {
         await removeConfiguration();
       },

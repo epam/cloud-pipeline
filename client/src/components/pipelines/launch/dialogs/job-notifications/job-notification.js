@@ -372,7 +372,7 @@ class JobNotification extends React.Component {
             >
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={this.handleRemove}
               >
                 <DeleteOutlined /> Remove

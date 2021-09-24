@@ -198,10 +198,10 @@ class FiltersControl extends React.Component {
                     onChange={this.onChangeFilter(i)}
                   />
                   <Button
+                    danger
                     disabled={disabled}
                     style={{marginLeft: 5}}
                     size="small"
-                    type="danger"
                     onClick={this.onRemoveFilter(i)}
                   >
                     <DeleteOutlined />

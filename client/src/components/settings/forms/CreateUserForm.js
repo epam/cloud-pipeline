@@ -141,7 +141,7 @@ export default class CreateUserForm extends React.Component {
       (role) => {
         return (
           <Row type="flex" justify="end">
-            <Button id="delete-role-button" size="small" type="danger" onClick={() => this.removeRole(role.id)}>
+            <Button id="delete-role-button" size="small" danger onClick={() => this.removeRole(role.id)}>
               <DeleteOutlined />
             </Button>
           </Row>

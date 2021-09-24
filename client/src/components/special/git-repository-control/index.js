@@ -84,7 +84,7 @@ export default class GitRepositoryControl extends React.Component {
       <Row type="flex" align="middle">
         <b style={{marginRight: 5}}>Clone repository via</b>
         <Dropdown overlay={menu}>
-          <a style={{lineHeight: 1}}>
+          <a>
             <b>{cloneType.toUpperCase()}<DownOutlined /></b>
           </a>
         </Dropdown>
@@ -141,7 +141,7 @@ export default class GitRepositoryControl extends React.Component {
         <Button
           id="pipeline-repository-button"
           size="small"
-          style={{lineHeight: 1}}>
+        >
           GIT REPOSITORY
         </Button>
       </Popover>

@@ -290,7 +290,6 @@ class Filters extends React.Component {
             allowClear
             showSearch
             dropdownMatchSelectWidth={false}
-            optionLabelProp="label"
             mode="multiple"
             placeholder="User"
             style={commonStyle}

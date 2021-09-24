@@ -26,6 +26,7 @@ import {
   ExclamationCircleOutlined,
   ForkOutlined,
   LoadingOutlined,
+  RightOutlined,
   SaveOutlined,
   SyncOutlined
 } from '@ant-design/icons';
@@ -825,6 +826,7 @@ class VSActions extends React.Component {
           subMenuOpenDelay={0.2}
           subMenuCloseDelay={0.2}
           openAnimation="zoom"
+          expandIcon={<RightOutlined />}
           getPopupContainer={node => node.parentNode}
           selectedKeys={[]}
         >

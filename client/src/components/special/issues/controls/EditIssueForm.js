@@ -88,7 +88,7 @@ export default class EditIssueForm extends localization.LocalizedReactComponent 
           onClick={this.closeDeleteDialog}>Cancel</Button>
         <Button
           id="edit-issue-delete-dialog-delete-button"
-          type="danger"
+          danger
           onClick={() => this.onDeleteClicked()}>Delete</Button>
       </Row>
     );
@@ -100,7 +100,7 @@ export default class EditIssueForm extends localization.LocalizedReactComponent 
         <Row type="flex" justify="space-between">
           <Button
             id="delete-issue"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}
             size="small">Remove</Button>
           <Row type="flex" className={styles.actions} justify="end">

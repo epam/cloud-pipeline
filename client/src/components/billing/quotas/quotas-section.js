@@ -236,9 +236,8 @@ class QuotasSection extends React.Component {
                     disabled={error || pending}
                     size="small"
                     onClick={this.addNewQuota}
-                  >
-                    <PlusOutlined />
-                  </Button>
+                    icon={<PlusOutlined />}
+                  />
                 )
               }
               {
@@ -248,9 +247,8 @@ class QuotasSection extends React.Component {
                     disabled={error || pending}
                     size="small"
                     onClick={this.openQuotaTemplatesDialog}
-                  >
-                    <SettingOutlined />
-                  </Button>
+                    icon={<SettingOutlined />}
+                  />
                 )
               }
             </div>
