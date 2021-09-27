@@ -44,6 +44,7 @@ EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
+EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
@@ -415,6 +416,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 sensitive = run_info.get("sensitive") or False
 
                 cloud_region_id = run_info.get("instance", {}).get("cloudRegionId") or None
+                instance_ip = run_info.get("instance", {}).get("nodeIP") or None
 
 
                 do_log('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
@@ -477,10 +479,18 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         else:
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
+                                        if EDGE_INSTANCE_IP in additional:
+                                                additional = additional.replace(EDGE_INSTANCE_IP, "") \
+                                                             + 'proxy_set_header Upgrade $http_upgrade;' \
+                                                               'proxy_set_header Connection "upgrade";'
+                                                target_ip = instance_ip
+                                        else:
+                                                target_ip = pod_ip
+
                                         edge_target = \
-                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
+                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=target_ip, endpoint_port=port, endpoint_path=path) \
                                                         if path \
-                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=pod_ip, endpoint_port=port)
+                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=target_ip, endpoint_port=port)
 
                                         # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
                                         # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
@@ -496,7 +506,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 
 
                                         service_list[edge_location_id] = {"pod_id": pod_id,
-                                                                        "pod_ip": pod_ip,
+                                                                        "pod_ip": target_ip,
                                                                         "pod_owner": pod_owner,
                                                                         "shared_users_sids": shared_users_sids,
                                                                         "shared_groups_sids": shared_groups_sids,

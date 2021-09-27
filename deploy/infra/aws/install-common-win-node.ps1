@@ -130,7 +130,7 @@ function WaitForProcess($ProcessName) {
 function InstallPythonIfRequired($PythonDir) {
     if (-not (Test-Path "$PythonDir")) {
         Write-Host "Installing python..."
-        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
         & "$workingDir\python-3.8.9-amd64.exe" /quiet TargetDir=$PythonDir InstallAllUsers=1 PrependPath=1
         WaitForProcess -ProcessName "python-3.8.9-amd64"
     }
@@ -139,7 +139,7 @@ function InstallPythonIfRequired($PythonDir) {
 function InstallChromeIfRequired {
     if (-not (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
         Write-Host "Installing chrome..."
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile $workingDir\ChromeSetup.exe
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile "$workingDir\ChromeSetup.exe"
         & $workingDir\ChromeSetup.exe /silent /install
         WaitForProcess -ProcessName "ChromeSetup"
     }
@@ -148,9 +148,19 @@ function InstallChromeIfRequired {
 function InstallDokanyIfRequired($DokanyDir) {
     if (-not (Test-Path "$DokanyDir")) {
         Write-Host "Installing Dokany..."
-        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
         & "$workingDir\DokanSetup.exe" /quiet /silent /verysilent
         WaitForProcess -ProcessName "DokanSetup"
+    }
+}
+
+function InstallNiceDcvIfRequired {
+    $niceDcvInstalled = Get-Service -Name "DCV Server" `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($niceDcvInstalled)) {
+        Invoke-WebRequest "https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/nice-dcv-server-x64-Release-2021.2-11048.msi" -outfile "$workingDir\nice-dcv-server-x64-Release-2021.2-11048.msi"
+        Start-Process -FilePath "$workingDir\nice-dcv-server-x64-Release-2021.2-11048.msi" -ArgumentList "ADDLOCAL=ALL /quiet /norestart /l*v $workingDir\nice_dcv_install.log" -Wait -PassThru
     }
 }
 
@@ -238,8 +248,8 @@ $pythonDir = "c:\python"
 $dokanyDir = "C:\Program Files\Dokan\Dokan Library-1.5.0"
 $initLog = "$workingDir\log.txt"
 
-$instanceId = Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id
-$region = Invoke-RestMethod -uri http://169.254.169.254/latest/dynamic/instance-identity/document | ForEach-Object { $_.region }
+$instanceId = Invoke-RestMethod http://169.254.169.254/latest/meta-data/instance-id
+$region = Invoke-RestMethod http://169.254.169.254/latest/dynamic/instance-identity/document | ForEach-Object { $_.region }
 $env:AWS_ACCESS_KEY_ID = "{{AWS_ACCESS_KEY_ID}}"
 $env:AWS_SECRET_ACCESS_KEY = "{{AWS_SECRET_ACCESS_KEY}}"
 $env:AWS_DEFAULT_REGION = "$region"
@@ -286,6 +296,9 @@ InstallChromeIfRequired
 
 Write-Host "Installing Dokany if required..."
 InstallDokanyIfRequired -DokanyDir $dokanyDir
+
+Write-Host "Installing NICE DCV if required..."
+InstallNiceDcvIfRequired
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
