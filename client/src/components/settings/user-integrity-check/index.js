@@ -562,7 +562,7 @@ class UserIntegrityCheck extends React.Component {
                             })
                           }
                           mode="combobox"
-                          size="large"
+                          size="medium"
                           style={{flex: 1}}
                           allowClear
                           disabled={actionInProgress || !!fieldParentLink}
@@ -639,7 +639,7 @@ class UserIntegrityCheck extends React.Component {
                           styles.input
                         )
                       }
-                      size="large"
+                      size="medium"
                       style={{width: '100%'}}
                       value={
                         userMetadata.hasOwnProperty(column)

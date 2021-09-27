@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,20 +107,21 @@ class SettingsForm extends React.Component {
     const activeTab = match.params.activeTab;
     return (
       <Row
-        // gutter={16}
         type="flex"
-        wrap
-        // justify="center"
         className={styles.rowMenu}
       >
         <Menu
           mode="horizontal"
+          disabledOverflow
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}
         >
           {
             this.tabs.map(tab => (
-              <Menu.Item key={tab.key}>
+              <Menu.Item
+                key={tab.key}
+                className={styles.menuItem}
+              >
                 <AdaptedLink
                   to={tab.path}
                   location={location}>

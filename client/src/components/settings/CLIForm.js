@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,12 +274,13 @@ export default class CLIForm extends React.Component {
         </Row>
         <div style={{backgroundColor: '#ddd', height: 1, width: '100%'}} />
         <Row style={{fontSize: 'large', marginBottom: 10}}>Access keys:</Row>
-        <Row>
+        <Row align="middle">
           <b>Valid till: </b>
           <DatePicker
             className="valid-till-date-picker"
             allowClear={false}
             onChange={onValidTillChanged}
+            style={{marginLeft: '5px'}}
             value={this.state.cli.validTill} />
           <Button
             id="generate-access-key-button"

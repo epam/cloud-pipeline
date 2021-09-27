@@ -384,11 +384,17 @@ class ImportUsersButton extends React.Component {
           beforeUpload={this.onFileSelected}
           showUploadList={false}
         >
-          <div onClick={(event) => {
-            if (event?.target?.classList.contains('ant-dropdown-trigger')) {
-              event.stopPropagation();
-            }
-          }}>
+          <div
+            className={styles.dropdownBtnContainer}
+            onClick={(event) => {
+              const {classList} = event.target;
+              if (classList && (classList.contains('ant-dropdown-trigger') ||
+                classList.contains('ant-dropdown-menu-title-content')
+              )) {
+                event.stopPropagation();
+              }
+            }}
+          >
             <Dropdown.Button
               disabled={disabled || pending}
               size={size}

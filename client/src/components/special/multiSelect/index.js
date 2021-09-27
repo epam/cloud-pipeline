@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {DownOutlined} from '@ant-design/icons';
 import {Input, Dropdown, Checkbox, Tag, Spin} from 'antd';
-import styles from './styles.css';
+import styles from './multiSelect.css';
 
 class MultiSelect extends React.Component {
   state = {
