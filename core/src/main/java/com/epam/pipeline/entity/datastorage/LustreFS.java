@@ -26,4 +26,5 @@ public class LustreFS {
     private String status;
     private String mountPath;
     private String mountOptions;
+    private Integer capacityGb;
 }

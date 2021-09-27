@@ -34,6 +34,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.NetworkConfiguration;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -88,6 +89,17 @@ public class LustreFSManager {
                 .map(fs -> convert(fs, region.getRegionCode()))
                 .orElseThrow(() -> new LustreFSException(
                         messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
+    }
+
+    public Optional<LustreFS> findLustreFS(final FileShareMount share) {
+        final AwsRegion region = getAwsRegion(regionManager.load(share.getRegionId()));
+        final DescribeFileSystemsResult result = buildFsxClient(region)
+            .describeFileSystems(new DescribeFileSystemsRequest().withNextToken(null));
+        final String regionCode = region.getRegionCode();
+        return ListUtils.emptyIfNull(result.getFileSystems()).stream()
+            .filter(fs -> getLustreMountPath(fs, regionCode).equals(share.getMountRoot()))
+            .map(fs -> convert(fs, regionCode))
+            .findAny();
     }
 
     public LustreFS deleteLustreFs(final Long runId) {
@@ -198,11 +210,16 @@ public class LustreFSManager {
     private LustreFS convert(final FileSystem lustre, final String region) {
         return LustreFS.builder()
                 .id(lustre.getFileSystemId())
-                .mountPath(String.format(LUSTRE_MOUNT_TEMPLATE, getMountPath(lustre, region),
-                        lustre.getLustreConfiguration().getMountName()))
+                .mountPath(getLustreMountPath(lustre, region))
                 .status(lustre.getLifecycle())
                 .mountOptions(preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_MOUNT_OPTIONS))
+                .capacityGb(lustre.getStorageCapacity())
                 .build();
+    }
+
+    private String getLustreMountPath(final FileSystem lustre, final String region) {
+        return String.format(LUSTRE_MOUNT_TEMPLATE, getMountPath(lustre, region),
+                             lustre.getLustreConfiguration().getMountName());
     }
 
     private String getMountPath(final FileSystem lustre, final String region) {

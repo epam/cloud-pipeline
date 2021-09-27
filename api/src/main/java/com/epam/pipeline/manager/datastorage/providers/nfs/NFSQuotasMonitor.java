@@ -22,6 +22,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
@@ -33,6 +34,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,12 +58,14 @@ public class NFSQuotasMonitor {
 
     private static final int GB_TO_BYTES = 1024 * 1024 * 1024;
     private static final String SIZE_QUOTA_GB = "GB";
-    private static final String SIZE_QUOTA_PERCENTS = "%";
+    private static final String SIZE_QUOTA_PERCENTS = "PERCENT";
+    private static final int PERCENTS_MULTIPLIER = 100;
 
     private final DataStorageManager dataStorageManager;
     private final SearchManager searchManager;
     private final MetadataManager metadataManager;
     private final FileShareMountManager fileShareMountManager;
+    private final LustreFSManager lustreManager;
     private final MessageHelper messageHelper;
     private final String emailNotificationAction;
     private final String readOnlyAction;
@@ -72,6 +76,7 @@ public class NFSQuotasMonitor {
                             final SearchManager searchManager,
                             final MetadataManager metadataManager,
                             final FileShareMountManager fileShareMountManager,
+                            final LustreFSManager lustreManager,
                             final MessageHelper messageHelper,
                             final @Value("${data.storage.nfs.quota.action.email:EMAIL}")
                                         String emailNotificationAction,
@@ -85,6 +90,7 @@ public class NFSQuotasMonitor {
         this.searchManager = searchManager;
         this.metadataManager = metadataManager;
         this.fileShareMountManager = fileShareMountManager;
+        this.lustreManager = lustreManager;
         this.messageHelper = messageHelper;
         this.emailNotificationAction = emailNotificationAction;
         this.readOnlyAction = readOnlyAction;
@@ -124,14 +130,15 @@ public class NFSQuotasMonitor {
             .orElse(NFSStorageMountStatus.ACTIVE);
     }
 
-    private NFSStorageMountStatus mapNotificationToStatus(final Long storageId, final NFSQuotaNotificationEntry notification) {
+    private NFSStorageMountStatus mapNotificationToStatus(final Long storageId,
+                                                          final NFSQuotaNotificationEntry notification) {
         final Set<String> actions = notification.getActions();
         if (actions.contains(disableMountAction)) {
             return NFSStorageMountStatus.MOUNT_DISABLED;
         } else if (actions.contains(readOnlyAction)) {
             return NFSStorageMountStatus.READ_ONLY;
         } else {
-            log.warn("Unknown restrictive status in [{}], set RO mode to storage id={}", actions, storageId );
+            log.warn("Unknown restrictive status in [{}], set RO mode to storage id={}", actions, storageId);
             return NFSStorageMountStatus.READ_ONLY;
         }
     }
@@ -156,7 +163,11 @@ public class NFSQuotasMonitor {
                 log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN,
                                                   storage.getId()));
             } else if (MountType.LUSTRE.equals(shareType)) {
-                // todo load actual Lustre share max size
+                return lustreManager.findLustreFS(shareMount)
+                    .map(LustreFS::getCapacityGb)
+                    .map(maxSize -> maxSize * originalLimit / PERCENTS_MULTIPLIER * GB_TO_BYTES)
+                    .map(limit -> storageUsage.getSize() > limit)
+                    .orElse(false);
             }
             return false;
         } else {
