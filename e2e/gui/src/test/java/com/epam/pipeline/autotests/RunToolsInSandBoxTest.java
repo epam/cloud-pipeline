@@ -105,11 +105,18 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-495"})
     public void validateEndpointLink() {
-        runsMenu()
-                .show(getLastRunId())
-                .clickEndpoint()
-                .sleep(10, SECONDS)
-                .validateEndpointPage(C.LOGIN);
+        ToolPageAO endpointPage = null;
+        try {
+            endpointPage = runsMenu()
+                    .show(getLastRunId())
+                    .clickEndpoint()
+                    .sleep(10, SECONDS)
+                    .validateEndpointPage(C.LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
