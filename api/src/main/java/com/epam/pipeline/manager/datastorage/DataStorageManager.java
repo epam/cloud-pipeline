@@ -310,7 +310,7 @@ public class DataStorageManager implements SecuredEntityManager {
             .map(NFSDataStorage.class::cast)
             .orElseThrow(() -> new IllegalArgumentException(
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_SUPPORTED,
-                                         storage.getName(), storage.getType())));
+                                         storage.getId(), storage.getType())));
         if (!existingStorage.getMountStatus().equals(status)) {
             dataStorageDao.updateDataStorageMountStatus(existingStorage.getId(), status);
         }

@@ -630,6 +630,9 @@ public final class MessageConstants {
     public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
     public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
 
+    // Storage quotas
+    public static final String STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN = "storage.quota.nfs.percentage.warn";
+
     private MessageConstants() {
         // no-op
     }
