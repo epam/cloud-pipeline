@@ -141,7 +141,7 @@ class S3Storage {
       success = false;
       return Promise.reject(new Error(err.message));
     }
-    this._s3 = new AWS.S3();
+    this._s3 = new AWS.S3({signatureVersion: 'v4'});
     return success;
   };
 
