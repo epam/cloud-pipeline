@@ -98,7 +98,7 @@ public class NFSQuotasMonitor {
         this.notificationsKey = notificationsKey;
     }
 
-    @Scheduled(fixedDelayString = "${data.storage.nfs.storage.quota.poll:60000}")
+    @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
     public void controlQuotas() {
         log.info("Start NFS quotas processing...");
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS();
