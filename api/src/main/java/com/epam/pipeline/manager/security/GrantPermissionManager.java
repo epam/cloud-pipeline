@@ -32,7 +32,9 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -138,6 +140,8 @@ public class GrantPermissionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrantPermissionManager.class);
     private static final String OWNER = "OWNER";
+    private static final String WRITE = "WRITE";
+    private static final String READ = "READ";
 
     @Autowired private PermissionEvaluator permissionEvaluator;
 
@@ -442,23 +446,26 @@ public class GrantPermissionManager {
 
     public boolean storagePermission(Long storageId, String permissionName) {
         AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(storage.getOwner());
-        } else {
-            return permissionsHelper.isAllowed(permissionName, storage);
-        }
+        return storagePermission(storage, permissionName);
     }
 
     public boolean storagePermissions(Long storageId, List<String> permissionNames) {
         return Optional.ofNullable(permissionNames)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList("READ"))
+                .orElseGet(() -> Collections.singletonList(READ))
                 .stream()
                 .allMatch(permissionName -> storagePermission(storageId, permissionName));
     }
 
     public boolean storagePermissionByName(final String identifier, final String permissionName) {
         final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
+        return storagePermission(storage, permissionName);
+    }
+
+    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
+        if (forbiddenByMountStatus(storage, permissionName)) {
+            return false;
+        }
         if (permissionName.equals(OWNER)) {
             return isOwnerOrAdmin(storage.getOwner());
         } else {
@@ -472,10 +479,12 @@ public class GrantPermissionManager {
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !permissionsHelper.isAllowed("READ", storage)) {
+            if (action.isRead() && !permissionsHelper.isAllowed(READ, storage)
+                && !forbiddenByMountStatus(storage, READ)) {
                 return false;
             }
-            if (action.isWrite() && !permissionsHelper.isAllowed("WRITE", storage)) {
+            if (action.isWrite() && !permissionsHelper.isAllowed(WRITE, storage)
+                && !forbiddenByMountStatus(storage, WRITE)) {
                 return false;
             }
         }
@@ -484,8 +493,12 @@ public class GrantPermissionManager {
 
     public boolean hasDataStoragePathsPermission(final List<PathDescription> paths, final String permissionName) {
         return ListUtils.emptyIfNull(paths).stream()
-                .allMatch(path -> permissionsHelper.isAllowed(permissionName,
-                        entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId())));
+                .allMatch(path -> pathAllowed(permissionName, path));
+    }
+
+    private boolean pathAllowed(String permissionName, PathDescription path) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId());
+        return permissionsHelper.isAllowed(permissionName, storage);
     }
 
     public boolean checkStorageShared(Long storageId) {
@@ -1148,6 +1161,24 @@ public class GrantPermissionManager {
             LOGGER.error(String.format("An error occurred during event update for entity %s with ID %d",
                     entity.getAclClass(), entity.getId()), e);
         }
+    }
+
+    private boolean forbiddenByMountStatus(final AbstractSecuredEntity storage, final String permissionName) {
+        if (storage instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) storage).getMountStatus();
+            switch (mountStatus) {
+                case MOUNT_DISABLED:
+                    return true;
+                case READ_ONLY:
+                    if (permissionName.equals(WRITE)) {
+                        return true;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return false;
     }
 
     @Data

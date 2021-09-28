@@ -78,28 +78,28 @@ public class DataStorageApiService {
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(filterObject.id, 'READ')")
     @AclMaskList
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') AND "
-            + "hasPermission(filterObject, 'WRITE'))")
+    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject.id, 'READ') AND "
+            + "@grantPermissionManager.storagePermission(filterObject.id, 'WRITE'))")
     @AclMaskList
     public List<AbstractDataStorage> getWritableStorages() {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
-            + "hasPermission(filterObject.storage, 'WRITE'))")
+    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject.storage.id, 'READ') OR "
+            + "@grantPermissionManager.storagePermission(filterObject.storage.id, 'WRITE'))")
     @AclMaskDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') OR "
-            + "hasPermission(filterObject, 'WRITE'))")
+    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject.id, 'READ') OR "
+            + "@grantPermissionManager.storagePermission(filterObject.id, 'WRITE'))")
     @AclMaskList
     public List<AbstractDataStorage> getAvailableStorages() {
         return dataStorageManager.getDataStorages();
@@ -111,13 +111,13 @@ public class DataStorageApiService {
         return dataStorageManager.load(id);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(returnObject.id, 'READ')")
     @AclMask
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         return dataStorageManager.loadByNameOrId(identifier);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(returnObject.id, 'READ')")
     @AclMask
     public AbstractDataStorage loadByPathOrId(final String identifier) {
         return dataStorageManager.loadByPathOrId(identifier);
