@@ -25,6 +25,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
@@ -42,7 +43,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     private final String currentDate = LocalDate.now().toString();
     private final String infoNotification = format("info_notification-%s", currentDate);
     private final String infoNotificationBodyText = "info_notification_body_text";
-    private final String infoEditedTitle = "info_edited";
+    private final String infoEditedTitle = format("info_edited-%s", currentDate);
     private final String infoEditedBodyText = "info_edited_body_text";
     private final String warningNotification = format("warning_notification-%s", currentDate);
     private final String warningNotificationBodyText = "warning_notification_body_text";
@@ -51,16 +52,8 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     private final String criticalNotification = format("critical_notification-%s", currentDate);
     private final String criticalNotificationBodyText = "critical_notification_body_text";
     private final String deletionMessageFormat = "Are you sure you want to delete notification '%s'?";
-    private List<String> initialEntries;
-
-    @BeforeClass
-    public void keptExistingEntries() {
-        open(C.ROOT_ADDRESS);
-        initialEntries = navigationMenu()
-                .settings()
-                .switchToSystemEvents()
-                .getAllEntriesNames();
-    }
+    private final List<String> testNotifications = Arrays.asList(infoNotification, infoEditedTitle,
+                            warningNotification, warningActiveNotification, criticalNotification);
 
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
@@ -68,7 +61,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         navigationMenu()
                 .settings()
                 .switchToSystemEvents()
-                .deleteTestEntries(initialEntries);
+                .deleteTestEntries(testNotifications);
     }
 
     @Test(dependsOnMethods = "validateRoleModelForNotifications")
