@@ -138,7 +138,7 @@ public class NFSQuotasMonitor {
         } else if (actions.contains(readOnlyAction)) {
             return NFSStorageMountStatus.READ_ONLY;
         } else {
-            log.warn("Unknown restrictive status in [{}], set RO mode to storage id={}", actions, storageId);
+            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_RESTRICTION, actions, storageId));
             return NFSStorageMountStatus.READ_ONLY;
         }
     }
@@ -157,22 +157,30 @@ public class NFSQuotasMonitor {
             final long limitBytes = (long) (originalLimit * GB_TO_BYTES);
             return storageUsage.getSize() > limitBytes;
         } else if (SIZE_QUOTA_PERCENTS.equals(notificationType)) {
-            final FileShareMount shareMount = fileShareMountManager.load(storage.getFileShareMountId());
-            final MountType shareType = shareMount.getMountType();
-            if (MountType.NFS.equals(shareType)) {
-                log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN,
-                                                  storage.getId()));
-            } else if (MountType.LUSTRE.equals(shareType)) {
-                return lustreManager.findLustreFS(shareMount)
-                    .map(LustreFS::getCapacityGb)
-                    .map(maxSize -> maxSize * originalLimit / PERCENTS_MULTIPLIER * GB_TO_BYTES)
-                    .map(limit -> storageUsage.getSize() > limit)
-                    .orElse(false);
-            }
-            return false;
+            return excessPercentageLimit(storage, originalLimit, storageUsage);
         } else {
+            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_TYPE, notificationType));
             return false;
         }
+    }
+
+    private boolean excessPercentageLimit(final NFSDataStorage storage, final Double originalLimit,
+                                          final StorageUsage storageUsage) {
+        final FileShareMount shareMount = fileShareMountManager.load(storage.getFileShareMountId());
+        final MountType shareType = shareMount.getMountType();
+        if (MountType.NFS.equals(shareType)) {
+            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN,
+                                              storage.getId()));
+        } else if (MountType.LUSTRE.equals(shareType)) {
+            return lustreManager.findLustreFS(shareMount)
+                .map(LustreFS::getCapacityGb)
+                .map(maxSize -> maxSize * originalLimit / PERCENTS_MULTIPLIER * GB_TO_BYTES)
+                .map(limit -> storageUsage.getSize() > limit)
+                .orElse(false);
+        } else {
+            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE, shareType));
+        }
+        return false;
     }
 
     private Map<Long, NFSQuota> loadStorageQuotas(final List<NFSDataStorage> storages) {

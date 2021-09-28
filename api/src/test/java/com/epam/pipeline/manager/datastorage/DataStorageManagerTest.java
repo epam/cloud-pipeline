@@ -410,7 +410,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         assertNfsMountStatus(saved, NFSStorageMountStatus.ACTIVE);
         assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.ACTIVE);
         final AbstractDataStorage updated = storageManager.updateMountStatus(saved, NFSStorageMountStatus.READ_ONLY);
-        assertNfsMountStatus(updated, NFSStorageMountStatus.ACTIVE);
+        assertNfsMountStatus(updated, NFSStorageMountStatus.READ_ONLY);
         assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.READ_ONLY);
     }
 

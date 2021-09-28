@@ -632,6 +632,10 @@ public final class MessageConstants {
 
     // Storage quotas
     public static final String STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN = "storage.quota.nfs.percentage.warn";
+    public static final String STORAGE_QUOTA_UNKNOWN_RESTRICTION = "storage.quota.unknown.restriction";
+    public static final String STORAGE_QUOTA_UNKNOWN_TYPE = "storage.quota.unknown.type";
+    public static final String STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE =
+        "storage.quota.unknown.share.type.for.percentage";
 
     private MessageConstants() {
         // no-op

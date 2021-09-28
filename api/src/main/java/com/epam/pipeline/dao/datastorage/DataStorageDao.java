@@ -127,7 +127,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateDataStorageMountStatus(final Long storageId, final NFSStorageMountStatus mountStatus) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(DataStorageParameters.DATASTORAGE_ID.name(),storageId);
+        params.addValue(DataStorageParameters.DATASTORAGE_ID.name(), storageId);
         params.addValue(DataStorageParameters.MOUNT_STATUS.name(), mountStatus.name());
         getNamedParameterJdbcTemplate().update(updateDataStorageMountStatusQuery, params);
     }

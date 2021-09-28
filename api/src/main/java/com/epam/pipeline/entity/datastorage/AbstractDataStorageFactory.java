@@ -37,7 +37,7 @@ public abstract class AbstractDataStorageFactory {
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
             List<String> allowedCidrs, Long regionId, Long fileShareMountId,
-            String kmsKey, String tempRole, boolean useAssumedCreds, final String mountStatus);
+            String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
         DataStorageType type = determineStorageType(vo, provider);

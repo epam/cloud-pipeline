@@ -313,6 +313,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                          storage.getId(), storage.getType())));
         if (!existingStorage.getMountStatus().equals(status)) {
             dataStorageDao.updateDataStorageMountStatus(existingStorage.getId(), status);
+            existingStorage.setMountStatus(status);
         }
         return existingStorage;
     }
