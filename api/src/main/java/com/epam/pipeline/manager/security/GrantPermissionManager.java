@@ -1168,9 +1168,11 @@ public class GrantPermissionManager {
             final NFSStorageMountStatus mountStatus = ((NFSDataStorage) storage).getMountStatus();
             switch (mountStatus) {
                 case MOUNT_DISABLED:
+                    storage.setMask(AclPermission.ALL_DENYING_PERMISSIONS.getMask());
                     return true;
                 case READ_ONLY:
-                    if (permissionName.equals(WRITE)) {
+                    storage.setMask(AclPermission.READ.getMask());
+                    if (!permissionName.equals(READ)) {
                         return true;
                     }
                     break;

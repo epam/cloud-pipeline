@@ -39,7 +39,6 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -192,9 +191,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
         final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
         assertThat(returnedDataStorages).hasSize(1).contains(nfsDataStorage);
-        final Integer entityMask = returnedDataStorages.get(0).getMask();
-        Assert.assertTrue(hasMask(entityMask, AclPermission.READ));
-        Assert.assertFalse(hasMask(entityMask, AclPermission.WRITE));
+        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
