@@ -64,6 +64,8 @@ import {
   METADATA_PANEL_KEY
 } from '../../special/splitPanel';
 import Metadata from '../../special/metadata/Metadata';
+import PreviewModal from '../../search/preview/preview-modal';
+import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
 import UploadButton from '../../special/UploadButton';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -142,7 +144,10 @@ export default class DataStorage extends React.Component {
     pagePerformed: false,
     selectedFile: null,
     editFile: null,
-    shareStorageDialogVisible: false
+    shareStorageDialogVisible: false,
+    previewModal: null,
+    previewAvailable: false,
+    previewPending: false
   };
 
   @observable
@@ -929,6 +934,100 @@ export default class DataStorage extends React.Component {
     this.setState({editFile: null});
   };
 
+  renderPreviewModal = () => {
+    const {previewModal} = this.state;
+    if (!previewModal) {
+      return null;
+    }
+    return (
+      <PreviewModal
+        preview={previewModal}
+        onClose={this.closePreviewModal}
+        lightMode
+      />
+    );
+  };
+
+  metadataRenderFn = () => {
+    const {selectedFile} = this.state;
+    if (!selectedFile) {
+      return null;
+    }
+    const extension = (selectedFile.path || '')
+      .split('.')
+      .pop()
+      .toLowerCase();
+    if (extension === 'vsi') {
+      return (
+        <Row
+          key="preview body"
+          style={{
+            color: '#777',
+            marginTop: 5,
+            marginBottom: 5
+          }}
+        >
+          VSI file selected.
+          <Button
+            onClick={this.openPreviewModal}
+            size="small"
+            style={{
+              border: 'none',
+              color: '#108ee9',
+              padding: '5px'
+            }}
+          >
+            Click
+          </Button>
+          to view VSI file content.
+        </Row>
+      );
+    }
+    return null;
+  };
+
+  openPreviewModal = () => {
+    const {storageId} = this.props;
+    const {selectedFile} = this.state;
+    if (storageId && selectedFile) {
+      this.setState({previewModal: {
+        id: selectedFile.path,
+        parentId: storageId,
+        type: 'S3_FILE'
+      }});
+    }
+  };
+
+  closePreviewModal = () => {
+    this.setState({previewModal: null});
+  };
+
+  checkPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    const {storageId} = this.props;
+    const {tilesFolder} = getTilesInfo(file.path);
+    if (tilesFolder) {
+      this.setState({previewPending: true}, () => {
+        getTiles(storageId, tilesFolder)
+          .then((tiles) => {
+            if (tiles) {
+              this.setState({
+                previewPending: false,
+                previewAvailable: true
+              });
+            } else {
+              this.setState({
+                previewPending: false,
+                previewAvailable: false
+              });
+            }
+          });
+      });
+    }
+  };
+
   getStorageItemsTable = () => {
     const getList = () => {
       const items = [];
@@ -1169,9 +1268,17 @@ export default class DataStorage extends React.Component {
         selectedItems: []
       });
     } else if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
+      const extension = (item.path || '')
+        .split('.')
+        .pop()
+        .toLowerCase();
       this.setState({
         selectedFile: item,
         metadata: true
+      }, () => {
+        if (extension === 'vsi') {
+          this.checkPreviewAvailability(item);
+        }
       });
     }
   };
@@ -1793,6 +1900,7 @@ export default class DataStorage extends React.Component {
           {
             this.showMetadata &&
             <Metadata
+              pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
               readOnly={!roleModel.isOwner(this.props.info.value)}
               downloadable={!this.props.info.value.sensitive}
@@ -1800,6 +1908,11 @@ export default class DataStorage extends React.Component {
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
+              metadataRenderFn={
+                this.state.previewAvailable
+                  ? this.metadataRenderFn
+                  : undefined
+              }
               entityName={
                 this.state.selectedFile
                   ? this.state.selectedFile.name
@@ -2027,7 +2140,9 @@ export default class DataStorage extends React.Component {
           downloadable={!this.props.info.value.sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
-          save={this.saveEditableFile} />
+          save={this.saveEditableFile}
+        />
+        {this.renderPreviewModal()}
       </div>
     );
   }

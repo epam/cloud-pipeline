@@ -124,6 +124,17 @@ function getTiles (storageId, folder) {
   });
 }
 
+function getTilesInfo (file) {
+  const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
+  if (e && e.length === 4) {
+    return {
+      tilesFolder: `${e[1] || ''}${e[2]}.tiles`,
+      folder: `${e[1] || ''}${e[2]}`
+    };
+  }
+  return null;
+};
+
 @inject('dataStorageCache', 'dataStorages')
 @observer
 class VSIPreview extends React.Component {
@@ -300,11 +311,9 @@ class VSIPreview extends React.Component {
         pending: true,
         fullscreen: false
       }, () => {
-        const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
-        if (e && e.length === 4) {
-          const tilesFolder = `${e[1] || ''}${e[2]}.tiles`;
-          const folder = `${e[1] || ''}${e[2]}`;
-          getTiles(storageId, tilesFolder)
+        const tilesInfo = getTilesInfo(file);
+        if (tilesInfo) {
+          getTiles(storageId, tilesInfo.tilesFolder)
             .then(tiles => {
               if (tiles) {
                 this.setState({
@@ -313,7 +322,7 @@ class VSIPreview extends React.Component {
                   pending: false
                 });
               } else {
-                getFolderContents(storageId, folder)
+                getFolderContents(storageId, tilesInfo.folder)
                   .then(items => {
                     const files = items
                       .filter(item => /^file$/i.test(item.type))
@@ -809,3 +818,4 @@ VSIPreview.defaultProps = {
 };
 
 export default VSIPreview;
+export {getTiles, getTilesInfo};

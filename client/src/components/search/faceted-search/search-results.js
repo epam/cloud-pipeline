@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {Alert, Icon, Spin} from 'antd';
-import Preview from '../preview';
+import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
 import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
@@ -236,12 +236,6 @@ class SearchResults extends React.Component {
     this.setState({preview: undefined});
   };
 
-  onPreviewWrapperClick = (event) => {
-    if (event && event.target === event.currentTarget) {
-      this.closePreview();
-    }
-  };
-
   navigate = (item) => (e) => {
     if (this.props.disabled) {
       return;
@@ -265,24 +259,11 @@ class SearchResults extends React.Component {
       return null;
     }
     return (
-      <div
-        className={styles.previewWrapper}
-        onClick={(e) => this.onPreviewWrapperClick(e)}
-      >
-        <div
-          className={styles.preview}
-        >
-          <Preview
-            item={preview}
-            lightMode
-          />
-          <Icon
-            type="close"
-            className={styles.closePreview}
-            onClick={this.onPreviewWrapperClick}
-          />
-        </div>
-      </div>
+      <PreviewModal
+        lightMode
+        preview={preview}
+        onClose={this.closePreview}
+      />
     );
   };
 
