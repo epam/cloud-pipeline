@@ -219,7 +219,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
     titleStyle: PropTypes.object,
     removeAllAvailable: PropTypes.bool,
     restrictedKeys: PropTypes.array,
-    extraKeys: PropTypes.arrayOf(PropTypes.string)
+    extraKeys: PropTypes.arrayOf(PropTypes.string),
+    pending: PropTypes.bool,
+    metadataRenderFn: PropTypes.func
   };
 
   static defaultProps = {
@@ -1335,7 +1337,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
       return previewRes;
     }
 
-    const {preview, truncated, noContent, error, mayBeBinary} = this.filePreview;
+    const {
+      preview,
+      truncated,
+      noContent,
+      error,
+      mayBeBinary
+    } = this.filePreview;
+    const {metadataRenderFn} = this.props;
     if (error) {
       previewRes.push(
         <div key="body" style={{width: '100%', flex: 1, overflowY: 'auto', paddingTop: 10}}>
@@ -1343,6 +1352,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
         </div>
       );
       return previewRes;
+    }
+    if (metadataRenderFn) {
+      return metadataRenderFn();
     }
     if (!mayBeBinary) {
       previewRes.push(
@@ -1601,7 +1613,10 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   render () {
-    if (this.props.metadata.pending && !this.props.metadata.loaded) {
+    if (
+      this.props.pending ||
+      (this.props.metadata.pending && !this.props.metadata.loaded)
+    ) {
       return <LoadingView />;
     }
     return (

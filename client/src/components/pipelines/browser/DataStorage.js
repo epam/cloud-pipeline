@@ -64,6 +64,8 @@ import {
   METADATA_PANEL_KEY
 } from '../../special/splitPanel';
 import Metadata from '../../special/metadata/Metadata';
+import PreviewModal from '../../search/preview/preview-modal';
+import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
 import UploadButton from '../../special/UploadButton';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -142,7 +144,10 @@ export default class DataStorage extends React.Component {
     pagePerformed: false,
     selectedFile: null,
     editFile: null,
-    shareStorageDialogVisible: false
+    shareStorageDialogVisible: false,
+    previewModal: null,
+    previewAvailable: false,
+    previewPending: false
   };
 
   @observable
@@ -239,9 +244,16 @@ export default class DataStorage extends React.Component {
       hide();
       message.error(request.error, 5);
     } else {
-      if (this.props.info.value.policySupported && storage.serviceType !== ServiceTypes.fileShare && (storage.longTermStorageDuration !== undefined ||
-      storage.shortTermStorageDuration !== undefined ||
-      storage.backupDuration !== undefined || !storage.versioningEnabled)) {
+      if (
+        this.props.info.value.policySupported &&
+        storage.serviceType !== ServiceTypes.fileShare &&
+        (
+          storage.longTermStorageDuration !== undefined ||
+          storage.shortTermStorageDuration !== undefined ||
+          storage.backupDuration !== undefined ||
+          !storage.versioningEnabled
+        )
+      ) {
         const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.props.storageId,
@@ -514,7 +526,7 @@ export default class DataStorage extends React.Component {
     if (clearSelection) {
       this.setState({
         renameItem: null,
-        selectedFile: null,
+        selectedFile: null
       });
     } else {
       this.setState({renameItem: null});
@@ -610,7 +622,7 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  saveEditableFile = async(path, content) => {
+  saveEditableFile = async (path, content) => {
     const currentItemContent = this.props.dataStorageCache.getContent(
       this.props.storageId,
       this.state.selectedFile.path,
@@ -625,7 +637,7 @@ export default class DataStorage extends React.Component {
       message.error(request.error, 5);
     } else {
       await this.props.storage.fetch();
-			await currentItemContent.fetch();
+      await currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
     }
@@ -929,6 +941,95 @@ export default class DataStorage extends React.Component {
     this.setState({editFile: null});
   };
 
+  renderPreviewModal = () => {
+    const {previewModal} = this.state;
+    if (!previewModal) {
+      return null;
+    }
+    return (
+      <PreviewModal
+        preview={previewModal}
+        onClose={this.closePreviewModal}
+        lightMode
+      />
+    );
+  };
+
+  metadataRenderFn = () => {
+    const {selectedFile} = this.state;
+    if (!selectedFile) {
+      return null;
+    }
+    const extension = (selectedFile.path || '')
+      .split('.')
+      .pop()
+      .toLowerCase();
+    if (extension === 'vsi' || extension === 'mrxs') {
+      return (
+        <Row
+          key="preview body"
+          style={{
+            color: '#777',
+            marginTop: 5,
+            marginBottom: 5
+          }}
+        >
+          <span
+            onClick={this.openPreviewModal}
+            className={styles.metadataPreviewBtn}
+          >
+            Click
+          </span>
+          {`to preview ${extension.toUpperCase()} file.`}
+        </Row>
+      );
+    }
+    return null;
+  };
+
+  openPreviewModal = () => {
+    const {storageId} = this.props;
+    const {selectedFile} = this.state;
+    if (storageId && selectedFile) {
+      this.setState({previewModal: {
+        id: selectedFile.path,
+        name: selectedFile.name,
+        parentId: storageId,
+        type: 'S3_FILE'
+      }});
+    }
+  };
+
+  closePreviewModal = () => {
+    this.setState({previewModal: null});
+  };
+
+  checkPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    const {storageId} = this.props;
+    const {tilesFolder} = getTilesInfo(file.path);
+    if (tilesFolder) {
+      this.setState({previewPending: true}, () => {
+        getTiles(storageId, tilesFolder)
+          .then((tiles) => {
+            if (tiles) {
+              this.setState({
+                previewPending: false,
+                previewAvailable: true
+              });
+            } else {
+              this.setState({
+                previewPending: false,
+                previewAvailable: false
+              });
+            }
+          });
+      });
+    }
+  };
+
   getStorageItemsTable = () => {
     const getList = () => {
       const items = [];
@@ -1064,7 +1165,7 @@ export default class DataStorage extends React.Component {
               content={
                 <div className={styles.miewPopoverContainer}>
                   <EmbeddedMiew
-                    previewMode={true}
+                    previewMode
                     s3item={{
                       storageId: this.props.storageId,
                       path: item.path,
@@ -1169,9 +1270,17 @@ export default class DataStorage extends React.Component {
         selectedItems: []
       });
     } else if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
+      const extension = (item.path || '')
+        .split('.')
+        .pop()
+        .toLowerCase();
       this.setState({
         selectedFile: item,
         metadata: true
+      }, () => {
+        if (extension === 'vsi' || extension === 'mrxs') {
+          this.checkPreviewAvailability(item);
+        }
       });
     }
   };
@@ -1497,14 +1606,14 @@ export default class DataStorage extends React.Component {
                 this.props.info.value.type !== 'NFS' &&
                 this.props.info.value.storagePolicy &&
                 this.props.info.value.storagePolicy.versioningEnabled
-                ? (
-                  <Checkbox
-                    checked={this.showVersions}
-                    onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}>
-                    Show files versions
-                  </Checkbox>
-                ) : undefined
+                  ? (
+                    <Checkbox
+                      checked={this.showVersions}
+                      onChange={this.showFilesVersionsChanged}
+                      style={{marginLeft: 10}}>
+                      Show files versions
+                    </Checkbox>
+                  ) : undefined
               }
             </div>
             <div style={{paddingRight: 8}}>
@@ -1685,7 +1794,7 @@ export default class DataStorage extends React.Component {
               sensitive={this.props.info.value.sensitive}
               displayTextEditableField={
                 <span>
-                    {this.props.info.value.name}
+                  {this.props.info.value.name}
                   <AWSRegionTag
                     className={styles.storageRegion}
                     darkMode
@@ -1695,7 +1804,7 @@ export default class DataStorage extends React.Component {
                     regionId={this.props.info.value.regionId}
                     style={{marginLeft: 5, fontSize: 'medium'}}
                   />
-                  </span>
+                </span>
               }
               subject={this.props.info.value}
             />
@@ -1762,8 +1871,8 @@ export default class DataStorage extends React.Component {
               }
               {
                 this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined ?
-                  (
+                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined
+                  ? (
                     <Row>
                       <b>Short-Term Storage duration: </b>
                       {`${this.props.info.value.storagePolicy.shortTermStorageDuration} days`}
@@ -1772,8 +1881,8 @@ export default class DataStorage extends React.Component {
               }
               {
                 this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined ?
-                  (
+                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined
+                  ? (
                     <Row>
                       <b>Long-Term Storage duration: </b>
                       {`${this.props.info.value.storagePolicy.longTermStorageDuration} days`}
@@ -1793,6 +1902,7 @@ export default class DataStorage extends React.Component {
           {
             this.showMetadata &&
             <Metadata
+              pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
               readOnly={!roleModel.isOwner(this.props.info.value)}
               downloadable={!this.props.info.value.sensitive}
@@ -1800,6 +1910,11 @@ export default class DataStorage extends React.Component {
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
+              metadataRenderFn={
+                this.state.previewAvailable
+                  ? this.metadataRenderFn
+                  : undefined
+              }
               entityName={
                 this.state.selectedFile
                   ? this.state.selectedFile.name
@@ -1933,10 +2048,11 @@ export default class DataStorage extends React.Component {
                     <Input
                       autosize
                       type="textarea"
-                      value={this._shareStorageLink.value}/>
+                      value={this._shareStorageLink.value}
+                    />
                   )
                   : <LoadingView />)
-                : <Alert message={this._shareStorageLink.error} type="error"/>)
+                : <Alert message={this._shareStorageLink.error} type="error" />)
             }
             {
               this.dataStorageShareLinkDisclaimer &&
@@ -2027,7 +2143,9 @@ export default class DataStorage extends React.Component {
           downloadable={!this.props.info.value.sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
-          save={this.saveEditableFile} />
+          save={this.saveEditableFile}
+        />
+        {this.renderPreviewModal()}
       </div>
     );
   }

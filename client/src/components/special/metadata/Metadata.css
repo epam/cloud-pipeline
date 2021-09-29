@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-.value-field-column {
-
-}
-
 .actions-column {
   width: 100px;
 }
@@ -78,10 +74,6 @@
 
 .new-key-row button {
   margin-left: 5px;
-}
-
-.split-pane {
-
 }
 
 .disabled-textarea {

@@ -53,47 +53,6 @@
   display: flex;
 }
 
-.container .preview-wrapper {
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  left: 0;
-  top: 0;
-  right: 100%;
-  z-index: 3;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-
-.container .preview {
-  max-width: 60%;
-  max-height: calc(100vh - 135px);
-  cursor: default;
-  flex: 1;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: white;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-}
-
-.container .preview .close-preview {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  cursor: pointer;
-  color: #666;
-  font-size: large;
-}
-
-.container .preview .close-preview:hover {
-  color: #333;
-}
 
 .container .pagination {
   height: 32px;
