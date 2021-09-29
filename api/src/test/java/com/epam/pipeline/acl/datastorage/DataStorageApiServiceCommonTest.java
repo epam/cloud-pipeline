@@ -115,7 +115,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         initAclEntity(anotherS3bucket);
-        mockS3bucket(anotherS3bucket);
+        mockStorage(anotherS3bucket);
         doReturn(mutableListOf(s3bucket, anotherS3bucket)).when(mockDataStorageManager).getDataStorages();
 
         assertThat(dataStorageApiService.getDataStorages()).hasSize(1).contains(s3bucket);
@@ -202,7 +202,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         initAclEntity(anotherS3bucket, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.NO_READ.getMask()),
                 new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        mockS3bucket(anotherS3bucket);
+        mockStorage(anotherS3bucket);
         doReturn(mutableListOf(s3bucket, anotherS3bucket)).when(mockDataStorageManager).getDataStorages();
 
         assertThat(dataStorageApiService.getWritableStorages()).hasSize(1).contains(s3bucket);
@@ -297,7 +297,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         initAclEntity(anotherS3bucket);
-        mockS3bucket(anotherS3bucket);
+        mockStorage(anotherS3bucket);
         doReturn(mutableListOf(s3bucket, anotherS3bucket)).when(mockDataStorageManager).getDataStorages();
 
         final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
@@ -343,7 +343,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     public void shouldDenyLoadDataStorageWhenStoragePermissionIsNotGranted() {
         initAclEntity(s3bucket);
         doReturn(s3bucket).when(mockDataStorageManager).load(ID);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.load(ID));
@@ -435,7 +435,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateDataStorageWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).update(dataStorageVO);
@@ -450,7 +450,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser
     public void shouldDenyUpdateDataStorageWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).update(dataStorageVO);
@@ -470,7 +470,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser
     public void shouldUpdatePolicyWhenPermissionIsGranted() {
         initAclEntity(notSharedS3bucket, AclPermission.OWNER);
-        mockS3bucket(notSharedS3bucket);
+        mockStorage(notSharedS3bucket);
         mockAuthUser(SIMPLE_USER);
         doReturn(notSharedS3bucket).when(mockDataStorageManager).updatePolicy(dataStorageVO);
 
@@ -481,7 +481,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser
     public void shouldDenyUpdatePolicyWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         doReturn(s3bucket).when(mockDataStorageManager).updatePolicy(dataStorageVO);
 
@@ -501,7 +501,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(username = SIMPLE_USER, roles = STORAGE_MANAGER_ROLE)
     public void shouldDeleteDataStorageWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).delete(ID, true);
@@ -513,7 +513,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(roles = STORAGE_MANAGER_ROLE)
     public void shouldDenyDeleteDataStorageWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).delete(ID, true);
@@ -525,7 +525,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser
     public void shouldDenyDeleteDataStorageWhenRoleIsNotGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
-        mockS3bucket(s3bucket);
+        mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).delete(ID, true);

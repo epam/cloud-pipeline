@@ -68,11 +68,11 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
                                           final AbstractDataStorage entity,
                                           final UserContext context) {
         mockAuthUser(user);
-        mockS3bucket(entity);
+        mockStorage(entity);
         mockUserContext(context);
     }
 
-    protected void mockS3bucket(final AbstractDataStorage entity) {
+    protected void mockStorage(final AbstractDataStorage entity) {
         doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, entity.getId());
     }
 

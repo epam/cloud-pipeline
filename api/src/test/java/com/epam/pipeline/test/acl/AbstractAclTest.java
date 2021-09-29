@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
@@ -98,6 +99,9 @@ public abstract class AbstractAclTest {
     @Autowired
     protected UserManager mockUserManager;
 
+    @Autowired
+    protected EntityManager mockEntityManager;
+
     protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
         initAclEntity(entity,
                 Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
@@ -141,6 +145,7 @@ public abstract class AbstractAclTest {
         doReturn(acl).when(aclService).createAcl(eq(entity));
         doReturn(acl).when(aclService).updateAcl(acl);
         doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());
+        doReturn(entity).when(mockEntityManager).load(entity.getAclClass(), entity.getId());
         return acl;
     }
 

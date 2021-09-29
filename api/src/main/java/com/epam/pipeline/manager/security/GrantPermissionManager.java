@@ -932,6 +932,9 @@ public class GrantPermissionManager {
 
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
             boolean includeInherited, List<Sid> sids) {
+        if (entity instanceof NFSDataStorage) {
+            return getActualMaskNFS((NFSDataStorage) entity);
+        }
         Acl child = aclService.getAcl(entity);
         //case for Runs and Nodes, that are not registered as ACL entities
         //check ownership
@@ -984,11 +987,26 @@ public class GrantPermissionManager {
         }
     }
 
+    private int getActualMaskNFS(final NFSDataStorage entity) {
+        final NFSStorageMountStatus status = entity.getMountStatus();
+        if (NFSStorageMountStatus.MOUNT_DISABLED.equals(status)) {
+            return AclPermission.ALL_DENYING_PERMISSIONS.getMask();
+        } else if (NFSStorageMountStatus.READ_ONLY.equals(status)) {
+            return AclPermission.READ.getMask();
+        } else {
+            return entity.getMask();
+        }
+    }
+
     private void filterChildren(int parentMask, List<? extends AbstractSecuredEntity> children,
             Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids) {
         ListUtils.emptyIfNull(children).forEach(child -> {
-            int mask = permissionsService
-                    .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
+            final int originalMask = getPermissionsMask(child, false, false, sids);
+            if (child instanceof NFSDataStorage) {
+                child.setMask(originalMask);
+                return;
+            }
+            final int mask = permissionsService.mergeParentMask(originalMask, parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
                 entitiesToRemove.putIfAbsent(child.getAclClass(), new HashSet<>());
                 entitiesToRemove.get(child.getAclClass()).add(child.getId());
