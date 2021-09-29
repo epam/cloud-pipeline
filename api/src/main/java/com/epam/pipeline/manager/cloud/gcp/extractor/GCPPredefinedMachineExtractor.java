@@ -20,11 +20,15 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
 import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.MachineType;
 import com.google.api.services.compute.model.MachineTypeList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -41,15 +45,19 @@ import java.util.stream.Collectors;
  * Extracts all available Google Cloud Provider predefined machines in a specific region.
  *
  * Retrieves machine family from a corresponding machine type name using one of the following patterns:
- * {prefix}-{instance_family}-{postfix}
  * {prefix}-{instance_family}
+ * {prefix}-{instance_family}-{postfix}
+ * {prefix}-{instance_family}-{number_of_gpus}g
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
 
+    private static final String FALLBACK_GCP_DEFAULT_GPU_TYPE = "a100";
+
     private final GCPClient gcpClient;
+    private final PreferenceManager preferenceManager;
 
     @Override
     public List<AbstractGCPObject> extract(final GCPRegion region) {
@@ -88,12 +96,24 @@ public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
                 final double memory = new BigDecimal((double) machineType.getMemoryMb() / 1024)
                         .setScale(2, RoundingMode.HALF_EVEN)
                         .doubleValue();
-                return Optional.of(GCPMachine.withCpu(name, family, cpu, memory, 0));
+                final int gpu = Optional.of(elements[2])
+                        .filter(it -> it.endsWith("g"))
+                        .map(it -> StringUtils.removeEnd(it, "g"))
+                        .map(NumberUtils::toInt)
+                        .orElse(0);
+                return gpu > 0
+                        ? Optional.of(GCPMachine.withGpu(name, family, cpu, memory, 0, gpu, getDefaultGpuType()))
+                        : Optional.of(GCPMachine.withCpu(name, family, cpu, memory, 0));
             } catch (NumberFormatException e) {
                 log.warn(String.format("GCP Machine Type name '%s' parsing has failed.", machineType), e);
                 return Optional.empty();
             }
         }
         return Optional.empty();
+    }
+
+    private String getDefaultGpuType() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.GCP_DEFAULT_GPU_TYPE))
+                .orElse(FALLBACK_GCP_DEFAULT_GPU_TYPE);
     }
 }

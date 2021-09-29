@@ -788,6 +788,8 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
             "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
+    public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
+            "gcp.default.gpu.type", "a100", GCP_GROUP, PreferenceValidators.isNotBlank);
 
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
