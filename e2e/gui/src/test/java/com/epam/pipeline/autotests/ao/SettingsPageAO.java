@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -277,10 +276,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     && $(byTitle(nextPage)).has(not(cssClass("ant-pagination-disabled")))) {
                 click(byTitle(nextPage));
             }
-            performIf(byXpath(format(
-                            ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)),exist,
-                entry -> removeEntry(getEntry(title))
-                );
+            performIf(byXpath(format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)),
+                    exist, entry -> removeEntry(getEntry(title))
+            );
         }
 
         public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{

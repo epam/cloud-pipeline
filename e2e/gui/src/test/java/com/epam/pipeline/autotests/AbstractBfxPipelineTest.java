@@ -25,8 +25,10 @@ import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.io.TemporaryFilesystem;
 import org.testng.ITest;
 import org.testng.ITestResult;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -38,6 +40,7 @@ import java.lang.reflect.Method;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -109,6 +112,13 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         );
     }
 
+    @AfterClass(alwaysRun=true)
+    public static void tearDownAfterClass() {
+        final TemporaryFilesystem tempFS = TemporaryFilesystem.getDefaultTmpFS();
+        tempFS.deleteTemporaryFiles();
+        getWebDriver().quit();
+    }
+
     private String getStatus(final int numericStatus) {
         String status;
         switch (numericStatus) {
@@ -129,10 +139,11 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         if ("true".equals(C.AUTH_TOKEN)) {
             if ("true".equalsIgnoreCase(C.IMPERSONATE_AUTH)) {
                 addExtension(C.EXTENSION_PATH);
+            } else {
+                Selenide.open(address);
+                Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
+                WebDriverRunner.getWebDriver().manage().addCookie(cookie);
             }
-            Selenide.open(address);
-            Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
-            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
         }
         Selenide.open(address);
 
