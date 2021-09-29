@@ -39,6 +39,14 @@
     "prefix": "Memory-optimized Instance Ram",
     "group": "RAM"
   },
+  "cpu_ondemand_highgpu": {
+    "prefix": "A2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_highgpu": {
+    "prefix": "A2 Instance Ram",
+    "group": "RAM"
+  },
   "cpu_ondemand_micro": {
     "prefix": "Micro Instance",
     "group": "F1Micro"
@@ -77,6 +85,10 @@
   },
   "gpu_ondemand_k80": {
     "prefix": "Nvidia Tesla K80 GPU running",
+    "group": "GPU"
+  },
+  "gpu_ondemand_a100": {
+    "prefix": "Nvidia Tesla A100 GPU running",
     "group": "GPU"
   },
   "cpu_preemptible_standard": {
@@ -119,6 +131,14 @@
     "prefix": "Preemptible Memory-optimized Instance Ram",
     "group": "RAM"
   },
+  "cpu_preemptible_highgpu": {
+    "prefix": "Preemptible A2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_highgpu": {
+    "prefix": "Preemptible A2 Instance Ram",
+    "group": "RAM"
+  },
   "cpu_preemptible_micro": {
     "prefix": "Preemptible Micro Instance",
     "group": "F1Micro"
@@ -157,6 +177,10 @@
   },
   "gpu_preemptible_k80": {
     "prefix": "Nvidia Tesla K80 GPU attached to preemptible",
+    "group": "GPU"
+  },
+  "gpu_preemptible_a100": {
+    "prefix": "Nvidia Tesla A100 GPU attached to preemptible",
     "group": "GPU"
   },
   "disk_ondemand": {
