@@ -37,7 +37,7 @@
   color: #bbb;
 }
 
-.button span[class="anticon"] {
+.button span[class*="anticon"] {
   color: #888;
   margin-right: 2px;
 }

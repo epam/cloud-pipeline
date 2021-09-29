@@ -37,7 +37,7 @@
   padding-left: 12px;
 }
 
-.run-title span[class="anticon"] {
+.run-title span[class*="anticon"] {
   margin-right: 10px;
 }
 
@@ -243,7 +243,7 @@
 }
 
 .nested-run > div,
-.nested-run > span[class="anticon"],
+.nested-run > span[class*="anticon"],
 .nested-run > span,
 .nested-run > b {
   margin-right: 2px;

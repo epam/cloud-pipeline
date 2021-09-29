@@ -35,6 +35,6 @@
   text-transform: uppercase;
 }
 
-.button span[class="anticon"] {
+.button span[class*="anticon"] {
   font-size: large;
 }

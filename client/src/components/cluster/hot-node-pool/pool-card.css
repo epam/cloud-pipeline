@@ -78,7 +78,7 @@
   height: 50px;
 }
 
-.header-container .info-block span[class="anticon"] {
+.header-container .info-block span[class*="anticon"] {
   font-size: large;
 }
 

@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row, Tooltip} from 'antd';
 import {getRunStatusIcon} from './run-status-iconset';
 import DefaultStyles from './run-status-styles';
@@ -26,7 +25,7 @@ import '../../../staticStyles/tooltip-without-arrow.css';
 
 const StatusIcon = (props) => {
   const status = getStatus(props);
-  const icon = getRunStatusIcon(status, props.iconSet);
+  const StatusIcon = getRunStatusIcon(status, props.iconSet);
   const className = [props.className, DefaultStyles[status]].filter(Boolean).join(' ');
 
   let iconStyle = {verticalAlign: 'middle', fontWeight: 'normal'};
@@ -43,10 +42,10 @@ const StatusIcon = (props) => {
   }
 
   const result = (
-    <LegacyIcon
+    <StatusIcon
       className={className}
-      type={icon}
-      style={iconStyle} />
+      style={iconStyle}
+    />
   );
   if (props.displayTooltip && StatusTooltips.hasOwnProperty(status)) {
     const {description, title} = StatusTooltips[status];

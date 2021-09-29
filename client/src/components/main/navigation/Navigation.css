@@ -93,10 +93,10 @@
   background-color: #bd4a1c !important;
 }
 
-.navigation-menu-item span[class="anticon"],
-.navigation-menu-item-selected span[class="anticon"],
-.highlighted-navigation-menu-item span[class="anticon"],
-.highlighted-navigation-menu-item-selected span[class="anticon"] {
+.navigation-menu-item span[class*="anticon"],
+.navigation-menu-item-selected span[class*="anticon"],
+.highlighted-navigation-menu-item span[class*="anticon"],
+.highlighted-navigation-menu-item-selected span[class*="anticon"] {
   font-weight: bold;
   font-size: large !important;
   margin: 0;

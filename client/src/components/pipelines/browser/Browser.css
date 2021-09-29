@@ -127,7 +127,7 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   flex: 1;
 }
 
-.item-header > span[class="anticon"] {
+.item-header > span[class*="anticon"] {
   margin-right: 10px;
 }
 
@@ -239,7 +239,7 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   width: 20px;
 }
 
-.item-type-cell span[class="anticon"] {
+.item-type-cell span[class*="anticon"] {
   vertical-align: middle;
 }
 
@@ -448,7 +448,7 @@ tr.table-row-selected {
   vertical-align: top;
 }
 
-.pipeline-with-description-row > td.tree-item-type > span[class="anticon"] {
+.pipeline-with-description-row > td.tree-item-type > span[class*="anticon"] {
   margin-top: 5px;
 }
 

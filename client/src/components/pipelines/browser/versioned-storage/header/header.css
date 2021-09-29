@@ -24,7 +24,7 @@
   color: #2696dd;
 }
 
-.breadcrumbs > span[class="anticon"].editable-control {
+.breadcrumbs > span[class*="anticon"].editable-control {
   margin-right: 5px;
   margin-bottom: 3px;
 }

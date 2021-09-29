@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {LoadingOutlined} from '@ant-design/icons';
+import {ClockCircleOutlined, ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import {Row} from 'antd';
 import classNames from 'classnames';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -118,8 +118,8 @@ const lightColors = {
 };
 
 const icons = {
-  [Statuses.failure]: 'exclamation-circle-o',
-  [Statuses.stopped]: 'clock-circle-o'
+  [Statuses.failure]: ExclamationCircleOutlined,
+  [Statuses.stopped]: ClockCircleOutlined
 };
 
 function getTimingInfoString (from, to) {
