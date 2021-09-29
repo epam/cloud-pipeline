@@ -964,7 +964,7 @@ export default class DataStorage extends React.Component {
       .split('.')
       .pop()
       .toLowerCase();
-    if (extension === 'vsi') {
+    if (extension === 'vsi' || extension === 'mrxs') {
       return (
         <Row
           key="preview body"
@@ -974,7 +974,6 @@ export default class DataStorage extends React.Component {
             marginBottom: 5
           }}
         >
-          VSI file selected.
           <Button
             onClick={this.openPreviewModal}
             size="small"
@@ -986,7 +985,7 @@ export default class DataStorage extends React.Component {
           >
             Click
           </Button>
-          to view VSI file content.
+          {`to preview ${extension.toUpperCase()} file.`}
         </Row>
       );
     }
@@ -999,6 +998,7 @@ export default class DataStorage extends React.Component {
     if (storageId && selectedFile) {
       this.setState({previewModal: {
         id: selectedFile.path,
+        name: selectedFile.name,
         parentId: storageId,
         type: 'S3_FILE'
       }});
@@ -1283,7 +1283,7 @@ export default class DataStorage extends React.Component {
         selectedFile: item,
         metadata: true
       }, () => {
-        if (extension === 'vsi') {
+        if (extension === 'vsi' || extension === 'mrxs') {
           this.checkPreviewAvailability(item);
         }
       });
