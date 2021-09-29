@@ -232,8 +232,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   state = {
-    addKey: null,
-    showVSIPreview: null
+    addKey: null
   };
 
   confirmDeleteMetadata = () => {

@@ -974,17 +974,12 @@ export default class DataStorage extends React.Component {
             marginBottom: 5
           }}
         >
-          <Button
+          <span
             onClick={this.openPreviewModal}
-            size="small"
-            style={{
-              border: 'none',
-              color: '#108ee9',
-              padding: '5px'
-            }}
+            className={styles.metadataPreviewBtn}
           >
             Click
-          </Button>
+          </span>
           {`to preview ${extension.toUpperCase()} file.`}
         </Row>
       );
