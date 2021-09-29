@@ -123,7 +123,7 @@ function generateItemsFilter (preferences) {
 }
 
 @localization.localizedComponent
-@HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
+@HiddenObjects.checkPipelines(p => (!p.listingMode && p.match && p.match.params ? p.match.params.id : p.id))
 @HiddenObjects.injectTreeFilter
 @inject('pipelines', 'folders', 'pipelinesLibrary', 'preferences', 'awsRegions')
 @inject(({pipelines}, params) => {
@@ -134,7 +134,7 @@ function generateItemsFilter (preferences) {
     path = queryParams.path;
   }
   let componentParameters = params;
-  if (params.match.params) {
+  if (!params.listingMode && params.match && params.match.params) {
     componentParameters = params.match.params;
   }
   return {
@@ -1167,6 +1167,7 @@ VersionedStorage.propTypes = {
     PropTypes.string,
     PropTypes.number
   ]),
+  listingMode: PropTypes.bool,
   readOnly: PropTypes.bool,
   onReloadTree: PropTypes.func,
   folders: PropTypes.object,

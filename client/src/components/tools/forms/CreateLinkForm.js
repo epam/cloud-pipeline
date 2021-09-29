@@ -181,7 +181,7 @@ class CreateLinkForm extends React.Component {
             onChange={this.onSelectGroup}
             filterOption={
               (input, option) =>
-                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
           >
             {
               this.getRegistryWritableGroups(selectedRegistryId ? +selectedRegistryId : undefined)

@@ -19,7 +19,7 @@ import ReactDOM from 'react-dom';
 import {computed, observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {QuestionCircleOutlined} from '@ant-design/icons';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import {Alert, Button, Checkbox, message, Modal, Row} from 'antd';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
@@ -238,7 +238,7 @@ class TerminateRunDialog extends React.Component {
         visible={this.state.visible}>
         <div>
           <Row style={{marginBottom: 10}} type="flex" align="middle">
-            <QuestionCircleOutlined style={{color: '#ffbf00', fontSize: 'x-large', marginLeft: 20}} />
+            <ExclamationCircleOutlined style={{color: '#ffbf00', fontSize: 'x-large', marginLeft: 20}} />
             <b style={{marginLeft: 10, fontSize: 14, color: 'rgba(0, 0, 0, 0.65)'}}>Terminate {this.run.podId}?</b>
           </Row>
           <Row type="flex" style={{marginBottom: 5, marginLeft: 55}}>

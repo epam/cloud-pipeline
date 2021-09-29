@@ -72,11 +72,11 @@ import styles from './Browser.css';
   pipelines
 })
 @localization.localizedComponent
-@HiddenObjects.checkPipelines(p => (p.match && p.match.params ? p.match.params.id : p.id))
+@HiddenObjects.checkPipelines(p => (!p.listingMode && p.match && p.match.params ? p.match.params.id : p.id))
 @HiddenObjects.injectTreeFilter
 @inject(({pipelines, folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
-  if (params.match && params.match.params) {
+  if (!params.listingMode && params.match && params.match.params) {
     componentParameters = params.match.params;
   }
   return {

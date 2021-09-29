@@ -268,7 +268,7 @@ class Filters extends React.Component {
             style={commonStyle}
             filterOption={
               (input, option) =>
-                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             value={serviceNames}
             onChange={onFieldChanged('serviceNames', true)}
@@ -295,7 +295,7 @@ class Filters extends React.Component {
             style={commonStyle}
             filterOption={
               (input, option) =>
-                option.props.attributesString.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.attributesstring.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             value={users}
             onChange={onFieldChanged('users', true)}
@@ -305,7 +305,7 @@ class Filters extends React.Component {
                 <Select.Option
                   key={user.userName}
                   value={user.userName}
-                  attributesString={user.attributesString}
+                  attributesstring={user.attributesString}
                   label={this.getUserLabel(user)}
                 >
                   {this.renderUserName(user)}
@@ -332,7 +332,7 @@ class Filters extends React.Component {
             style={commonStyle}
             filterOption={
               (input, option) =>
-                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             value={hostnames}
             onChange={onFieldChanged('hostnames', true)}
@@ -358,7 +358,7 @@ class Filters extends React.Component {
             style={commonStyle}
             filterOption={
               (input, option) =>
-                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             value={types}
             onChange={onFieldChanged('types', true)}

@@ -63,6 +63,7 @@ class ClusterRoot extends React.Component {
         className={styles.rowMenu}
       >
         <Menu
+          disabledOverflow
           mode="horizontal"
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}

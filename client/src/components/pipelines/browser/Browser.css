@@ -127,11 +127,11 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   flex: 1;
 }
 
-.item-header > i {
+.item-header > span[class="anticon"] {
   margin-right: 10px;
 }
 
-.item-header > i.editable-control {
+.item-header > .editable-control {
   margin-right: 5px;
   margin-bottom: 3px;
 }
@@ -239,7 +239,7 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   width: 20px;
 }
 
-.item-type-cell i {
+.item-type-cell span[class="anticon"] {
   vertical-align: middle;
 }
 
@@ -256,8 +256,17 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   width: 30px;
 }
 
+.metadata-cell {
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-right-color: rgba(0, 0, 0, 0.1);
+}
+
 .metadata-checkbox-cell {
   text-align: center;
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-right-color: rgba(0, 0, 0, 0.1);
 }
 
 .selected-cell {
@@ -362,7 +371,7 @@ tr.table-row-selected {
 }
 
 .metadata-table {
-  border-radius: 0 0 5px 5px;
+  border-radius: 0 0 2px 2px;
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -393,7 +402,7 @@ tr.table-row-selected {
 .metadata-additional-actions {
   background-color: white;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 5px 5px 0 0;
+  border-radius: 2px 2px 0 0;
   border-bottom: none;
   padding: 5px;
   min-height: 37px;
@@ -439,7 +448,7 @@ tr.table-row-selected {
   vertical-align: top;
 }
 
-.pipeline-with-description-row > td.tree-item-type > i {
+.pipeline-with-description-row > td.tree-item-type > span[class="anticon"] {
   margin-top: 5px;
 }
 

@@ -44,11 +44,11 @@ export default class NotificationsPanel extends React.Component {
   renderSeverityIcon = (notification) => {
     switch (notification.severity) {
       case 'INFO':
-        return <InfoCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
+        return <InfoCircleOutlined className={`${styles.severityIcon} ${styles[notification.severity.toLowerCase()]}`} />;
       case 'WARNING':
-        return <ExclamationCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
+        return <ExclamationCircleOutlined className={`${styles.severityIcon} ${styles[notification.severity.toLowerCase()]}`} />;
       case 'CRITICAL':
-        return <CloseCircleOutlined className={styles[notification.severity.toLowerCase()]} />;
+        return <CloseCircleOutlined className={`${styles.severityIcon} ${styles[notification.severity.toLowerCase()]}`} />;
       default: return undefined;
     }
   };

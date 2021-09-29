@@ -37,7 +37,7 @@
   color: #bbb;
 }
 
-.button i {
+.button span[class="anticon"] {
   color: #888;
   margin-right: 2px;
 }
@@ -46,7 +46,7 @@
   color: rgba(0, 0, 0, 0.65);
 }
 
-.button .value-is-set i.close {
+.button .value-is-set .close {
   color: rgba(0, 0, 0, 0.5);
 }
 

@@ -200,9 +200,10 @@ export class DataStoragePathInput extends React.Component {
               style={{
                 backgroundColor: '#eee',
                 border: '1px solid #ccc',
-                borderRadius: '4px 0px 0px 4px',
+                borderRadius: '2px 0px 0px 2px',
                 height: 32,
-                maxWidth: '50%'
+                maxWidth: '50%',
+                lineHeight: 1.5715
               }}>
               <span style={{padding: '0 7px'}}>{this.storageObjectPrefix}</span>
             </div>
@@ -211,14 +212,13 @@ export class DataStoragePathInput extends React.Component {
               className={styles.pathInput}
               disabled={this.props.disabled}
               ref={this.initializeNameInput}
-              size="large"
               value={this.state.storagePath}
               onBlur={this.validatePath}
               onPressEnter={(e) => this.props.onPressEnter && this.props.onPressEnter(e)}
               style={{
                 width: 200,
                 flex: 1,
-                borderRadius: '0px 4px 4px 0px',
+                borderRadius: '0px 2px 2px 0px',
                 marginLeft: -1
               }}
               onChange={e => this.onPathChanged(e.target.value)} />
@@ -244,63 +244,26 @@ export class DataStoragePathInput extends React.Component {
           style={{
             backgroundColor: '#eee',
             border: '1px solid #ccc',
-            borderRadius: '4px 0px 0px 4px',
+            borderRadius: '2px 0px 0px 2px',
             height: 32,
-            maxWidth: '50%'
+            maxWidth: '50%',
+            lineHeight: 1.5715
           }}>
           {
             this.props.disabled || this.fileShareMountsList
               .filter(
                 r => !this.currentFileShareMount || r.id !== this.currentFileShareMount.id
               ).length === 0
-              ? <Button
-                id="edit-storage-storage-path-nfs-mount"
-                size="small"
-                style={{
-                  border: 'none',
-                  fontWeight: 'bold',
-                  backgroundColor: 'transparent',
-                  width: '100%'
-                }}
-                onClick={null}>
-                {
-                  this.currentFileShareMount
-                    ? this.displayFileShareHostName(this.currentFileShareMount)
-                    : (this.state.path && this.state.path.split(':')[0]) ||
-                    'None'
-                }
-              </Button>
-              : <Dropdown
-                id="edit-storage-storage-path-nfs-mount"
-                overlay={
-                  <div className={styles.navigationDropdownContainer}>
-                    {
-                      this.fileShareMountsList
-                        .filter(
-                          r => !this.currentFileShareMount || r.id !== this.currentFileShareMount.id
-                        )
-                        .map(fileShareMount => {
-                          return (
-                            <Row key={fileShareMount.id} type="flex">
-                              <Button
-                                style={{textAlign: 'left', width: '100%', border: 'none'}}
-                                onClick={() => this.onSelectFileShareMount(fileShareMount)}>
-                                {this.displayFileShareHostName(fileShareMount)}
-                              </Button>
-                            </Row>
-                          );
-                        })
-                    }
-                  </div>
-                }>
+              ? (
                 <Button
-                  size="small"
+                  id="edit-storage-storage-path-nfs-mount"
                   style={{
                     border: 'none',
                     fontWeight: 'bold',
                     backgroundColor: 'transparent',
                     width: '100%'
-                  }}>
+                  }}
+                  onClick={null}>
                   {
                     this.currentFileShareMount
                       ? this.displayFileShareHostName(this.currentFileShareMount)
@@ -308,7 +271,46 @@ export class DataStoragePathInput extends React.Component {
                       'None'
                   }
                 </Button>
-              </Dropdown>
+              ) : (
+                <Dropdown
+                  id="edit-storage-storage-path-nfs-mount"
+                  overlay={
+                    <div className={styles.navigationDropdownContainer}>
+                      {
+                        this.fileShareMountsList
+                          .filter(
+                            r => !this.currentFileShareMount || r.id !== this.currentFileShareMount.id
+                          )
+                          .map(fileShareMount => {
+                            return (
+                              <Row key={fileShareMount.id} type="flex">
+                                <Button
+                                  style={{textAlign: 'left', width: '100%', border: 'none'}}
+                                  onClick={() => this.onSelectFileShareMount(fileShareMount)}>
+                                  {this.displayFileShareHostName(fileShareMount)}
+                                </Button>
+                              </Row>
+                            );
+                          })
+                      }
+                    </div>
+                  }>
+                  <Button
+                    style={{
+                      border: 'none',
+                      fontWeight: 'bold',
+                      backgroundColor: 'transparent',
+                      width: '100%'
+                    }}>
+                    {
+                      this.currentFileShareMount
+                        ? this.displayFileShareHostName(this.currentFileShareMount)
+                        : (this.state.path && this.state.path.split(':')[0]) ||
+                        'None'
+                    }
+                  </Button>
+                </Dropdown>
+              )
           }
         </div>
         <Input
@@ -316,14 +318,13 @@ export class DataStoragePathInput extends React.Component {
           className={styles.pathInput}
           disabled={this.props.disabled}
           ref={this.initializeNameInput}
-          size="large"
           value={this.state.storagePath}
           onBlur={this.validatePath}
           onPressEnter={(e) => this.props.onPressEnter && this.props.onPressEnter(e)}
           style={{
             width: 200,
             flex: 1,
-            borderRadius: '0px 4px 4px 0px',
+            borderRadius: '0px 2px 2px 0px',
             marginLeft: -1
           }}
           onChange={e => this.onPathChanged(e.target.value)} />

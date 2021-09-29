@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {LoadingOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row, Tooltip} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -237,6 +236,7 @@ export default class IssuePreview extends React.Component {
     const labels = this.renderLabels();
     const issue = this.renderIssue();
     const comments = this.renderComments();
+    const PreviewIcon = PreviewIcons[this.props.item.type];
 
     return (
       <div
@@ -251,7 +251,7 @@ export default class IssuePreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
+            <PreviewIcon />
             <span>{this.props.item.name}</span>
           </Row>
           {
@@ -273,5 +273,4 @@ export default class IssuePreview extends React.Component {
       </div>
     );
   }
-
 }

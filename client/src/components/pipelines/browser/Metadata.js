@@ -37,7 +37,7 @@ import {
   FilterOutlined,
   PlusOutlined,
   SettingOutlined,
-  UploadOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 
 import {Button, Checkbox, Input, message, Modal, Pagination, Row} from 'antd';
@@ -81,6 +81,7 @@ import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
+import RouteBlocker from '../../special/RouteBlocker';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -147,11 +148,11 @@ function makeCurrentOrderSort (array) {
 })
 @roleModel.authenticationInfo
 @inject('preferences', 'dataStorages')
-@HiddenObjects.checkMetadataFolders(p => (p.match?.params || p).id)
+@HiddenObjects.checkMetadataFolders(p => (!p.listingMode && p.match?.params ? p.match.params : p).id)
 @HiddenObjects.checkMetadataClassesWithParent(p => (p.match?.params || p).id, p => (p.match?.params || p).class)
 @inject(({folders, pipelinesLibrary, authenticatedUserInfo, preferences, dataStorages}, params) => {
   let componentParameters = params;
-  if (params.match && params.match.params) {
+  if (!params.listingMode && params.match && params.match.params) {
     componentParameters = params.match.params;
   }
   return {
@@ -174,6 +175,7 @@ class Metadata extends React.Component {
     onSelectItems: PropTypes.func,
     initialSelection: PropTypes.array,
     hideUploadMetadataBtn: PropTypes.bool,
+    listingMode: PropTypes.bool,
     readOnly: PropTypes.bool
   };
 
@@ -550,7 +552,7 @@ class Metadata extends React.Component {
           border: 'none',
           color: (
             this.filterApplied(key)
-              ? '#108ee9' : 'grey'
+              ? '#1890FF' : 'grey'
           )
         }}
         icon={<FilterOutlined />}
@@ -1517,10 +1519,10 @@ class Metadata extends React.Component {
       return {
         border: '1px solid transparent',
         position: 'relative',
-        borderTopColor: top ? '#108ee9' : 'transparent',
-        borderBottomColor: bottom ? '#108ee9' : 'transparent',
-        borderLeftColor: left ? '#108ee9' : 'transparent',
-        borderRightColor: right ? '#108ee9' : 'rgba(0, 0, 0, 0.1)',
+        borderTopColor: top ? '#1890FF' : 'transparent',
+        borderBottomColor: bottom ? '#1890FF' : 'transparent',
+        borderLeftColor: left ? '#1890FF' : 'transparent',
+        borderRightColor: right ? '#1890FF' : 'rgba(0, 0, 0, 0.1)',
         backgroundColor
       };
     };
@@ -1963,8 +1965,7 @@ class Metadata extends React.Component {
         width: 30,
         style: {
           cursor: 'pointer',
-          padding: 0,
-          borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+          padding: 0
         },
         className: styles.metadataCheckboxCell,
         Cell: (props) => cellWrapper(props, () => {
@@ -1983,9 +1984,9 @@ class Metadata extends React.Component {
           index,
           style: {
             cursor: this.props.readOnly ? 'default' : 'cell',
-            padding: 0,
-            borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+            padding: 0
           },
+          className: styles.metadataCell,
           Header: () => renderTitle(key),
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
@@ -2327,6 +2328,14 @@ class Metadata extends React.Component {
           onTransfer={this.onStartUploadToBucket}
           onClose={this.onCloseUploadToBucketDialog}
         />
+        <RouteBlocker
+          message="All selected items will be reset. Continue?"
+          onCancel={() => this.props.onReloadTree(false)}
+          navigate={location => this.props.history.push(location)}
+          when={
+            this.state.selectedItems && this.state.selectedItems.length > 0 && !this.state.selectedItemsCanBeSkipped
+          }
+        />
       </div>
     );
   };
@@ -2373,15 +2382,7 @@ class Metadata extends React.Component {
   };
 
   componentDidMount () {
-    const {
-      authenticatedUserInfo,
-      route,
-      router
-    } = this.props;
-    // todo replace with history or with <Prompt>
-    // if (route && router) {
-    //   router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
-    // }
+    const {authenticatedUserInfo} = this.props;
     this.onFolderChanged();
     authenticatedUserInfo
       .fetchIfNeededOrWait()
@@ -2466,44 +2467,7 @@ class Metadata extends React.Component {
     }
   };
 
-  leavePageWithSelectedItems (nextLocation) {
-    const {history} = this.props;
-    const {selectedItemsCanBeSkipped} = this.state;
-
-    const resetSelectedItemsCanBeSkipped = () => {
-      this.resetSelectedItemsTimeout = setTimeout(
-        () => this.setState && this.setState({selectedItemsCanBeSkipped: false}),
-        0
-      );
-    };
-
-    const leave = nextLocation => {
-      this.setState({selectedItemsCanBeSkipped: true},
-        () => {
-          history.push(nextLocation);
-          resetSelectedItemsCanBeSkipped();
-        }
-      );
-      return true;
-    };
-
-    if (this.state.selectedItems && this.state.selectedItems.length && !selectedItemsCanBeSkipped) {
-      Modal.confirm({
-        title: 'All selected items will be reset. Continue?',
-        okType: 'danger',
-        onOk () {
-          leave(nextLocation);
-        },
-        onCancel: () => this.props.onReloadTree(false),
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-      return false;
-    }
-  };
-
   componentWillUnmount () {
-    this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
     document.removeEventListener('keydown', this.resetSelection);
     window.removeEventListener('mouseup', this.handleFinishSelection);
   }

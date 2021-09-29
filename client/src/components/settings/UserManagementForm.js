@@ -957,8 +957,8 @@ export default class UserManagementForm extends React.Component {
                 value={this.state.createGroupDefaultDataStorage}
                 onChange={this.createGroupDefaultDataStorageChanged}
                 filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                  option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                  option.pathmask.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }>
                 {
                   this.dataStorages.map(d => {
@@ -968,7 +968,7 @@ export default class UserManagementForm extends React.Component {
                         value={`${d.id}`}
                         name={d.name}
                         title={d.name}
-                        pathMask={d.pathMask}
+                        pathmask={d.pathMask}
                       >
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>

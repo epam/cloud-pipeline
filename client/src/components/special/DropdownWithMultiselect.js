@@ -81,10 +81,10 @@ export default class DropdownWithMultiselect extends React.Component {
       columnNameFn = (o) => o;
     }
     const columns = this.state.columns;
-    const DragHandle = SortableHandle(() => <span><BarsOutlined /></span>);
+    const DragHandle = SortableHandle(() => <span><BarsOutlined className={styles.dragIcon} /></span>);
     const SortableItem = SortableElement(({value}) => {
       return (
-        <Row className={styles.row}>
+        <div className={styles.row}>
           <DragHandle />
           <Checkbox
             disabled={this.state.selectedColumns.length <= 1 && this.itemIsSelected(value)}
@@ -92,7 +92,7 @@ export default class DropdownWithMultiselect extends React.Component {
             onChange={this.onColumnSelect(value)}>
             {columnNameFn(value)}
           </Checkbox>
-        </Row>
+        </div>
       );
     });
 

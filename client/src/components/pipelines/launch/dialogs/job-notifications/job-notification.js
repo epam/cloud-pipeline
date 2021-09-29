@@ -261,7 +261,7 @@ class JobNotification extends React.Component {
               className={styles.value}
               filterOption={
                 (input, option) =>
-                  option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
               {
@@ -296,7 +296,7 @@ class JobNotification extends React.Component {
               onChange={this.onChangeRecipients}
               className={styles.value}
               filterOption={
-                (input, option) => (option.props.attributes.split('|').map(o => o.toLowerCase()))
+                (input, option) => (option.attributes.split('|').map(o => o.toLowerCase()))
                   .find(o => o.includes((input || '').toLowerCase()))
               }
             >

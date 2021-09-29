@@ -1290,6 +1290,7 @@ class Tool extends localization.LocalizedReactComponent {
       <Row type="flex" justify="center">
         <MenuHorizontal
           className={styles.toolMenu}
+          disabledOverflow
           onClick={onChangeSection}
           mode="horizontal"
           selectedKeys={[this.props.section]}>

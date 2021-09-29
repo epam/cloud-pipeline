@@ -20,8 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {LoadingOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {AppstoreOutlined, LoadingOutlined} from '@ant-design/icons';
 import {Row} from 'antd';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -172,7 +171,7 @@ export default class FolderPreview extends React.Component {
       ...(this.props.folder.value.storages || []).map(mapChild),
       ...(this.props.folder.value.pipelines || []).map(mapChild),
       ...(this.props.folder.value.configurations || []).map(mapChild),
-      ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: 'appstore-o'}] : [])
+      ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: AppstoreOutlined}] : [])
     ];
     const padding = 20;
     const firstCellStyle = {
@@ -189,25 +188,20 @@ export default class FolderPreview extends React.Component {
               (items.length > MAX_ITEMS
                 ? items.slice(0, MAX_ITEMS)
                 : items || []).map((item, index) => {
-                  return (
-                    <tr key={index} style={rowStyle}>
-                      <td style={firstCellStyle}>
-                        {
-                          PreviewIcons[item.type]
-                            ? <LegacyIcon
-                              className={styles.searchResultItemIcon}
-                              type={PreviewIcons[item.type]} />
-                            : item.icon && <LegacyIcon
-                              className={styles.searchResultItemIcon}
-                              type={item.icon} />
-                        }
-                      </td>
-                      <td>
-                        {renderName(item)}
-                      </td>
-                    </tr>
-                  );
-                })
+                const PreviewIcon = PreviewIcons[item.type] || item.icon;
+                return (
+                  <tr key={index} style={rowStyle}>
+                    <td style={firstCellStyle}>
+                      {
+                        PreviewIcon && <PreviewIcon className={styles.searchResultItemIcon} />
+                      }
+                    </td>
+                    <td>
+                      {renderName(item)}
+                    </td>
+                  </tr>
+                );
+              })
             }
           </tbody>
         </table>
@@ -223,6 +217,7 @@ export default class FolderPreview extends React.Component {
     const highlights = renderHighlights(this.props.item);
     const attributes = renderAttributes(this.folderMetadataTags, true);
     const items = this.renderItems();
+    const PreviewIcon = PreviewIcons[this.props.item.type];
 
     return (
       <div
@@ -237,7 +232,7 @@ export default class FolderPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
+            <PreviewIcon />
             <span>{this.props.item.name}</span>
           </Row>
         </div>

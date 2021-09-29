@@ -232,9 +232,9 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
     switch (event.type) {
       case NEW_ISSUE_EVENT:
         title = (
-          <Row>
+          <div>
             <b>{owner}</b> created new {this.localizedString('issue')} <b>{event.object.name}</b>{parent} {moment.utc(event.date).fromNow(false)}{modified}:
-          </Row>
+          </div>
         );
         content = (
           <IssueCommentPreview
@@ -244,9 +244,9 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
         break;
       case NEW_COMMENT_EVENT:
         title = (
-          <Row>
+          <div>
             <b>{owner}</b> commented {this.localizedString('issue')} <b>{event.parent.name}</b>{parent} {moment.utc(event.date).fromNow(false)}{modified}:
-          </Row>);
+          </div>);
         content = (
           <IssueCommentPreview
             style={{padding: 0, fontSize: 'small'}}
@@ -255,9 +255,9 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
         break;
       case UPDATE_ISSUE_EVENT:
         title = (
-          <Row>
+          <div>
             <b>{owner}</b> updated an {this.localizedString('issue')} <b>{event.object.name}</b>{parent} {moment.utc(event.date).fromNow(false)}{modified}:
-          </Row>
+          </div>
         );
         content = (
           <IssueCommentPreview
@@ -267,9 +267,9 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
         break;
       case UPDATE_COMMENT_EVENT:
         title = (
-          <Row>
+          <div>
             <b>{owner}</b> updated comment for {this.localizedString('issue')} <b>{event.parent.name}</b>{parent} {moment.utc(event.date).fromNow(false)}{modified}:
-          </Row>
+          </div>
         );
         content = (
           <IssueCommentPreview

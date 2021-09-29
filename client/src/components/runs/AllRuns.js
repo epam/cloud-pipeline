@@ -180,15 +180,15 @@ class AllRuns extends Component {
     }
     if (this.props.allUsers) {
       return (
-        <Row style={{marginBottom: 5, padding: 2}}>
+        <div style={{marginBottom: 5, padding: 2}}>
           Currently viewing <b>all available active runs</b>. <a onClick={() => this.navigateToActiveRuns(true)}>View only <b>your active runs</b></a>
-        </Row>
+        </div>
       );
     } else {
       return (
-        <Row style={{marginBottom: 5, padding: 2}}>
+        <div style={{marginBottom: 5, padding: 2}}>
           Currently viewing only <b>your active runs ({this.runFilter.total} out of {this.props.counter.value})</b>. <a onClick={() => this.navigateToActiveRuns(false)}>View <b>other available active runs</b></a>
-        </Row>
+        </div>
       );
     }
   };
@@ -368,7 +368,7 @@ class AllRuns extends Component {
         <Row type="flex" align="bottom">
           <Col offset={2} span={20}>
             <Row type="flex" justify="center" className={styles.rowMenu}>
-              <Menu mode="horizontal" selectedKeys={[status]} className={styles.tabsMenu}>
+              <Menu mode="horizontal" selectedKeys={[status]} className={styles.tabsMenu} disabledOverflow>
                 <Menu.Item key="active">
                   <AdaptedLink
                     id="active-runs-button"
@@ -400,10 +400,10 @@ class AllRuns extends Component {
         {
           this.renderOwnersSwitch()
         }
-        <Row>
+        <div>
           <RunTable
             onInitialized={this.initializeRunTable}
-            useFilter={true}
+            useFilter
             loading={this.props.authenticatedUserInfo.pending || !this.runFilter || this.runFilter.pending}
             dataSource={this.runFilter ? this.runFilter.value : []}
             handleTableChange={::this.handleTableChange}
@@ -415,7 +415,7 @@ class AllRuns extends Component {
             launchPipeline={this.launchPipeline}
             onSelect={this.onSelectRun}
           />
-        </Row>
+        </div>
       </Card>);
   }
 }

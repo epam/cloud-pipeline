@@ -301,25 +301,20 @@ class CopyMetadataEntitiesDialog extends React.Component {
       .filter(item => item.searchHit)
       .map(item => {
         if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={styles.treeItem}
-              title={renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            />
-          );
+          return {
+            className: styles.treeItem,
+            title: renderItemTitle(item),
+            key: item.key,
+            isLeaf: item.isLeaf
+          };
         } else {
-          return (
-            <Tree.TreeNode
-              className={styles.treeItem}
-              title={renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            >
-              {generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
+          return {
+            className: styles.treeItem,
+            title: renderItemTitle(item),
+            key: item.key,
+            isLeaf: item.isLeaf,
+            children: generateTreeItems(item.children)
+          };
         }
       });
     return (
@@ -348,9 +343,9 @@ class CopyMetadataEntitiesDialog extends React.Component {
                 onExpand={onExpand}
                 checkStrictly
                 expandedKeys={expandedKeys}
-                selectedKeys={selectedKeys} >
-                {generateTreeItems(tree)}
-              </Tree>
+                selectedKeys={selectedKeys}
+                treeData={generateTreeItems(tree)}
+              />
             </Spin>
           </div>
         </div>

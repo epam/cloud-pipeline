@@ -178,23 +178,20 @@ export default class MetadataBrowser extends React.Component {
     }
     return items.map(item => {
       if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
+        return {
+          className: `pipelines-library-tree-node-${item.key}`,
+          title: this.renderItemTitle(item),
+          key: item.key,
+          isLeaf: item.isLeaf
+        };
       } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
+        return {
+          className: `pipelines-library-tree-node-${item.key}`,
+          title: this.renderItemTitle(item),
+          key: item.key,
+          isLeaf: item.isLeaf,
+          children: this.generateTreeItems(item.children)
+        };
       }
     });
   }
@@ -248,11 +245,11 @@ export default class MetadataBrowser extends React.Component {
         className={styles.libraryTree}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+        treeData={this.generateTreeItems(this.rootItems)}
+      />
     );
   }
 
@@ -441,19 +438,21 @@ export default class MetadataBrowser extends React.Component {
             onNavigate={this.onSelectItem}
             onSelectItem={this.onSelectMetadataEntityItem}
             initialSelection={this.state.selectedMetadataClassEntity}
-            selectionAvailable={true}
-            hideUploadMetadataBtn={true}
+            listingMode
+            selectionAvailable
+            hideUploadMetadataBtn
           />
         );
       } else if (this.state.isMetadata && this.state.metadataClassName) {
         listingContent = (
           <div style={{height: 450}}>
             <Metadata
+              listingMode
               id={this.state.folderId}
               class={this.state.metadataClassName}
               initialSelection={this.state.selectedMetadata}
               onSelectItems={this.onSelectMetadataItems}
-              hideUploadMetadataBtn={true}
+              hideUploadMetadataBtn
               readOnly={this.props.readOnly}
             />
           </div>
@@ -464,8 +463,8 @@ export default class MetadataBrowser extends React.Component {
             id={this.state.folderId}
             treatAsRootId={this.props.initialFolderId}
             onSelectItem={this.onSelectItem}
-            listingMode={true}
-            readOnly={true}
+            listingMode
+            readOnly
             supportedTypes={[ItemTypes.metadataFolder, ItemTypes.metadata]} />
         );
       }
@@ -587,7 +586,7 @@ export default class MetadataBrowser extends React.Component {
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     this.props.tree.invalidateCache();
   }
 }

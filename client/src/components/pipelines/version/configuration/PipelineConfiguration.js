@@ -33,6 +33,7 @@ import LaunchPipelineForm from '../../launch/form/LaunchPipelineForm';
 import roleModel from '../../../../utils/roleModel';
 import CreateConfigurationForm from './forms/CreateConfigurationForm';
 import styles from './PipelineConfiguration.css';
+import RouteBlocker from '../../../special/RouteBlocker';
 
 @connect({
   pipelines, preferences
@@ -58,8 +59,6 @@ class PipelineConfiguration extends React.Component {
 
   @observable configurationModified;
 
-  navigationBlockedListener;
-  navigationBlocker;
   allowedNavigation;
 
   state = {
@@ -69,46 +68,6 @@ class PipelineConfiguration extends React.Component {
   };
 
   componentDidMount() {
-      /* todo
-      this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (location.pathname === locationBefore) {
-        callback();
-        return;
-      }
-      const clearBlocker = () => {
-        setTimeout(() => {
-          this.navigationBlocker = null;
-        }, 0);
-      };
-      if (this.configurationModified && !this.navigationBlocker && location.pathname !== this.allowedNavigation) {
-        const cancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          clearBlocker();
-        };
-        this.navigationBlocker = Modal.confirm({
-          title: 'You have unsaved changes. Continue?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          onOk () {
-            callback();
-            clearBlocker();
-          },
-          onCancel () {
-            cancel();
-          },
-          okText: 'Yes',
-          cancelText: 'No'
-        });
-
-      } else {
-        callback();
-      }
-    });
-    */
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = new AllowedInstanceTypes();
@@ -118,12 +77,6 @@ class PipelineConfiguration extends React.Component {
         isSpot: parameters.is_spot,
         regionId: parameters.cloudRegionId
       });
-    }
-  }
-
-  componentWillUnmount () {
-    if (this.navigationBlockedListener) {
-      this.navigationBlockedListener();
     }
   }
 
@@ -524,10 +477,15 @@ class PipelineConfiguration extends React.Component {
           defaultTemplate={this.defaultConfigurationName}
           onSubmit={this.createConfigurationForm}
           onCancel={this.closeCreateConfigurationFormDialog} />
+        <RouteBlocker
+          when={this.configurationModified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+          shouldBlockNavigation={(nextLocation) => nextLocation.pathname !== this.allowedNavigation}
+        />
       </div>
     );
   }
-
 }
 
 export default withRouter(PipelineConfiguration);

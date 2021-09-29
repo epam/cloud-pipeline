@@ -190,9 +190,9 @@ class VSVersions extends React.Component {
         style={style}
         showSearch
         filterOption={
-          (input, option) => !option.props.searchValue ||
-            option.props.searchValue.length === 0 ||
-            option.props.searchValue.find(o => o.indexOf(input.toLowerCase()) >= 0)
+          (input, option) => !option.searchvalue ||
+            option.searchvalue.length === 0 ||
+            option.searchvalue.find(o => o.indexOf(input.toLowerCase()) >= 0)
         }
       >
         {
@@ -202,7 +202,7 @@ class VSVersions extends React.Component {
               key={version.commit}
               title={this.getSelectTitle(version)}
               value={version.commit}
-              searchValue={[
+              searchvalue={[
                 (version.commit || '').toLowerCase(),
                 (version.author || '').toLowerCase(),
                 (version.commit_message || '').toLowerCase()
@@ -235,7 +235,7 @@ class VSVersions extends React.Component {
               disabled
               key="load more"
               value=""
-              searchValue={[]}
+              searchvalue={[]}
             >
               <div
                 className={styles.loadMore}

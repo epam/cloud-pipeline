@@ -369,7 +369,7 @@ export default class CardsPanel extends React.Component {
       emptyMessage = emptyMessage(this.state.search);
     }
     return (
-      <Row className={styles.cardsPanelContainer} style={this.props.style}>
+      <div className={styles.cardsPanelContainer} style={this.props.style}>
         {
           this.props.search &&
           <Row type="flex" align="middle">
@@ -408,7 +408,7 @@ export default class CardsPanel extends React.Component {
             }
           </Row>
         </div>
-      </Row>
+      </div>
     );
   }
 }

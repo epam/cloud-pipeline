@@ -1078,7 +1078,7 @@ export default class EditToolForm extends React.Component {
                     optionFilterProp="children"
                     filterOption={
                       (input, option) =>
-                      option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                        option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
                     {
                       this.allowedInstanceTypes
                         .map(t => t.instanceFamily)
@@ -1265,8 +1265,8 @@ export default class EditToolForm extends React.Component {
                     optionFilterProp="children"
                     onChange={this.handleCloudRegionChange}
                     filterOption={
-                      (input, option) =>
-                        option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                      (input, option) => (option.name || '').toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    }
                   >
                     <Select.Option
                       key={regionNotConfiguredValue}
@@ -1288,7 +1288,7 @@ export default class EditToolForm extends React.Component {
                         </Select.Option>
                       )
                     }
-                    <Select.Option disabled key="divider" className={styles.selectOptionDivider} />
+                    <Select.Option disabled key="divider" value={null} className={styles.selectOptionDivider} />
                     {
                       this.awsRegions
                         .map(region => {
@@ -1352,7 +1352,7 @@ export default class EditToolForm extends React.Component {
                     className={styles.codeEditor}
                     language="shell"
                     onChange={this.defaultCommandEditorValueChanged}
-                    lineWrapping={true}
+                    lineWrapping
                     defaultCode={this.defaultCommand}
                   />
                 </Col>

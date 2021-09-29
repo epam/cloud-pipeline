@@ -3307,7 +3307,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             onChange={this.instanceTypeChanged}
             filterOption={
               (input, option) =>
-                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
               this.instanceTypes
                 .map(t => t.instanceFamily)
@@ -3474,7 +3474,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             onSelect={(cloudRegionId) => this.evaluateEstimatedPrice({cloudRegionId})}
             filterOption={
               (input, option) =>
-                option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
               this.getInitialCloudRegionNotAvailable() && (
                 <Select.Option
@@ -4893,7 +4893,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 onChange={configurationChange}
                 filterOption={
                   (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0} >
+                    option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0} >
                 {
                   this.props.configurations.map(c => {
                     return (

@@ -216,8 +216,8 @@ export default class CreateUserForm extends React.Component {
                 disabled={this.props.pending}
                 style={{flex: 1}}
                 filterOption={(input, option) =>
-                option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                option.pathmask.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }>
                 {
                   this.dataStorages.map(d => {
@@ -227,7 +227,7 @@ export default class CreateUserForm extends React.Component {
                         value={`${d.id}`}
                         name={d.name}
                         title={d.name}
-                        pathMask={d.pathMask}>
+                        pathmask={d.pathMask}>
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
                     );
@@ -244,12 +244,12 @@ export default class CreateUserForm extends React.Component {
               value={this.state.selectedRole}
               showSearch
               style={{flex: 1}}
-              allowClear={true}
+              allowClear
               placeholder="Add role"
               optionFilterProp="children"
               onSelect={this.assignRole}
               filterOption={
-                (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                (input, option) => option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }>
               {
                 this.availableRoles().map(t =>

@@ -650,6 +650,8 @@
 .select-option-divider {
   cursor: default !important;
   padding: 0;
+  height: 11px;
+  min-height: 11px;
 }
 
 .select-option-divider::before {

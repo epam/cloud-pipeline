@@ -531,7 +531,7 @@ export default class AddInstanceForm extends React.Component {
                 optionFilterProp="children"
                 onSelect={this.onSelectEntityType}
                 filterOption={
-                  (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  (input, option) => option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }
               >
                 {

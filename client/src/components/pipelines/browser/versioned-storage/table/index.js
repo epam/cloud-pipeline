@@ -148,7 +148,6 @@ class VersionedStorageTable extends React.Component {
     Modal.confirm({
       title: `Remove ${type}`,
       content: content,
-      style: {wordWrap: 'break-word'},
       okType: 'danger',
       onOk: () => callback && callback(record, comment)
     });

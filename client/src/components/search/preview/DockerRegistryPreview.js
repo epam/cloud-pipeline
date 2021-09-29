@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {LoadingOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -132,6 +131,7 @@ export default class DockerRegistryPreview extends React.Component {
 
     const highlights = renderHighlights(this.props.item);
     const groups = this.renderGroups();
+    const PreviewIcon = PreviewIcons[this.props.item.type];
 
     return (
       <div
@@ -146,7 +146,7 @@ export default class DockerRegistryPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
+            <PreviewIcon />
             <span>{this.name}</span>
           </Row>
         </div>

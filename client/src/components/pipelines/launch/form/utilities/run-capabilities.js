@@ -78,10 +78,9 @@ export default class RunCapabilities extends React.Component {
         mode="multiple"
         onChange={this.onSelectionChanged}
         placeholder="None selected"
-        size="large"
         value={filteredValues || []}
         filterOption={
-          (input, option) => option.props.children.toLowerCase().includes(input.toLowerCase())
+          (input, option) => option.children.toLowerCase().includes(input.toLowerCase())
         }
       >
         {capabilities.map(o => (<Select.Option key={o}>{o}</Select.Option>))}

@@ -66,8 +66,7 @@
   z-index: 1;
 }
 
-.action-button span,
-.action-button i {
+.action-button span {
   text-transform: uppercase;
   color: #108ee9;
   font-weight: bold;
@@ -86,8 +85,7 @@
   opacity: 1;
 }
 
-.actions-container:hover .action-button span,
-.actions-container:hover .action-button i {
+.actions-container:hover .action-button span {
 
 }
 

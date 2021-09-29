@@ -69,7 +69,7 @@ export default class EditFolderForm extends React.Component {
 
   render () {
     const modalFooter = this.props.pending || this.state.activeTab !== 'info' ? false : (
-      <Row>
+      <Row justify="end">
         <Button
           id="folder-edit-form-cancel-button"
           onClick={this.props.onCancel}>Cancel</Button>

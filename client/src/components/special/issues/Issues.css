@@ -152,7 +152,7 @@
   margin-right: 10px;
 }
 
-.item-header > i.editable-control {
+.item-header > .editable-control {
   margin-right: 5px;
   margin-bottom: 3px;
 }

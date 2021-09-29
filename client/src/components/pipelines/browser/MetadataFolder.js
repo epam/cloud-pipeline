@@ -43,10 +43,10 @@ import HiddenObjects from '../../../utils/hidden-objects';
   pipelinesLibrary
 })
 @HiddenObjects.injectTreeFilter
-@HiddenObjects.checkMetadataFolders(props => (props.params || props).id)
+@HiddenObjects.checkMetadataFolders(p => (!p.listingMode && p.match?.params ? p.match.params : p).id)
 @inject(({folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
-  if (params.match && params.match.params) {
+  if (!params.listingMode && params.match && params.match.params) {
     componentParameters = params.match.params;
   }
   return {
@@ -59,8 +59,8 @@ import HiddenObjects from '../../../utils/hidden-objects';
 })
 @observer
 class MetadataFolder extends React.Component {
-
   static propTypes = {
+    listingMode: PropTypes.bool,
     selectionAvailable: PropTypes.bool,
     hideUploadMetadataBtn: PropTypes.bool,
     onNavigate: PropTypes.func,
@@ -233,7 +233,7 @@ class MetadataFolder extends React.Component {
 
   renderContent = () => {
     return (
-      <Row style={{padding: 5, overflowY: 'auto'}}>
+      <div style={{padding: 5, overflowY: 'auto'}}>
         <Table
           className={styles.childrenContainer}
           dataSource={this._currentFolder.data}
@@ -247,7 +247,7 @@ class MetadataFolder extends React.Component {
           pagination={{pageSize: 40}}
           locale={{emptyText: 'Metadata is empty'}}
           size="small" />
-      </Row>);
+      </div>);
   };
 
   deleteMetadataConfirm = () => {

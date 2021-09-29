@@ -39,6 +39,7 @@ import {
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
+  ExclamationCircleOutlined,
   FolderOutlined,
   ForkOutlined,
   HddOutlined,
@@ -46,7 +47,6 @@ import {
   LockOutlined,
   MessageOutlined,
   PlusOutlined,
-  QuestionCircleOutlined,
   RightOutlined,
   SettingOutlined,
   SolutionOutlined,
@@ -123,11 +123,11 @@ function splitFolderPaths (foldersStructure) {
 })
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
-@HiddenObjects.checkFolders(props => (props?.match?.params ? props.match?.params.id : props.id))
+@HiddenObjects.checkFolders(props => (!props.listingMode && props?.match?.params ? props.match?.params.id : props.id))
 @inject('awsRegions')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
-  if (params.match && params.match.params) {
+  if (!params.listingMode && params.match && params.match.params) {
     componentParameters = params.match.params;
   }
   return {
@@ -2171,7 +2171,7 @@ class Folder extends localization.LocalizedReactComponent {
           <Row style={{flexDirection: 'column'}}>
             <Row className={styles.configurationConfirmTitle}>
               <Col>
-                <QuestionCircleOutlined className={styles.configurationConfirmIcon} />
+                <ExclamationCircleOutlined className={styles.configurationConfirmIcon} />
               </Col>
               <Col flex="1">
                 {

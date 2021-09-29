@@ -157,7 +157,7 @@ export class WDLInstanceTypeFormItem extends React.Component {
             onChange={this.onInstanceTypeChanged}
             filterOption={
               (input, option) =>
-                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
               this.instanceTypes
                 .map(t => t.instanceFamily)

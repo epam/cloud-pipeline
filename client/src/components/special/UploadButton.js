@@ -77,13 +77,12 @@ class UploadButton extends React.Component {
   triggerClick = () => {
     if (
       this.uploadButton &&
-      this.uploadButton.refs &&
-      this.uploadButton.refs.upload &&
-      this.uploadButton.refs.upload.uploader &&
-      this.uploadButton.refs.upload.uploader.fileInput &&
-      this.uploadButton.refs.upload.uploader.fileInput.click
+      this.uploadButton.upload &&
+      this.uploadButton.upload.uploader &&
+      this.uploadButton.upload.uploader.fileInput &&
+      this.uploadButton.upload.uploader.fileInput.click
     ) {
-      this.uploadButton.refs.upload.uploader.fileInput.click();
+      this.uploadButton.upload.uploader.fileInput.click();
     }
   };
 
@@ -562,8 +561,9 @@ class UploadButton extends React.Component {
         size="small"
         id="upload-button"
         disabled={this.props.uploadToS3 && !!this.s3StorageError}
+        icon={<UploadOutlined />}
+        style={this.props.style}
       >
-        <UploadOutlined />
         <span>{this.props.title}</span>
       </Button>
     );

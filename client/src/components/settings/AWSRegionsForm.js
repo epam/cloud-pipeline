@@ -30,7 +30,7 @@ import {
   TeamOutlined,
   UserAddOutlined,
   UsergroupAddOutlined,
-  UserOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 
 import {Form} from '@ant-design/compatible';
@@ -70,6 +70,7 @@ import AWSRegionTag from '../special/AWSRegionTag';
 import ProviderForm from './cloud-provider';
 import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
+import RouteBlocker from '../special/RouteBlocker';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -116,20 +117,14 @@ class AWSRegionsForm extends React.Component {
     currentProvider: null,
     search: null,
     operationInProgress: false,
-    newRegion: null,
-    changesCanBeSkipped: false
+    newRegion: null
   };
 
   @observable awsRegionForm;
   @observable awsRegionIds;
 
   componentDidMount () {
-    const {route, router} = this.props;
     this.props.onInitialize && this.props.onInitialize(this);
-    // todo replace with history or with <Prompt>
-    // if (route && router) {
-    //   router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
-    // }
   };
 
   componentDidUpdate () {
@@ -618,6 +613,11 @@ class AWSRegionsForm extends React.Component {
             {this.renderRegionForm()}
           </div>
         </SplitPanel>
+        <RouteBlocker
+          when={this.regionModified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+        />
       </div>
     );
   }
@@ -627,31 +627,6 @@ class AWSRegionsForm extends React.Component {
     this.setState({
       newRegion: null
     }, this.loadAvailableRegionIds);
-  };
-
-  // todo
-  checkSettingsBeforeLeave = (nextLocation) => {
-    const {history} = this.props;
-    const {changesCanBeSkipped} = this.state;
-    const makeTransition = nextLocation => {
-      this.setState({changesCanBeSkipped: true},
-        () => history.push(nextLocation)
-      );
-    };
-    if (this.regionModified && !changesCanBeSkipped) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          makeTransition(nextLocation);
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-      return false;
-    }
   };
 
   selectRegion = (region) => {
@@ -1324,7 +1299,7 @@ class AWSRegionForm extends React.Component {
         }
       },
       {
-        dataIndex: 'sid.name',
+        dataIndex: ['sid', 'name'],
         className: styles.permissionCell,
         key: 'name',
         render: (name, item) => getSidName(name, item.sid.principal)
@@ -1333,14 +1308,14 @@ class AWSRegionForm extends React.Component {
         key: 'actions',
         className: `${styles.permissionActions} ${styles.permissionCell}`,
         render: (item) => (
-          <Row>
+          <div>
             <Button
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
               size="small"
               icon={<DeleteOutlined />}
             />
-          </Row>
+          </div>
         )
       }
     ];
@@ -1359,7 +1334,7 @@ class AWSRegionForm extends React.Component {
     );
 
     return (
-      <Row style={{marginTop: 5}}>
+      <div style={{marginTop: 5}}>
         <Table
           className={styles.table}
           style={{
@@ -1408,7 +1383,7 @@ class AWSRegionForm extends React.Component {
             onChange={this.onGroupFindInputChanged}
             placeholder="Enter the group name" />
         </Modal>
-      </Row>
+      </div>
     );
   };
 
@@ -1462,7 +1437,7 @@ class AWSRegionForm extends React.Component {
                   style={{marginTop: 4}}
                   filterOption={
                     (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                    option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   disabled={!this.props.isNew || this.props.pending}>
                   {
                     (this.props.regionIds || []).map(r => {
@@ -2291,7 +2266,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
 
   render () {
     return (
-      <Row
+      <div
         className={styles.fileShareMountRow}
         style={Object.assign(
           {padding: 3},
@@ -2347,7 +2322,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         </Row>
         {
           this.state.mountRootError &&
-          <Row
+          <div
             style={{
               color: 'red',
               lineHeight: '12px',
@@ -2355,7 +2330,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             }}
           >
             {this.state.mountRootError}
-          </Row>
+          </div>
         }
         {
           this.props.expanded &&
@@ -2369,7 +2344,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
               onChange={this.onChangeMountOptions} />
           </Row>
         }
-      </Row>
+      </div>
     );
   }
 }
@@ -2495,7 +2470,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
 
   render () {
     return (
-      <Row>
+      <div>
         <div>
           {
             this.state.mounts.map((mount, index) => {
@@ -2525,7 +2500,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
             <PlusOutlined />Add file share mount
           </Button>
         </Row>
-      </Row>
+      </div>
     );
   }
 }

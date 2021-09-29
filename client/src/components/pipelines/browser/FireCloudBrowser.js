@@ -218,9 +218,9 @@ export default class FireCloudBrowser extends React.Component {
                     selectedMethodConfiguration: null,
                     selectedMethodConfigurationSnapshot: null
                   });
-                }}>
-                <LeftOutlined />
-              </Button>
+                }}
+                icon={<LeftOutlined />}
+              />
               <ForkOutlined style={{color: '#2796dd', margin: '0px 5px'}} />
               {this.state.selectedMethod}
               {

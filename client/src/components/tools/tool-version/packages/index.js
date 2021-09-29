@@ -225,7 +225,7 @@ export default class Packages extends React.Component {
             style={{flex: 1, marginLeft: 5}}
             showSearch
             filterOption={(input, option) =>
-              option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }>
             {this.ecosystems.map(e => <Select.Option key={e} value={e}>{e}</Select.Option>)}
           </Select>

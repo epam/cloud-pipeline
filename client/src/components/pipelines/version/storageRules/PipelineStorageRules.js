@@ -123,7 +123,7 @@ class PipelineStorageRules extends React.Component {
     );
 
     return (
-      <Row className={styles.container} style={{overflowY: 'auto'}}>
+      <div className={styles.container} style={{overflowY: 'auto'}}>
         <Table
           className={styles.table}
           rowKey="fileMask"
@@ -134,12 +134,14 @@ class PipelineStorageRules extends React.Component {
           locale={{emptyText: 'Rules are not configured'}}
           pagination={{pageSize: 20}}
           size="small" />
-        <PipelineStorageRuleCreateDialog visible={this.state.createRuleDialogVisible}
-                                         onCancel={this.closeCreateRuleDialog}
-                                         onSubmit={this.createRule}
-                                         pending={this.props.rules.pending}
-                                         pipelineId={this.props.pipelineId} />
-      </Row>
+        <PipelineStorageRuleCreateDialog
+          visible={this.state.createRuleDialogVisible}
+          onCancel={this.closeCreateRuleDialog}
+          onSubmit={this.createRule}
+          pending={this.props.rules.pending}
+          pipelineId={this.props.pipelineId}
+        />
+      </div>
     );
   }
 }

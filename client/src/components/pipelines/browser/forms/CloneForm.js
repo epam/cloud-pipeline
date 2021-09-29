@@ -17,7 +17,7 @@
 import React from 'react';
 import {Form} from '@ant-design/compatible';
 import '@ant-design/compatible/assets/index.css';
-import {Button, Input, Modal, Row, Spin } from 'antd';
+import {Button, Input, Modal, Row, Spin} from 'antd';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
 import roleModel from '../../../../utils/roleModel';
@@ -135,8 +135,8 @@ export default class CloneForm extends React.Component {
               <Folder
                 id={this.state.value ? this.state.value.id : null}
                 onSelectItem={this.onSelectFolder}
-                listingMode={true}
-                readOnly={true}
+                listingMode
+                readOnly
                 supportedTypes={[ItemTypes.folder]} />
             </div>
           </Spin>

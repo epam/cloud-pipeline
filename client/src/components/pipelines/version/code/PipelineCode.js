@@ -476,9 +476,11 @@ class PipelineCode extends Component {
             breadcrumbContent = <b>{part.name}</b>;
           } else if (part.isCreateNewFolder) {
             breadcrumbContent = (
-              <Button onClick={() => this.openCreateFolderDialog()} size="small">
-                <PlusOutlined />
-              </Button>
+              <Button
+                onClick={() => this.openCreateFolderDialog()}
+                size="small"
+                icon={<PlusOutlined />}
+              />
             );
           }
           return (

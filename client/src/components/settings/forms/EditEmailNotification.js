@@ -213,7 +213,7 @@ export default class EditEmailNotification extends React.Component {
                 size="small"
                 filterOption={
                   (input, option) =>
-                  option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                 mode="tags">
                 {
                   this.props.users.map(u => {
@@ -241,7 +241,7 @@ export default class EditEmailNotification extends React.Component {
                 size="small"
                 filterOption={
                   (input, option) =>
-                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                 mode="tags">
                 {
                   statuses.map(s => {

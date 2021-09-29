@@ -322,7 +322,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
           justify="center"
           className={`${styles.rowMenu} ${styles[activeTab] || ''}`}
         >
-          <TabMenu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
+          <TabMenu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu} disabledOverflow>
             <TabMenu.Item key="documents">
               <AdaptedLink
                 to={`/${id}/${version}/documents`}

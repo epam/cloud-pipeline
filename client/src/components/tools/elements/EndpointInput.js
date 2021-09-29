@@ -428,15 +428,13 @@ export default class EndpointInput extends React.Component {
             </Dropdown>
           </Col>
           <Col style={{paddingLeft: 5}}>
-            <Row type="flex" align="middle" style={{height: 31}}>
-              <Button
-                disabled={this.props.disabled}
-                onClick={e => this.props.onRemove && this.props.onRemove()}
-                size="small"
-                danger>
-                Delete
-              </Button>
-            </Row>
+            <Button
+              disabled={this.props.disabled}
+              onClick={e => this.props.onRemove && this.props.onRemove()}
+              size="small"
+              danger>
+              Delete
+            </Button>
           </Col>
         </Row>
         <Row type="flex" className={styles.endpointCodeEditorContainer}>

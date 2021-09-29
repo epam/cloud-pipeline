@@ -44,6 +44,7 @@ function test (o) {
   return !!(this.types || []).find(t => set.has(t));
 }
 
+// todo icons
 const SearchGroupTypes = {
   folder: {
     types: [SearchItemTypes.folder, SearchItemTypes.metadataEntity],

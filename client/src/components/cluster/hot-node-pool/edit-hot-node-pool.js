@@ -1314,7 +1314,7 @@ class EditHotNodePool extends React.Component {
             onChange={this.onChangeInstanceType}
             placeholder="Instance type"
             filterOption={(input, option) =>
-              option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
             {
@@ -1370,7 +1370,7 @@ class EditHotNodePool extends React.Component {
             onChange={this.onChangeSpot}
             placeholder="Price type"
             filterOption={(input, option) =>
-              option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
             {
@@ -1420,7 +1420,7 @@ class EditHotNodePool extends React.Component {
             onChange={this.onChangeRegion}
             placeholder="Region"
             filterOption={(input, option) =>
-              option.props.title.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.title.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
             {

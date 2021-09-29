@@ -45,6 +45,7 @@ import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
 import getPathParameters from '../browser/metadata-controls/get-path-parameters';
+import RouteBlocker from '../../special/RouteBlocker';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -83,7 +84,6 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
   @observable configurationModified;
 
   navigationBlockedListener;
-  navigationBlocker;
   allowedNavigation;
 
   state = {
@@ -100,7 +100,8 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
   get selectedConfiguration () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.entries) {
-      const [configuration] = this.props.configurations.value.entries.filter(c => c.name === this.selectedConfigurationName);
+      const [configuration] = this.props.configurations.value.entries
+        .filter(c => c.name === this.selectedConfigurationName);
       return configuration;
     }
     return null;
@@ -318,7 +319,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
       this.props.configurations.value.entries.length > 0) {
       const entries = this.props.configurations.value.entries;
       if (entries
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
         return false;
@@ -970,7 +971,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
       <Row>
         <Tabs
           className={styles.tabs}
-          hideAdd={true}
+          hideAdd
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
@@ -1093,59 +1094,18 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
             onSubmit={this.editConfiguration}
             onDelete={this.deleteConfiguration} />
         </Row>
+        <RouteBlocker
+          when={this.configurationModified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+          shouldBlockNavigation={(nextLocation) => nextLocation.pathname !== this.allowedNavigation}
+        />
       </div>
     );
   }
 
   componentDidMount () {
     this.loadSelectedPipelineParameters();
-/*
-    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (location.pathname === locationBefore) {
-        callback();
-        return;
-      }
-      const clearBlocker = () => {
-        setTimeout(() => {
-          this.navigationBlocker = null;
-        }, 0);
-      };
-      if (this.configurationModified && !this.navigationBlocker &&
-        location.pathname !== this.allowedNavigation) {
-        const cancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          clearBlocker();
-        };
-        this.navigationBlocker = Modal.confirm({
-          title: 'You have unsaved changes. Continue?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          onOk () {
-            callback();
-            clearBlocker();
-          },
-          onCancel () {
-            cancel();
-          },
-          okText: 'Yes',
-          cancelText: 'No'
-        });
-
-      } else {
-        callback();
-      }
-    });
-*/
-  }
-
-  componentWillUnmount () {
-    if (this.navigationBlockedListener) {
-      this.navigationBlockedListener();
-    }
   }
 
   componentDidUpdate (prevProps) {

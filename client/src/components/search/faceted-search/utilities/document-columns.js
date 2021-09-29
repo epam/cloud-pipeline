@@ -16,7 +16,6 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {InfoCircleOutlined} from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
@@ -76,11 +75,9 @@ function parseExtraColumns (preferences) {
 
 const renderIcon = (resultItem) => {
   if (PreviewIcons[resultItem.type]) {
-    return (
-      <LegacyIcon
-        className={styles.icon}
-        type={PreviewIcons[resultItem.type]} />
-    );
+    const PreviewIcon = PreviewIcons[resultItem.type];
+
+    return <PreviewIcon className={styles.icon} />;
   }
   return null;
 };

@@ -19,13 +19,14 @@ import {withRouter} from 'react-router-dom';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Input, Modal, message, Table} from 'antd';
+import {Alert, Button, Input, message, Table} from 'antd';
 import SystemDictionaryForm from './forms/SystemDictionaryForm';
 import roleModel from '../../utils/roleModel';
 import SystemDictionariesUpdate from '../../models/systemDictionaries/SystemDictionariesUpdate';
 import SystemDictionariesDelete from '../../models/systemDictionaries/SystemDictionariesDelete';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
+import RouteBlocker from '../special/RouteBlocker';
 
 import styles from './SystemDictionaries.css';
 
@@ -34,18 +35,12 @@ class SystemDictionaries extends React.Component {
     newDictionary: false,
     modified: false,
     pending: false,
-    changesCanBeSkipped: false,
     navigating: false,
     filter: undefined
   };
 
   componentDidMount () {
-    const {route, router} = this.props;
     this.navigateToDefault();
-    // todo replace with history or with <Prompt>
-    // if (route && router) {
-    //   router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
-    // }
   };
 
   componentDidUpdate () {
@@ -93,40 +88,6 @@ class SystemDictionaries extends React.Component {
     names.sort();
     return names;
   }
-
-  // todo
-  checkModifiedBeforeLeave = (nextLocation) => {
-    const {history} = this.props;
-    const {changesCanBeSkipped, modified} = this.state;
-    const resetChangesCanBeSkipped = () => {
-      this.resetChangesStateTimeout = setTimeout(
-        () => this.setState && this.setState({changesCanBeSkipped: false}),
-        0
-      );
-    };
-    const makeTransition = nextLocation => {
-      this.setState({changesCanBeSkipped: true},
-        () => {
-          history.push(nextLocation);
-          resetChangesCanBeSkipped();
-        }
-      );
-    };
-    if (modified && !changesCanBeSkipped) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          makeTransition(nextLocation);
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-      return false;
-    }
-  };
 
   addNewDictionary = () => {
     this.setState({
@@ -345,6 +306,11 @@ class SystemDictionaries extends React.Component {
             </div>
           </SplitPanel>
         </div>
+        <RouteBlocker
+          when={this.state.modified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+        />
       </div>
     );
   }

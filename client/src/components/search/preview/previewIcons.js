@@ -15,24 +15,33 @@
  */
 
 import {SearchItemTypes} from '../../../models/search';
+import {
+  AppstoreOutlined,
+  FileOutlined,
+  FileTextOutlined, FolderOutlined,
+  ForkOutlined,
+  HddOutlined,
+  InboxOutlined, MessageOutlined,
+  PlayCircleOutlined, SettingOutlined, ToolOutlined
+} from '@ant-design/icons';
 
 export const PreviewIcons = {
-  [SearchItemTypes.pipeline]: 'fork',
-  [SearchItemTypes.pipelineCode]: 'file-text',
-  [SearchItemTypes.run]: 'play-circle-o',
-  [SearchItemTypes.azStorage]: 'inbox',
-  [SearchItemTypes.azFile]: 'file',
-  [SearchItemTypes.s3Bucket]: 'inbox',
-  [SearchItemTypes.s3File]: 'file',
-  [SearchItemTypes.NFSBucket]: 'hdd',
-  [SearchItemTypes.NFSFile]: 'file',
-  [SearchItemTypes.gsStorage]: 'hdd',
-  [SearchItemTypes.gsFile]: 'file',
-  [SearchItemTypes.tool]: 'tool',
-  [SearchItemTypes.toolGroup]: 'tool',
-  [SearchItemTypes.dockerRegistry]: 'tool',
-  [SearchItemTypes.folder]: 'folder',
-  [SearchItemTypes.configuration]: 'setting',
-  [SearchItemTypes.metadataEntity]: 'appstore-o',
-  [SearchItemTypes.issue]: 'message'
+  [SearchItemTypes.pipeline]: ForkOutlined,
+  [SearchItemTypes.pipelineCode]: FileTextOutlined,
+  [SearchItemTypes.run]: PlayCircleOutlined,
+  [SearchItemTypes.azStorage]: InboxOutlined,
+  [SearchItemTypes.azFile]: FileOutlined,
+  [SearchItemTypes.s3Bucket]: InboxOutlined,
+  [SearchItemTypes.s3File]: FileOutlined,
+  [SearchItemTypes.NFSBucket]: HddOutlined,
+  [SearchItemTypes.NFSFile]: FileOutlined,
+  [SearchItemTypes.gsStorage]: HddOutlined,
+  [SearchItemTypes.gsFile]: FileOutlined,
+  [SearchItemTypes.tool]: ToolOutlined,
+  [SearchItemTypes.toolGroup]: ToolOutlined,
+  [SearchItemTypes.dockerRegistry]: ToolOutlined,
+  [SearchItemTypes.folder]: FolderOutlined,
+  [SearchItemTypes.configuration]: SettingOutlined,
+  [SearchItemTypes.metadataEntity]: AppstoreOutlined,
+  [SearchItemTypes.issue]: MessageOutlined
 };

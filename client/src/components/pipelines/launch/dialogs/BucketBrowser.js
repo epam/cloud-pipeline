@@ -521,23 +521,20 @@ export default class BucketBrowser extends React.Component {
     }
     return items.map(item => {
       if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
+        return {
+          className: `pipelines-library-tree-node-${item.key}`,
+          title: this.renderItemTitle(item),
+          key: item.key,
+          isLeaf: item.isLeaf
+        };
       } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
+        return {
+          className: `pipelines-library-tree-node-${item.key}`,
+          title: this.renderItemTitle(item),
+          key: item.key,
+          isLeaf: item.isLeaf,
+          children: this.generateTreeItems(item.children)
+        };
       }
     });
   }
@@ -643,11 +640,11 @@ export default class BucketBrowser extends React.Component {
         className={styles.libraryTree}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+        treeData={this.generateTreeItems(this.rootItems)}
+      />
     );
   }
 

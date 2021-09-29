@@ -52,26 +52,26 @@
   text-align: left;
 }
 
-.icon-column > i {
+.icon-column .severity-icon {
   font-size: x-large;
   font-weight: normal;
 }
 
-.icon-container > i {
+.icon-container .severity-icon {
   font-size: x-large;
   font-weight: normal;
   margin-right: 10px;
 }
 
-i.info {
+.severity-icon.info {
   color: green;
 }
 
-i.warning {
+.severity-icon.warning {
   color: #ff8818;
 }
 
-i.critical {
+.severity-icon.critical {
   color: #c01911;
 }
 

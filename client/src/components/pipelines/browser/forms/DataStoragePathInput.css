@@ -16,7 +16,7 @@
 
 .path-input input,
 .path-input > div {
-  border-radius: 0 4px 4px 0 !important;
+  border-radius: 0 2px 2px 0 !important;
 }
 
 .navigation-dropdown-container {

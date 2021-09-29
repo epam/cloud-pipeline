@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row} from 'antd';
 import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
@@ -256,9 +255,10 @@ export default class ToolPreview extends React.Component {
 
   renderHeader = () => {
     const renderMainInfo = () => {
+      const PreviewIcon = PreviewIcons[this.props.item.type];
       const name = (
         <Row key="name" className={styles.title} type="flex" align="middle">
-          <LegacyIcon type={PreviewIcons[this.props.item.type]} />
+          <PreviewIcon />
           <span>{this.name}</span>
         </Row>
       );

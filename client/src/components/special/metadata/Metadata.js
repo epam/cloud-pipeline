@@ -975,7 +975,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
               showSearch
               style={{width: '100%'}}
               filterOption={
-                (input, option) => option.props.children.toLowerCase()
+                (input, option) => option.children.toLowerCase()
                   .indexOf(input.toLowerCase()) >= 0
               }
               value={metadataItem.value}
@@ -1208,7 +1208,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             showSearch
             style={{width: '100%'}}
             filterOption={
-              (input, option) => option.props.children.toLowerCase()
+              (input, option) => option.children.toLowerCase()
                 .indexOf(input.toLowerCase()) >= 0
             }
             value={this.state.addKey.value}
@@ -1260,7 +1260,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
               style={{width: '100%'}}
               filterOption={
                 (input, option) =>
-                  option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
               {

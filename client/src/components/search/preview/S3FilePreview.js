@@ -20,7 +20,6 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -408,6 +407,8 @@ export default class S3FilePreview extends React.Component {
     const info = this.renderInfo();
     const attributes = renderAttributes(this.props.metadata, true);
     const preview = this.renderPreview();
+    const PreviewIcon = PreviewIcons[this.props.item.type];
+
     return (
       <div
         className={
@@ -421,7 +422,7 @@ export default class S3FilePreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title}>
-            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
+            <PreviewIcon />
             <span>{this.props.item.name}</span>
           </Row>
           {

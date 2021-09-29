@@ -57,6 +57,7 @@ import {
   quotesFn
 } from './forms/utilities';
 import {ItemTypes} from '../../../model/treeStructureFunctions';
+import RouteBlocker from '../../../../special/RouteBlocker';
 
 const graphFitContentOpts = {padding: 24};
 
@@ -381,28 +382,6 @@ export default class WdlGraph extends Graph {
         }
       }
     }
-  };
-
-  unsavedChangesConfirm = (onOk, onCancel) => {
-    if (!this.props.canEdit) {
-      onOk();
-      return null;
-    }
-    return Modal.confirm({
-      title: 'You have unsaved changes. Continue?',
-      style: {
-        wordWrap: 'break-word'
-      },
-      okType: 'danger',
-      async onOk () {
-        onOk();
-      },
-      async onCancel () {
-        onCancel();
-      },
-      okText: 'Yes',
-      cancelText: 'No'
-    });
   };
 
   onSelectItem = () => {
@@ -1426,6 +1405,11 @@ export default class WdlGraph extends Graph {
         <div className={styles.wdlGraphContainer} >
           <div ref={this.initializeContainer} />
         </div>
+        <RouteBlocker
+          when={this.props.canEdit && this.state.modified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+        />
       </div>
     );
   }
@@ -1449,44 +1433,13 @@ export default class WdlGraph extends Graph {
     });
   }
 
-  _removeRouterListener = null;
-  _routeChangeConfirm = null;
-
   componentDidMount () {
     this.loadMainFile();
-/* todo
-    this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (this.state.modified && !this._routeChangeConfirm) {
-        const onOk = () => {
-          callback();
-          setTimeout(() => {
-            this._routeChangeConfirm = null;
-          }, 0);
-        };
-        const onCancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          setTimeout(() => {
-            this._routeChangeConfirm = null;
-          }, 0);
-        };
-
-        this._routeChangeConfirm = this.unsavedChangesConfirm(onOk, onCancel);
-      } else {
-        callback();
-      }
-    });
-*/
     this.props.onGraphReady && this.props.onGraphReady(this);
   }
 
   componentWillUnmount () {
     this._mainFileRequest = null;
-    if (this._removeRouterListener) {
-      this._removeRouterListener();
-    }
   }
 
   loadMainFile = () => {

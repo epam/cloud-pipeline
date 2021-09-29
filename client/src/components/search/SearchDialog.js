@@ -256,11 +256,8 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
 
   renderIcon = (resultItem) => {
     if (PreviewIcons[resultItem.type]) {
-      return (
-        <LegacyIcon
-          className={styles.searchResultItemIcon}
-          type={PreviewIcons[resultItem.type]} />
-      );
+      const PreviewIcon = PreviewIcons[resultItem.type];
+      return <PreviewIcon className={styles.searchResultItemIcon} />;
     }
     return null;
   };

@@ -28,6 +28,7 @@ import Users from '../../models/user/Users';
 import {Alert, message, Modal, Table} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
 import styles from './EmailNotificationSettings.css';
+import RouteBlocker from '../special/RouteBlocker';
 
 @inject('authenticatedUserInfo')
 @inject(() => {
@@ -40,16 +41,7 @@ import styles from './EmailNotificationSettings.css';
 @observer
 class EmailNotificationSettings extends React.Component {
   state = {
-    selectedTemplateId: null,
-    changesCanBeSkipped: false
-  };
-
-  componentDidMount () {
-    const {route, router} = this.props;
-    // todo replace with history or with <Prompt>
-    // if (route && router) {
-    //   router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
-    // }
+    selectedTemplateId: null
   };
 
   componentDidUpdate () {
@@ -101,31 +93,6 @@ class EmailNotificationSettings extends React.Component {
     }
     return [];
   }
-
-  // todo
-  checkSettingsBeforeLeave = (nextLocation) => {
-    const {history} = this.props;
-    const {changesCanBeSkipped} = this.state;
-    const makeTransition = nextLocation => {
-      this.setState({changesCanBeSkipped: true},
-        () => history.push(nextLocation)
-      );
-    };
-    if (this.templateModified && !changesCanBeSkipped) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          makeTransition(nextLocation);
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-      return false;
-    }
-  };
 
   updateTemplate = async (values) => {
     const [template] = this.templates.filter(t => t.id === this.state.selectedTemplateId);
@@ -293,6 +260,11 @@ class EmailNotificationSettings extends React.Component {
           <div key="templates">{this.renderTemplatesTable()}</div>
           <div>{this.renderTemplateForm()}</div>
         </SplitPanel>
+        <RouteBlocker
+          when={this.templateModified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+        />
       </div>
     );
   }

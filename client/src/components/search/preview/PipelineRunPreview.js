@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {LoadingOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row} from 'antd';
 import classNames from 'classnames';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -530,6 +529,8 @@ export default class PipelineRunPreview extends React.Component {
     const description = this.renderDescription();
     const info = this.renderInfo();
     const tasks = this.renderTasks();
+    const PreviewIcon = PreviewIcons[this.props.item.type];
+
     return (
       <div
         className={
@@ -553,10 +554,7 @@ export default class PipelineRunPreview extends React.Component {
                   />
                 )
                 : (
-                  <LegacyIcon
-                    type={PreviewIcons[this.props.item.type]}
-                    style={{fontSize: 'smaller'}}
-                  />
+                  <PreviewIcon style={{fontSize: 'smaller'}} />
                 )
             }
             <span>{this.runName}</span>

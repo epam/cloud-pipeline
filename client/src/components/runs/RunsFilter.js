@@ -520,7 +520,7 @@ class RunsFilter extends React.Component {
         <Row>
           {this.renderError()}
         </Row>
-        <Row>
+        <div>
           <RunTable
             useFilter={false}
             loading={this.state.loading}
@@ -535,7 +535,7 @@ class RunsFilter extends React.Component {
             launchPipeline={this.launchPipeline}
             onSelect={this.onSelectRun}
           />
-        </Row>
+        </div>
         <SaveFilterForm
           pending={false}
           onSubmit={this.saveFilter}

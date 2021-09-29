@@ -48,7 +48,7 @@
   border-bottom: 1px solid transparent;
 }
 
-.row i {
+.row .drag-icon {
   margin-right: 10px;
   cursor: move;
   vertical-align: middle;

@@ -653,7 +653,7 @@ export class RunConfirmation extends React.Component {
       <Select.OptGroup key={g.key} label={g.key}>
         {
           g.storages.map(s => (
-            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathMask={s.pathMask}>
+            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathmask={s.pathMask}>
               <Tooltip
                 overlayClassName="limit-mounts-warning"
                 title={s.pathMask}>
@@ -694,8 +694,8 @@ export class RunConfirmation extends React.Component {
           notFoundContent="Mounts not found"
           filterOption={
             (input, option) =>
-              option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-              option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+              option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+              option.pathmask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
           value={
             this.selectedDataStorageIndecis
               .filter(i => this.notConflictingIndecis.indexOf(+i) === -1)
@@ -838,7 +838,7 @@ export class RunConfirmation extends React.Component {
                   onChange={this.setInstanceType}
                   filterOption={
                     (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                    option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
                   {
                     this.getInstanceTypes()
                       .map(t => t.instanceFamily)

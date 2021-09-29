@@ -17,7 +17,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -41,6 +40,7 @@ export default class DefaultPreview extends React.Component {
       return null;
     }
     const highlights = renderHighlights(this.props.item);
+    const PreviewIcon = PreviewIcons[this.props.item.type];
     return (
       <div
         className={
@@ -54,7 +54,7 @@ export default class DefaultPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
-            <LegacyIcon type={PreviewIcons[this.props.item.type]} />
+            <PreviewIcon />
             <span>{this.props.item.name}</span>
           </Row>
           {

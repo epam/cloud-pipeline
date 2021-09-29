@@ -184,7 +184,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           style={{width: '70%'}}
           value={authors || []}
           filterOption={
-            (input, option) => option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            (input, option) => option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
         >
           {

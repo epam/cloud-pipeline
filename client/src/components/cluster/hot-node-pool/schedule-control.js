@@ -229,7 +229,7 @@ class ScheduleControl extends React.Component {
             value={from}
             onChange={this.onChangeFrom}
             filterOption={(input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
             {
@@ -263,7 +263,7 @@ class ScheduleControl extends React.Component {
             value={to}
             onChange={this.onChangeTo}
             filterOption={(input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
             {

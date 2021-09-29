@@ -86,13 +86,12 @@ class ToolDeletionWarning extends React.Component {
     const onConfirmChanged = (e) => {
       this.setState({groupAlertConfirmed: e.target.checked});
     };
-    // todo
     return (
       <Row>
-        <Row>
+        <div>
           Group <b>{name || ''}</b> has child tools, do you want to delete
           them?
-        </Row>
+        </div>
         <Row style={{
           fontSize: 12,
           color: 'rgba(0,0,0,.65)',

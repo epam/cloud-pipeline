@@ -71,7 +71,7 @@ class VersionedStorageDialog extends React.Component {
     const {predefinedFoldersChecked} = this.state;
     const {getFieldDecorator} = form;
     const modalFooter = (
-      <Row>
+      <Row justify="end">
         <Button
           onClick={this.props.onCancel}
           disabled={pending}

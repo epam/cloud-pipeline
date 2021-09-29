@@ -180,9 +180,9 @@ class QuotasSection extends React.Component {
       }
       let icon;
       switch (type) {
-        case billing.quotas.keys.billingCenters: icon = (<SolutionOutlined />); break;
-        case billing.quotas.keys.user: icon = (<UserOutlined />); break;
-        case billing.quotas.keys.group: icon = (<TeamOutlined />); break;
+        case billing.quotas.keys.billingCenters: icon = (<SolutionOutlined className={styles.icon} />); break;
+        case billing.quotas.keys.user: icon = (<UserOutlined className={styles.icon} />); break;
+        case billing.quotas.keys.group: icon = (<TeamOutlined className={styles.icon} />); break;
       }
       const {name} = quotaTarget;
       return (

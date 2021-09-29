@@ -24,6 +24,7 @@ import PreferenceGroup from './forms/PreferenceGroup';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
 import styles from './Preferences.css';
+import RouteBlocker from "../special/RouteBlocker";
 
 @inject('preferences', 'authenticatedUserInfo')
 @observer
@@ -31,20 +32,15 @@ class Preferences extends React.Component {
   state = {
     selectedPreferenceGroup: null,
     operationInProgress: false,
-    search: null,
-    changesCanBeSkipped: false
+    search: null
   };
 
   componentDidMount () {
-    const {route, router, preferences} = this.props;
+    const {preferences} = this.props;
     const {selectedPreferenceGroup} = this.state;
     if (!selectedPreferenceGroup && this.preferencesGroups.length > 0) {
       this.selectPreferenceGroup(this.preferencesGroups[0]);
     }
-    // todo replace with history or with <Prompt>
-    // if (route && router) {
-    //   router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
-    // }
     preferences.fetch();
   };
 
@@ -97,31 +93,6 @@ class Preferences extends React.Component {
     }
     return [];
   }
-
-  // todo
-  checkSettingsBeforeLeave = (nextLocation) => {
-    const {history} = this.props;
-    const {changesCanBeSkipped} = this.state;
-    const makeTransition = nextLocation => {
-      this.setState({changesCanBeSkipped: true},
-        () => history.push(nextLocation)
-      );
-    };
-    if (this.templateModified && !changesCanBeSkipped) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          makeTransition(nextLocation);
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-      return false;
-    }
-  };
 
   selectPreferenceGroup = (name) => {
     const changePreferenceGroup = () => {
@@ -290,6 +261,11 @@ class Preferences extends React.Component {
             </div>
           </SplitPanel>
         </div>
+        <RouteBlocker
+          when={this.templateModified}
+          message="You have unsaved changes. Continue?"
+          navigate={location => this.props.history.push(location)}
+        />
       </div>
     );
   }

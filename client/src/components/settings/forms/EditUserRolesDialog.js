@@ -919,22 +919,20 @@ export default class EditUserRolesDialog extends React.Component {
                 onChange={this.onChangeDefaultStorageId}
                 size="small"
                 filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                  option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                  option.pathmask.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }>
                 {
-                  this.dataStorages.map(d => {
-                    return (
-                      <Select.Option
-                        key={d.id}
-                        value={`${d.id}`}
-                        title={d.name}
-                        name={d.name}
-                        pathMask={d.pathMask}>
-                        <b>{d.name}</b> ({d.pathMask})
-                      </Select.Option>
-                    );
-                  })
+                  this.dataStorages.map(d => (
+                    <Select.Option
+                      key={d.id}
+                      value={`${d.id}`}
+                      title={d.name}
+                      name={d.name}
+                      pathmask={d.pathMask}>
+                      <b>{d.name}</b> ({d.pathMask})
+                    </Select.Option>
+                  ))
                 }
               </Select>
             </Row>
@@ -955,7 +953,7 @@ export default class EditUserRolesDialog extends React.Component {
                   onChange={this.addRoleInputChanged}
                   filterOption={
                     (input, option) =>
-                      option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }>
                   {
                     this.availableRoles.map(t =>
@@ -1091,7 +1089,7 @@ export default class EditUserRolesDialog extends React.Component {
                   style={{width: '100%'}}
                   onChange={this.onChangeCredentialProfiles}
                   filterOption={(input, option) =>
-                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }>
                   {
                     this.cloudCredentialProfiles.map(d => (
@@ -1132,7 +1130,7 @@ export default class EditUserRolesDialog extends React.Component {
                   style={{width: '100%'}}
                   onChange={this.onChangeDefaultProfileId}
                   filterOption={(input, option) =>
-                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    option.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }>
                   {
                     this.cloudCredentialProfiles

@@ -103,11 +103,11 @@ export default class SystemNotification extends React.Component {
   renderSeverityIcon = () => {
     switch (this.props.notification.severity) {
       case 'INFO':
-        return <InfoCircleOutlined className={styles[this.props.notification.severity.toLowerCase()]} />;
+        return <InfoCircleOutlined className={`${styles.severityIcon} ${styles[this.props.notification.severity.toLowerCase()]}`} />;
       case 'WARNING':
-        return <ExclamationCircleOutlined className={styles[this.props.notification.severity.toLowerCase()]} />;
+        return <ExclamationCircleOutlined className={`${styles.severityIcon} ${styles[this.props.notification.severity.toLowerCase()]}`} />;
       case 'CRITICAL':
-        return <CloseCircleOutlined className={styles[this.props.notification.severity.toLowerCase()]} />;
+        return <CloseCircleOutlined className={`${styles.severityIcon} ${styles[this.props.notification.severity.toLowerCase()]}`} />;
       default: return undefined;
     }
   };

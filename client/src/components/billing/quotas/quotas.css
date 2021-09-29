@@ -191,7 +191,7 @@
   width: 25%;
 }
 
-.quota .target > i {
+.quota .target .icon {
   margin-right: 2px;
   font-weight: bold;
 }

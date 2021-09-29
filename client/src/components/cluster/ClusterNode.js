@@ -104,6 +104,7 @@ class ClusterNode extends Component {
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
         <Menu
+          disabledOverflow
           mode="horizontal"
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}>

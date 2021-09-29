@@ -296,7 +296,7 @@ class FilterControl extends React.Component {
         style={{flex: 1}}
         getPopupContainer={triggerNode => triggerNode.parentNode}
         filterOption={
-          (input, option) => option.props.description
+          (input, option) => option.description
             .find(d => (d || '').toLowerCase().indexOf(input.toLowerCase()) >= 0)
         }
       >
@@ -341,7 +341,7 @@ class FilterControl extends React.Component {
         style={{flex: 1}}
         getPopupContainer={triggerNode => triggerNode.parentNode}
         filterOption={
-          (input, option) => option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          (input, option) => option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
         }
       >
         {
@@ -378,7 +378,7 @@ class FilterControl extends React.Component {
         style={{flex: 1}}
         getPopupContainer={triggerNode => triggerNode.parentNode}
         filterOption={
-          (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          (input, option) => option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
         }
       >
         {
@@ -415,7 +415,7 @@ class FilterControl extends React.Component {
         style={{flex: 1}}
         getPopupContainer={triggerNode => triggerNode.parentNode}
         filterOption={
-          (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          (input, option) => option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
         }
       >
         {

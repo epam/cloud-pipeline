@@ -94,7 +94,7 @@ class SystemDictionaryLinksForm extends React.Component {
           onChange={onChangeDictionary}
           filterOption={
             (input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
           placeholder="Select dictionary"
         >
@@ -119,7 +119,7 @@ class SystemDictionaryLinksForm extends React.Component {
           onChange={onChangeDictionaryValue}
           filterOption={
             (input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
           placeholder="Select dictionary value"
         >
@@ -209,7 +209,7 @@ class SystemDictionaryLinksForm extends React.Component {
           onChange={onChangeLink}
           filterOption={
             (input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
           placeholder="Select dictionary value"
         >

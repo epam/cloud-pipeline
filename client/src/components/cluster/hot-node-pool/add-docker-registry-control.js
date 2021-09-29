@@ -417,7 +417,7 @@ class AddDockerRegistryControl extends React.Component {
             placeholder="Docker image"
             style={{flex: 1}}
             filterOption={(input, option) =>
-              option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             getPopupContainer={node => node.parentNode}
           >
