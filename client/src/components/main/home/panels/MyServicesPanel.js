@@ -82,7 +82,7 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
     const [reg, group, dockerImage] = service.run.dockerImage.split('/');
     const renderMainInfo = () => {
       return [
-        <Row key="name" style={{fontSize: 'larger', fontWeight: 'bold'}}>
+        <Row key="name" style={{fontWeight: 'bold'}}>
           <span type="main">{name}</span>
         </Row>,
         <Row key="docker image" style={{fontSize: 'smaller'}}>

@@ -78,7 +78,7 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         key="title"
         type="flex"
         align="middle"
-        style={{fontWeight: 'bold', fontSize: 'larger', height: pipeline.description ? '50%' : '100%'}}>
+        style={{fontWeight: 'bold', height: pipeline.description ? '50%' : '100%'}}>
         <span type="main">
           {highlightText(pipeline.name, search)}
         </span>

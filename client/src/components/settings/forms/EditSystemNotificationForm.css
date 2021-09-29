@@ -54,7 +54,7 @@
 .notification-preview-container > div {
   border: 1px solid;
   border-color: #ddd !important;
-  border-radius: 4px;
+  border-radius: 2px;
   border-top: none !important;
   border-top-left-radius: 0 !important;
   border-top-right-radius: 0 !important;

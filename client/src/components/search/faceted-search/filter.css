@@ -19,7 +19,7 @@
   padding: 0;
   background-color: #fafafa;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
 }
@@ -89,16 +89,16 @@
   font-size: 12px;
   visibility: visible;
   transition: all 0.2s ease-in-out;
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 2px 2px;
 }
 
 .filter .search-input input {
   border-top: 1px solid transparent;
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 2px 2px;
 }
 
 .filter .search-input:hover input {
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .filter .search-input .clear-btn {

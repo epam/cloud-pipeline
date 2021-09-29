@@ -21,7 +21,7 @@
   flex-wrap: nowrap;
   align-items: center;
   border: 1px solid #dfdfdf;
-  border-radius: 3px;
+  border-radius: 2px;
   transition: background-color 0.2s ease;
 }
 

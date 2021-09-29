@@ -31,7 +31,7 @@
   flex: 0.75;
   min-width: 50vw;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: 2px;
   background-color: #fafafa;
 }
 
@@ -104,7 +104,7 @@
   font-size: 20px;
   font-weight: bold;
   padding: 0 10px !important;
-  border-radius: 4px;
+  border-radius: 2px;
   box-shadow: none;
   outline: none;
   border: 1px solid #ddd;
@@ -141,7 +141,7 @@
 .quota .display:hover {
   background-color: white;
   border-color: #ddd;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 .select-container {
@@ -162,7 +162,7 @@
 
 .threshold-container .input {
   width: 100px;
-  border-radius: 4px;
+  border-radius: 2px;
   box-shadow: none;
   outline: none;
   border: 1px solid #ddd;

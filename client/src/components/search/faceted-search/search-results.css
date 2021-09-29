@@ -74,7 +74,7 @@
   cursor: default;
   flex: 1;
   border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 2px;
   background-color: white;
   overflow: auto;
   display: flex;
@@ -134,7 +134,7 @@
 }
 
 .result-item-container .preview-btn:first-child {
-  border-radius: 5px 0 0 5px;
+  border-radius: 2px 0 0 2px;
   border-left-width: 1px;
 }
 
@@ -152,7 +152,7 @@
   background-color: #fafafa;
   border: 1px solid #ddd;
   border-left: none;
-  border-radius: 0 5px 5px 0;
+  border-radius: 0 2px 2px 0;
   padding: 2px 10px;
   display: flex;
   flex-direction: row;
@@ -201,7 +201,7 @@
   flex-direction: column;
   width: 100%;
   min-width: 100%;
-  border-radius: 5px 5px 0 0;
+  border-radius: 2px 2px 0 0;
   border: 1px solid #ddd;
   overflow: auto;
   flex: 1;
@@ -225,7 +225,7 @@
   margin-right: 3px;
   cursor: pointer;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: 2px;
   transition: all 0.3s ease;
   font-size: 16px;
 }

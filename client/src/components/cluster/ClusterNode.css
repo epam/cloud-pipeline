@@ -51,7 +51,7 @@
 .pod-container-indicator {
   margin-right: 5px;
   font-size: xx-small;
-  border-radius: 5px;
+  border-radius: 2px;
   padding: 1px 5px;
   border: 1px solid #cccccc;
   background-color: #fafafa;

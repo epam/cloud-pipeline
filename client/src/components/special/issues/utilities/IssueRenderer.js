@@ -49,7 +49,7 @@ const STYLE =
   'font-size: 90%;' +
   'color: #c7254e;' +
   'background-color: #f9f2f4;' +
-  'border-radius: 4px;' +
+  'border-radius: 2px;' +
   'box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);' +
   '}' +
   '.md-preview img {' +
@@ -81,7 +81,7 @@ const STYLE =
   'color: #333;' +
   'background-color: #f5f5f5;' +
   'border: 1px solid #ccc;' +
-  'border-radius: 4px;' +
+  'border-radius: 2px;' +
   '}' +
   '.md-preview pre > code {' +
   'padding: 0;' +

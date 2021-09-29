@@ -156,7 +156,7 @@ export default class FilterInput extends React.Component {
     }
     this.codeMirrorInstance.setSize('100%', '100%');
     this.codeMirrorInstance.display.wrapper.style.backgroundColor = this.props.isError ? '#fff9f9' : 'white';
-    this.codeMirrorInstance.display.wrapper.style.borderRadius = '4px';
+    this.codeMirrorInstance.display.wrapper.style.borderRadius = '2px';
     this.codeMirrorInstance.display.wrapper.style.border = this.props.isError ? '1px solid #f00' : '1px solid #ddd';
     this.codeMirrorInstance.off('change', this._onCodeChange);
     this.codeMirrorInstance.off('keyHandled', this._keyHandled);

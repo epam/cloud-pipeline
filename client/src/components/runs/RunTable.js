@@ -230,6 +230,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     filterParameter.filtered = filterParameter.finalValue !== null &&
       filterParameter.finalValue !== '';
     const newState = Object.assign(state, {[filterParameterName]: filterParameter});
+    debugger;
     if (this.table) {
       const nextFilters = this.table.state.filters;
       if (filterParameter.isDate) {

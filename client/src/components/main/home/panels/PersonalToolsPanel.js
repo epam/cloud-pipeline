@@ -528,7 +528,7 @@ export default class PersonalToolsPanel extends React.Component {
       }
       return [
         <Row key="name" type="flex" align="middle">
-          <span type="main" style={{fontSize: 'larger', fontWeight: 'bold'}}>
+          <span type="main" style={{fontWeight: 'bold'}}>
             {highlightText(name, search)}
           </span>
           <PlatformIcon

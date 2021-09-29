@@ -69,7 +69,7 @@ const SystemDiskConsumeThresholdPreference = {
           color: '#ae1726',
           border: '1px solid #ae1726',
           padding: '2px 5px',
-          borderRadius: 5,
+          borderRadius: 2,
           margin: 3,
           lineHeight: 1
         }}
@@ -96,7 +96,7 @@ const SystemMemoryConsumeThresholdPreference = {
           color: '#ae1726',
           border: '1px solid #ae1726',
           padding: '2px 5px',
-          borderRadius: 5,
+          borderRadius: 2,
           margin: 3,
           lineHeight: 1
         }}
@@ -124,7 +124,7 @@ const SystemMaxIdleTimeoutMinutesPreference = {
           color: '#f79e2c',
           border: '1px solid #f79e2c',
           padding: '2px 5px',
-          borderRadius: 5,
+          borderRadius: 2,
           margin: 3,
           lineHeight: 1
         }}

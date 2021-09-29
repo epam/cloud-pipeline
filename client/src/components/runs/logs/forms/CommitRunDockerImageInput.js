@@ -289,7 +289,7 @@ export default class CommitRunDockerImageInput extends React.Component {
           style={{
             backgroundColor: '#eee',
             border: '1px solid #ccc',
-            borderRadius: '4px 0px 0px 4px',
+            borderRadius: '2px 0px 0px 2px',
             height: 32
           }}>
           <RegistrySelector
@@ -320,7 +320,7 @@ export default class CommitRunDockerImageInput extends React.Component {
           style={{
             width: 200,
             flex: 1,
-            borderRadius: '0px 4px 4px 0px',
+            borderRadius: '0px 2px 2px 0px',
             marginLeft: -1
           }}
           onChange={this.onToolChanged}

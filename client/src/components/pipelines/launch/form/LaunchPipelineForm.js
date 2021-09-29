@@ -4538,7 +4538,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             flexDirection: 'column',
             margin: 5,
             border: '1px dashed #ccc',
-            borderRadius: 5,
+            borderRadius: 2,
             backgroundColor: '#fafafa',
             marginTop: 20,
             padding: 20

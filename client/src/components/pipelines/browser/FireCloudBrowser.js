@@ -75,7 +75,7 @@ export default class FireCloudBrowser extends React.Component {
           flexDirection: 'column',
           margin: 5,
           border: '1px dashed #ccc',
-          borderRadius: 5,
+          borderRadius: 2,
           backgroundColor: '#efefef'
         }}>
         <Row style={{margin: 2}}>

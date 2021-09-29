@@ -1712,7 +1712,7 @@ class DataStorage extends React.Component {
               sensitive={this.props.info.value.sensitive}
               displayTextEditableField={
                 <span>
-                    {this.props.info.value.name}
+                  {this.props.info.value.name}
                   <AWSRegionTag
                     className={styles.storageRegion}
                     darkMode
@@ -1722,7 +1722,7 @@ class DataStorage extends React.Component {
                     regionId={this.props.info.value.regionId}
                     style={{marginLeft: 5, fontSize: 'medium'}}
                   />
-                  </span>
+                </span>
               }
               subject={this.props.info.value}
             />

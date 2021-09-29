@@ -106,6 +106,7 @@ div[type=actions-container-background] {
 
 .pipeline-card .description {
   max-width: 400px;
+  font-size: smaller;
 }
 
 .project-tag {
@@ -133,7 +134,7 @@ div[type=actions-container-background] {
 .storage-region {
   margin-left: 2px;
   font-size: xx-small;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 1px 3px;
   vertical-align: middle;
   background-color: #555;

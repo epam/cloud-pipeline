@@ -81,7 +81,8 @@ export default class MyDataPanel extends React.Component {
         key="title"
         type="flex"
         align="middle"
-        style={{fontWeight: 'bold', fontSize: 'larger'}}>
+        style={{fontWeight: 'bold'}}
+      >
         {
           storage.type.toUpperCase() === 'NFS' &&
           <span
@@ -96,7 +97,7 @@ export default class MyDataPanel extends React.Component {
           <span className="storage-name">{highlightText(storage.name, search)}</span>
         </span>
       </Row>,
-      <Row key="path">
+      <Row key="path" style={{fontSize: 'smaller'}}>
         {highlightText(storage.pathMask, search)}
         {
           storage.sensitive

@@ -26,7 +26,7 @@ export default class EmailPreview extends React.Component {
     iFrameStyle: PropTypes.object
   };
 
-  codeTemplateStyle = 'padding: 2px 4px;font-size: 90%;color: #c7254e;background-color: #f9f2f4;border-radius: 4px;box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);';
+  codeTemplateStyle = 'padding: 2px 4px;font-size: 90%;color: #c7254e;background-color: #f9f2f4;border-radius: 2px;box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);';
 
   processHtml = (regexp, fieldRegex, html) => {
     const process = (str) => {
