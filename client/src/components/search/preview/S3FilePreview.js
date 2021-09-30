@@ -100,7 +100,11 @@ export default class S3FilePreview extends React.Component {
       name: PropTypes.string,
       description: PropTypes.string
     }),
-    lightMode: PropTypes.bool
+    lightMode: PropTypes.bool,
+    onPreviewLoaded: PropTypes.func,
+    fullscreen: PropTypes.bool,
+    onFullScreenChange: PropTypes.func,
+    fullScreenAvailable: PropTypes.bool
   };
 
   state = {
@@ -340,6 +344,10 @@ export default class S3FilePreview extends React.Component {
         className={styles.contentPreview}
         file={this.props.item.id}
         storageId={this.props.item.parentId}
+        onPreviewLoaded={this.props.onPreviewLoaded}
+        fullscreen={this.props.fullscreen}
+        onFullScreenChange={this.props.onFullScreenChange}
+        fullScreenAvailable={this.props.fullScreenAvailable}
       />
     );
   };

@@ -325,6 +325,20 @@
   bottom: 0;
   top: 0;
   z-index: 1001;
+  padding: 20px;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: large;
+  color: #666;
+  cursor: pointer;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button:hover {
+  color: #333;
 }
 
 .vsi-content-preview img {

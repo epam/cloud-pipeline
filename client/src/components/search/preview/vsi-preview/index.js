@@ -133,7 +133,7 @@ function getTilesInfo (file) {
     };
   }
   return null;
-};
+}
 
 @inject('dataStorageCache', 'dataStorages')
 @observer
@@ -146,7 +146,6 @@ class VSIPreview extends React.Component {
     pending: false,
     s3storageWrapperPending: true,
     s3storageWrapperError: undefined,
-    fullscreen: false,
     shareUrl: undefined,
     showShareUrlModal: false
   };
@@ -287,6 +286,16 @@ class VSIPreview extends React.Component {
     });
   };
 
+  reportPreviewLoaded = () => {
+    const {onPreviewLoaded} = this.props;
+    if (onPreviewLoaded) {
+      const {
+        tiles
+      } = this.state;
+      onPreviewLoaded({maximizedAvailable: !!tiles});
+    }
+  };
+
   fetchPreviewItems = () => {
     const {file, storageId, dataStorageCache} = this.props;
     if (this.saViewer) {
@@ -299,18 +308,17 @@ class VSIPreview extends React.Component {
         tiles: false,
         active: undefined,
         preview: undefined,
-        pending: false,
-        fullscreen: false
-      });
+        pending: false
+      }, this.reportPreviewLoaded);
     } else {
       this.setState({
         items: [],
         tiles: false,
         active: undefined,
         preview: undefined,
-        pending: true,
-        fullscreen: false
+        pending: true
       }, () => {
+        this.reportPreviewLoaded();
         const tilesInfo = getTilesInfo(file);
         if (tilesInfo) {
           getTiles(storageId, tilesInfo.tilesFolder)
@@ -320,7 +328,7 @@ class VSIPreview extends React.Component {
                   items: [],
                   tiles,
                   pending: false
-                });
+                }, this.reportPreviewLoaded);
               } else {
                 getFolderContents(storageId, tilesInfo.folder)
                   .then(items => {
@@ -342,14 +350,17 @@ class VSIPreview extends React.Component {
                       items: files,
                       tiles: false,
                       pending: false
-                    }, () => this.onChangePreview(items.length > 0 ? items[0].path : undefined));
+                    }, () => {
+                      this.onChangePreview(items.length > 0 ? items[0].path : undefined);
+                      this.reportPreviewLoaded();
+                    });
                   });
               }
             });
         } else {
           this.setState({
             pending: false
-          });
+          }, this.reportPreviewLoaded);
         }
       });
     }
@@ -611,15 +622,16 @@ class VSIPreview extends React.Component {
     const {
       storageId,
       fullScreenAvailable,
+      onFullScreenChange,
       shareAvailable,
       x,
       y,
       zoom,
-      roll
+      roll,
+      fullscreen
     } = this.props;
     const {
       tiles,
-      fullscreen,
       shareUrl
     } = this.state;
     if (!tiles || !storageId) {
@@ -673,9 +685,9 @@ class VSIPreview extends React.Component {
       }
     };
     const goFullScreen = () => {
-      this.setState({
-        fullscreen: !fullscreen
-      });
+      if (fullScreenAvailable && onFullScreenChange) {
+        onFullScreenChange(!fullscreen);
+      }
     };
     const capture = () => {
       const [x, y] = this.saViewer.MainView.Camera.GetWorldFocalPoint();
@@ -726,20 +738,18 @@ class VSIPreview extends React.Component {
           }}
         >
         </div>
+        {
+          fullScreenAvailable && (
+            <Icon
+              type={fullscreen ? 'shrink' : 'arrows-alt'}
+              onClick={goFullScreen}
+              className={styles.vsiPreviewFullscreenButton}
+            />
+          )
+        }
         <div
           className={styles.vsiPreviewButtonContainer}
         >
-          {
-            fullScreenAvailable && (
-              <Button
-                id="vsi-preview-fullscreen-button"
-                className={styles.vsiPreviewButton}
-                onClick={goFullScreen}
-              >
-                <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
-              </Button>
-            )
-          }
           <Button
             id="vsi-preview-capture-button"
             className={styles.vsiPreviewButton}
@@ -809,7 +819,10 @@ VSIPreview.propTypes = {
   y: PropTypes.number,
   zoom: PropTypes.number,
   roll: PropTypes.number,
-  onCameraChanged: PropTypes.func
+  onCameraChanged: PropTypes.func,
+  onPreviewLoaded: PropTypes.func,
+  fullscreen: PropTypes.bool,
+  onFullScreenChange: PropTypes.func
 };
 
 VSIPreview.defaultProps = {

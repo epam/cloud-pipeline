@@ -522,6 +522,13 @@ class FacetedSearch extends React.Component {
       presentationMode,
       showResults
     } = this.state;
+    const {
+      userDocumentTypes = []
+    } = this.state;
+    const documentTypes = Array.from(new Set([
+      ...((activeFilters || {})[DocumentTypeFilterName] || []),
+      ...(userDocumentTypes || [])
+    ]));
     return (
       <SearchResults
         key="search-results"
@@ -544,7 +551,7 @@ class FacetedSearch extends React.Component {
         showResults={showResults}
         onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
         mode={presentationMode}
-        documentTypes={(activeFilters || {})[DocumentTypeFilterName]}
+        documentTypes={documentTypes}
       />
     );
   };

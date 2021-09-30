@@ -17,42 +17,92 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon} from 'antd';
+import classNames from 'classnames';
 import Preview from '../index.js';
 import styles from './preview-modal.css';
 
-function PreviewModal ({
-  preview,
-  lightMode,
-  onClose
-}) {
-  if (!preview) {
-    return null;
-  }
-  const handleClosePreview = (event) => {
-    if (event && event.target === event.currentTarget) {
-      onClose && onClose();
-    }
+class PreviewModal extends React.Component {
+  state = {
+    maximized: false,
+    maximizedAvailable: false
   };
-  return (
-    <div
-      className={styles.previewWrapper}
-      onClick={handleClosePreview}
-    >
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.preview !== this.props.preview && !this.props.preview) {
+      this.resetMaximized();
+    }
+  }
+
+  resetMaximized () {
+    this.setState({
+      maximized: false,
+      maximizedAvailable: false
+    });
+  }
+
+  onPreviewLoaded = (options = {}) => {
+    const {
+      maximizedAvailable = false
+    } = options;
+    this.setState({
+      maximizedAvailable
+    });
+  };
+
+  handleMaximizePreview = (maximized = true) => {
+    this.setState({maximized});
+  };
+
+  render () {
+    const {
+      preview,
+      lightMode,
+      onClose
+    } = this.props;
+    if (!preview) {
+      return null;
+    }
+    const {maximized, maximizedAvailable} = this.state;
+    const handleClosePreview = (event) => {
+      if (event && event.target === event.currentTarget) {
+        onClose && onClose();
+        this.setState({maximized: false, maximizedAvailable: false});
+      }
+    };
+    return (
       <div
-        className={styles.preview}
+        className={styles.previewWrapper}
+        onClick={handleClosePreview}
       >
-        <Preview
-          item={preview}
-          lightMode={lightMode}
-        />
-        <Icon
-          type="close"
-          className={styles.closePreview}
-          onClick={handleClosePreview}
-        />
+        <div
+          className={styles.preview}
+        >
+          <Preview
+            item={preview}
+            lightMode={lightMode}
+            onPreviewLoaded={this.onPreviewLoaded}
+            fullscreen={maximized}
+            onFullScreenChange={this.handleMaximizePreview}
+            fullScreenAvailable={maximized && maximizedAvailable}
+          />
+          {
+            maximizedAvailable && (
+              <Icon
+                type="arrows-alt"
+                className={classNames(styles.previewButton, styles.maximize)}
+                onClick={() => this.handleMaximizePreview(true)}
+              />
+            )
+          }
+          <Icon
+            type="close"
+            className={classNames(styles.previewButton, styles.close)}
+            onClick={handleClosePreview}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 PreviewModal.propTypes = {

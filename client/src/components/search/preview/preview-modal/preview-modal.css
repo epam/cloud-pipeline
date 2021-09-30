@@ -43,7 +43,7 @@
   position: fixed;
 }
 
-.preview .close-preview {
+.preview .preview-button {
   position: absolute;
   right: 5px;
   top: 5px;
@@ -52,6 +52,16 @@
   font-size: large;
 }
 
-.preview .close-preview:hover {
+.preview .preview-button:hover {
   color: #333;
+}
+
+.preview-button.close {
+  right: 5px;
+}
+
+.preview-button.maximize {
+  right: 30px;
+  font-size: larger;
+  top: 8px;
 }
