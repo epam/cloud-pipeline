@@ -19,10 +19,11 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
 import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
-// todo Mention deprecated since 3.19.0 -> we should use new Mentions
-import {Mention} from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.css';
-import {Row, Tabs} from 'antd';
+import {
+  Row,
+  Tabs,
+  Mentions
+} from 'antd';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';
 import FileDropContainer from './FileDropContainer';
@@ -75,15 +76,14 @@ export default class IssueComment extends React.Component {
     if (fetchId === this.lastFetchId) {
       let suggestions = [];
       if (!request.error) {
-        suggestions = (request.value || []).map(user => {
-          return (
-            <Mention.Nav
-              value={user.userName}
-              data={user}>
-              {this.renderUserName(user)}
-            </Mention.Nav>
-          );
-        });
+        suggestions = (request.value || []).map(user => (
+          <Mentions.Option
+            value={user.userName}
+            key={user.id}
+          >
+            {this.renderUserName(user)}
+          </Mentions.Option>
+        ));
       }
       this.setState({
         pending: false,
@@ -110,13 +110,14 @@ export default class IssueComment extends React.Component {
       };
       const suggestions = result.map(link => {
         return (
-          <Mention.Nav
+          <Mentions.Option
             value={`[${link.type}:${link.id}:${link.displayName}]`}
-            data={link}>
+            key={`${link.type}_${link.id}`}
+          >
             <Row align="middle">
               {renderIcon(link.type)} {link.displayName}
             </Row>
-          </Mention.Nav>
+          </Mentions.Option>
         );
       });
       this.setState({
@@ -151,11 +152,14 @@ export default class IssueComment extends React.Component {
     });
   };
 
-  onChange = (contentState) => {
+  onChange = (value) => {
     this.setState({
-      rawText: Mention.toString(contentState)
+      rawText: value
     }, () => {
-      this.props.onChange && this.props.onChange({text: this.state.rawText, attachments: this.state.attachments});
+      this.props.onChange && this.props.onChange({
+        text: this.state.rawText,
+        attachments: this.state.attachments
+      });
     });
   };
 
@@ -227,22 +231,22 @@ export default class IssueComment extends React.Component {
               action={IssueAttachmentUpload.url}>
               {
                 !this.state.clear &&
-                <Mention
+                <Mentions
+                  prefix={['@', '#']}
                   ref={this.initializeMentionControl}
                   placeholder={this.props.placeholder || 'Description'}
                   disabled={this.props.disabled}
-                  defaultValue={Mention.toContentState(this.props.value ? (this.props.value.text || '') : '')}
+                  defaultValue={this.props.value ? (this.props.value.text || '') : ''}
                   loading={this.state.pending}
                   className={styles.issueDescription}
                   style={{height: this.props.height || 300}}
-                  suggestions={this.state.suggestions}
-                  onSearchChange={this.onSearchChange}
+                  onSearch={this.onSearchChange}
                   onSelect={this.onSelect}
                   onChange={this.onChange}
                   notFoundContent={notFoundContent}
-                  multiLines={true}
-                  prefix={['@', '#']}
-                />
+                >
+                  {this.state.suggestions}
+                </Mentions>
               }
             </FileDropContainer>
           </Tabs.TabPane>

@@ -174,7 +174,7 @@ export default class FileDropContainer extends React.Component {
   render () {
     return (
       <div
-        style={{position: 'relative'}}
+        style={{position: 'relative', padding: '1px'}}
         className={this.state.dragOver ? styles.dragOver : undefined}
         onDrop={this.onDrop}
         onDragLeave={this.onDragLeave}
