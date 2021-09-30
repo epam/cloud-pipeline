@@ -931,9 +931,19 @@ public class GrantPermissionManager {
     }
 
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
-            boolean includeInherited, List<Sid> sids) {
+                                       boolean includeInherited, List<Sid> sids) {
         if (entity instanceof NFSDataStorage) {
-            return getActualMaskNFS((NFSDataStorage) entity);
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+            switch (mountStatus) {
+                case MOUNT_DISABLED:
+                    return AclPermission.ALL_DENYING_PERMISSIONS.getMask();
+                case READ_ONLY:
+                    if (permissionsHelper.isAllowed(AclPermission.READ_NAME, entity)) {
+                        return AclPermission.READ.getMask();
+                    }
+                default:
+                    break;
+            }
         }
         Acl child = aclService.getAcl(entity);
         //case for Runs and Nodes, that are not registered as ACL entities
@@ -978,8 +988,7 @@ public class GrantPermissionManager {
         }
         if (CollectionUtils.isEmpty(entity.getLeaves()) && CollectionUtils
                 .isEmpty(entity.getChildren()) && !permissionGranted) {
-            entitiesToRemove.putIfAbsent(entity.getAclClass(), new HashSet<>());
-            entitiesToRemove.get(entity.getAclClass()).add(entity.getId());
+            addToEntitiesToBeRemoved(entitiesToRemove, entity);
         }
         entity.setMask(permissionsService.mergeMask(currentMask));
         if (entity instanceof DockerRegistry) {
@@ -987,32 +996,35 @@ public class GrantPermissionManager {
         }
     }
 
-    private int getActualMaskNFS(final NFSDataStorage entity) {
-        final NFSStorageMountStatus status = entity.getMountStatus();
-        if (NFSStorageMountStatus.MOUNT_DISABLED.equals(status)) {
-            return AclPermission.ALL_DENYING_PERMISSIONS.getMask();
-        } else if (NFSStorageMountStatus.READ_ONLY.equals(status)) {
-            return AclPermission.READ.getMask();
-        } else {
-            return entity.getMask();
-        }
-    }
-
     private void filterChildren(int parentMask, List<? extends AbstractSecuredEntity> children,
             Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids) {
         ListUtils.emptyIfNull(children).forEach(child -> {
-            final int originalMask = getPermissionsMask(child, false, false, sids);
-            if (child instanceof NFSDataStorage) {
-                child.setMask(originalMask);
-                return;
-            }
-            final int mask = permissionsService.mergeParentMask(originalMask, parentMask);
+            int mask = permissionsService
+                    .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
-                entitiesToRemove.putIfAbsent(child.getAclClass(), new HashSet<>());
-                entitiesToRemove.get(child.getAclClass()).add(child.getId());
+                addToEntitiesToBeRemoved(entitiesToRemove, child);
+            }
+            if (child instanceof NFSDataStorage) {
+                final NFSStorageMountStatus mountStatus = ((NFSDataStorage) child).getMountStatus();
+                switch (mountStatus) {
+                    case MOUNT_DISABLED:
+                        addToEntitiesToBeRemoved(entitiesToRemove, child);
+                        return;
+                    case READ_ONLY:
+                        child.setMask(AclPermission.READ.getMask());
+                        return;
+                    default:
+                        break;
+                }
             }
             child.setMask(permissionsService.mergeMask(mask));
         });
+    }
+
+    private void addToEntitiesToBeRemoved(final Map<AclClass, Set<Long>> entitiesToRemove,
+                                          final AbstractSecuredEntity entity) {
+        entitiesToRemove.putIfAbsent(entity.getAclClass(), new HashSet<>());
+        entitiesToRemove.get(entity.getAclClass()).add(entity.getId());
     }
 
     private void clearWriteExecutePermissions(AbstractSecuredEntity entity) {

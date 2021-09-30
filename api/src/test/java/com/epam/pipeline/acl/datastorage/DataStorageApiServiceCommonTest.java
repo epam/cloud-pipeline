@@ -42,7 +42,6 @@ import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.acls.model.Permission;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.AopTestUtils;
 
@@ -751,9 +750,5 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
         assertThrows(AccessDeniedException.class, () ->
                 dataStorageApiService.generateCredentials(dataStorageActionList));
-    }
-
-    private boolean hasMask(final Integer entityMask, final Permission permission) {
-        return (entityMask & permission.getMask()) == permission.getMask();
     }
 }
