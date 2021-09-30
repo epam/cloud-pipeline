@@ -248,8 +248,9 @@ class StorageMounter:
     @staticmethod
     def create_directory(path, task_name):
         try:
-            if not os.path.exists(path):
-                os.makedirs(path)
+            expanded_path = os.path.expandvars(path)
+            if not os.path.exists(expanded_path):
+                os.makedirs(expanded_path)
             return True
         except:
             Logger.warn('Failed to create mount directory: {path}'.format(path=path), task_name=task_name)
