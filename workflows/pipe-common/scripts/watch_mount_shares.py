@@ -451,8 +451,10 @@ class NFSMountWatcher:
                     NFSMountWatcher.save_details_status_readonly(mount_details)
                 else:
                     NFSMountWatcher.save_details_status_active(mount_details)
-        else:
+        elif active_mount_status == MOUNT_STATUS_ACTIVE:
             mount_points[mount_details.mount_point] = mount_details.mount_source
+        else:
+            logging.warning(format_message('Unknown mount status [{}]'.format(active_mount_status)))
 
     @staticmethod
     def save_mount_details_status_disabled(mount_details):
