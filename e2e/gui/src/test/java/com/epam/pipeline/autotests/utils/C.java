@@ -84,6 +84,8 @@ public class C {
         ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
         ANOTHER_ADMIN_TOKEN = conf.getProperty("e2e.ui.another.admin.token");
         DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.instance.types");
+        DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER = conf.getProperty(
+                "e2e.ui.default.cluster.allowed.instance.types.docker");
         CLUSTER_ALLOWED_MASKS = conf.getProperty("e2e.ui.cluster.allowed.masks");
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
@@ -96,6 +98,7 @@ public class C {
         SUPPORT_CONTENT = conf.getProperty("e2e.ui.help.content");
         LUSTRE_MOUNT_OPTIONS = conf.getProperty("e2e.ui.lustre.fs.mount.options");
         LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH = conf.getProperty("e2e.ui.launch.system.parameters.path");
+        LAUNCH_CONTAINER_CPU_RESOURCES_VALUE = conf.getProperty("e2e.ui.launch.container.cpu.resource");
         PIPE_OPERATION_SYSTEM = conf.getProperty("e2e.ui.pipe.operation.system");
         PIPE_INSTALLATION_CONTENT = conf.getProperty("e2e.ui.pipe.installation.content");
         PIPE_CONFIG_CONTENT_PATH = conf.getProperty("e2e.ui.pipe.config.content.path");
@@ -158,6 +161,7 @@ public class C {
     public static final String ANOTHER_INSTANCE;
     public static final String DEFAULT_INSTANCE_FAMILY_NAME;
     public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES;
+    public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER;
     public static final String CLUSTER_ALLOWED_MASKS;
     public static final String DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
 
@@ -180,6 +184,7 @@ public class C {
     public static final String SUPPORT_CONTENT;
     public static final String LUSTRE_MOUNT_OPTIONS;
     public static final String LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH;
+    public static final String LAUNCH_CONTAINER_CPU_RESOURCES_VALUE;
     public static final String PIPE_OPERATION_SYSTEM;
     public static final String PIPE_INSTALLATION_CONTENT;
     public static final String PIPE_CONFIG_CONTENT_PATH;

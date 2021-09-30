@@ -53,4 +53,34 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
                 .switchToLaunch()
                 .checkLaunchSystemParameters(launchConfig);
     }
+
+    @Test
+    @TestCase(value = {""})
+    public void checkLaunchContainerCpuResource() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToLaunch()
+                .checkLaunchContainerCpuResource(C.LAUNCH_CONTAINER_CPU_RESOURCES_VALUE);
+    }
+
+    @Test
+    @TestCase(value = {""})
+    public void checkClusterAllowedInstanceTypes() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToCluster()
+                .checkClusterAllowedInstanceTypes(C.DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES);
+    }
+
+    @Test
+    @TestCase(value = {""})
+    public void checkClusterAllowedInstanceTypesDocker() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToCluster()
+                .checkClusterAllowedInstanceTypesDocker(C.DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
+    }
 }
