@@ -475,7 +475,7 @@ class NFSMountWatcher:
                     NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
                 else:
                     NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
-               return
+                return
         elif active_mount_status != MOUNT_STATUS_ACTIVE:
                 logging.info(format_message('Received unknown status [{}] for [{}]'.format(active_mount_status,
                                                                                            mount_details.mount_point)))
