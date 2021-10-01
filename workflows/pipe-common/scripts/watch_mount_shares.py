@@ -421,10 +421,6 @@ class NFSMountWatcher:
             NFSMountWatcher.process_currently_disabled_mount(modified_mount_details, mount_points, new_mount_status)
         elif current_mount_status == MOUNT_STATUS_READ_ONLY:
             NFSMountWatcher.process_currently_ro_mount(modified_mount_details, mount_points, new_mount_status)
-        elif current_mount_status == MOUNT_STATUS_ACTIVE:
-            # we should fall here only in case RO remount failed during `process_active_mounts_found`
-            if NFSMountWatcher.mount_storage(modified_mount_details, False):
-                NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         else:
             logging.warning(format_message('Unknown mount status [{}]'.format(new_mount_status)))
             NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details, current_mount_status)
@@ -441,7 +437,7 @@ class NFSMountWatcher:
                 if NFSMountWatcher.mount_storage(modified_mount_details, False):
                     mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                 else:
-                    NFSMountWatcher.save_details_status_readonly(modified_mount_details)
+                    NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         else:
@@ -474,7 +470,7 @@ class NFSMountWatcher:
                 if NFSMountWatcher.mount_storage(mount_details, True):
                     NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
                 else:
-                    NFSMountWatcher.save_details_status_active(mount_details, use_tmp_file=False)
+                    NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
         elif active_mount_status == MOUNT_STATUS_ACTIVE:
             mount_points[mount_details.mount_point] = mount_details.mount_source
         else:
@@ -515,6 +511,9 @@ class NFSMountWatcher:
         mount_options = COMMA.join(mount_options)
         mount_command = NFS_MOUNT_CMD_PATTERN.format(
             mount_details.mount_type, mount_options, mount_details.mount_source, mount_details.mount_point)
+        logging.info(format_message('Trying to mount [{}] to [{}] in RO=[{}] mode'.format(mount_details.mount_source,
+                                                                                          mount_details.mount_point,
+                                                                                          read_only)))
         out, res = execute_command(mount_command)
         if not res:
             logging.warning(
