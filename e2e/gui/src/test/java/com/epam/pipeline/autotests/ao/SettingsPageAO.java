@@ -1277,8 +1277,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class ClusterTabAO extends PreferencesAO {
 
-            private final By dockerExtraMulti = getByClusterField("cluster.docker.extra_multi");
-            private final By instanceHddExtraMulti = getByClusterField("cluster.instance.extra_multi");
+            private final By dockerExtraMulti = getByField("cluster.docker.extra_multi");
+            private final By instanceHddExtraMulti = getByField("cluster.instance.extra_multi");
+            private final By clusterAllowedInstanceTypes = getByField("cluster.allowed.instance.types");
+            private final By clusterAllowedInstanceTypesDocker = getByField(
+                    "cluster.allowed.instance.types.docker");
 
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1306,21 +1309,18 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return setClusterValue(mask, value);
             }
 
-            private By getByClusterField(final String variable) {
-                return new By() {
-                    @Override
-                    public List<WebElement> findElements(final SearchContext context) {
-                        return $$(byClassName("preference-group__preference-row"))
-                                .stream()
-                                .filter(element -> exactText(variable).apply(element))
-                                .map(e -> e.find(".ant-input-sm"))
-                                .collect(toList());
-                    }
-                };
+            public ClusterTabAO checkClusterAllowedInstanceTypes(final String value) {
+                ensure(clusterAllowedInstanceTypes, value(value));
+                return this;
+            }
+
+            public ClusterTabAO checkClusterAllowedInstanceTypesDocker(final String value) {
+                ensure(clusterAllowedInstanceTypesDocker, value(value));
+                return this;
             }
 
             private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
-                By clusterVariable = getByClusterField(clusterPref);
+                By clusterVariable = getByField(clusterPref);
                 setByVariable(value, clusterVariable);
                 return this;
             }
@@ -1343,26 +1343,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class SystemTabAO extends PreferencesAO {
 
-            private final By maxIdleTimeout = getBySystemField("system.max.idle.timeout.minutes");
-            private final By idleActionTimeout = getBySystemField("system.idle.action.timeout.minutes");
-            private final By idleCpuThreshold = getBySystemField("system.idle.cpu.threshold");
-            private final By idleAction = getBySystemField("system.idle.action");
+            private final By maxIdleTimeout = getByField("system.max.idle.timeout.minutes");
+            private final By idleActionTimeout = getByField("system.idle.action.timeout.minutes");
+            private final By idleCpuThreshold = getByField("system.idle.cpu.threshold");
+            private final By idleAction = getByField("system.idle.action");
 
             SystemTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
-            }
-
-            private By getBySystemField(final String variable) {
-                return new By() {
-                    @Override
-                    public List<WebElement> findElements(final SearchContext context) {
-                        return $$(byClassName("preference-group__preference-row"))
-                                .stream()
-                                .filter(element -> exactText(variable).apply(element))
-                                .map(e -> e.find(".ant-input-sm"))
-                                .collect(toList());
-                    }
-                };
             }
 
             public SystemTabAO setMaxIdleTimeout(final String value) {
@@ -1417,7 +1404,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class DockerSecurityAO extends PreferencesAO {
 
             private final By policyDenyNotScanned = getByDockerSecurityCheckbox("security.tools.policy.deny.not.scanned");
-            private final By graceHours = getByDockerSecurityField("security.tools.grace.hours");
+            private final By graceHours = getByField("security.tools.grace.hours");
 
             DockerSecurityAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1477,25 +1464,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
                 };
             }
-
-            private By getByDockerSecurityField(final String variable) {
-                return new By() {
-                    @Override
-                    public List<WebElement> findElements(final SearchContext context) {
-                        return $$(byClassName("preference-group__preference-row"))
-                                .stream()
-                                .filter(element -> exactText(variable).apply(element))
-                                .map(e -> e.find(".ant-input-sm"))
-                                .collect(toList());
-                    }
-                };
-            }
         }
 
         public class AutoscalingTabAO extends PreferencesAO {
 
-            private final By scaleDownTimeout = getByAutoscalingField("ge.autoscaling.scale.down.timeout");
-            private final By scaleUpTimeout = getByAutoscalingField("ge.autoscaling.scale.up.timeout");
+            private final By scaleDownTimeout = getByField("ge.autoscaling.scale.down.timeout");
+            private final By scaleUpTimeout = getByField("ge.autoscaling.scale.up.timeout");
 
             AutoscalingTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1513,19 +1487,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 clear(scaleUpTimeout);
                 setValue(scaleUpTimeout, value);
                 return this;
-            }
-
-            private By getByAutoscalingField(final String variable) {
-                return new By() {
-                    @Override
-                    public List<WebElement> findElements(final SearchContext context) {
-                        return $$(byClassName("preference-group__preference-row"))
-                                .stream()
-                                .filter(element -> exactText(variable).apply(element))
-                                .map(e -> e.find(".ant-input-sm"))
-                                .collect(toList());
-                    }
-                };
             }
         }
 
@@ -1564,6 +1525,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class LaunchAO extends PreferencesAO {
 
             public static final String LAUNCH_PARAMETERS = "launch.system.parameters";
+            public static final String LAUNCH_CONTAINER_CPU_RESOURCES = "launch.container.cpu.resource";
 
             LaunchAO(PipelinesLibraryAO pipelinesLibraryAO) {
                 super(pipelinesLibraryAO);
@@ -1580,6 +1542,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         )));
                 assertTrue(launchSystemParameters.contains(value),
                         format("Value %s isn't found in '%s' preference", value, launchSystemParameters));
+                return this;
+            }
+
+            public LaunchAO checkLaunchContainerCpuResource(final String value) {
+                ensure(getByField(LAUNCH_CONTAINER_CPU_RESOURCES), value(value));
                 return this;
             }
         }
