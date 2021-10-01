@@ -39,6 +39,8 @@ LNET_SPLIT = '@tcp:/'
 MOUNT_STATUS_DISABLED = 'MOUNT_DISABLED'
 MOUNT_STATUS_READ_ONLY = 'READ_ONLY'
 MOUNT_STATUS_ACTIVE = 'ACTIVE'
+MOUNT_STATUS_UNKNOWN = 'UNKNOWN'
+DEFAULT_MOUNT_STATUS = os.getenv('CP_CAP_NFS_OBSERVER_DEFAULT_STORAGE_STATUS', 'UNKNOWN')
 
 NEWLINE = '\n'
 COMMA = ','
@@ -365,7 +367,7 @@ class NFSMountWatcher:
         if matching_storage:
             return matching_storage.mount_status
         else:
-            return MOUNT_STATUS_DISABLED
+            return DEFAULT_MOUNT_STATUS
 
     @staticmethod
     def _get_available_storages_dict():
@@ -401,7 +403,8 @@ class NFSMountWatcher:
             new_mount_status = NFSMountWatcher._get_mount_status(available_storages_dict, modified_mount_details,
                                                                  default=current_mount_status)
             if new_mount_status:
-                if current_mount_status == new_mount_status:
+                if current_mount_status == new_mount_status \
+                        or current_mount_status == MOUNT_STATUS_UNKNOWN:
                     NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details,
                                                                                current_mount_status)
                 else:
@@ -465,16 +468,18 @@ class NFSMountWatcher:
         if active_mount_status == MOUNT_STATUS_DISABLED:
             if NFSMountWatcher.try_to_unmount(mount_details):
                 NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
+                return
         elif active_mount_status == MOUNT_STATUS_READ_ONLY:
             if NFSMountWatcher.try_to_unmount(mount_details):
                 if NFSMountWatcher.mount_storage(mount_details, True):
                     NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
                 else:
                     NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
-        elif active_mount_status == MOUNT_STATUS_ACTIVE:
-            mount_points[mount_details.mount_point] = mount_details.mount_source
-        else:
-            logging.warning(format_message('Unknown mount status [{}]'.format(active_mount_status)))
+               return
+        elif active_mount_status != MOUNT_STATUS_ACTIVE:
+                logging.info(format_message('Received unknown status [{}] for [{}]'.format(active_mount_status,
+                                                                                           mount_details.mount_point)))
+        mount_points[mount_details.mount_point] = mount_details.mount_source
 
     @staticmethod
     def save_mount_details_status_disabled(mount_details, use_tmp_file=True):
