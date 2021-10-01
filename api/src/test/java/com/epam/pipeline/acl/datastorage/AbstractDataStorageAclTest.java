@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,12 +68,12 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
                                           final AbstractDataStorage entity,
                                           final UserContext context) {
         mockAuthUser(user);
-        mockS3bucket(entity);
+        mockStorage(entity);
         mockUserContext(context);
     }
 
-    protected void mockS3bucket(final AbstractDataStorage entity) {
-        doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, ID);
+    protected void mockStorage(final AbstractDataStorage entity) {
+        doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, entity.getId());
     }
 
     @Override

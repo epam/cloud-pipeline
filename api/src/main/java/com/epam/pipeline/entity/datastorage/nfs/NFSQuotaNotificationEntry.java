@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.datastorage.nfs;
 
-import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import lombok.Data;
 
 import java.util.Set;
@@ -26,5 +25,5 @@ public class NFSQuotaNotificationEntry {
 
     private final Double value;
     private final String type;
-    private final Set<StorageQuotaAction> actions;
+    private final Set<String> actions;
 }

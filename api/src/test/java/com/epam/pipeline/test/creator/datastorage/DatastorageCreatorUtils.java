@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
@@ -158,6 +159,13 @@ public final class DatastorageCreatorUtils {
 
     public static NFSDataStorage getNfsDataStorage() {
         return new NFSDataStorage(ID, TEST_STRING, TEST_PATH);
+    }
+
+    public static NFSDataStorage getNfsDataStorage(final NFSStorageMountStatus status, final String owner) {
+        final NFSDataStorage nfsDataStorage = getNfsDataStorage();
+        nfsDataStorage.setMountStatus(status);
+        nfsDataStorage.setOwner(owner);
+        return nfsDataStorage;
     }
 
     public static NFSDataStorage getNfsDataStorage(final Long id, final String path, final String options,
