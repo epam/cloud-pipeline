@@ -341,6 +341,7 @@ class NFSMountWatcher:
     def _get_target_mount_points():
         mount_points = dict()
         available_storages_dict = NFSMountWatcher._get_available_storages_dict()
+        is_admin = NFSMountWatcher._is_admin()
         out, res = execute_command(MNT_LISTING_COMMAND.format(TARGET_FS_TYPES))
         if not res or not out:
             logging.info(format_message('Unable to retrieve [{}] mounts'.format(TARGET_FS_TYPES)))
@@ -352,15 +353,19 @@ class NFSMountWatcher:
                         mount_details = MountPointDetails.from_array(mnt_details)
                         mount_attributes = mount_details.mount_attributes.split(COMMA)
                         active_mount_status = NFSMountWatcher._get_mount_status(available_storages_dict, mount_details,
-                                                                                default=MOUNT_STATUS_ACTIVE)
+                                                                                is_admin, default=MOUNT_STATUS_ACTIVE)
                         if READ_WRITE_OPTION in mount_attributes:
                             NFSMountWatcher.process_active_mounts_found(active_mount_status, mount_details,
                                                                         mount_points)
-        NFSMountWatcher._process_modified_mounts(available_storages_dict, mount_points)
+        NFSMountWatcher._process_modified_mounts(available_storages_dict, mount_points, is_admin)
         return mount_points
 
     @staticmethod
-    def _get_mount_status(available_storages_dict, mount_details, default):
+    def _get_mount_status(available_storages_dict, mount_details, is_admin, default):
+        if is_admin is None:
+            return MOUNT_STATUS_UNKNOWN
+        elif is_admin:
+            return MOUNT_STATUS_ACTIVE
         if available_storages_dict is None:
             return default
         matching_storage = NFSMountWatcher._find_matching_storage(available_storages_dict, mount_details)
@@ -381,7 +386,23 @@ class NFSMountWatcher:
             return None
 
     @staticmethod
-    def _process_modified_mounts(available_storages_dict, mount_points):
+    def _is_admin():
+        api = PipelineAPI(os.getenv('API'), 'logs')
+        try:
+            user = api.load_current_user()
+            if 'roles' in user and user['roles']:
+                roles = user['roles']
+                roles_names = [role['name'] for role in roles]
+                return 'ROLE_ADMIN' in roles_names
+            else:
+                return False
+        except RuntimeError as e:
+            logging.warning(format_message('Unable to load current user: {}'.format(str(e))))
+            return None
+
+
+    @staticmethod
+    def _process_modified_mounts(available_storages_dict, mount_points, is_admin):
         modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path()
         if not os.path.exists(modified_mounts_file):
             logging.info(format_message('No modified mounts to check...'))
@@ -401,7 +422,7 @@ class NFSMountWatcher:
             modified_mount_details = MountPointDetails.from_array(modified_mount_summary[0:-1])
             current_mount_status = modified_mount_summary[-1]
             new_mount_status = NFSMountWatcher._get_mount_status(available_storages_dict, modified_mount_details,
-                                                                 default=current_mount_status)
+                                                                 is_admin, default=current_mount_status)
             if new_mount_status:
                 if current_mount_status == new_mount_status \
                         or current_mount_status == MOUNT_STATUS_UNKNOWN:
