@@ -61,9 +61,14 @@ public class SearchManager {
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path) {
+        return getStorageUsage(dataStorage, path, false);
+    }
+
+    public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
+                                        final boolean allowNoIndex) {
         try {
             final SearchResponse searchResponse = globalSearchElasticHelper.buildClient().search(requestBuilder
-                    .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path));
+                    .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path, allowNoIndex));
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);

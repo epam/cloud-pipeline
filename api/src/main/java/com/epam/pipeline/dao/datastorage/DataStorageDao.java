@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
@@ -67,6 +69,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStorageByIdQuery;
     private String createDataStorageQuery;
     private String updateDataStorageQuery;
+    private String updateDataStorageMountStatusQuery;
     private String deleteDataStorageQuery;
     private String loadRootDataStoragesQuery;
     private String loadDataStorageByNameQuery;
@@ -102,15 +105,23 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             dataStorage.setCreatedDate(DateUtils.now());
         }
         getNamedParameterJdbcTemplate().update(createDataStorageQuery,
-                DataStorageParameters.getParameters(dataStorage));
+                DataStorageParameters.getParameters(dataStorage, true));
         updateToolsToMountForDataStorage(dataStorage);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateDataStorage(AbstractDataStorage dataStorage) {
         getNamedParameterJdbcTemplate().update(updateDataStorageQuery,
-                DataStorageParameters.getParameters(dataStorage));
+                DataStorageParameters.getParameters(dataStorage, false));
         updateToolsToMountForDataStorage(dataStorage);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateDataStorageMountStatus(final Long storageId, final NFSStorageMountStatus mountStatus) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_ID.name(), storageId);
+        params.addValue(DataStorageParameters.MOUNT_STATUS.name(), mountStatus.name());
+        getNamedParameterJdbcTemplate().update(updateDataStorageMountStatusQuery, params);
     }
 
     private void updateToolsToMountForDataStorage(final AbstractDataStorage dataStorage) {
@@ -309,6 +320,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
+    public void setUpdateDataStorageMountStatusQuery(String updateDataStorageMountStatusQuery) {
+        this.updateDataStorageMountStatusQuery = updateDataStorageMountStatusQuery;
+    }
+
+    @Required
     public void setLoadDataStorageByNameQuery(String loadDataStorageByNameQuery) {
         this.loadDataStorageByNameQuery = loadDataStorageByNameQuery;
     }
@@ -409,9 +425,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         TOOL_REGISTRY,
         ALL_TOOL_VERSIONS,
         TOOL_VERSION_ID,
-        TOOL_VERSION;
+        TOOL_VERSION,
+        MOUNT_STATUS;
 
-        static MapSqlParameterSource getParameters(AbstractDataStorage dataStorage) {
+        static MapSqlParameterSource getParameters(final AbstractDataStorage dataStorage,
+                                                   final boolean setStorageMountStatus) {
             MapSqlParameterSource params = new MapSqlParameterSource();
 
             params.addValue(DATASTORAGE_ID.name(), dataStorage.getId());
@@ -443,6 +461,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(REGION_ID.name(), blob.getRegionId());
             } else if (dataStorage instanceof GSBucketStorage) {
                 params.addValue(REGION_ID.name(), ((GSBucketStorage)dataStorage).getRegionId());
+            } else if (dataStorage instanceof NFSDataStorage && setStorageMountStatus) {
+                params.addValue(MOUNT_STATUS.name(), ((NFSDataStorage) dataStorage).getMountStatus().name());
             }
 
             addPolicyParameters(dataStorage, params);
@@ -518,7 +538,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     fileShareMountId,
                     rs.getString(S3_KMS_KEY_ARN.name()),
                     rs.getString(S3_TEMP_CREDS_ROLE.name()),
-                    rs.getBoolean(S3_USE_ASSUMED_CREDS.name()));
+                    rs.getBoolean(S3_USE_ASSUMED_CREDS.name()),
+                    rs.getString(MOUNT_STATUS.name()));
 
             dataStorage.setShared(rs.getBoolean(SHARED.name()));
             dataStorage.setDescription(rs.getString(DESCRIPTION.name()));

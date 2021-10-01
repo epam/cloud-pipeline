@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -399,6 +401,20 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testUpdateDataStorageMountStatus() {
+        final DataStorageVO storageVO =
+            ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS, PATH, WITHOUT_PARENT_ID,
+                                                      TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        assertNfsMountStatus(saved, NFSStorageMountStatus.ACTIVE);
+        assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.ACTIVE);
+        final AbstractDataStorage updated = storageManager.updateMountStatus(saved, NFSStorageMountStatus.READ_ONLY);
+        assertNfsMountStatus(updated, NFSStorageMountStatus.READ_ONLY);
+        assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.READ_ONLY);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateDefaultUserStorage() {
         final Optional<AbstractDataStorage> defaultStorage = storageManager.createDefaultStorageForUser(NAME);
         Assert.assertTrue(defaultStorage.isPresent());
@@ -539,5 +555,11 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         }
 
         return path;
+    }
+
+    private void assertNfsMountStatus(final AbstractDataStorage storage, final NFSStorageMountStatus status) {
+        Assert.assertEquals(DataStorageType.NFS, storage.getType());
+        final NFSDataStorage nfsDataStorage = (NFSDataStorage) storage;
+        Assert.assertEquals(status, nfsDataStorage.getMountStatus());
     }
 }
