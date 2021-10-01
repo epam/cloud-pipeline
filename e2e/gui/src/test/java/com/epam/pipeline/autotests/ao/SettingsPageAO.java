@@ -58,7 +58,6 @@ import static org.testng.Assert.assertTrue;
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
         Authorization {
 
-    final String nextPage = "Next Page";
     protected PipelinesLibraryAO parentAO;
 
     @Override
@@ -184,6 +183,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     }
 
     public class SystemEventsAO extends SettingsPageAO {
+        public static final String NEXT_PAGE = "Next Page";
+
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
                 entry(REFRESH, context().find(byId("refresh-notifications-button"))),
@@ -221,15 +222,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public SelenideElement getEntry(String title) {
             sleep(1, SECONDS);
             return elements().get(TABLE)
-                    .find(byXpath(format(
-                            ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)));
+                    .find(byXpath(
+                            format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)));
         }
 
         public SystemEventsEntry searchForTableEntry(String title) {
             sleep(1, SECONDS);
             while (!getEntry(title).isDisplayed()
-                    && $(byTitle(nextPage)).has(not(cssClass("ant-pagination-disabled")))) {
-                click(byTitle(nextPage));
+                    && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+                click(byTitle(NEXT_PAGE));
             }
             SelenideElement entry = getEntry(title).shouldBe(visible);
             return new SystemEventsEntry(this, title, entry);
@@ -273,8 +274,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         private void removeEntryIfExist(String title) {
             sleep(1, SECONDS);
             while (!getEntry(title).isDisplayed()
-                    && $(byTitle(nextPage)).has(not(cssClass("ant-pagination-disabled")))) {
-                click(byTitle(nextPage));
+                    && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+                click(byTitle(NEXT_PAGE));
             }
             performIf(byXpath(format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)),
                     exist, entry -> removeEntry(getEntry(title))
@@ -545,8 +546,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             public UserEntry searchForUserEntry(String login) {
                 sleep(1, SECONDS);
                 while (!getUser(login).isDisplayed()
-                        && $(byTitle(nextPage)).has(not(cssClass("ant-pagination-disabled")))) {
-                    click(byTitle(nextPage));
+                        && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+                    click(byTitle(NEXT_PAGE));
                 }
                 SelenideElement entry = getUser(login).shouldBe(visible);
                 return new UserEntry(this, login, entry);

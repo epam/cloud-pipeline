@@ -52,7 +52,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     private final String criticalNotificationBodyText = "critical_notification_body_text";
     private final String deletionMessageFormat = "Are you sure you want to delete notification '%s'?";
     private final List<String> testNotifications = Arrays.asList(infoNotification, infoEditedTitle,
-                            warningNotification, warningActiveNotification, criticalNotification);
+            warningNotification, warningActiveNotification, criticalNotification);
 
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
@@ -177,7 +177,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
                 .click(EXPAND)
                 .ensureBodyHasText(infoEditedBodyText);
-        if(impersonateMode()) {
+        if (impersonateMode()) {
             return;
         }
         refresh();
