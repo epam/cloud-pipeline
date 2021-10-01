@@ -493,12 +493,8 @@ public class GrantPermissionManager {
 
     public boolean hasDataStoragePathsPermission(final List<PathDescription> paths, final String permissionName) {
         return ListUtils.emptyIfNull(paths).stream()
-                .allMatch(path -> pathAllowed(permissionName, path));
-    }
-
-    private boolean pathAllowed(String permissionName, PathDescription path) {
-        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId());
-        return permissionsHelper.isAllowed(permissionName, storage);
+                .allMatch(path -> permissionsHelper.isAllowed(permissionName,
+                        entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId())));
     }
 
     public boolean checkStorageShared(Long storageId) {
