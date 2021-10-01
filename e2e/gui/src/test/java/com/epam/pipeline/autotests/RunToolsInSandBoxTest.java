@@ -25,7 +25,6 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
 
-import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -106,11 +105,18 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-495"})
     public void validateEndpointLink() {
-        runsMenu()
-                .show(getLastRunId())
-                .clickEndpoint()
-                .sleep(10, SECONDS)
-                .validateEndpointPage(C.LOGIN);
+        ToolPageAO endpointPage = null;
+        try {
+            endpointPage = runsMenu()
+                    .show(getLastRunId())
+                    .clickEndpoint()
+                    .sleep(10, SECONDS)
+                    .validateEndpointPage(C.LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})

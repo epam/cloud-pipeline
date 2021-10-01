@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -184,6 +183,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     }
 
     public class SystemEventsAO extends SettingsPageAO {
+        public static final String NEXT_PAGE = "Next Page";
+
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
                 entry(REFRESH, context().find(byId("refresh-notifications-button"))),
@@ -218,12 +219,20 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public SelenideElement getEntry(String title) {
+            sleep(1, SECONDS);
+            return elements().get(TABLE)
+                    .find(byXpath(
+                            format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)));
+        }
+
         public SystemEventsEntry searchForTableEntry(String title) {
             sleep(1, SECONDS);
-            SelenideElement entry = elements().get(TABLE)
-                    .find(byXpath(format(
-                            ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)))
-                    .shouldBe(visible);
+            while (!getEntry(title).isDisplayed()
+                    && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+                click(byTitle(NEXT_PAGE));
+            }
+            SelenideElement entry = getEntry(title).shouldBe(visible);
             return new SystemEventsEntry(this, title, entry);
         }
 
@@ -246,21 +255,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"));
         }
 
-        public List<String> getAllEntriesNames() {
+        public void deleteTestEntries(final List<String> testEntries) {
             sleep(2, SECONDS);
-            return context().find(byClassName("ant-table-content"))
-                    .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]"))
-                    .stream()
-                    .map(e -> e.find(byClassName("notification-title-column")).text())
-                    .collect(toList());
-        }
-
-        public void deleteTestEntries(final List<String> initEntries) {
-            sleep(2, SECONDS);
-            Optional.ofNullable(getAllEntries())
-                    .ifPresent(entries -> entries.stream()
-                            .filter(e -> !initEntries.contains(e.find(byClassName("notification-title-column")).text()))
-                            .forEach(this::removeEntry));
+            testEntries.forEach(notification ->
+                    navigationMenu()
+                            .settings()
+                            .switchToSystemEvents()
+                            .removeEntryIfExist(notification));
         }
 
         private void removeEntry(SelenideElement entry) {
@@ -268,6 +269,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             new ConfirmationPopupAO<>(this)
                     .ensureTitleIs("Are you sure you want to delete notification")
                     .ok();
+        }
+
+        private void removeEntryIfExist(String title) {
+            sleep(1, SECONDS);
+            while (!getEntry(title).isDisplayed()
+                    && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+                click(byTitle(NEXT_PAGE));
+            }
+            performIf(byXpath(format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)),
+                    exist, entry -> removeEntry(getEntry(title))
+            );
         }
 
         public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
@@ -533,10 +545,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UserEntry searchForUserEntry(String login) {
                 sleep(1, SECONDS);
-                final String nextPage = "Next Page";
                 while (!getUser(login).isDisplayed()
-                        && $(byTitle(nextPage)).has(not(cssClass("ant-pagination-disabled")))) {
-                    click(byTitle(nextPage));
+                        && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+                    click(byTitle(NEXT_PAGE));
                 }
                 SelenideElement entry = getUser(login).shouldBe(visible);
                 return new UserEntry(this, login, entry);

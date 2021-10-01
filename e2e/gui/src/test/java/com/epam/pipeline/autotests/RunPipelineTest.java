@@ -263,7 +263,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase({"EPMCMBIBPC-280", "EPMCMBIBPC-301"})
     public void nodePageShouldBeValid() {
         final By nonMasterNode = Combiners.select(
-                Condition.and("node neither master nor windows", not(master()), not(windows())),
+                and("node neither master nor windows", not(master()), not(windows())),
                 node(), "any non-master node");
         clusterMenu()
             .click(nonMasterNode, NodePage::new)

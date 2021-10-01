@@ -463,15 +463,21 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2668"})
     public void searchForToolRun() {
-        tools()
-                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                .launchTool(this, toolEndpoint)
-                .showLog(testRunID_2668 = getLastRunId())
-                .waitForEndpointLink()
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .validateEndpointPage(LOGIN)
-                .closeTab();
+        ToolPageAO endpointPage = null;
+        try {
+            endpointPage = tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .launchTool(this, toolEndpoint)
+                    .showLog(testRunID_2668 = getLastRunId())
+                    .waitForEndpointLink()
+                    .clickOnEndpointLink()
+                    .sleep(3, SECONDS)
+                    .validateEndpointPage(LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
         LogAO logAO = new LogAO();
         String endpointLink = logAO.getEndpointLink();
         String[] instanceParam = new String[] {
@@ -499,17 +505,23 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668));
         home();
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(2, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .validateEndpointPage(LOGIN)
-                .closeTab();
+        endpointPage = null;
+        try {
+            endpointPage = search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(2, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .clickOnEndpointLink()
+                    .sleep(3, SECONDS)
+                    .validateEndpointPage(LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"searchForToolRun"})
