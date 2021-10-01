@@ -55,7 +55,7 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"783"})
     public void checkLaunchContainerCpuResource() {
         navigationMenu()
                 .settings()
@@ -65,7 +65,7 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"TC-PARAMETERS-1"})
     public void checkClusterAllowedInstanceTypes() {
         navigationMenu()
                 .settings()
@@ -75,7 +75,7 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"TC-PARAMETERS-2"})
     public void checkClusterAllowedInstanceTypesDocker() {
         navigationMenu()
                 .settings()
