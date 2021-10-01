@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
@@ -442,6 +443,18 @@ public class GrantPermissionManager {
             return false;
         }
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
+    }
+
+    public boolean storageWithSharePermission(final DataStorageWithShareMount storageWithShare,
+                                              final String permissionName) {
+        final AbstractDataStorage storage = storageWithShare.getStorage();
+        final boolean disabled = Optional.of(storage)
+            .filter(NFSDataStorage.class::isInstance)
+            .map(NFSDataStorage.class::cast)
+            .map(NFSDataStorage::getMountStatus)
+            .filter(NFSStorageMountStatus.MOUNT_DISABLED::equals)
+            .isPresent();
+        return !disabled && storagePermission(storage.getId(), permissionName);
     }
 
     public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
@@ -935,8 +948,6 @@ public class GrantPermissionManager {
         if (entity instanceof NFSDataStorage) {
             final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
             switch (mountStatus) {
-                case MOUNT_DISABLED:
-                    return AclPermission.ALL_DENYING_PERMISSIONS.getMask();
                 case READ_ONLY:
                     if (permissionsHelper.isAllowed(AclPermission.READ_NAME, entity)) {
                         return AclPermission.READ.getMask();
@@ -1007,9 +1018,6 @@ public class GrantPermissionManager {
             if (child instanceof NFSDataStorage) {
                 final NFSStorageMountStatus mountStatus = ((NFSDataStorage) child).getMountStatus();
                 switch (mountStatus) {
-                    case MOUNT_DISABLED:
-                        addToEntitiesToBeRemoved(entitiesToRemove, child);
-                        return;
                     case READ_ONLY:
                         child.setMask(AclPermission.READ.getMask());
                         return;
@@ -1197,9 +1205,6 @@ public class GrantPermissionManager {
         if (storage instanceof NFSDataStorage) {
             final NFSStorageMountStatus mountStatus = ((NFSDataStorage) storage).getMountStatus();
             switch (mountStatus) {
-                case MOUNT_DISABLED:
-                    storage.setMask(AclPermission.ALL_DENYING_PERMISSIONS.getMask());
-                    return true;
                 case READ_ONLY:
                     storage.setMask(AclPermission.READ.getMask());
                     if (!permissionName.equals(READ)) {

@@ -579,27 +579,6 @@ public class FolderApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldLoadWithHierarchyFilterMountDisabledStorage() {
-        final Folder folder = getFolderWithMetadata(ID, ID_3, ANOTHER_SIMPLE_USER);
-        initAclEntity(folder);
-        final NFSDataStorage disabledNFS =
-            DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.MOUNT_DISABLED, SIMPLE_USER);
-        initAclEntity(disabledNFS, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
-                                                 new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        folder.setStorages(Collections.singletonList(disabledNFS));
-        final List<Folder> folders = Collections.singletonList(folder);
-        final Folder initializedFolder = initParentFolder(folders);
-        doReturn(initializedFolder).when(mockFolderManager).load(ID);
-        mockSecurityContext();
-
-        final Folder parentFolder = folderApiService.load(ID);
-
-        assertThat(parentFolder).isEqualTo(initializedFolder);
-        assertThat(parentFolder.getChildFolders()).isEmpty();
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadWithHierarchyModifiedMaskReadOnlyStorage() {
         final Folder folder = getFolderWithMetadata(ID, ID_3, ANOTHER_SIMPLE_USER);
         initAclEntity(folder);
