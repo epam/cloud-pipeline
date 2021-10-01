@@ -630,6 +630,13 @@ public final class MessageConstants {
     public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
     public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
 
+    // Storage quotas
+    public static final String STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN = "storage.quota.nfs.percentage.warn";
+    public static final String STORAGE_QUOTA_UNKNOWN_RESTRICTION = "storage.quota.unknown.restriction";
+    public static final String STORAGE_QUOTA_UNKNOWN_TYPE = "storage.quota.unknown.type";
+    public static final String STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE =
+        "storage.quota.unknown.share.type.for.percentage";
+
     private MessageConstants() {
         // no-op
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,18 +13,5 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage;
-
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-public class LustreFS {
-
-    private String id;
-    private String status;
-    private String mountPath;
-    private String mountOptions;
-    private Integer capacityGb;
-}
+ALTER TABLE pipeline.datastorage ADD mount_status TEXT NULL;
+UPDATE pipeline.datastorage SET mount_status = 'ACTIVE' WHERE datastorage_type='NFS'

@@ -1,10 +1,11 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +16,13 @@
 
 package com.epam.pipeline.entity.datastorage;
 
-import lombok.Builder;
-import lombok.Data;
+public enum NFSStorageMountStatus {
+    ACTIVE, READ_ONLY, MOUNT_DISABLED;
 
-@Data
-@Builder
-public class LustreFS {
-
-    private String id;
-    private String status;
-    private String mountPath;
-    private String mountOptions;
-    private Integer capacityGb;
+    public static NFSStorageMountStatus fromName(final String name) {
+        if (name == null) {
+            return null;
+        }
+        return valueOf(name);
+    }
 }
