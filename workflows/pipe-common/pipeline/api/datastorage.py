@@ -34,7 +34,7 @@ class StoragePolicy:
 class DataStorage:
     def __init__(self, id, name, description, path, policy, mask, storage_type,
                  owner, region_id, locked, parentId, mount_point, mount_options,
-                 region_name=None, sensitive=False, tools_to_mount=None):
+                 region_name=None, sensitive=False, tools_to_mount=None, mount_status=None):
         self.id = int(id)
         self.name = str(name)
         self.description = str(description)
@@ -51,6 +51,7 @@ class DataStorage:
         self.region_name = region_name
         self.sensitive = sensitive
         self.tools_to_mount = tools_to_mount
+        self.mount_status = mount_status
 
     @classmethod
     def from_json(cls, data):
@@ -70,8 +71,10 @@ class DataStorage:
         sensitive = JsonParser.get_optional_field(data, 'sensitive', default=False)
         tools_to_mount = JsonParser.get_optional_field(data, 'toolsToMount')
         policy = StoragePolicy.from_json(data['storagePolicy']) if 'storagePolicy' in data else None
+        mount_status = JsonParser.get_optional_field(data, 'mountStatus', default=None)
         return DataStorage(id, name, description, path, policy, mask, type, owner, region_id, locked, parentId,
-                           mount_point, mount_options, region_name, sensitive=sensitive, tools_to_mount=tools_to_mount)
+                           mount_point, mount_options, region_name, sensitive=sensitive, tools_to_mount=tools_to_mount,
+                           mount_status=mount_status)
 
 
 class FileShareMount:
