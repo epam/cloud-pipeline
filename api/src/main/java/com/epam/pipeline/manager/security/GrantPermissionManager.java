@@ -444,6 +444,10 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
+    public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
+        return storagePermission(storage.getId(), permissionName);
+    }
+
     public boolean storagePermission(Long storageId, String permissionName) {
         AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
         return storagePermission(storage, permissionName);
