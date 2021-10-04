@@ -511,24 +511,29 @@
 */
 .sa-view-zoom-panel {
     box-sizing: border-box;
-    left: -25px;
-    width: 61px;
+    left: 0;
+    width: 100%;
     padding: 0 2px;
+}
+
+.sa-magnifier-button {
+    cursor: pointer;
+}
+
+.sa-magnifier-button:hover {
+    opacity: 1;
 }
 
 .sa-view-zoom-panel-div {
     box-sizing: border-box;
     opacity: 0.6;
     background-color: #fff;
-    height: 106px;
-    width: 55px;
-    margin-top: 2px;
-    margin-bottom: 2px;
-    border-style: solid;
-    border-width: 1px;
-    border-radius: 27px;
-    border-color: #AAA;
+    width: 100%;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px 0;
 }
 .sa-view-zoom-text {
     opacity: 0.9;
@@ -546,12 +551,16 @@
 
 .sa-view-zoom-button {
     box-sizing: border-box;
-    padding: 1px;
-    position: absolute;
-    height: 50px;
-    width: 50px;
-    right: 4px;
+    height: 20px;
+    width: 20px;
     z-index: 2;
+    margin: 4px 2px;
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.sa-view-zoom-button:hover {
+    opacity: 1;
 }
 
 .sa-view-zoom-button.sa-zoom-in {

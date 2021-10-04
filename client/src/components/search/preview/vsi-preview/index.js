@@ -43,6 +43,8 @@ const {SA, SAM, $} = window;
 const SA_CAMERA_CALLBACK_TIMEOUT = 1000;
 const SA_CAMERA_CALLBACK_START_TIMEOUT = 2500;
 
+const magnificationTagName = 'Magnification';
+
 function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
   return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
@@ -135,7 +137,7 @@ function getTilesInfo (file) {
   return null;
 }
 
-@inject('dataStorageCache', 'dataStorages')
+@inject('dataStorageCache', 'dataStorages', 'preferences')
 @observer
 class VSIPreview extends React.Component {
   state = {
@@ -297,7 +299,12 @@ class VSIPreview extends React.Component {
   };
 
   fetchPreviewItems = () => {
-    const {file, storageId, dataStorageCache} = this.props;
+    const {
+      file,
+      storageId,
+      dataStorageCache,
+      preferences
+    } = this.props;
     if (this.saViewer) {
       this.saViewer = undefined;
       this.resetSAViewerCameraUpdate();
@@ -324,11 +331,39 @@ class VSIPreview extends React.Component {
           getTiles(storageId, tilesInfo.tilesFolder)
             .then(tiles => {
               if (tiles) {
-                this.setState({
-                  items: [],
-                  tiles,
-                  pending: false
-                }, this.reportPreviewLoaded);
+                const tagsRequest = dataStorageCache.getTags(storageId, file);
+                tagsRequest
+                  .fetch()
+                  .then(() => preferences.fetchIfNeededOrWait())
+                  .then(() => {
+                    let magnification;
+                    if (
+                      tagsRequest.loaded &&
+                      tagsRequest.value &&
+                      tagsRequest.value.hasOwnProperty(magnificationTagName)
+                    ) {
+                      let [, value = ''] = /([\d\\.\\,]+)/
+                        .exec(tagsRequest.value[magnificationTagName]) || [];
+                      if (value) {
+                        magnification = Number(value.replace(/,/g, '.'));
+                        if (Number.isNaN(magnification)) {
+                          magnification = undefined;
+                        }
+                      }
+                    }
+                    if (!tiles.info) {
+                      tiles.info = {};
+                    }
+                    tiles.info.scannedAt = magnification;
+                    tiles.info.maxZoomLevel = magnification
+                      ? preferences.vsiPreviewMagnificationMultiplier * magnification
+                      : undefined;
+                    this.setState({
+                      items: [],
+                      tiles,
+                      pending: false
+                    }, this.reportPreviewLoaded);
+                  });
               } else {
                 getFolderContents(storageId, tilesInfo.folder)
                   .then(items => {
@@ -645,6 +680,8 @@ class VSIPreview extends React.Component {
           minLevel = 0,
           maxLevel = 5,
           bounds = [0, width - 1, 0, height - 1],
+          scannedAt,
+          maxZoomLevel,
           ...rest
         } = tiles.info || {};
         const viewers = SA.SAViewer($(element),
@@ -658,6 +695,8 @@ class VSIPreview extends React.Component {
               bounds,
               minLevel,
               maxLevel,
+              scannedAt,
+              maxZoomLevel,
               ...rest,
               getTileUrl: (level, x, y) => this.getTileUrl(storageId, tiles.folder, x, y, level)
             }

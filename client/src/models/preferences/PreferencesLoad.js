@@ -212,6 +212,15 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get vsiPreviewMagnificationMultiplier () {
+    const value = this.getPreferenceValue('ui.wsi.magnification.factor');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 1;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
