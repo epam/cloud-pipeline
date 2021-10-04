@@ -50,3 +50,8 @@
   font-weight: bold;
   margin-right: 8px;
 }
+
+.title {
+  margin: 5px 0;
+  padding: 2px 0;
+}

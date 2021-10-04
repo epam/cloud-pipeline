@@ -24,7 +24,9 @@ import {
   Input,
   Select
 } from 'antd';
+import {observer} from 'mobx-react';
 import UsersRolesSelect from '../../../users-roles-select';
+import roleModel from '../../../../../utils/roleModel';
 import styles from './fs-notifications.css';
 
 const VALUE_TITLE = 'Volume threshold';
@@ -526,6 +528,8 @@ FSNotificationsDialog.propTypes = {
   readOnly: PropTypes.bool
 };
 
+@roleModel.authenticationInfo
+@observer
 class FSNotifications extends React.Component {
   state = {
     visible: false
@@ -562,8 +566,14 @@ class FSNotifications extends React.Component {
 
   render () {
     const {
-      readOnly
+      authenticatedUserInfo,
+      readOnly: readOnlyRaw
     } = this.props;
+    const readOnly = readOnlyRaw ||
+      !authenticatedUserInfo ||
+      !authenticatedUserInfo.loaded ||
+      !authenticatedUserInfo.value ||
+      !authenticatedUserInfo.value.admin;
     const {
       visible
     } = this.state;
