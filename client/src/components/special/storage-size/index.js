@@ -50,7 +50,6 @@ class StorageSize extends React.PureComponent {
     }
     if (id !== undefined) {
       const request = new DataStoragePathUsage(id);
-      console.log('FETCH', id);
       request
         .fetch()
         .then(() => {
