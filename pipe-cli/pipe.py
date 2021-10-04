@@ -1055,18 +1055,22 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to move a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
+@click.option('-nio', '--io-threads', type=int, required=False,
+              help='The number of threads to be used for a single file io operations')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 @common_options
+@stacktracing
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, verify_destination):
+                      symlinks, threads, io_threads, verify_destination):
     """ Moves a file or a folder from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, clean=True, skip_existing=skip_existing,
+                             symlinks, threads, io_threads, clean=True, skip_existing=skip_existing,
                              verify_destination=verify_destination)
 
 
@@ -1098,18 +1102,22 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
+@click.option('-nio', '--io-threads', type=int, required=False,
+              help='The number of threads to be used for a single file io operations')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 @common_options
+@stacktracing
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, verify_destination):
+                      symlinks, threads, io_threads, verify_destination, trace):
     """ Copies files from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing,
+                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads, skip_existing=skip_existing,
                              verify_destination=verify_destination)
 
 
