@@ -103,21 +103,26 @@ class Logger:
 
 class CmdExecutor:
 
+    EMPTY_OUTPUT = ''
+
     def __init__(self):
         pass
 
-    def execute(self, command):
+    def execute(self, command, safe=False):
         process = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         out, err = process.communicate()
         exit_code = process.wait()
         if exit_code != 0:
-            exec_err_msg = 'Command \'%s\' execution has failed. Out: %s Err: %s.' % (command, out.rstrip(), err.rstrip())
-            Logger.warn(exec_err_msg)
-            raise ExecutionError(exec_err_msg)
+            if safe:
+                out = CmdExecutor.EMPTY_OUTPUT
+            else:
+                exec_err_msg = 'Command \'%s\' execution has failed. Out: %s Err: %s.' % (command, out.rstrip(), err.rstrip())
+                Logger.warn(exec_err_msg)
+                raise ExecutionError(exec_err_msg)
         return out
 
-    def execute_to_lines(self, command):
-        return self._non_empty(self.execute(command).splitlines())
+    def execute_to_lines(self, command, safe=False):
+        return self._non_empty(self.execute(command, safe).splitlines())
 
     def _non_empty(self, elements):
         return [element for element in elements if element.strip()]
@@ -405,7 +410,7 @@ class GridEngine:
         available_slots = 0
         # there should be lines like:  main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
         # and we are interested in 0/2/2 - slots status
-        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOSTS_SLOTS):
+        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOSTS_SLOTS, True):
             rsrv_used_total = line.strip().split()[2].split("/")
             available_slots += int(rsrv_used_total[2]) - int(rsrv_used_total[1]) - int(rsrv_used_total[0])
         return available_slots
