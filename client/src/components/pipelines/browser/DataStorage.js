@@ -79,6 +79,7 @@ import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
   from '../../special/metadata/special/fs-notifications';
+import StorageSize from "../../special/storage-size";
 
 const PAGE_SIZE = 40;
 
@@ -1494,6 +1495,7 @@ export default class DataStorage extends React.Component {
             >
               <RestrictedImagesInfo
                 toolsToMount={this.toolsToMount}
+                status={this.props.info.value.mountStatus}
               />
               <Button
                 id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
@@ -1616,6 +1618,9 @@ export default class DataStorage extends React.Component {
                   ? [FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE]
                   : []
               }
+              extraInfo={[
+                <StorageSize storage={this.props.info.value} />
+              ]}
             />
           }
         </ContentMetadataPanel>

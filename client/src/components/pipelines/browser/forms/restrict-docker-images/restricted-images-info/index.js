@@ -22,6 +22,7 @@ import {
 } from 'antd';
 import DockerImageDetails from '../../../../../cluster/hot-node-pool/docker-image-details';
 import styles from './restricted-images-info.css';
+import FSMountStatus, {MountStatus} from '../../../../../special/fs-mount-status';
 
 const getToolVersions = (tool) => {
   const {versions} = tool;
@@ -36,37 +37,60 @@ const getDockerImage = (tool) => {
 };
 
 function RestrictedImagesInfo ({
-  toolsToMount
+  toolsToMount,
+  status
 }) {
   const renderContent = () => {
+    const displayStatus = status && status !== MountStatus.active;
     return (
       <div
         className={styles.popoverContainer}
       >
-        {toolsToMount.map(tool => (
-          <span
-            key={tool.id}
-            className={styles.toolRow}
-          >
-            <span className={styles.toolName}>
-              <DockerImageDetails
-                docker={getDockerImage(tool)}
-              />
+        {
+          displayStatus && (
+            <div>
+              Storage status is: <FSMountStatus status={status} />
+            </div>
+          )
+        }
+        {
+          toolsToMount && toolsToMount.length > 0 && (
+            <div
+              className={styles.title}
+              style={displayStatus ? {borderTop: '1px solid #ccc'} : {}}
+            >
+              Storage is automatically mounted to:
+            </div>
+          )
+        }
+        {
+          (toolsToMount || []).map(tool => (
+            <span
+              key={tool.id}
+              className={styles.toolRow}
+            >
+              <span className={styles.toolName}>
+                <DockerImageDetails
+                  docker={getDockerImage(tool)}
+                />
+              </span>
+              {getToolVersions(tool)}
             </span>
-            {getToolVersions(tool)}
-          </span>
-        ))}
+          ))
+        }
       </div>
     );
   };
-  if (!toolsToMount || toolsToMount.length === 0) {
+  if (
+    (!toolsToMount || toolsToMount.length === 0) &&
+    (!status || status === MountStatus.active)
+  ) {
     return null;
   }
   return (
     <div className={styles.container}>
       <Popover
         content={renderContent()}
-        title="Storage is automatically mounted to:"
         overlayClassName={styles.overlay}
       >
         <Icon
@@ -84,7 +108,8 @@ RestrictedImagesInfo.PropTypes = {
     image: PropTypes.string,
     registry: PropTypes.string,
     versions: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
-  }))
+  })),
+  status: PropTypes.string
 };
 
 export default RestrictedImagesInfo;
