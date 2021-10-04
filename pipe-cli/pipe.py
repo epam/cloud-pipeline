@@ -755,8 +755,17 @@ def view_cluster_for_node(node_name):
               help='Specifies run status change notification body file path. '
                    'The option will be ignored if -sn (--status-notifications) option was not specified. '
                    'Defaults to global run status change notification body.')
-@click.option('-u', '--user', required=False, type=str, help=USER_OPTION_DESCRIPTION)
+@click.option('-u', '--user', required=False, type=str,
+              help='Specifies user name to launch a run on behalf of. '
+                   'A user can launch a run on behalf of a different user '
+                   'only if the corresponding run as permission is granted. '
+                   'In this case the original user name will be preserved in ORIGINAL_OWNER run parameter. '
+                   'An admin can launch a run on behalf of a different user '
+                   'exactly the same way the user would launch the same run by herself/himself. '
+                   'Therefore no ORIGINAL_OWNER run parameter is set for admins.')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
+@stacktracing
 def run(pipeline,
         config,
         parameters,
@@ -781,24 +790,36 @@ def run(pipeline,
         status_notifications_recipient,
         status_notifications_subject,
         status_notifications_body,
-        user):
+        user,
+        trace):
     """
     Launches a new run.
+
+    Runs can be launched on behalf of other users using -u (--user) option.
+    Check the option description for more details.
 
     Optional run status change notifications can be enabled.
     Check the examples below to find out how to enable notifications.
 
     Examples:
 
-    I.  Launches pipeline (mypipeline) run with default run status change notifications enabled.
+    I.   Launches some pipeline (mypipeline) run with default settings.
+
+        pipe run -n mypipeline -y
+
+    II.  Launches some pipeline (mypipeline) run as a different user (someuser).
+
+        pipe run -n mypipeline -y -u someuser
+
+    III. Launches some pipeline (mypipeline) run with default run status change notifications enabled.
 
         pipe run -n mypipeline -y -sn
 
-    II. Launches pipeline (mypipeline) run with custom run status change notifications enabled.
+    IV.  Launches some pipeline (mypipeline) run with custom run status change notifications enabled.
     In this case notifications will only be sent if run reaches
     one of the statuses (SUCCESS or FAILURE)
     to some users (USER1 and USER2)
-    with the specified subject (Run has changed its status)
+    with the specified subject (Run status has changed)
     and body from some local file (/path/to/email/body/template/file).
 
         pipe run -n mypipeline -y -sn
@@ -808,9 +829,6 @@ def run(pipeline,
         -sn-body /path/to/email/body/template/file
 
     """
-    if user and not pipeline and not docker_image:
-        UserTokenOperations().set_user_token(user)
-        user = None
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
                               region_id, parent_node, non_pause, friendly_url,
@@ -824,8 +842,10 @@ def run(pipeline,
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def stop(run_id, yes):
+@stacktracing
+def stop(run_id, yes, trace):
     """Stops a running pipeline
     """
     PipelineRunOperations.stop(run_id, yes)

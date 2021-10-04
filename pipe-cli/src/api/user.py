@@ -96,3 +96,9 @@ class User(API):
             raise RuntimeError(response_data['message'])
         else:
             return []
+
+    @classmethod
+    def whoami(cls):
+        api = cls.instance()
+        query = '/whoami'
+        return api.retryable_call('GET', query) or {}
