@@ -579,6 +579,8 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+    public static final DoublePreference UI_WSI_NOTIFICATION_FACTOR = new DoublePreference(
+            "ui.wsi.magnification.factor", 1.0, UI_GROUP, isGreaterThan(0));
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(

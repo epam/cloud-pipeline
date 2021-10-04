@@ -914,7 +914,7 @@ function api_setup_base_preferences {
     ## Metadata
     api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"
     api_set_preference "misc.groups.ui.preferences" "{}" "true"
-
+    api_set_preference "ui.wsi.magnification.factor" "1" "true"
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
     if [ "$CP_PREF_COMMIT_DEPLOY_KEY" ]; then
