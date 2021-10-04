@@ -70,7 +70,7 @@ public class FolderApiService {
     }
 
     @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
-    @AclMask
+    @AclTree
     public Folder loadByIdOrPath(String pathOrIdentifier) {
         return folderManager.loadByNameOrId(pathOrIdentifier);
     }

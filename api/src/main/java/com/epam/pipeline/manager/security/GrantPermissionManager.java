@@ -32,7 +32,10 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -114,6 +117,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -137,6 +141,8 @@ public class GrantPermissionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrantPermissionManager.class);
     private static final String OWNER = "OWNER";
+    private static final String WRITE = "WRITE";
+    private static final String READ = "READ";
 
     @Autowired private PermissionEvaluator permissionEvaluator;
 
@@ -439,17 +445,44 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
+    public boolean storageWithSharePermission(final DataStorageWithShareMount storageWithShare,
+                                              final String permissionName) {
+        final AbstractDataStorage storage = storageWithShare.getStorage();
+        final boolean disabled = Optional.of(storage)
+            .filter(NFSDataStorage.class::isInstance)
+            .map(NFSDataStorage.class::cast)
+            .map(NFSDataStorage::getMountStatus)
+            .filter(NFSStorageMountStatus.MOUNT_DISABLED::equals)
+            .isPresent();
+        return !disabled && storagePermission(storage.getId(), permissionName);
+    }
+
+    public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
+        return storagePermission(storage.getId(), permissionName);
+    }
+
     public boolean storagePermission(Long storageId, String permissionName) {
         AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(storage.getOwner());
-        } else {
-            return permissionsHelper.isAllowed(permissionName, storage);
-        }
+        return storagePermission(storage, permissionName);
+    }
+
+    public boolean storagePermissions(Long storageId, List<String> permissionNames) {
+        return Optional.ofNullable(permissionNames)
+                .filter(CollectionUtils::isNotEmpty)
+                .orElseGet(() -> Collections.singletonList(READ))
+                .stream()
+                .allMatch(permissionName -> storagePermission(storageId, permissionName));
     }
 
     public boolean storagePermissionByName(final String identifier, final String permissionName) {
         final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
+        return storagePermission(storage, permissionName);
+    }
+
+    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
+        if (forbiddenByMountStatus(storage, permissionName)) {
+            return false;
+        }
         if (permissionName.equals(OWNER)) {
             return isOwnerOrAdmin(storage.getOwner());
         } else {
@@ -463,10 +496,12 @@ public class GrantPermissionManager {
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !permissionsHelper.isAllowed("READ", storage)) {
+            if (action.isRead() && !permissionsHelper.isAllowed(READ, storage)
+                && !forbiddenByMountStatus(storage, READ)) {
                 return false;
             }
-            if (action.isWrite() && !permissionsHelper.isAllowed("WRITE", storage)) {
+            if (action.isWrite() && !permissionsHelper.isAllowed(WRITE, storage)
+                && !forbiddenByMountStatus(storage, WRITE)) {
                 return false;
             }
         }
@@ -909,7 +944,18 @@ public class GrantPermissionManager {
     }
 
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
-            boolean includeInherited, List<Sid> sids) {
+                                       boolean includeInherited, List<Sid> sids) {
+        if (entity instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+            switch (mountStatus) {
+                case READ_ONLY:
+                    if (permissionsHelper.isAllowed(AclPermission.READ_NAME, entity)) {
+                        return AclPermission.READ.getMask();
+                    }
+                default:
+                    break;
+            }
+        }
         Acl child = aclService.getAcl(entity);
         //case for Runs and Nodes, that are not registered as ACL entities
         //check ownership
@@ -953,8 +999,7 @@ public class GrantPermissionManager {
         }
         if (CollectionUtils.isEmpty(entity.getLeaves()) && CollectionUtils
                 .isEmpty(entity.getChildren()) && !permissionGranted) {
-            entitiesToRemove.putIfAbsent(entity.getAclClass(), new HashSet<>());
-            entitiesToRemove.get(entity.getAclClass()).add(entity.getId());
+            addToEntitiesToBeRemoved(entitiesToRemove, entity);
         }
         entity.setMask(permissionsService.mergeMask(currentMask));
         if (entity instanceof DockerRegistry) {
@@ -968,11 +1013,26 @@ public class GrantPermissionManager {
             int mask = permissionsService
                     .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
-                entitiesToRemove.putIfAbsent(child.getAclClass(), new HashSet<>());
-                entitiesToRemove.get(child.getAclClass()).add(child.getId());
+                addToEntitiesToBeRemoved(entitiesToRemove, child);
+            }
+            if (child instanceof NFSDataStorage) {
+                final NFSStorageMountStatus mountStatus = ((NFSDataStorage) child).getMountStatus();
+                switch (mountStatus) {
+                    case READ_ONLY:
+                        child.setMask(AclPermission.READ.getMask());
+                        return;
+                    default:
+                        break;
+                }
             }
             child.setMask(permissionsService.mergeMask(mask));
         });
+    }
+
+    private void addToEntitiesToBeRemoved(final Map<AclClass, Set<Long>> entitiesToRemove,
+                                          final AbstractSecuredEntity entity) {
+        entitiesToRemove.putIfAbsent(entity.getAclClass(), new HashSet<>());
+        entitiesToRemove.get(entity.getAclClass()).add(entity.getId());
     }
 
     private void clearWriteExecutePermissions(AbstractSecuredEntity entity) {
@@ -1139,6 +1199,23 @@ public class GrantPermissionManager {
             LOGGER.error(String.format("An error occurred during event update for entity %s with ID %d",
                     entity.getAclClass(), entity.getId()), e);
         }
+    }
+
+    private boolean forbiddenByMountStatus(final AbstractSecuredEntity storage, final String permissionName) {
+        if (storage instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) storage).getMountStatus();
+            switch (mountStatus) {
+                case READ_ONLY:
+                    storage.setMask(AclPermission.READ.getMask());
+                    if (!permissionName.equals(READ)) {
+                        return true;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return false;
     }
 
     @Data
