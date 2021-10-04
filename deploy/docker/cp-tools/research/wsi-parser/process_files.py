@@ -17,6 +17,7 @@ import json
 import os
 import multiprocessing
 import datetime
+import re
 import shutil
 import tempfile
 import time
@@ -37,6 +38,10 @@ TAGS_PROCESSING_ONLY = os.getenv('WSI_PARSING_TAGS_ONLY', 'false') == 'true'
 REFR_IND_CAT_ATTR_NAME = os.getenv('WSI_PARSING_REFR_IND_CAT_ATTR_NAME', 'Immersion liquid')
 EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NAME', 'Extended Focus')
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
+STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-zA-Z]{3})(-|_)*(\\d{2})(-|_)*(\\d{5})'))
+STUDY_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STUDY_NAME_CAT_ATTR_NAME', 'Study name')
+UNKNOWN_ATTRIBUTE_VALUE = 'NA'
+HYPHEN = '-'
 
 
 class ImageDetails(object):
@@ -246,7 +251,36 @@ class WsiFileTagProcessor:
         magnification_value = self._get_magnification_attribute_value(target_image_details, metadata_dict)
         if magnification_value:
             tags[MAGNIFICATION_CAT_ATTR_NAME] = {magnification_value}
+        tags[STUDY_NAME_CAT_ATTR_NAME] = self._try_extract_study_name(self.file_path)
         return tags
+
+    def _try_extract_study_name(self, path):
+        matching_result = STUDY_NAME_MATCHER.findall(path)
+        if not matching_result:
+            self.log_processing_info('Unable to find match for study name in the file path...')
+            return UNKNOWN_ATTRIBUTE_VALUE
+        else:
+            study_names_found = set()
+            for match_tuple in matching_result:
+                study_names_found.add(self._extract_study_name_from_tuple(match_tuple))
+            if UNKNOWN_ATTRIBUTE_VALUE in study_names_found:
+                study_names_found.remove(UNKNOWN_ATTRIBUTE_VALUE)
+            if len(study_names_found) != 1:
+                self.log_processing_info(
+                    'Unable to determine study name in the file path, matches found: [{}]'.format(study_names_found))
+                return UNKNOWN_ATTRIBUTE_VALUE
+            return list(study_names_found)[0]
+
+    def _extract_study_name_from_tuple(self, tuple):
+        study_group = tuple[0]
+        study_number = tuple[2]
+        study_code = tuple[4]
+        if study_group and study_number and study_code:
+            return HYPHEN.join([study_group, study_number, study_code])
+        else:
+            self.log_processing_info(
+                'Unable to build full study name from: [{} {} {}]'.format(study_group, study_number, study_code))
+            return UNKNOWN_ATTRIBUTE_VALUE
 
     def _get_refractive_index_substance(self, target_image_details):
         refractive_index = target_image_details.refractive_index
@@ -344,6 +378,8 @@ class WsiFileTagProcessor:
             else:
                 key = rule_mapping[0]
                 value = rule_mapping[1]
+                if value == STUDY_NAME_CAT_ATTR_NAME:
+                    continue
                 if value not in existing_attributes_dictionary:
                     self.log_processing_info('No dictionary [{}] is registered, the rule "{}" will be skipped!'
                                              .format(value, rule_mapping))
