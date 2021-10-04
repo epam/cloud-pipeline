@@ -258,7 +258,7 @@ class WsiFileTagProcessor:
         matching_result = STUDY_NAME_MATCHER.findall(path)
         if not matching_result:
             self.log_processing_info('Unable to find match for study name in the file path...')
-            return UNKNOWN_ATTRIBUTE_VALUE
+            return {UNKNOWN_ATTRIBUTE_VALUE}
         else:
             study_names_found = set()
             for match_tuple in matching_result:
@@ -268,8 +268,8 @@ class WsiFileTagProcessor:
             if len(study_names_found) != 1:
                 self.log_processing_info(
                     'Unable to determine study name in the file path, matches found: [{}]'.format(study_names_found))
-                return UNKNOWN_ATTRIBUTE_VALUE
-            return list(study_names_found)[0]
+                return {UNKNOWN_ATTRIBUTE_VALUE}
+            return study_names_found
 
     def _extract_study_name_from_tuple(self, tuple):
         study_group = tuple[0]
