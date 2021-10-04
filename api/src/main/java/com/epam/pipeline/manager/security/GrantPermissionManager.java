@@ -445,18 +445,6 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
-    public boolean storageWithSharePermission(final DataStorageWithShareMount storageWithShare,
-                                              final String permissionName) {
-        final AbstractDataStorage storage = storageWithShare.getStorage();
-        final boolean disabled = Optional.of(storage)
-            .filter(NFSDataStorage.class::isInstance)
-            .map(NFSDataStorage.class::cast)
-            .map(NFSDataStorage::getMountStatus)
-            .filter(NFSStorageMountStatus.MOUNT_DISABLED::equals)
-            .isPresent();
-        return !disabled && storagePermission(storage.getId(), permissionName);
-    }
-
     public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
         return storagePermission(storage.getId(), permissionName);
     }
