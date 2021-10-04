@@ -16,6 +16,16 @@
 
 import React from 'react';
 import {Link} from 'react-router-dom';
+import {
+  CloseCircleOutlined,
+  CodeOutlined,
+  ExclamationCircleOutlined,
+  ExportOutlined,
+  ForkOutlined,
+  LinkOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined
+} from '@ant-design/icons';
 import {canPauseRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
@@ -30,7 +40,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
       case 'SUCCESS':
         actions.push({
           title: 'RERUN',
-          icon: 'play-circle-o',
+          icon: PlayCircleOutlined,
           action: callbacks ? callbacks.run : undefined
         });
         break;
@@ -43,7 +53,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
             const url = regionedUrl.url[defaultUrlRegion];
             actions.push({
               title: 'OPEN',
-              icon: 'export',
+              icon: ExportOutlined,
               target: regionedUrl.sameTab ? '_top' : '_blank',
               multiZoneUrl: regionedUrl.url,
               action: url && callbacks && callbacks.openUrl
@@ -71,7 +81,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
             );
             actions.push({
               title: 'OPEN',
-              icon: 'export',
+              icon: ExportOutlined,
               overlay
             });
           }
@@ -79,7 +89,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         if (run.initialized && run.podIP) {
           actions.push({
             title: 'SSH',
-            icon: 'code-o',
+            icon: CodeOutlined,
             runSSH: true,
             runId: run.id
           });
@@ -103,21 +113,21 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
                   VSC
                 </VSActions>
               ),
-              icon: 'fork'
+              icon: ForkOutlined
             });
           }
         }
         if (canPauseRun(run) && run.platform !== 'windows') {
           actions.push({
             title: 'PAUSE',
-            icon: 'pause-circle-o',
+            icon: PauseCircleOutlined,
             action: callbacks ? callbacks.pause : undefined
           });
         }
         if ((run.commitStatus || '').toLowerCase() !== 'committing') {
           actions.push({
             title: 'STOP',
-            icon: 'close-circle-o',
+            icon: CloseCircleOutlined,
             style: {color: 'red'},
             action: callbacks ? callbacks.stop : undefined
           });
@@ -130,7 +140,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         ) {
           actions.push({
             title: 'RESUME',
-            icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
+            icon: run.resumeFailureReason ? ExclamationCircleOutlined : PlayCircleOutlined,
             action: callbacks ? callbacks.resume : undefined,
             overlay: run.resumeFailureReason ? (
               <div style={{maxWidth: '40vw'}}>
@@ -141,7 +151,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         }
         actions.push({
           title: 'TERMINATE',
-          icon: 'close-circle-o',
+          icon: CloseCircleOutlined,
           style: {color: 'red'},
           action: callbacks ? callbacks.terminate : undefined
         });
@@ -239,7 +249,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         );
         actions.push({
           title: 'LINKS',
-          icon: 'link',
+          icon: LinkOutlined,
           overlay
         });
       }

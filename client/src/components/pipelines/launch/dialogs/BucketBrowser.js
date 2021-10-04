@@ -20,8 +20,16 @@ import connect from '../../../../utils/connect';
 import {observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
-import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
+import {
+  CaretLeftOutlined,
+  CaretRightOutlined,
+  DesktopOutlined,
+  FolderOutlined,
+  ForkOutlined,
+  HddOutlined,
+  InboxOutlined,
+  TagOutlined
+} from '@ant-design/icons';
 import {Alert, Button, Checkbox, Col, Input, Modal, Row, Table, Tree} from 'antd';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
@@ -43,6 +51,7 @@ import {
 
 import styles from './Browser.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
+import {getDataStorageItemIcon} from '../../utils';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -338,7 +347,10 @@ export default class BucketBrowser extends React.Component {
         key: 'type',
         title: '',
         className: styles.itemTypeCell,
-        render: (text, item) => <LegacyIcon className={styles.itemType} type={item.type.toLowerCase()} />,
+        render: (text, item) => {
+          const ItemIcon = getDataStorageItemIcon(item);
+          return <ItemIcon className={styles.itemType} />;
+        },
         onCell: (item) => ({
           onClick: () => this.didSelectDataStorageItem(item)
         })
@@ -476,20 +488,20 @@ export default class BucketBrowser extends React.Component {
   };
 
   renderItemTitle (item) {
-    let icon;
+    let ItemIcon;
     let subTitle;
     switch (item.type) {
-      case DTS_ITEM_TYPE: icon = 'desktop'; break;
-      case DTS_ROOT_ITEM_TYPE: icon = 'inbox'; break;
-      case ItemTypes.pipeline: icon = 'fork'; break;
-      case ItemTypes.versionedStorage: icon = 'fork'; break;
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.version: icon = 'tag'; break;
+      case DTS_ITEM_TYPE: ItemIcon = DesktopOutlined; break;
+      case DTS_ROOT_ITEM_TYPE: ItemIcon = InboxOutlined; break;
+      case ItemTypes.pipeline: ItemIcon = ForkOutlined; break;
+      case ItemTypes.versionedStorage: ItemIcon = ForkOutlined; break;
+      case ItemTypes.folder: ItemIcon = FolderOutlined; break;
+      case ItemTypes.version: ItemIcon = TagOutlined; break;
       case ItemTypes.storage:
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          icon = 'inbox';
+          ItemIcon = InboxOutlined;
         } else {
-          icon = 'hdd';
+          ItemIcon = HddOutlined;
         }
         subTitle = <AWSRegionTag regionId={item.regionId} />;
         break;
@@ -510,7 +522,7 @@ export default class BucketBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <LegacyIcon type={icon} />}<span className="storage-name">{name}</span>{subTitle}
+        {ItemIcon && <ItemIcon />}<span className="storage-name">{name}</span>{subTitle}
       </span>
     );
   }

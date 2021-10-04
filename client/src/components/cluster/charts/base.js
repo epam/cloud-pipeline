@@ -18,8 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import styles from './chart.css';
+import {LoadingOutlined, MinusCircleOutlined, PlusCircleOutlined} from '@ant-design/icons';
 
 const TITLE_HEIGHT = 26;
 const MINUTE = 60;
@@ -119,10 +119,7 @@ class Chart extends React.Component {
         className={styles.title}
         style={{height}}
       >
-        <LegacyIcon
-          type={'loading'}
-          style={{opacity: data && data.pending ? 1 : 0, marginRight: 5}}
-        />
+        <LoadingOutlined style={{opacity: data && data.pending ? 1 : 0, marginRight: 5}} />
         {title}
       </div>
     );
@@ -213,14 +210,12 @@ class Chart extends React.Component {
       <div
         className={styles.zoomControls}
       >
-        <LegacyIcon
+        <PlusCircleOutlined
           className={zoomInClassNames.join(' ')}
-          type={'plus-circle-o'}
           onClick={zoomIn}
         />
-        <LegacyIcon
+        <MinusCircleOutlined
           className={zoomOutClassNames.join(' ')}
-          type={'minus-circle-o'}
           onClick={zoomOut}
         />
       </div>

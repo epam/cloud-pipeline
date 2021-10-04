@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import {Tooltip} from 'antd';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
@@ -114,7 +113,7 @@ class RunSSHButton extends React.Component {
       visibilityChanged,
       style,
       className,
-      icon
+      icon: ItemIcon
     } = this.props;
     if (error) {
       return (
@@ -126,7 +125,7 @@ class RunSSHButton extends React.Component {
             style={style}
           >
             {
-              icon && (<LegacyIcon type={icon} />)
+              ItemIcon && (<ItemIcon />)
             }
             SSH
             <ExclamationCircleOutlined />
@@ -144,7 +143,7 @@ class RunSSHButton extends React.Component {
           visibilityChanged={visibilityChanged}
         >
           {
-            icon && (<LegacyIcon type={icon} />)
+            ItemIcon && (<ItemIcon />)
           }
           <span>SSH</span>
         </MultizoneUrl>
@@ -159,7 +158,7 @@ class RunSSHButton extends React.Component {
         onMouseLeave={this.clearLoadRunSSHConfigurationTimer}
       >
         {
-          icon && (<LegacyIcon type={icon} />)
+          ItemIcon && (<ItemIcon />)
         }
         <span>SSH</span>
         {
@@ -177,7 +176,7 @@ RunSSHButton.propTypes = {
   style: PropTypes.object,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   visibilityChanged: PropTypes.func,
-  icon: PropTypes.string
+  icon: PropTypes.object
 };
 
 export default RunSSHButton;

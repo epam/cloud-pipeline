@@ -87,10 +87,10 @@ class CreateItemForm extends React.Component {
     const {documentType} = this.props;
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
-      <Row>
+      <div>
         <Button onClick={this.props.onCancel}>Cancel</Button>
         <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>OK</Button>
-      </Row>
+      </div>
     );
     const onClose = () => {
       this.setState({

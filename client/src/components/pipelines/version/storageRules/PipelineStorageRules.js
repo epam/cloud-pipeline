@@ -31,7 +31,6 @@ import roleModel from '../../../../utils/roleModel';
 }))
 @observer
 class PipelineStorageRules extends React.Component {
-
   state = {createRuleDialogVisible: false};
 
   rulesTableColumns = [
@@ -52,7 +51,7 @@ class PipelineStorageRules extends React.Component {
       title: 'Move to Short-Term Storage',
       render: (value) => {
         if (roleModel.writeAllowed(this.props.pipeline.value)) {
-          return <Checkbox checked={value} disabled={true} />
+          return <Checkbox checked={value} disabled />;
         } else {
           return undefined;
         }
@@ -63,7 +62,7 @@ class PipelineStorageRules extends React.Component {
       title: '',
       render: (rule) => {
         if (roleModel.writeAllowed(this.props.pipeline.value)) {
-          return <span><a onClick={() => this.deleteRuleDialog(rule)}>Delete</a></span>
+          return <span><a onClick={() => this.deleteRuleDialog(rule)}>Delete</a></span>;
         } else {
           return undefined;
         }
@@ -92,7 +91,7 @@ class PipelineStorageRules extends React.Component {
     });
   };
 
-  createRule = async(rule) => {
+  createRule = async (rule) => {
     await this.props.rules.createRule(rule);
     if (this.props.rules.createRuleLastError) {
       message.error(this.props.rules.createRuleLastError, 5);
@@ -111,14 +110,13 @@ class PipelineStorageRules extends React.Component {
   };
 
   render () {
-
     const header = (
       roleModel.writeAllowed(this.props.pipeline.value)
-      ? (
-        <Row type="flex" justify="end" style={{paddingRight: 5}}>
-          <Button type="primary" onClick={this.openCreateRuleDialog}>Add new rule</Button>
-        </Row>
-      )
+        ? (
+          <Row type="flex" justify="end" style={{paddingRight: 5}}>
+            <Button type="primary" onClick={this.openCreateRuleDialog}>Add new rule</Button>
+          </Row>
+        )
         : false
     );
 

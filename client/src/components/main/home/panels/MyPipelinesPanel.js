@@ -27,6 +27,7 @@ import localization from '../../../../utils/localization';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
+import {CompassOutlined, PlayCircleOutlined} from "@ant-design/icons";
 
 @roleModel.authenticationInfo
 @inject('pipelines', 'hiddenObjects')
@@ -147,12 +148,12 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
           actions={[
             {
               title: 'RUN',
-              icon: 'play-circle-o',
+              icon: PlayCircleOutlined,
               action: launch
             },
             {
               title: 'HISTORY',
-              icon: 'compass',
+              icon: CompassOutlined,
               action: history
             }
           ]}

@@ -21,7 +21,7 @@ import connect from '../../../../utils/connect';
 import localization from '../../../../utils/localization';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {CloudOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, TagFilled} from '@ant-design/icons';
 import {Modal, Button, Row, Col, Alert, Tree, Input} from 'antd';
 import Folder from '../../browser/Folder';
 import Pipeline from '../../browser/Pipeline';
@@ -145,30 +145,30 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   };
 
   renderItemTitle (item) {
-    let icon;
+    let ItemIcon;
     const style = {};
     switch (item.type) {
-      case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.pipeline: ItemIcon = ForkOutlined; break;
       case ItemTypes.versionedStorage:
         style.color = '#2796dd';
-        icon = 'inbox';
+        ItemIcon = InboxOutlined;
         break;
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.version: icon = 'tag'; break;
+      case ItemTypes.folder: ItemIcon = FolderOutlined; break;
+      case ItemTypes.version: ItemIcon = TagFilled; break;
       case ItemTypes.storage:
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          icon = 'inbox';
+          ItemIcon = InboxOutlined;
         } else {
-          icon = 'hdd';
+          ItemIcon = HddOutlined;
         }
         break;
       case ItemTypes.fireCloud:
-        icon = 'cloud-o';
+        ItemIcon = CloudOutlined;
         style.color = '#2796dd';
         style.fontWeight = 'bold';
         break;
       case ItemTypes.fireCloudMethod:
-        icon = 'fork';
+        ItemIcon = ForkOutlined;
         style.color = '#2796dd';
         style.fontWeight = 'bold';
         break;
@@ -194,7 +194,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <LegacyIcon type={icon} style={style} />}{name}
+        {ItemIcon && <ItemIcon style={style} />}{name}
       </span>
     );
   }

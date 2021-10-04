@@ -17,6 +17,14 @@
 import {isObservableArray} from 'mobx';
 import {SearchItemTypes} from '../../models/search';
 import displayCount from '../../utils/displayCount';
+import {
+  FileOutlined,
+  FolderOutlined,
+  ForkOutlined,
+  MessageOutlined,
+  PlayCircleFilled,
+  ToolOutlined
+} from '@ant-design/icons';
 
 const pluralString = (plural) => plural === undefined ? 's' : plural;
 
@@ -44,26 +52,25 @@ function test (o) {
   return !!(this.types || []).find(t => set.has(t));
 }
 
-// todo icons
 const SearchGroupTypes = {
   folder: {
     types: [SearchItemTypes.folder, SearchItemTypes.metadataEntity],
-    icon: 'folder',
+    icon: FolderOutlined,
     title: titleFn('Folder')
   },
   pipeline: {
     types: [SearchItemTypes.pipeline, SearchItemTypes.configuration, SearchItemTypes.pipelineCode],
-    icon: 'fork',
+    icon: ForkOutlined,
     title: titleFn('Pipeline')
   },
   run: {
     types: [SearchItemTypes.run],
-    icon: 'play-circle',
+    icon: PlayCircleFilled,
     title: titleFn('Run')
   },
   tool: {
     types: [SearchItemTypes.tool, SearchItemTypes.dockerRegistry, SearchItemTypes.toolGroup],
-    icon: 'tool',
+    icon: ToolOutlined,
     title: titleFn('Tool')
   },
   storage: {
@@ -77,12 +84,12 @@ const SearchGroupTypes = {
       SearchItemTypes.gsFile,
       SearchItemTypes.gsStorage
     ],
-    icon: 'file',
+    icon: FileOutlined,
     title: titleFn('Data', '')
   },
   issue: {
     types: [SearchItemTypes.issue],
-    icon: 'message',
+    icon: MessageOutlined,
     title: titleFn('Issue')
   }
 };

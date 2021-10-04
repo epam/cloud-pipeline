@@ -543,7 +543,7 @@ export default class PipelineRunPreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} style={{whiteSpace: 'initial'}}>
+          <Row className={styles.title} style={{whiteSpace: 'initial'}} type="flex" align="middle">
             {
               this.props.runInfo && this.props.runInfo.loaded
                 ? (

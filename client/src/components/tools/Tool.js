@@ -30,7 +30,7 @@ import {
   LinkOutlined,
   LoadingOutlined,
   SettingOutlined,
-  UploadOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 
 import {
@@ -1057,7 +1057,7 @@ class Tool extends localization.LocalizedReactComponent {
           size="small" />
         {
           isContainsUnscannedVersion &&
-          <Row className={styles.viewUnscannedVersion}>
+          <div className={styles.viewUnscannedVersion}>
             <Button
               style={{marginTop: 10}}
               key="view_unscanned_version"
@@ -1068,7 +1068,7 @@ class Tool extends localization.LocalizedReactComponent {
               onClick={this.onChangeViewUnscannedVersion}>
               {this.state.isShowUnscannedVersion ? 'HIDE UNSCANNED VERSIONS' : 'VIEW UNSCANNED VERSIONS'}
             </Button>
-          </Row>
+          </div>
         }
       </Row>
     );

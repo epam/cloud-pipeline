@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
-import {QuestionCircleOutlined} from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {Input, InputNumber, Select, Popover} from 'antd';
 import styles from './preference-control.css';
 
@@ -112,7 +112,7 @@ class PreferenceControl extends React.Component {
         content={preference.hint}
         placement="left"
       >
-        <QuestionCircleOutlined
+        <QuestionCircleFilled
           style={{
             marginLeft: 5,
             marginRight: 10,

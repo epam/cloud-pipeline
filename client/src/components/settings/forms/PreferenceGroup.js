@@ -18,8 +18,9 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Form, Icon as LegacyIcon} from '@ant-design/compatible';
+import {Form} from '@ant-design/compatible';
 import '@ant-design/compatible/assets/index.css';
+import {EyeFilled, EyeOutlined} from '@ant-design/icons';
 import {Button, Checkbox, Input, Row} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
@@ -287,13 +288,13 @@ class PreferenceInput extends React.Component {
     if (this.props.isLast) {
       className = `${className} ${styles.lastRow}`;
     }
+    const EyeIcon = this.state.visible ? EyeFilled : EyeOutlined;
     return (
       <div
         className={className}
         style={{width: '100%'}}>
         <Row type="flex" align="middle">
-          <LegacyIcon
-            type={this.state.visible ? 'eye' : 'eye-o'}
+          <EyeIcon
             onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
             style={{
               cursor: 'pointer',

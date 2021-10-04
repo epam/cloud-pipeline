@@ -28,6 +28,7 @@ import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySav
 import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataEntityLoadExternal';
 
 import {
+  AppstoreOutlined,
   CaretDownOutlined,
   CaretUpOutlined,
   CloseOutlined,
@@ -2259,7 +2260,7 @@ class Metadata extends React.Component {
               type={ItemTypes.metadata}
               textEditableField={this.props.metadataClass}
               readOnlyEditableField
-              icon="appstore-o"
+              icon={AppstoreOutlined}
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}
             />

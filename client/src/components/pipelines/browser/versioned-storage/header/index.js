@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {AppstoreOutlined, SettingOutlined} from '@ant-design/icons';
+import {AppstoreOutlined, InboxOutlined, SettingOutlined} from '@ant-design/icons';
 import {Row, Col, Button} from 'antd';
 import localization from '../../../../../utils/localization';
 import Breadcrumbs from '../../../../special/Breadcrumbs';
@@ -99,7 +99,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               textEditableField={pipeline.value.name}
               onSaveEditableField={this.onRenameStorage}
               editStyleEditableField={{flex: 1}}
-              icon="inbox"
+              icon={InboxOutlined}
               iconClassName={styles.versionedStorageIcon}
               lock={pipeline.value.locked}
               subject={pipeline.value}

@@ -394,7 +394,6 @@ class Filters extends React.Component {
           <Button
             id="show-hide-advanced"
             onClick={this.toggleAdvanced}
-            size="small"
             style={{lineHeight: 1}}
           >
             {showAdvanced ? 'Hide' : 'Show'} advanced

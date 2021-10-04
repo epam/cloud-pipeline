@@ -22,7 +22,7 @@ import {
   CaretRightOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
-  LockOutlined,
+  LockOutlined
 } from '@ant-design/icons';
 
 import {

@@ -18,11 +18,15 @@ import {SearchItemTypes} from '../../../models/search';
 import {
   AppstoreOutlined,
   FileOutlined,
-  FileTextOutlined, FolderOutlined,
+  FileTextOutlined,
+  FolderOutlined,
   ForkOutlined,
   HddOutlined,
-  InboxOutlined, MessageOutlined,
-  PlayCircleOutlined, SettingOutlined, ToolOutlined
+  InboxOutlined,
+  MessageOutlined,
+  PlayCircleOutlined,
+  SettingOutlined,
+  ToolOutlined
 } from '@ant-design/icons';
 
 export const PreviewIcons = {

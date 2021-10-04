@@ -387,7 +387,7 @@ export default class PipelineDocumentPreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title}>
+          <Row className={styles.title} type="flex" align="middle">
             <span>{this.fileName}</span>
           </Row>
           <Row className={styles.description}>

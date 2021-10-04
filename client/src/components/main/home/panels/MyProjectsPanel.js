@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {CompassOutlined, HddOutlined} from '@ant-design/icons';
 import {Alert, Row} from 'antd';
 import LoadingView from '../../../special/LoadingView';
 import CardsPanel from './components/CardsPanel';
@@ -111,7 +112,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     const actions = [
       {
         title: 'History',
-        icon: 'compass',
+        icon: CompassOutlined,
         action: history
       }
     ];
@@ -120,13 +121,13 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
       if (storages.length === 1) {
         actions.push({
           title: 'Data storage',
-          icon: 'hdd',
+          icon: HddOutlined,
           action: () => this.props.history && this.props.history.push(`/storage/${storages[0].id}`)
         });
       } else {
         actions.push({
           title: 'Data storages',
-          icon: 'hdd',
+          icon: HddOutlined,
           overlay: (
             <div style={{display: 'flex', flexDirection: 'column'}}>
               {

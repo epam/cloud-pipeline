@@ -1324,7 +1324,7 @@ class AWSRegionForm extends React.Component {
         <Col span={12}>
           <b>Groups and users</b>
         </Col>
-        <Col span={12} style={{textAlign: 'right', paddingRight: 8}}>
+        <Col span={12} style={{textAlign: 'right'}}>
           <span className={styles.permissionTableActions}>
             <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog} icon={<UserAddOutlined />} />
             <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog} icon={<UsergroupAddOutlined />} />

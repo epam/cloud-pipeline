@@ -20,17 +20,22 @@ import {inject, observer} from 'mobx-react';
 import {action, computed, observable} from 'mobx';
 
 import {
+  BarsOutlined,
   CodeOutlined,
+  DownloadOutlined,
   DownOutlined,
   ExportOutlined,
+  FolderOutlined,
   InfoCircleOutlined,
   MinusCircleOutlined,
   PlayCircleOutlined,
   ReloadOutlined,
+  SelectOutlined,
   SettingOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 
-import {Form, Icon as LegacyIcon} from '@ant-design/compatible';
+import {Form} from '@ant-design/compatible';
 import '@ant-design/compatible/assets/index.css';
 import {
   Alert,
@@ -1981,14 +1986,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     {key, value, required, readOnly, validator},
     type,
     system,
-    visible,
+    visible
   ) => {
-    let icon;
+    let ItemIcon;
     switch (type) {
-      case 'input': icon = 'download'; break;
-      case 'output': icon = 'upload'; break;
-      case 'common': icon = 'select'; break;
-      default: icon = 'folder'; break;
+      case 'input': {
+        ItemIcon = DownloadOutlined;
+        break;
+      }
+      case 'output': {
+        ItemIcon = UploadOutlined;
+        break;
+      }
+      case 'common': {
+        ItemIcon = SelectOutlined;
+        break;
+      }
+      default: {
+        ItemIcon = FolderOutlined;
+        break;
+      }
     }
     const rules = [];
     if (validator) {
@@ -2035,7 +2052,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 currentProjectMetadata={this.state.currentProjectMetadata}
                 rootEntityId={this.state.rootEntityId}
                 showWithButton={false}
-                buttonIcon={icon}
+                buttonIcon={ItemIcon}
                 onButtonClick={(selectKey, selectValue) => {
                   this.openBucketBrowser(sectionName, selectKey, selectValue, type);
                 }}
@@ -2049,7 +2066,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     onClick={() =>
                       !(this.props.readOnly && !this.props.canExecute) &&
                       this.openBucketBrowser(sectionName, key, value, type)}>
-                    <LegacyIcon type={icon} />
+                    <ItemIcon />
                   </div>}
                 placeholder="Path"
               />
@@ -2629,7 +2646,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
 
     const keysFormItem = this.props.isDetachedConfiguration &&
-    this.props.selectedPipelineParametersIsLoading
+      this.props.selectedPipelineParametersIsLoading
       ? null
       : (
         <FormItem
@@ -4378,16 +4395,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   getPanelHeader = (key) => {
     let title;
-    let icon;
+    let ItemIcon;
     switch (key) {
-      case EXEC_ENVIRONMENT: title = 'Exec environment'; icon = 'code-o'; break;
-      case ADVANCED: title = 'Advanced'; icon = 'setting'; break;
-      case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
+      case EXEC_ENVIRONMENT: title = 'Exec environment'; ItemIcon = CodeOutlined; break;
+      case ADVANCED: title = 'Advanced'; ItemIcon = SettingOutlined; break;
+      case PARAMETERS: title = 'Parameters'; ItemIcon = BarsOutlined; break;
     }
     return (
       <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
         <span className={styles.itemHeader}>
-          <LegacyIcon type={icon} /> {title}
+          <ItemIcon /> {title}
         </span>
         {
           this.getPanelShortDescription(key)

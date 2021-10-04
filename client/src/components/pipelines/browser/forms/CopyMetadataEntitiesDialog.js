@@ -17,8 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {FolderOutlined, SolutionOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {FolderOutlined, LockOutlined, SolutionOutlined} from '@ant-design/icons';
 import {Alert, Button, Input, message, Modal, Spin, Table, Tree} from 'antd';
 import {
   generateTreeData,
@@ -162,20 +161,20 @@ class CopyMetadataEntitiesDialog extends React.Component {
         expandedKeys: [...(new Set([...expandedKeys, item.key]))]
       });
     };
-    let icon = 'folder';
+    let FolderIcon = FolderOutlined;
     if (
       selectedFolder.isProject ||
       (selectedFolder.objectMetadata && selectedFolder.objectMetadata.type &&
         (selectedFolder.objectMetadata.type.value || '').toLowerCase() === 'project')
     ) {
-      icon = 'solution';
+      FolderIcon = SolutionOutlined;
     }
     return (
       <div
         className={styles.treeContainer}
       >
         <div style={{fontSize: 'large', marginLeft: 5}}>
-          <LegacyIcon type={icon} />
+          <FolderIcon />
           <b style={{marginLeft: 5}}>{selectedFolder.name}</b>
         </div>
         <Table
@@ -264,13 +263,13 @@ class CopyMetadataEntitiesDialog extends React.Component {
       });
     };
     const renderItemTitle = (item) => {
-      let icon;
-      const subIcon = item.locked ? 'lock' : undefined;
+      let ItemIcon;
+      const SubIcon = item.locked ? LockOutlined : undefined;
       if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
         (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-        icon = 'solution';
+        ItemIcon = SolutionOutlined;
       } else {
-        icon = 'folder';
+        ItemIcon = FolderOutlined;
       }
       let {name} = item;
       if (item.searchResult) {
@@ -291,8 +290,8 @@ class CopyMetadataEntitiesDialog extends React.Component {
       }
       return (
         <span>
-          {icon && <LegacyIcon type={icon} />}
-          {subIcon && <LegacyIcon type={subIcon} />}
+          {ItemIcon && <ItemIcon />}
+          {SubIcon && <SubIcon />}
           <span className={styles.treeItemName}>{name}</span>
         </span>
       );

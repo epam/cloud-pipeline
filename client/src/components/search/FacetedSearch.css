@@ -107,6 +107,7 @@
 }
 
 .container .clear-filters-btn {
+  font-size: smaller;
   position: sticky;
   top: 0;
   left: calc(100% - 74px);

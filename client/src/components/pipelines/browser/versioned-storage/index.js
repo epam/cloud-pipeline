@@ -1078,7 +1078,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               style={{height: 'auto'}}
               contents={this.filteredContents}
               onRowClick={this.onRowClick}
-              showNavigateBack={path}
+              showNavigateBack={!!path}
               pending={pending}
               controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
               onTableActionClick={this.onTableActionClick}

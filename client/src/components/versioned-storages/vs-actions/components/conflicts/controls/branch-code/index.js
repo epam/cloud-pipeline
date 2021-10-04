@@ -17,8 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
-import {CloseOutlined} from '@ant-design/icons';
+import {CloseOutlined, DoubleLeftOutlined, DoubleRightOutlined} from '@ant-design/icons';
 import Caret from './caret';
 import getClassNameForChange from './utilities/class-name-for-change';
 import getStyleForChange from './utilities/style-for-change';
@@ -908,6 +907,7 @@ function renderLineNumberWithActions (line, props) {
         conflictedFile.registerOperation({apply, revert});
       }
     };
+    const ArrowsIcon = rtl ? DoubleLeftOutlined : DoubleRightOutlined;
     const actions = (
       modification &&
       !hideModificationActions &&
@@ -915,10 +915,9 @@ function renderLineNumberWithActions (line, props) {
     )
       ? [
         (
-          <LegacyIcon
+          <ArrowsIcon
             className={styles.action}
             key="apply"
-            type={rtl ? 'double-left' : 'double-right'}
             onMouseDown={e => e.stopPropagation()}
             onClick={wrapAction(modification, modification.apply, onRefresh)}
             tabIndex={0}

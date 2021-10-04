@@ -29,13 +29,13 @@ import {
   EditOutlined,
   FileOutlined,
   FolderOutlined,
+  HddOutlined,
   InboxOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SettingOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {
   Alert,
   Button,
@@ -99,6 +99,7 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
   from '../../special/metadata/special/fs-notifications';
+import {getDataStorageItemIcon} from '../utils';
 
 const PAGE_SIZE = 40;
 
@@ -1075,7 +1076,10 @@ class DataStorage extends React.Component {
       onCell: item => ({
         onClick: () => this.didSelectDataStorageItem(item)
       }),
-      render: (text, item) => <LegacyIcon className={styles.itemType} type={item.type.toLowerCase()} />
+      render: (text, item) => {
+        const ItemIcon = getDataStorageItemIcon(item);
+        return <ItemIcon className={styles.itemType} />;
+      }
     };
     const appsColumn = {
       key: 'apps',
@@ -1090,7 +1094,7 @@ class DataStorage extends React.Component {
               content={
                 <div className={styles.miewPopoverContainer}>
                   <EmbeddedMiew
-                    previewMode={true}
+                    previewMode
                     s3item={{
                       storageId: this.props.storageId,
                       path: item.path,
@@ -1517,17 +1521,17 @@ class DataStorage extends React.Component {
                 this.props.info.value.type !== 'NFS' &&
                 this.props.info.value.storagePolicy &&
                 this.props.info.value.storagePolicy.versioningEnabled
-                ? (
-                  <Checkbox
-                    checked={this.showVersions}
-                    onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}>
-                    Show files versions
-                  </Checkbox>
-                ) : undefined
+                  ? (
+                    <Checkbox
+                      checked={this.showVersions}
+                      onChange={this.showFilesVersionsChanged}
+                      style={{marginLeft: 10}}>
+                      Show files versions
+                    </Checkbox>
+                  ) : undefined
               }
             </div>
-            <div style={{paddingRight: 8}}>
+            <div>
               {
                 this.bulkDownloadEnabled &&
                 this.storageAllowSignedUrls &&
@@ -1703,8 +1707,8 @@ class DataStorage extends React.Component {
               editStyleEditableField={{flex: 1}}
               icon={
                 this.props.info.value && this.props.info.value.type.toLowerCase() !== 'nfs'
-                  ? 'inbox'
-                  : 'hdd'
+                  ? InboxOutlined
+                  : HddOutlined
               }
               iconClassName={`${styles.editableControl} ${storageTitleClassName}`}
               lock={this.props.info.value.locked}

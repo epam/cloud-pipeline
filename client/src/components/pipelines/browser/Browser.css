@@ -184,6 +184,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   margin-left: 5px;
 }
 
+.storage-actions button:first-child {
+  margin-left: 0;
+}
+
 .item-actions {
   text-align: right;
 }
@@ -629,9 +633,9 @@ tr.table-row-selected {
 }
 
 .download-button:hover {
-  color: #108ee9;
+  color: #1890ff;
   background-color: #fff;
-  border-color: #108ee9;
+  border-color: #1890ff;
   text-decoration: none;
 }
 

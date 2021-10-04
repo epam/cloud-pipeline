@@ -22,7 +22,7 @@ import {
   TeamOutlined,
   UserAddOutlined,
   UsergroupAddOutlined,
-  UserOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 
 import {Table, Row, Col, Button, AutoComplete, Modal, Checkbox, message} from 'antd';

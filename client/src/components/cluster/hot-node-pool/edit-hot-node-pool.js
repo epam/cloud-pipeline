@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer, Provider} from 'mobx-react';
 import {computed} from 'mobx';
-import {PlusOutlined, QuestionCircleOutlined} from '@ant-design/icons';
+import {PlusOutlined, QuestionCircleFilled} from '@ant-design/icons';
 import {Button, Checkbox, Input, InputNumber, Modal, Popover, Select} from 'antd';
 import classNames from 'classnames';
 import InstanceDetails from './instance-details';
@@ -884,7 +884,7 @@ class EditHotNodePool extends React.Component {
           content={hint}
           placement="right"
         >
-          <QuestionCircleOutlined style={{marginLeft: 5}} />
+          <QuestionCircleFilled style={{marginLeft: 5}} />
         </Popover>
       );
     }

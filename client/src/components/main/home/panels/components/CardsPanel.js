@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {StarOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {LoadingOutlined, StarOutlined} from '@ant-design/icons';
 import {Card, Input, Popover, Row} from 'antd';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
@@ -29,7 +28,7 @@ import RunSSHButton from './run-ssh-button';
 const ACTION = PropTypes.shape({
   title: PropTypes.string,
   overlay: PropTypes.object,
-  icon: PropTypes.string,
+  icon: PropTypes.object,
   action: PropTypes.func
 });
 
@@ -156,10 +155,10 @@ export default class CardsPanel extends React.Component {
           this.closePopover(index);
         }
       };
-      const getIconType = (action) => {
+      const getIcon = (action) => {
         const {actionInProgress, inProgressActionsTitle} = this.state;
         if (actionInProgress && inProgressActionsTitle === action.title) {
-          return 'loading';
+          return LoadingOutlined;
         }
         return action.icon;
       };
@@ -210,6 +209,7 @@ export default class CardsPanel extends React.Component {
                   />
                 );
               }
+              const ActionIcon = getIcon(action);
               if (multiZoneUrl) {
                 return (
                   <MultizoneUrl
@@ -228,13 +228,8 @@ export default class CardsPanel extends React.Component {
                     >
                       {
                         icon
-                          ? (
-                            <LegacyIcon
-                              style={style}
-                              type={getIconType(action)}
-                            />
-                          )
-                          : undefined
+                          ? <ActionIcon style={style} />
+                          : null
                       }
                       <span>{title}</span>
                     </div>
@@ -256,8 +251,8 @@ export default class CardsPanel extends React.Component {
                   <Row type="flex" align="middle">
                     {
                       icon
-                        ? <LegacyIcon style={style} type={getIconType(action)} />
-                        : undefined
+                        ? <ActionIcon style={style} />
+                        : null
                     }
                     {
                       overlay && (

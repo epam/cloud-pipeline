@@ -117,7 +117,7 @@
   flex-wrap: nowrap;
 }
 
-.view-toggler i[class~="anticon"] {
+.view-toggler span[class*="anticon"] {
   font-size: large;
 }
 

@@ -571,7 +571,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     if (details.length > 0) {
       return (
-        <Row>
+        <span>
           Instance: {
             details.map(d => {
               return (
@@ -584,7 +584,7 @@ class Logs extends localization.LocalizedReactComponent {
               );
             })
           }
-        </Row>
+        </span>
       );
     }
     return 'Instance';
@@ -1676,7 +1676,7 @@ class Logs extends localization.LocalizedReactComponent {
           <Collapse.Panel
             key="instance"
             header={this.renderInstanceHeader(instance, this.props.run.value)}>
-            <ul>
+            <ul style={{listStyle: 'none', padding: 0}}>
               {
                 this.renderInstanceDetails(instance, this.props.run.value)
               }
@@ -1917,16 +1917,16 @@ class Logs extends localization.LocalizedReactComponent {
             }
           </Col>
         </Row>
-        <Row>
+        <div>
           <Col>
             {Parameters}
           </Col>
-        </Row>
-        <Row className={styles.rowDetailLast}>
+        </div>
+        <div className={styles.rowDetailLast}>
           <Col>
             {InstanceDetails}
           </Col>
-        </Row>
+        </div>
         <Row className={styles.fullHeightContainer}>
           {this.renderContent(selectedTask)}
         </Row>

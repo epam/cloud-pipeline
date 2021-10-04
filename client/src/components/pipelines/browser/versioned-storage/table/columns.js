@@ -24,6 +24,7 @@ import {
   FileOutlined,
   FolderOutlined
 } from '@ant-design/icons';
+import {Button} from 'antd';
 
 import DOCUMENT_TYPES from '../document-types';
 import UserName from '../../../../special/UserName';
@@ -38,43 +39,84 @@ const FILES = {
   navback: <FolderOutlined />
 };
 
-const renderActions = (item) => {
+const renderActions = (item, itemActions) => {
   if (!item) {
     return null;
   }
   const actions = [];
   if (item.type === DOCUMENT_TYPES.blob) {
     actions.push((
-      <DownloadOutlined key="download" className={styles.action} data-action="download" />
+      <Button
+        className={styles.action}
+        key="download"
+        onClick={(e) => {
+          e.stopPropagation();
+          itemActions.download && itemActions.download(item);
+        }}
+        icon={<DownloadOutlined />}
+        size="small"
+      />
     ));
     if (roleModel.writeAllowed(item)) {
       actions.push((
-        <EditOutlined key="edit" className={styles.action} data-action="edit" />
+        <Button
+          className={styles.action}
+          key="edit"
+          onClick={(e) => {
+            e.stopPropagation();
+            itemActions.edit && itemActions.edit(item);
+          }}
+          icon={<EditOutlined />}
+          size="small"
+        />
       ));
       actions.push((
-        <DeleteOutlined
-          key="delete"
+        <Button
           className={classNames(
             styles.action,
             styles.actionDelete
           )}
-          data-action="delete" />
+          danger
+          key="delete"
+          onClick={(e) => {
+            e.stopPropagation();
+            itemActions.delete && itemActions.delete(item);
+          }}
+          icon={<DeleteOutlined />}
+          size="small"
+        />
       ));
     }
   }
   if (item.type === DOCUMENT_TYPES.tree) {
     if (roleModel.writeAllowed(item)) {
       actions.push((
-        <EditOutlined key="edit" className={styles.action} data-action="edit" />
+        <Button
+          className={styles.action}
+          key="edit"
+          onClick={(e) => {
+            e.stopPropagation();
+            itemActions.edit && itemActions.edit(item);
+          }}
+          icon={<EditOutlined />}
+          size="small"
+        />
       ));
       actions.push((
-        <DeleteOutlined
-          key="delete"
+        <Button
           className={classNames(
             styles.action,
             styles.actionDelete
           )}
-          data-action="delete" />
+          danger
+          key="delete"
+          onClick={(e) => {
+            e.stopPropagation();
+            itemActions.delete && itemActions.delete(item);
+          }}
+          icon={<DeleteOutlined />}
+          size="small"
+        />
       ));
     }
   }
@@ -87,7 +129,7 @@ const renderActions = (item) => {
   );
 };
 
-const COLUMNS = [{
+const getColumns = (itemActions) => [{
   title: 'Name',
   dataIndex: 'name',
   key: 'name',
@@ -138,8 +180,8 @@ const COLUMNS = [{
   title: '',
   key: 'actions',
   className: styles.cell,
-  render: (record) => renderActions(record),
+  render: (record) => renderActions(record, itemActions),
   width: 150
 }];
 
-export default COLUMNS;
+export default getColumns;

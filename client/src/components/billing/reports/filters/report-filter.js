@@ -54,6 +54,7 @@ export default function ({onChange, filter}) {
   return (
     <Menu
       className={styles.styledMenu}
+      expandIcon={<span />}
       mode="inline"
       inlineIndent={12}
       onClick={onSelect}

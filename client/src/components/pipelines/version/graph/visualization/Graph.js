@@ -17,8 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observable} from 'mobx';
-import {MinusCircleOutlined, PlusCircleOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {ArrowsAltOutlined, MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined} from '@ant-design/icons';
 import {Row, Col, message} from 'antd';
 import styles from './Graph.css';
 import CodeFileCommitForm from '../../code/forms/CodeFileCommitForm';
@@ -211,6 +210,7 @@ export default class Graph extends React.Component {
       }
       return styles.graphInterfaceButtonIconDisabled;
     };
+    const FullScreenIcon = this.state.fullScreen ? ShrinkOutlined : ArrowsAltOutlined;
 
     return (
       <Row type="flex" justify="end" className={styles.graphInterface}>
@@ -225,10 +225,10 @@ export default class Graph extends React.Component {
             className={getIconClassName(this.state.canZoomIn)} />
         </Col>
         <Col className={styles.graphInterfaceButton}>
-          <LegacyIcon
+          <FullScreenIcon
             onClick={this.toggleFullScreen}
             className={getIconClassName(true)}
-            type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
+          />
         </Col>
       </Row>
     );

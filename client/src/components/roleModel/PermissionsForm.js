@@ -657,14 +657,14 @@ export default class PermissionsForm extends React.Component {
         key: 'actions',
         className: styles.userActions,
         render: (item) => (
-          <Row>
+          <div>
             <Button
               disabled={this.state.operationInProgress || this.props.readonly}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small"
               icon={<DeleteOutlined />}
             />
-          </Row>
+          </div>
         )
       }
     ];

@@ -20,7 +20,6 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router-dom';
 import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import EditableField from './EditableField';
 import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
@@ -43,7 +42,7 @@ export default class Breadcrumbs extends React.Component {
     onSaveEditableField: PropTypes.func,
     onNavigate: PropTypes.func,
     displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    icon: PropTypes.string,
+    icon: PropTypes.object,
     iconClassName: PropTypes.string,
     lock: PropTypes.bool,
     lockClassName: PropTypes.string,
@@ -145,6 +144,7 @@ export default class Breadcrumbs extends React.Component {
         }}>
         {
           this.items.map((item, index, array) => {
+            const ItemIcon = item.icon || null;
             const isLast = index === array.length - 1;
             if (isLast) {
               return [
@@ -155,9 +155,8 @@ export default class Breadcrumbs extends React.Component {
                     marginLeft: -2
                   }}>
                   {
-                    item.icon ? (
-                      <LegacyIcon
-                        type={item.icon}
+                    ItemIcon ? (
+                      <ItemIcon
                         className={item.iconClassName}
                         style={
                           Object.assign(
@@ -213,9 +212,8 @@ export default class Breadcrumbs extends React.Component {
                       verticalAlign: 'baseline'
                     }}>
                     {
-                      item.icon ? (
-                        <LegacyIcon
-                          type={item.icon}
+                      ItemIcon ? (
+                        <ItemIcon
                           className={item.iconClassName}
                           style={
                             Object.assign(
@@ -259,9 +257,8 @@ export default class Breadcrumbs extends React.Component {
                     color: 'inherit'
                   }}>
                   {
-                    item.icon ? (
-                      <LegacyIcon
-                        type={item.icon}
+                    ItemIcon ? (
+                      <ItemIcon
                         className={item.iconClassName}
                         style={
                           Object.assign(

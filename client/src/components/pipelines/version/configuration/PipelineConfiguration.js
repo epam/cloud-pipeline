@@ -57,7 +57,7 @@ import RouteBlocker from '../../../special/RouteBlocker';
 class PipelineConfiguration extends React.Component {
   @observable allowedInstanceTypes;
 
-  @observable configurationModified;
+  @observable configurationModified = false;
 
   allowedNavigation;
 
@@ -383,7 +383,7 @@ class PipelineConfiguration extends React.Component {
       );
     }
     return (
-      <Row>
+      <div>
         <Tabs
           className={styles.tabs}
           hideAdd={true}
@@ -409,7 +409,7 @@ class PipelineConfiguration extends React.Component {
               })
           }
         </Tabs>
-      </Row>
+      </div>
     );
   };
 
@@ -447,7 +447,7 @@ class PipelineConfiguration extends React.Component {
     return (
       <div style={{display: 'flex', flex: 1, flexDirection: 'column', height: '100%'}}>
         {this.renderTabs()}
-        <Row style={{flex: 1, overflowY: 'auto', height: '100%'}}>
+        <div style={{flex: 1, overflowY: 'auto', height: '100%'}}>
           <LaunchPipelineForm
             defaultPriceTypeIsLoading={this.props.preferences.pending}
             defaultPriceTypeIsSpot={defaultPriceTypeIsSpot}
@@ -469,7 +469,7 @@ class PipelineConfiguration extends React.Component {
             isDetachedConfiguration={false}
             onModified={this.onConfigurationModified}
           />
-        </Row>
+        </div>
         <CreateConfigurationForm
           pending={false}
           configurations={(this.props.configurations.value || []).map(c => c)}

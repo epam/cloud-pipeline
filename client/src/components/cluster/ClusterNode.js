@@ -229,7 +229,7 @@ class ClusterNode extends Component {
       >
         <Row align="middle">
           <Col span={1}>
-            <Link id="back-button" to="/cluster"><Button type="link" icon={<ArrowLeftOutlined />} /></Link>
+            <Link id="back-button" to="/cluster"><Button icon={<ArrowLeftOutlined />} /></Link>
           </Col>
           <Col span={18}>
             <span className={parentStyles.nodeMainInfo}>

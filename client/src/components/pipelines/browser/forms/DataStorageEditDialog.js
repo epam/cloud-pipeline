@@ -221,7 +221,7 @@ export class DataStorageEditDialog extends React.Component {
 
   getCreateFooter = () => {
     return (
-      <Row>
+      <div>
         <Button
           id="edit-storage-dialog-cancel-button"
           onClick={this.props.onCancel}>Cancel</Button>
@@ -231,7 +231,7 @@ export class DataStorageEditDialog extends React.Component {
           htmlType="submit"
           disabled={this.isNfsMount && !this.isStoragePathValid}
           onClick={this.handleSubmit}>Create</Button>
-      </Row>
+      </div>
     );
   };
 

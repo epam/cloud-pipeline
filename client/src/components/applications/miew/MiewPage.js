@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {CodeFilled, CodeOutlined} from '@ant-design/icons';
 import {Row, Col, Select} from 'antd';
 import parseQueryParameters from '../../../utils/queryParameters';
 import EmbeddedMiew from './EmbeddedMiew';
@@ -39,7 +39,6 @@ import {withRouter} from 'react-router-dom';
 })
 @observer
 export default class MiewPage extends React.Component {
-
   displayModes = [
     {
       mode: 'LN',
@@ -174,6 +173,7 @@ export default class MiewPage extends React.Component {
   };
 
   render () {
+    const TerminalVisibleIcon = this.state.terminalVisible ? CodeFilled : CodeOutlined;
     return (
       <div style={{flex: 1, display: 'flex', backgroundColor: '#202020'}}>
         <EmbeddedMiew
@@ -184,9 +184,8 @@ export default class MiewPage extends React.Component {
         <Row className={styles.miewToolbar} type="flex" align="middle">
           <div className={styles.miewToolbarOverlay} />
           <Col span={4} style={{textAlign: 'left', paddingLeft: 15}}>
-            <LegacyIcon
+            <TerminalVisibleIcon
               onClick={this.changeTerminalVisibility}
-              type={this.state.terminalVisible ? 'code' : 'code-o'}
               style={{
                 cursor: 'pointer',
                 verticalAlign: 'middle',
@@ -274,5 +273,4 @@ export default class MiewPage extends React.Component {
       );
     }
   }
-
 }

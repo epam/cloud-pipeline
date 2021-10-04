@@ -2074,7 +2074,7 @@ class Folder extends localization.LocalizedReactComponent {
               classNameEditableField={folderTitleClassName}
               onSaveEditableField={this.renameCurrentFolder}
               editStyleEditableField={{flex: 1}}
-              icon={isProject ? 'solution' : 'folder'}
+              icon={isProject ? SolutionOutlined : FolderOutlined}
               iconClassName={`${styles.editableControl} ${folderTitleClassName}`}
               lock={this.props.folder.value.locked}
               lockClassName={`${styles.editableControl} ${folderTitleClassName}`}

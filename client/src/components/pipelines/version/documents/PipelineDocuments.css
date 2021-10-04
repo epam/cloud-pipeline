@@ -31,7 +31,6 @@
 }
 
 .action-buttons-container {
-  padding-right: 7px;
 }
 
 .row-action-buttons-container button,
@@ -49,7 +48,7 @@
 
 .document-name {
   cursor: pointer;
-  color: #108ee9;
+  color: #1890ff;
 }
 
 .graph {

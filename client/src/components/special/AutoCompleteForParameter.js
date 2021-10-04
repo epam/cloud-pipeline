@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {Select, Input} from 'antd';
 import styles from './AutoCompleteForParameter.css';
 
@@ -120,6 +119,7 @@ export default class AutoCompleteForParameter extends React.Component {
   };
 
   render () {
+    const ButtonIcon = this.props.buttonIcon;
     // todo replace Select with AutoComplete before antd 4
     return (
       <Input.Group compact style={{display: 'flex'}}>
@@ -132,7 +132,7 @@ export default class AutoCompleteForParameter extends React.Component {
               this.props.onButtonClick(this.props.parameterKey, this.state.value)}
           >
             <div style={{padding: '5px', cursor: 'pointer'}}>
-              <LegacyIcon type={this.props.buttonIcon} />
+              <ButtonIcon />
             </div>
           </span>
         }

@@ -15,15 +15,26 @@
  */
 
 import Panels from './panels';
+import {
+  ApiOutlined,
+  ClockCircleOutlined,
+  ForkOutlined,
+  HddOutlined,
+  MessageOutlined,
+  NotificationOutlined,
+  PlayCircleOutlined,
+  RocketOutlined,
+  ToolOutlined
+} from '@ant-design/icons';
 
 export default {
-  [Panels.runs]: 'play-circle-o',
-  [Panels.activities]: 'message',
-  [Panels.data]: 'hdd',
-  [Panels.personalTools]: 'tool',
-  [Panels.pipelines]: 'fork',
-  [Panels.projects]: 'api',
-  [Panels.notifications]: 'notification',
-  [Panels.recentlyCompletedRuns]: 'clock-circle-o',
-  [Panels.services]: 'rocket'
+  [Panels.runs]: PlayCircleOutlined,
+  [Panels.activities]: MessageOutlined,
+  [Panels.data]: HddOutlined,
+  [Panels.personalTools]: ToolOutlined,
+  [Panels.pipelines]: ForkOutlined,
+  [Panels.projects]: ApiOutlined,
+  [Panels.notifications]: NotificationOutlined,
+  [Panels.recentlyCompletedRuns]: ClockCircleOutlined,
+  [Panels.services]: RocketOutlined
 };

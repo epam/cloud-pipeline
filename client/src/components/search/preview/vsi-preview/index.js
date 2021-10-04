@@ -17,8 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
-import {CameraOutlined, ExportOutlined} from '@ant-design/icons';
+import {ArrowsAltOutlined, CameraOutlined, ExportOutlined, ShrinkOutlined} from '@ant-design/icons';
 import {Button, Tabs} from 'antd';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
@@ -536,6 +535,7 @@ class VSIPreview extends React.Component {
             });
         });
     };
+    const FullScreenIcon = fullscreen ? ShrinkOutlined : ArrowsAltOutlined;
     return (
       <div
         className={
@@ -565,7 +565,7 @@ class VSIPreview extends React.Component {
                 className={styles.vsiPreviewButton}
                 onClick={goFullScreen}
               >
-                <LegacyIcon type={fullscreen ? 'shrink' : 'arrows-alt'} />
+                <FullScreenIcon />
               </Button>
             )
           }

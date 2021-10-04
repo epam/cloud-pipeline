@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
 import classNames from 'classnames';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import {FilterOutlined, LoadingOutlined, QuestionOutlined} from '@ant-design/icons';
 import {Input, message, Tooltip, Row} from 'antd';
 import Preview from './preview';
@@ -495,30 +494,30 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             The query string supports the following special characters:
           </span>
         </Row>
-        <Row>
+        <div>
           <code>+</code> signifies AND operation
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>|</code> signifies OR operation
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>-</code> negates a single token
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>"</code> wraps a number of tokens to signify a phrase for searching
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>*</code> at the end of a term signifies a prefix query
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>(</code> and <code>)</code> signify precedence
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>~N</code> after a word signifies edit distance (fuzziness)
-        </Row>
-        <Row>
+        </div>
+        <div>
           <code>~N</code> after a phrase signifies slop amount
-        </Row>
+        </div>
         <Row
           style={{
             borderTop: '1px solid rgba(255, 255, 255, 0.1)',
@@ -627,6 +626,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
               this.searchTypesArray.map((type, index) => {
                 const disabled = this.state.aggregates && !this.state.aggregates[type.key];
                 const active = !disabled && this.state.selectedGroupTypes.indexOf(type.key) >= 0;
+                const TypeIcon = type.icon;
                 return (
                   <div
                     className={
@@ -640,7 +640,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                     }
                     onClick={this.enableDisableSearchGroup(type.key, disabled)}
                     key={index}>
-                    <LegacyIcon type={type.icon} />
+                    <TypeIcon />
                     <span className={styles.typeTitle}>
                       {
                         type.title(this.localizedString)(
@@ -656,17 +656,18 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         </div>
         <Row type="flex" className={`${searchFormClassNames.join(' ')}`} align="middle">
           <Input.Search
-            className={styles.searchInput}
             placeholder={this.props.preferences.loaded
               ? `${this.props.preferences.deploymentName} search`
               : 'Cloud Platform search'
             }
+            size="large"
             ref={this.initializeInputControl}
             value={this.state.searchString}
             onChange={this.onSearchChanged}
             onSearch={this.onPerformSearch}
             onKeyDown={this.onKeyEnter}
-            style={{width: '100%'}} />
+            style={{width: '100%'}}
+          />
           {
             !this.state.searching &&
             this.state.searchResultsFor &&
@@ -700,7 +701,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 align="middle"
                 justify="center"
               >
-                <LoadingOutlined />
+                <LoadingOutlined className={styles.loadingIcon} />
               </Row>
             )
           }

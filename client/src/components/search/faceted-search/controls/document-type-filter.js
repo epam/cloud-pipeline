@@ -17,7 +17,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
 import classNames from 'classnames';
 import {SearchGroupTypes} from '../../searchGroupTypes';
 import localization from '../../../../utils/localization';
@@ -59,38 +58,38 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
         className={styles.documentTypeFilter}
       >
         {
-          this.filters.map(f => (
-            <div
-              className={
-                classNames(
-                  styles.filter,
-                  {
-                    [styles.selected]: f.enabled,
-                    [styles.disabled]: !f.enabled && f.count === 0
-                  }
-                )
-              }
-              key={f.types.join('-')}
-              onClick={this.handleFilterClick(f)}
-            >
-              <LegacyIcon
-                className={styles.icon}
-                type={f.icon}
-              />
-              {f.title(this.localizedString)()}
-              {
-                f.count > 0
-                  ? (
-                    <span
-                      className={styles.count}
-                    >
-                      ({displayCount(f.count, true)})
-                    </span>
+          this.filters.map(f => {
+            const TypeIcon = f.icon;
+            return (
+              <div
+                className={
+                  classNames(
+                    styles.filter,
+                    {
+                      [styles.selected]: f.enabled,
+                      [styles.disabled]: !f.enabled && f.count === 0
+                    }
                   )
-                  : undefined
-              }
-            </div>
-          ))
+                }
+                key={f.types.join('-')}
+                onClick={this.handleFilterClick(f)}
+              >
+                <TypeIcon className={styles.icon} />
+                {f.title(this.localizedString)()}
+                {
+                  f.count > 0
+                    ? (
+                      <span
+                        className={styles.count}
+                      >
+                        ({displayCount(f.count, true)})
+                      </span>
+                    )
+                    : undefined
+                }
+              </div>
+            );
+          })
         }
       </div>
     );

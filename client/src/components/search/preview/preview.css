@@ -44,12 +44,12 @@
 }
 
 .header .sub-title span,
-.header .sub-title span > i {
+.header .sub-title span > span[class*="anticon"] {
   font-size: medium;
 }
 
 .header span,
-.header i {
+.header span[class*="anticon"] {
   margin-right: 7px;
   color: #ddd;
 }
@@ -65,7 +65,7 @@
 }
 
 .container.light .header span,
-.container.light .header i,
+.container.light .header span[class*="anticon"],
 .container.light .header .description,
 .container.light .header .tool-description {
   color: #555;
@@ -178,11 +178,11 @@
   padding: 1px 10px 1px 0;
 }
 
-.run-table .run i {
+.run-table .run span[class*="anticon"] {
   color: #ccc;
 }
 
-.container.light .run-table .run i {
+.container.light .run-table .run span[class*="anticon"] {
   color: #555;
 }
 
@@ -197,7 +197,7 @@
 }
 
 .content-preview .task span,
-.content-preview .task i,
+.content-preview .task span[class*="anticon"],
 .content-preview .task code {
   color: #ccc;
   margin-right: 5px;
@@ -218,7 +218,7 @@
 }
 
 .container.light .content-preview .task span,
-.container.light .content-preview .task i,
+.container.light .content-preview .task span[class*="anticon"],
 .container.light .content-preview .task code,
 .container.light .md-preview,
 .container.light .md-preview h1,

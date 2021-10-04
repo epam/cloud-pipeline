@@ -242,14 +242,14 @@ export default class Navigation extends React.Component {
             VERSION &&
             <Popover
               content={
-                <Row>
-                  <Row>
+                <div>
+                  <div>
                     <b>{this.props.deploymentName || 'EPAM Cloud Pipeline'}</b>
-                  </Row>
-                  <Row>
+                  </div>
+                  <div>
                     <b>Version:</b> {VERSION}
-                  </Row>
-                </Row>
+                  </div>
+                </div>
               }
               placement="right"
               trigger="click"

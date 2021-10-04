@@ -96,7 +96,7 @@ export default class CloneForm extends React.Component {
 
   render () {
     const modalFooter = this.props.pending ? false : (
-      <Row>
+      <Row justify="end">
         <Button
           id="folder-clone-form-cancel-button"
           onClick={this.props.onCancel}>Cancel</Button>

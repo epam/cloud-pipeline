@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
 import {withRouter} from 'react-router-dom';
-import {DownOutlined, SettingOutlined} from '@ant-design/icons';
+import {DownOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import {Alert, Menu as TabMenu, message, Row, Button, Col} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -289,7 +289,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
               editStyleEditableField={{flex: 1}}
               displayTextEditableField={`${this.props.pipeline.value.name} (${this.props.version})`}
               textEditableField={this.props.pipeline.value.name}
-              icon="tag"
+              icon={TagFilled}
               iconClassName={browserStyles.editableControl}
               lock={this.props.pipeline.value.locked}
               lockClassName={browserStyles.editableControl}

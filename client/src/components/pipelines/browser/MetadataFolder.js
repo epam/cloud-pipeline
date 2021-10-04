@@ -374,8 +374,8 @@ class MetadataFolder extends React.Component {
               id={parseInt(this.props.folderId)}
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
-              readOnlyEditableField={true}
-              icon="appstore-o"
+              readOnlyEditableField
+              icon={AppstoreOutlined}
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}
             />

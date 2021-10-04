@@ -109,7 +109,7 @@
 }
 
 .wdl-appearance-button.active:focus {
-  border-color: #108ee9;
+  border-color: #1890ff;
   color: #fff;
 }
 
@@ -189,7 +189,7 @@
   position: relative;
   top: -30px;
   font-size: 20px;
-  color: #108ee9;
+  color: #1890ff;
 }
 
 .graph-interface-button {
@@ -197,7 +197,7 @@
 }
 
 .graph-interface-button-icon {
-  color: #108ee9;
+  color: #1890ff;
 }
 
 .graph-interface-button-icon-disabled {

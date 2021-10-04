@@ -421,7 +421,7 @@ export default class S3FilePreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title}>
+          <Row className={styles.title} type="flex" align="middle">
             <PreviewIcon />
             <span>{this.props.item.name}</span>
           </Row>

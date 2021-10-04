@@ -23,7 +23,8 @@ import {
   PoweroffOutlined,
   SearchOutlined,
   SettingOutlined,
-  ToolOutlined, UserDeleteOutlined
+  ToolOutlined,
+  UserDeleteOutlined
 } from '@ant-design/icons';
 import Pages from './pages';
 

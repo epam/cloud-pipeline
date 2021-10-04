@@ -26,7 +26,7 @@ import VSTableNavigation from './vs-table-navigation';
 import roleModel from '../../../../../utils/roleModel';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
 import checkFileExistence from '../utils';
-import COLUMNS from './columns';
+import getColumns from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
 import styles from './table.css';
@@ -130,13 +130,13 @@ class VersionedStorageTable extends React.Component {
     }
     const content = (
       <div>
-        <Row>
+        <div>
           {`Are you sure you want to delete ${type} '${record.name}'?`}
-        </Row>
+        </div>
         {type === 'folder' && (
-          <Row>
+          <div>
             All child folders and files will be removed.
-          </Row>
+          </div>
         )}
         <Input.TextArea
           placeholder="Please type a comment"
@@ -153,15 +153,10 @@ class VersionedStorageTable extends React.Component {
     });
   };
 
-  onRowClick = (record, index, event) => {
+  onRowClick = (record) => {
     const {onRowClick} = this.props;
     if (!record) {
       return;
-    }
-    debugger;
-    if (event && event.target.dataset.action) {
-      const buttonAction = event.target.dataset.action;
-      return this.actions[buttonAction] && this.actions[buttonAction](record);
     }
     return onRowClick && onRowClick(record);
   };
@@ -355,13 +350,13 @@ class VersionedStorageTable extends React.Component {
         width="500px"
       >
         <div>
-          <Row style={{paddingLeft: '15px'}}>
+          <div style={{paddingLeft: '15px'}}>
             {`Are you sure you want to delete ${type} '${deletingDocument.name}'?`}
-          </Row>
+          </div>
           {type === 'folder' && (
-            <Row style={{textAlign: 'center'}}>
+            <div style={{textAlign: 'center'}}>
               All child folders and files will be removed.
-            </Row>
+            </div>
           )}
           <div
             style={{padding: '15px', display: 'flex', flexWrap: 'nowrap'}}
@@ -407,12 +402,12 @@ class VersionedStorageTable extends React.Component {
               'versioned-storage-contents'
             )
           }
-          columns={COLUMNS}
+          columns={getColumns(this.actions)}
           rowKey={(record) => record.name}
           dataSource={this.data}
           size="small"
-          onRow={(item, i) => ({
-            onClick: (e) => this.onRowClick(item, i, e)
+          onRow={item => ({
+            onClick: () => this.onRowClick(item)
           })}
           pagination={false}
           rowClassName={() => styles.tableRow}

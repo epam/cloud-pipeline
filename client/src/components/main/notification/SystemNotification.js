@@ -22,7 +22,7 @@ import {
   CloseCircleOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
-  InfoCircleOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 
 import {Row} from 'antd';

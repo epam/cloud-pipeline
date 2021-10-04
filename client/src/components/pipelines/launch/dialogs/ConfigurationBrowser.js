@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Icon as LegacyIcon} from '@ant-design/compatible';
+import {FolderOutlined, SettingOutlined} from '@ant-design/icons';
 import {Alert, Button, Col, Modal, Row, Select, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import LoadingView from '../../../special/LoadingView';
@@ -232,8 +232,8 @@ export default class ConfigurationBrowser extends React.Component {
       if (!defaultRootEntity) return false;
       const [selectedEntityConfiguration] =
         this.props.currentMetadataEntity.filter(matadataEntity =>
-        matadataEntity.metadataClass.id === defaultRootEntity.rootEntityId
-      );
+          matadataEntity.metadataClass.id === defaultRootEntity.rootEntityId
+        );
       return selectedEntityConfiguration && selectedEntityConfiguration.metadataClass
         ? selectedEntityConfiguration.metadataClass.name !== this.props.metadataClassName
         : false;
@@ -243,10 +243,10 @@ export default class ConfigurationBrowser extends React.Component {
   }
 
   renderItemTitle (item) {
-    let icon;
+    let ItemIcon;
     switch (item.type) {
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.configuration: icon = 'setting'; break;
+      case ItemTypes.folder: ItemIcon = FolderOutlined; break;
+      case ItemTypes.configuration: ItemIcon = SettingOutlined; break;
     }
     let name = item.name;
     if (item.searchResult) {
@@ -269,7 +269,7 @@ export default class ConfigurationBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <LegacyIcon type={icon} />}{name}
+        {ItemIcon && <ItemIcon />}{name}
       </span>
     );
   }
