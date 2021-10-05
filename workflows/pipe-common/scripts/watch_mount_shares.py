@@ -370,7 +370,11 @@ class NFSMountWatcher:
             return default
         matching_storage = NFSMountWatcher._find_matching_storage(available_storages_dict, mount_details)
         if matching_storage:
-            return matching_storage.mount_status
+            status = matching_storage.mount_status
+            if status == MOUNT_STATUS_DISABLED:
+                return MOUNT_STATUS_READ_ONLY
+            else:
+                return status
         else:
             return DEFAULT_MOUNT_STATUS
 

@@ -126,10 +126,10 @@ public class NFSQuotasMonitor {
     private NFSStorageMountStatus mapNotificationToStatus(final Long storageId,
                                                           final NFSQuotaNotificationEntry notification) {
         final Set<StorageQuotaAction> actions = notification.getActions();
-        if (actions.contains(StorageQuotaAction.DISABLE)) {
-            return NFSStorageMountStatus.MOUNT_DISABLED;
-        } else if (actions.contains(StorageQuotaAction.READ_ONLY)) {
+        if (actions.contains(StorageQuotaAction.READ_ONLY)) {
             return NFSStorageMountStatus.READ_ONLY;
+        } else if (actions.contains(StorageQuotaAction.DISABLE)) {
+            return NFSStorageMountStatus.MOUNT_DISABLED;
         } else {
             log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_RESTRICTION, actions, storageId));
             return defaultRestrictiveStatus;
