@@ -119,11 +119,51 @@ public class NFSQuotasMonitor {
     private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage) {
         return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparing(NFSQuotaNotificationEntry::getValue).reversed())
+            .sorted(quotasComparator(storage).reversed())
             .filter(notification -> exceedsLimit(storage, notification))
             .findFirst()
             .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients()))
             .orElse(NFSStorageMountStatus.ACTIVE);
+    }
+
+    private Comparator<NFSQuotaNotificationEntry> quotasComparator(final NFSDataStorage storage) {
+        return (entry1, entry2) -> {
+            final StorageQuotaType type1 = entry1.getType();
+            final StorageQuotaType type2 = entry2.getType();
+            if (type1.equals(type2)) {
+                return entry1.getValue().compareTo(entry2.getValue());
+            } else {
+                final FileShareMount shareMount = fileShareMountManager.load(storage.getFileShareMountId());
+                final MountType shareType = shareMount.getMountType();
+                switch (shareType) {
+                    case LUSTRE:
+                        return lustreManager.findLustreFS(shareMount)
+                            .map(lustreFS -> compareMixedQuotasForLustre(entry1, entry2, lustreFS))
+                            .orElse(0);
+                    case NFS:
+                        // assuming for NFS, that percentage quota is always greater, than the absolute one
+                        return StorageQuotaType.GIGABYTES.equals(type1) ? -1 : 1;
+                    default:
+                        return 0;
+                }
+            }
+        };
+    }
+
+    private int compareMixedQuotasForLustre(final NFSQuotaNotificationEntry entry1,
+                                            final NFSQuotaNotificationEntry entry2,
+                                            final LustreFS lustreFS) {
+        final Integer capacityGb = lustreFS.getCapacityGb();
+        final Double absoluteQuota1;
+        final Double absoluteQuota2;
+        if (StorageQuotaType.GIGABYTES.equals(entry1.getType())) {
+            absoluteQuota1 = entry1.getValue();
+            absoluteQuota2 = convertLustrePercentageLimitToAbsoluteValue(entry2.getValue(), capacityGb);
+        } else {
+            absoluteQuota1 = convertLustrePercentageLimitToAbsoluteValue(entry1.getValue(), capacityGb);
+            absoluteQuota2 = entry2.getValue();
+        }
+        return absoluteQuota1.compareTo(absoluteQuota2);
     }
 
     private NFSStorageMountStatus mapNotificationToStatus(final NFSDataStorage storage,
@@ -181,7 +221,7 @@ public class NFSQuotasMonitor {
             case LUSTRE:
                 return lustreManager.findLustreFS(shareMount)
                     .map(LustreFS::getCapacityGb)
-                    .map(maxSize -> maxSize * originalLimit / PERCENTS_MULTIPLIER * GB_TO_BYTES)
+                    .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize) * GB_TO_BYTES)
                     .map(limit -> storageUsage.getSize() > limit)
                     .orElse(false);
             case NFS:
@@ -194,6 +234,10 @@ public class NFSQuotasMonitor {
                 break;
         }
         return false;
+    }
+
+    private Double convertLustrePercentageLimitToAbsoluteValue(final Double percentage, final Integer capacityGb) {
+        return capacityGb * percentage / PERCENTS_MULTIPLIER;
     }
 
     private Map<Long, NFSQuota> loadStorageQuotas(final List<NFSDataStorage> storages) {
