@@ -27,4 +27,8 @@ public class NFSQuotaNotificationEntry {
     private final Double value;
     private final String type;
     private final Set<StorageQuotaAction> actions;
+
+    public String toThreshold() {
+        return String.format("%.0f %s", value, type);
+    }
 }

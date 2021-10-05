@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuota;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -37,6 +38,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +70,7 @@ public class NFSQuotasMonitor {
     private final FileShareMountManager fileShareMountManager;
     private final LustreFSManager lustreManager;
     private final MessageHelper messageHelper;
+    private final NotificationManager notificationManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
 
@@ -77,6 +80,7 @@ public class NFSQuotasMonitor {
                             final FileShareMountManager fileShareMountManager,
                             final LustreFSManager lustreManager,
                             final MessageHelper messageHelper,
+                            final NotificationManager notificationManager,
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
@@ -87,6 +91,7 @@ public class NFSQuotasMonitor {
         this.fileShareMountManager = fileShareMountManager;
         this.lustreManager = lustreManager;
         this.messageHelper = messageHelper;
+        this.notificationManager = notificationManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
     }
@@ -116,30 +121,37 @@ public class NFSQuotasMonitor {
         return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
             .sorted(Comparator.comparing(NFSQuotaNotificationEntry::getValue).reversed())
-            .filter(this::hasRestrictingActions)
             .filter(notification -> exceedsLimit(storage, notification))
-            .map(notification -> mapNotificationToStatus(storage.getId(), notification))
             .findFirst()
+            .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients()))
             .orElse(NFSStorageMountStatus.ACTIVE);
     }
 
-    private NFSStorageMountStatus mapNotificationToStatus(final Long storageId,
-                                                          final NFSQuotaNotificationEntry notification) {
+    private NFSStorageMountStatus mapNotificationToStatus(final NFSDataStorage storage,
+                                                          final NFSQuotaNotificationEntry notification,
+                                                          final List<NFSQuotaNotificationRecipient> recipients) {
         final Set<StorageQuotaAction> actions = notification.getActions();
-        if (actions.contains(StorageQuotaAction.READ_ONLY)) {
-            return NFSStorageMountStatus.READ_ONLY;
-        } else if (actions.contains(StorageQuotaAction.DISABLE)) {
-            return NFSStorageMountStatus.MOUNT_DISABLED;
-        } else {
-            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_RESTRICTION, actions, storageId));
-            return defaultRestrictiveStatus;
+        final NFSStorageMountStatus mountStatus = resolveMountStatus(storage, actions);
+        if (actions.contains(StorageQuotaAction.EMAIL)) {
+            notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
         }
+        return mountStatus;
     }
 
-    private boolean hasRestrictingActions(final NFSQuotaNotificationEntry notification) {
-        final Set<StorageQuotaAction> actions = notification.getActions();
-        return CollectionUtils.size(actions) > 1
-               || (CollectionUtils.size(actions) == 1 && !actions.contains(StorageQuotaAction.EMAIL));
+    private NFSStorageMountStatus resolveMountStatus(NFSDataStorage storage, Set<StorageQuotaAction> actions) {
+        final NFSStorageMountStatus mountStatus;
+        if (actions.contains(StorageQuotaAction.READ_ONLY)) {
+            mountStatus = NFSStorageMountStatus.READ_ONLY;
+        } else if (actions.contains(StorageQuotaAction.DISABLE)) {
+            mountStatus = NFSStorageMountStatus.MOUNT_DISABLED;
+        } else if (actions.contains(StorageQuotaAction.EMAIL)) {
+            mountStatus = NFSStorageMountStatus.ACTIVE;
+        } else {
+            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_RESTRICTION,
+                                              actions, storage.getId()));
+            mountStatus = defaultRestrictiveStatus;
+        }
+        return mountStatus;
     }
 
     private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {

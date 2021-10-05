@@ -38,7 +38,9 @@ public enum NotificationType {
     LONG_PAUSED(11, -1L, -1L, Collections.emptyList(), true,
             NotificationGroup.LONG_PAUSED),
     LONG_PAUSED_STOPPED(12, -1L, -1L, Collections.emptyList(), true,
-            NotificationGroup.LONG_PAUSED);
+            NotificationGroup.LONG_PAUSED),
+    STORAGE_QUOTA_EXCEEDING(13, -1L, -1L, Collections.emptyList(), true,
+                NotificationGroup.RESOURCE_CONSUMING);
 
     private static final Map<Long, NotificationType> BY_ID;
 
