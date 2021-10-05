@@ -108,6 +108,22 @@ def set_user_token(ctx, param, value):
         UserTokenOperations().set_user_token(value)
 
 
+def stacktracing(func):
+    def _stacktracing_decorator(f):
+        @click.pass_context
+        def _stacktracing_wrapper(ctx, *args, **kwargs):
+            trace = ctx.params.get('trace') or False
+            try:
+                return ctx.invoke(f, *args, **kwargs)
+            except Exception as runtime_error:
+                click.echo('Error: {}'.format(str(runtime_error)), err=True)
+                if trace:
+                    traceback.print_exc()
+                sys.exit(1)
+        return functools.update_wrapper(_stacktracing_wrapper, f)
+    return _stacktracing_decorator(func)
+
+
 def common_options(func):
     @click.option(
         '--debug',
@@ -1065,8 +1081,8 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
-@stacktracing
 @common_options
+@stacktracing
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks, threads, io_threads, verify_destination):
     """ Moves a file or a folder from one datastorage to another one
@@ -1112,8 +1128,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
-@stacktracing
 @common_options
+@stacktracing
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks, threads, io_threads, verify_destination, trace):
     """ Copies files from one datastorage to another one
@@ -1399,6 +1415,7 @@ def chown(user_name, entity_class, entity_name):
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @click.pass_context
 @Config.validate_access_token
+@stacktracing
 def ssh(ctx, run_id, retries, trace):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
@@ -1418,14 +1435,8 @@ def ssh(ctx, run_id, retries, trace):
 
         pipe ssh 12345 echo \$HOSTNAME
     """
-    try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
-        sys.exit(ssh_exit_code)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
+    sys.exit(ssh_exit_code)
 
 
 @cli.command(name='scp')
@@ -1438,6 +1449,7 @@ def ssh(ctx, run_id, retries, trace):
 @click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@stacktracing
 def scp(source, destination, recursive, quiet, retries, trace):
     """
     Transfers files or directories between local workstation and run instance.
@@ -1471,13 +1483,7 @@ def scp(source, destination, recursive, quiet, retries, trace):
 
         pipe scp -r 12345:/common/workdir/dir dir
     """
-    try:
-        run_scp(source, destination, recursive, quiet, retries)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    run_scp(source, destination, recursive, quiet, retries)
 
 
 @cli.group()
@@ -1499,6 +1505,7 @@ def tunnel():
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@stacktracing
 def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
     """
     Stops background tunnel processes.
@@ -1526,13 +1533,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
         pipe tunnel stop -lp 4567 12345
 
     """
-    try:
-        kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
 
 
 @tunnel.command(name='start')
@@ -1560,6 +1561,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
+@stacktracing
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                  timeout, foreground, retries, trace):
@@ -1632,15 +1634,9 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
-    try:
-        create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                      ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
-                      timeout, foreground, retries)
-    except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        if trace:
-            traceback.print_exc()
-        sys.exit(1)
+    create_tunnel(host_id, local_port, remote_port, connection_timeout,
+                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                  timeout, foreground, retries)
 
 
 @cli.command(name='update')
