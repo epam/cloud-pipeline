@@ -37,7 +37,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager, UploadResult, TransferResult
+    AbstractDeleteManager
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
