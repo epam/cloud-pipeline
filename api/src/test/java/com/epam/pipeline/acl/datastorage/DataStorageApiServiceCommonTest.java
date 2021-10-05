@@ -24,7 +24,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
@@ -163,24 +162,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
         assertThat(returnedDataStorages).hasSize(1).contains(nfsDataStorage);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(ALL_PERMISSIONS);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldNotReturnDataStoragesWhenPermissionIsGrantedAndMountStatusDisabled() {
-        final NFSDataStorage nfsDataStorage =
-            DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.MOUNT_DISABLED, OWNER_USER);
-        initAclEntity(nfsDataStorage, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
-                                                    new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        initUserAndEntityMocks(SIMPLE_USER, nfsDataStorage, context);
-        final DataStorageWithShareMount storageWithShareMount =
-            new DataStorageWithShareMount(nfsDataStorage, new FileShareMount());
-        doReturn(mutableListOf(storageWithShareMount)).when(mockDataStorageManager)
-            .getDataStoragesWithShareMountObject(eq(ID));
-
-        final List<DataStorageWithShareMount> returnedDataStorages =
-            dataStorageApiService.getAvailableStoragesWithShareMount(ID);
-        assertThat(returnedDataStorages).isEmpty();
     }
 
     @Test
