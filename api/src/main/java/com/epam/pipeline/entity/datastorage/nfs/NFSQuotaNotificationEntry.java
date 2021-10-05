@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.datastorage.nfs;
 
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
+import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import lombok.Data;
 
 import java.util.Set;
@@ -25,10 +26,10 @@ import java.util.Set;
 public class NFSQuotaNotificationEntry {
 
     private final Double value;
-    private final String type;
+    private final StorageQuotaType type;
     private final Set<StorageQuotaAction> actions;
 
     public String toThreshold() {
-        return String.format("%.0f %s", value, type);
+        return String.format("%.0f %s", value, type.getThresholdLabel());
     }
 }

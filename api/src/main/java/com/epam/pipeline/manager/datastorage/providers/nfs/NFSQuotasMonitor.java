@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
+import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
@@ -60,8 +61,6 @@ import java.util.stream.Collectors;
 public class NFSQuotasMonitor {
 
     private static final int GB_TO_BYTES = 1024 * 1024 * 1024;
-    private static final String SIZE_QUOTA_GB = "GB";
-    private static final String SIZE_QUOTA_PERCENTS = "PERCENT";
     private static final int PERCENTS_MULTIPLIER = 100;
 
     private final DataStorageManager dataStorageManager;
@@ -157,11 +156,11 @@ public class NFSQuotasMonitor {
     private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
         final Double originalLimit = notification.getValue();
         final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, true);
-        final String notificationType = notification.getType();
+        final StorageQuotaType notificationType = notification.getType();
         switch (notificationType) {
-            case SIZE_QUOTA_GB:
+            case GIGABYTES:
                 return exceedsAbsoluteLimit(originalLimit, storageUsage);
-            case SIZE_QUOTA_PERCENTS:
+            case PERCENTS:
                 return exceedsPercentageLimit(storage, originalLimit, storageUsage);
             default:
                 log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_TYPE, notificationType));
