@@ -339,7 +339,6 @@ class NFSMountWatcher:
 
     @staticmethod
     def _get_target_mount_points():
-        mount_points = dict()
         available_storages_dict = NFSMountWatcher._get_available_storages_dict()
         is_admin = NFSMountWatcher._is_admin()
         out, res = execute_command(MNT_LISTING_COMMAND.format(TARGET_FS_TYPES))
@@ -352,12 +351,12 @@ class NFSMountWatcher:
                     if len(mnt_details) == 4:
                         mount_details = MountPointDetails.from_array(mnt_details)
                         mount_attributes = mount_details.mount_attributes.split(COMMA)
-                        active_mount_status = NFSMountWatcher._get_mount_status(available_storages_dict, mount_details,
-                                                                                is_admin, default=MOUNT_STATUS_ACTIVE)
                         if READ_WRITE_OPTION in mount_attributes:
-                            NFSMountWatcher.process_active_mounts_found(active_mount_status, mount_details,
-                                                                        mount_points)
-        NFSMountWatcher._process_modified_mounts(available_storages_dict, mount_points, is_admin)
+                            NFSMountWatcher.save_details_status_active(mount_details)
+                        else:
+                            NFSMountWatcher.save_details_status_readonly(mount_details)
+            NFSMountWatcher.move_mount_statuses_from_tmp_file()
+        mount_points = NFSMountWatcher._process_modified_mounts(available_storages_dict, is_admin)
         return mount_points
 
     @staticmethod
@@ -404,18 +403,18 @@ class NFSMountWatcher:
             logging.warning(format_message('Unable to load current user: {}'.format(str(e))))
             return None
 
-
     @staticmethod
-    def _process_modified_mounts(available_storages_dict, mount_points, is_admin):
+    def _process_modified_mounts(available_storages_dict, is_admin):
+        mount_points = dict()
         modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path()
         if not os.path.exists(modified_mounts_file):
             logging.info(format_message('No modified mounts to check...'))
-            return
+            return mount_points
         with open(modified_mounts_file, "r") as modified_mounts:
             lines = modified_mounts.readlines()
         if len(lines) < 1:
             logging.info(format_message('No modified mounts to check...'))
-            return
+            return mount_points
         else:
             logging.info(format_message('Processing modified mounts'))
         for line in lines:
@@ -429,14 +428,24 @@ class NFSMountWatcher:
                                                                  is_admin, default=current_mount_status)
             if new_mount_status:
                 if current_mount_status == new_mount_status \
-                        or current_mount_status == MOUNT_STATUS_UNKNOWN:
+                        or new_mount_status == MOUNT_STATUS_UNKNOWN:
+                    if current_mount_status == MOUNT_STATUS_ACTIVE:
+                        mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                     NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details,
                                                                                current_mount_status)
                 else:
                     NFSMountWatcher._process_modified_mount(current_mount_status, new_mount_status,
                                                             modified_mount_details, mount_points)
             else:
+                if current_mount_status == MOUNT_STATUS_ACTIVE:
+                    mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                 NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details, current_mount_status)
+        NFSMountWatcher.move_mount_statuses_from_tmp_file()
+        return mount_points
+
+    @staticmethod
+    def move_mount_statuses_from_tmp_file():
+        modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path()
         tmp_modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path(use_tmp_file=True)
         if not os.path.exists(tmp_modified_mounts_file):
             os.mknod(tmp_modified_mounts_file)
@@ -449,6 +458,8 @@ class NFSMountWatcher:
             NFSMountWatcher.process_currently_disabled_mount(modified_mount_details, mount_points, new_mount_status)
         elif current_mount_status == MOUNT_STATUS_READ_ONLY:
             NFSMountWatcher.process_currently_ro_mount(modified_mount_details, mount_points, new_mount_status)
+        elif current_mount_status == MOUNT_STATUS_ACTIVE:
+            NFSMountWatcher.process_currently_active_mount(modified_mount_details, mount_points, new_mount_status)
         else:
             logging.warning(format_message('Unknown mount status [{}]'.format(new_mount_status)))
             NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details, current_mount_status)
@@ -457,15 +468,16 @@ class NFSMountWatcher:
     def process_currently_ro_mount(modified_mount_details, mount_points, new_mount_status):
         if new_mount_status == MOUNT_STATUS_DISABLED:
             if NFSMountWatcher.try_to_unmount(modified_mount_details):
-                NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                NFSMountWatcher.save_details_status_disabled(modified_mount_details)
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         elif new_mount_status == MOUNT_STATUS_ACTIVE:
             if NFSMountWatcher.try_to_unmount(modified_mount_details):
                 if NFSMountWatcher._try_mount_storage(modified_mount_details, False):
+                    NFSMountWatcher.save_details_status_active(modified_mount_details)
                     mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                 else:
-                    NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                    NFSMountWatcher.save_details_status_disabled(modified_mount_details)
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         else:
@@ -478,36 +490,37 @@ class NFSMountWatcher:
             if NFSMountWatcher._try_mount_storage(modified_mount_details, True):
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
             else:
-                NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                NFSMountWatcher.save_details_status_disabled(modified_mount_details)
         elif new_mount_status == MOUNT_STATUS_ACTIVE:
             if NFSMountWatcher._try_mount_storage(modified_mount_details, False):
+                NFSMountWatcher.save_details_status_active(modified_mount_details)
                 mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
             else:
-                NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                NFSMountWatcher.save_details_status_disabled(modified_mount_details)
         else:
             logging.warning(format_message('Unknown mount status [{}]'.format(new_mount_status)))
-            NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+            NFSMountWatcher.save_details_status_disabled(modified_mount_details)
 
     @staticmethod
-    def process_active_mounts_found(active_mount_status, mount_details, mount_points):
-        if active_mount_status == MOUNT_STATUS_DISABLED:
+    def process_currently_active_mount(mount_details, mount_points, new_mount_status):
+        if new_mount_status == MOUNT_STATUS_DISABLED:
             if NFSMountWatcher.try_to_unmount(mount_details):
-                NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
+                NFSMountWatcher.save_details_status_disabled(mount_details, use_tmp_file=False)
                 return
-        elif active_mount_status == MOUNT_STATUS_READ_ONLY:
+        elif new_mount_status == MOUNT_STATUS_READ_ONLY:
             if NFSMountWatcher.try_to_unmount(mount_details):
                 if NFSMountWatcher._try_mount_storage(mount_details, True):
                     NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
                 else:
-                    NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
+                    NFSMountWatcher.save_details_status_disabled(mount_details, use_tmp_file=False)
                 return
-        elif active_mount_status != MOUNT_STATUS_ACTIVE:
-                logging.info(format_message('Received unknown status [{}] for [{}]'.format(active_mount_status,
+        elif new_mount_status != MOUNT_STATUS_ACTIVE:
+                logging.info(format_message('Received unknown status [{}] for [{}]'.format(new_mount_status,
                                                                                            mount_details.mount_point)))
         mount_points[mount_details.mount_point] = mount_details.mount_source
 
     @staticmethod
-    def save_mount_details_status_disabled(mount_details, use_tmp_file=True):
+    def save_details_status_disabled(mount_details, use_tmp_file=True):
         NFSMountWatcher.save_mount_details_to_modified_mounts_file(mount_details, MOUNT_STATUS_DISABLED,
                                                                    use_tmp_file=use_tmp_file)
 
@@ -538,6 +551,8 @@ class NFSMountWatcher:
         mount_options = mount_details.mount_attributes.split(COMMA)
         if read_only:
             mount_options = [READ_ONLY_OPTION if option == READ_WRITE_OPTION else option for option in mount_options]
+        else:
+            mount_options = [READ_WRITE_OPTION if option == READ_ONLY_OPTION else option for option in mount_options]
         mount_options = COMMA.join(mount_options)
         mkdir(mount_details.mount_point)
         mount_command = NFS_MOUNT_CMD_PATTERN.format(
