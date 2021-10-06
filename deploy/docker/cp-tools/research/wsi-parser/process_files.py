@@ -446,19 +446,13 @@ class WsiFileParser:
             output_file.write(json.dumps(details, indent=4))
 
     def update_dz_info_file(self, original_width, original_height):
-        service_directory = WsiParsingUtils.get_service_directory(self.file_path)
         file_name = WsiParsingUtils.get_basename_without_extension(self.file_path)
-        image = os.path.join(service_directory, '{}.jpeg'.format(file_name))
-        if os.path.exists(image):
-            tiles_dir = os.path.join(os.path.dirname(self.file_path), file_name + WsiParsingUtils.TILES_DIR_SUFFIX)
-            max_zoom = self._max_zoom_level(tiles_dir)
-            if max_zoom < 0:
-                self.log_processing_info('Unable to determine DZ depth calculation, skipping json file creation')
-                return
-            self._write_dz_info_to_file(os.path.join(tiles_dir, 'info.json'),
-                                        original_width,
-                                        original_height,
-                                        max_zoom)
+        tiles_dir = os.path.join(os.path.dirname(self.file_path), file_name + WsiParsingUtils.TILES_DIR_SUFFIX)
+        max_zoom = self._max_zoom_level(tiles_dir)
+        if max_zoom < 0:
+            self.log_processing_info('Unable to determine DZ depth calculation, skipping json file creation')
+            return
+        self._write_dz_info_to_file(os.path.join(tiles_dir, 'info.json'), original_width, original_height, max_zoom)
 
     def _is_same_series_selected(self, selected_series):
         stat_file = WsiParsingUtils.get_stat_file_name(self.file_path)
@@ -487,6 +481,9 @@ class WsiFileParser:
             'tileHeight': DZ_TILES_SIZE,
             'bounds': [0, width, 0, height]
         }
+        self.log_processing_info(
+            'Saving preview settings [width={}; height={}; tiles={}; maxLevel={}] to JSON configuration [{}]'.format(
+                width, height, DZ_TILES_SIZE, max_dz_level, dz_info_file_path))
         with open(dz_info_file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
 
