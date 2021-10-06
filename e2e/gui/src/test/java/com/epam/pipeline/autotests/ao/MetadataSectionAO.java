@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,18 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.VALUE_FIELD;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
@@ -39,7 +46,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             entry(ADD_KEY, $(byId("add-key-button"))),
             entry(REMOVE_ALL_KEYS, $(byId("remove-all-keys-button"))),
             entry(ENLARGE, $(PipelineSelectors.buttonByIconClass("anticon-arrows-alt"))),
-            entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea"))
+            entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea")),
+            entry(CONFIGURE_NOTIFICATION, $(byId("value-column-fs_notifications")))
     );
 
     private final String keyElementId = "key-column-%s";
@@ -143,6 +151,16 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         );
     }
 
+    public ConfigureNotificationAO configureNotification() {
+        click(CONFIGURE_NOTIFICATION);
+        return new ConfigureNotificationAO(this);
+    }
+
+    public MetadataSectionAO validateConfigureNotificationFormForUser() {
+        ensure(CONFIGURE_NOTIFICATION, text("Notifications are not configured"));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
@@ -177,6 +195,46 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
         public KeysAndValuesAdditionForm setValue(String value) {
             return setValue(VALUE_FIELD, value);
+        }
+    }
+
+    public static class ConfigureNotificationAO extends PopupAO<ConfigureNotificationAO, MetadataSectionAO> {
+
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(RECIPIENTS, context().find(comboboxOf(byClassName("s-notifications__users-roles-select")))),
+                entry(ADD_NOTIFICATION, context().find(button("Add notification"))),
+                entry(CLEAR_ALL_RECIPIENTS, context().find(button("Clear all recipients"))),
+                entry(CLEAR_ALL_NOTIFICATIONS, context().find(button("Clear all notifications")))
+        );
+
+        public ConfigureNotificationAO(MetadataSectionAO parentAO) {
+            super(parentAO);
+        }
+
+        public ConfigureNotificationAO addRecipient(final String recipient) {
+            setValue(RECIPIENTS, recipient).enter();
+            click(byText("Recipients:"));
+            return this;
+        }
+
+        public ConfigureNotificationAO addNotification(final String volumeThresholdInGb, final String action) {
+            setValue(inputOf(byClassName("s-notifications__notification")), volumeThresholdInGb);
+            click(combobox("s-notifications__select"));
+            if ($(byClassName("ant-select-selection__choice__remove")).isDisplayed()) {
+                click(byClassName("ant-select-selection__choice__remove"));
+            }
+            selectValue(combobox("Do nothing"), menuitem(action));
+            return this;
+        }
+
+        @Override
+        public SelenideElement context() {
+            return $(modalWithTitle("Configure FS mount notifications"));
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 }
