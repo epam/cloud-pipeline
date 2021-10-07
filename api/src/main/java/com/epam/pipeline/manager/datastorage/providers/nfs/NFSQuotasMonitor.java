@@ -26,10 +26,12 @@ import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
+import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuota;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -37,6 +39,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -58,8 +61,6 @@ import java.util.stream.Collectors;
 public class NFSQuotasMonitor {
 
     private static final int GB_TO_BYTES = 1024 * 1024 * 1024;
-    private static final String SIZE_QUOTA_GB = "GB";
-    private static final String SIZE_QUOTA_PERCENTS = "PERCENT";
     private static final int PERCENTS_MULTIPLIER = 100;
 
     private final DataStorageManager dataStorageManager;
@@ -68,6 +69,7 @@ public class NFSQuotasMonitor {
     private final FileShareMountManager fileShareMountManager;
     private final LustreFSManager lustreManager;
     private final MessageHelper messageHelper;
+    private final NotificationManager notificationManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
 
@@ -77,6 +79,7 @@ public class NFSQuotasMonitor {
                             final FileShareMountManager fileShareMountManager,
                             final LustreFSManager lustreManager,
                             final MessageHelper messageHelper,
+                            final NotificationManager notificationManager,
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
@@ -87,6 +90,7 @@ public class NFSQuotasMonitor {
         this.fileShareMountManager = fileShareMountManager;
         this.lustreManager = lustreManager;
         this.messageHelper = messageHelper;
+        this.notificationManager = notificationManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
     }
@@ -115,41 +119,88 @@ public class NFSQuotasMonitor {
     private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage) {
         return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparing(NFSQuotaNotificationEntry::getValue).reversed())
-            .filter(this::hasRestrictingActions)
+            .sorted(quotasComparator(storage).reversed())
             .filter(notification -> exceedsLimit(storage, notification))
-            .map(notification -> mapNotificationToStatus(storage.getId(), notification))
             .findFirst()
+            .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients()))
             .orElse(NFSStorageMountStatus.ACTIVE);
     }
 
-    private NFSStorageMountStatus mapNotificationToStatus(final Long storageId,
-                                                          final NFSQuotaNotificationEntry notification) {
-        final Set<StorageQuotaAction> actions = notification.getActions();
-        if (actions.contains(StorageQuotaAction.READ_ONLY)) {
-            return NFSStorageMountStatus.READ_ONLY;
-        } else if (actions.contains(StorageQuotaAction.DISABLE)) {
-            return NFSStorageMountStatus.MOUNT_DISABLED;
-        } else {
-            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_RESTRICTION, actions, storageId));
-            return defaultRestrictiveStatus;
-        }
+    private Comparator<NFSQuotaNotificationEntry> quotasComparator(final NFSDataStorage storage) {
+        return (entry1, entry2) -> {
+            final StorageQuotaType type1 = entry1.getType();
+            final StorageQuotaType type2 = entry2.getType();
+            if (type1.equals(type2)) {
+                return entry1.getValue().compareTo(entry2.getValue());
+            } else {
+                final FileShareMount shareMount = fileShareMountManager.load(storage.getFileShareMountId());
+                final MountType shareType = shareMount.getMountType();
+                switch (shareType) {
+                    case LUSTRE:
+                        return lustreManager.findLustreFS(shareMount)
+                            .map(lustreFS -> compareMixedQuotasForLustre(entry1, entry2, lustreFS))
+                            .orElse(0);
+                    case NFS:
+                        // assuming for NFS, that percentage quota is always greater, than the absolute one
+                        return StorageQuotaType.GIGABYTES.equals(type1) ? -1 : 1;
+                    default:
+                        return 0;
+                }
+            }
+        };
     }
 
-    private boolean hasRestrictingActions(final NFSQuotaNotificationEntry notification) {
+    private int compareMixedQuotasForLustre(final NFSQuotaNotificationEntry entry1,
+                                            final NFSQuotaNotificationEntry entry2,
+                                            final LustreFS lustreFS) {
+        final Integer capacityGb = lustreFS.getCapacityGb();
+        final Double absoluteQuota1;
+        final Double absoluteQuota2;
+        if (StorageQuotaType.GIGABYTES.equals(entry1.getType())) {
+            absoluteQuota1 = entry1.getValue();
+            absoluteQuota2 = convertLustrePercentageLimitToAbsoluteValue(entry2.getValue(), capacityGb);
+        } else {
+            absoluteQuota1 = convertLustrePercentageLimitToAbsoluteValue(entry1.getValue(), capacityGb);
+            absoluteQuota2 = entry2.getValue();
+        }
+        return absoluteQuota1.compareTo(absoluteQuota2);
+    }
+
+    private NFSStorageMountStatus mapNotificationToStatus(final NFSDataStorage storage,
+                                                          final NFSQuotaNotificationEntry notification,
+                                                          final List<NFSQuotaNotificationRecipient> recipients) {
         final Set<StorageQuotaAction> actions = notification.getActions();
-        return CollectionUtils.size(actions) > 1
-               || (CollectionUtils.size(actions) == 1 && !actions.contains(StorageQuotaAction.EMAIL));
+        final NFSStorageMountStatus mountStatus = resolveMountStatus(storage, actions);
+        if (actions.contains(StorageQuotaAction.EMAIL)) {
+            notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
+        }
+        return mountStatus;
+    }
+
+    private NFSStorageMountStatus resolveMountStatus(NFSDataStorage storage, Set<StorageQuotaAction> actions) {
+        final NFSStorageMountStatus mountStatus;
+        if (actions.contains(StorageQuotaAction.READ_ONLY)) {
+            mountStatus = NFSStorageMountStatus.READ_ONLY;
+        } else if (actions.contains(StorageQuotaAction.DISABLE)) {
+            mountStatus = NFSStorageMountStatus.MOUNT_DISABLED;
+        } else if (actions.contains(StorageQuotaAction.EMAIL)) {
+            mountStatus = NFSStorageMountStatus.ACTIVE;
+        } else {
+            log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_RESTRICTION,
+                                              actions, storage.getId()));
+            mountStatus = defaultRestrictiveStatus;
+        }
+        return mountStatus;
     }
 
     private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
         final Double originalLimit = notification.getValue();
         final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, true);
-        final String notificationType = notification.getType();
+        final StorageQuotaType notificationType = notification.getType();
         switch (notificationType) {
-            case SIZE_QUOTA_GB:
+            case GIGABYTES:
                 return exceedsAbsoluteLimit(originalLimit, storageUsage);
-            case SIZE_QUOTA_PERCENTS:
+            case PERCENTS:
                 return exceedsPercentageLimit(storage, originalLimit, storageUsage);
             default:
                 log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_UNKNOWN_TYPE, notificationType));
@@ -170,7 +221,7 @@ public class NFSQuotasMonitor {
             case LUSTRE:
                 return lustreManager.findLustreFS(shareMount)
                     .map(LustreFS::getCapacityGb)
-                    .map(maxSize -> maxSize * originalLimit / PERCENTS_MULTIPLIER * GB_TO_BYTES)
+                    .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize) * GB_TO_BYTES)
                     .map(limit -> storageUsage.getSize() > limit)
                     .orElse(false);
             case NFS:
@@ -183,6 +234,10 @@ public class NFSQuotasMonitor {
                 break;
         }
         return false;
+    }
+
+    private Double convertLustrePercentageLimitToAbsoluteValue(final Double percentage, final Integer capacityGb) {
+        return capacityGb * percentage / PERCENTS_MULTIPLIER;
     }
 
     private Map<Long, NFSQuota> loadStorageQuotas(final List<NFSDataStorage> storages) {

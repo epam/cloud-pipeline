@@ -16,6 +16,10 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.notification.NotificationGroup;
 import com.epam.pipeline.entity.notification.NotificationType;
 
@@ -25,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -422,6 +427,60 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Transactional(propagation = Propagation.REQUIRED)
     public List<PipelineRun> notifyLongPausedRunsBeforeStop(final List<PipelineRun> pausedRuns) {
         return createNotificationsForLongPausedRuns(pausedRuns, NotificationType.LONG_PAUSED_STOPPED);
+    }
+
+    /**
+     * Creates notifications regarding storage quotas.
+     * @param storage the NFS storage that exceeding the quota
+     * @param exceededQuota the quota, that was exceeded
+     * @param recipients list of users to be notified
+     */
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyOnStorageQuotaExceeding(final NFSDataStorage storage,
+                                              final NFSStorageMountStatus newStatus,
+                                              final NFSQuotaNotificationEntry exceededQuota,
+                                              final List<NFSQuotaNotificationRecipient> recipients) {
+        final NotificationSettings notificationSettings =
+            notificationSettingsManager.load(NotificationType.STORAGE_QUOTA_EXCEEDING);
+        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+            LOGGER.info("No template configured for storage quotas notifications or it was disabled!");
+            return;
+        }
+        LOGGER.info("Storage quota exceeding notification for datastorage id={} will be sent!", storage.getId());
+
+        final List<Long> ccUserIds = mapRecipientsToUserIds(recipients);
+        if (CollectionUtils.isEmpty(ccUserIds)) {
+            LOGGER.info("Resolved list of users is empty, skipping notification creation...");
+            return;
+        }
+
+        final NotificationMessage quotaNotificationMessage = new NotificationMessage();
+        quotaNotificationMessage.setCopyUserIds(ccUserIds);
+        quotaNotificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
+        quotaNotificationMessage.setTemplateParameters(buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus));
+        monitoringNotificationDao.createMonitoringNotification(quotaNotificationMessage);
+    }
+
+    private List<Long> mapRecipientsToUserIds(List<NFSQuotaNotificationRecipient> recipients) {
+        return recipients.stream()
+            .map(NFSQuotaNotificationRecipient::getName)
+            .map(userManager::loadUserByName)
+            .filter(Objects::nonNull)
+            .map(PipelineUser::getId)
+            .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> buildQuotasPlaceholdersDict(final NFSDataStorage storage,
+                                                            final NFSQuotaNotificationEntry quota,
+                                                            final NFSStorageMountStatus newStatus) {
+        final Map<String, Object> templateParameters = new HashMap<>();
+        templateParameters.put("storageId", storage.getId());
+        templateParameters.put("storageName", storage.getName());
+        templateParameters.put("threshold", quota.toThreshold());
+        templateParameters.put("previousMountStatus", storage.getMountStatus());
+        templateParameters.put("newMountStatus", newStatus);
+        return templateParameters;
     }
 
     private boolean isRunStuckInStatus(final NotificationSettings settings,
