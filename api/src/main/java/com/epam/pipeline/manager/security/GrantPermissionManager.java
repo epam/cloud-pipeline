@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
@@ -442,6 +443,21 @@ public class GrantPermissionManager {
             return false;
         }
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
+    }
+
+    public boolean storageWithSharePermission(final DataStorageWithShareMount storageWithShare,
+                                              final String permissionName) {
+        final AbstractDataStorage storage = storageWithShare.getStorage();
+        final boolean accessGranted = storagePermission(storage.getId(), permissionName);
+        if (accessGranted) {
+            Optional.of(storage)
+                .filter(NFSDataStorage.class::isInstance)
+                .map(NFSDataStorage.class::cast)
+                .map(NFSDataStorage::getMountStatus)
+                .filter(NFSStorageMountStatus.MOUNT_DISABLED::equals)
+                .ifPresent(status -> storage.setMask(AclPermission.READ.getMask()));
+        }
+        return accessGranted;
     }
 
     public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
