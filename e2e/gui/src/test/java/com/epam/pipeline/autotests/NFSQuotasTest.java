@@ -97,7 +97,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .ensureNotVisible(CONFIGURE_NOTIFICATION)
                 .validateConfigureNotificationFormForUser();
         logout();
     }
