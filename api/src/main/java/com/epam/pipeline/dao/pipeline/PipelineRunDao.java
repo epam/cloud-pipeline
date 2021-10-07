@@ -57,6 +57,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -127,6 +128,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
     private String loadRunsByNodeNameQuery;
+    private String updateClusterPriceQuery;
+    private String loadRunsByParentRunsIdsQuery;
+    private String loadRunningMasterRunsQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -431,6 +435,40 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     public List<PipelineRun> loadRunsByNodeName(final String nodeName) {
         return addServiceUrls(ListUtils.emptyIfNull(getJdbcTemplate()
                 .query(loadRunsByNodeNameQuery, PipelineRunParameters.getRowMapper(), nodeName)));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void batchUpdateClusterPrices(final Collection<PipelineRun> runs) {
+        if (CollectionUtils.isEmpty(runs)) {
+            return;
+        }
+
+        final MapSqlParameterSource[] params = runs.stream()
+                .map(run -> {
+                    final MapSqlParameterSource param = new MapSqlParameterSource();
+                    param.addValue(PipelineRunParameters.RUN_ID.name(), run.getId());
+                    param.addValue(PipelineRunParameters.CLUSTER_PRICE.name(), run.getClusterPrice());
+                    return param;
+                }).toArray(MapSqlParameterSource[]::new);
+
+        getNamedParameterJdbcTemplate().batchUpdate(updateClusterPriceQuery, params);
+    }
+
+    public List<PipelineRun> loadRunsByParentRuns(final Collection<Long> parentIds) {
+        if (CollectionUtils.isEmpty(parentIds)) {
+            return Collections.emptyList();
+        }
+
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, parentIds);
+
+        return getNamedParameterJdbcTemplate()
+                .query(loadRunsByParentRunsIdsQuery, params, PipelineRunParameters.getRowMapper());
+    }
+
+    public List<PipelineRun> loadRunningMasters() {
+        return getJdbcTemplate()
+                .query(loadRunningMasterRunsQuery, PipelineRunParameters.getExtendedRowMapper());
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -750,7 +788,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         ACCESS_TYPE,
         TAGS,
         SENSITIVE,
-        KUBE_SERVICE_ENABLED;
+        KUBE_SERVICE_ENABLED,
+        CLUSTER_PRICE;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -793,6 +832,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
             params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
             params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
+            params.addValue(CLUSTER_PRICE.name(), run.getClusterPrice());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
@@ -937,6 +977,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
             run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
             run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
+            run.setClusterPrice(rs.getBigDecimal(CLUSTER_PRICE.name()));
             String stateReasonMessage = rs.getString(STATE_REASON.name());
             if (!rs.wasNull()) {
                 run.setStateReasonMessage(stateReasonMessage);
@@ -1247,5 +1288,20 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsByNodeNameQuery(final String loadRunsByNodeNameQuery) {
         this.loadRunsByNodeNameQuery = loadRunsByNodeNameQuery;
+    }
+
+    @Required
+    public void setUpdateClusterPriceQuery(final String updateClusterPriceQuery) {
+        this.updateClusterPriceQuery = updateClusterPriceQuery;
+    }
+
+    @Required
+    public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
+        this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
+    }
+
+    @Required
+    public void setLoadRunningMasterRunsQuery(final String loadRunningMasterRunsQuery) {
+        this.loadRunningMasterRunsQuery = loadRunningMasterRunsQuery;
     }
 }

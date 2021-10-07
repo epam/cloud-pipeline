@@ -181,6 +181,7 @@
                         r.tags,
                         r.sensitive,
                         r.kube_service_enabled,
+                        r.cluster_price,
                         r.pipeline_name,
                         CASE
                             WHEN EXISTS (
@@ -273,7 +274,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -336,7 +338,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -399,7 +402,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -604,7 +608,8 @@
                       r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
-                      r.pipeline_name
+                      r.pipeline_name,
+                      r.cluster_price
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -668,7 +673,8 @@
                       r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
-                      r.pipeline_name
+                      r.pipeline_name,
+                      r.cluster_price
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -731,6 +737,7 @@
                       r.sensitive,
                       r.kube_service_enabled,
                       r.pipeline_name,
+                      r.cluster_price,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -794,6 +801,7 @@
                       active_run.sensitive,
                       active_run.kube_service_enabled,
                       active_run.pipeline_name,
+                      active_run.cluster_price,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1003,7 +1011,8 @@
                         r.tags,
                         r.sensitive,
                         r.kube_service_enabled,
-                        r.pipeline_name
+                        r.pipeline_name,
+                        r.cluster_price
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1064,7 +1073,8 @@
                         r.tags,
                         r.sensitive,
                         r.kube_service_enabled,
-                        r.pipeline_name
+                        r.pipeline_name,
+                        r.cluster_price
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1126,6 +1136,7 @@
                         r.sensitive,
                         r.kube_service_enabled,
                         r.pipeline_name,
+                        r.cluster_price,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1213,6 +1224,7 @@
                         runs.tags,
                         runs.sensitive,
                         runs.kube_service_enabled,
+                        runs.cluster_price,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1289,7 +1301,8 @@
                             p.tags,
                             p.sensitive,
                             p.kube_service_enabled,
-                            p.pipeline_name
+                            p.pipeline_name,
+                            p.cluster_price
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1346,7 +1359,8 @@
                             c.tags,
                             c.sensitive,
                             c.kube_service_enabled,
-                            c.pipeline_name
+                            c.pipeline_name,
+                            c.cluster_price
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1401,6 +1415,7 @@
                         runs.tags,
                         runs.sensitive,
                         runs.kube_service_enabled,
+                        runs.cluster_price,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1550,7 +1565,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1627,7 +1643,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1690,7 +1707,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1753,7 +1771,8 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1816,13 +1835,152 @@
                         tags,
                         sensitive,
                         kube_service_enabled,
-                        pipeline_name
+                        pipeline_name,
+                        cluster_price
                     FROM
                         pipeline.pipeline_run
                     WHERE
                         node_name = ?
                     ORDER BY
                         start_date DESC
+                ]]>
+            </value>
+        </property>
+        <property name="updateClusterPriceQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
+                        cluster_price = :CLUSTER_PRICE
+                    WHERE
+                        run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunsByParentRunsIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name,
+                        cluster_price
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        parent_id IN (:list)
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunningMasterRunsQuery">
+            <value>
+                <![CDATA[
+                      SELECT
+                      r.run_id,
+                      r.pipeline_id,
+                      r.version,
+                      r.start_date,
+                      r.end_date,
+                      r.parameters,
+                      r.status,
+                      r.terminating,
+                      r.pod_id,
+                      r.node_type,
+                      r.node_disk,
+                      r.node_ip,
+                      r.node_id,
+                      r.node_name,
+                      r.node_image,
+                      r.node_cloud_region,
+                      r.node_platform,
+                      r.docker_image,
+                      r.actual_docker_image,
+                      r.platform,
+                      r.cmd_template,
+                      r.actual_cmd,
+                      r.timeout,
+                      r.owner,
+                      r.pod_ip,
+                      r.commit_status,
+                      r.last_change_commit_time,
+                      r.config_name,
+                      r.node_count,
+                      r.parent_id,
+                      r.entities_ids,
+                      r.is_spot,
+                      r.configuration_id,
+                      r.pod_status,
+                      r.prolonged_at_time,
+                      r.last_notification_time,
+                      r.last_idle_notification_time,
+                      r.exec_preferences,
+                      r.pretty_url,
+                      r.price_per_hour,
+                      r.compute_price_per_hour,
+                      r.disk_price_per_hour,
+                      r.state_reason,
+                      r.non_pause,
+                      r.node_real_disk,
+                      r.node_cloud_provider,
+                      r.tags,
+                      r.sensitive,
+                      r.kube_service_enabled,
+                      TRUE as initialization_finished,
+                      FALSE as queued,
+                      r.pipeline_name,
+                      r.cluster_price
+                    FROM
+                      pipeline.pipeline_run r
+                    WHERE
+                      r.status = 2 AND r.node_count NOTNULL AND r.node_count > 0
                 ]]>
             </value>
         </property>
