@@ -43,6 +43,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -99,6 +100,7 @@ public class NFSQuotasMonitor {
     }
 
     @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
+    @SchedulerLock(name = "NFSQuotasMonitor_controlQuotas", lockAtMostForString = "PT10M")
     public void controlQuotas() {
         log.info("Start NFS quotas processing...");
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS();
