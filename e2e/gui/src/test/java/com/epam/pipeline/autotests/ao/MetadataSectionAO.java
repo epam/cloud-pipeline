@@ -187,11 +187,12 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO waitUntilStatusUpdated() {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 5; i++) {
             if ($(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
                 break;
             }
             sleep(1, MINUTES);
+            refresh();
         }
         return this;
     }

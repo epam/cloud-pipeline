@@ -33,7 +33,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE_NOTIFICATION;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation {
@@ -170,7 +172,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .rmFile(fileName)
                 .validateElementNotPresent(fileName);
-
+        sleep(5, MINUTES);
         runsMenu()
                 .log(userRunId, log ->
                         log.waitForSshLink()
@@ -194,8 +196,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                                         .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
                                         .assertOutputContains("Read-only file system")
                                         .sleep(2, SECONDS))
-                        ))
-                .stopRun(getLastRunId());
+                        ));
+//                .stopRun(getLastRunId());
         logout();
     }
 }
