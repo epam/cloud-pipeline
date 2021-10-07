@@ -42,6 +42,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
@@ -182,6 +183,16 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO checkWarningStatusIcon() {
         ensure(byClassName("estricted-images-info__popover-icon"), cssClass("anticon-exclamation-circle-o"));
+        return this;
+    }
+
+    public MetadataSectionAO waitUntilStatusUpdated() {
+        for (int i = 0; i < 3; i++) {
+            if ($(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
+                break;
+            }
+            sleep(1, MINUTES);
+        }
         return this;
     }
 

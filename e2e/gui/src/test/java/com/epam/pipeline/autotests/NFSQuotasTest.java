@@ -85,7 +85,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .selectStorage(storage)
                 .showMetadata()
                 .configureNotification()
-                .ensureVisible(RECIPIENTS, ADD_NOTIFICATION, CLEAR_ALL_NOTIFICATIONS, CLEAR_ALL_RECIPIENTS);
+                .ensureVisible(RECIPIENTS, ADD_NOTIFICATION, CLEAR_ALL_NOTIFICATIONS, CLEAR_ALL_RECIPIENTS)
+                .ok();
     }
 
     @Test
@@ -101,7 +102,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         logout();
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase(value = {"2182_3"})
     public void validateFSMountConfigureNotifications() {
         final String disabledMountStatus = "Mount is disabled";
@@ -139,6 +140,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
+                .waitUntilStatusUpdated()
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)
                 .checkStorageStatus(disabledMountStatus);
