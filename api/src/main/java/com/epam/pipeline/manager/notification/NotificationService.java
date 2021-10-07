@@ -2,6 +2,10 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.notification.NotificationSettings;
@@ -52,5 +56,12 @@ public interface NotificationService {
 
     default List<PipelineRun> notifyLongPausedRunsBeforeStop(List<PipelineRun> pausedRuns) {
         return Collections.emptyList();
+    }
+
+    default void notifyOnStorageQuotaExceeding(final NFSDataStorage storage,
+                                               final NFSStorageMountStatus newStatus,
+                                               final NFSQuotaNotificationEntry exceededQuota,
+                                               final List<NFSQuotaNotificationRecipient> recipients) {
+
     }
 }
