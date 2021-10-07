@@ -84,8 +84,9 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
-            + "hasPermission(filterObject.storage, 'WRITE'))")
+    @PostFilter("hasRole('ADMIN')"
+                + " OR @grantPermissionManager.storageWithSharePermission(filterObject, 'READ')"
+                + " OR @grantPermissionManager.storageWithSharePermission(filterObject, 'WRITE')")
     @AclMaskDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);

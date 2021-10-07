@@ -48,7 +48,6 @@ S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
 SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
-STORAGE_MOUNT_STATUS_DISABLED = 'MOUNT_DISABLED'
 
 
 class PermissionHelper:
@@ -80,8 +79,6 @@ class PermissionHelper:
 
     @classmethod
     def is_storage_writable(cls, storage):
-        if storage.mount_status == STORAGE_MOUNT_STATUS_DISABLED:
-            return False
         write_permission_granted = cls.is_permission_set(storage, WRITE_MASK)
         if not cls.is_run_sensitive():
             return write_permission_granted
