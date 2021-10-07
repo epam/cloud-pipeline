@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ClusterCostsMonitoringServiceTest {
+public class ClusterCostsMonitoringServiceCoreTest {
     private static final Long MASTER_ID_1 = 1L;
     private static final Long WORKER_ID_11 = 2L;
     private static final Long WORKER_ID_12 = 3L;
@@ -56,8 +56,8 @@ public class ClusterCostsMonitoringServiceTest {
     private static final double EXPECTED_PRICE_2 = 1.7;
 
     private final PipelineRunCRUDService pipelineRunCRUDService = mock(PipelineRunCRUDService.class);
-    private final ClusterCostsMonitoringService clusterCostsMonitoringService =
-            new ClusterCostsMonitoringService(pipelineRunCRUDService);
+    private final ClusterCostsMonitoringServiceCore clusterCostsMonitoringService =
+            new ClusterCostsMonitoringServiceCore(pipelineRunCRUDService);
 
     @Test
     public void shouldUpdateClusterPrices() {

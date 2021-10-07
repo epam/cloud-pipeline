@@ -681,6 +681,8 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
+            "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
