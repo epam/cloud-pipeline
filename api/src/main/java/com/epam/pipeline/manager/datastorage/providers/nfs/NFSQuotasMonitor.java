@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.LustreFS;
@@ -55,7 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,7 +75,7 @@ public class NFSQuotasMonitor {
     private final NotificationManager notificationManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
-    private final Set<Long> notifiedStorageIds;
+    private final Map<Long, NFSQuotaNotificationEntry> notificationTriggers;
 
     public NFSQuotasMonitor(final DataStorageManager dataStorageManager,
                             final SearchManager searchManager,
@@ -96,14 +97,16 @@ public class NFSQuotasMonitor {
         this.notificationManager = notificationManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
-        this.notifiedStorageIds = new CopyOnWriteArraySet<>();
+        this.notificationTriggers = new ConcurrentHashMap<>();
     }
 
     @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
     @SchedulerLock(name = "NFSQuotasMonitor_controlQuotas", lockAtMostForString = "PT10M")
     public void controlQuotas() {
         log.info("Start NFS quotas processing...");
-        final List<NFSDataStorage> nfsDataStorages = loadAllNFS();
+        final List<AbstractDataStorage> activeStorages = dataStorageManager.getDataStorages();
+        clearTriggersForRemovedStorages(activeStorages);
+        final List<NFSDataStorage> nfsDataStorages = loadAllNFS(activeStorages);
         final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages);
         nfsDataStorages.forEach(storage -> {
             final NFSStorageMountStatus statusUpdate = Optional.ofNullable(activeQuotas.get(storage.getId()))
@@ -114,8 +117,20 @@ public class NFSQuotasMonitor {
         log.info("NFS quotas are processed successfully.");
     }
 
-    private List<NFSDataStorage> loadAllNFS() {
-        return dataStorageManager.getDataStorages().stream()
+    @Scheduled(cron = "${data.storage.nfs.quota.triggers.evict.cron:0 0 9 ? * *}")
+    public void clearAllTriggers() {
+        notificationTriggers.clear();
+    }
+
+    private void clearTriggersForRemovedStorages(final List<AbstractDataStorage> activeStorages) {
+        final Set<Long> activeStorageIds = activeStorages.stream()
+            .map(BaseEntity::getId)
+            .collect(Collectors.toSet());
+        notificationTriggers.keySet().removeIf(storageId -> !activeStorageIds.contains(storageId));
+    }
+
+    private List<NFSDataStorage> loadAllNFS(final List<AbstractDataStorage> activeStorages) {
+        return activeStorages.stream()
             .filter(storage -> DataStorageType.NFS.equals(storage.getType()))
             .map(NFSDataStorage.class::cast)
             .collect(Collectors.toList());
@@ -176,16 +191,24 @@ public class NFSQuotasMonitor {
                                                           final List<NFSQuotaNotificationRecipient> recipients) {
         final Set<StorageQuotaAction> actions = notification.getActions();
         final NFSStorageMountStatus mountStatus = resolveMountStatus(storage, actions);
-        if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus)) {
+        if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus, notification)) {
             notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
-            notifiedStorageIds.add(storage.getId());
+            notificationTriggers.put(storage.getId(), notification);
         }
         return mountStatus;
     }
 
-    private boolean requireNotification(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus) {
-        return !(notifiedStorageIds.contains(storage.getId())
-                 && newMountStatus.equals(storage.getMountStatus()));
+    private boolean requireNotification(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus,
+                                        final NFSQuotaNotificationEntry notification) {
+        return !(newMountStatus.equals(storage.getMountStatus())
+                 && hasSameTrigger(storage, notification));
+    }
+
+    private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
+        return Optional.ofNullable(notificationTriggers.get(storage.getId()))
+            .filter(lastTrigger -> lastTrigger.getValue().equals(notification.getValue()))
+            .filter(lastTrigger -> lastTrigger.getType().equals(notification.getType()))
+            .isPresent();
     }
 
     private NFSStorageMountStatus resolveMountStatus(NFSDataStorage storage, Set<StorageQuotaAction> actions) {
