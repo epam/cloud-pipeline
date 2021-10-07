@@ -108,6 +108,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         final String disabledMountStatus = "Mount is disabled";
         final String storageSizeWithUnit = format("%s Gb", "1.*");
 
+        logoutIfNeeded();
         loginAs(user);
         tools()
                 .perform(registry, group, tool, tool -> tool.run(this));

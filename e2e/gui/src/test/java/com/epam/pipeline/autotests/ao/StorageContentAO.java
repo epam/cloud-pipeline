@@ -425,8 +425,14 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
-        if (get(HIDE_METADATA).isDisplayed()) {
-            return new MetadataSectionAO(this);
+        int attempt = 0;
+        int maxAttempts = 3;
+        while (get(SHOW_METADATA).is(not(visible)) && attempt < maxAttempts) {
+            if (get(HIDE_METADATA).isDisplayed()) {
+                return new MetadataSectionAO(this);
+            }
+            sleep(1, SECONDS);
+            attempt++;
         }
         click(SHOW_METADATA);
         return new MetadataSectionAO(this);
