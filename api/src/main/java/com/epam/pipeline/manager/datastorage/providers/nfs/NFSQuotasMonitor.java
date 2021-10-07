@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,6 +73,7 @@ public class NFSQuotasMonitor {
     private final NotificationManager notificationManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
+    private final Set<Long> notifiedStorageIds;
 
     public NFSQuotasMonitor(final DataStorageManager dataStorageManager,
                             final SearchManager searchManager,
@@ -93,6 +95,7 @@ public class NFSQuotasMonitor {
         this.notificationManager = notificationManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
+        this.notifiedStorageIds = new CopyOnWriteArraySet<>();
     }
 
     @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
@@ -171,10 +174,16 @@ public class NFSQuotasMonitor {
                                                           final List<NFSQuotaNotificationRecipient> recipients) {
         final Set<StorageQuotaAction> actions = notification.getActions();
         final NFSStorageMountStatus mountStatus = resolveMountStatus(storage, actions);
-        if (actions.contains(StorageQuotaAction.EMAIL)) {
+        if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus)) {
             notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
+            notifiedStorageIds.add(storage.getId());
         }
         return mountStatus;
+    }
+
+    private boolean requireNotification(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus) {
+        return !(notifiedStorageIds.contains(storage.getId())
+                 && newMountStatus.equals(storage.getMountStatus()));
     }
 
     private NFSStorageMountStatus resolveMountStatus(NFSDataStorage storage, Set<StorageQuotaAction> actions) {
