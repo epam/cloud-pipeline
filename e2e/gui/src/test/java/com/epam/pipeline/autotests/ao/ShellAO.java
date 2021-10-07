@@ -39,6 +39,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.lang.String.format;
@@ -179,6 +180,17 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(1, MINUTES);
             refresh();
             sleep(5, SECONDS);
+        }
+        return this;
+    }
+
+    public ShellAO waitUntilTextAppearsSeveralTimes(final String runId, final int textNumberTimes) {
+        for (int i = 0; i < 3; i++) {
+            sleep(10, SECONDS);
+            if ($$(withText(format("root@pipeline-%s", runId))).size() >= textNumberTimes) {
+                break;
+            }
+            sleep(1, MINUTES);
         }
         return this;
     }

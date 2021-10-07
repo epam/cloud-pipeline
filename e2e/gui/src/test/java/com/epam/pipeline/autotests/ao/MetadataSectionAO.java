@@ -21,7 +21,9 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Arrays;
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -31,14 +33,15 @@ import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.VALUE_FIELD;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
@@ -76,7 +79,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public ConfirmationPopupAO<MetadataSectionAO> deleteKey(final String key) {
-        $(byId(String.format(deleteButtonId, key))).shouldBe(visible, enabled).click();
+        $(byId(format(deleteButtonId, key))).shouldBe(visible, enabled).click();
         return new ConfirmationPopupAO<>(this);
     }
 
@@ -86,7 +89,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO assertKeyIsPresent(final String key) {
-        $(byId(String.format(keyElementId, key))).shouldBe(visible);
+        $(byId(format(keyElementId, key))).shouldBe(visible);
         return this;
     }
 
@@ -97,7 +100,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO assertKeyNotPresent(final String key) {
-        $(byId(String.format(keyElementId, key))).shouldNotBe(visible);
+        $(byId(format(keyElementId, key))).shouldNotBe(visible);
         return this;
     }
 
@@ -109,7 +112,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO assertKeyWithValueIsPresent(final String key, final String value) {
         assertKeyIsPresent(key);
-        $(byId(String.format(valueElementId, key))).shouldBe(visible).shouldHave(text(value));
+        $(byId(format(valueElementId, key))).shouldBe(visible).shouldHave(text(value));
         return this;
     }
 
@@ -143,7 +146,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataKeyAO selectKey(final String key) {
-        final SelenideElement keyRow = $(byId(String.format(keyElementId, key))).closest(".metadata__key-row");
+        final SelenideElement keyRow = $(byId(format(keyElementId, key))).closest(".metadata__key-row");
         return new MetadataKeyAO(
                 keyRow,
                 keyRow.find(byXpath("following-sibling::*[contains(@class, 'metadata__value-row')]")),
@@ -158,6 +161,27 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO validateConfigureNotificationFormForUser() {
         ensure(CONFIGURE_NOTIFICATION, text("Notifications are not configured"));
+        return this;
+    }
+
+    public MetadataSectionAO checkConfiguredNotificationsLink(final int notificationNumber, final int recipients) {
+        ensure(CONFIGURE_NOTIFICATION, text(format("%s notifications, %s recipient", notificationNumber, recipients)));
+        return this;
+    }
+
+    public MetadataSectionAO checkStorageSize(final String sizeWithUnit) {
+        ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
+        return this;
+    }
+
+    public MetadataSectionAO checkStorageStatus(final String status) {
+        hover(byClassName("estricted-images-info__container"));
+        ensure(byClassName("estricted-images-info__popover-container"), text(format("Storage status is: %s", status)));
+        return this;
+    }
+
+    public MetadataSectionAO checkWarningStatusIcon() {
+        ensure(byClassName("estricted-images-info__popover-icon"), cssClass("anticon-exclamation-circle-o"));
         return this;
     }
 
@@ -212,18 +236,24 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         }
 
         public ConfigureNotificationAO addRecipient(final String recipient) {
-            setValue(RECIPIENTS, recipient).enter();
+            click(RECIPIENTS);
+            actions().sendKeys(recipient).perform();
+            enter();
             click(byText("Recipients:"));
             return this;
         }
 
         public ConfigureNotificationAO addNotification(final String volumeThresholdInGb, final String action) {
-            setValue(inputOf(byClassName("s-notifications__notification")), volumeThresholdInGb);
-            click(combobox("s-notifications__select"));
-            if ($(byClassName("ant-select-selection__choice__remove")).isDisplayed()) {
-                click(byClassName("ant-select-selection__choice__remove"));
+            click(ADD_NOTIFICATION);
+            final SelenideElement threshold = $$(inputOf(byClassName("s-notifications__notification")))
+                    .filter(cssClass("s-notifications__error"))
+                    .last();
+            setValue(threshold, volumeThresholdInGb);
+            final SelenideElement actionElement = $$(byText("Do nothing")).last().parent();
+            if (actionElement.find(byClassName("ant-select-selection__choice__remove")).isDisplayed()) {
+                actionElement.find(byClassName("ant-select-selection__choice__remove")).shouldBe(enabled).click();
             }
-            selectValue(combobox("Do nothing"), menuitem(action));
+            selectValue(actionElement, menuitem(action));
             return this;
         }
 

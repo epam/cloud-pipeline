@@ -507,6 +507,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE selectValue(final SelenideElement element, final By optionQualifier) {
+        element.shouldBe(visible).click();
+        $(comboboxDropdown()).find(optionQualifier).shouldBe(visible).click();
+        return (ELEMENT_TYPE) this;
+    }
+
     default ELEMENT_TYPE checkValueIsInDropDown(final Primitive combobox, final String option) {
         sleep(1, SECONDS);
         get(combobox).shouldBe(visible).click();
