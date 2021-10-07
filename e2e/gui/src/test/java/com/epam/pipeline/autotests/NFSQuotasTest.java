@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -63,6 +64,17 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         tools()
                 .perform(registry, group, tool, tool -> tool.run(this));
         commonRunId = getLastRunId();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void removeStorage() {
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .clickEditStorageButton()
+                .editForNfsMount()
+                .clickDeleteStorageButton()
+                .clickDelete();
     }
 
     @Test
@@ -182,5 +194,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                                         .sleep(2, SECONDS))
                         ))
                 .stopRun(getLastRunId());
+        logout();
     }
 }
