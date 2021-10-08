@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import platform
+
+from pipeline.common.common import execute
+from pipeline.utils.path import mkdir
 
 _USER_ALREADY_EXISTS_WIN_ERROR = 2224
 _USER_ALREADY_IN_GROUP_WIN_ERROR = 1378
@@ -50,12 +54,27 @@ def _add_win_user_to_group(username, domain, group, skip_existing=False):
             raise
 
 
-def create_user(username, password, groups, skip_existing=False):
+def _create_lin_user(username, password, home_dir=None, skip_existing=False, logger=None):
+    try:
+        execute('id -u {username}'.format(username=username))
+        if not skip_existing:
+            raise RuntimeError('User {} already exists.'.format(username))
+    except:
+        if home_dir:
+            mkdir(os.path.dirname(home_dir))
+            home_dir_arg = '-d "{home_dir}" '.format(home_dir=home_dir)
+        else:
+            home_dir_arg = ''
+        execute(('useradd -m -s /bin/bash ' + home_dir_arg + ' -p $(openssl passwd -1 "{password}") "{username}"')
+                .format(username=username, password=password),
+                logger=logger)
+
+
+def create_user(username, password, groups='', home_dir=None, skip_existing=False, logger=None):
     current_platform = platform.system()
     if current_platform == 'Windows':
         _create_win_user(username, password, skip_existing=skip_existing)
         for group in groups.split(','):
             _add_win_user_to_group(username, platform.node(), group, skip_existing=skip_existing)
     else:
-        raise RuntimeError('Creating user is not supported on {platform} platform.'
-                           .format(platform=current_platform))
+        _create_lin_user(username, password, home_dir=home_dir, skip_existing=skip_existing, logger=logger)
