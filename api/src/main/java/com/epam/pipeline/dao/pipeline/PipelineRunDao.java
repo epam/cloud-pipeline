@@ -130,7 +130,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadRunsByNodeNameQuery;
     private String updateClusterPriceQuery;
     private String loadRunsByParentRunsIdsQuery;
-    private String loadRunningMasterRunsQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -464,11 +463,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
         return getNamedParameterJdbcTemplate()
                 .query(loadRunsByParentRunsIdsQuery, params, PipelineRunParameters.getRowMapper());
-    }
-
-    public List<PipelineRun> loadRunningMasters() {
-        return getJdbcTemplate()
-                .query(loadRunningMasterRunsQuery, PipelineRunParameters.getExtendedRowMapper());
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -1298,10 +1292,5 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
         this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
-    }
-
-    @Required
-    public void setLoadRunningMasterRunsQuery(final String loadRunningMasterRunsQuery) {
-        this.loadRunningMasterRunsQuery = loadRunningMasterRunsQuery;
     }
 }

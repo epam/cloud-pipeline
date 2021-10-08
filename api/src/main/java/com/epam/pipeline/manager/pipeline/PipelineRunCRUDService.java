@@ -91,8 +91,4 @@ public class PipelineRunCRUDService {
         return CollectionUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(parents)).stream()
                 .collect(Collectors.groupingBy(PipelineRun::getParentRunId));
     }
-
-    public List<PipelineRun> loadRunningMasters() {
-        return pipelineRunDao.loadRunningMasters();
-    }
 }

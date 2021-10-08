@@ -979,26 +979,6 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void shouldLoadRunningMasters() {
-        final PipelineRun runningRun1 = runningRun();
-        runningRun1.setNodeCount(1);
-        final PipelineRun runningRun2 = runningRun();
-        final PipelineRun pausedRun1 = pausedRun();
-        pausedRun1.setNodeCount(4);
-        pipelineRunDao.createPipelineRun(runningRun1);
-        pipelineRunDao.createPipelineRun(runningRun2);
-        pipelineRunDao.createPipelineRun(pausedRun1);
-
-        final List<PipelineRun> actualRuns = pipelineRunDao.loadRunningMasters();
-        assertThat(actualRuns.size(), equalTo(1));
-
-        final PipelineRun actualRun = actualRuns.get(0);
-        assertThat(actualRun.getId(), equalTo(runningRun1.getId()));
-        assertTrue(actualRun.isMasterRun());
-        assertThat(actualRun.getStatus(), equalTo(TaskStatus.RUNNING));
-    }
-
-    @Test
     public void shouldLoadWorkers() {
         final PipelineRun masterRun = runningRun();
         pipelineRunDao.createPipelineRun(masterRun);

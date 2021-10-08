@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster.costs;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -56,14 +57,15 @@ public class ClusterCostsMonitoringServiceCoreTest {
     private static final double EXPECTED_PRICE_2 = 1.7;
 
     private final PipelineRunCRUDService pipelineRunCRUDService = mock(PipelineRunCRUDService.class);
+    private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final ClusterCostsMonitoringServiceCore clusterCostsMonitoringService =
-            new ClusterCostsMonitoringServiceCore(pipelineRunCRUDService);
+            new ClusterCostsMonitoringServiceCore(pipelineRunCRUDService, pipelineRunManager);
 
     @Test
     public void shouldUpdateClusterPrices() {
         final PipelineRun master1 = masterRun(MASTER_ID_1, 2, PRICE_1, buildDate(MASTER_1_DURATION));
         final PipelineRun master2 = masterRun(MASTER_ID_2, 1, PRICE_2, buildDate(MASTER_2_DURATION));
-        when(pipelineRunCRUDService.loadRunningMasters()).thenReturn(Arrays.asList(master1, master2));
+        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(master1, master2));
 
         final PipelineRun worker11 = workerRun(WORKER_ID_11, MASTER_ID_1, PRICE_1); // not start time
         final PipelineRun worker12 = workerRun(WORKER_ID_12, MASTER_ID_1, PRICE_1); // 3 min duration

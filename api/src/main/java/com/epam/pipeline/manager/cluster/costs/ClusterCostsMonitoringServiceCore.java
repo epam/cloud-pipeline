@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster.costs;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
@@ -41,12 +42,13 @@ import java.util.stream.Collectors;
 public class ClusterCostsMonitoringServiceCore {
 
     private final PipelineRunCRUDService pipelineRunCRUDService;
+    private final PipelineRunManager pipelineRunManager;
 
     @SchedulerLock(name = "ClusterCostsMonitoringService_monitor", lockAtMostForString = "PT10M")
     public void monitor() {
         log.debug("Started cluster costs monitoring");
-        final Map<Long, PipelineRun> masters = ListUtils.emptyIfNull(pipelineRunCRUDService
-                .loadRunningMasters()).stream()
+        final Map<Long, PipelineRun> masters = ListUtils.emptyIfNull(pipelineRunManager
+                .loadRunningPipelineRuns()).stream()
                 .filter(PipelineRun::isMasterRun)
                 .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
         log.debug("Found '{}' running master runs", masters.size());
