@@ -34,8 +34,10 @@ import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_ALL_NOTIFICATIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_ALL_RECIPIENTS;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE_NOTIFICATION;
+import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
+import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
@@ -45,14 +47,20 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation {
 
+    private static final String TEST_NAME_BIG_FILE_1 = "test1.big";
+    private static final String TEST_NAME_BIG_FILE_2 = "test2.big";
+    private static final String DISABLED_MOUNT_STATUS = "MOUNT IS DISABLED";
+    public static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
     private final String nfsPrefix = C.NFS_PREFIX.replace(":/", "");
     private final String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
-//    private String storage = "fs-2a5ab373.efs.eu-central-1.amazonaws.com:/quotas_test";
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String fileName = "test_file1.txt";
+    private final String fileName2 = "test_file2.txt";
     private String commonRunId;
+    private String userRunId;
+    private String userRunId2;
 
     @BeforeClass
     public void createNfsStorage() {
@@ -148,14 +156,13 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     @Test(priority = 1)
     @TestCase(value = {"2182_3"})
     public void validateFSMountConfigureNotifications() {
-        final String disabledMountStatus = "Mount is disabled";
         final String storageSizeWithUnit = format("%s Gb", "1.*");
 
         logoutIfNeeded();
         loginAs(user);
         tools()
                 .perform(registry, group, tool, tool -> tool.run(this));
-        final String userRunId = getLastRunId();
+        userRunId = getLastRunId();
         logout();
         navigationMenu()
                 .library()
@@ -175,8 +182,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                                         .ssh(shell -> shell
                                                 .waitUntilTextAppears(commonRunId)
                                                 .execute(format(
-                                                        "head -c 1500MB /dev/urandom > /cloud-data/%s/%s/test1.big",
-                                                        nfsPrefix, storage))
+                                                        "head -c 1500MB /dev/urandom > /cloud-data/%s/%s/%s",
+                                                        nfsPrefix, storage, TEST_NAME_BIG_FILE_1))
                                                 .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
                                                 .sleep(2, SECONDS))
                                 ));
@@ -184,10 +191,10 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .waitUntilStatusUpdated()
+                .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)
-                .checkStorageStatus(disabledMountStatus);
+                .checkStorageStatus(DISABLED_MOUNT_STATUS);
 
         runsMenu()
                 .log(commonRunId, log ->
@@ -209,7 +216,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)
-                .checkStorageStatus(disabledMountStatus);
+                .checkStorageStatus(DISABLED_MOUNT_STATUS);
 
         new StorageContentAO()
                 .rmFile(fileName)
@@ -240,6 +247,187 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                                         .sleep(2, SECONDS))
                         ))
                 .stopRun(getLastRunId());
+        logout();
+    }
+
+    @Test(dependsOnMethods = {"validateFSMountConfigureNotifications"})
+    @TestCase(value = {"2182_4"})
+    public void validateReadOnlyQuota() {
+        final String storageSizeWithUnit = format("%s Gb", "2.*");
+        runsMenu()
+                .log(commonRunId, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(commonRunId)
+                                                .execute(format(
+                                                        "head -c 1000MB /dev/urandom > /cloud-data/%s/%s/%s",
+                                                        nfsPrefix, storage, TEST_NAME_BIG_FILE_2))
+                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
+                                                .sleep(2, SECONDS))
+                                ));
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .waitUntilStatusUpdated(READ_ONLY_MOUNT_STATUS)
+                .checkWarningStatusIcon()
+                .checkStorageSize(storageSizeWithUnit)
+                .checkStorageStatus(READ_ONLY_MOUNT_STATUS);
+
+        new StorageContentAO()
+                .ensureVisible(CREATE, UPLOAD);
+
+        runsMenu()
+                .log(commonRunId, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(commonRunId)
+                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                        storage, fileName))
+                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
+                                                .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
+                                                .assertOutputContains(fileName)
+                                                .sleep(2, SECONDS))
+                                ));
+        loginAs(user);
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .waitUntilStatusUpdated(READ_ONLY_MOUNT_STATUS)
+                .checkWarningStatusIcon()
+                .checkStorageSize(storageSizeWithUnit)
+                .checkStorageStatus(READ_ONLY_MOUNT_STATUS);
+
+        new StorageContentAO()
+                .ensureNotVisible(CREATE, UPLOAD);
+
+        runsMenu()
+                .log(userRunId, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(userRunId)
+                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                        storage, fileName2))
+                                                .waitUntilTextAppearsSeveralTimes(userRunId, 2)
+                                                .assertOutputContains("Read-only file system")
+                                                .sleep(2, SECONDS))
+                                ));
+        tools()
+                .perform(registry, group, tool, tool -> tool.run(this))
+                .log(getLastRunId(), log -> log.waitForSshLink()
+                        .inAnotherTab(logTab -> logTab
+                                .ssh(shell -> shell
+                                        .waitUntilTextAppears(getLastRunId())
+                                        .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                storage, fileName2))
+                                        .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
+                                        .assertOutputContains("Read-only file system")
+                                        .sleep(2, SECONDS))
+                        ));
+        userRunId2 = getLastRunId();
+        logout();
+    }
+
+    @Test(dependsOnMethods = {"validateReadOnlyQuota"})
+    @TestCase(value = {"2182_5"})
+    public void validateQuotaAtBackProcess() {
+        final String storageSizeWithUnit = format("%s Gb", "1.*");
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .rmFile(TEST_NAME_BIG_FILE_2);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
+                .checkWarningStatusIcon()
+                .checkStorageSize(storageSizeWithUnit)
+                .checkStorageStatus(DISABLED_MOUNT_STATUS);
+
+        loginAs(user);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
+                .checkWarningStatusIcon()
+                .checkStorageSize(storageSizeWithUnit)
+                .checkStorageStatus(DISABLED_MOUNT_STATUS);
+        new StorageContentAO()
+                .ensureVisible(CREATE, UPLOAD);
+
+        runsMenu()
+                .log(commonRunId, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(commonRunId)
+                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                        storage, fileName))
+                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
+                                                .assertOutputContains("Read-only file system")
+                                                .sleep(2, SECONDS))
+                                ));
+        logout();
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .rmFile(TEST_NAME_BIG_FILE_1);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .checkWarningStatusIconNotVisible()
+                .checkStorageSize("0");
+
+        loginAs(user);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .checkWarningStatusIconNotVisible()
+                .checkStorageSize("0");
+
+        new StorageContentAO()
+                .ensureVisible(CREATE, UPLOAD);
+
+        runsMenu()
+                .log(commonRunId, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(commonRunId)
+                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                        storage, fileName))
+                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
+                                                .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
+                                                .assertOutputContains(fileName)
+                                                .sleep(2, SECONDS))
+                                ));
+        runsMenu()
+                .log(userRunId2, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(userRunId2)
+                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                        storage, fileName2))
+                                                .waitUntilTextAppearsSeveralTimes(userRunId2, 2)
+                                                .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
+                                                .assertOutputContains(fileName2)
+                                                .sleep(2, SECONDS))
+                                ));
         logout();
     }
 }

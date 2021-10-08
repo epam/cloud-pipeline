@@ -190,10 +190,27 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         return this;
     }
 
-    public MetadataSectionAO waitUntilStatusUpdated() {
+    public MetadataSectionAO checkWarningStatusIconNotVisible() {
+        for (int i = 0; i < 5; i++) {
+            if (!$(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
+                break;
+            }
+            sleep(1, MINUTES);
+            refresh();
+        }
+        return this;
+    }
+
+    public MetadataSectionAO waitUntilStatusUpdated(final String status) {
         for (int i = 0; i < 5; i++) {
             if ($(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
-                break;
+                hover(byClassName("estricted-images-info__container"));
+                if ($(byClassName("estricted-images-info__popover-container"))
+                        .has(text(format("Storage status is: %s", status)))) {
+                    break;
+                } else {
+                    continue;
+                }
             }
             sleep(1, MINUTES);
             refresh();
