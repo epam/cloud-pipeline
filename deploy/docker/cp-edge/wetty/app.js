@@ -237,13 +237,6 @@ io.on('connection', function(socket) {
                     rows: 30,
                     env: { [ENV_TAG_RUNID_NAME]: pipeline_id }
             });
-        } else if (match[1] == "container") {
-            console.log((new Date()) + ' Trying to exec kubectl exec for pod: ' + pipe_details.pod_id);
-            term = pty.spawn('kubectl', ['exec', '-it', pipe_details.pod_id, '/bin/bash'], {
-                    name: 'xterm-256color',
-                    cols: 80,
-                    rows: 30
-            });
         } else {
             socket.disconnect();
             return;
