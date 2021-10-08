@@ -341,5 +341,12 @@
         "description": "Disables hyper-threading for a run and its workers",
         "defaultValue": "false",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_USERS",
+        "type": "boolean",
+        "description": "Enables cluster users sharing.",
+        "defaultValue": "true",
+        "passToWorkers": true
     }
 ]
