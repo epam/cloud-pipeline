@@ -27,16 +27,39 @@ function call_api(api_method, auth_key) {
 function get_pipe_details(pipeline_id, auth_key) {
     payload = call_api('/run/' + pipeline_id, auth_key);
     if (payload) {
+        var parameters = {};
+        if (payload.pipelineRunParameters) {
+            parameters = payload.pipelineRunParameters.reduce(function(parameters, parameter) {
+                parameters[parameter.name] = parameter.value;
+                return parameters;
+            }, {});
+        }
         return {
             'ip': payload.podIP,
             'pass': payload.sshPassword,
             'owner': payload.owner,
             'pod_id': payload.podId,
-            'platform': payload.platform
+            'platform': payload.platform,
+            'parameters': parameters
         };
     } else {
         return payload;
     }
+}
+
+function get_current_user(auth_key) {
+    payload = call_api('/whoami', auth_key);
+    if (payload) {
+        return {
+            'name': payload.userName
+        };
+    } else {
+        return payload;
+    }
+}
+
+function get_boolean(value) {
+    return value ? value.toLowerCase().trim() === 'true' : false;
 }
 
 function get_preference(preference, auth_key) {
@@ -45,12 +68,7 @@ function get_preference(preference, auth_key) {
 }
 
 function get_boolean_preference(preference, auth_key) {
-    value = get_preference(preference, auth_key);
-    if (value) {
-        return value.toLowerCase().trim() === 'true';
-    } else {
-        return false;
-    }
+    return get_boolean(get_preference(preference, auth_key));
 }
 
 function conn_quota_available(pipeline_id) {
@@ -84,6 +102,17 @@ function conn_quota_available(pipeline_id) {
 function get_owner_user_name(owner) {
     // split owner by @ in case it represented by email address
     return owner.split("@")[0];
+}
+
+function get_run_sshpass(run_details) {
+    parent_run_id = run_details.parameters['parent-id'];
+    run_shared_users_enabled = get_boolean(run_details.parameters['CP_CAP_SHARE_USERS']);
+    if (run_shared_users_enabled && parent_run_id) {
+        parent_run_details = get_pipe_details(parent_run_id, auth_key);
+        return parent_run_details.pass;
+    } else {
+        return run_details.pass;
+    }
 }
 
 var opts = require('optimist')
@@ -172,20 +201,35 @@ io.on('connection', function(socket) {
             return;
         }
 
-        ssh_default_root_user_enabled = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key);
-
-        if(match[1] == "pipeline") {
+        if(match[1] == 'pipeline') {
             sshhost = pipe_details.ip;
+            run_ssh_mode = pipe_details.parameters['CP_CAP_SSH_MODE'];
             owner_user_name = get_owner_user_name(pipe_details.owner);
-            if (pipe_details.platform == "windows") {
-                sshpass = pipe_details.pass;
-                sshuser = owner_user_name;
-            } else if (ssh_default_root_user_enabled) {
-                sshpass = pipe_details.pass;
-                sshuser = 'root';
-            } else {
-                sshpass = owner_user_name;
-                sshuser = owner_user_name;
+            if (!run_ssh_mode) {
+                if (pipe_details.platform == 'windows') {
+                    run_ssh_mode = 'owner-sshpass';
+                } else {
+                    run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'user';
+                }
+            }
+            switch (run_ssh_mode) {
+                case 'user':
+                    user = get_current_user(auth_key);
+                    sshuser = user.name;
+                    sshpass = user.name;
+                    break
+                case 'owner':
+                    sshuser = owner_user_name;
+                    sshpass = owner_user_name;
+                    break
+                case 'owner-sshpass':
+                    sshuser = owner_user_name;
+                    sshpass = get_run_sshpass(pipe_details);
+                    break
+                default:
+                    sshuser = 'root';
+                    sshpass = get_run_sshpass(pipe_details);
+                    break
             }
             term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost, '-p', sshport, '-o', 'StrictHostKeyChecking=no', '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'UserKnownHostsFile=/dev/null', '-q'], {
                     name: 'xterm-256color',
