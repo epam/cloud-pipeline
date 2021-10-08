@@ -85,7 +85,8 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
   from '../../special/metadata/special/fs-notifications';
-import StorageSize from "../../special/storage-size";
+import StorageSize from '../../special/storage-size';
+import {extractFileShareMountList} from './forms/DataStoragePathInput';
 
 const PAGE_SIZE = 40;
 
@@ -222,6 +223,29 @@ export default class DataStorage extends React.Component {
     const {info = {}} = this.props;
     if (info.loaded && info.value.toolsToMount) {
       return (info.value.toolsToMount || []).map(t => t);
+    }
+    return undefined;
+  }
+
+  @computed
+  get fileShareMountList () {
+    const {awsRegions} = this.props;
+    if (awsRegions && awsRegions.loaded) {
+      return extractFileShareMountList(awsRegions.value || []);
+    }
+    return [];
+  }
+
+  @computed
+  get fileShareMount () {
+    if (this.props.info && this.props.info.loaded) {
+      const {
+        fileShareMountId,
+        type
+      } = this.props.info.value || {};
+      if (/^nfs$/i.test(type)) {
+        return this.fileShareMountList.find(mount => mount.id === fileShareMountId);
+      }
     }
     return undefined;
   }
@@ -1956,6 +1980,9 @@ export default class DataStorage extends React.Component {
               extraInfo={[
                 <StorageSize storage={this.props.info.value} />
               ]}
+              specialTagsProperties={{
+                storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined
+              }}
             />
           }
         </ContentMetadataPanel>

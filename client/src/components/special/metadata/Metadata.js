@@ -221,6 +221,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     restrictedKeys: PropTypes.array,
     extraKeys: PropTypes.arrayOf(PropTypes.string),
     extraInfo: PropTypes.arrayOf(PropTypes.node),
+    specialTagsProperties: PropTypes.object,
     pending: PropTypes.bool,
     metadataRenderFn: PropTypes.func
   };
@@ -662,6 +663,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   renderSpecialTag = (metadataItem) => {
     const {key, index} = metadataItem || {};
+    const {specialTagsProperties = {}} = this.props;
     const readOnly = this.props.readOnly ||
       this.isReadOnlyTag(metadataItem.key);
     if (key && SpecialTags.hasOwnProperty(key)) {
@@ -688,6 +690,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
               metadata={metadataItem}
               readOnly={readOnly}
               onChange={this.saveMetadataValue(index)}
+              info={specialTagsProperties}
             />
           </td>
         </tr>

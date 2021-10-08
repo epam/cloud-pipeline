@@ -69,13 +69,13 @@
   align-items: center;
 }
 
-.notification-error .error-description {
-  font-size: 0.85em;
+.notification-error ul {
+  margin-left: 20px;
+  list-style: disc;
 }
 
-.notification-error.visible .error-description:not(:last-child)::after {
-  content: ',';
-  margin-right: 5px;
+.notification-error .error-description {
+  font-size: 0.85em;
 }
 
 .actions,
