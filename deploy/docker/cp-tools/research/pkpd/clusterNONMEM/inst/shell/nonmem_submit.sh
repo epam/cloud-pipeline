@@ -48,6 +48,8 @@ done
 if [ -z "$INPUT_FILE" ]; then
     echo "No input file specified, exiting..."
     exit 1
+elif [[ "$INPUT_FILE" != /* ]]; then
+    INPUT_FILE="$(pwd)/$INPUT_FILE"
 fi
 if [ ! -f "$INPUT_FILE" ]; then
     echo "Input file [$INPUT_FILE] doesn't exist, exiting..."
@@ -75,11 +77,17 @@ job_script="$job_service_dir/script.sh"
 job_parafile="$job_service_dir/pfile.pnm"
 job_execution_log="$job_service_dir/exec.log"
 rundir=$(dirname $INPUT_FILE)
+
 if [ -z "$OUTPUT_FILE" ]; then
-    OUTPUT_FILE="$job_service_dir/results.txt"
+    OUTPUT_FILE="$rundir/$file_name.lst"
 elif [[ "$OUTPUT_FILE" != /* ]]; then
     OUTPUT_FILE="$rundir/$OUTPUT_FILE"
+else
+    rundir=$(dirname $OUTPUT_FILE)
 fi
+
+mkdir -p "$rundir"
+
 job_script_text="nmfe $INPUT_FILE $OUTPUT_FILE -rundir=$rundir <<PARAFILE_OPTIONS>> > $job_execution_log 2>&1;"
 
 job_parafile_options=""
