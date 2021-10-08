@@ -21,8 +21,29 @@ PKPD_NONMEM_JOBS_ROOT_DIR=${PKPD_NONMEM_JOBS_ROOT_DIR:-$COMMON_DIR/nonmem-sge}
 mkdir -p "$PKPD_NONMEM_JOBS_ROOT_DIR"
 
 INPUT_FILE="$1"
-NUM_CORES="$2"
-OUTPUT_FILE="$3"
+
+POSITIONAL=()
+shift
+while [[ $# -gt 0 ]]
+do
+key="$1"
+case $key in
+    -threads)
+    NUM_CORES="$2"
+    shift
+    shift
+    ;;
+    -outfile)
+    OUTPUT_FILE="$2"
+    shift
+    shift
+    ;;
+    *)
+    echo "Skipping unknown option [$1]"
+    shift
+    ;;
+esac
+done
 
 if [ -z "$INPUT_FILE" ]; then
     echo "No input file specified, exiting..."
@@ -36,6 +57,12 @@ fi
 if [ -z "$NUM_CORES" ]; then
     NUM_CORES=${PKPD_DEFAULT_NONMEM_JOB_CORES:-1}
 fi
+
+if ! [ "$NUM_CORES" -eq "$NUM_CORES" ] 2>/dev/null; then
+	echo "[$NUM_CORES] is not a valid number fro threads specification, exiting..."
+	exit 1
+fi
+
 
 file_name=${INPUT_FILE%%.*}
 file_name=${file_name#/}
