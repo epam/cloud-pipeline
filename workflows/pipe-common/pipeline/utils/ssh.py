@@ -67,7 +67,7 @@ class HostSSH(CloudPipelineSSH):
                 logger.info(stripped_line)
             for line in stderr:
                 stripped_line = line.strip('\n')
-                logger.warn(stripped_line)
+                logger.warning(stripped_line)
         if exit_code != 0:
             raise SSHError('Command has finished with exit code ' + str(exit_code))
         client.close()
