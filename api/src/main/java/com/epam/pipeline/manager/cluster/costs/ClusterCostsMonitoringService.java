@@ -27,7 +27,7 @@ import javax.annotation.PostConstruct;
 @RequiredArgsConstructor
 public class ClusterCostsMonitoringService extends AbstractSchedulingManager {
 
-   private final ClusterCostsMonitoringServiceCore core;
+    private final ClusterCostsMonitoringServiceCore core;
 
     @PostConstruct
     public void init() {
