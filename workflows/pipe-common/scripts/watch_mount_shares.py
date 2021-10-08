@@ -171,7 +171,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
     @staticmethod
     def _configure_logging_bucket_dir():
-        bucket_dir = os.path.join(os.getenv('CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET'),
+        bucket_dir = os.path.join(os.getenv('CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET', ''),
                                   CloudBucketDumpingEventHandler._get_service_name())
         logging.info(format_message('Destination bucket location is [{}]'.format(bucket_dir)))
         return bucket_dir
