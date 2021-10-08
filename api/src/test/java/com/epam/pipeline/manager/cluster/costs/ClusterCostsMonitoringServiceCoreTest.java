@@ -1,0 +1,122 @@
+/*
+ * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.epam.pipeline.manager.cluster.costs;
+
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+public class ClusterCostsMonitoringServiceCoreTest {
+    private static final Long MASTER_ID_1 = 1L;
+    private static final Long WORKER_ID_11 = 2L;
+    private static final Long WORKER_ID_12 = 3L;
+    private static final Long MASTER_ID_2 = 4L;
+    private static final Long WORKER_ID_21 = 5L;
+    private static final double PRICE_1 = 1.95;
+    private static final double PRICE_2 = 20.25;
+    private static final int MASTER_1_DURATION = 5;
+    private static final int MASTER_2_DURATION = 3;
+    private static final int WORKER_21_DURATION = 2;
+    private static final double EXPECTED_PRICE_1 = 0.24;
+    private static final double EXPECTED_PRICE_2 = 1.7;
+
+    private final PipelineRunCRUDService pipelineRunCRUDService = mock(PipelineRunCRUDService.class);
+    private final ClusterCostsMonitoringServiceCore clusterCostsMonitoringService =
+            new ClusterCostsMonitoringServiceCore(pipelineRunCRUDService);
+
+    @Test
+    public void shouldUpdateClusterPrices() {
+        final PipelineRun master1 = masterRun(MASTER_ID_1, 2, PRICE_1, buildDate(MASTER_1_DURATION));
+        final PipelineRun master2 = masterRun(MASTER_ID_2, 1, PRICE_2, buildDate(MASTER_2_DURATION));
+        when(pipelineRunCRUDService.loadRunningMasters()).thenReturn(Arrays.asList(master1, master2));
+
+        final PipelineRun worker11 = workerRun(WORKER_ID_11, MASTER_ID_1, PRICE_1); // not start time
+        final PipelineRun worker12 = workerRun(WORKER_ID_12, MASTER_ID_1, PRICE_1); // 3 min duration
+        worker12.setStartDate(buildDate(5));
+        worker12.setEndDate(buildDate(2));
+
+        // started 2 min ago and not completed
+        final PipelineRun worker21 = workerRun(WORKER_ID_21, MASTER_ID_2, PRICE_2);
+        worker21.setStartDate(buildDate(WORKER_21_DURATION));
+
+        when(pipelineRunCRUDService.loadRunsByParentRuns(any())).thenReturn(new HashMap<Long, List<PipelineRun>>() {
+            {
+                put(MASTER_ID_1, Arrays.asList(worker11, worker12));
+                put(MASTER_ID_2, Collections.singletonList(worker21));
+            }
+        });
+
+        clusterCostsMonitoringService.monitor();
+
+        final ArgumentCaptor<Collection<PipelineRun>> runsCaptor = ArgumentCaptor.forClass((Class) Collection.class);
+        verify(pipelineRunCRUDService).updateClusterPrices(runsCaptor.capture());
+        assertThat(runsCaptor.getValue().size(), is(2));
+        final Map<Long, PipelineRun> actualMastersById = runsCaptor.getValue().stream()
+                .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
+        final PipelineRun actualMaster1 = actualMastersById.get(MASTER_ID_1);
+        final PipelineRun actualMaster2 = actualMastersById.get(MASTER_ID_2);
+        assertThat(actualMaster1, notNullValue());
+        assertThat(actualMaster2, notNullValue());
+        assertThat(actualMaster1.getClusterPrice().doubleValue(), is(EXPECTED_PRICE_1));
+        assertThat(actualMaster2.getClusterPrice().doubleValue(), is(EXPECTED_PRICE_2));
+    }
+
+    private PipelineRun masterRun(final Long id, final int nodeCount, final double price, final Date startDate) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(id);
+        pipelineRun.setNodeCount(nodeCount);
+        pipelineRun.setPricePerHour(BigDecimal.valueOf(price));
+        pipelineRun.setStartDate(startDate);
+        return pipelineRun;
+    }
+
+    private PipelineRun workerRun(final Long id, final Long parentRunId, final double price) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(id);
+        pipelineRun.setParentRunId(parentRunId);
+        pipelineRun.setPricePerHour(BigDecimal.valueOf(price));
+        return pipelineRun;
+    }
+
+    private Date buildDate(final int minutesFromNow) {
+        final Calendar calendar = Calendar.getInstance();
+        calendar.setTime(DateUtils.now());
+        calendar.add(Calendar.MINUTE, -minutesFromNow);
+        return calendar.getTime();
+    }
+}
