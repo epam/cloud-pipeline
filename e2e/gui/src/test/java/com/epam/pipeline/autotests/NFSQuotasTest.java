@@ -50,7 +50,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     private static final String TEST_NAME_BIG_FILE_1 = "test1.big";
     private static final String TEST_NAME_BIG_FILE_2 = "test2.big";
     private static final String DISABLED_MOUNT_STATUS = "MOUNT IS DISABLED";
-    public static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
+    private static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
     private final String nfsPrefix = C.NFS_PREFIX.replace(":/", "");
     private final String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
@@ -106,7 +106,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .ok();
     }
 
-    @Test
+    @Test(dependsOnMethods = {"validateFSMountConfigureNotificationsForm"})
     @TestCase(value = {"2182_2"})
     public void validateFSMountConfigureNotificationsFormForUser() {
         loginAs(user);
@@ -153,7 +153,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .ensure(CONFIGURE_NOTIFICATION, Condition.text("Configure notifications"));
     }
 
-    @Test(priority = 1)
+    @Test(dependsOnMethods = {"validateFSMountConfigureNotificationsFormForUser"})
     @TestCase(value = {"2182_3"})
     public void validateFSMountConfigureNotifications() {
         final String storageSizeWithUnit = format("%s Gb", "1.*");
