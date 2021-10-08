@@ -19,7 +19,7 @@ runNonmemSge <- function(infile, outfile='', threads = 1, verbose = TRUE, blocki
     if (!file.exists(infile)) {
         print(sprintf('No such file [%s] exists, exiting...', infile))
     } else {
-        script <- system.file('shell/nonmem_run_sge.sh', package = 'clusterNONMEM')
+        script <- system.file('shell/nonmem_submit.sh', package = 'clusterNONMEM')
         scriptArgs <- c(infile, threads, outfile)
         wrapperResult <- system2(script, args = scriptArgs, stdout = TRUE, stderr = TRUE)
         exitCode <- attr(wrapperResult, 'status')
