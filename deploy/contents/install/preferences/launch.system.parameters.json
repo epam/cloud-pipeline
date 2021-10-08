@@ -348,5 +348,12 @@
         "description": "Enables cluster users sharing.",
         "defaultValue": "true",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SYNC_USERS",
+        "type": "boolean",
+        "description": "Enables users synchronization.",
+        "defaultValue": "true",
+        "passToWorkers": false
     }
 ]
