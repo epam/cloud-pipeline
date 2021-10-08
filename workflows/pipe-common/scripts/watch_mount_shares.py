@@ -35,6 +35,7 @@ READ_WRITE_OPTION = 'rw'
 READ_ONLY_OPTION = 'ro'
 MODIFIED_MNT_SEPARATOR = '|'
 LNET_SPLIT = '@tcp:/'
+WRITE_MASK = 1 << 1
 
 MOUNT_STATUS_DISABLED = 'MOUNT_DISABLED'
 MOUNT_STATUS_READ_ONLY = 'READ_ONLY'
@@ -360,6 +361,10 @@ class NFSMountWatcher:
         return mount_points
 
     @staticmethod
+    def is_permission_set(storage, mask):
+        return storage.mask & mask == mask
+
+    @staticmethod
     def _get_mount_status(available_storages_dict, mount_details, is_admin, default):
         if is_admin is None:
             return MOUNT_STATUS_UNKNOWN
@@ -370,7 +375,9 @@ class NFSMountWatcher:
         matching_storage = NFSMountWatcher._find_matching_storage(available_storages_dict, mount_details)
         if matching_storage:
             status = matching_storage.mount_status
-            if status == MOUNT_STATUS_DISABLED:
+            if status == MOUNT_STATUS_DISABLED \
+                    or (status == MOUNT_STATUS_ACTIVE
+                        and not NFSMountWatcher.is_permission_set(matching_storage, WRITE_MASK)):
                 return MOUNT_STATUS_READ_ONLY
             else:
                 return status
