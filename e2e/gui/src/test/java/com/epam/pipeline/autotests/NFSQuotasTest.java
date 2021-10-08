@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -26,10 +27,14 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NOTIFICATION;
+import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_ALL_NOTIFICATIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_ALL_RECIPIENTS;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE_NOTIFICATION;
+import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -80,7 +85,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"2182_1"})
     public void validateFSMountConfigureNotificationsForm() {
         navigationMenu()
                 .library()
@@ -88,11 +93,13 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .configureNotification()
                 .ensureVisible(RECIPIENTS, ADD_NOTIFICATION, CLEAR_ALL_NOTIFICATIONS, CLEAR_ALL_RECIPIENTS)
+                .ensureAll(Condition.enabled, RECIPIENTS, ADD_NOTIFICATION, OK, CANCEL)
+                .ensureDisable(CLEAR_ALL_NOTIFICATIONS, CLEAR_ALL_RECIPIENTS)
                 .ok();
     }
 
     @Test
-    @TestCase(value = {""})
+    @TestCase(value = {"2182_2"})
     public void validateFSMountConfigureNotificationsFormForUser() {
         loginAs(user);
         navigationMenu()
@@ -101,6 +108,41 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .validateConfigureNotificationFormForUser();
         logout();
+        loginAs(admin);
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .configureNotification()
+                .addRecipient(user.login)
+                .ensure(CLEAR_ALL_RECIPIENTS, Condition.enabled)
+                .addNotification(String.valueOf(1), "Disable mount")
+                .addNotification(String.valueOf(2), "Make read-only")
+                .ensure(CLEAR_ALL_NOTIFICATIONS, Condition.enabled)
+                .ok()
+                .checkConfiguredNotificationsLink(2, 1);
+        loginAs(user);
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .checkConfiguredNotificationsLink(2, 1)
+                .configureNotification()
+                .checkConfigureNotificationIsNotAvailable()
+                .checkRecipients(Collections.singletonList(user.login))
+                .checkNotification(String.valueOf(1), "Disable mount")
+                .checkNotification(String.valueOf(2), "Make read-only")
+                .click(CANCEL);
+        logout();
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .showMetadata()
+                .configureNotification()
+                .clearAllNotifications()
+                .clearAllRecipients()
+                .ok()
+                .ensure(CONFIGURE_NOTIFICATION, Condition.text("Configure notifications"));
     }
 
     @Test(priority = 1)
@@ -196,8 +238,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                                         .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
                                         .assertOutputContains("Read-only file system")
                                         .sleep(2, SECONDS))
-                        ));
-//                .stopRun(getLastRunId());
+                        ))
+                .stopRun(getLastRunId());
         logout();
     }
 }

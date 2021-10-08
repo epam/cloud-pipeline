@@ -15,13 +15,16 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
@@ -166,7 +169,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkConfiguredNotificationsLink(final int notificationNumber, final int recipients) {
-        ensure(CONFIGURE_NOTIFICATION, text(format("%s notifications, %s recipient", notificationNumber, recipients)));
+        ensure(CONFIGURE_NOTIFICATION, matchText(
+                format("%s notification.*, %s recipient.*", notificationNumber, recipients)));
         return this;
     }
 
@@ -240,7 +244,9 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                 entry(RECIPIENTS, context().find(comboboxOf(byClassName("s-notifications__users-roles-select")))),
                 entry(ADD_NOTIFICATION, context().find(button("Add notification"))),
                 entry(CLEAR_ALL_RECIPIENTS, context().find(button("Clear all recipients"))),
-                entry(CLEAR_ALL_NOTIFICATIONS, context().find(button("Clear all notifications")))
+                entry(CLEAR_ALL_NOTIFICATIONS, context().find(button("Clear all notifications"))),
+                entry(OK, context().find(button("OK"))),
+                entry(CANCEL, context().find(button("CANCEL")))
         );
 
         public ConfigureNotificationAO(MetadataSectionAO parentAO) {
@@ -266,6 +272,42 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                 actionElement.find(byClassName("ant-select-selection__choice__remove")).shouldBe(enabled).click();
             }
             selectValue(actionElement, menuitem(action));
+            return this;
+        }
+
+        public ConfigureNotificationAO checkConfigureNotificationIsNotAvailable() {
+            get(RECIPIENTS).parent().parent().shouldHave(cssClass("ant-select-disabled"));
+            ensureDisable(ADD_NOTIFICATION, CLEAR_ALL_RECIPIENTS, CLEAR_ALL_NOTIFICATIONS, OK);
+            $$(inputOf(byClassName("s-notifications__notification")))
+                    .filter(cssClass("s-notifications__error"))
+                    .forEach(s -> s.shouldBe(disabled));
+            ensure(CANCEL, enabled);
+            return this;
+        }
+
+        public ConfigureNotificationAO clearAllNotifications() {
+            click(CLEAR_ALL_NOTIFICATIONS);
+            return this;
+        }
+
+        public ConfigureNotificationAO clearAllRecipients() {
+            click(CLEAR_ALL_RECIPIENTS);
+            return this;
+        }
+
+        public ConfigureNotificationAO checkRecipients(final List<String> recipients) {
+            recipients.forEach(recipient -> $$(byClassName("ant-select-selection__choice"))
+                    .filter(Condition.attribute("title", recipient))
+                    .shouldHaveSize(1));
+            return this;
+        }
+
+        public ConfigureNotificationAO checkNotification(final String volumeThresholdInGb, final String action) {
+            $$(byClassName("s-notifications__notification"))
+                    .findBy(text(action))
+                    .findAll(byClassName("s-notifications__input"))
+                    .filter(Condition.value(volumeThresholdInGb))
+                    .shouldHaveSize(1);
             return this;
         }
 
