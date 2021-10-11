@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ClusterCostsMonitoringServiceCore {
+    private static final int DIVIDE_SCALE = 5;
+    private static final int MINUTES_IN_HOUR = 60;
 
     private final PipelineRunCRUDService pipelineRunCRUDService;
     private final PipelineRunManager pipelineRunManager;
@@ -76,8 +78,9 @@ public class ClusterCostsMonitoringServiceCore {
         if (Objects.isNull(run.getPricePerHour())) {
             return BigDecimal.ZERO;
         }
-        final BigDecimal pricePerMinute = run.getPricePerHour().divide(BigDecimal.valueOf(60), RoundingMode.HALF_UP);
-        return pricePerMinute.multiply(durationInMinutes(run));
+        return run.getPricePerHour()
+                .multiply(durationInMinutes(run))
+                .divide(BigDecimal.valueOf(MINUTES_IN_HOUR), DIVIDE_SCALE, RoundingMode.HALF_UP);
     }
 
     private BigDecimal durationInMinutes(final PipelineRun run) {

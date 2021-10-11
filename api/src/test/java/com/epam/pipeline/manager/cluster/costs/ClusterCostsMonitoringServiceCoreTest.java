@@ -49,13 +49,10 @@ public class ClusterCostsMonitoringServiceCoreTest {
     private static final Long MASTER_ID_2 = 4L;
     private static final Long WORKER_ID_21 = 5L;
     private static final double PRICE_1 = 1.95;
-    private static final double PRICE_1_PER_MINUTE = 0.03;
     private static final double PRICE_2 = 20.25;
-    private static final double PRICE_2_PER_MINUTE = 0.34;
-    private static final int WORKER_12_DURATION = 3;
     private static final int WORKER_21_DURATION = 2;
-    private static final double EXPECTED_PRICE_1 = PRICE_1_PER_MINUTE * WORKER_12_DURATION;
-    private static final double EXPECTED_PRICE_2 = PRICE_2_PER_MINUTE * WORKER_21_DURATION;
+    private static final double EXPECTED_PRICE_1 = 0.0975;
+    private static final double EXPECTED_PRICE_2 = 0.675;
 
     private final PipelineRunCRUDService pipelineRunCRUDService = mock(PipelineRunCRUDService.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
