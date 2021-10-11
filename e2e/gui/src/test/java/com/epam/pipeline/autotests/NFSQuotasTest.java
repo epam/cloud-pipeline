@@ -175,18 +175,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .ok()
                 .checkConfiguredNotificationsLink(2, 1);
 
-        runsMenu()
-                .log(commonRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(commonRunId)
-                                                .execute(format(
-                                                        "head -c 1500MB /dev/urandom > /cloud-data/%s/%s/%s",
-                                                        nfsPrefix, storage, TEST_NAME_BIG_FILE_1))
-                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
-                                                .sleep(2, SECONDS))
-                                ));
+        addBigFileToStorage(commonRunId, TEST_NAME_BIG_FILE_1, "1500MB");
         navigationMenu()
                 .library()
                 .selectStorage(storage)
@@ -196,19 +185,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .checkStorageSize(storageSizeWithUnit)
                 .checkStorageStatus(DISABLED_MOUNT_STATUS);
 
-        runsMenu()
-                .log(commonRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(commonRunId)
-                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                        storage, fileName))
-                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
-                                                .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
-                                                .assertOutputContains(fileName)
-                                                .sleep(2, SECONDS))
-                                ));
+        checkFileCreationViaSSH(commonRunId, fileName);
         loginAs(user);
         navigationMenu()
                 .library()
@@ -222,31 +199,10 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .rmFile(fileName)
                 .validateElementNotPresent(fileName);
         sleep(5, MINUTES);
+        checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
+        String lastRunId = checkStorageReadOnlyStatusInNewRun(fileName);
         runsMenu()
-                .log(userRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(userRunId)
-                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                        storage, fileName))
-                                                .waitUntilTextAppearsSeveralTimes(userRunId, 2)
-                                                .assertOutputContains("Read-only file system")
-                                                .sleep(2, SECONDS))
-                                ));
-        tools()
-                .perform(registry, group, tool, tool -> tool.run(this))
-                .log(getLastRunId(), log -> log.waitForSshLink()
-                        .inAnotherTab(logTab -> logTab
-                                .ssh(shell -> shell
-                                        .waitUntilTextAppears(getLastRunId())
-                                        .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                storage, fileName))
-                                        .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
-                                        .assertOutputContains("Read-only file system")
-                                        .sleep(2, SECONDS))
-                        ))
-                .stopRun(getLastRunId());
+                .stopRun(lastRunId);
         logout();
     }
 
@@ -254,18 +210,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     @TestCase(value = {"2182_4"})
     public void validateReadOnlyQuota() {
         final String storageSizeWithUnit = format("%s Gb", "2.*");
-        runsMenu()
-                .log(commonRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(commonRunId)
-                                                .execute(format(
-                                                        "head -c 1000MB /dev/urandom > /cloud-data/%s/%s/%s",
-                                                        nfsPrefix, storage, TEST_NAME_BIG_FILE_2))
-                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
-                                                .sleep(2, SECONDS))
-                                ));
+        addBigFileToStorage(commonRunId, TEST_NAME_BIG_FILE_2, "1000MB");
         navigationMenu()
                 .library()
                 .selectStorage(storage)
@@ -278,19 +223,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
-        runsMenu()
-                .log(commonRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(commonRunId)
-                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                        storage, fileName))
-                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
-                                                .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
-                                                .assertOutputContains(fileName)
-                                                .sleep(2, SECONDS))
-                                ));
+        checkFileCreationViaSSH(commonRunId, fileName);
         loginAs(user);
         navigationMenu()
                 .library()
@@ -304,31 +237,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureNotVisible(CREATE, UPLOAD);
 
-        runsMenu()
-                .log(userRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(userRunId)
-                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                        storage, fileName2))
-                                                .waitUntilTextAppearsSeveralTimes(userRunId, 2)
-                                                .assertOutputContains("Read-only file system")
-                                                .sleep(2, SECONDS))
-                                ));
-        tools()
-                .perform(registry, group, tool, tool -> tool.run(this))
-                .log(getLastRunId(), log -> log.waitForSshLink()
-                        .inAnotherTab(logTab -> logTab
-                                .ssh(shell -> shell
-                                        .waitUntilTextAppears(getLastRunId())
-                                        .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                storage, fileName2))
-                                        .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
-                                        .assertOutputContains("Read-only file system")
-                                        .sleep(2, SECONDS))
-                        ));
-        userRunId2 = getLastRunId();
+        checkStorageReadOnlyStatusInActiveRun(userRunId, fileName2);
+        userRunId2 = checkStorageReadOnlyStatusInNewRun(fileName2);
         logout();
     }
 
@@ -364,18 +274,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
-        runsMenu()
-                .log(commonRunId, log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(commonRunId)
-                                                .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                        storage, fileName))
-                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
-                                                .assertOutputContains("Read-only file system")
-                                                .sleep(2, SECONDS))
-                                ));
+        checkStorageReadOnlyStatusInActiveRun(commonRunId, fileName);
         logout();
 
         navigationMenu()
@@ -402,32 +301,70 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
+        checkFileCreationViaSSH(commonRunId, fileName);
+        checkFileCreationViaSSH(userRunId2, fileName2);
+        logout();
+    }
+
+    private void checkFileCreationViaSSH(String runId, String fileName) {
         runsMenu()
-                .log(commonRunId, log ->
+                .log(runId, log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
-                                                .waitUntilTextAppears(commonRunId)
+                                                .waitUntilTextAppears(runId)
                                                 .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
                                                         storage, fileName))
-                                                .waitUntilTextAppearsSeveralTimes(commonRunId, 2)
+                                                .waitUntilTextAppearsSeveralTimes(runId, 2)
                                                 .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
                                                 .assertOutputContains(fileName)
                                                 .sleep(2, SECONDS))
                                 ));
+    }
+
+    private void checkStorageReadOnlyStatusInActiveRun(String runId, String fileName) {
         runsMenu()
-                .log(userRunId2, log ->
+                .log(runId, log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
-                                                .waitUntilTextAppears(userRunId2)
+                                                .waitUntilTextAppears(runId)
                                                 .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
-                                                        storage, fileName2))
-                                                .waitUntilTextAppearsSeveralTimes(userRunId2, 2)
-                                                .execute(format("ls -la /cloud-data/%s/%s/", nfsPrefix, storage))
-                                                .assertOutputContains(fileName2)
+                                                        storage, fileName))
+                                                .waitUntilTextAppearsSeveralTimes(runId, 2)
+                                                .assertOutputContains("Read-only file system")
                                                 .sleep(2, SECONDS))
                                 ));
-        logout();
+    }
+
+    private String checkStorageReadOnlyStatusInNewRun(String fileName) {
+        tools()
+                .perform(registry, group, tool, tool -> tool.run(this))
+                .log(getLastRunId(), log -> log.waitForSshLink()
+                        .inAnotherTab(logTab -> logTab
+                                .ssh(shell -> shell
+                                        .waitUntilTextAppears(getLastRunId())
+                                        .execute(format("echo test file >> /cloud-data/%s/%s/%s", nfsPrefix,
+                                                storage, fileName))
+                                        .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
+                                        .assertOutputContains("Read-only file system")
+                                        .sleep(2, SECONDS))
+                        ));
+        return getLastRunId();
+    }
+
+    private void addBigFileToStorage(String runId, String fileName, String fileSize) {
+        runsMenu()
+                .log(runId, log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(runId)
+                                                .execute(format(
+                                                        "head -c %s /dev/urandom > /cloud-data/%s/%s/%s",
+                                                        fileSize, nfsPrefix, storage, fileName))
+                                                .waitUntilTextAppearsSeveralTimes(runId, 2)
+                                                .sleep(2, SECONDS))
+                                ));
     }
 }
