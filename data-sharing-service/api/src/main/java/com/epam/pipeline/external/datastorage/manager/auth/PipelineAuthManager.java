@@ -17,6 +17,7 @@
 package com.epam.pipeline.external.datastorage.manager.auth;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +43,11 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 @Service
 public class PipelineAuthManager {
     public static final String UNAUTHORIZED_USER = "Unauthorized";
@@ -53,11 +59,7 @@ public class PipelineAuthManager {
     public PipelineAuthManager(@Value("${pipeline.api.base.url}") String pipelineBaseUrl,
                                @Value("${pipeline.client.connect.timeout}") long connectTimeout,
                                @Value("${pipeline.client.read.timeout}") long readTimeout) {
-        OkHttpClient client = new OkHttpClient.Builder()
-            .readTimeout(readTimeout, TimeUnit.SECONDS)
-            .connectTimeout(connectTimeout, TimeUnit.SECONDS)
-            .hostnameVerifier((s, sslSession) -> true)
-            .build();
+        OkHttpClient client = buildHttpClient();
 
         Retrofit retrofit = new Retrofit.Builder()
             .baseUrl(pipelineBaseUrl)
@@ -66,6 +68,46 @@ public class PipelineAuthManager {
             .build();
 
         authClient = retrofit.create(PipelineAuthClient.class);
+    }
+
+    private OkHttpClient buildHttpClient() {
+        final TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                    }
+
+                    @Override
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                    }
+
+                    @Override
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        return new java.security.cert.X509Certificate[]{};
+                    }
+                }
+        };
+        final SSLContext sslContext = buildSSLContext(trustAllCerts);
+        final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+        builder.hostnameVerifier((hostname, session) -> true);
+        return builder.readTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .hostnameVerifier((s, sslSession) -> true)
+                .build();
+    }
+
+    private SSLContext buildSSLContext(TrustManager[] trustAllCerts) {
+        try {
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            return sslContext;
+        } catch (GeneralSecurityException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+
     }
 
     public UserContext getUser() {

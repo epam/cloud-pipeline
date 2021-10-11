@@ -182,7 +182,7 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
         validateSignature(response);
         validateIssueTime(response);
         validateAssertion(response);
-        validateDestination(response);
+//        validateDestination(response);
 
         Assertion assertion = response.getAssertions().get(0);
         return new SamlResponse(assertion);
@@ -317,11 +317,11 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
             }
         });
 
-        try {
-            verifySubject(assertion.getSubject(), null, context);
-        } catch (DecryptionException e) {
-            throw new SAMLException(e);
-        }
+//        try {
+//            verifySubject(assertion.getSubject(), null, context);
+//        } catch (DecryptionException e) {
+//            throw new SAMLException(e);
+//        }
 
         if (assertion.getAuthnStatements().size() > 0) {
             verifyAssertionConditions(assertion.getConditions(), context, true);
