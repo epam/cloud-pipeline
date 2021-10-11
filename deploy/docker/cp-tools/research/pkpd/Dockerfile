@@ -136,3 +136,64 @@ RUN cp /opt/clusterNONMEM/inst/shell/nonmem_submit.sh $NONMEM_HOME && \
     R -e "install.packages('/opt/clusterNONMEM/clusterNONMEM.tar.gz', repos = NULL, type='source')" && \
     rm -rf /opt/clusterNONMEM && \
     chmod -R 777 /opt/R/$R_VERSION/lib/R/library/clusterNONMEM $NONMEM_HOME
+
+# Configure cloud-pipeline yum repository
+RUN yum install curl -y && \
+    curl -sk "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/centos/7/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
+    yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y && \
+    yum-config-manager --save --setopt=\*.skip_if_unavailable=true && \
+    sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf && \
+    sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+
+# Install common dependencies
+RUN yum install -y wget \
+                   bzip2 \
+                   gcc \
+                   zlib-devel \
+                   bzip2-devel \
+                   xz-devel \
+                   make \
+                   ncurses-devel \
+                   unzip \
+                   git \
+                   python \
+                   fuse \
+                   tzdata \
+                   acl \
+                   coreutils \
+                   openssh-server \
+                   yum-utils && \
+    yum clean all
+
+# Install NFS/SMB/Lustre clients
+RUN cd /tmp && \
+    yum install nfs-utils cifs-utils -y && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    package-cleanup --cleandupes -y && \
+    rm -rf lustre-client*
+
+# Install SGE
+RUN yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
+                        perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
+                        perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
+                        ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
+                        xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
+                        compat-db-headers compat-db47 libpipeline man-db \
+    && yum install -y -q gridengine \
+                        gridengine-debuginfo \
+                        gridengine-devel \
+                        gridengine-drmaa4ruby \
+                        gridengine-execd \
+                        gridengine-guiinst \
+                        gridengine-qmaster \
+                        gridengine-qmon
+ENV CP_CAP_SGE_PREINSTALLED="true"
+
+# Install LFS
+RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client
