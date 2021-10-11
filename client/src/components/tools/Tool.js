@@ -79,6 +79,7 @@ import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
 import HiddenObjects from '../../utils/hidden-objects';
+import {withCurrentUserAttributes} from "../../utils/current-user-attributes";
 
 const MarkdownRenderer = new Remarkable('full', {
   html: true,
@@ -126,6 +127,7 @@ const DEFAULT_FILE_SIZE_KB = 50;
     versionSettings: new LoadToolVersionSettings(params.id)
   };
 })
+@withCurrentUserAttributes()
 @observer
 export default class Tool extends localization.LocalizedReactComponent {
 
@@ -1275,6 +1277,8 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   runToolDefault = async (version) => {
+    const {currentUserAttributes} = this.props;
+    await currentUserAttributes.refresh();
     const parameterIsNotEmpty = (parameter, additionalCriteria) =>
       parameter !== null &&
       parameter !== undefined &&
@@ -1316,17 +1320,22 @@ export default class Tool extends localization.LocalizedReactComponent {
     const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
     const prepareParameters = (parameters) => {
       const result = {};
-      for (let key in parameters) {
-        if (parameters.hasOwnProperty(key)) {
-          result[key] = {
-            type: parameters[key].type,
-            value: parameters[key].value,
-            required: parameters[key].required,
-            defaultValue: parameters[key].defaultValue
-          };
+      if (parameters) {
+        for (let key in parameters) {
+          if (parameters.hasOwnProperty(key)) {
+            result[key] = {
+              type: parameters[key].type,
+              value: parameters[key].value,
+              required: parameters[key].required,
+              defaultValue: parameters[key].defaultValue
+            };
+          }
         }
       }
-      return result;
+      return currentUserAttributes.extendLaunchParameters(
+        result,
+        this.props.tool.value.allowSensitive
+      );
     };
     const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
       ? versionSettingValue('cloudRegionId')
@@ -1362,9 +1371,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       dockerImage: registry
         ? `${registry.path}/${this.props.tool.value.image}${version ? `:${version}` : ''}`
         : `${this.props.tool.value.image}${version ? `:${version}` : ''}`,
-      params: parameterIsNotEmpty(versionSettingValue('parameters'))
-        ? prepareParameters(versionSettingValue('parameters'))
-        : {},
+      params: prepareParameters(versionSettingValue('parameters')),
       isSpot: isSpotValue,
       nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
         ? +versionSettingValue('node_count')

@@ -49,6 +49,7 @@ import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
+import {withCurrentUserAttributes} from "../../../../utils/current-user-attributes";
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -69,6 +70,7 @@ const findGroupByName = (groups, name) => {
 )
 @HiddenObjects.injectToolsFilters
 @runPipelineActions
+@withCurrentUserAttributes()
 @observer
 export default class PersonalToolsPanel extends React.Component {
 
@@ -271,6 +273,7 @@ export default class PersonalToolsPanel extends React.Component {
     const toolSettings = new LoadToolVersionSettings(tool.id);
     await toolSettings.fetch();
     await this.props.dockerRegistries.fetchIfNeededOrWait();
+    await this.props.currentUserAttributes.refresh();
     const registry = this.registries
       .find(r => r.id === tool.registryId);
     if (toolRequest.error) {
@@ -363,17 +366,22 @@ export default class PersonalToolsPanel extends React.Component {
         const version = defaultTag;
         const prepareParameters = (parameters) => {
           const result = {};
-          for (let key in parameters) {
-            if (parameters.hasOwnProperty(key)) {
-              result[key] = {
-                type: parameters[key].type,
-                value: parameters[key].value,
-                required: parameters[key].required,
-                defaultValue: parameters[key].defaultValue
-              };
+          if (parameters) {
+            for (let key in parameters) {
+              if (parameters.hasOwnProperty(key)) {
+                result[key] = {
+                  type: parameters[key].type,
+                  value: parameters[key].value,
+                  required: parameters[key].required,
+                  defaultValue: parameters[key].defaultValue
+                };
+              }
             }
           }
-          return result;
+          return this.props.currentUserAttributes.extendLaunchParameters(
+            result,
+            toolValue.allowSensitive
+          );
         };
         const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
           ? versionSettingValue('cloudRegionId')
@@ -420,9 +428,7 @@ export default class PersonalToolsPanel extends React.Component {
           dockerImage: tool.registry
             ? `${tool.registry.path}/${toolValue.image}${version ? `:${version}` : ''}`
             : `${toolValue.image}${version ? `:${version}` : ''}`,
-          params: parameterIsNotEmpty(versionSettingValue('parameters'))
-            ? prepareParameters(versionSettingValue('parameters'))
-            : {},
+          params: prepareParameters(versionSettingValue('parameters')),
           isSpot: parameterIsNotEmpty(versionSettingValue('is_spot'))
             ? versionSettingValue('is_spot')
             : this.props.preferences.useSpot,
