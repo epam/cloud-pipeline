@@ -67,10 +67,9 @@ if [ -z "$NUM_CORES" ]; then
 fi
 
 if ! [ "$NUM_CORES" -eq "$NUM_CORES" ] 2>/dev/null; then
-	echo "[$NUM_CORES] is not a valid number fro threads specification, exiting..."
+	echo "[$NUM_CORES] is not a valid number for threads specification, exiting..."
 	exit 1
 fi
-
 
 file_name=${INPUT_FILE%%.*}
 file_name_without_extension="$(basename $file_name)"
@@ -134,11 +133,11 @@ Results will be stored in [$OUTPUT_FILE]"
 job_name="$(basename $job_service_dir)"
 qsub -N "$job_name" -pe mpi $NUM_CORES "$job_script"
 submission_exit_code=$?
-if [ $submission_exit_code -eq 0 -a $SYNC_MODE -eq 1 ];then
+if [ $submission_exit_code -eq 0 -a $SYNC_MODE -eq 1 ]; then
     echo "Command was called in synchronized mode, waiting for NONMEM modeling to finish..."
     while true; do
         qstat -j "$job_name" &> /dev/null
-        if [ $? -ne 0 ];then
+        if [ $? -ne 0 ]; then
           exit 0
         fi
         sleep $PKPD_NONMEM_SYNC_REFRESH_RATE
