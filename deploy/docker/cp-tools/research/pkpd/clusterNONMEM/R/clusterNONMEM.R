@@ -13,14 +13,14 @@
 # limitations under the License.
 #
 
-runNonmemSge <- function(infile, outfile='', threads = 1, verbose = TRUE, blocking = FALSE) {
+nonmemSubmit <- function(infile, outfile='', threads = 1, verbose = TRUE, blocking = FALSE) {
     exitCode <- 1
     taskDetails <- NULL
     if (!file.exists(infile)) {
         print(sprintf('No such file [%s] exists, exiting...', infile))
     } else {
         script <- system.file('shell/nonmem_submit.sh', package = 'clusterNONMEM')
-        scriptArgs <- c(infile, threads, outfile)
+        scriptArgs <- c(infile, '-threads', threads, '-outfile', outfile)
         wrapperResult <- system2(script, args = scriptArgs, stdout = TRUE, stderr = TRUE)
         exitCode <- attr(wrapperResult, 'status')
         taskDetails <- NULL

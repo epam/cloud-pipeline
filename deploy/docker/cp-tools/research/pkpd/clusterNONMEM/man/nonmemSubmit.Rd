@@ -4,14 +4,14 @@
 Run NONMEM model processing in a cluster
 }
 \description{
-\code{runNonmemSge} starts from R NONMEM model processing for
+\code{nonmemSubmit} starts from R NONMEM model processing for
   a control stream file passed as \code{infile} argument.
   Function is intended to submit processing as an SGE job.
   Returns `exitCode` of underlying `qsub` call and `details` object
   with the summary describing submission: 'file', 'slots', 'serviceDir', 'workdir', 'resultPath', 'id'
 }
 \usage{
-runNonmemSge(infile, outfile='', threads = 1, verbose = TRUE, blocking = FALSE)
+nonmemSubmit(infile, outfile='', threads = 1, verbose = TRUE, blocking = FALSE)
 }
 \arguments{
   \item{infile}{
@@ -43,7 +43,7 @@ EPAM Systems
 \dontrun{
 
   # Simple execution with all defaults for model 'example'
-  > runNonmemSge('/common/models/example1/example.ctl')
+  > nonmemSubmit('/common/models/example1/example.ctl')
     [1] "Processing [/common/models/example1/example.ctl] with a NONMEM on a cluster"
     [2] "Using [1] slots"
     [3] "Service dir: [/common/nonmem-sge/common_models_example1_example.hH2U9]"
@@ -70,7 +70,7 @@ EPAM Systems
 
 
   # Processing of a model using multiple threads
-  > runNonmemSge('/common/models/example.ctl', threads = 4, verbose = FALSE)
+  > nonmemSubmit('/common/models/example.ctl', threads = 4, verbose = FALSE)
     $exitCode
     0
 
@@ -90,7 +90,7 @@ EPAM Systems
 
 
   # Specifying output file to store processing results in the same directory as \code{infile}.
-  > runNonmemSge('/common/models/example.ctl', outfile = 'output.txt', threads = 4, verbose = FALSE)
+  > nonmemSubmit('/common/models/example.ctl', outfile = 'output.txt', threads = 4, verbose = FALSE)
     $exitCode
     0
 
@@ -110,7 +110,7 @@ EPAM Systems
 
 
   # Passing absolute output file path to store processing results in some specific place.
-  > runNonmemSge('/common/models/example.ctl', outfile = '/common/nonmem-results/example-output.txt',
+  > nonmemSubmit('/common/models/example.ctl', outfile = '/common/nonmem-results/example-output.txt',
                  threads = 2, verbose = FALSE)
     $exitCode
     0
@@ -130,7 +130,7 @@ EPAM Systems
     [1] "4"
 
   # Try to submit nonexistent input file.
-  > runNonmemSge('/common/models/nonexistent.ctl')
+  > nonmemSubmit('/common/models/nonexistent.ctl')
     [1] "No such file [/common/models/nonexistent.ctl] exists, exiting..."
     $exitCode
     [1] 1
