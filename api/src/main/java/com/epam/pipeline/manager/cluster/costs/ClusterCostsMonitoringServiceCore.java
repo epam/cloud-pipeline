@@ -56,19 +56,14 @@ public class ClusterCostsMonitoringServiceCore {
         final Map<Long, List<PipelineRun>> workersByParent = pipelineRunCRUDService
                 .loadRunsByParentRuns(masters.keySet());
 
-        workersByParent.forEach((parentId, workers) -> estimateClusterPrice(parentId, workers, masters));
+        workersByParent.forEach((parentId, workers) -> estimateClusterPrice(workers, masters.get(parentId)));
         pipelineRunCRUDService.updateClusterPrices(masters.values());
         log.debug("Finished cluster costs monitoring");
     }
 
-    private void estimateClusterPrice(final Long parentId, final List<PipelineRun> workers,
-                                      final Map<Long, PipelineRun> masters) {
+    private void estimateClusterPrice(final List<PipelineRun> workers, final PipelineRun master) {
         final BigDecimal workersPrice = estimateWorkersPrice(workers);
-
-        final PipelineRun master = masters.get(parentId);
-        final BigDecimal masterPrice = estimatePriceForRun(master);
-
-        master.setClusterPrice(masterPrice.add(workersPrice));
+        master.setWorkersPrice(workersPrice);
     }
 
     private BigDecimal estimateWorkersPrice(final List<PipelineRun> workers) {

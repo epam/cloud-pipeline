@@ -129,9 +129,9 @@ public class PipelineRun extends AbstractSecuredEntity {
     private Map<String, String> tags;
     private boolean kubeServiceEnabled;
     /**
-     * Pipeline run total cluster price estimation. This value shall be calculated for master runs only.
+     * Cluster workers price estimation. This value shall be calculated for master runs only.
      */
-    private BigDecimal clusterPrice;
+    private BigDecimal workersPrice;
 
     public PipelineRun() {
         this.terminating = false;

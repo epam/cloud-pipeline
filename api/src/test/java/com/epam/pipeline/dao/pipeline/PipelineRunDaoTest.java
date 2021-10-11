@@ -969,13 +969,13 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunDao.createPipelineRun(run1);
         pipelineRunDao.createPipelineRun(run2);
 
-        run1.setClusterPrice(INITIAL_CLUSTER_PRICE_1);
-        run2.setClusterPrice(INITIAL_CLUSTER_PRICE_2);
+        run1.setWorkersPrice(INITIAL_CLUSTER_PRICE_1);
+        run2.setWorkersPrice(INITIAL_CLUSTER_PRICE_2);
 
         pipelineRunDao.batchUpdateClusterPrices(Arrays.asList(run1, run2));
 
-        assertThat(pipelineRunDao.loadPipelineRun(run1.getId()).getClusterPrice(), equalTo(EXPECTED_CLUSTER_PRICE_1));
-        assertThat(pipelineRunDao.loadPipelineRun(run2.getId()).getClusterPrice(), equalTo(EXPECTED_CLUSTER_PRICE_2));
+        assertThat(pipelineRunDao.loadPipelineRun(run1.getId()).getWorkersPrice(), equalTo(EXPECTED_CLUSTER_PRICE_1));
+        assertThat(pipelineRunDao.loadPipelineRun(run2.getId()).getWorkersPrice(), equalTo(EXPECTED_CLUSTER_PRICE_2));
     }
 
     @Test

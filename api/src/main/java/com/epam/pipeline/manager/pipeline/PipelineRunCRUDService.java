@@ -83,7 +83,7 @@ public class PipelineRunCRUDService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateClusterPrices(final Collection<PipelineRun> runs) {
         pipelineRunDao.batchUpdateClusterPrices(CollectionUtils.emptyIfNull(runs).stream()
-                .filter(run -> Objects.nonNull(run.getClusterPrice()))
+                .filter(run -> Objects.nonNull(run.getWorkersPrice()))
                 .collect(Collectors.toList()));
     }
 

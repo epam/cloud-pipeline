@@ -446,7 +446,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .map(run -> {
                     final MapSqlParameterSource param = new MapSqlParameterSource();
                     param.addValue(PipelineRunParameters.RUN_ID.name(), run.getId());
-                    param.addValue(PipelineRunParameters.CLUSTER_PRICE.name(), run.getClusterPrice());
+                    param.addValue(PipelineRunParameters.CLUSTER_PRICE.name(), run.getWorkersPrice());
                     return param;
                 }).toArray(MapSqlParameterSource[]::new);
 
@@ -826,7 +826,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
             params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
             params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
-            params.addValue(CLUSTER_PRICE.name(), run.getClusterPrice());
+            params.addValue(CLUSTER_PRICE.name(), run.getWorkersPrice());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
@@ -971,7 +971,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
             run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
             run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
-            run.setClusterPrice(rs.getBigDecimal(CLUSTER_PRICE.name()));
+            run.setWorkersPrice(rs.getBigDecimal(CLUSTER_PRICE.name()));
             String stateReasonMessage = rs.getString(STATE_REASON.name());
             if (!rs.wasNull()) {
                 run.setStateReasonMessage(stateReasonMessage);
