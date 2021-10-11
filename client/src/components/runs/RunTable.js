@@ -865,10 +865,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
     }
     const diff = evaluateRunDuration(item) * item.pricePerHour;
     const price = Math.ceil(diff * 100.0) / 100.0;
-    if (item.nodeCount) {
+    if (item.masterRun) {
+      const {
+        workersPrice = 0
+      } = item;
       return (
         <JobEstimatedPriceInfo>
-          Cost: {(price * (+item.nodeCount + 1)).toFixed(2)}$ ({price.toFixed(2)}$)
+          Cost: {(price + workersPrice).toFixed(2)}$ ({price.toFixed(2)}$)
         </JobEstimatedPriceInfo>
       );
     }
