@@ -18,9 +18,11 @@
 # Submits a job with suitable parameters to get the correct environment setup on the new node
 
 PKPD_NONMEM_JOBS_ROOT_DIR=${PKPD_NONMEM_JOBS_ROOT_DIR:-$COMMON_DIR/nonmem-sge}
+PKPD_NONMEM_SYNC_REFRESH_RATE=${PKPD_NONMEM_SYNC_REFRESH_RATE:-10}
 mkdir -p "$PKPD_NONMEM_JOBS_ROOT_DIR"
 
 INPUT_FILE="$1"
+SYNC_MODE=0
 
 POSITIONAL=()
 shift
@@ -36,6 +38,10 @@ case $key in
     -outfile)
     OUTPUT_FILE="$2"
     shift
+    shift
+    ;;
+    -sync)
+    SYNC_MODE=1
     shift
     ;;
     *)
@@ -67,6 +73,7 @@ fi
 
 
 file_name=${INPUT_FILE%%.*}
+file_name_without_extension="$(basename $file_name)"
 file_name=${file_name#/}
 file_name=${file_name//\//_}
 file_name=${file_name/ /-}
@@ -79,14 +86,12 @@ job_execution_log="$job_service_dir/exec.log"
 rundir=$(dirname $INPUT_FILE)
 
 if [ -z "$OUTPUT_FILE" ]; then
-    OUTPUT_FILE="$rundir/$file_name.lst"
+    OUTPUT_FILE="$rundir/$file_name_without_extension.lst"
 elif [[ "$OUTPUT_FILE" != /* ]]; then
     OUTPUT_FILE="$rundir/$OUTPUT_FILE"
-else
-    rundir=$(dirname $OUTPUT_FILE)
 fi
 
-mkdir -p "$rundir"
+mkdir -p "$(dirname $OUTPUT_FILE)"
 
 job_script_text="nmfe $INPUT_FILE $OUTPUT_FILE -rundir=$rundir <<PARAFILE_OPTIONS>> > $job_execution_log 2>&1;"
 
@@ -126,5 +131,17 @@ Service dir: [$job_service_dir]
 Workdir: [$rundir]
 Results will be stored in [$OUTPUT_FILE]"
 
-qsub -N $(basename $job_service_dir) -pe mpi $NUM_CORES $job_script
-exit $?
+job_name="$(basename $job_service_dir)"
+qsub -N "$job_name" -pe mpi $NUM_CORES "$job_script"
+submission_exit_code=$?
+if [ $submission_exit_code -eq 0 -a $SYNC_MODE -eq 1 ];then
+    echo "Command was called in synchronized mode, waiting for NONMEM modeling to finish..."
+    while true; do
+        qstat -j "$job_name" &> /dev/null
+        if [ $? -ne 0 ];then
+          exit 0
+        fi
+        sleep $PKPD_NONMEM_SYNC_REFRESH_RATE
+    done
+fi
+exit $submission_exit_code
