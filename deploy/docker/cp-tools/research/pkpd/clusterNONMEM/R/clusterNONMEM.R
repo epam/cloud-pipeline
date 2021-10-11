@@ -16,6 +16,9 @@
 nonmemSubmit <- function(infile, outfile='', threads = 1, verbose = TRUE, blocking = FALSE) {
     exitCode <- 1
     taskDetails <- NULL
+    if (!.isAbsolutePath(infile)) {
+        infile <- file.path(getwd(), infile)
+    }
     if (!file.exists(infile)) {
         print(sprintf('No such file [%s] exists, exiting...', infile))
     } else {
@@ -40,6 +43,10 @@ nonmemSubmit <- function(infile, outfile='', threads = 1, verbose = TRUE, blocki
 
 checkJobStatus <- function(job_id) {
     return(suppressWarnings(.checkJobStatus(job_id)))
+}
+
+.isAbsolutePath <- function(path) {
+    return (startsWith(path, '/') || startsWith(path, '~'))
 }
 
 .waitJobFinish <- function(job_id) {
