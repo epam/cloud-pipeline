@@ -1543,7 +1543,12 @@ class Logs extends localization.LocalizedReactComponent {
             <th>Estimated price:</th>
             <td>
               <JobEstimatedPriceInfo>
-                {adjustPrice(evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour).toFixed(2)}
+                {
+                  adjustPrice(
+                    evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour +
+                    (this.props.run.value.workersPrice || 0)
+                  ).toFixed(2)
+                }
                 $
               </JobEstimatedPriceInfo>
             </td>
