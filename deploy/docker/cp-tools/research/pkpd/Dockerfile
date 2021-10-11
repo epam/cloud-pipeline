@@ -128,9 +128,9 @@ RUN yum install -y devtoolset-9-gcc-gfortran \
 
 ADD clusterNONMEM /opt/clusterNONMEM
 
-RUN cp /opt/clusterNONMEM/inst/shell/nonmem_run_sge.sh $NONMEM_HOME && \
-    chmod +x $NONMEM_HOME/nonmem_run_sge.sh && \
-    ln -s $NONMEM_HOME/nonmem_run_sge.sh /usr/bin/nonmem_run_sge && \
+RUN cp /opt/clusterNONMEM/inst/shell/nonmem_submit.sh $NONMEM_HOME && \
+    chmod +x $NONMEM_HOME/nonmem_submit.sh && \
+    ln -s $NONMEM_HOME/nonmem_submit.sh /usr/bin/nonmem_submit && \
     R CMD build /opt/clusterNONMEM && \
     mv clusterNONMEM_*.tar.gz /opt/clusterNONMEM/clusterNONMEM.tar.gz && \
     R -e "install.packages('/opt/clusterNONMEM/clusterNONMEM.tar.gz', repos = NULL, type='source')" && \
