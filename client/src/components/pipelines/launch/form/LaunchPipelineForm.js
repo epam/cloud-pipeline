@@ -121,6 +121,7 @@ import {
 import OOMCheck from './utilities/oom-check';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
 import JobNotifications from '../dialogs/job-notifications';
+import {withCurrentUserAttributes} from "../../../../utils/current-user-attributes";
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -148,6 +149,7 @@ function getFormItemClassName (rootClass, key) {
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
+@withCurrentUserAttributes()
 @observer
 class LaunchPipelineForm extends localization.LocalizedReactComponent {
   localizedStringWithSpotDictionaryFn = (key) => {
@@ -3961,12 +3963,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.isWindowsPlatform) {
       return null;
     }
-    const {dataStorageAvailable} = this.props;
-    if (dataStorageAvailable.loaded) {
+    const {
+      dataStorageAvailable,
+      currentUserAttributes
+    } = this.props;
+    if (dataStorageAvailable.loaded && currentUserAttributes.loaded) {
       const getDefaultValue = () => {
         if (this.props.parameters.parameters &&
           this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
           return this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
+        }
+        if (
+          !this.props.isDetachedConfiguration &&
+          !this.props.editConfigurationMode &&
+          currentUserAttributes.hasAttribute(CP_CAP_LIMIT_MOUNTS)
+        ) {
+          return currentUserAttributes.getAttributeValue(
+            CP_CAP_LIMIT_MOUNTS,
+            this.toolAllowSensitive
+          );
         }
         return null;
       };

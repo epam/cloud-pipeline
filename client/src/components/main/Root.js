@@ -62,6 +62,7 @@ import multiZoneManager from '../../utils/multizone';
 import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
+import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -97,6 +98,11 @@ const allConfigurations = new AllConfigurations();
 const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
 
 const vsActions = new VsActionsAvailable(pipelines);
+
+const currentUserAttributes = new CurrentUserAttributes(
+  authenticatedUserInfo,
+  dataStorageAvailable
+);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -136,6 +142,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
