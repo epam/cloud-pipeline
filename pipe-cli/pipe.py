@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import traceback
+import functools
 import click
 import requests
 import sys
@@ -46,9 +47,10 @@ from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
-USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
-RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10'
-TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
+USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only.'
+RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
+TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying.'
+EDGE_REGION_OPTION_DESCRIPTION = 'The edge region name. If not specified the default edge region will be used.'
 SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
                         ' until the expected status of the operation won\'t be returned'
 STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination path check: if destination already ' \
@@ -1400,18 +1402,20 @@ def scp(source, destination, recursive, quiet, retries, trace):
 @cli.group()
 def tunnel():
     """
-    Run ports tunnelling operations
+    Remote instance ports tunnelling operations
     """
     pass
 
 
 @tunnel.command(name='stop')
 @click.argument('run-id', required=False, type=int)
-@click.option('-lp', '--local-port', required=False, type=int, help='Local port to stop tunnel for')
+@click.option('-lp', '--local-port', required=False, type=str,
+              help='A single local port (4567) or a range of ports (4567-4569) '
+                   'to stop corresponding tunnel processes for.')
 @click.option('-t', '--timeout', required=False, type=int, default=60 * 1000,
-              help='Tunnels stopping timeout in ms')
+              help='Tunnels stopping timeout in ms.')
 @click.option('-f', '--force', required=False, is_flag=True, default=False,
-              help='Killing tunnels rather than stopping them')
+              help='Killing tunnels rather than stopping them.')
 @click.option('-v', '--log-level', required=False, help='Explicit logging level: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
@@ -1420,17 +1424,17 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
     """
     Stops background tunnel processes.
 
-    It allows to stop multiple tunnel processes for a single run, a single port or a single run port.
+    It allows to stop multiple tunnel processes by either run id or a local port (range of local ports) or both.
 
-    Additionally specified without arguments it allows to stop all background tunnels.
+    If the command is specified without arguments then all background tunnel processes will be stopped.
 
     Examples:
 
-    I. Stop all active tunnels:
+    I.   Stop all active tunnels:
 
         pipe tunnel stop
 
-    II. Stop all tunnels for a single run (12345):
+    II.  Stop all tunnels for a single run (12345):
 
         pipe tunnel stop 12345
 
@@ -1438,55 +1442,85 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 
         pipe tunnel stop -lp 4567
 
-    IV. Stop a single tunnel which serves for some run (12345) on specific local port (4567):
+    IV.  Stop a single tunnel which serves on specific range of local ports (4567-4569):
+
+        pipe tunnel stop -lp 4567-4569
+
+    V.   Stop a single tunnel which serves for some run (12345) on specific local port (4567):
 
         pipe tunnel stop -lp 4567 12345
 
     """
     try:
-        kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
+        kill_tunnels(run_id=run_id, local_ports_str=local_port, timeout=timeout, force=force, log_level=log_level)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
+    kill_tunnels(run_id=run_id, local_ports_str=local_port, timeout=timeout, force=force, log_level=log_level)
+
+
+def start_tunnel_arguments(start_tunnel_command):
+    @click.argument('host-id', required=True)
+    @click.option('-lp', '--local-port', required=False, type=str,
+                  help='A single local port (4567) or a range of ports (4567-4569) '
+                       'to establish tunnel connections for. '
+                       'At least one of --lp/--local-port and --rp/--remote-port options should be be specified. '
+                       'If one of the options is omitted then local and remote ports will be the same. '
+                       'Notice that a range of ports is not allowed if -s/--ssh option is used.')
+    @click.option('-rp', '--remote-port', required=False, type=str,
+                  help='A single remote port (4567) or a range of ports (4567-4569) '
+                       'to establish tunnel connections for.'
+                       'At least one of --lp/--local-port and --rp/--remote-port options should be be specified. '
+                       'If one of the options is omitted then local and remote ports will be the same. '
+                       'Notice that a range of ports is not allowed if -s/--ssh option is used.')
+    @click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
+                  help='Socket connection timeout in seconds.')
+    @click.option('-s', '--ssh', required=False, is_flag=True, default=False,
+                  help='Configures passwordless ssh to specified run instance.')
+    @click.option('-sp', '--ssh-path', required=False, type=str,
+                  help='Path to .ssh directory for passwordless ssh configuration on Linux.')
+    @click.option('-sh', '--ssh-host', required=False, type=str,
+                  help='Host name for passwordless ssh configuration.')
+    @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
+                  help='Keeps passwordless ssh configuration after tunnel stopping.')
+    @click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode.')
+    @click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
+                                                            'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
+    @click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
+                  help='Maximum timeout for background tunnel process health check in seconds.')
+    @click.option('-ts', '--timeout-stop', required=False, type=int, default=60,
+                  help='Maximum timeout for background tunnel process stopping in seconds.')
+    @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+                  help='Establishes tunnel in foreground mode.')
+    @click.option('-ke', '--keep-existing', required=False, is_flag=True, default=False,
+                  help='Skips tunnel establishing if a tunnel on the same local port already exists.')
+    @click.option('-ks', '--keep-same', required=False, is_flag=True, default=False,
+                  help='Skips tunnel establishing if a tunnel with the same configuration '
+                       'on the same local port already exists.')
+    @click.option('-re', '--replace-existing', required=False, is_flag=True, default=False,
+                  help='Replaces existing tunnel on the same local port.')
+    @click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
+                  help='Replaces existing tunnel on the same local port if it has different configuration.')
+    @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
+                  help=USER_OPTION_DESCRIPTION)
+    @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+    @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+    @click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
+    def _start_tunnel_command_decorator(*args, **kwargs):
+        return start_tunnel_command(*args, **kwargs)
+    return functools.update_wrapper(_start_tunnel_command_decorator, start_tunnel_command)
 
 
 @tunnel.command(name='start')
-@click.argument('host-id', required=True)
-@click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
-@click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
-@click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
-              help='Socket connection timeout in seconds')
-@click.option('-s', '--ssh', required=False, is_flag=True, default=False,
-              help='Configures passwordless ssh to specified run instance')
-@click.option('-sp', '--ssh-path', required=False, type=str,
-              help='Path to .ssh directory for passwordless ssh configuration on Linux')
-@click.option('-sh', '--ssh-host', required=False, type=str,
-              help='Host name for passwordless ssh configuration')
-@click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
-              help='Keeps passwordless ssh configuration after tunnel stopping')
-@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
-@click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
-                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG')
-@click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
-              help='Maximum timeout for background tunnel process health check in seconds')
-@click.option('-ts', '--timeout-stop', required=False, type=int, default=60,
-              help='Maximum timeout for background tunnel process stopping in seconds')
-@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
-              help='Establishes tunnel in foreground mode')
-@click.option('-ke', '--keep-existing', required=False, is_flag=True, default=False,
-              help='Skips tunnel establishing if a tunnel on the same local port already exists')
-@click.option('-ks', '--keep-same', required=False, is_flag=True, default=False,
-              help='Skips tunnel establishing if a tunnel with the same configuration '
-                   'on the same local port already exists')
-@click.option('-re', '--replace-existing', required=False, is_flag=True, default=False,
-              help='Replaces existing tunnel on the same local port')
-@click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
-              help='Replaces existing tunnel on the same local port if it has different configuration')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@start_tunnel_arguments
+def return_tunnel_args(*args, **kwargs):
+    return kwargs
+
+
+@tunnel.command(name='start')
+@start_tunnel_arguments
 @Config.validate_access_token
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
@@ -1512,13 +1546,23 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
 
     Examples:
 
-    I. Example of simple tcp port tunnel connection establishing.
+    I.   Examples of a single tcp port tunnel connection establishing.
 
     Establish tunnel connection from run (12345) instance port (4567) to the same local port.
 
-        pipe tunnel start -lp 4567 -rp 4567 12345
+        pipe tunnel start -lp 4567 12345
 
-    II. Example of ssh port tunnel connection establishing with enabled passwordless ssh configuration.
+    Establish tunnel connection from run (12345) instance port (4567) to a different local port (7654).
+
+        pipe tunnel start -lp 7654 -rp 4567 12345
+
+    II.  Example of multiple tcp ports tunnel connection establishing.
+
+    Establish tunnel connections from run (12345) instance ports (4567, 4568 and 4569) to the same local ports.
+
+        pipe tunnel start -lp 4567-4569 12345
+
+    III. Examples of ssh port tunnel connection establishing with enabled passwordless ssh configuration.
 
     First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
 
@@ -1548,26 +1592,28 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
 
         scp file.txt pipeline-12345:/common/workdir/file.txt
 
-    III. Example of tcp port tunnel connection establishing to a specific host.
+    IV.  Example of tcp port tunnel connection establishing to a specific host.
 
     Establish tunnel connection from host (10.244.123.123) port (4567) to the same local port.
 
-        pipe tunnel start -lp 4567 -rp 4567 10.244.123.123
+        pipe tunnel start -lp 4567 10.244.123.123
 
     Advanced tunnel configuration environment variables:
 
     \b
         CP_CLI_TUNNEL_PROXY_HOST - tunnel proxy host
         CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
-        CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
     try:
+        def _parse_tunnel_args(args):
+            with return_tunnel_args.make_context('start', args) as ctx:
+                return return_tunnel_args.invoke(ctx)
         create_tunnel(host_id, local_port, remote_port, connection_timeout,
                       ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                       timeout, timeout_stop, foreground,
                       keep_existing, keep_same, replace_existing, replace_different,
-                      retries)
+                      retries, _parse_tunnel_args)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:
