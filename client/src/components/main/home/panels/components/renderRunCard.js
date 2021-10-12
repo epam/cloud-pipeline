@@ -120,7 +120,9 @@ function renderEstimatedPrice (run) {
     return null;
   }
   const diff = evaluateRunDuration(run) * run.pricePerHour;
-  const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
+  // const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
+  const masterPrice = Math.ceil(diff * 100.0) / 100.0;
+  const price = masterPrice + (run.workersPrice || 0);
   return (
     <JobEstimatedPriceInfo>
       , estimated price: <b>{price.toFixed(2)}$</b>

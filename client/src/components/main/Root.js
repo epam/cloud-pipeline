@@ -59,6 +59,7 @@ import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
 import impersonation from '../../models/user/impersonation';
+import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -85,6 +86,11 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
+
+const currentUserAttributes = new CurrentUserAttributes(
+  authenticatedUserInfo,
+  dataStorageAvailable
+);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -124,6 +130,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
