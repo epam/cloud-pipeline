@@ -208,9 +208,10 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                 if ($(byClassName("estricted-images-info__popover-container"))
                         .has(text(format("Storage status is: %s", status)))) {
                     break;
-                } else {
-                    continue;
                 }
+//                else {
+//                    continue;
+//                }
             }
             sleep(1, MINUTES);
             refresh();

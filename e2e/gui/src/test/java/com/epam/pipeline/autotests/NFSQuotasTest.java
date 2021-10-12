@@ -198,7 +198,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .rmFile(fileName)
                 .validateElementNotPresent(fileName);
-        sleep(5, MINUTES);
+//        sleep(5, MINUTES);
         checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
         String lastRunId = checkStorageReadOnlyStatusInNewRun(fileName);
         runsMenu()
