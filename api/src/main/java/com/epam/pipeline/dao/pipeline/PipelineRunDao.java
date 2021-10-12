@@ -55,6 +55,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -122,6 +123,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
     private String loadRunsByNodeNameQuery;
+    private String updateClusterPriceQuery;
+    private String loadRunsByParentRunsIdsQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -433,6 +436,35 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(loadRunsByNodeNameQuery, PipelineRunParameters.getRowMapper(), nodeName));
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void batchUpdateClusterPrices(final Collection<PipelineRun> runs) {
+        if (CollectionUtils.isEmpty(runs)) {
+            return;
+        }
+
+        final MapSqlParameterSource[] params = runs.stream()
+                .map(run -> {
+                    final MapSqlParameterSource param = new MapSqlParameterSource();
+                    param.addValue(PipelineRunParameters.RUN_ID.name(), run.getId());
+                    param.addValue(PipelineRunParameters.CLUSTER_PRICE.name(), run.getWorkersPrice());
+                    return param;
+                }).toArray(MapSqlParameterSource[]::new);
+
+        getNamedParameterJdbcTemplate().batchUpdate(updateClusterPriceQuery, params);
+    }
+
+    public List<PipelineRun> loadRunsByParentRuns(final Collection<Long> parentIds) {
+        if (CollectionUtils.isEmpty(parentIds)) {
+            return Collections.emptyList();
+        }
+
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, parentIds);
+
+        return getNamedParameterJdbcTemplate()
+                .query(loadRunsByParentRunsIdsQuery, params, PipelineRunParameters.getRowMapper());
+    }
+
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("LIMIT", filter.getPageSize());
@@ -684,331 +716,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .toArray(MapSqlParameterSource[]::new);
     }
 
-    public enum PipelineRunParameters {
-        RUN_ID,
-        PIPELINE_ID,
-        VERSION,
-        START_DATE,
-        END_DATE,
-        PARAMETERS,
-        PARENT_ID,
-        STATUS,
-        COMMIT_STATUS,
-        LAST_CHANGE_COMMIT_TIME,
-        TERMINATING,
-        POD_ID,
-        PIPELINE_NAME,
-        NODE_TYPE,
-        NODE_IP,
-        NODE_ID,
-        NODE_DISK,
-        NODE_IMAGE,
-        NODE_NAME,
-        NODE_CLOUD_REGION,
-        NODE_CLOUD_PROVIDER,
-        DOCKER_IMAGE,
-        ACTUAL_DOCKER_IMAGE,
-        CMD_TEMPLATE,
-        ACTUAL_CMD,
-        TIMEOUT,
-        OWNER,
-        SERVICE_URL,
-        PIPELINE_ALLOWED,
-        OWNERSHIP,
-        POD_IP,
-        SSH_PASSWORD,
-        CONFIG_NAME,
-        NODE_COUNT,
-        START_DATE_FROM,
-        END_DATE_TO,
-        INITIALIZATION_FINISHED,
-        TASK_NAME,
-        TASK_STATUS,
-        ENTITIES_IDS,
-        IS_SPOT,
-        CONFIGURATION_ID,
-        NAME,
-        IS_PRINCIPAL,
-        POD_STATUS,
-        ENV_VARS,
-        LAST_NOTIFICATION_TIME,
-        PROLONGED_AT_TIME,
-        LAST_IDLE_NOTIFICATION_TIME,
-        PROJECT_PIPELINES,
-        PROJECT_CONFIGS,
-        EXEC_PREFERENCES,
-        PRETTY_URL,
-        PRICE_PER_HOUR,
-        COMPUTE_PRICE_PER_HOUR,
-        DISK_PRICE_PER_HOUR,
-        STATE_REASON,
-        NON_PAUSE,
-        NODE_REAL_DISK,
-        QUEUED,
-        NODEUP_TASK,
-        ACCESS_TYPE,
-        TAGS,
-        SENSITIVE,
-        KUBE_SERVICE_ENABLED;
-
-        public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
-
-        static MapSqlParameterSource getParameters(PipelineRun run, Connection connection) {
-            MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(RUN_ID.name(), run.getId());
-            params.addValue(PIPELINE_NAME.name(), run.getPipelineName());
-            params.addValue(PIPELINE_ID.name(), run.getPipelineId());
-            params.addValue(VERSION.name(), run.getVersion());
-            params.addValue(START_DATE.name(), run.getStartDate());
-            params.addValue(END_DATE.name(), run.getEndDate());
-            params.addValue(PARAMETERS.name(), run.getParams());
-            params.addValue(STATUS.name(), run.getStatus().getId());
-            params.addValue(COMMIT_STATUS.name(), run.getCommitStatus().getId());
-            params.addValue(LAST_CHANGE_COMMIT_TIME.name(), run.getLastChangeCommitTime());
-            params.addValue(TERMINATING.name(), run.isTerminating());
-            params.addValue(POD_ID.name(), run.getPodId());
-            params.addValue(TIMEOUT.name(), run.getTimeout());
-            params.addValue(DOCKER_IMAGE.name(), run.getDockerImage());
-            params.addValue(ACTUAL_DOCKER_IMAGE.name(), run.getActualDockerImage());
-            params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
-            params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
-            params.addValue(OWNER.name(), run.getOwner());
-            params.addValue(SERVICE_URL.name(), run.getServiceUrl());
-            params.addValue(POD_IP.name(), run.getPodIP());
-            params.addValue(SSH_PASSWORD.name(), run.getSshPassword());
-            params.addValue(CONFIG_NAME.name(), run.getConfigName());
-            params.addValue(NODE_COUNT.name(), run.getNodeCount());
-            params.addValue(PARENT_ID.name(), run.getParentRunId());
-            params.addValue(ENTITIES_IDS.name(), mapListToSqlArray(run.getEntitiesIds(), connection));
-            params.addValue(CONFIGURATION_ID.name(), run.getConfigurationId());
-            params.addValue(POD_STATUS.name(), run.getPodStatus());
-            params.addValue(ENV_VARS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getEnvVars()));
-            params.addValue(PROLONGED_AT_TIME.name(), run.getProlongedAtTime());
-            params.addValue(LAST_NOTIFICATION_TIME.name(), run.getLastNotificationTime());
-            params.addValue(LAST_IDLE_NOTIFICATION_TIME.name(), run.getLastIdleNotificationTime());
-            params.addValue(EXEC_PREFERENCES.name(),
-                    JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
-            params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
-            params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
-            params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
-            params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
-            params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
-            params.addValue(NON_PAUSE.name(), run.isNonPause());
-            params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
-            params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
-            params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
-            addInstanceFields(run, params);
-            return params;
-        }
-
-        private static void addInstanceFields(PipelineRun run, MapSqlParameterSource params) {
-            Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
-            params.addValue(NODE_TYPE.name(), instance.map(RunInstance::getNodeType).orElse(null));
-            params.addValue(NODE_IP.name(), instance.map(RunInstance::getNodeIP).orElse(null));
-            params.addValue(NODE_ID.name(), instance.map(RunInstance::getNodeId).orElse(null));
-            params.addValue(NODE_DISK.name(), instance.map(RunInstance::getNodeDisk).orElse(null));
-            params.addValue(NODE_IMAGE.name(), instance.map(RunInstance::getNodeImage).orElse(null));
-            params.addValue(NODE_NAME.name(), instance.map(RunInstance::getNodeName).orElse(null));
-            params.addValue(IS_SPOT.name(), instance.map(RunInstance::getSpot).orElse(null));
-            params.addValue(NODE_CLOUD_REGION.name(), instance.map(RunInstance::getCloudRegionId).orElse(null));
-            params.addValue(NODE_REAL_DISK.name(), instance.map(RunInstance::getEffectiveNodeDisk).orElse(null));
-            params.addValue(NODE_CLOUD_PROVIDER.name(),
-                    instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
-        }
-
-        static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
-            return (rs) -> {
-                Map<Long, PipelineRun> runs = new HashMap<>();
-                Map<Long, List<PipelineRun>> childRuns = new HashMap<>();
-                while (rs.next()) {
-                    PipelineRun run = parsePipelineRun(rs);
-                    run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
-                    if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
-                        run.setQueued(rs.getBoolean(QUEUED.name()));
-                    }
-                    runs.put(run.getId(), run);
-                    if (run.getParentRunId() != null) {
-                        childRuns.putIfAbsent(run.getParentRunId(), new ArrayList<>());
-                        childRuns.get(run.getParentRunId()).add(run);
-                    }
-                }
-                runs.values().forEach(run -> {
-                    if (childRuns.containsKey(run.getId())) {
-                        List<PipelineRun> children = childRuns.get(run.getId());
-                        children.sort(getPipelineRunComparator());
-                        run.setChildRuns(children);
-                    }
-                });
-                return runs.values();
-            };
-        }
-
-
-        static RowMapper<PipelineRun> getRowMapper() {
-            return (rs, rowNum) -> parsePipelineRun(rs);
-        }
-
-        public static PipelineRun parsePipelineRun(ResultSet rs) throws SQLException {
-            PipelineRun run = new PipelineRun();
-            run.setId(rs.getLong(RUN_ID.name()));
-            long pipelineId = rs.getLong(PIPELINE_ID.name());
-            if (!rs.wasNull()) {
-                run.setPipelineId(pipelineId);
-                run.setParent(new Pipeline(pipelineId));
-            }
-            run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
-            run.setVersion(rs.getString(VERSION.name()));
-            run.setStartDate(new Date(rs.getTimestamp(START_DATE.name()).getTime()));
-            run.setParams(rs.getString(PARAMETERS.name()));
-            run.setStatus(TaskStatus.getById(rs.getLong(STATUS.name())));
-            run.setCommitStatus(CommitStatus.getById(rs.getLong(COMMIT_STATUS.name())));
-            run.setLastChangeCommitTime(new Date(rs.getTimestamp(LAST_CHANGE_COMMIT_TIME.name()).getTime()));
-            run.setTerminating(rs.getBoolean(TERMINATING.name()));
-            run.setPodId(rs.getString(POD_ID.name()));
-            run.setPodIP(rs.getString(POD_IP.name()));
-            run.setOwner(rs.getString(OWNER.name()));
-            run.setConfigName(rs.getString(CONFIG_NAME.name()));
-            run.setNodeCount(rs.getInt(NODE_COUNT.name()));
-            run.setExecutionPreferences(JsonMapper.parseData(rs.getString(EXEC_PREFERENCES.name()),
-                    new TypeReference<ExecutionPreferences>() {}));
-
-            Timestamp end = rs.getTimestamp(END_DATE.name());
-            if (!rs.wasNull()) {
-                run.setEndDate(new Date(end.getTime()));
-            }
-
-            run.setDockerImage(rs.getString(DOCKER_IMAGE.name()));
-            run.setActualDockerImage(rs.getString(ACTUAL_DOCKER_IMAGE.name()));
-            run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
-            run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
-            run.setSensitive(rs.getBoolean(SENSITIVE.name()));
-            run.setKubeServiceEnabled(rs.getBoolean(KUBE_SERVICE_ENABLED.name()));
-            RunInstance instance = new RunInstance();
-            instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
-            instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));
-            instance.setNodeId(rs.getString(NODE_ID.name()));
-            instance.setNodeIP(rs.getString(NODE_IP.name()));
-            instance.setNodeType(rs.getString(NODE_TYPE.name()));
-            instance.setNodeImage(rs.getString(NODE_IMAGE.name()));
-            instance.setNodeName(rs.getString(NODE_NAME.name()));
-            instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));
-            instance.setCloudProvider(CloudProvider.valueOf(rs.getString(NODE_CLOUD_PROVIDER.name())));
-
-            boolean spot = rs.getBoolean(IS_SPOT.name());
-            if (!rs.wasNull()) {
-                instance.setSpot(spot);
-            }
-            if (!instance.isEmpty()) {
-                run.setInstance(instance);
-            }
-            run.setTimeout(rs.getLong(TIMEOUT.name()));
-            run.setServiceUrl(rs.getString(SERVICE_URL.name()));
-            Long parentRunId = rs.getLong(PARENT_ID.name());
-            if (!rs.wasNull()) {
-                run.setParentRunId(parentRunId);
-            }
-            run.parseParameters();
-            Array entitiesIdsArray = rs.getArray(ENTITIES_IDS.name());
-            if (entitiesIdsArray != null) {
-                List<Long> entitiesIds = Arrays.asList((Long[]) entitiesIdsArray.getArray());
-                run.setEntitiesIds(entitiesIds);
-            }
-            run.setConfigurationId(rs.getLong(CONFIGURATION_ID.name()));
-            run.setPodStatus(rs.getString(POD_STATUS.name()));
-
-            Timestamp lastNotificationTime = rs.getTimestamp(LAST_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                run.setLastNotificationTime(new Date(lastNotificationTime.getTime()));
-            }
-
-            Timestamp lastIdleNotifiactionTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                run.setLastIdleNotificationTime(lastIdleNotifiactionTime.toLocalDateTime()); // convert to UTC
-            }
-
-            Timestamp idleNotificationStartingTime = rs.getTimestamp(PROLONGED_AT_TIME.name());
-            if (!rs.wasNull()) {
-                run.setProlongedAtTime(idleNotificationStartingTime.toLocalDateTime());
-            }
-            run.setPrettyUrl(rs.getString(PRETTY_URL.name()));
-            run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
-            run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
-            run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
-            String stateReasonMessage = rs.getString(STATE_REASON.name());
-            if (!rs.wasNull()) {
-                run.setStateReasonMessage(stateReasonMessage);
-            }
-            boolean nonPause = rs.getBoolean(NON_PAUSE.name());
-            if (!rs.wasNull()) {
-                run.setNonPause(nonPause);
-            }
-            final String tagsJson = rs.getString(TAGS.name());
-            if (!rs.wasNull()) {
-                final Map<String, String> newTags =
-                    JsonMapper.parseData(tagsJson, new TypeReference<Map<String, String>>() {});
-                run.setTags(newTags);
-            }
-            return run;
-        }
-
-        static RowMapper<PipelineRun> getExtendedRowMapper() {
-            return getExtendedRowMapper(false);
-        }
-
-        static RowMapper<PipelineRun> getExtendedRowMapper(final boolean loadEnvVars) {
-            return (rs, rowNum) -> {
-                PipelineRun run = parsePipelineRun(rs);
-                run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
-                if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
-                    run.setQueued(rs.getBoolean(QUEUED.name()));
-                }
-                if (loadEnvVars) {
-                    run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
-                }
-                return run;
-            };
-        }
-
-        static RowMapper<String> getPasswordRowMapper() {
-            return (rs, rowNum) -> rs.getString(SSH_PASSWORD.name());
-        }
-
-        static MapSqlParameterSource[] getRunSidsParameters(Long runId, List<RunSid> runSids) {
-            MapSqlParameterSource[] sqlParameterSource = new MapSqlParameterSource[runSids.size()];
-            for (int i = 0; i < runSids.size(); i++) {
-                MapSqlParameterSource params = new MapSqlParameterSource();
-                params.addValue(RUN_ID.name(), runId);
-                final RunSid sid = runSids.get(i);
-                params.addValue(NAME.name(), sid.getName());
-                params.addValue(IS_PRINCIPAL.name(), sid.getIsPrincipal());
-                params.addValue(ACCESS_TYPE.name(), Optional.ofNullable(sid.getAccessType())
-                        .map(Enum::name)
-                        .orElse(DEFAULT_ACCESS_TYPE.name()));
-                sqlParameterSource[i] = params;
-            }
-            return sqlParameterSource;
-        }
-
-        static RowMapper<RunSid> getRunSidsRowMapper() {
-            return (rs, rowNum) -> {
-                RunSid runSid = new RunSid();
-                runSid.setRunId(rs.getLong(RUN_ID.name()));
-                runSid.setName(rs.getString(NAME.name()));
-                runSid.setIsPrincipal(rs.getBoolean(IS_PRINCIPAL.name()));
-                final String access = rs.getString(ACCESS_TYPE.name());
-                if (StringUtils.isBlank(access)) {
-                    runSid.setAccessType(DEFAULT_ACCESS_TYPE);
-                } else {
-                    runSid.setAccessType(RunAccessType.valueOf(access));
-                }
-                return runSid;
-            };
-        }
-
-        static RowMapper<Map<String, String>> getEnvVarsRowMapper() {
-            return (rs, rowNum) -> JsonMapper.parseData(rs.getString(ENV_VARS.name()),
-                    new TypeReference<Map<String, String>>() {});
-        }
+    @Required
+    public void setUpdateClusterPriceQuery(final String updateClusterPriceQuery) {
+        this.updateClusterPriceQuery = updateClusterPriceQuery;
     }
     private static Array mapListToSqlArray(List<Long> list, Connection connection) {
         Long[] emptyArray = new Long[0];
@@ -1216,5 +926,340 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsByNodeNameQuery(final String loadRunsByNodeNameQuery) {
         this.loadRunsByNodeNameQuery = loadRunsByNodeNameQuery;
+    }
+
+    @Required
+    public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
+        this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
+    }
+
+    public enum PipelineRunParameters {
+        RUN_ID,
+        PIPELINE_ID,
+        VERSION,
+        START_DATE,
+        END_DATE,
+        PARAMETERS,
+        PARENT_ID,
+        STATUS,
+        COMMIT_STATUS,
+        LAST_CHANGE_COMMIT_TIME,
+        TERMINATING,
+        POD_ID,
+        PIPELINE_NAME,
+        NODE_TYPE,
+        NODE_IP,
+        NODE_ID,
+        NODE_DISK,
+        NODE_IMAGE,
+        NODE_NAME,
+        NODE_CLOUD_REGION,
+        NODE_CLOUD_PROVIDER,
+        DOCKER_IMAGE,
+        ACTUAL_DOCKER_IMAGE,
+        CMD_TEMPLATE,
+        ACTUAL_CMD,
+        TIMEOUT,
+        OWNER,
+        SERVICE_URL,
+        PIPELINE_ALLOWED,
+        OWNERSHIP,
+        POD_IP,
+        SSH_PASSWORD,
+        CONFIG_NAME,
+        NODE_COUNT,
+        START_DATE_FROM,
+        END_DATE_TO,
+        INITIALIZATION_FINISHED,
+        TASK_NAME,
+        TASK_STATUS,
+        ENTITIES_IDS,
+        IS_SPOT,
+        CONFIGURATION_ID,
+        NAME,
+        IS_PRINCIPAL,
+        POD_STATUS,
+        ENV_VARS,
+        LAST_NOTIFICATION_TIME,
+        PROLONGED_AT_TIME,
+        LAST_IDLE_NOTIFICATION_TIME,
+        PROJECT_PIPELINES,
+        PROJECT_CONFIGS,
+        EXEC_PREFERENCES,
+        PRETTY_URL,
+        PRICE_PER_HOUR,
+        COMPUTE_PRICE_PER_HOUR,
+        DISK_PRICE_PER_HOUR,
+        STATE_REASON,
+        NON_PAUSE,
+        NODE_REAL_DISK,
+        QUEUED,
+        NODEUP_TASK,
+        ACCESS_TYPE,
+        TAGS,
+        SENSITIVE,
+        KUBE_SERVICE_ENABLED,
+        CLUSTER_PRICE;
+
+        public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
+
+        static MapSqlParameterSource getParameters(PipelineRun run, Connection connection) {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue(RUN_ID.name(), run.getId());
+            params.addValue(PIPELINE_NAME.name(), run.getPipelineName());
+            params.addValue(PIPELINE_ID.name(), run.getPipelineId());
+            params.addValue(VERSION.name(), run.getVersion());
+            params.addValue(START_DATE.name(), run.getStartDate());
+            params.addValue(END_DATE.name(), run.getEndDate());
+            params.addValue(PARAMETERS.name(), run.getParams());
+            params.addValue(STATUS.name(), run.getStatus().getId());
+            params.addValue(COMMIT_STATUS.name(), run.getCommitStatus().getId());
+            params.addValue(LAST_CHANGE_COMMIT_TIME.name(), run.getLastChangeCommitTime());
+            params.addValue(TERMINATING.name(), run.isTerminating());
+            params.addValue(POD_ID.name(), run.getPodId());
+            params.addValue(TIMEOUT.name(), run.getTimeout());
+            params.addValue(DOCKER_IMAGE.name(), run.getDockerImage());
+            params.addValue(ACTUAL_DOCKER_IMAGE.name(), run.getActualDockerImage());
+            params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
+            params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
+            params.addValue(OWNER.name(), run.getOwner());
+            params.addValue(SERVICE_URL.name(), run.getServiceUrl());
+            params.addValue(POD_IP.name(), run.getPodIP());
+            params.addValue(SSH_PASSWORD.name(), run.getSshPassword());
+            params.addValue(CONFIG_NAME.name(), run.getConfigName());
+            params.addValue(NODE_COUNT.name(), run.getNodeCount());
+            params.addValue(PARENT_ID.name(), run.getParentRunId());
+            params.addValue(ENTITIES_IDS.name(), mapListToSqlArray(run.getEntitiesIds(), connection));
+            params.addValue(CONFIGURATION_ID.name(), run.getConfigurationId());
+            params.addValue(POD_STATUS.name(), run.getPodStatus());
+            params.addValue(ENV_VARS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getEnvVars()));
+            params.addValue(PROLONGED_AT_TIME.name(), run.getProlongedAtTime());
+            params.addValue(LAST_NOTIFICATION_TIME.name(), run.getLastNotificationTime());
+            params.addValue(LAST_IDLE_NOTIFICATION_TIME.name(), run.getLastIdleNotificationTime());
+            params.addValue(EXEC_PREFERENCES.name(),
+                    JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
+            params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
+            params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
+            params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
+            params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
+            params.addValue(CLUSTER_PRICE.name(), run.getWorkersPrice());
+            params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
+            params.addValue(NON_PAUSE.name(), run.isNonPause());
+            params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
+            params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
+            params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
+            addInstanceFields(run, params);
+            return params;
+        }
+
+        private static void addInstanceFields(PipelineRun run, MapSqlParameterSource params) {
+            Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
+            params.addValue(NODE_TYPE.name(), instance.map(RunInstance::getNodeType).orElse(null));
+            params.addValue(NODE_IP.name(), instance.map(RunInstance::getNodeIP).orElse(null));
+            params.addValue(NODE_ID.name(), instance.map(RunInstance::getNodeId).orElse(null));
+            params.addValue(NODE_DISK.name(), instance.map(RunInstance::getNodeDisk).orElse(null));
+            params.addValue(NODE_IMAGE.name(), instance.map(RunInstance::getNodeImage).orElse(null));
+            params.addValue(NODE_NAME.name(), instance.map(RunInstance::getNodeName).orElse(null));
+            params.addValue(IS_SPOT.name(), instance.map(RunInstance::getSpot).orElse(null));
+            params.addValue(NODE_CLOUD_REGION.name(), instance.map(RunInstance::getCloudRegionId).orElse(null));
+            params.addValue(NODE_REAL_DISK.name(), instance.map(RunInstance::getEffectiveNodeDisk).orElse(null));
+            params.addValue(NODE_CLOUD_PROVIDER.name(),
+                    instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
+        }
+
+        static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
+            return (rs) -> {
+                Map<Long, PipelineRun> runs = new HashMap<>();
+                Map<Long, List<PipelineRun>> childRuns = new HashMap<>();
+                while (rs.next()) {
+                    PipelineRun run = parsePipelineRun(rs);
+                    run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+                    if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
+                        run.setQueued(rs.getBoolean(QUEUED.name()));
+                    }
+                    runs.put(run.getId(), run);
+                    if (run.getParentRunId() != null) {
+                        childRuns.putIfAbsent(run.getParentRunId(), new ArrayList<>());
+                        childRuns.get(run.getParentRunId()).add(run);
+                    }
+                }
+                runs.values().forEach(run -> {
+                    if (childRuns.containsKey(run.getId())) {
+                        List<PipelineRun> children = childRuns.get(run.getId());
+                        children.sort(getPipelineRunComparator());
+                        run.setChildRuns(children);
+                    }
+                });
+                return runs.values();
+            };
+        }
+
+
+        static RowMapper<PipelineRun> getRowMapper() {
+            return (rs, rowNum) -> parsePipelineRun(rs);
+        }
+
+        public static PipelineRun parsePipelineRun(ResultSet rs) throws SQLException {
+            PipelineRun run = new PipelineRun();
+            run.setId(rs.getLong(RUN_ID.name()));
+            long pipelineId = rs.getLong(PIPELINE_ID.name());
+            if (!rs.wasNull()) {
+                run.setPipelineId(pipelineId);
+                run.setParent(new Pipeline(pipelineId));
+            }
+            run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
+            run.setVersion(rs.getString(VERSION.name()));
+            run.setStartDate(new Date(rs.getTimestamp(START_DATE.name()).getTime()));
+            run.setParams(rs.getString(PARAMETERS.name()));
+            run.setStatus(TaskStatus.getById(rs.getLong(STATUS.name())));
+            run.setCommitStatus(CommitStatus.getById(rs.getLong(COMMIT_STATUS.name())));
+            run.setLastChangeCommitTime(new Date(rs.getTimestamp(LAST_CHANGE_COMMIT_TIME.name()).getTime()));
+            run.setTerminating(rs.getBoolean(TERMINATING.name()));
+            run.setPodId(rs.getString(POD_ID.name()));
+            run.setPodIP(rs.getString(POD_IP.name()));
+            run.setOwner(rs.getString(OWNER.name()));
+            run.setConfigName(rs.getString(CONFIG_NAME.name()));
+            run.setNodeCount(rs.getInt(NODE_COUNT.name()));
+            run.setExecutionPreferences(JsonMapper.parseData(rs.getString(EXEC_PREFERENCES.name()),
+                    new TypeReference<ExecutionPreferences>() {}));
+
+            Timestamp end = rs.getTimestamp(END_DATE.name());
+            if (!rs.wasNull()) {
+                run.setEndDate(new Date(end.getTime()));
+            }
+
+            run.setDockerImage(rs.getString(DOCKER_IMAGE.name()));
+            run.setActualDockerImage(rs.getString(ACTUAL_DOCKER_IMAGE.name()));
+            run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
+            run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
+            run.setSensitive(rs.getBoolean(SENSITIVE.name()));
+            run.setKubeServiceEnabled(rs.getBoolean(KUBE_SERVICE_ENABLED.name()));
+            RunInstance instance = new RunInstance();
+            instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
+            instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));
+            instance.setNodeId(rs.getString(NODE_ID.name()));
+            instance.setNodeIP(rs.getString(NODE_IP.name()));
+            instance.setNodeType(rs.getString(NODE_TYPE.name()));
+            instance.setNodeImage(rs.getString(NODE_IMAGE.name()));
+            instance.setNodeName(rs.getString(NODE_NAME.name()));
+            instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));
+            instance.setCloudProvider(CloudProvider.valueOf(rs.getString(NODE_CLOUD_PROVIDER.name())));
+
+            boolean spot = rs.getBoolean(IS_SPOT.name());
+            if (!rs.wasNull()) {
+                instance.setSpot(spot);
+            }
+            if (!instance.isEmpty()) {
+                run.setInstance(instance);
+            }
+            run.setTimeout(rs.getLong(TIMEOUT.name()));
+            run.setServiceUrl(rs.getString(SERVICE_URL.name()));
+            Long parentRunId = rs.getLong(PARENT_ID.name());
+            if (!rs.wasNull()) {
+                run.setParentRunId(parentRunId);
+            }
+            run.parseParameters();
+            Array entitiesIdsArray = rs.getArray(ENTITIES_IDS.name());
+            if (entitiesIdsArray != null) {
+                List<Long> entitiesIds = Arrays.asList((Long[]) entitiesIdsArray.getArray());
+                run.setEntitiesIds(entitiesIds);
+            }
+            run.setConfigurationId(rs.getLong(CONFIGURATION_ID.name()));
+            run.setPodStatus(rs.getString(POD_STATUS.name()));
+
+            Timestamp lastNotificationTime = rs.getTimestamp(LAST_NOTIFICATION_TIME.name());
+            if (!rs.wasNull()) {
+                run.setLastNotificationTime(new Date(lastNotificationTime.getTime()));
+            }
+
+            Timestamp lastIdleNotifiactionTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
+            if (!rs.wasNull()) {
+                run.setLastIdleNotificationTime(lastIdleNotifiactionTime.toLocalDateTime()); // convert to UTC
+            }
+
+            Timestamp idleNotificationStartingTime = rs.getTimestamp(PROLONGED_AT_TIME.name());
+            if (!rs.wasNull()) {
+                run.setProlongedAtTime(idleNotificationStartingTime.toLocalDateTime());
+            }
+            run.setPrettyUrl(rs.getString(PRETTY_URL.name()));
+            run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
+            run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
+            run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
+            run.setWorkersPrice(rs.getBigDecimal(CLUSTER_PRICE.name()));
+            String stateReasonMessage = rs.getString(STATE_REASON.name());
+            if (!rs.wasNull()) {
+                run.setStateReasonMessage(stateReasonMessage);
+            }
+            boolean nonPause = rs.getBoolean(NON_PAUSE.name());
+            if (!rs.wasNull()) {
+                run.setNonPause(nonPause);
+            }
+            final String tagsJson = rs.getString(TAGS.name());
+            if (!rs.wasNull()) {
+                final Map<String, String> newTags =
+                    JsonMapper.parseData(tagsJson, new TypeReference<Map<String, String>>() {});
+                run.setTags(newTags);
+            }
+            return run;
+        }
+
+        static RowMapper<PipelineRun> getExtendedRowMapper() {
+            return getExtendedRowMapper(false);
+        }
+
+        static RowMapper<PipelineRun> getExtendedRowMapper(final boolean loadEnvVars) {
+            return (rs, rowNum) -> {
+                PipelineRun run = parsePipelineRun(rs);
+                run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+                if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
+                    run.setQueued(rs.getBoolean(QUEUED.name()));
+                }
+                if (loadEnvVars) {
+                    run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
+                }
+                return run;
+            };
+        }
+
+        static RowMapper<String> getPasswordRowMapper() {
+            return (rs, rowNum) -> rs.getString(SSH_PASSWORD.name());
+        }
+
+        static MapSqlParameterSource[] getRunSidsParameters(Long runId, List<RunSid> runSids) {
+            MapSqlParameterSource[] sqlParameterSource = new MapSqlParameterSource[runSids.size()];
+            for (int i = 0; i < runSids.size(); i++) {
+                MapSqlParameterSource params = new MapSqlParameterSource();
+                params.addValue(RUN_ID.name(), runId);
+                final RunSid sid = runSids.get(i);
+                params.addValue(NAME.name(), sid.getName());
+                params.addValue(IS_PRINCIPAL.name(), sid.getIsPrincipal());
+                params.addValue(ACCESS_TYPE.name(), Optional.ofNullable(sid.getAccessType())
+                        .map(Enum::name)
+                        .orElse(DEFAULT_ACCESS_TYPE.name()));
+                sqlParameterSource[i] = params;
+            }
+            return sqlParameterSource;
+        }
+
+        static RowMapper<RunSid> getRunSidsRowMapper() {
+            return (rs, rowNum) -> {
+                RunSid runSid = new RunSid();
+                runSid.setRunId(rs.getLong(RUN_ID.name()));
+                runSid.setName(rs.getString(NAME.name()));
+                runSid.setIsPrincipal(rs.getBoolean(IS_PRINCIPAL.name()));
+                final String access = rs.getString(ACCESS_TYPE.name());
+                if (StringUtils.isBlank(access)) {
+                    runSid.setAccessType(DEFAULT_ACCESS_TYPE);
+                } else {
+                    runSid.setAccessType(RunAccessType.valueOf(access));
+                }
+                return runSid;
+            };
+        }
+
+        static RowMapper<Map<String, String>> getEnvVarsRowMapper() {
+            return (rs, rowNum) -> JsonMapper.parseData(rs.getString(ENV_VARS.name()),
+                    new TypeReference<Map<String, String>>() {});
+        }
     }
 }
