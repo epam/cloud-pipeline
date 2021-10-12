@@ -1325,8 +1325,10 @@ echo
 ######################################################
 
 
+######################################################
 echo "Setting up Gitlab credentials"
-
+echo "-"
+######################################################
 set_git_credentials
 
 _GIT_CREDS_RESULT=$?
@@ -1336,21 +1338,6 @@ then
     echo "Failed to get user's Gitlab credentials"
 fi
 echo "------"
-
-######################################################
-echo Checking if remote data storages shall be mounted
-echo "------"
-######################################################
-MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
-DATA_STORAGE_MOUNT_ROOT="/cloud-data"
-
-echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
-rm -Rf $DATA_STORAGE_MOUNT_ROOT
-create_sys_dir $DATA_STORAGE_MOUNT_ROOT
-mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
-
-echo "------"
-echo
 ######################################################
 
 MOUNT_GIT_TASK_NAME="MountRepository"
@@ -1470,6 +1457,23 @@ do
 done
 
 echo "Finished setting environment variables to /etc/profile"
+
+echo "------"
+echo
+######################################################
+
+
+######################################################
+echo "Checking if remote data storages shall be mounted"
+echo "------"
+######################################################
+MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
+DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
+
+echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
+rm -Rf $DATA_STORAGE_MOUNT_ROOT
+create_sys_dir $DATA_STORAGE_MOUNT_ROOT
+mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
 
 echo "------"
 echo
