@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import base64
 import collections
 import itertools
 import logging
@@ -91,26 +90,43 @@ class PasswordlessSSHConfig:
 
 class TunnelArgs:
 
-    def __init__(self, parsed_args):
-        self.host_id = parsed_args.get('host_id')
-        self.local_port = parsed_args.get('local_port')
-        self.remote_port = parsed_args.get('remote_port')
-        self.ssh = parsed_args.get('ssh')
-        self.ssh_path = parsed_args.get('ssh_path')
-        self.ssh_host = parsed_args.get('ssh_host')
-        self.direct = parsed_args.get('direct')
-        self.run_id = parse_run_identifier(self.host_id)
-        self.conn_info = get_conn_info(self.run_id) if self.run_id \
-            else get_custom_conn_info(self.host_id)
-        self.remote_host = self.ssh_host or 'pipeline-{}'.format(self.host_id)
+    def __init__(self, host_id=None, local_ports=None, remote_ports=None,
+                 ssh=None, ssh_path=None, ssh_host=None,
+                 direct=None):
+        self.host_id = str(host_id)
+        self.local_ports = local_ports
+        self.remote_ports = remote_ports
+        if not self.local_ports:
+            self.local_ports = self.remote_ports
+        if not self.remote_ports:
+            self.remote_ports = self.local_ports
+        self.ssh = ssh
+        self.ssh_path = str(ssh_path)
+        self.ssh_host = str(ssh_host)
+        self.direct = direct
 
-    def equals(self, host_id, remote_port, ssh, ssh_path, ssh_host, direct):
-        return (str(host_id) == str(self.host_id)) \
-               & (str(remote_port) == str(self.remote_port)) \
-               & (ssh == self.ssh) \
-               & (str(ssh_path) == str(self.ssh_path)) \
-               & (str(ssh_host) == str(self.ssh_host)) \
-               & (direct == self.direct)
+    @staticmethod
+    def from_args(parsed_args):
+        return TunnelArgs(
+            host_id=parsed_args.get('host_id'),
+            local_ports=parse_ports(parsed_args.get('local_port')),
+            remote_ports=parse_ports(parsed_args.get('remote_port')),
+            ssh=parsed_args.get('ssh'),
+            ssh_path=parsed_args.get('ssh_path'),
+            ssh_host=parsed_args.get('ssh_host'),
+            direct=parsed_args.get('direct'),
+        )
+
+    def compare(self, existing_tunnel_args):
+        for public_field in list(self.__dict__):
+            creating_tunnel_value = getattr(self, public_field)
+            existing_tunnel_value = getattr(existing_tunnel_args, public_field)
+            if creating_tunnel_value != existing_tunnel_value:
+                logging.debug('The existing tunnel process has different %s configuration '
+                              'in comparison with the creating tunnel process. Existing: %s. Creating: %s.',
+                              public_field, existing_tunnel_value, creating_tunnel_value)
+                return False
+        return True
 
 
 def setup_paramiko_logging():
@@ -370,47 +386,88 @@ def parse_scp_location(location):
     return location_parts[0], None
 
 
-def create_tunnel(host_id, local_port, remote_port, connection_timeout,
+def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different,
                   retries, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
-    check_existing_tunnels(host_id, local_port, remote_port,
+    if not local_ports_str and not remote_ports_str:
+        raise RuntimeError('Either --lp/--local-port or --rp/--remote-port option should be specified.')
+    local_ports = parse_ports(local_ports_str)
+    remote_ports = parse_ports(remote_ports_str)
+    if not local_ports and not remote_ports:
+        raise RuntimeError('Either a single port (4567) or a range of ports (4567-4569) '
+                           'can be specified using -lp/--local-port and -rp/--remote-port options.')
+    local_ports = local_ports or remote_ports
+    remote_ports = remote_ports or local_ports
+    if len(local_ports) != len(remote_ports):
+        raise RuntimeError('The number of local ({}) and remote ({}) ports should be the same.'
+                           .format(len(local_ports), len(remote_ports)))
+    if len(local_ports) > 1 and ssh:
+        raise RuntimeError('A single port can be specified using -lp/--local-port and -rp/--remote-port options '
+                           'if -s/--ssh option is used.')
+    run_id = parse_run_identifier(host_id)
+    if not run_id and ssh:
+        raise RuntimeError('Option -s/--ssh can be used only for run tunnels.')
+    check_existing_tunnels(host_id, local_ports, remote_ports,
                            ssh, ssh_path, ssh_host, direct, log_file, timeout_stop,
                            keep_existing, keep_same, replace_existing, replace_different,
                            retries, parse_tunnel_args)
     run_id = parse_run_identifier(host_id)
     if run_id:
-        create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
+        create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
                              ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                              timeout, foreground, retries)
     else:
-        if ssh:
-            raise RuntimeError('Passwordless SSH tunnel connections are allowed to runs only.')
-        create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
+        create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
                               direct, log_file, log_level,
                               timeout, foreground, retries)
 
 
-def check_existing_tunnels(host_id, local_port, remote_port,
+def parse_ports(port_str):
+    if not port_str:
+        return []
+    if isinstance(port_str, int):
+        return [port_str]
+    import re
+    match = re.search('^(\\d+)$', port_str)
+    if match:
+        return [int(match.group(1))]
+    match = re.search('^(\\d+)-(\\d+)$', port_str)
+    if match:
+        min_and_max_ports = sorted([int(match.group(1)), int(match.group(2))])
+        return range(*[min_and_max_ports[0], min_and_max_ports[1] + 1])
+    return []
+
+
+def check_existing_tunnels(host_id, local_ports, remote_ports,
                            ssh, ssh_path, ssh_host, direct, log_file, timeout_stop,
                            keep_existing, keep_same, replace_existing, replace_different,
                            retries, parse_tunnel_args):
-    for tunnel_proc in find_tunnel_procs(run_id=None, local_port=local_port):
-        logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
-        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, local_port, timeout_stop,
+    for tunnel_proc in find_tunnel_procs(run_id=None, local_ports=local_ports):
+        logging.info('Process with pid %s was found (%s).', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, timeout_stop,
                                                   replace_different, replace_existing,
                                                   parse_tunnel_args)
         if not proc_parsed_args:
             return
-        tunnel_args = TunnelArgs(proc_parsed_args)
-        is_same_tunnel = tunnel_args.equals(host_id, remote_port, ssh, ssh_path, ssh_host, direct)
+        existing_tunnel = TunnelArgs.from_args(proc_parsed_args)
+        creating_tunnel = TunnelArgs(host_id=host_id, local_ports=local_ports, remote_ports=remote_ports,
+                                     ssh=ssh, ssh_path=ssh_path, ssh_host=ssh_host, direct=direct)
+        logging.info('Comparing the existing tunnel process with the current process...')
+        is_same_tunnel = creating_tunnel.compare(existing_tunnel)
+        existing_tunnel_run_id = parse_run_identifier(existing_tunnel.host_id)
+        existing_tunnel_conn_info = get_conn_info(existing_tunnel_run_id) if existing_tunnel_run_id \
+            else get_custom_conn_info(existing_tunnel.host_id)
+        existing_tunnel_remote_host = existing_tunnel.ssh_host \
+                                      or 'pipeline-{}'.format(existing_tunnel.host_id)
         if keep_existing:
             logging.info('Skipping tunnel establishing since the tunnel already exists...')
-            if tunnel_args.ssh and has_different_owner(tunnel_proc):
-                configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
-                              tunnel_args.conn_info, tunnel_args.ssh_path, tunnel_args.remote_host,
+            if existing_tunnel.ssh and has_different_owner(tunnel_proc):
+                configure_ssh(existing_tunnel.host_id,
+                              existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
+                              existing_tunnel_conn_info, existing_tunnel.ssh_path, existing_tunnel_remote_host,
                               log_file, retries)
             sys.exit(0)
         if replace_existing:
@@ -419,20 +476,21 @@ def check_existing_tunnels(host_id, local_port, remote_port,
             return
         if is_same_tunnel and keep_same:
             logging.info('Skipping tunnel establishing since the same tunnel already exists...')
-            if tunnel_args.ssh and has_different_owner(tunnel_proc):
-                configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
-                              tunnel_args.conn_info, tunnel_args.ssh_path, tunnel_args.remote_host,
+            if existing_tunnel.ssh and has_different_owner(tunnel_proc):
+                configure_ssh(existing_tunnel.host_id,
+                              existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
+                              existing_tunnel_conn_info, existing_tunnel.ssh_path, existing_tunnel_remote_host,
                               log_file, retries)
             sys.exit(0)
         if not is_same_tunnel and replace_different:
             logging.info('Stopping existing tunnel since it has a different configuration...')
             kill_process(tunnel_proc, timeout_stop)
             return
-        raise RuntimeError('{} tunnel already exists on the same local port'
+        raise RuntimeError('{} tunnel already exists on the same local port.'
                            .format('Same' if is_same_tunnel else 'Different'))
 
 
-def parse_tunnel_proc_args(proc, local_port, timeout_stop,
+def parse_tunnel_proc_args(proc, timeout_stop,
                            replace_different, replace_existing,
                            parse_start_tunnel_arguments):
     try:
@@ -446,8 +504,8 @@ def parse_tunnel_proc_args(proc, local_port, timeout_stop,
             kill_process(proc, timeout_stop)
         else:
             raise RuntimeError('Existing tunnel process arguments parsing has failed. '
-                               'Use the following command to stop the existing tunnel and then try again: \n\n'
-                               'pipe tunnel stop -lp {}'.format(local_port))
+                               'Use the following command to stop all existing tunnels and then try again: \n\n'
+                               'pipe tunnel stop')
     return {}
 
 
@@ -480,38 +538,42 @@ def get_flag_value(proc_args, arg_index, arg_names):
     return proc_args[arg_index] in arg_names
 
 
-def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
+def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
                          ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                          timeout, foreground, retries):
     conn_info = get_conn_info(run_id)
     if conn_info.sensitive:
-        raise RuntimeError('Tunnel connections to sensitive runs are not allowed.')
+        raise RuntimeError('Tunnel connections are only allowed to non sensitive runs.')
     remote_host = ssh_host or 'pipeline-{}'.format(run_id)
     if foreground:
         if ssh:
-            create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
+            create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                               ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries)
         else:
-            create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
+            create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                      remote_host, direct, log_level, retries)
     else:
-        create_background_tunnel(local_port, remote_port, remote_host, log_file, log_level, timeout)
+        create_background_tunnel(local_ports, remote_ports, remote_host, log_file, log_level, timeout)
 
 
-def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
+def create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
                           direct, log_file, log_level,
                           timeout, foreground, retries):
     if foreground:
         conn_info = get_custom_conn_info(host_id)
-        create_foreground_tunnel(host_id, local_port, remote_port, connection_timeout, conn_info,
+        create_foreground_tunnel(host_id, local_ports, remote_ports, connection_timeout, conn_info,
                                  host_id, direct, log_level, retries)
     else:
-        create_background_tunnel(local_port, remote_port, host_id, log_file, log_level, timeout)
+        create_background_tunnel(local_ports, remote_ports, host_id, log_file, log_level, timeout)
 
 
-def create_background_tunnel(local_port, remote_port, remote_host, log_file, log_level, timeout):
+def create_background_tunnel(local_ports, remote_ports, remote_host, log_file, log_level, timeout):
     import subprocess
-    logging.info('Launching background tunnel %s:%s:%s...', local_port, remote_host, remote_port)
+    if len(local_ports) > 1:
+        logging.info('Launching background tunnel %s-%s:%s:%s-%s...',
+                     local_ports[0], local_ports[-1], remote_host, remote_ports[0], remote_ports[-1])
+    else:
+        logging.info('Launching background tunnel %s:%s:%s...', local_ports[0], remote_host, remote_ports[0])
     with open(log_file or os.devnull, 'w') as output:
         if is_windows():
             # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
@@ -529,21 +591,22 @@ def create_background_tunnel(local_port, remote_port, remote_host, log_file, log
                                        cwd=os.getcwd(), env=os.environ.copy(), creationflags=creationflags)
         if stdin:
             os.close(stdin)
-        wait_for_background_tunnel(tunnel_proc, local_port, timeout)
+        wait_for_background_tunnel(tunnel_proc, local_ports, timeout)
 
 
-def wait_for_background_tunnel(tunnel_proc, local_port, timeout, polling_delay=1):
+def wait_for_background_tunnel(tunnel_proc, local_ports, timeout, polling_delay=1):
     attempts = int(timeout / polling_delay)
     is_tunnel_ready = is_tunnel_ready_on_lin
     is_tunnel_ready = is_tunnel_ready_on_mac if is_mac() else is_tunnel_ready
     is_tunnel_ready = is_tunnel_ready_on_win if is_windows() else is_tunnel_ready
+    logging.debug('Waiting for tunnel process %s to listen on all the required ports...', tunnel_proc.pid)
     while attempts > 0:
         time.sleep(polling_delay)
         if tunnel_proc.poll() is not None:
             raise RuntimeError('Failed to serve tunnel in background. '
                                'Tunnel exited with return code {}.'
                                .format(tunnel_proc.returncode))
-        if is_tunnel_ready(tunnel_proc.pid, local_port):
+        if is_tunnel_ready(tunnel_proc.pid, local_ports):
             logging.info('Background tunnel is initialized. Exiting...')
             return
         logging.debug('Background tunnel is not initialized yet. '
@@ -554,63 +617,83 @@ def wait_for_background_tunnel(tunnel_proc, local_port, timeout, polling_delay=1
                        .format(timeout))
 
 
-def is_tunnel_ready_on_mac(tunnel_pid, local_port):
+def is_tunnel_ready_on_mac(tunnel_pid, local_ports):
+    listening_pids = list(get_listening_pids_on_mac(local_ports))
+    return is_tunnel_listen_all_ports(tunnel_pid, local_ports, listening_pids)
+
+
+def get_listening_pids_on_mac(local_ports):
     # psutil.net_connections() is not allowed to a regular user on mac
-    listening_pid = clean_tunnel_pid(perform_command(['lsof', '-t', '-i', 'TCP:' + str(local_port), '-s', 'TCP:LISTEN'],
-                                                     fail_on_error=False))
-    # In MacOS the "listening_pid" will be a child of "tunnel_pid" (which is a pyinstaller bootloader)
-    # So we need to check that listening_pid's parent is a tunnel_pid
-    listening_parent_pid = clean_tunnel_pid(perform_command(['ps', '-o', 'ppid=', '-p', listening_pid],
-                                                            fail_on_error=False))
-    logging.debug('Waiting for tunnel PID {}, got PID {} listening on port {} with parent PID {}'
-                  .format(tunnel_pid, listening_pid, local_port, listening_parent_pid))
-    return listening_pid and \
-           listening_parent_pid and \
-           (int(listening_pid) == tunnel_pid or int(listening_parent_pid) == tunnel_pid)
+    for local_port in local_ports:
+        listening_pid = get_trimmed_digit_str(perform_command(['lsof', '-t',
+                                                               '-i', 'TCP:' + str(local_port),
+                                                               '-s', 'TCP:LISTEN'],
+                                                              fail_on_error=False))
+        if listening_pid:
+            yield listening_pid
 
 
-def clean_tunnel_pid(pid):
-    return pid.strip() if pid and pid.strip().isdigit() else ''
+def get_trimmed_digit_str(digit_str):
+    return int(digit_str.strip()) if digit_str and digit_str.strip().isdigit() else None
 
 
-def is_tunnel_ready_on_lin(tunnel_pid, local_port):
-    listening_pid = get_listening_pid_on_lin_and_win(local_port)
-    listening_parent_pid = get_parent_pid_on_lin_and_win(listening_pid)
-    logging.debug('Waiting for tunnel PID {}, got PID {} listening on port {} with parent PID {}'
-                  .format(tunnel_pid, listening_pid, local_port, listening_parent_pid))
-    return listening_pid and \
-           listening_parent_pid and \
-           (listening_pid == tunnel_pid or listening_parent_pid == tunnel_pid)
+def is_tunnel_ready_on_lin(tunnel_pid, local_ports):
+    listening_pids = list(get_listening_pids_on_lin_and_win(local_ports))
+    return is_tunnel_listen_all_ports(tunnel_pid, local_ports, listening_pids)
 
 
-def get_listening_pid_on_lin_and_win(local_port):
+def is_tunnel_ready_on_win(tunnel_pid, local_ports):
+    listening_pids = list(get_listening_pids_on_lin_and_win(local_ports))
+    listening_pid = get_single_listening_pid(local_ports, listening_pids)
+    if not listening_pid:
+        return False
+    logging.debug('Found a process %s that listens all required ports.', listening_pid)
+    return listening_pid == tunnel_pid
+
+
+def get_listening_pids_on_lin_and_win(local_ports):
     import psutil
     for net_connection in psutil.net_connections():
-        if net_connection.laddr and net_connection.laddr.port == local_port:
-            return net_connection.pid
-    return 0
+        if net_connection.laddr and net_connection.laddr.port in local_ports:
+            yield net_connection.pid
 
 
-def get_parent_pid_on_lin_and_win(pid):
+def is_tunnel_listen_all_ports(tunnel_pid, local_ports, listening_pids):
+    listening_pid = get_single_listening_pid(local_ports, listening_pids)
+    if not listening_pid:
+        return False
+    listening_parent_pid = get_parent_pid(listening_pid)
+    logging.debug('Found a process %s and its parent %s that listen all required ports.',
+                  listening_pid, listening_parent_pid or '-')
+    return tunnel_pid in [listening_pid, listening_parent_pid]
+
+
+def get_single_listening_pid(local_ports, listening_pids):
+    if len(listening_pids) != len(local_ports):
+        logging.debug('Waiting for all required ports (%s/%s) to be listened...', len(listening_pids), len(local_ports))
+        return None
+    if len(set(listening_pids)) != 1:
+        logging.debug('Waiting for a single process to listen all required ports...')
+        return None
+    return listening_pids[0]
+
+
+def get_parent_pid(pid):
     import psutil
     return psutil.Process(pid).ppid() if pid else 0
 
 
-def is_tunnel_ready_on_win(tunnel_pid, local_port):
-    return get_listening_pid_on_lin_and_win(local_port) == tunnel_pid
-
-
-def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
+def create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                       ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
     def _establish_tunnel():
-        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
+        create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                  remote_host, direct, log_level, retries)
     if is_windows():
-        configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
+        configure_ssh_and_execute_on_windows(run_id, local_ports[0], remote_ports[0], conn_info,
                                              ssh_keep, remote_host,
                                              retries, _establish_tunnel)
     else:
-        configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
+        configure_ssh_and_execute_on_linux(run_id, local_ports[0], remote_ports[0], conn_info,
                                            ssh_path, ssh_keep, remote_host, log_file,
                                            retries, _establish_tunnel)
 
@@ -678,40 +761,48 @@ def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_inf
                             passwordless_config.local_private_key_path)
 
 
-def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
+def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                              remote_host, direct, log_level, retries,
                              chunk_size=4096, server_delay=0.0001):
-    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
-                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
-    target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
-                       remote_port)
-    server_address = os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0')
-    logging.info('Initializing tunnel %s:%s:%s...', local_port, remote_host, remote_port)
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((server_address, local_port))
-    server_socket.listen(5)
+    if len(local_ports) > 1:
+        logging.info('Initializing tunnel %s-%s:%s:%s-%s...',
+                     local_ports[0], local_ports[-1], remote_host, remote_ports[0], remote_ports[-1])
+    else:
+        logging.info('Initializing tunnel %s:%s:%s...', local_ports[0], remote_host, remote_ports[0])
     inputs = []
     channel = {}
-    configure_graceful_exiting()
-    logging.info('Serving tunnel...')
     try:
-        inputs.append(server_socket)
+        for server_socket in serve_local_ports(local_ports):
+            inputs.append(server_socket)
+        server_sockets = set(list(inputs))
+        server_local_ports = dict(zip(inputs, local_ports))
+        server_remote_ports = dict(zip(inputs, remote_ports))
+        configure_graceful_exiting()
+        logging.info('Serving tunnel...')
         while True:
             time.sleep(server_delay)
             logging.info('Waiting for connections...')
             inputs_ready, _, _ = select.select(inputs, [], [])
             for input in inputs_ready:
-                if input == server_socket:
+                if input in server_sockets:
+                    local_port = server_local_ports[input]
+                    remote_port = server_remote_ports[input]
+                    target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
+                    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
+                                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
                     try:
-                        logging.info('Initializing client connection...')
-                        client_socket, address = server_socket.accept()
+                        logging.info('Initializing client connection %s:%s:%s...',
+                                     local_port, remote_host, remote_port)
+                        client_socket, address = input.accept()
                     except KeyboardInterrupt:
                         raise
                     except:
-                        logging.exception('Cannot establish client connection')
+                        logging.exception('Cannot establish client connection %s:%s:%s.',
+                                          local_port, remote_host, remote_port)
                         break
                     try:
-                        logging.info('Initializing tunnel connection...')
+                        logging.info('Initializing tunnel connection %s:%s:%s...',
+                                     local_port, remote_host, remote_port)
                         if direct:
                             tunnel_socket = direct_connect(target_endpoint,
                                                            timeout=connection_timeout,
@@ -723,7 +814,8 @@ def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout
                     except KeyboardInterrupt:
                         raise
                     except:
-                        logging.exception('Cannot establish tunnel connection')
+                        logging.exception('Cannot establish tunnel connection %s:%s:%s.',
+                                          local_port, remote_host, remote_port)
                         client_socket.close()
                         break
                     inputs.append(client_socket)
@@ -752,23 +844,32 @@ def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout
                         logging.exception('Cannot write data to socket')
                 if not read_data or not sent_data:
                     logging.info('Closing client and tunnel connections...')
-                    out = channel[input]
+                    output = channel[input]
                     inputs.remove(input)
-                    inputs.remove(out)
-                    channel[out].close()
+                    inputs.remove(output)
+                    channel[output].close()
                     channel[input].close()
-                    del channel[out]
+                    del channel[output]
                     del channel[input]
                     break
     except KeyboardInterrupt:
         logging.info('Interrupted...')
     except:
         logging.exception('Errored...')
+        raise
     finally:
         logging.info('Closing all sockets...')
         for input in inputs:
             input.close()
         logging.info('Exiting...')
+
+
+def serve_local_ports(local_ports):
+    for local_port in local_ports:
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0'), local_port))
+        server_socket.listen(5)
+        yield server_socket
 
 
 def configure_graceful_exiting():
@@ -1072,18 +1173,23 @@ def perform_command(executable, log_file=None, collect_output=True, fail_on_erro
         return out
 
 
-def kill_tunnels(run_id=None, local_port=None, timeout=None, force=False, log_level=None):
+def kill_tunnels(run_id=None, local_ports_str=None, timeout=None, force=False, log_level=None):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
-    for tunnel_proc in find_tunnel_procs(run_id, local_port):
+    local_ports = parse_ports(local_ports_str)
+    if local_ports_str and not local_ports:
+        raise RuntimeError('Either a single port (4567) or a range of ports (4567-4569) '
+                           'can be specified using -lp/--local-port option.')
+    for tunnel_proc in find_tunnel_procs(run_id, local_ports):
         logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
         logging.info('Killing the process...')
         kill_process(tunnel_proc, timeout / 1000, force)
 
 
-def find_tunnel_procs(run_id=None, local_port=None):
+def find_tunnel_procs(run_id=None, local_ports=None):
     import psutil
     logging.info('Searching for pipe tunnel processes...')
     current_pids = get_current_pids()
+    local_ports_set = set(local_ports) if local_ports else set()
     for proc in psutil.process_iter():
         if proc.pid in current_pids:
             continue
@@ -1098,12 +1204,14 @@ def find_tunnel_procs(run_id=None, local_port=None):
         if not all(required_arg in proc_args
                    for required_arg in (TUNNEL_REQUIRED_ARGS + ([str(run_id)] if run_id else []))):
             continue
-        if local_port:
-            for i in range(len(proc_args)):
-                if proc_args[i] in TUNNEL_LOCAL_PORT_ARGS and proc_args[i + 1] == str(local_port):
-                    yield proc
-        else:
+        if not local_ports_set:
             yield proc
+        for i in range(len(proc_args)):
+            if proc_args[i] not in TUNNEL_LOCAL_PORT_ARGS:
+                continue
+            proc_local_ports = parse_ports(proc_args[i + 1])
+            if any(proc_local_port in local_ports_set for proc_local_port in proc_local_ports):
+                yield proc
 
 
 def get_current_pids():
