@@ -135,8 +135,8 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
 
             UserContext userContext = new UserContext(loadedUser);
             userContext.setExternal(endpoint.isExternal());
-            SecurityContextHolder.getContext().setAuthentication(new SAMLProxyAuthentication(
-                samlResponse, parsedResponse, userContext));
+            SecurityContextHolder.getContext()
+                    .setAuthentication(new SAMLProxyAuthentication(samlResponse, userContext));
         }
     }
 
