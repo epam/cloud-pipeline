@@ -314,7 +314,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         clearFiltersIfNeeded(systemLogsAO);
         return impersonateMode()
                 ? systemLogsAO.getInfoRow(
-                        format("Successful impersonation action: %s, user: %s", action, account.login), account.login,
+                        format("Successful impersonation action: %s, user: %s", action, account.login.toUpperCase()), account.login,
                         TYPE)
                 : systemLogsAO.filterByUser(account.login).getInfoRow(message, account.login, TYPE);
     }
