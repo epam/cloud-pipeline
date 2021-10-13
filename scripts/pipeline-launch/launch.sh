@@ -600,6 +600,12 @@ root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
 EOT
+    if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
+        # On centos this configuration file contains some default nproc limits
+        # which overrides the ones we set in /etc/security/limits.conf.
+        # To prevent this from happening we remove the limits beforehand.
+        sed -i "\|nproc|d" "/etc/security/limits.d/20-nproc.conf"
+    fi
 }
 
 function add_self_to_no_proxy() {
@@ -1480,8 +1486,8 @@ echo "$_CP_ENV_SOURCE_COMMAND" >> /etc/profile
 sed -i "\|$_CP_ENV_SUDO_ALIAS|d" /etc/profile
 echo "$_CP_ENV_SUDO_ALIAS" >> /etc/profile
 
+# All ulimits are configured in update_user_limits procedure
 sed -i "\|ulimit|d" /etc/profile
-echo "$_CP_ENV_ULIMIT" >> /etc/profile
 
 # umask may be present in the existing file, so we are replacing it the updated value
 sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
@@ -1508,8 +1514,8 @@ do
     sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
 
+    # All ulimits are configured in update_user_limits procedure
     sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
-    sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
 
     sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
