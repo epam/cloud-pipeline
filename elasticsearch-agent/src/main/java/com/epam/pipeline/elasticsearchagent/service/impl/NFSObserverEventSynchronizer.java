@@ -114,6 +114,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
+        log.debug("Started NFS events synchronization");
         final Map<String, AbstractDataStorage> storagePathMapping = getCloudPipelineAPIClient().loadAllDataStorages()
             .stream()
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
