@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,54 +16,41 @@
 
 package com.epam.pipeline.external.datastorage.manager.datastorage;
 
-import com.epam.pipeline.external.datastorage.app.JsonMapper;
 import com.epam.pipeline.external.datastorage.entity.datastorage.DataStorage;
 import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTemporaryCredentials;
 import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
-import com.epam.pipeline.external.datastorage.entity.item.*;
+import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
+import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
+import com.epam.pipeline.external.datastorage.entity.item.UpdateDataStorageItemVO;
+import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
 import com.epam.pipeline.external.datastorage.manager.auth.PipelineAuthManager;
 import com.epam.pipeline.external.datastorage.manager.QueryUtils;
-import okhttp3.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class DataStorageManager {
-
     private final PipelineAuthManager pipelineAuthManager;
-    private PipelineDataStorageClient storageClient;
+    private final PipelineDataStorageClient storageClient;
 
-
-    @Autowired
-    public DataStorageManager(@Value("${pipeline.api.base.url}") String pipelineBaseUrl,
-                              @Value("${pipeline.client.connect.timeout}") long connectTimeout,
-                              @Value("${pipeline.client.read.timeout}") long readTimeout,
-                              PipelineAuthManager pipelineAuthManager) {
-
+    public DataStorageManager(@Value("${pipeline.api.base.url}") final String pipelineBaseUrl,
+                              @Value("${pipeline.client.connect.timeout}") final long connectTimeout,
+                              @Value("${pipeline.client.read.timeout}") final long readTimeout,
+                              final PipelineAuthManager pipelineAuthManager) {
         this.pipelineAuthManager = pipelineAuthManager;
-        OkHttpClient client = new OkHttpClient.Builder()
-                .readTimeout(readTimeout, TimeUnit.SECONDS)
-                .connectTimeout(connectTimeout, TimeUnit.SECONDS)
-                .hostnameVerifier((s, sslSession) -> true)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(pipelineBaseUrl)
-                .addConverterFactory(JacksonConverterFactory.create(new JsonMapper()))
-                .client(client)
-                .build();
-
-        storageClient = retrofit.create(PipelineDataStorageClient.class);
+        final Retrofit retrofit = new CloudPipelineApiBuilder(connectTimeout, readTimeout, pipelineBaseUrl)
+                .buildClient();
+        this.storageClient = retrofit.create(PipelineDataStorageClient.class);
     }
 
     public DataStorage loadStorage(long storageId) {

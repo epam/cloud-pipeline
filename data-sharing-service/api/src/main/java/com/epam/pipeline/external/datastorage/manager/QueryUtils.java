@@ -30,7 +30,7 @@ public final class QueryUtils {
 
     public static <T> T execute(Call<Result<T>> call) {
         try {
-            Response<Result<T>> response =call.execute();
+            Response<Result<T>> response = call.execute();
 
             if (response.isSuccessful() && response.body().getStatus() == ResultStatus.OK) {
                 return response.body().getPayload();
