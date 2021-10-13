@@ -1565,6 +1565,8 @@ def start_tunnel_arguments(start_tunnel_command):
                   help='Path to .ssh directory for passwordless ssh configuration on Linux.')
     @click.option('-sh', '--ssh-host', required=False, type=str,
                   help='Host name for passwordless ssh configuration.')
+    @click.option('-su', '--ssh-user', required=False, type=str,
+                  help='User name for passwordless ssh configuration.')
     @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
                   help='Keeps passwordless ssh configuration after tunnel stopping.')
     @click.option('-d', '--direct', required=False, is_flag=True, default=False,
@@ -1607,7 +1609,7 @@ def return_tunnel_args(*args, **kwargs):
 @Config.validate_access_token
 @stacktracing
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
-                 ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                 ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
                  keep_existing, keep_same, replace_existing, replace_different,
                  retries, trace):
@@ -1693,7 +1695,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         with return_tunnel_args.make_context('start', args) as ctx:
             return return_tunnel_args.invoke(ctx)
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different,
                   retries, _parse_tunnel_args)
