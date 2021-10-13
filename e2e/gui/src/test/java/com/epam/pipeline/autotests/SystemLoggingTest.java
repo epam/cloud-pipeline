@@ -90,14 +90,14 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
             }
-            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login),
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login.toUpperCase()),
                     stopAction, admin);
-            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login), startAction,
+            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login.toUpperCase()), startAction,
                     user);
         } catch (NoSuchElementException e) {
-            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", admin.login),
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", admin.login.toUpperCase()),
                     stopAction, admin);
-            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", user.login), startAction,
+            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", user.login.toUpperCase()), startAction,
                     user);
         }
         systemLogsAO.validateTimeOrder(adminInfo, userInfo);
@@ -314,7 +314,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         clearFiltersIfNeeded(systemLogsAO);
         return impersonateMode()
                 ? systemLogsAO.getInfoRow(
-                        format("Successful impersonation action: %s, user: %s", action, account.login.toUpperCase()), account.login,
+                        format("Successful impersonation action: %s, user: %s", action, account.login.toUpperCase()), account.login.toUpperCase(),
                         TYPE)
                 : systemLogsAO.filterByUser(account.login).getInfoRow(message, account.login, TYPE);
     }
