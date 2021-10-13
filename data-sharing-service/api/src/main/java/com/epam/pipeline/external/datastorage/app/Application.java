@@ -25,7 +25,9 @@ import org.springframework.context.annotation.Import;
         AppMVCConfiguration.class,
         AppConfiguration.class
     })
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class Application {
+
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
