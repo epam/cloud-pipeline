@@ -44,6 +44,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
@@ -109,7 +110,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
-        return new SystemLogsAO();
+        if("false".equals(ADMIN_TOKEN_IS_SERVICE)) {
+            return new SystemLogsAO();
+        }
+        return new SystemLogsAO().setIncludeServiceAccountEventsOption();
     }
 
     public MyProfileAO switchToMyProfile() {
@@ -1648,6 +1652,18 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
                 $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
             }
+        }
+
+        public SystemLogsAO setIncludeServiceAccountEventsOption() {
+            if($(byId("show-hide-advanced")).shouldBe(enabled).has(text("Show advanced"))) {
+                $(byId("show-hide-advanced")).shouldBe(enabled).click();
+            }
+            if(!$(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
+                    .has(cssClass("ant-checkbox-checked"))) {
+                $(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
+                        .shouldBe(enabled).click();
+            }
+            return this;
         }
     }
 
