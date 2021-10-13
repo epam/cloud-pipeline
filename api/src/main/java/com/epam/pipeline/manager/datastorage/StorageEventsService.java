@@ -83,27 +83,30 @@ public class StorageEventsService {
         }
     }
 
+    public void addEvent(final AbstractDataStorage dataStorage, final String pathFrom, final String pathTo,
+                         final NFSObserverEventType eventType) {
+        events.add(fileToEvent(dataStorage, pathFrom, pathTo, eventType));
+    }
+
     public void addEvent(final AbstractDataStorage dataStorage, final String path,
                          final NFSObserverEventType eventType) {
-        events.add(fileToEvent(dataStorage, path, eventType));
+        addEvent(dataStorage, path, null, eventType);
     }
 
-    public void addEvents(final AbstractDataStorage dataStorage, final List<String> paths,
-                          final NFSObserverEventType eventType) {
-        final List<NFSObserverEvent> newEvents =
-            paths.stream().map(path -> fileToEvent(dataStorage, path, eventType)).collect(Collectors.toList());
-        events.addAll(newEvents);
-    }
-
-    private NFSObserverEvent fileToEvent(final AbstractDataStorage dataStorage, final String path,
+    private NFSObserverEvent fileToEvent(final AbstractDataStorage dataStorage,
+                                         final String pathFrom,
+                                         final String pathTo,
                                          final NFSObserverEventType eventType) {
-        return new NFSObserverEvent(Instant.now().toEpochMilli(), eventType, dataStorage.getPath(), path);
+        return new NFSObserverEvent(Instant.now().toEpochMilli(), eventType, dataStorage.getPath(), pathFrom, pathTo);
     }
 
     private String eventToString(final NFSObserverEvent event) {
-        return String.join(Constants.COMMA,
-                           event.getTimestamp().toString(), event.getEventType().getEventCode(),
-                           event.getStorage(), event.getFilePath());
+        final String eventString = String.join(Constants.COMMA,
+                                               event.getTimestamp().toString(), event.getEventType().getEventCode(),
+                                               event.getStorage(), event.getFilePathFrom());
+        return Optional.ofNullable(event.getFilePathTo())
+            .map(pathTo -> eventString + Constants.COMMA + pathTo)
+            .orElse(eventString);
     }
 
     private void checkBucketScheme(final URI eventsBucketURI) {

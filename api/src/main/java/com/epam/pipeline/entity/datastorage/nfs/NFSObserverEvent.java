@@ -23,6 +23,7 @@ public class NFSObserverEvent {
     private final Long timestamp;
     private final NFSObserverEventType eventType;
     private final String storage;
-    private final String filePath;
+    private final String filePathFrom;
+    private final String filePathTo;
 
 }
