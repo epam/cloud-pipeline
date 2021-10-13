@@ -26,6 +26,7 @@ import time
 import paramiko
 from scp import SCPClient, SCPException
 from src.api.cluster import Cluster
+from src.api.user import User
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
@@ -40,11 +41,6 @@ DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 PIPE_PROC_NAMES = ['pipe', 'pipe.exe']
 TUNNEL_REQUIRED_ARGS = ['tunnel', 'start']
 TUNNEL_LOCAL_PORT_ARGS = ['-lp', '--local-port']
-TUNNEL_REMOTE_PORT_ARGS = ['-rp', '--remote-port']
-TUNNEL_SSH_ARGS = ['-s', '--ssh']
-TUNNEL_SSH_PATH_ARGS = ['-sp', '--ssh-path']
-TUNNEL_SSH_HOST_ARGS = ['-sh', '--ssh-host']
-TUNNEL_DIRECT_ARGS = ['-d', '--direct']
 TUNNEL_CONFLICT_ARGS = ['-ke', '--keep-existing',
                         '-ks', '--keep-same',
                         '-re', '--replace-existing',
@@ -52,14 +48,16 @@ TUNNEL_CONFLICT_ARGS = ['-ke', '--keep-existing',
 PYTHON_PROC_PREFIX = 'python'
 PIPE_SCRIPT_NAME = 'pipe.py'
 
-run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
+run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner '
+                                                    'sensitive platform parameters')
 
 
 class PasswordlessSSHConfig:
 
-    def __init__(self, run_id, conn_info, ssh_path=None):
-        self.owner_user = conn_info.owner.split('@')[0]
-        self.user = DEFAULT_SSH_USER if is_ssh_default_root_user_enabled() else self.owner_user
+    def __init__(self, run_id, conn_info, ssh_user=None, ssh_path=None):
+        self.run_ssh_mode = resolve_run_ssh_mode(conn_info)
+        self.run_owner = conn_info.owner.split('@')[0]
+        self.user = ssh_user or resolve_run_ssh_user(self.run_ssh_mode, self.run_owner)
         self.key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
 
         self.remote_keys_path = '/root/.pipe/.keys'
@@ -68,8 +66,7 @@ class PasswordlessSSHConfig:
         self.remote_ppk_key_path = '{}.ppk'.format(self.remote_private_key_path)
         self.remote_host_rsa_public_key_path = '/etc/ssh/ssh_host_rsa_key.pub'
         self.remote_host_ed25519_public_key_path = '/etc/ssh/ssh_host_ed25519_key.pub'
-        self.remote_authorized_keys_paths = ['/root/.ssh/authorized_keys',
-                                             '/home/{}/.ssh/authorized_keys'.format(self.owner_user)]
+        self.remote_authorized_users = list({DEFAULT_SSH_USER, self.run_owner, self.user})
 
         self.local_keys_path = os.path.join(os.path.expanduser('~'), '.pipe', '.keys')
         self.local_private_key_path = os.path.join(self.local_keys_path, self.key_name)
@@ -222,7 +219,9 @@ def get_conn_info(run_id):
                          ssh_endpoint=(run_model.pod_ip, DEFAULT_SSH_PORT),
                          ssh_pass=run_model.ssh_pass,
                          owner=run_model.owner,
-                         sensitive=run_model.sensitive)
+                         sensitive=run_model.sensitive,
+                         platform=run_model.platform,
+                         parameters={parameter.name: parameter.value for parameter in run_model.parameters})
 
 
 def get_custom_conn_info(host_id):
@@ -240,7 +239,9 @@ def get_custom_conn_info(host_id):
                          ssh_endpoint=(host_id, DEFAULT_SSH_PORT),
                          ssh_pass=None,
                          owner=None,
-                         sensitive=None)
+                         sensitive=None,
+                         platform=None,
+                         parameters={})
 
 
 def setup_paramiko_transport(conn_info, retries):
@@ -270,15 +271,23 @@ def setup_authenticated_paramiko_transport(run_id, user, retries):
     # Initialize Paramiko SSH client
     setup_paramiko_logging()
     transport = setup_paramiko_transport(conn_info, retries)
-    # User password authentication, which available only to the OWNER and ROLE_ADMIN users
-    if user or is_ssh_default_root_user_enabled():
-        sshpass = conn_info.ssh_pass
-        sshuser = user or DEFAULT_SSH_USER
+    run_ssh_mode = 'root' if user == DEFAULT_SSH_USER \
+                   else 'user' if user \
+                   else resolve_run_ssh_mode(conn_info)
+    run_owner = conn_info.owner.split('@')[0]
+    user = user or User.whoami().get('userName')
+    if run_ssh_mode == 'user':
+        sshuser = user
+        sshpass = sshuser
+    elif run_ssh_mode == 'owner':
+        sshuser = run_owner
+        sshpass = sshuser
+    elif run_ssh_mode == 'owner-sshpass':
+        sshuser = run_owner
+        sshpass = resolve_run_ssh_pass(conn_info)
     else:
-        # split owner by @ in case it represented by email address
-        owner_user_name = conn_info.owner.split("@")[0]
-        sshpass = owner_user_name
-        sshuser = owner_user_name
+        sshuser = DEFAULT_SSH_USER
+        sshpass = resolve_run_ssh_pass(conn_info)
     try:
         transport.auth_password(sshuser, sshpass)
         return transport
@@ -291,9 +300,37 @@ def setup_authenticated_paramiko_transport(run_id, user, retries):
 def is_ssh_default_root_user_enabled():
     try:
         ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
-        return ssh_default_root_user_enabled_preference.value.lower() == 'true'
+        return get_boolean(ssh_default_root_user_enabled_preference.value)
     except:
         return True
+
+
+def get_boolean(value):
+    return value and value.lower().strip() == 'true'
+
+
+def resolve_run_ssh_mode(conn_info):
+    return conn_info.parameters.get('CP_CAP_SSH_MODE') \
+           or ('owner-sshpass' if conn_info.platform == 'windows'
+               else 'root' if is_ssh_default_root_user_enabled()
+               else 'user')
+
+
+def resolve_run_ssh_user(run_ssh_mode, run_owner):
+    return User.whoami().get('userName') if run_ssh_mode == 'user' \
+           else run_owner if run_ssh_mode == 'owner' \
+           else run_owner if run_ssh_mode == 'owner-sshpass' \
+           else DEFAULT_SSH_USER
+
+
+def resolve_run_ssh_pass(conn_info):
+    parent_run_id = conn_info.parameters.get('parent-id')
+    run_shared_users_enabled = get_boolean(conn_info.parameters.get('CP_CAP_SHARE_USERS'))
+    if run_shared_users_enabled and parent_run_id:
+        parent_conn_info = get_conn_info(parent_run_id)
+        return parent_conn_info.ssh_pass
+    else:
+        return conn_info.ssh_pass
 
 
 def run_ssh_command(channel, command):
@@ -387,7 +424,7 @@ def parse_scp_location(location):
 
 
 def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different,
                   retries, parse_tunnel_args):
@@ -411,13 +448,13 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
     if not run_id and ssh:
         raise RuntimeError('Option -s/--ssh can be used only for run tunnels.')
     check_existing_tunnels(host_id, local_ports, remote_ports,
-                           ssh, ssh_path, ssh_host, direct, log_file, timeout_stop,
+                           ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
                            keep_existing, keep_same, replace_existing, replace_different,
                            retries, parse_tunnel_args)
     run_id = parse_run_identifier(host_id)
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
-                             ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                             ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                              timeout, foreground, retries)
     else:
         create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
@@ -442,7 +479,7 @@ def parse_ports(port_str):
 
 
 def check_existing_tunnels(host_id, local_ports, remote_ports,
-                           ssh, ssh_path, ssh_host, direct, log_file, timeout_stop,
+                           ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
                            keep_existing, keep_same, replace_existing, replace_different,
                            retries, parse_tunnel_args):
     for tunnel_proc in find_tunnel_procs(run_id=None, local_ports=local_ports):
@@ -460,15 +497,14 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
         existing_tunnel_run_id = parse_run_identifier(existing_tunnel.host_id)
         existing_tunnel_conn_info = get_conn_info(existing_tunnel_run_id) if existing_tunnel_run_id \
             else get_custom_conn_info(existing_tunnel.host_id)
-        existing_tunnel_remote_host = existing_tunnel.ssh_host \
-                                      or 'pipeline-{}'.format(existing_tunnel.host_id)
+        existing_tunnel_remote_host = existing_tunnel.ssh_host or 'pipeline-{}'.format(existing_tunnel.host_id)
         if keep_existing:
             logging.info('Skipping tunnel establishing since the tunnel already exists...')
             if existing_tunnel.ssh and has_different_owner(tunnel_proc):
                 configure_ssh(existing_tunnel.host_id,
                               existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
-                              existing_tunnel_conn_info, existing_tunnel.ssh_path, existing_tunnel_remote_host,
-                              log_file, retries)
+                              existing_tunnel_conn_info, existing_tunnel.ssh_path, ssh_user,
+                              existing_tunnel_remote_host, log_file, retries)
             sys.exit(0)
         if replace_existing:
             logging.info('Stopping existing tunnel...')
@@ -479,8 +515,8 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
             if existing_tunnel.ssh and has_different_owner(tunnel_proc):
                 configure_ssh(existing_tunnel.host_id,
                               existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
-                              existing_tunnel_conn_info, existing_tunnel.ssh_path, existing_tunnel_remote_host,
-                              log_file, retries)
+                              existing_tunnel_conn_info, existing_tunnel.ssh_path, ssh_user,
+                              existing_tunnel_remote_host, log_file, retries)
             sys.exit(0)
         if not is_same_tunnel and replace_different:
             logging.info('Stopping existing tunnel since it has a different configuration...')
@@ -515,18 +551,18 @@ def has_different_owner(proc):
 
 
 def configure_ssh(run_id, local_port, remote_port,
-                  conn_info, ssh_path, remote_host,
+                  conn_info, ssh_path, ssh_user, remote_host,
                   log_file, retries):
     def _establish_tunnel():
         pass
     ssh_keep = True
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
-                                             ssh_keep, remote_host,
+                                             ssh_user, ssh_keep, remote_host,
                                              retries, _establish_tunnel)
     else:
         configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
-                                           ssh_path, ssh_keep, remote_host, log_file,
+                                           ssh_path, ssh_user, ssh_keep, remote_host, log_file,
                                            retries, _establish_tunnel)
 
 
@@ -539,7 +575,7 @@ def get_flag_value(proc_args, arg_index, arg_names):
 
 
 def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
-                         ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
+                         ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                          timeout, foreground, retries):
     conn_info = get_conn_info(run_id)
     if conn_info.sensitive:
@@ -548,7 +584,8 @@ def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
     if foreground:
         if ssh:
             create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
-                                              ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries)
+                                              ssh_path, ssh_user, ssh_keep,
+                                              remote_host, direct, log_file, log_level, retries)
         else:
             create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                      remote_host, direct, log_level, retries)
@@ -684,25 +721,25 @@ def get_parent_pid(pid):
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
-                                      ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
+                                      ssh_path, ssh_user, ssh_keep, remote_host, direct, log_file, log_level, retries):
     def _establish_tunnel():
         create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                  remote_host, direct, log_level, retries)
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_ports[0], remote_ports[0], conn_info,
-                                             ssh_keep, remote_host,
+                                             ssh_user, ssh_keep, remote_host,
                                              retries, _establish_tunnel)
     else:
         configure_ssh_and_execute_on_linux(run_id, local_ports[0], remote_ports[0], conn_info,
-                                           ssh_path, ssh_keep, remote_host, log_file,
+                                           ssh_path, ssh_user, ssh_keep, remote_host, log_file,
                                            retries, _establish_tunnel)
 
 
 def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
-                                         ssh_keep, remote_host,
+                                         ssh_user, ssh_keep, remote_host,
                                          retries, func):
     logging.info('Configuring putty and openssh passwordless ssh...')
-    passwordless_config = PasswordlessSSHConfig(run_id, conn_info)
+    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_user)
     if not os.path.exists(passwordless_config.local_openssh_path):
         os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
@@ -733,10 +770,10 @@ def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_i
 
 
 def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
-                                       ssh_path, ssh_keep, remote_host, log_file,
+                                       ssh_path, ssh_user, ssh_keep, remote_host, log_file,
                                        retries, func):
     logging.info('Configuring openssh passwordless ssh...')
-    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_path)
+    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_user, ssh_path)
     if not os.path.exists(passwordless_config.local_openssh_path):
         os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
@@ -887,7 +924,17 @@ def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
                         """
                         mkdir -p $(dirname {remote_private_key_path})
                         ssh-keygen -t rsa -f {remote_private_key_path} -N "" -q
-                        cat {remote_public_key_path} | tee -a {remote_authorized_keys_paths} > /dev/null
+                        for authorized_user in {authorized_users}; do
+                            user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
+                            user_openssh_path="$user_home_path/.ssh"
+                            user_authorized_keys_path="$user_openssh_path/authorized_keys"
+                            mkdir -p "$user_openssh_path"
+                            touch "$user_authorized_keys_path"
+                            chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
+                            chmod 700 "$user_openssh_path"
+                            chmod 600 "$user_authorized_keys_path"
+                            cat "{remote_public_key_path}" | tee -a "$user_authorized_keys_path" > /dev/null
+                        done
                         if ! command -v puttygen; then
                             wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
                             tar -zxf "/tmp/puttygen.tgz" -C "${{CP_USR_BIN:-/usr/cpbin}}"
@@ -896,11 +943,10 @@ def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
                         if ! command -v puttygen; then apt-get -y install putty-tools; fi
                         if ! command -v puttygen; then yum -y install putty; fi
                         puttygen {remote_private_key_path} -o {remote_ppk_key_path} -O private
-                        """
-                        .format(remote_public_key_path=passwordless_config.remote_public_key_path,
-                                remote_private_key_path=passwordless_config.remote_private_key_path,
-                                remote_ppk_key_path=passwordless_config.remote_ppk_key_path,
-                                remote_authorized_keys_paths=' '.join(passwordless_config.remote_authorized_keys_paths)),
+                        """.format(remote_public_key_path=passwordless_config.remote_public_key_path,
+                                   remote_private_key_path=passwordless_config.remote_private_key_path,
+                                   remote_ppk_key_path=passwordless_config.remote_ppk_key_path,
+                                   authorized_users=' '.join(passwordless_config.remote_authorized_users)),
                         user=DEFAULT_SSH_USER, retries=retries)
     if exit_code:
         raise RuntimeError('Generating tunnel remote ssh keys and copying ssh public key to authorized keys '
@@ -911,20 +957,23 @@ def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
 def remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
     logging.info('Deleting remote ssh keys...')
     remove_ssh_keys_from_run_command = ''
-    for remote_authorized_keys_path in passwordless_config.remote_authorized_keys_paths:
-        remote_authorized_keys_temp_path = '{}_{}'.format(remote_authorized_keys_path,
-                                                          random.randint(0, sys.maxsize))
-        remove_ssh_keys_from_run_command += \
-            ('[ -f {public_key_path} ] &&'
-             'cat {public_key_path} | xargs -I {{}} grep -v "{{}}" {authorized_keys_path} > {authorized_keys_temp_path} &&'
-             'cp {authorized_keys_temp_path} {authorized_keys_path} &&'
-             'chmod 600 {authorized_keys_path} &&'
-             'rm {authorized_keys_temp_path};') \
-                .format(public_key_path=passwordless_config.remote_public_key_path,
-                        private_key_path=passwordless_config.remote_private_key_path,
-                        ppk_key_path=passwordless_config.remote_ppk_key_path,
-                        authorized_keys_path=remote_authorized_keys_path,
-                        authorized_keys_temp_path=remote_authorized_keys_temp_path)
+    for remote_authorized_user in passwordless_config.remote_authorized_users:
+        remove_ssh_keys_from_run_command += (
+            """
+            [ -f {public_key_path} ] &&
+            user_home_path="$(getent passwd "{authorized_user}" | cut -d: -f6)" &&
+            user_openssh_path="$user_home_path/.ssh" &&
+            user_authorized_keys_path="$user_openssh_path/authorized_keys" &&
+            user_authorized_keys_temp_path="${{user_authorized_keys_path}}_$RANDOM" &&
+            cat {public_key_path} | xargs -I {{}} grep -v "{{}}" "$user_authorized_keys_path" > "$user_authorized_keys_temp_path" || true &&
+            chown -R "{authorized_user}:{authorized_user}" "$user_openssh_path" &&
+            chmod 600 "$user_authorized_keys_path" &&
+            cp "$user_authorized_keys_temp_path" "$user_authorized_keys_path" &&
+            rm "$user_authorized_keys_temp_path";
+            """.format(public_key_path=passwordless_config.remote_public_key_path,
+                       private_key_path=passwordless_config.remote_private_key_path,
+                       ppk_key_path=passwordless_config.remote_ppk_key_path,
+                       authorized_user=remote_authorized_user))
     for key_path in [passwordless_config.remote_public_key_path,
                      passwordless_config.remote_private_key_path,
                      passwordless_config.remote_ppk_key_path]:
@@ -1041,8 +1090,20 @@ def copy_openssh_public_key_to_remote_authorized_hosts(run_id, retries, password
     with open(passwordless_config.local_public_key_path, 'r') as f:
         ssh_public_key = f.read().strip()
     exit_code = run_ssh(run_id,
-                        'echo "{}" | tee -a {} > /dev/null'
-                        .format(ssh_public_key, ' '.join(passwordless_config.remote_authorized_keys_paths)),
+                        """
+                        for authorized_user in {authorized_users}; do
+                            user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
+                            user_openssh_path="$user_home_path/.ssh"
+                            user_authorized_keys_path="$user_openssh_path/authorized_keys"
+                            mkdir -p "$user_openssh_path"
+                            touch "$user_authorized_keys_path"
+                            chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
+                            chmod 700 "$user_openssh_path"
+                            chmod 600 "$user_authorized_keys_path"
+                            echo "{ssh_public_key}" | tee -a "$user_authorized_keys_path" > /dev/null
+                        done
+                        """.format(ssh_public_key=ssh_public_key,
+                                   authorized_users=' '.join(passwordless_config.remote_authorized_users)),
                         user=DEFAULT_SSH_USER, retries=retries)
     if exit_code:
         raise RuntimeError('Copying ssh public key to remote authorized keys has failed with {} exit code'.format(exit_code))
@@ -1054,21 +1115,25 @@ def remove_openssh_public_key_from_remote_authorized_hosts(run_id, retries, pass
         with open(passwordless_config.local_public_key_path, 'r') as f:
             ssh_public_key = f.read().strip()
         remove_ssh_public_keys_from_run_command = ''
-        for remote_ssh_authorized_keys_path in passwordless_config.remote_authorized_keys_paths:
-            remote_ssh_authorized_keys_temp_path = '{}_{}'.format(remote_ssh_authorized_keys_path,
-                                                                  random.randint(0, sys.maxsize))
-            remove_ssh_public_keys_from_run_command += \
-                'grep -v "{key}" {authorized_keys_path} > {authorized_keys_temp_path};' \
-                'cp {authorized_keys_temp_path} {authorized_keys_path};' \
-                'chmod 600 {authorized_keys_path};' \
-                'rm {authorized_keys_temp_path};' \
-                .format(key=ssh_public_key,
-                        authorized_keys_path=remote_ssh_authorized_keys_path,
-                        authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
+        for remote_authorized_user in passwordless_config.remote_authorized_users:
+            remove_ssh_public_keys_from_run_command += (
+                """
+                user_home_path="$(getent passwd "{authorized_user}" | cut -d: -f6)" &&
+                user_openssh_path="$user_home_path/.ssh" &&
+                user_authorized_keys_path="$user_openssh_path/authorized_keys" &&
+                user_authorized_keys_temp_path="${{user_authorized_keys_path}}_$RANDOM" &&
+                grep -v "{key}" "$user_authorized_keys_path" > "$user_authorized_keys_temp_path" || true &&
+                chown -R "{authorized_user}:{authorized_user}" "$user_openssh_path" &&
+                chmod 600 "$user_authorized_keys_temp_path" &&
+                cp "$user_authorized_keys_temp_path" "$user_authorized_keys_path" &&
+                rm "$user_authorized_keys_temp_path";
+                """.format(key=ssh_public_key,
+                           authorized_user=remote_authorized_user))
         exit_code = run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'),
                             user=DEFAULT_SSH_USER, retries=retries)
         if exit_code:
-            raise RuntimeError('Removing ssh public keys from remote authorized hosts has failed with {} exit code'.format(exit_code))
+            raise RuntimeError('Removing ssh public keys from remote authorized hosts has failed with {} exit code'
+                               .format(exit_code))
 
 
 def add_record_to_openssh_config(local_port, remote_host, passwordless_config):
