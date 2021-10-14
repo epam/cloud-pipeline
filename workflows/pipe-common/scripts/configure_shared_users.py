@@ -89,7 +89,7 @@ def configure_shared_users():
         logger.success('Shared users and groups management was successfully configured.')
     except BaseException as e:
         traceback.print_exc()
-        stacktrace = traceback.format_stack()
+        stacktrace = traceback.format_exc()
         logger.error('Shared users and groups management configuration has failed: {} {}'.format(e, stacktrace))
         raise
 
