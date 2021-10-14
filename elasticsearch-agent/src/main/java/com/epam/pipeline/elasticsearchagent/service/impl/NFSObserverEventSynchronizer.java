@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -42,7 +43,9 @@ import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -82,7 +85,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private static final String STORAGE_ID_FIELD = "storage_id";
     private static final String DOC_MAPPING_TYPE = "_doc";
     private static final String FOLDER_EVENT_WILDCARD = "/*";
-    private static final int MATCHING_SEARCH_SIZE = 10000;
+    private static final int SCROLLING_PAGE_SIZE = 1000;
+    private static final Scroll TIME_SCROLL = new Scroll(new TimeValue(60000));
 
     private final String eventsBucketName;
     private final String eventsBucketFolderPath;
@@ -251,8 +255,23 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private List<NFSObserverEvent> searchEventRelatedFiles(final AbstractDataStorage dataStorage,
                                                            final NFSObserverEvent folderEvent) {
-        final SearchResponse folderResponse = getElasticsearchServiceClient()
-            .search(buildFolderSearchRequest(dataStorage, folderEvent, 0));
+        final List<NFSObserverEvent> allFilesEvents = new ArrayList<>();
+        SearchResponse folderResponse = getElasticsearchServiceClient()
+            .search(buildFolderSearchRequest(dataStorage, folderEvent));
+        do {
+            final List<NFSObserverEvent> scrollingPageEvents = mapHitsToPossibleEvents(folderResponse, folderEvent);
+            if (CollectionUtils.isNotEmpty(scrollingPageEvents)) {
+                allFilesEvents.addAll(scrollingPageEvents);
+                folderResponse = getElasticsearchServiceClient().nextScrollPage(folderResponse.getScrollId(), TIME_SCROLL);
+            } else {
+                break;
+            }
+        } while (true);
+        return allFilesEvents;
+    }
+
+    private List<NFSObserverEvent> mapHitsToPossibleEvents(final SearchResponse folderResponse,
+                                                           final NFSObserverEvent folderEvent) {
         return Optional.ofNullable(folderResponse.getHits())
             .map(SearchHits::getHits)
             .map(Stream::of)
@@ -327,16 +346,16 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .source(source);
     }
 
-    private SearchRequest buildFolderSearchRequest(final AbstractDataStorage dataStorage, final NFSObserverEvent event,
-                                                   final int from) {
+    private SearchRequest buildFolderSearchRequest(final AbstractDataStorage dataStorage,
+                                                   final NFSObserverEvent event) {
         final String eventPath = event.getFilePath();
         final SearchSourceBuilder source = new SearchSourceBuilder()
             .query(QueryBuilders.boolQuery()
                        .must(QueryBuilders.prefixQuery(FILE_ID_FIELD, extractFolderFromFolderEvent(eventPath)))
                        .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
-            .from(from)
-            .size(MATCHING_SEARCH_SIZE);
+            .size(SCROLLING_PAGE_SIZE);
         return new SearchRequest("*")
+            .scroll(TIME_SCROLL)
             .indicesOptions(IndicesOptions.lenientExpandOpen())
             .source(source);
     }
