@@ -65,8 +65,7 @@ def _create_lin_user(username, password, home_dir=None, skip_existing=False, log
             home_dir_arg = '-d "{home_dir}" '.format(home_dir=home_dir)
         else:
             home_dir_arg = ''
-        execute(('useradd -m -s /bin/bash ' + home_dir_arg + '"{username}"; '
-                'echo "{password}" | passwd --stdin "{username}"')
+        execute(('useradd -m -s /bin/bash ' + home_dir_arg + ' -p $(openssl passwd -1 "{password}") "{username}"')
                 .format(username=username, password=password),
                 logger=logger)
 
