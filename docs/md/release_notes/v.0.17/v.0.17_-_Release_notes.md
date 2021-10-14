@@ -12,6 +12,7 @@
 - [Hot node pools](#hot-node-pools)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
+- [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
 - [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
@@ -454,6 +455,34 @@ The one of the below options should be specified:
 Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
 
 For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
+
+## Pause/resume runs via `pipe`
+
+Previously, users could automate the pause and resume operation for the pipeline execution only via the API calls.  
+In the current version, `pipe pause` and `pipe resume` operations are exposed to the CLI.
+
+The command to pause a specific running pipeline:
+
+``` bash
+pipe pause [OPTIONS] RUN_ID
+```
+
+Possible options:
+
+- **`--check-size`** - to check firstly if free disk space is enough for the commit operation
+- **`-s`** / **`--sync`** - to perform operation in a sync mode. This option blocks the terminal until the **_PAUSED_** status won't be returned for the pausing pipeline
+
+The command to resume a specific paused pipeline:
+
+``` bash
+pipe resume [OPTIONS] RUN_ID
+```
+
+Possible option:
+
+- **`-s`** / **`--sync`** - to perform operation in a sync mode. This option blocks the terminal until the **_RUNNING_** status won't be returned for the resuming pipeline
+
+For details and examples see here - [pause command](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#pause-a-pipeline-execution) and [resume command](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#resume-paused-pipeline-execution).
 
 ## Home storage for each user
 
