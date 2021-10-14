@@ -50,7 +50,6 @@ MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only.'
 RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
 TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying.'
-EDGE_REGION_OPTION_DESCRIPTION = 'The edge region name. If not specified the default edge region will be used.'
 SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
                         ' until the expected status of the operation won\'t be returned'
 STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination path check: if destination already ' \
@@ -1507,7 +1506,6 @@ def start_tunnel_arguments(start_tunnel_command):
                   help=USER_OPTION_DESCRIPTION)
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
     @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-    @click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
     def _start_tunnel_command_decorator(*args, **kwargs):
         return start_tunnel_command(*args, **kwargs)
     return functools.update_wrapper(_start_tunnel_command_decorator, start_tunnel_command)
