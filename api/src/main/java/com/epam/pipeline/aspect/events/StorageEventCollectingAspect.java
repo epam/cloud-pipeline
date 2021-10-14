@@ -23,18 +23,18 @@ import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
 
 @Aspect
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(value = "data.storage.nfs.events.disable.sync", matchIfMissing = true, havingValue = "false")
 public class StorageEventCollectingAspect {
 
     private static final String FOLDER_EVENT_WILDCARD = "/*";
 
     private final StorageEventsService storageEventsService;
-
 
     @After("execution(* com.epam.pipeline.manager.datastorage.providers.nfs.NFSStorageProvider.createFile(..)) && "
            + "args(dataStorage, path, ..)")
@@ -66,7 +66,6 @@ public class StorageEventCollectingAspect {
                                       oldFolderPath + FOLDER_EVENT_WILDCARD,
                                       newFolderPath + FOLDER_EVENT_WILDCARD,
                                       NFSObserverEventType.FOLDER_MOVED);
-
     }
 
     @After("execution(* com.epam.pipeline.manager.datastorage.providers.nfs.NFSStorageProvider.deleteFolder(..)) && "
