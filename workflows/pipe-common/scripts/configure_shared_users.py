@@ -27,10 +27,15 @@ _ETC_DIRECTORY = '/etc'
 _ETC_DIRECTORY_SHARED = '/etc-shared'
 _ETC_FILE_PATHS = ['passwd', 'shadow', 'group', 'gshadow']
 
-if __name__ == '__main__':
+
+class SharedUsersConfigurationError(RuntimeError):
+    pass
+
+
+def configure_shared_users():
     api_url = os.environ['API']
-    api_token = os.environ['API_TOKEN']
     run_id = os.environ['RUN_ID']
+    parent_id = os.getenv('parent_id')
     cluster_role = os.getenv('cluster_role', _MANAGER_CLUSTER_ROLE)
     logging_directory = os.getenv('CP_CAP_SHARE_USERS_LOGDIR', os.getenv('LOG_DIR', '/var/log'))
     logging_level = os.getenv('CP_CAP_SHARE_USERS_LOGGING_LEVEL', 'ERROR')
@@ -47,28 +52,47 @@ if __name__ == '__main__':
     logger = LocalLogger(inner=logger)
 
     try:
-        if cluster_role != _MANAGER_CLUSTER_ROLE:
-            logger.info('Configuring shared users and groups management...')
+        logger.info('Configuring shared users and groups management...')
 
-            logger.info('Installing sshfs...')
-            install_package(rpm='fuse-sshfs', nonrpm='sshfs', logger=logger)
+        if cluster_role == _MANAGER_CLUSTER_ROLE:
+            logger.info('Skipping shared users and groups management because run cluster role is manager...')
+            return
+        if not parent_id:
+            logger.info('Skipping shared users and groups management because parent id was not found...')
+            return
 
-            logger.info('Mounting etc directory from manager node...')
-            mkdir(_ETC_DIRECTORY_SHARED)
-            execute('sshfs -o ro,allow_other root@lizardfs-master:{etc_directory} {etc_directory_shared}'
-                    .format(etc_directory=_ETC_DIRECTORY, etc_directory_shared=_ETC_DIRECTORY_SHARED),
+        logger.info('Loading parent run pod ip...')
+        parent_run = api.load_run_efficiently(parent_id)
+        parent_run_host = parent_run.get('podIP')
+        if not parent_run_host:
+            logger.error('Parent run pod ip was not found.')
+            raise SharedUsersConfigurationError('Parent run pod ip was not found.')
+
+        logger.info('Installing sshfs...')
+        install_package(rpm='fuse-sshfs', nonrpm='sshfs', logger=logger)
+
+        logger.info('Mounting etc directory from manager node...')
+        mkdir(_ETC_DIRECTORY_SHARED)
+        execute('sshfs -o ro,allow_other root@{parent_run_host}:{etc_directory} {etc_directory_shared}'
+                .format(parent_run_host=parent_run_host,
+                        etc_directory=_ETC_DIRECTORY, etc_directory_shared=_ETC_DIRECTORY_SHARED),
+                logger=logger)
+
+        logger.info('Mounting users and groups from manager node etc directory...')
+        for etc_file_path in _ETC_FILE_PATHS:
+            file_path = os.path.join(_ETC_DIRECTORY, etc_file_path)
+            file_path_shared = os.path.join(_ETC_DIRECTORY_SHARED, etc_file_path)
+            execute('mount -o ro,bind,allow_other {file_path_shared} {file_path}'
+                    .format(file_path=file_path, file_path_shared=file_path_shared),
                     logger=logger)
 
-            logger.info('Mounting users and groups from manager node etc directory...')
-            for etc_file_path in _ETC_FILE_PATHS:
-                file_path = os.path.join(_ETC_DIRECTORY, etc_file_path)
-                file_path_shared = os.path.join(_ETC_DIRECTORY_SHARED, etc_file_path)
-                execute('mount -o ro,bind,allow_other {file_path_shared} {file_path}'
-                        .format(file_path=file_path, file_path_shared=file_path_shared),
-                        logger=logger)
-
-            logger.success('Shared users and groups management was successfully configured.')
+        logger.success('Shared users and groups management was successfully configured.')
     except BaseException as e:
         traceback.print_exc()
         stacktrace = traceback.format_stack()
         logger.error('Shared users and groups management configuration has failed: {} {}'.format(e, stacktrace))
+        raise
+
+
+if __name__ == '__main__':
+    configure_shared_users()
