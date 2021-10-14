@@ -362,7 +362,7 @@ try:
 except BaseException as e:
     if _extract_boolean_parameter('CP_CAP_ZOMBIE'):
         traceback.print_exc()
-        stacktrace = traceback.format_stack()
+        stacktrace = traceback.format_exc()
         try:
             logger.error('Switching to zombie mode because the error occurred: {} {}'.format(e, stacktrace))
         except:
