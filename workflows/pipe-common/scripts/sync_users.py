@@ -53,9 +53,8 @@ def _get_local_users():
             yield stripped_line.split(':')[0]
 
 
-if __name__ == '__main__':
+def sync_users():
     api_url = os.environ['API']
-    api_token = os.environ['API_TOKEN']
     run_id = os.environ['RUN_ID']
     shared_dir = os.getenv('SHARED_ROOT', '/common')
     shared_home_dir = os.getenv('CP_CAP_SYNC_USERS_HOME_DIR', os.path.join(shared_dir, 'home'))
@@ -87,8 +86,10 @@ if __name__ == '__main__':
             logger.info('Loaded {} shared users.'.format(len(shared_users)))
             logger.debug('Loaded shared users: {}'.format(shared_users))
 
-            logger.info('Loading existing users...')
+            logger.info('Loading local users...')
             local_users = set(_get_local_users())
+            logger.info('Loaded {} local users.'.format(len(local_users)))
+            logger.debug('Loaded local users: {}'.format(local_users))
 
             users_to_create = shared_users - local_users
             logger.info('Creating {} users...'.format(len(users_to_create)))
@@ -103,5 +104,10 @@ if __name__ == '__main__':
             break
         except BaseException as e:
             traceback.print_exc()
-            stacktrace = traceback.format_stack()
+            stacktrace = traceback.format_exc()
             logger.error('Users synchronization has failed: {} {}'.format(e, stacktrace))
+            raise
+
+
+if __name__ == '__main__':
+    sync_users()
