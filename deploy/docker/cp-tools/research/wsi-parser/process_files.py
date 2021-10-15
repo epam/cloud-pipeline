@@ -194,26 +194,24 @@ class WsiFileTagProcessor:
 
     CATEGORICAL_ATTRIBUTE = '/categoricalAttribute'
 
-    def __init__(self, file_path, xml_info_tree, tags_mapping_rules):
+    def __init__(self, file_path, xml_info_tree):
         self.file_path = file_path
         self.xml_info_tree = xml_info_tree
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.system_dictionaries_url = self.api.api_url + self.CATEGORICAL_ATTRIBUTE
         self.cloud_path = WsiParsingUtils.extract_cloud_path(file_path)
-        self.tags_mapping_rules = tags_mapping_rules
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
 
     def process_tags(self, target_image_details):
         existing_attributes_dictionary = self.load_existing_attributes()
-        tags_mapping = self.map_tags(existing_attributes_dictionary)
         metadata = self.xml_info_tree.find(SCHEMA_PREFIX + 'StructuredAnnotations')
         if not metadata:
             self.log_processing_info('No metadata found for file, skipping tags processing...')
             return 0
         metadata_dict = self.map_to_metadata_dict(metadata)
-        tags_to_push = self.build_tags_dictionary(metadata_dict, tags_mapping, target_image_details)
+        tags_to_push = self.build_tags_dictionary(metadata_dict, existing_attributes_dictionary, target_image_details)
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
             return 0
@@ -237,10 +235,11 @@ class WsiFileTagProcessor:
                         metadata_dict[key] = value
         return metadata_dict
 
-    def build_tags_dictionary(self, metadata_dict, tags_mapping, target_image_details):
+    def build_tags_dictionary(self, metadata_dict, existing_attributes_dictionary, target_image_details):
         tags_dictionary = dict()
-        if tags_mapping:
-            tags_dictionary.update(self.extract_matching_tags_from_metadata(metadata_dict, tags_mapping))
+        common_tags_mapping = self.map_tags('WSI_PARSING_TAG_MAPPING', existing_attributes_dictionary)
+        if common_tags_mapping:
+            tags_dictionary.update(self.extract_matching_tags_from_metadata(metadata_dict, common_tags_mapping))
         tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
         return tags_dictionary
 
@@ -367,9 +366,11 @@ class WsiFileTagProcessor:
                     tags_to_push[target_tag] = {value}
         return tags_to_push
 
-    def map_tags(self, existing_attributes_dictionary):
+    def map_tags(self, tags_mapping_env_var_name, existing_attributes_dictionary):
+        tags_mapping_rules_str = os.getenv(tags_mapping_env_var_name, '')
+        tags_mapping_rules = tags_mapping_rules_str.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules_str else []
         tags_mapping = dict()
-        for rule in self.tags_mapping_rules:
+        for rule in tags_mapping_rules:
             rule_mapping = rule.split(TAGS_MAPPING_KEYS_DELIMITER, 1)
             if len(rule_mapping) != 2:
                 self.log_processing_info('Error [{}]: mapping rule declaration should contain a delimiter!'.format(
@@ -400,9 +401,8 @@ class WsiFileParser:
     _DEEP_ZOOM_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'),
                                               'create_deepzoom.sh')
 
-    def __init__(self, file_path, tags_mapping_rules):
+    def __init__(self, file_path):
         self.file_path = file_path
-        self.tags_mapping_rules = tags_mapping_rules.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules else []
         self.log_processing_info('Generating XML description')
         self.xml_info_file = os.path.join(WsiParsingUtils.get_service_directory(file_path),
                                           WsiParsingUtils.get_basename_without_extension(self.file_path) + '_info.xml')
@@ -601,7 +601,7 @@ class WsiFileParser:
     def try_process_tags(self, target_image_details):
         tags_processing_result = 0
         try:
-            if WsiFileTagProcessor(self.file_path, self.xml_info_tree, self.tags_mapping_rules).process_tags(target_image_details) != 0:
+            if WsiFileTagProcessor(self.file_path, self.xml_info_tree).process_tags(target_image_details) != 0:
                 self.log_processing_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
@@ -621,7 +621,7 @@ def log_info(message, status=TaskStatus.RUNNING):
 def try_process_file(file_path):
     parser = None
     try:
-        parser = WsiFileParser(file_path, os.getenv('WSI_PARSING_TAG_MAPPING', ''))
+        parser = WsiFileParser(file_path)
         processing_result = parser.process_file()
         return processing_result
     except Exception as e:
