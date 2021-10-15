@@ -1064,6 +1064,8 @@ function api_register_drive_mapping {
                             "$CP_DAV_EXTERNAL_AUTH_URL"
 
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
+
+    api_set_preference"base.invalidate.edge.auth.path" "${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}" "true"
 }
 
 function api_register_share_service {
