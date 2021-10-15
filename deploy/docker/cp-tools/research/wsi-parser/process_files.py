@@ -19,8 +19,10 @@ import multiprocessing
 import datetime
 import re
 import shutil
+import struct
 import tempfile
 import time
+import traceback
 import urllib
 import xml.etree.ElementTree as ET
 
@@ -190,6 +192,311 @@ class WsiProcessingFileGenerator:
         return False
 
 
+class UserDefinedMetadata:
+
+    def __init__(self, path_list, value):
+        self._path = self._convert_path_list_to_string(path_list)
+        self._value = value
+
+    @staticmethod
+    def _convert_path_list_to_string(path):
+        return '-'.join(str(p) for p in path) + '-'
+
+    def get_path(self):
+        return self._path
+
+    def get_value(self):
+        return self._value
+
+    def __repr__(self):
+        return 'UserMetadata({},{})'.format(self._path, self._value)
+
+
+class VSIBinaryTagsReader:
+
+    STAIN_KEY = 'Stain'
+    STAIN_METHOD_KEY = 'Stain Method'
+    PREPARATION_KEY = 'Preparation'
+    GROUP_KEY = 'Group'
+    SEX_KEY = 'Sex'
+    ANIMAL_ID_KEY = 'Animal ID'
+    PURPOSE_KEY = 'Purpose'
+
+    HEADER_BYTES_SIZE = 24
+
+    NEW_VOLUME_HEADER = 0
+    PROPERTY_SET_VOLUME = 1
+    NEW_MDIM_VOLUME_HEADER = 2
+
+    COLLECTION_VOLUME = 2000
+    MULTIDIM_IMAGE_VOLUME = 2001
+    IMAGE_FRAME_VOLUME = 2002
+    DIMENSION_SIZE = 2003
+    IMAGE_COLLECTION_PROPERTIES = 2004
+    MULTIDIM_STACK_PROPERTIES = 2005
+    FRAME_PROPERTIES = 2006
+    DIMENSION_DESCRIPTION_VOLUME = 2007
+    CHANNEL_PROPERTIES = 2008
+    DISPLAY_MAPPING_VOLUME = 2011
+    LAYER_INFO_PROPERTIES = 2012
+
+    CHAR = 1
+    UCHAR = 2
+    SHORT = 3
+    USHORT = 4
+    INT = 5
+    UINT = 6
+    LONG = 7
+    ULONG = 8
+    FLOAT = 9
+    DOUBLE = 10
+
+    BOOLEAN = 12
+    TCHAR = 13
+    DWORD = 14
+    TIMESTAMP = 17
+    DATE = 18
+
+    FIELD_TYPE = 271
+    MEM_MODEL = 272
+    COLOR_SPACE = 273
+    UNICODE_TCHAR = 8192
+
+    USER_DEFINED_ITEM = 27354
+    USER_DEFINED_SPECIES = 2056
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.previous_tag = 0
+        self.parents = []
+        self.user_data = []
+        self._result_tags = {}
+
+    @staticmethod
+    def _convert_binary(bytes, format):
+        return struct.unpack("<" + format, bytes)[0]
+
+    @staticmethod
+    def _read_short(stream):
+        return VSIBinaryTagsReader._convert_binary(stream.read(2), 'h')
+
+    @staticmethod
+    def _read_int(stream):
+        return VSIBinaryTagsReader._convert_binary(stream.read(4), 'i')
+
+    @staticmethod
+    def _read_long(stream):
+        return VSIBinaryTagsReader._convert_binary(stream.read(8), 'q')
+
+    @staticmethod
+    def _read_float(stream):
+        return VSIBinaryTagsReader._convert_binary(stream.read(4), 'f')
+
+    @staticmethod
+    def _read_double(stream):
+        return VSIBinaryTagsReader._convert_binary(stream.read(8), 'd')
+
+    @staticmethod
+    def _read_bool(stream):
+        return VSIBinaryTagsReader._convert_binary(stream.read(1), '?')
+
+    @staticmethod
+    def _read_string(stream, length):
+        try:
+            return stream.read(length).decode("utf-16-le", "backslashreplace").encode('utf-8', errors='ignore')
+        except BaseException:
+            return ''
+
+    @staticmethod
+    def _skip_bytes(stream, count):
+        stream.read(count)
+
+    def _get_file_length(self):
+        return os.stat(self.file_path).st_size
+
+    @staticmethod
+    def _get_volume_name(tag):
+        if tag == VSIBinaryTagsReader.COLLECTION_VOLUME or \
+                tag == VSIBinaryTagsReader.MULTIDIM_IMAGE_VOLUME or \
+                tag == VSIBinaryTagsReader.IMAGE_FRAME_VOLUME or \
+                tag == VSIBinaryTagsReader.DIMENSION_SIZE or \
+                tag == VSIBinaryTagsReader.IMAGE_COLLECTION_PROPERTIES or \
+                tag == VSIBinaryTagsReader.MULTIDIM_STACK_PROPERTIES or \
+                tag == VSIBinaryTagsReader.FRAME_PROPERTIES or \
+                tag == VSIBinaryTagsReader.DIMENSION_DESCRIPTION_VOLUME or \
+                tag == VSIBinaryTagsReader.CHANNEL_PROPERTIES or \
+                tag == VSIBinaryTagsReader.DISPLAY_MAPPING_VOLUME or \
+                tag == VSIBinaryTagsReader.LAYER_INFO_PROPERTIES:
+            pass
+        else:
+            print('Unhandled volume {}'.format(tag))
+        return ''
+
+    @staticmethod
+    def _get_tag_name(tag):
+        return str(tag)
+
+    def _push_to_user_defined_meta(self, path, value):
+        self.user_data.append(UserDefinedMetadata(path, value))
+
+    def _push_to_results(self, name, value):
+        self._result_tags[name] = value
+
+    def _collect_tags(self, vsi_file, tag_prefix):
+        metadata_block_start_position = vsi_file.tell()
+        file_length = self._get_file_length()
+        if metadata_block_start_position + self.HEADER_BYTES_SIZE >= file_length:
+            return
+
+        data_field_offset, tag_count = self.read_metadata_block_header(vsi_file)
+        if tag_count > file_length:
+            return
+
+        metadata_block_data_position = metadata_block_start_position + data_field_offset
+        if metadata_block_data_position < 0 or metadata_block_data_position >= file_length:
+            return
+        vsi_file.seek(metadata_block_data_position)
+
+        for i in range(0, tag_count):
+            field_type = self._read_int(vsi_file)
+            tag = self._read_int(vsi_file)
+            next_field = self._read_int(vsi_file) & 0xffffffff
+            data_size = self._read_int(vsi_file)
+            extra_tag = ((field_type & 0x8000000) >> 27) == 1
+            extended_field = ((field_type & 0x10000000) >> 28) == 1
+            inline_data = ((field_type & 0x40000000) >> 30) == 1
+
+            real_type = field_type & 0xffffff
+
+            if extra_tag:
+                self._read_int(vsi_file)
+
+            if tag < 0:
+                if not inline_data and data_size + vsi_file.tell() < file_length:
+                    self._skip_bytes(vsi_file, data_size)
+                return
+
+            if extended_field and real_type == self.NEW_VOLUME_HEADER:
+                self.extract_new_volume_header(data_size, file_length, tag, vsi_file)
+            elif extended_field and (real_type == self.PROPERTY_SET_VOLUME or real_type == self.NEW_MDIM_VOLUME_HEADER):
+                tag_name = self._get_volume_name(tag) if real_type == self.NEW_MDIM_VOLUME_HEADER else tag_prefix
+                self.parents.append(tag)
+                self._collect_tags(vsi_file, tag_name)
+                self.parents.pop()
+            else:
+                value = str(data_size) if inline_data else ''
+                if not inline_data and data_size > 0:
+                    if real_type == self.CHAR or \
+                            real_type == self.UCHAR:
+                        value = str(vsi_file.read(1))
+                    if real_type == self.SHORT or \
+                            real_type == self.USHORT:
+                        value = str(self._read_short(vsi_file))
+                    if real_type == self.INT or \
+                            real_type == self.UINT or \
+                            real_type == self.DWORD or \
+                            real_type == self.FIELD_TYPE or \
+                            real_type == self.MEM_MODEL or \
+                            real_type == self.COLOR_SPACE:
+                        int_value = self._read_int(vsi_file)
+                        value = str(int_value)
+                    if real_type == self.LONG or \
+                            real_type == self.ULONG or \
+                            real_type == self.TIMESTAMP:
+                        long_value = self._read_long(vsi_file)
+                        value = str(long_value)
+                    if real_type == self.FLOAT:
+                        value = str(self._read_float(vsi_file))
+                    if real_type == self.DOUBLE or \
+                            real_type == self.DATE:
+                        value = str(self._read_double(vsi_file))
+                    if real_type == self.BOOLEAN:
+                        value = str(self._read_bool(vsi_file))
+                    if real_type == self.TCHAR or \
+                            real_type == self.UNICODE_TCHAR:
+                        value = self._read_string(vsi_file, data_size)
+
+                if tag == self.USER_DEFINED_ITEM:
+                    self._push_to_user_defined_meta(list(self.parents), value)
+
+                if tag == self.USER_DEFINED_SPECIES:
+                    self._push_to_results('Species', value)
+
+            if next_field == 0 or tag == -494804095:
+                if metadata_block_start_position + data_size + 32 < file_length \
+                        and metadata_block_start_position + data_size >= 0:
+                    vsi_file.seek(metadata_block_start_position + data_size + 32)
+                return
+
+            next_fp_position = metadata_block_start_position + next_field
+            if file_length > next_fp_position >= 0:
+                vsi_file.seek(next_fp_position)
+            else:
+                break
+
+    def extract_new_volume_header(self, data_size, file_length, tag, vsi_file):
+        end_pointer = vsi_file.tell() + data_size
+        while vsi_file.tell() < end_pointer and vsi_file.tell() < file_length:
+            start = vsi_file.tell()
+            self.parents.append(tag)
+            self._collect_tags(vsi_file, self._get_volume_name(tag))
+            self.parents.pop()
+            end = vsi_file.tell()
+            if start >= end:
+                break
+
+    def read_metadata_block_header(self, vsi):
+        self._skip_bytes(vsi, 8)  # skipping unused info: header_size(short), version(short), volume_version(int)
+        data_field_offset = self._read_long(vsi)
+        flags = self._read_int(vsi)
+        self._skip_bytes(vsi, 4)
+        tag_count = flags & 0xfffffff
+        return data_field_offset, tag_count
+
+    def _resolve_tags(self):
+        for item1 in self.user_data:
+            for item2 in self.user_data:
+                path1 = item1.get_path()
+                path2 = item2.get_path()
+                if path1 != path2 and path1.startswith(path2):
+                    self._result_tags[item1.get_value()] = item2.get_value()
+
+    def get_user_defined_tags(self):
+        try:
+            with open(self.file_path, "rb") as vsi_file:
+                vsi_file.seek(8)
+                self._collect_tags(vsi_file, '')
+                self._resolve_tags()
+                self._set_default_values()
+                self._remove_empty_values()
+                return self._result_tags
+        except BaseException as e:
+            print('An error occurred during binary tags reading:')
+            print(traceback.format_exc())
+            return {}
+
+    def _set_default_values(self):
+        if self.PURPOSE_KEY not in self._result_tags or not self._result_tags[self.PURPOSE_KEY]:
+            self._result_tags[self.PURPOSE_KEY] = 'Study'
+        if self.ANIMAL_ID_KEY in self._result_tags:
+            animal_id = int(self._result_tags[self.ANIMAL_ID_KEY])
+            if self.SEX_KEY not in self._result_tags or not self._result_tags[self.SEX_KEY]:
+                self._result_tags[self.SEX_KEY] = 'Male' if animal_id % 1000 < 500 else 'Female'
+            if self.GROUP_KEY not in self._result_tags or not self._result_tags[self.GROUP_KEY]:
+                self._result_tags[self.GROUP_KEY] = str(animal_id / 1000)
+        if self.PREPARATION_KEY not in self._result_tags or not self._result_tags[self.PREPARATION_KEY]:
+            self._result_tags[self.PREPARATION_KEY] = 'FFPE'
+        if self.STAIN_METHOD_KEY not in self._result_tags or not self._result_tags[self.STAIN_METHOD_KEY]:
+            self._result_tags[self.STAIN_METHOD_KEY] = 'General'
+        if self.STAIN_KEY not in self._result_tags or not self._result_tags[self.STAIN_KEY]:
+            self._result_tags[self.STAIN_KEY] = 'H&E'
+
+    def _remove_empty_values(self):
+        for key, value in self._result_tags.items():
+            if not value:
+                del self._result_tags[key]
+
+
 class WsiFileTagProcessor:
 
     CATEGORICAL_ATTRIBUTE = '/categoricalAttribute'
@@ -241,7 +548,19 @@ class WsiFileTagProcessor:
         if common_tags_mapping:
             tags_dictionary.update(self.extract_matching_tags_from_metadata(metadata_dict, common_tags_mapping))
         tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
+        if self.file_path.endswith('.vsi'):
+            self._add_user_defined_tags_if_required(existing_attributes_dictionary, tags_dictionary)
         return tags_dictionary
+
+    def _add_user_defined_tags_if_required(self, existing_attributes_dictionary, tags_dictionary):
+        user_defined_tags = VSIBinaryTagsReader(self.file_path).get_user_defined_tags()
+        user_defined_tags_mapping = self.map_tags('WSI_PARSING_USER_DEFINED_TAG_MAPPING',
+                                                  existing_attributes_dictionary)
+        for key, value in user_defined_tags.items():
+            if key in user_defined_tags_mapping:
+                target_attribute_name = user_defined_tags_mapping[key]
+                if target_attribute_name not in tags_dictionary:
+                    tags_dictionary[target_attribute_name] = {value}
 
     def _get_advanced_mapping_dict(self, target_image_details, metadata_dict):
         tags = dict()
@@ -261,7 +580,7 @@ class WsiFileTagProcessor:
         else:
             study_names_found = set()
             for match_tuple in matching_result:
-                study_names_found.add(self._extract_study_name_from_tuple(match_tuple))
+                study_names_found.add(self._extract_study_name_from_tuple(match_tuple).upper())
             if UNKNOWN_ATTRIBUTE_VALUE in study_names_found:
                 study_names_found.remove(UNKNOWN_ATTRIBUTE_VALUE)
             if len(study_names_found) != 1:
