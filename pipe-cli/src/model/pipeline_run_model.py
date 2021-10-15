@@ -108,7 +108,7 @@ class PipelineRunModel(object):
         if 'sensitive' in json:
             instance.sensitive = json['sensitive']
 
-        instance.platform = result.get('platform')
+        instance.platform = json.get('platform')
 
         return instance
 
