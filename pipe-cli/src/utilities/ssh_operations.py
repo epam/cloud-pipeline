@@ -264,10 +264,10 @@ def setup_authenticated_paramiko_transport(run_id, user, retries):
         sshpass = sshuser
     elif run_ssh_mode == 'owner-sshpass':
         sshuser = run_owner
-        sshpass = resolve_run_ssh_pass(conn_info, region)
+        sshpass = resolve_run_ssh_pass(conn_info)
     else:
         sshuser = DEFAULT_SSH_USER
-        sshpass = resolve_run_ssh_pass(conn_info, region)
+        sshpass = resolve_run_ssh_pass(conn_info)
     try:
         transport.auth_password(sshuser, sshpass)
         return transport
@@ -303,11 +303,11 @@ def resolve_run_ssh_user(run_ssh_mode, run_owner):
         else DEFAULT_SSH_USER
 
 
-def resolve_run_ssh_pass(conn_info, region=None):
+def resolve_run_ssh_pass(conn_info):
     parent_run_id = conn_info.parameters.get('parent-id')
     run_shared_users_enabled = get_boolean(conn_info.parameters.get('CP_CAP_SHARE_USERS'))
     if run_shared_users_enabled and parent_run_id:
-        parent_conn_info = get_conn_info(parent_run_id, region)
+        parent_conn_info = get_conn_info(parent_run_id)
         return parent_conn_info.ssh_pass
     else:
         return conn_info.ssh_pass
