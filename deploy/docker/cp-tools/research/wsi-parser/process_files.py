@@ -42,6 +42,7 @@ EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NA
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
 STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-zA-Z]{3})(-|_)*(\\d{2})(-|_)*(\\d{5})'))
 STUDY_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STUDY_NAME_CAT_ATTR_NAME', 'Study name')
+SLIDE_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SLIDE_NAME_CAT_ATTR_NAME', 'Slide Name')
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 
@@ -550,6 +551,7 @@ class WsiFileTagProcessor:
         tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
         if self.file_path.endswith('.vsi'):
             self._add_user_defined_tags_if_required(existing_attributes_dictionary, tags_dictionary)
+        self._try_build_slide_name(tags_dictionary)
         return tags_dictionary
 
     def _add_user_defined_tags_if_required(self, existing_attributes_dictionary, tags_dictionary):
@@ -712,6 +714,21 @@ class WsiFileTagProcessor:
         existing_attributes = self.api.execute_request(self.system_dictionaries_url)
         existing_attributes_dictionary = {attribute['key']: attribute['values'] for attribute in existing_attributes}
         return existing_attributes_dictionary
+
+    def _try_build_slide_name(self, tags_dictionary):
+        slide_name_parts_tags = os.getenv('WSI_TAGS_PROCESSING_SLIDE_NAME_TAGS', '')
+        slide_name_building_rules = slide_name_parts_tags.split(TAGS_MAPPING_RULE_DELIMITER) \
+            if slide_name_parts_tags \
+            else []
+        slide_name_parts = []
+        for tag in slide_name_building_rules:
+            if tag not in tags_dictionary or not tags_dictionary[tag]:
+                self.log_processing_info('No tag [{}] presented in tags, unable to build slide name...'.format(tag))
+                return
+            else:
+                slide_name_parts.append(tags_dictionary[tag])
+        if slide_name_parts:
+            tags_dictionary[SLIDE_NAME_CAT_ATTR_NAME] = {'_'.join(slide_name_parts)}
 
 
 class WsiFileParser:
