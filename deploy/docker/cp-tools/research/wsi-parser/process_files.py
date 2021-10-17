@@ -43,6 +43,14 @@ MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME
 STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-zA-Z]{3})(-|_)*(\\d{2})(-|_)*(\\d{5})'))
 STUDY_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STUDY_NAME_CAT_ATTR_NAME', 'Study name')
 SLIDE_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SLIDE_NAME_CAT_ATTR_NAME', 'Slide Name')
+STAIN_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_CAT_ATTR_NAME', 'Stain')
+STAIN_METHOD_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_METHOD_CAT_ATTR_NAME', 'Stain Method')
+PREPARATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_PREPARATION_CAT_ATTR_NAME', 'Preparation')
+GROUP_CAT_ATTR_NAME = os.getenv('WSI_PARSING_GROUP_CAT_ATTR_NAME', 'Group')
+SEX_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SEX_CAT_ATTR_NAME', 'Sex')
+ANIMAL_ID_CAT_ATTR_NAME = os.getenv('WSI_PARSING_ANIMAL_ID_CAT_ATTR_NAME', 'Animal ID')
+PURPOSE_CAT_ATTR_NAME = os.getenv('WSI_PARSING_PURPOSE_CAT_ATTR_NAME', 'Purpose')
+
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 
@@ -214,14 +222,6 @@ class UserDefinedMetadata:
 
 
 class VSIBinaryTagsReader:
-
-    STAIN_KEY = 'Stain'
-    STAIN_METHOD_KEY = 'Stain Method'
-    PREPARATION_KEY = 'Preparation'
-    GROUP_KEY = 'Group'
-    SEX_KEY = 'Sex'
-    ANIMAL_ID_KEY = 'Animal ID'
-    PURPOSE_KEY = 'Purpose'
 
     HEADER_BYTES_SIZE = 24
 
@@ -468,29 +468,12 @@ class VSIBinaryTagsReader:
                 vsi_file.seek(8)
                 self._collect_tags(vsi_file, '')
                 self._resolve_tags()
-                self._set_default_values()
                 self._remove_empty_values()
                 return self._result_tags
         except BaseException as e:
             print('An error occurred during binary tags reading:')
             print(traceback.format_exc())
             return {}
-
-    def _set_default_values(self):
-        if self.PURPOSE_KEY not in self._result_tags or not self._result_tags[self.PURPOSE_KEY]:
-            self._result_tags[self.PURPOSE_KEY] = 'Study'
-        if self.ANIMAL_ID_KEY in self._result_tags:
-            animal_id = int(self._result_tags[self.ANIMAL_ID_KEY])
-            if self.SEX_KEY not in self._result_tags or not self._result_tags[self.SEX_KEY]:
-                self._result_tags[self.SEX_KEY] = 'Male' if animal_id % 1000 < 500 else 'Female'
-            if self.GROUP_KEY not in self._result_tags or not self._result_tags[self.GROUP_KEY]:
-                self._result_tags[self.GROUP_KEY] = str(animal_id / 1000)
-        if self.PREPARATION_KEY not in self._result_tags or not self._result_tags[self.PREPARATION_KEY]:
-            self._result_tags[self.PREPARATION_KEY] = 'FFPE'
-        if self.STAIN_METHOD_KEY not in self._result_tags or not self._result_tags[self.STAIN_METHOD_KEY]:
-            self._result_tags[self.STAIN_METHOD_KEY] = 'General'
-        if self.STAIN_KEY not in self._result_tags or not self._result_tags[self.STAIN_KEY]:
-            self._result_tags[self.STAIN_KEY] = 'H&E'
 
     def _remove_empty_values(self):
         for key, value in self._result_tags.items():
@@ -551,6 +534,7 @@ class WsiFileTagProcessor:
         tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
         if self.file_path.endswith('.vsi'):
             self._add_user_defined_tags_if_required(existing_attributes_dictionary, tags_dictionary)
+        self._set_tags_default_values(tags_dictionary)
         self._try_build_slide_name(tags_dictionary)
         return tags_dictionary
 
@@ -563,6 +547,22 @@ class WsiFileTagProcessor:
                 target_attribute_name = user_defined_tags_mapping[key]
                 if target_attribute_name not in tags_dictionary:
                     tags_dictionary[target_attribute_name] = {value}
+
+    def _set_tags_default_values(self, tags):
+        if PURPOSE_CAT_ATTR_NAME not in tags or not tags[PURPOSE_CAT_ATTR_NAME]:
+            tags[PURPOSE_CAT_ATTR_NAME] = {'Study'}
+        if ANIMAL_ID_CAT_ATTR_NAME in tags:
+            animal_id = int(tags[ANIMAL_ID_CAT_ATTR_NAME])
+            if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
+                tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id % 1000 < 500 else {'Female'}
+            if GROUP_CAT_ATTR_NAME not in tags or not tags[GROUP_CAT_ATTR_NAME]:
+                tags[GROUP_CAT_ATTR_NAME] = {str(animal_id / 1000)}
+        if PREPARATION_CAT_ATTR_NAME not in tags or not tags[PREPARATION_CAT_ATTR_NAME]:
+            tags[PREPARATION_CAT_ATTR_NAME] = {'FFPE'}
+        if STAIN_METHOD_CAT_ATTR_NAME not in tags or not tags[STAIN_METHOD_CAT_ATTR_NAME]:
+            tags[STAIN_METHOD_CAT_ATTR_NAME] = {'General'}
+        if STAIN_CAT_ATTR_NAME not in tags or not tags[STAIN_CAT_ATTR_NAME]:
+            tags[STAIN_CAT_ATTR_NAME] = {'H&E'}
 
     def _get_advanced_mapping_dict(self, target_image_details, metadata_dict):
         tags = dict()
