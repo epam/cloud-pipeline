@@ -44,7 +44,7 @@ STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-z
 STUDY_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STUDY_NAME_CAT_ATTR_NAME', 'Study name')
 SLIDE_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SLIDE_NAME_CAT_ATTR_NAME', 'Slide Name')
 STAIN_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_CAT_ATTR_NAME', 'Stain')
-STAIN_METHOD_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_METHOD_CAT_ATTR_NAME', 'Stain Method')
+STAIN_METHOD_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_METHOD_CAT_ATTR_NAME', 'Stain method')
 PREPARATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_PREPARATION_CAT_ATTR_NAME', 'Preparation')
 GROUP_CAT_ATTR_NAME = os.getenv('WSI_PARSING_GROUP_CAT_ATTR_NAME', 'Group')
 SEX_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SEX_CAT_ATTR_NAME', 'Sex')
@@ -552,11 +552,13 @@ class WsiFileTagProcessor:
         if PURPOSE_CAT_ATTR_NAME not in tags or not tags[PURPOSE_CAT_ATTR_NAME]:
             tags[PURPOSE_CAT_ATTR_NAME] = {'Study'}
         if ANIMAL_ID_CAT_ATTR_NAME in tags:
-            animal_id = int(tags[ANIMAL_ID_CAT_ATTR_NAME])
-            if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
-                tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id % 1000 < 500 else {'Female'}
-            if GROUP_CAT_ATTR_NAME not in tags or not tags[GROUP_CAT_ATTR_NAME]:
-                tags[GROUP_CAT_ATTR_NAME] = {str(animal_id / 1000)}
+            animal_ids_set = tags[ANIMAL_ID_CAT_ATTR_NAME]
+            if len(animal_ids_set) == 1:
+                animal_id = int(list(animal_ids_set)[0])
+                if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
+                    tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id % 1000 < 500 else {'Female'}
+                if GROUP_CAT_ATTR_NAME not in tags or not tags[GROUP_CAT_ATTR_NAME]:
+                    tags[GROUP_CAT_ATTR_NAME] = {str(animal_id / 1000)}
         if PREPARATION_CAT_ATTR_NAME not in tags or not tags[PREPARATION_CAT_ATTR_NAME]:
             tags[PREPARATION_CAT_ATTR_NAME] = {'FFPE'}
         if STAIN_METHOD_CAT_ATTR_NAME not in tags or not tags[STAIN_METHOD_CAT_ATTR_NAME]:
@@ -942,6 +944,7 @@ class WsiFileParser:
                 tags_processing_result = 1
         except Exception as e:
             log_info('An error occurred during tags processing: {}'.format(str(e)))
+            print(traceback.format_exc())
             tags_processing_result = 1
         return tags_processing_result
 
