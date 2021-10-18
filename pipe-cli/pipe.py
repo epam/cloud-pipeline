@@ -1550,6 +1550,8 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
               help='Host name for passwordless ssh configuration')
 @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
               help='Keeps passwordless ssh configuration after tunnel stopping')
+@click.option('-d', '--direct', required=False, is_flag=True, default=False,
+               help='Configures direct tunnel connection without proxy')
 @click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
 @click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
@@ -1563,7 +1565,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @Config.validate_access_token
 @stacktracing
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
-                 ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                 ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                  timeout, foreground, retries, trace):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
@@ -1635,7 +1637,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                   timeout, foreground, retries)
 
 
