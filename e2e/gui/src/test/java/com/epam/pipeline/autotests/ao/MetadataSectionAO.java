@@ -191,13 +191,14 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkWarningStatusIconNotVisible() {
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
             if (!$(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
                 break;
             }
             sleep(1, MINUTES);
             refresh();
         }
+        $(byClassName("estricted-images-info__popover-icon")).shouldNotBe(visible);
         return this;
     }
 

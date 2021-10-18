@@ -240,6 +240,12 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         checkStorageReadOnlyStatusInActiveRun(userRunId, fileName2);
         userRunId2 = checkStorageReadOnlyStatusInNewRun(fileName2);
         logout();
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .rmFile(fileName)
+                .validateElementNotPresent(fileName);
     }
 
     @Test(dependsOnMethods = {"validateReadOnlyQuota"})
