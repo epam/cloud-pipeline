@@ -110,7 +110,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
-        if("false".equals(ADMIN_TOKEN_IS_SERVICE)) {
+        if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
             return new SystemLogsAO();
         }
         return new SystemLogsAO().setIncludeServiceAccountEventsOption();
@@ -1656,12 +1656,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public SystemLogsAO setIncludeServiceAccountEventsOption() {
             if($(byId("show-hide-advanced")).shouldBe(enabled).has(text("Show advanced"))) {
-                $(byId("show-hide-advanced")).shouldBe(enabled).click();
+                click(byId("show-hide-advanced"));
             }
             if(!$(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
                     .has(cssClass("ant-checkbox-checked"))) {
-                $(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
-                        .shouldBe(enabled).click();
+                click(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"));
             }
             return this;
         }
