@@ -217,7 +217,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
-    private SelenideElement elementRow(String elementName) {
+    public SelenideElement elementRow(String elementName) {
         return $$(className("ant-table-row")).findBy(textCaseSensitive(elementName));
     }
 
@@ -781,7 +781,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public EditStoragePopUpAO editForNfsMount() {
-            $(byClassName("edit-storage-button")).shouldBe(enabled).click();
+            if (!filesAndFolderElements().isEmpty()) {
+                click(byClassName("edit-storage-button"));
+            }
             return this;
         }
 
