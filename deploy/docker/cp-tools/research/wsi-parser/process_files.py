@@ -40,7 +40,7 @@ TAGS_PROCESSING_ONLY = os.getenv('WSI_PARSING_TAGS_ONLY', 'false') == 'true'
 REFR_IND_CAT_ATTR_NAME = os.getenv('WSI_PARSING_REFR_IND_CAT_ATTR_NAME', 'Immersion liquid')
 EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NAME', 'Extended Focus')
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
-STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-zA-Z]{3})(-|_)*(\\d{2})(-|_)*(\\d{5})'))
+STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-zA-Z]{3})(-|_)*(\\d{2})(-|_)*(\\d{3,5})'))
 STUDY_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STUDY_NAME_CAT_ATTR_NAME', 'Study name')
 SLIDE_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SLIDE_NAME_CAT_ATTR_NAME', 'Slide Name')
 STAIN_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_CAT_ATTR_NAME', 'Stain')
@@ -566,7 +566,8 @@ class WsiFileTagProcessor:
         if STAIN_METHOD_CAT_ATTR_NAME not in tags or not tags[STAIN_METHOD_CAT_ATTR_NAME]:
             tags[STAIN_METHOD_CAT_ATTR_NAME] = {'General'}
         if STAIN_CAT_ATTR_NAME not in tags or not tags[STAIN_CAT_ATTR_NAME]:
-            tags[STAIN_CAT_ATTR_NAME] = {'H&E'}
+            if list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] == 'General':
+                tags[STAIN_CAT_ATTR_NAME] = {'H&E'}
 
     def _get_advanced_mapping_dict(self, target_image_details, metadata_dict):
         tags = dict()
