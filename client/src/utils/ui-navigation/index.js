@@ -206,6 +206,7 @@ class UINavigation {
   @observable dashboard;
   @observable homePage;
   @observable searchDocumentTypes;
+  @observable supportTemplate;
   @observable _loaded;
 
   constructor (authenticatedUserInfo, preferences) {
@@ -244,6 +245,39 @@ class UINavigation {
     return '/dashboard';
   }
 
+  parseSupportTemplate () {
+    if (this.preferences && this.preferences.loaded && this.user && this.user.loaded) {
+      const template = this.preferences.getPreferenceValue('ui.support.template');
+      if (template) {
+        try {
+          const parsed = JSON.parse(template);
+          if (typeof parsed === 'object') {
+            const {
+              groups = []
+            } = this.user.value;
+            const keys = Object.keys(parsed);
+            console.log(groups, keys);
+            const groupKey = keys.find(key => groups.includes(key));
+            if (groupKey) {
+              console.log('parsed', parsed[groupKey]);
+              this.supportTemplate = parsed[groupKey];
+            } else {
+              this.supportTemplate = parsed._default;
+            }
+          } else if (typeof parsed === 'string') {
+            this.supportTemplate = parsed;
+          } else {
+            this.supportTemplate = undefined;
+          }
+        } catch (_) {
+          if (typeof template === 'string') {
+            this.supportTemplate = template;
+          }
+        }
+      }
+    }
+  }
+
   @action
   fetch () {
     if (this.loaded) {
@@ -265,6 +299,7 @@ class UINavigation {
           this.dashboard = dashboard;
           this.homePage = homePage;
           this.searchDocumentTypes = searchDocumentTypes;
+          this.parseSupportTemplate();
           this._loaded = true;
         })
         .then(resolve);
