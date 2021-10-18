@@ -88,6 +88,27 @@ def setup_paramiko_logging():
         paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 
 
+def direct_connect(target, timeout=None, retries=None):
+    timeout = timeout or None
+    retries = retries or 0
+    sock = None
+    try:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect(target)
+        return sock
+    except KeyboardInterrupt:
+        raise
+    except:
+        if retries >= 1:
+            if sock:
+                sock.close()
+            return direct_connect(target, timeout=timeout, retries=retries - 1)
+        else:
+            raise
+
+
 def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
     timeout = timeout or None
     retries = retries or 0
@@ -312,23 +333,23 @@ def parse_scp_location(location):
 
 
 def create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                   timeout, foreground, retries):
     run_id = parse_run_identifier(host_id)
     if run_id:
         create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
-                             ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                             ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                              timeout, foreground, retries)
     else:
         if ssh:
             raise RuntimeError('Passwordless SSH tunnel connections are allowed to runs only.')
         create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
-                              log_file, log_level,
+                              direct, log_file, log_level,
                               timeout, foreground, retries)
 
 
 def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
-                         ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                         ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                          timeout, foreground, retries):
     conn_info = get_conn_info(run_id)
     if conn_info.sensitive:
@@ -346,12 +367,12 @@ def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
 
 
 def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
-                          log_file, log_level,
+                          direct, log_file, log_level,
                           timeout, foreground, retries):
     if foreground:
         conn_info = get_custom_conn_info(host_id)
         create_foreground_tunnel(host_id, local_port, remote_port, connection_timeout, conn_info,
-                                 host_id, log_level, retries)
+                                 host_id, direct, log_level, retries)
     else:
         create_background_tunnel(local_port, remote_port, host_id, log_file, log_level, timeout)
 
@@ -448,18 +469,18 @@ def is_tunnel_ready_on_win(tunnel_pid, local_port):
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                      ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+                                      ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if is_windows():
         create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                     ssh_keep, remote_host, log_level, retries)
+                                                     ssh_keep, remote_host, direct, log_level, retries)
     else:
         create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                   ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
+                                                   ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries)
 
 
 def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                 ssh_keep, remote_host, log_level, retries):
+                                                 ssh_keep, remote_host, direct, log_level, retries):
     logging.info('Configuring putty and openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info)
     if not os.path.exists(passwordless_config.local_openssh_path):
@@ -475,7 +496,7 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                 remote_host, log_level, retries)
+                                 remote_host, direct, log_level, retries)
     except:
         logging.exception('Error occurred while trying set up tunnel')
         raise
@@ -493,7 +514,7 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
 
 
 def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                               ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+                                               ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
     logging.info('Configuring openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_path)
     if not os.path.exists(passwordless_config.local_openssh_path):
@@ -507,7 +528,7 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                 remote_host, log_level, retries)
+                                 remote_host, direct, log_level, retries)
     except:
         logging.exception('Error occurred while trying set up tunnel')
         raise
@@ -522,7 +543,7 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                             remote_host, log_level, retries,
+                             remote_host, direct, log_level, retries,
                              chunk_size=4096, server_delay=0.0001):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
@@ -556,9 +577,14 @@ def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout
                         break
                     try:
                         logging.info('Initializing tunnel connection...')
-                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
-                                                                  timeout=connection_timeout,
-                                                                  retries=retries)
+                        if direct:
+                            tunnel_socket = direct_connect(target_endpoint,
+                                                           timeout=connection_timeout,
+                                                           retries=retries)
+                        else:
+                            tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
+                                                                      timeout=connection_timeout,
+                                                                      retries=retries)
                     except KeyboardInterrupt:
                         raise
                     except:
