@@ -209,9 +209,6 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                         .has(text(format("Storage status is: %s", status)))) {
                     break;
                 }
-//                else {
-//                    continue;
-//                }
             }
             sleep(1, MINUTES);
             refresh();

@@ -274,7 +274,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
-        checkStorageReadOnlyStatusInActiveRun(commonRunId, fileName);
+        checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
         logout();
 
         navigationMenu()
@@ -301,7 +301,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
-        checkFileCreationViaSSH(commonRunId, fileName);
+        checkFileCreationViaSSH(userRunId, fileName);
         checkFileCreationViaSSH(userRunId2, fileName2);
         logout();
     }
