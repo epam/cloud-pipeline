@@ -347,15 +347,15 @@ class VSIBinaryTagsReader:
         metadata_block_start_position = vsi_file.tell()
         file_length = self._get_file_length()
         if metadata_block_start_position + self.HEADER_BYTES_SIZE >= file_length:
-            return
+            return False
 
         data_field_offset, tag_count = self.read_metadata_block_header(vsi_file)
-        if tag_count > file_length:
-            return
+        if tag_count > file_length or tag_count < 1:
+            return False
 
         metadata_block_data_position = metadata_block_start_position + data_field_offset
         if metadata_block_data_position < 0 or metadata_block_data_position >= file_length:
-            return
+            return False
         vsi_file.seek(metadata_block_data_position)
 
         for i in range(0, tag_count):
@@ -375,7 +375,7 @@ class VSIBinaryTagsReader:
             if tag < 0:
                 if not inline_data and data_size + vsi_file.tell() < file_length:
                     self._skip_bytes(vsi_file, data_size)
-                return
+                return False
 
             if extended_field and real_type == self.NEW_VOLUME_HEADER:
                 self.extract_new_volume_header(data_size, file_length, tag, vsi_file)
@@ -427,20 +427,22 @@ class VSIBinaryTagsReader:
                 if metadata_block_start_position + data_size + 32 < file_length \
                         and metadata_block_start_position + data_size >= 0:
                     vsi_file.seek(metadata_block_start_position + data_size + 32)
-                return
+                return False
 
             next_fp_position = metadata_block_start_position + next_field
             if file_length > next_fp_position >= 0:
                 vsi_file.seek(next_fp_position)
             else:
                 break
+        return True
 
     def extract_new_volume_header(self, data_size, file_length, tag, vsi_file):
         end_pointer = vsi_file.tell() + data_size
         while vsi_file.tell() < end_pointer and vsi_file.tell() < file_length:
             start = vsi_file.tell()
             self.parents.append(tag)
-            self._collect_tags(vsi_file, self._get_volume_name(tag))
+            if not self._collect_tags(vsi_file, self._get_volume_name(tag)):
+                break
             self.parents.pop()
             end = vsi_file.tell()
             if start >= end:
