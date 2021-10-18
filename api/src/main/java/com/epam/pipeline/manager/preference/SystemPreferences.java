@@ -596,6 +596,8 @@ public class SystemPreferences {
                                                         null, BASE_URLS_GROUP, PreferenceValidators.isValidUrl);
     public static final StringPreference BASE_DAV_AUTH_URL = new StringPreference("base.dav.auth.url",
             null, BASE_URLS_GROUP, pass);
+    public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH = new StringPreference("base.invalidate.edge.auth.path",
+            "/invalidate", BASE_URLS_GROUP, pass);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
