@@ -278,7 +278,7 @@ API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
-nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar $CP_API_SRV_JAVA_SPRING_OPTS  &> $API_RUN_TIME_LOG &
 APP_PID="$!"
 
 sleep 5
