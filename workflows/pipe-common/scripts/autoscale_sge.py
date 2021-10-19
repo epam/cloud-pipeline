@@ -16,6 +16,8 @@ import argparse
 import errno
 import logging
 import os
+from collections import Counter
+
 from datetime import datetime, timedelta
 from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 import subprocess
@@ -384,7 +386,9 @@ class GridEngine:
     def get_resource_demand(self, expired_jobs):
         demand_slots = 0
         available_slots = self._get_available_slots()
+        user_slots = Counter()
         for job in expired_jobs:
+            user_slots += Counter(**{job.user: job.slots})
             if self.get_pe_allocation_rule(job.pe) in [AllocationRule.round_robin(), AllocationRule.fill_up()]:
                 if available_slots >= job.slots:
                     available_slots -= job.slots
@@ -393,7 +397,8 @@ class GridEngine:
                     available_slots = 0
             else:
                 demand_slots += job.slots
-        return ComputeResource(demand_slots)
+        # Resource owner is a user who has submitted most of the pending jobs
+        return ComputeResource(demand_slots, owner=user_slots.most_common(1)[0][0])
 
     def get_host_to_scale_down(self, hosts):
         # choose the weakest one (map to number of CPU, sort in reverse order and get from top)
@@ -498,11 +503,12 @@ class GridEngine:
 
 class ComputeResource:
 
-    def __init__(self, cpu, gpu=0, memory=0, disk=0):
+    def __init__(self, cpu, gpu=0, memory=0, disk=0, owner=None):
         self.cpu = cpu
         self.gpu = gpu
         self.memory = memory
         self.disk = disk
+        self.owner = owner
 
 
 class CPInstance:
@@ -539,7 +545,7 @@ class GridEngineScaleUpHandler:
     _GE_POLL_ATTEMPTS = 6
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, cmd_template, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 instance_image, cmd_template, price_type, region_id, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params=''):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
@@ -557,6 +563,7 @@ class GridEngineScaleUpHandler:
         :param cmd_template: Additional nodes cmd template.
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
+        :param owner_param_name: Instance owner param name.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
         :param ge_polling_timeout: Grid Engine polling timeout - in seconds.
@@ -575,6 +582,7 @@ class GridEngineScaleUpHandler:
         self.cmd_template = cmd_template
         self.price_type = price_type
         self.region_id = region_id
+        self.owner_param_name = owner_param_name
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
         self.ge_polling_timeout = ge_polling_timeout
@@ -596,7 +604,7 @@ class GridEngineScaleUpHandler:
         """
         instance_to_run = self.instance_helper.select_instance(resource, self.price_type)
         Logger.info('The next instance is matched according to allowed: %s' % instance_to_run.name)
-        run_id = self._launch_additional_worker(instance_to_run.name)
+        run_id = self._launch_additional_worker(instance_to_run.name, resource.owner)
         host = self._retrieve_pod_name(run_id)
         self.host_storage.add_host(host)
         pod = self._await_pod_initialization(run_id)
@@ -613,9 +621,11 @@ class GridEngineScaleUpHandler:
 
         return pod.name
 
-    def _launch_additional_worker(self, instance):
+    def _launch_additional_worker(self, instance, owner):
         Logger.info('Launch additional worker.')
-        Logger.info('Pass to worker the next parameters: {}'.format(self.worker_launch_system_params))
+        instance_dynamic_launch_params = {
+            self.owner_param_name: owner
+        }
         pipe_run_command = 'pipe run --yes --quiet ' \
                            '--instance-disk %s ' \
                            '--instance-type %s ' \
@@ -626,13 +636,17 @@ class GridEngineScaleUpHandler:
                            '--region-id %s ' \
                            'cluster_role worker ' \
                            'cluster_role_type additional ' \
+                           '%s ' \
                            '%s' \
                            % (self.instance_disk, instance, self.instance_image, self.cmd_template, self.parent_run_id,
-                              self._pipe_cli_price_type(self.price_type), self.region_id, self.worker_launch_system_params)
+                              self._pipe_cli_price_type(self.price_type), self.region_id, self.worker_launch_system_params,
+                              self._parameters_str(instance_dynamic_launch_params))
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
 
+    def _parameters_str(self, instance_launch_params):
+         return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
 
     def _pipe_cli_price_type(self, price_type):
         """
@@ -944,8 +958,9 @@ class GridEngineAutoscaler:
                                 (len(additional_hosts), self.max_additional_hosts))
                     resource = self.grid_engine.get_resource_demand(pending_jobs)
                     Logger.info('The next resource is requested by pending jobs to be run: '
-                                'cpu - {cpu}, gpu - {gpu}, memory - {mem}, disk - {disk}'.
-                                format(cpu=resource.cpu, gpu=resource.gpu, mem=resource.memory, disk=resource.disk))
+                                'cpu - {cpu}, gpu - {gpu}, memory - {mem}, disk - {disk}, owner - {owner}'.
+                                format(cpu=resource.cpu, gpu=resource.gpu, mem=resource.memory, disk=resource.disk,
+                                       owner=resource.owner))
                     self.scale_up(resource)
                 else:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up is aborted.' %
@@ -1384,6 +1399,7 @@ if __name__ == '__main__':
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceHelper.get_family_from_type(cloud_provider, instance_type))
+    owner_param_name = os.getenv('CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', 'CP_CAP_AUTOSCALE_OWNER')
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
@@ -1424,6 +1440,7 @@ if __name__ == '__main__':
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 cmd_template=cmd_template,
                                                 price_type=price_type, region_id=region_id,
+                                                owner_param_name=owner_param_name,
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
