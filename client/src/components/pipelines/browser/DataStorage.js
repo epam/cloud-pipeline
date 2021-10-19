@@ -43,7 +43,7 @@ import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
@@ -77,16 +77,17 @@ import moment from 'moment-timezone';
 import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
-  from '../../../models/dataStorage/DataStorageGenerateSharedLink';
+from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
-  from '../../special/metadata/special/fs-notifications';
+from '../../special/metadata/special/fs-notifications';
 import StorageSize from '../../special/storage-size';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
+import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 
 const PAGE_SIZE = 40;
 
@@ -137,6 +138,7 @@ export default class DataStorage extends React.Component {
     downloadFolderUrlModal: false,
     generateFolderUrlWriteAccess: false,
     selectedItems: [],
+    itemToShare: undefined,
     renameItem: null,
     createFolder: false,
     createFile: false,
@@ -248,6 +250,20 @@ export default class DataStorage extends React.Component {
       }
     }
     return undefined;
+  }
+
+  get sharingEnabled () {
+    const {preferences, info} = this.props;
+    const {selectedItems} = this.state;
+    if (info && info.loaded && info.value) {
+      return info.value.type !== 'NFS' &&
+        selectedItems.length === 1 &&
+        selectedItems[0].type === 'Folder' &&
+        preferences &&
+        preferences.loaded &&
+        preferences.sharedStoragesSystemDirectory;
+    }
+    return false;
   }
 
   onDataStorageEdit = async (storage) => {
@@ -951,6 +967,17 @@ export default class DataStorage extends React.Component {
     this.setState({shareStorageDialogVisible: false});
   };
 
+  openShareItemDialog = (event, item) => {
+    event && event.stopPropagation();
+    if (item) {
+      this.setState({itemToShare: item});
+    }
+  };
+
+  closeShareItemDialog = () => {
+    return this.setState({itemToShare: undefined});
+  };
+
   openEditFileForm = (item) => {
     const sensitive = this.props.info.loaded
       ? this.props.info.value.sensitive
@@ -1066,7 +1093,8 @@ export default class DataStorage extends React.Component {
           type: 'folder',
           downloadable: false,
           editable: false,
-          selectable: false
+          selectable: false,
+          shareAvailable: false
         });
       }
       const getChildList = (item, versions, sensitive) => {
@@ -1092,6 +1120,7 @@ export default class DataStorage extends React.Component {
               !versions[version].deleteMarker,
               deletable: roleModel.writeAllowed(this.props.info.value),
               selectable: false,
+              shareAvailable: false,
               latest: versions[version].version === item.version,
               isVersion: true
             });
@@ -1129,6 +1158,7 @@ export default class DataStorage extends React.Component {
               i.labels['StorageClass'].toLowerCase() !== 'glacier'
             ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
+          shareAvailable: i.type.toLowerCase() !== 'file' && !i.deleteMarker,
           deletable: roleModel.writeAllowed(this.props.info.value),
           children: getChildList(i, i.versions, sensitive),
           selectable: !i.deleteMarker,
@@ -1162,7 +1192,7 @@ export default class DataStorage extends React.Component {
       title: '',
       className: (this.showVersions || hasVersions) ? styles.checkboxCellVersions : styles.checkboxCell,
       render: (item) => {
-        if (item.selectable && (item.downloadable || item.editable)) {
+        if (item.selectable && (item.downloadable || item.editable || item.shareAvailable)) {
           return (
             <Checkbox
               checked={this.fileIsSelected(item)}
@@ -1658,6 +1688,19 @@ export default class DataStorage extends React.Component {
             </div>
             <div style={{paddingRight: 8}}>
               {
+                this.sharingEnabled &&
+                <Button
+                  id="share-selected-button"
+                  size="small"
+                  onClick={(e) => this.openShareItemDialog(e, this.state.selectedItems[0])
+                  }
+                >
+                  {`Share ${this.state.selectedItems[0]
+                    ? this.state.selectedItems[0].type.toLowerCase()
+                    : ''}`}
+                </Button>
+              }
+              {
                 this.bulkDownloadEnabled &&
                 this.storageAllowSignedUrls &&
                 <Button
@@ -2142,6 +2185,12 @@ export default class DataStorage extends React.Component {
           visible={!!this.state.renameItem}
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
+        <SharedItemInfo
+          path={this.state.itemToShare ? this.state.itemToShare.path : undefined}
+          storage={this.props.info.value}
+          visible={!!this.state.itemToShare}
+          close={this.closeShareItemDialog}
+        />
         <Modal
           visible={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}

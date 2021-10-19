@@ -221,6 +221,31 @@ class PreferencesLoad extends Remote {
     return 1;
   }
 
+  @computed
+  get sharedStoragesSystemDirectory () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get sharedStoragesDefaultPermissions () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.default.permissions');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "data.sharing.storage.folders.default.permissions" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
