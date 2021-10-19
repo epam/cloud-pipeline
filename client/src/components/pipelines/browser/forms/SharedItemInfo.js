@@ -186,6 +186,7 @@ class SharedItemInfo extends React.Component {
 SharedItemInfo.PropTypes = {
   storageId: PropTypes.string,
   item: PropTypes.object,
+  title: PropTypes.string,
   close: PropTypes.func,
   submit: PropTypes.func,
   visible: PropTypes.bool
