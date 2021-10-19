@@ -52,7 +52,8 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
     selectedPermission: null,
     operationInProgress: false,
     subObjectsPermissions: [],
-    usersToShare: this.props.usersToShare || []
+    usersToShare: this.props.usersToShare || [],
+    permissionsOptions: {}
   };
 
   static propTypes = {
@@ -333,7 +334,7 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
             type="primary"
             style={{marginTop: '10px'}}
             disabled={this.state.usersToShare.length === 0}
-            onClick={() => this.props.goToCreateShareLink()}
+            onClick={() => this.props.goToCreateShareLink(this.state.selectedPermission)}
           >SAVE AND SHARE</Button>
         </Row>
       </div>

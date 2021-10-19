@@ -72,6 +72,7 @@ import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import parseQueryParameters from '../../../utils/queryParameters';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
+import {shareStorageItem} from '../../../utils/share-storage-item';
 import roleModel from '../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Browser.css';
@@ -139,6 +140,8 @@ export default class DataStorage extends React.Component {
     generateFolderUrlWriteAccess: false,
     selectedItems: [],
     shareItem: null,
+    sharedLink: null,
+    sharingErrorMessage: null,
     renameItem: null,
     createFolder: false,
     createFile: false,
@@ -254,7 +257,7 @@ export default class DataStorage extends React.Component {
 
   get sharingEnabled () {
     const {selectedItems} = this.state;
-    return selectedItems.length === 1;
+    return selectedItems.length === 1 && selectedItems[0].type === 'Folder';
   }
 
   onDataStorageEdit = async (storage) => {
@@ -948,7 +951,19 @@ export default class DataStorage extends React.Component {
     }
     this.setState({selectedItems});
   };
-
+  shareItem = async (permissions) => {
+    try {
+      const result = await shareStorageItem(
+        this.props.preferences,
+        this.props.info.value,
+        this.state.shareItem.name,
+        permissions
+      );
+      this.setState({sharedLink: result});
+    } catch (e) {
+      this.setState({sharingErrorMessage: e.message});
+    }
+  }
   openShareStorageDialog = () => {
     this.setState({shareStorageDialogVisible: true});
   };
@@ -970,10 +985,11 @@ export default class DataStorage extends React.Component {
     if (clearSelection) {
       return this.setState({
         shareItem: null,
-        selectedFile: null
+        selectedFile: null,
+        sharingErrorMessage: null
       });
     }
-    return this.setState({shareItem: null});
+    return this.setState({shareItem: null, sharingErrorMessage: null});
   };
 
   openEditFileForm = (item) => {
@@ -2175,6 +2191,9 @@ export default class DataStorage extends React.Component {
           visible={!!this.state.shareItem}
           close={this.closeShareItemDialog}
           submit={this.closeShareItemDialog}
+          generateLinkFn={this.shareItem}
+          link={this.state.sharedLink}
+          sharingError={this.state.sharingErrorMessage}
         />
         <Modal
           visible={!!this.state.itemsToDelete}

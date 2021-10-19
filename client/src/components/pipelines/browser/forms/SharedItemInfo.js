@@ -19,10 +19,12 @@ import {
   Button,
   Input,
   Modal,
-  Row
+  Row,
+  Spin,
+  Alert
 } from 'antd';
 import PropTypes from 'prop-types';
-import {SERVER} from '../../../../config';
+
 import styles from './SharedItemInfo.css';
 import DataStorageSharingPermissionsForm from './DataStorageSharingPermissionsForm';
 
@@ -30,8 +32,10 @@ class SharedItemInfo extends React.Component {
   state = {
     copySuccess: false,
     copyDisabled: false,
-    isSharingMode: false,
-    usersToShare: []
+    showLink: false,
+    usersToShare: [],
+    permissions: {},
+    pending: false
   }
 
   get itemName () {
@@ -43,22 +47,7 @@ class SharedItemInfo extends React.Component {
   }
 
   get sharedItemUrl () {
-    const {item, storageId} = this.props;
-    let serverUrl = `${SERVER}/#/storage`;
-    let query;
-    if (SERVER.endsWith('/')) {
-      serverUrl = `${SERVER}#/storage`;
-    }
-    if (item && item.type.toLowerCase() === 'file') {
-      const itemPath = item.path.split('/').slice(0, -1).join('/');
-      query = `?path=${itemPath}&versions=false`;
-    } else if (item && item.type.toLowerCase() === 'folder') {
-      const itemPath = item.path.endsWith('/')
-        ? item.path.substring(0, item.path.length - 1)
-        : item.path;
-      query = `?path=${itemPath}&versions=false`;
-    }
-    return `${serverUrl}/${storageId}${query}`;
+    return this.props.link;
   }
 
   copyUrlToClipboard = (event) => {
@@ -73,6 +62,9 @@ class SharedItemInfo extends React.Component {
   };
 
   closeShareDialog = () => {
+    this.setState({
+      copySuccess: false
+    });
     this.props.close();
   }
 
@@ -80,23 +72,17 @@ class SharedItemInfo extends React.Component {
     this.setState({usersToShare: value});
   }
 
-  onCancel = () => {
-    this.resetForm();
-    this.props.close();
-  }
-
-  onShare = () => {
-    this.resetForm();
-    this.props.close();
-  }
-
-  resetForm = () => {
-    this.setState({
-      copySuccess: false,
-      copyDisabled: false,
-      isSharingMode: false,
-      usersToShare: []
+  onShare = async (selectedPermissions) => {
+    const {generateLinkFn} = this.props;
+    this.setState({pending: true});
+    await generateLinkFn({
+      permissions: this.state.usersToShare,
+      mask: selectedPermissions.mask
     });
+    this.setState({pending: false});
+    if (!this.props.sharingError) {
+      this.setState({showLink: true});
+    }
   }
 
   renderShareForm = () => {
@@ -125,7 +111,7 @@ class SharedItemInfo extends React.Component {
           <Button
             type={copySuccess ? '' : 'primary'}
             onClick={this.copyUrlToClipboard}
-            disabled={copySuccess || copyDisabled}
+            disabled={copyDisabled}
             style={{
               marginLeft: '15px',
               minWidth: '130px'
@@ -145,39 +131,54 @@ class SharedItemInfo extends React.Component {
         objectType={'DATA_STORAGE'}
         onChangeUsersToShare={(value) => this.onChangeUsersToShare(value)}
         usersToShare={this.state.usersToShare}
-        goToCreateShareLink={() => this.setState({isSharingMode: true})}
+        goToCreateShareLink={this.onShare}
       />
     );
   }
 
   renderContent = () => {
-    return this.state.isSharingMode
+    return this.state.showLink
       ? this.renderShareForm()
       : this.renderUserSelectForm();
+  }
+
+  renderModalFooter = () => {
+    return (this.state.showLink || this.props.sharingError)
+      ? (
+        <Row type="flex" justify="end">
+          <Button
+            type="primary"
+            onClick={this.closeShareDialog}
+            style={{marginRight: 5}}
+          >
+            OK
+          </Button>
+        </Row>
+      ) : null;
   }
   render () {
     return (
       <Modal
         visible={this.props.visible}
         title={this.props.title}
-        footer={this.state.isSharingMode ? (
-          <Row type="flex" justify="end">
-            <Button
-              onClick={() => this.onCancel()}
-            >
-              CANCEL
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => this.onShare()}
-              style={{marginRight: 5}}
-            >
-              SHARE
-            </Button>
-          </Row>
-        ) : null}
+        onCancel={this.closeShareDialog}
+        footer={this.renderModalFooter()}
       >
-        {this.renderContent()}
+        <div>
+          {
+            this.props.sharingError
+              ? (
+                <Alert
+                  type="error"
+                  message={this.props.sharingError}
+                />)
+              : (
+                <Spin spinning={this.state.pending}>
+                  {this.renderContent()}
+                </Spin>
+              )
+          }
+        </div>
       </Modal>
     );
   }
@@ -189,7 +190,9 @@ SharedItemInfo.PropTypes = {
   title: PropTypes.string,
   close: PropTypes.func,
   submit: PropTypes.func,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  generateLinkFn: PropTypes.func,
+  link: PropTypes.string
 };
 
 export default SharedItemInfo;
