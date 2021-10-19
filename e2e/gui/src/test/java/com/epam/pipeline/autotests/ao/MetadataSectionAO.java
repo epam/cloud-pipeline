@@ -27,6 +27,7 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -175,6 +176,9 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkStorageSize(final String sizeWithUnit) {
+        if ("0".equals(sizeWithUnit)) {
+            ensure(byClassName("torage-size__storage-size"), not(visible));
+        }
         ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
         return this;
     }
@@ -191,14 +195,15 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkWarningStatusIconNotVisible() {
-        for (int i = 0; i < 10; i++) {
-            if (!$(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
+        for (int i = 0; i < 5; i++) {
+            if (!$(byClassName("estricted-images-info__container")).isDisplayed()) {
                 break;
             }
             sleep(1, MINUTES);
             refresh();
+            sleep(5, SECONDS);
         }
-        $(byClassName("estricted-images-info__popover-icon")).shouldNotBe(visible);
+        $(byClassName("estricted-images-info__container")).shouldNotBe(visible);
         return this;
     }
 

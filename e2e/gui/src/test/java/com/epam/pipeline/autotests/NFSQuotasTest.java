@@ -40,9 +40,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation {
@@ -198,7 +196,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .rmFile(fileName)
                 .validateElementNotPresent(fileName);
-//        sleep(5, MINUTES);
         checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
         String lastRunId = checkStorageReadOnlyStatusInNewRun(fileName);
         runsMenu()
