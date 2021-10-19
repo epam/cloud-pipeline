@@ -221,6 +221,15 @@ class PreferencesLoad extends Remote {
     return 1;
   }
 
+  @computed
+  get sharedStoragesSystemDirectory () {
+    const value = this.getPreferenceValue('misc.shared.storages.directory');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 2630;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
