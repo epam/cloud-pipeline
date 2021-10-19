@@ -43,7 +43,7 @@ function invalidateToken (edgeUrl) {
   const invalidateUrl = edgeUrl.concat('/invalidate');
   return new Promise(async (resolve) => {
     try {
-      await fetch(invalidateUrl);
+      await fetch(invalidateUrl, {mode: 'cors', credentials: 'include'});
     } catch (e) {
       console.warn(`${invalidateUrl} error: ${e.message}`);
     } finally {
