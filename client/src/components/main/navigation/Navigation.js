@@ -27,6 +27,7 @@ import RunsCounterMenuItem from './RunsCounterMenuItem';
 import SupportMenuItem from './SupportMenuItem';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
+import invalidateEdgeTokens from "../../../utils/invalidate-edge-tokens";
 
 @inject('impersonation')
 @observer
@@ -175,11 +176,14 @@ export default class Navigation extends React.Component {
     } else if (key === 'runs') {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     } else if (key === 'logout') {
-      let url = `${SERVER}/saml/logout`;
-      if (SERVER.endsWith('/')) {
-        url = `${SERVER}saml/logout`;
-      }
-      window.location = url;
+      invalidateEdgeTokens()
+        .then(() => {
+          let url = `${SERVER}/saml/logout`;
+          if (SERVER.endsWith('/')) {
+            url = `${SERVER}saml/logout`;
+          }
+          window.location = url;
+        });
     } else {
       const item = this.navigationItems.find(item => item.key === key);
       if (item && typeof item.action === 'function') {
