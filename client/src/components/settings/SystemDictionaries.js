@@ -35,6 +35,15 @@ import {SplitPanel} from '../special/splitPanel';
 
 import styles from './SystemDictionaries.css';
 
+function nameSorter (a, b) {
+  const aName = (a.name || '').toLowerCase();
+  const bName = (b.name || '').toLowerCase();
+  if (aName === bName) {
+    return 0;
+  }
+  return aName < bName ? -1 : 1;
+}
+
 class SystemDictionaries extends React.Component {
   state = {
     newDictionary: false,
@@ -232,13 +241,15 @@ class SystemDictionaries extends React.Component {
     if (newDictionary) {
       dataSource.push({name: 'New dictionary', isNew: true});
     }
+    const lowerCasedFilter = (filter || '').toLowerCase();
     dataSource.push(
       ...this.dictionaries
         .filter((dict) => !filter ||
           (dict.values || [])
-            .find(v => (v.value || '').toLowerCase().indexOf((filter || '').toLowerCase()) >= 0)
+            .find(v => (v.value || '').toLowerCase().indexOf(lowerCasedFilter) >= 0)
         )
         .map((dict) => ({name: dict.key}))
+        .sort(nameSorter)
     );
     const getRowClassName = (group) => {
       if (newDictionary) {
@@ -355,7 +366,7 @@ class SystemDictionaries extends React.Component {
 export default inject(({systemDictionaries}, {params = {}}) => {
   const {currentDictionary} = params;
   return {
-    currentDictionary: decodeURIComponent(currentDictionary),
+    currentDictionary,
     systemDictionaries
   };
 })(
