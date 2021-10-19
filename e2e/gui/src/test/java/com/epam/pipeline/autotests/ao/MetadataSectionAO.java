@@ -178,8 +178,9 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     public MetadataSectionAO checkStorageSize(final String sizeWithUnit) {
         if ("0".equals(sizeWithUnit)) {
             ensure(byClassName("torage-size__storage-size"), not(visible));
+        } else {
+            ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
         }
-        ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
         return this;
     }
 
@@ -218,6 +219,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             }
             sleep(1, MINUTES);
             refresh();
+            sleep(5, SECONDS);
+
         }
         return this;
     }

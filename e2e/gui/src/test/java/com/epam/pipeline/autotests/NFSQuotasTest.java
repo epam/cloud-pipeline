@@ -27,7 +27,10 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NOTIFICATION;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
@@ -51,6 +54,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     private static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
     private final String nfsPrefix = C.NFS_PREFIX.replace(":/", "");
     private final String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
+    private final String storage2 = "epmcmbi-test-nfs-" + Utils.randomSuffix();
+    private final String folder = "epmcmbi-test-folder-" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
@@ -81,13 +86,14 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
 
     @AfterClass(alwaysRun = true)
     public void removeStorage() {
-        navigationMenu()
-                .library()
-                .selectStorage(storage)
-                .clickEditStorageButton()
-                .editForNfsMount()
-                .clickDeleteStorageButton()
-                .clickDelete();
+        Stream.of(storage, storage2)
+                .forEach(s -> navigationMenu()
+                        .library()
+                        .selectStorage(s)
+                        .clickEditStorageButton()
+                        .editForNfsMount()
+                        .clickDeleteStorageButton()
+                        .clickDelete());
     }
 
     @Test
@@ -308,6 +314,50 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         checkFileCreationViaSSH(userRunId2, fileName2);
         logout();
     }
+
+    @Test
+    @TestCase(value = {"2182_6"})
+    public void validateQuotasViaUI() throws IOException {
+        navigationMenu()
+                .library()
+                .createNfsMount("/" + storage2, storage2);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage2)
+                .showMetadata()
+                .configureNotification()
+                .addRecipient(user.login)
+                .addNotification("0.001", "Make read-only")
+                .addNotification("0.002", "Disable mount")
+                .ok();
+
+        // Create a 1.5 MB file
+        final File file = Utils.createTempFileWithSpecificSize(1572864);
+        library()
+                .selectStorage(storage2)
+                .uploadFile(file);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage2)
+                .showMetadata()
+                .waitUntilStatusUpdated(READ_ONLY_MOUNT_STATUS)
+                .checkWarningStatusIcon()
+                .checkStorageSize(format("%s Mb", "1.50"))
+                .checkStorageStatus(READ_ONLY_MOUNT_STATUS);
+
+        library()
+                .selectStorage(storage2)
+                .createFolder(folder)
+                .cd(folder)
+                .uploadFile(file)
+                .showMetadata()
+                .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
+                .checkStorageSize(format("%s Mb", "3.00"))
+                .checkStorageStatus(DISABLED_MOUNT_STATUS);
+    }
+
 
     private void checkFileCreationViaSSH(String runId, String fileName) {
         runsMenu()
