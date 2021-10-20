@@ -104,7 +104,7 @@ function get_owner_user_name(owner) {
     return owner.split("@")[0];
 }
 
-function get_run_sshpass(run_details) {
+function get_run_sshpass(run_details, auth_key) {
     parent_run_id = run_details.parameters['parent-id'];
     run_shared_users_enabled = get_boolean(run_details.parameters['CP_CAP_SHARE_USERS']);
     if (run_shared_users_enabled && parent_run_id) {
@@ -224,11 +224,11 @@ io.on('connection', function(socket) {
                     break
                 case 'owner-sshpass':
                     sshuser = owner_user_name;
-                    sshpass = get_run_sshpass(pipe_details);
+                    sshpass = get_run_sshpass(pipe_details, auth_key);
                     break
                 default:
                     sshuser = 'root';
-                    sshpass = get_run_sshpass(pipe_details);
+                    sshpass = get_run_sshpass(pipe_details, auth_key);
                     break
             }
             term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost, '-p', sshport, '-o', 'StrictHostKeyChecking=no', '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'UserKnownHostsFile=/dev/null', '-q'], {
