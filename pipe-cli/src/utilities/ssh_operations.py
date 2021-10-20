@@ -30,7 +30,7 @@ from src.api.user import User
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
-from src.utilities.platform_utilities import is_windows, is_wsl, is_mac
+from src.utilities.platform_utilities import is_windows, is_mac
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
 from urllib.parse import urlparse
@@ -492,36 +492,34 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
         existing_tunnel = TunnelArgs.from_args(proc_parsed_args)
         creating_tunnel = TunnelArgs(host_id=host_id, local_ports=local_ports, remote_ports=remote_ports,
                                      ssh=ssh, ssh_path=ssh_path, ssh_host=ssh_host, direct=direct)
-        logging.info('Comparing the existing tunnel process with the current process...')
+        logging.info('Comparing existing tunnel process with the current process...')
         is_same_tunnel = creating_tunnel.compare(existing_tunnel)
         existing_tunnel_run_id = parse_run_identifier(existing_tunnel.host_id)
-        existing_tunnel_conn_info = get_conn_info(existing_tunnel_run_id) if existing_tunnel_run_id \
-            else get_custom_conn_info(existing_tunnel.host_id)
         existing_tunnel_remote_host = existing_tunnel.ssh_host or 'pipeline-{}'.format(existing_tunnel.host_id)
-        if keep_existing:
-            logging.info('Skipping tunnel establishing since the tunnel already exists...')
-            if existing_tunnel.ssh and has_different_owner(tunnel_proc):
-                configure_ssh(existing_tunnel.host_id,
-                              existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
-                              existing_tunnel_conn_info, existing_tunnel.ssh_path, ssh_user,
-                              existing_tunnel_remote_host, log_file, retries)
-            sys.exit(0)
         if replace_existing:
             logging.info('Stopping existing tunnel...')
             kill_process(tunnel_proc, timeout_stop)
             return
-        if is_same_tunnel and keep_same:
-            logging.info('Skipping tunnel establishing since the same tunnel already exists...')
+        if keep_existing:
+            logging.info('Skipping tunnel establishing since the tunnel already exists...')
             if existing_tunnel.ssh and has_different_owner(tunnel_proc):
-                configure_ssh(existing_tunnel.host_id,
+                configure_ssh(existing_tunnel_run_id,
                               existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
-                              existing_tunnel_conn_info, existing_tunnel.ssh_path, ssh_user,
+                              existing_tunnel.ssh_path, ssh_user,
                               existing_tunnel_remote_host, log_file, retries)
             sys.exit(0)
-        if not is_same_tunnel and replace_different:
+        if replace_different and not is_same_tunnel:
             logging.info('Stopping existing tunnel since it has a different configuration...')
             kill_process(tunnel_proc, timeout_stop)
             return
+        if keep_same and is_same_tunnel:
+            logging.info('Skipping tunnel establishing since the same tunnel already exists...')
+            if existing_tunnel.ssh and has_different_owner(tunnel_proc):
+                configure_ssh(existing_tunnel_run_id,
+                              existing_tunnel.local_ports[0], existing_tunnel.remote_ports[0],
+                              existing_tunnel.ssh_path, ssh_user,
+                              existing_tunnel_remote_host, log_file, retries)
+            sys.exit(0)
         raise RuntimeError('{} tunnel already exists on the same local port.'
                            .format('Same' if is_same_tunnel else 'Different'))
 
@@ -540,7 +538,7 @@ def parse_tunnel_proc_args(proc, timeout_stop,
             kill_process(proc, timeout_stop)
         else:
             raise RuntimeError('Existing tunnel process arguments parsing has failed. '
-                               'Use the following command to stop all existing tunnels and then try again: \n\n'
+                               'Please use the following command to stop all existing tunnels and then try again: \n\n'
                                'pipe tunnel stop')
     return {}
 
@@ -551,10 +549,11 @@ def has_different_owner(proc):
 
 
 def configure_ssh(run_id, local_port, remote_port,
-                  conn_info, ssh_path, ssh_user, remote_host,
+                  ssh_path, ssh_user, remote_host,
                   log_file, retries):
     def _establish_tunnel():
         pass
+    conn_info = get_conn_info(run_id)
     ssh_keep = True
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
