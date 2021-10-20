@@ -32,10 +32,13 @@ import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.Scroll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -183,6 +186,19 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return client.search(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to find results for search query:" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public SearchResponse nextScrollPage(final String scrollId, final Scroll scroll) {
+        final SearchScrollRequest searchScrollRequest = new SearchScrollRequest();
+        searchScrollRequest.scrollId(scrollId);
+        searchScrollRequest.scroll(scroll);
+        try {
+            return client.scroll(searchScrollRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to retrieve next scroll page for [{}]: {}",
+                                             scrollId,e.getMessage(), e);
         }
     }
 

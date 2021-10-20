@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.elasticsearchagent.model.nfsobserver;
+package com.epam.pipeline.entity.datastorage.nfs;
 
-import lombok.AllArgsConstructor;
 import lombok.Value;
 
 @Value
-@AllArgsConstructor
 public class NFSObserverEvent {
-
-    public NFSObserverEvent(final Long timestamp, final NFSObserverEventType eventType, final String storage,
-                            final String filePath) {
-        this(timestamp, eventType, storage, filePath, null);
-    }
-
     private final Long timestamp;
     private final NFSObserverEventType eventType;
     private final String storage;
-    private final String filePath;
+    private final String filePathFrom;
     private final String filePathTo;
 
 }
