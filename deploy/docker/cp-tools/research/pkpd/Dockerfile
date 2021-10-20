@@ -197,3 +197,36 @@ ENV CP_CAP_SGE_PREINSTALLED="true"
 
 # Install LFS
 RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client
+
+ARG PSN_VERSION="5.2.6"
+# Install PsN
+RUN yum remove -y ghostscript && \
+    yum install -y --skip-broken perl \
+                    python3 \
+                    python3-virtualenv \
+                    python3-devel \
+                    make \
+                    pandoc \
+                    openssl-devel \
+                    libcurl-devel \
+                    cairo-devel \
+                    libxml2-devel \
+                    ImageMagick-c++-devel \
+                    mariadb-devel
+
+ENV PERL_CPANM_OPT="--from https://cpan.metacpan.org/"
+RUN (echo y;echo o conf prerequisites_policy follow;echo o conf commit)|cpan && \
+    cpan Math::Random Moose MooseX::Params::Validate Archive::Zip File::Copy::Recursive YAML::XS && \
+    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/psn/psn-$PSN_VERSION.tar.gz" -O psn.tar.gz && \
+    tar -xzf psn.tar.gz && \
+    rm -f psn.tar.gz && \
+    cd PsN-Source && \
+    NONMEM_VERSION_FLAT=$(echo "$NONMEM_VERSION" | tr -d .) && \
+    NONMEM_VERSION_FLAT_MAJOR=$(echo $NONMEM_VERSION_FLAT | cut -c1-2) && \
+    (echo;echo;echo;echo y;echo y;echo y;echo y;echo y;echo;echo y;echo $NONMEM_HOME;echo n;echo $NONMEM_VERSION_FLAT_MAJOR)|perl setup.pl && \
+    cd .. && \
+    rm -rf PsN-Source
+
+ADD psn_submit.sh $NONMEM_HOME/
+RUN chmod +x $NONMEM_HOME/psn_submit.sh && \
+    ln -s $NONMEM_HOME/psn_submit.sh /usr/bin/psn_submit \
