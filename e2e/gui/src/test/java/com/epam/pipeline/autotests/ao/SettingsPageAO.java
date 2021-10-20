@@ -549,11 +549,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UserEntry searchForUserEntry(String login) {
                 sleep(1, SECONDS);
-                while (!getUser(login).isDisplayed()
+                while (!getUser(login.toUpperCase()).isDisplayed()
                         && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
                     click(byTitle(NEXT_PAGE));
                 }
-                SelenideElement entry = getUser(login).shouldBe(visible);
+                SelenideElement entry = getUser(login.toUpperCase()).shouldBe(visible);
                 return new UserEntry(this, login, entry);
             }
 
