@@ -100,8 +100,6 @@ class TunnelArgs:
         self.ssh_host = parsed_args.get('ssh_host')
         self.direct = parsed_args.get('direct')
         self.run_id = parse_run_identifier(self.host_id)
-        self.conn_info = get_conn_info(self.run_id, region) if self.run_id \
-            else get_custom_conn_info(self.host_id, region)
         self.remote_host = self.ssh_host or 'pipeline-{}'.format(self.host_id)
 
     def equals(self, host_id, remote_port, ssh, ssh_path, ssh_host, direct):
@@ -404,29 +402,29 @@ def check_existing_tunnels(host_id, local_port, remote_port,
             return
         tunnel_args = TunnelArgs(proc_parsed_args, region)
         is_same_tunnel = tunnel_args.equals(host_id, remote_port, ssh, ssh_path, ssh_host, direct)
-        if keep_existing:
-            logging.info('Skipping tunnel establishing since the tunnel already exists...')
-            if tunnel_args.ssh and has_different_owner(tunnel_proc):
-                configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
-                              tunnel_args.conn_info, tunnel_args.ssh_path, tunnel_args.remote_host,
-                              log_file, retries)
-            sys.exit(0)
         if replace_existing:
             logging.info('Stopping existing tunnel...')
             kill_process(tunnel_proc, timeout_stop)
             return
-        if is_same_tunnel and keep_same:
-            logging.info('Skipping tunnel establishing since the same tunnel already exists...')
+        if keep_existing:
+            logging.info('Skipping tunnel establishing since the tunnel already exists...')
             if tunnel_args.ssh and has_different_owner(tunnel_proc):
                 configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
-                              tunnel_args.conn_info, tunnel_args.ssh_path, tunnel_args.remote_host,
+                              tunnel_args.ssh_path, tunnel_args.remote_host,
                               log_file, retries)
             sys.exit(0)
-        if not is_same_tunnel and replace_different:
+        if replace_different and not is_same_tunnel:
             logging.info('Stopping existing tunnel since it has a different configuration...')
             kill_process(tunnel_proc, timeout_stop)
             return
-        raise RuntimeError('{} tunnel already exists on the same local port'
+        if keep_same and is_same_tunnel:
+            logging.info('Skipping tunnel establishing since the same tunnel already exists...')
+            if tunnel_args.ssh and has_different_owner(tunnel_proc):
+                configure_ssh(tunnel_args.host_id, tunnel_args.local_port, tunnel_args.remote_port,
+                              tunnel_args.ssh_path, tunnel_args.remote_host,
+                              log_file, retries)
+            sys.exit(0)
+        raise RuntimeError('{} tunnel already exists on the same local port.'
                            .format('Same' if is_same_tunnel else 'Different'))
 
 
@@ -444,8 +442,8 @@ def parse_tunnel_proc_args(proc, local_port, timeout_stop,
             kill_process(proc, timeout_stop)
         else:
             raise RuntimeError('Existing tunnel process arguments parsing has failed. '
-                               'Use the following command to stop the existing tunnel and then try again: \n\n'
-                               'pipe tunnel stop -lp {}'.format(local_port))
+                               'Please use the following command to stop all existing tunnels and then try again: \n\n'
+                               'pipe tunnel stop')
     return {}
 
 
@@ -455,10 +453,11 @@ def has_different_owner(proc):
 
 
 def configure_ssh(run_id, local_port, remote_port,
-                  conn_info, ssh_path, remote_host,
+                  ssh_path, remote_host,
                   log_file, retries):
     def _establish_tunnel():
         pass
+    conn_info = get_conn_info(run_id)
     ssh_keep = True
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
