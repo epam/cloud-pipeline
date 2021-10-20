@@ -330,7 +330,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .addRecipient(user.login)
                 .addNotification("0.001", "Make read-only")
                 .addNotification("0.002", "Disable mount")
-                .ok();
+                .ok()
+                .checkConfiguredNotificationsLink(2, 1);
 
         // Create a 1.5 MB file
         final File file = Utils.createTempFileWithSpecificSize(1572864);
