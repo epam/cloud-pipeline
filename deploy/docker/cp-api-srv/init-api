@@ -126,15 +126,6 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
-function extract_nfs_observing_script {
-    local jar_path="$1"
-    local output_dir="$2"
-    unzip -p "$jar_path" BOOT-INF/classes/static/pipe-common.tar.gz >pipe-common.tar.gz
-    tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
-    mv watch_mount_shares.py $output_dir && \
-    rm -rf pipe-common.tar.gz
-}
-
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -284,16 +275,6 @@ if [ "$CP_CLOUD_PLATFORM" == "az" ] && [ -f /root/.cloud/azureProfile.json ] && 
   cp /root/.cloud/* /root/.azure/
 fi
 
-if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
-  WATCHER_HOME="$CP_API_HOME/nfs-watcher"
-  WATCHER_LOG_HOME="/var/log/nfs-watcher"
-  mkdir -p "$WATCHER_LOG_HOME" "$WATCHER_HOME"
-  extract_nfs_observing_script "$CP_API_HOME/pipeline.jar" "$WATCHER_HOME"
-  inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_API_WATCHERS:-131071}
-  sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
-  sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
-  nohup python -u $WATCHER_HOME/watch_mount_shares.py 1>/dev/null 2>$WATCHER_LOG_HOME/.nohup.nfswatcher.log &
-fi
 
 # Workaround the container hanging when being terminated
 function sig_handler {
