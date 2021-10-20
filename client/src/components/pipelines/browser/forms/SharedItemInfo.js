@@ -32,10 +32,23 @@ class SharedItemInfo extends React.Component {
   state = {
     copySuccess: false,
     copyDisabled: false,
-    showLink: false,
+    showCreatedLinkForm: false,
     usersToShare: [],
-    permissions: {},
-    pending: false
+    sharedLink: '',
+    mask: 1,
+    pending: false,
+    editPermissionsMode: false
+  }
+
+  componentWillReceiveProps (nextProps) {
+    const {sharedItemPermissions} = this.props;
+    if (nextProps !== sharedItemPermissions) {
+      this.setState({
+        usersToShare: nextProps.sharedItemPermissions ? nextProps.sharedItemPermissions.permissions : [],
+        mask: nextProps.sharedItemPermissions ? nextProps.sharedItemPermissions.mask : 1,
+        sharedLink: nextProps.link
+      });
+    }
   }
 
   get itemName () {
@@ -47,7 +60,7 @@ class SharedItemInfo extends React.Component {
   }
 
   get sharedItemUrl () {
-    return this.props.link;
+    return this.state.sharedLink;
   }
 
   copyUrlToClipboard = (event) => {
@@ -63,7 +76,14 @@ class SharedItemInfo extends React.Component {
 
   closeShareDialog = () => {
     this.setState({
-      copySuccess: false
+      copySuccess: false,
+      copyDisabled: false,
+      showCreatedLinkForm: false,
+      usersToShare: [],
+      sharedLink: '',
+      mask: 1,
+      pending: false,
+      editPermissionsMode: false
     });
     this.props.close();
   }
@@ -81,12 +101,14 @@ class SharedItemInfo extends React.Component {
     });
     this.setState({pending: false});
     if (!this.props.sharingError) {
-      this.setState({showLink: true});
+      this.setState({showCreatedLinkForm: true});
     }
   }
 
+  onEditPermissions = () => {
+    this.setState({editPermissionsMode: true, copySuccess: false});
+  }
   renderShareForm = () => {
-    const {copySuccess, copyDisabled} = this.state;
     const {item} = this.props;
     if (!item) {
       return null;
@@ -100,50 +122,80 @@ class SharedItemInfo extends React.Component {
         <span className={styles.hint}>
           Make sure you copy the link below.
         </span>
-        <div className={styles.urlSection}>
-          <Input
-            value={this.sharedItemUrl}
-            readOnly
-            style={{
-              width: '100%'
-            }}
-          />
-          <Button
-            type={copySuccess ? '' : 'primary'}
-            onClick={this.copyUrlToClipboard}
-            disabled={copyDisabled}
-            style={{
-              marginLeft: '15px',
-              minWidth: '130px'
-            }}
-          >
-            {copySuccess ? 'Successfully copied' : 'Copy to clipboard'}
-          </Button>
-        </div>
+        {this.renderSharedLink()}
       </div>
     );
   }
 
+  renderSharedLink = () => {
+    const {copySuccess, copyDisabled} = this.state;
+    return (<div className={styles.urlSection}>
+      <Input
+        value={this.sharedItemUrl}
+        readOnly
+        style={{
+          width: '100%',
+          color: 'black',
+          backgroundColor: copySuccess ? 'rgba(16, 142, 233, 0.1)' : 'transparent'
+        }}
+        size="large"
+      />
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        <Button
+          type={copySuccess ? '' : 'primary'}
+          onClick={this.copyUrlToClipboard}
+          disabled={copyDisabled}
+          style={{
+            marginLeft: '15px'
+          }}
+          icon="copy"
+        />
+        {copySuccess && <span className={styles.copyStatus}>Copied!</span>}
+      </div>
+    </div>);
+  }
+
   renderUserSelectForm = () => {
     return (
-      <DataStorageSharingPermissionsForm
-        objectIdentifier={this.props.storageId}
-        objectType={'DATA_STORAGE'}
-        onChangeUsersToShare={(value) => this.onChangeUsersToShare(value)}
-        usersToShare={this.state.usersToShare}
-        goToCreateShareLink={this.onShare}
-      />
+      <div>
+        {this.state.sharedLink && !this.state.editPermissionsMode && (
+          <div className={styles.existedLinkContainer}>
+            <h2>Link to <b>{this.itemName}</b> folder</h2>
+            {this.renderSharedLink()}
+            <div className={styles.urlEditSection}>
+              <Button
+                type="primary"
+                size="large"
+                icon="edit"
+                onClick={this.onEditPermissions}
+              >
+                Edit permissions
+              </Button>
+            </div>
+          </div>
+        )}
+        {(this.state.editPermissionsMode || !this.state.sharedLink) && (
+          <DataStorageSharingPermissionsForm
+            objectIdentifier={this.props.storageId}
+            objectType={'DATA_STORAGE'}
+            onChangeUsersToShare={(value) => this.onChangeUsersToShare(value)}
+            usersToShare={this.state.usersToShare}
+            goToCreateShareLink={this.onShare}
+            mask={this.state.mask}
+          />
+        )}
+      </div>
     );
   }
 
   renderContent = () => {
-    return this.state.showLink
+    return this.state.showCreatedLinkForm
       ? this.renderShareForm()
       : this.renderUserSelectForm();
   }
 
   renderModalFooter = () => {
-    return (this.state.showLink || this.props.sharingError)
+    return (this.state.showCreatedLinkForm || this.props.sharingError)
       ? (
         <Row type="flex" justify="end">
           <Button

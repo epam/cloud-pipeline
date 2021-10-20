@@ -49,11 +49,9 @@ const MAX_SUB_OBJECTS_WARNINGS_TO_SHOW = 5;
 @observer
 export default class DataStorageSharingPermissionsForm extends React.Component {
   state = {
-    selectedPermission: null,
-    operationInProgress: false,
+    selectedPermission: this.props.mask ? {mask: this.props.mask} : null,
     subObjectsPermissions: [],
-    usersToShare: this.props.usersToShare || [],
-    permissionsOptions: {}
+    usersToShare: this.props.usersToShare || []
   };
 
   static propTypes = {
@@ -61,6 +59,7 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
       PropTypes.string,
       PropTypes.number
     ]),
+    mask: PropTypes.number,
     objectType: PropTypes.string,
     readonly: PropTypes.bool,
     subObjectsPermissionsMaskToCheck: PropTypes.number,
@@ -240,8 +239,6 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
           render: (item) => (
             <Checkbox
               disabled={
-                this.state.operationInProgress ||
-                this.props.readonly ||
                 item.allowMask === 0 ||
                 this.state.usersToShare?.length === 0
               }
@@ -256,8 +253,6 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
           render: (item) => (
             <Checkbox
               disabled={
-                this.state.operationInProgress ||
-                this.props.readonly ||
                 item.denyMask === 0 ||
                 this.state.usersToShare?.length === 0
               }
@@ -341,9 +336,9 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
     );
   }
 
-  selectFirstPermission = () => {
-    this.setState({selectedPermission: {mask: 0}});
-  };
+  // selectFirstPermission = () => {
+  //   this.setState({selectedPermission: {mask: 0}});
+  // };
 
   fetchSubObjectsPermissions = () => {
     const wrapPermissionsFetch = (subObject) => new Promise((resolve) => {
@@ -376,7 +371,6 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
   };
 
   componentDidMount () {
-    this.selectFirstPermission();
     this.fetchSubObjectsPermissions();
   }
 
@@ -389,7 +383,7 @@ export default class DataStorageSharingPermissionsForm extends React.Component {
     if (this.props.objectIdentifier !== nextProps.objectIdentifier) {
       this.setState({
         selectedPermission: null
-      }, this.selectFirstPermission);
+      });
     }
   }
 

@@ -20,6 +20,12 @@
   align-items: center;
 }
 
+.existedLinkContainer > *{
+  text-align: center;
+  padding-bottom: 10px;
+  width: 100%;
+}
+
 .main-text {
   font-size: large;
   font-weight: bold;
@@ -31,10 +37,47 @@
 }
 
 .url-section {
+  position:relative;
   width: 100%;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
+}
+.urlEditSection {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.copyStatus {
+  position: absolute;
+  top: -20px;
+  right: -10px;
+  color: #108ee9;
+  -moz-animation: cssAnimation 0s ease-in-out 3s forwards;
+  /* Firefox */
+  -webkit-animation: cssAnimation 0s ease-in-out 3s forwards;
+  /* Safari and Chrome */
+  -o-animation: cssAnimation 0s ease-in-out 3s forwards;
+  /* Opera */
+  animation: cssAnimation 0s ease-in-out 3s forwards;
+  -webkit-animation-fill-mode: forwards;
+  animation-fill-mode: forwards;
+}
+
+@keyframes cssAnimation {
+  to {
+      width:0;
+      height:0;
+      overflow:hidden;
+  }
+}
+@-webkit-keyframes cssAnimation {
+  to {
+      width:0;
+      height:0;
+      visibility:hidden;
+  }
 }

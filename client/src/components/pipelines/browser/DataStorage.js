@@ -73,6 +73,7 @@ import parseQueryParameters from '../../../utils/queryParameters';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
 import {shareStorageItem} from '../../../utils/share-storage-item';
+import getSharedFolderInfo from '../../../utils/share-storage-item/get-shared-folder-info';
 import roleModel from '../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Browser.css';
@@ -141,6 +142,7 @@ export default class DataStorage extends React.Component {
     selectedItems: [],
     shareItem: null,
     sharedLink: null,
+    sharedItemPermissions: null,
     sharingErrorMessage: null,
     renameItem: null,
     createFolder: false,
@@ -964,6 +966,24 @@ export default class DataStorage extends React.Component {
       this.setState({sharingErrorMessage: e.message});
     }
   }
+
+  getSharedItemInfo = async (item) => {
+    try {
+      const info = await getSharedFolderInfo(
+        this.props.preferences,
+        this.props.info.value,
+        item.name
+      );
+      if (info) {
+        this.setState({
+          sharedLink: info.url,
+          sharedItemPermissions: info.permissions
+        });
+      }
+    } catch (e) {
+      this.setState({sharingErrorMessage: e.message});
+    }
+  }
   openShareStorageDialog = () => {
     this.setState({shareStorageDialogVisible: true});
   };
@@ -973,11 +993,12 @@ export default class DataStorage extends React.Component {
     this.setState({shareStorageDialogVisible: false});
   };
 
-  openShareItemDialog = (event, item) => {
+  openShareItemDialog = async (event, item) => {
     event && event.stopPropagation();
     if (!item) {
       return null;
     }
+    await this.getSharedItemInfo(item);
     return this.setState({shareItem: item});
   };
 
@@ -2194,6 +2215,7 @@ export default class DataStorage extends React.Component {
           generateLinkFn={this.shareItem}
           link={this.state.sharedLink}
           sharingError={this.state.sharingErrorMessage}
+          sharedItemPermissions={this.state.sharedItemPermissions}
         />
         <Modal
           visible={!!this.state.itemsToDelete}
