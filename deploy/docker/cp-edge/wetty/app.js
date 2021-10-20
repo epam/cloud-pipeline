@@ -209,7 +209,7 @@ io.on('connection', function(socket) {
                 if (pipe_details.platform == 'windows') {
                     run_ssh_mode = 'owner-sshpass';
                 } else {
-                    run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'user';
+                    run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'owner';
                 }
             }
             switch (run_ssh_mode) {
