@@ -1000,7 +1000,7 @@ export default class DataStorage extends React.Component {
           }}
         >
           <span
-            onClick={this.openPreviewModal}
+            onClick={() => this.openPreviewModal(selectedFile)}
             className={styles.metadataPreviewBtn}
           >
             Click
@@ -1012,13 +1012,13 @@ export default class DataStorage extends React.Component {
     return null;
   };
 
-  openPreviewModal = () => {
+  openPreviewModal = (file, event) => {
     const {storageId} = this.props;
-    const {selectedFile} = this.state;
-    if (storageId && selectedFile) {
+    event && event.stopPropagation();
+    if (storageId && file) {
       this.setState({previewModal: {
-        id: selectedFile.path,
-        name: selectedFile.name,
+        id: file.path,
+        name: file.name,
         parentId: storageId,
         type: 'S3_FILE'
       }});
@@ -1134,7 +1134,11 @@ export default class DataStorage extends React.Component {
           selectable: !i.deleteMarker,
           miew: !i.deleteMarker &&
                 i.type.toLowerCase() === 'file' &&
-                i.path.toLowerCase().endsWith('.pdb')
+                i.path.toLowerCase().endsWith('.pdb'),
+          vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
+            i.path.toLowerCase().endsWith('.vsi') ||
+            i.path.toLowerCase().endsWith('.mrxs')
+          )
         };
       }));
       return items;
@@ -1146,7 +1150,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew) {
+      if (item.miew || item.vsi) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -1210,6 +1214,17 @@ export default class DataStorage extends React.Component {
                 <img src="miew_logo.png" />
               </Link>
             </Popover>
+          );
+        }
+        if (item.vsi) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openPreviewModal(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/vsi.png" />
+            </div>
           );
         }
         return apps;
