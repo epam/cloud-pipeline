@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -596,14 +597,20 @@ public class SystemPreferences {
                                                         null, BASE_URLS_GROUP, PreferenceValidators.isValidUrl);
     public static final StringPreference BASE_DAV_AUTH_URL = new StringPreference("base.dav.auth.url",
             null, BASE_URLS_GROUP, pass);
-    public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH = new StringPreference("base.invalidate.edge.auth.path",
-            "/invalidate", BASE_URLS_GROUP, pass);
+    public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH =
+            new StringPreference("base.invalidate.edge.auth.path", "/invalidate", BASE_URLS_GROUP, pass);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
             DATA_SHARING_GROUP, PreferenceValidators.isEmptyOrValidUrlSyntax);
     public static final StringPreference DATA_SHARING_DISCLAIMER = new StringPreference("data.sharing.disclaimer", null,
             DATA_SHARING_GROUP, pass);
+    public static final StringPreference DATA_SHARING_FOLDERS_DIR =
+            new StringPreference("data.sharing.storage.folders.directory", null, DATA_SHARING_GROUP, pass);
+    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS = new ObjectPreference<>(
+            "data.sharing.storage.folders.default.permissions", null,
+            new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
+            isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
 
     // SYSTEM_GROUP
     /**
