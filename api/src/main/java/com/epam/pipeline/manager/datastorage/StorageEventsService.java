@@ -46,7 +46,7 @@ import javax.annotation.PreDestroy;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(value = "data.storage.nfs.events.disable.sync", matchIfMissing = true, havingValue = "false")
+@ConditionalOnProperty(value = "data.storage.nfs.events.enable.sync", havingValue = "true")
 public class StorageEventsService {
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss.SSSSSS");
