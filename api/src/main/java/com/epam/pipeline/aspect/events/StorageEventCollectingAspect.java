@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(value = "data.storage.nfs.events.disable.sync", matchIfMissing = true, havingValue = "false")
+@ConditionalOnProperty(value = "data.storage.nfs.events.enable.sync", havingValue = "true")
 public class StorageEventCollectingAspect {
 
     private static final String FOLDER_EVENT_WILDCARD = "/*";
