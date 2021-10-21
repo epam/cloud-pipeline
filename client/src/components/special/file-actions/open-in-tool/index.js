@@ -392,7 +392,7 @@ class OpenInToolAction extends React.Component {
         placement="left"
         overlayStyle={{
           width: '35vw',
-          height: '35vh',
+          maxHeight: '35vh',
           minWidth: 200
         }}
         overlayClassName={styles.modalOverlay}
