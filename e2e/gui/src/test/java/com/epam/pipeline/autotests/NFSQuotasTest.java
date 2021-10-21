@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.BucketPermission;
@@ -41,6 +42,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static java.lang.String.format;
@@ -80,8 +82,15 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 BucketPermission.allow(READ, storage),
                 BucketPermission.allow(WRITE, storage));
         tools()
-                .perform(registry, group, tool, tool -> tool.run(this));
-        commonRunId = getLastRunId();
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storage)
+                .selectStorage(storage)
+                .ok()
+                .launch(this)
+                .showLog(commonRunId = getLastRunId());
     }
 
     @AfterClass(alwaysRun = true)
