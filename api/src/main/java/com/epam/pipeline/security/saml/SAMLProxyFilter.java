@@ -184,6 +184,7 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
                 .map(attributes::get)
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
+                .map(String::toUpperCase)
                 .collect(Collectors.toList());
     }
 
