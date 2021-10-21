@@ -1407,6 +1407,25 @@ echo
 
 
 
+######################################################
+# Setup users synchronization if required
+######################################################
+
+echo "Setup users synchronization"
+echo "-"
+
+if check_cp_cap CP_CAP_SYNC_USERS; then
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+else
+    echo "Users synchronization is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
 CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
 if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
       if [ "$RESUMED_RUN" == true ]; then
