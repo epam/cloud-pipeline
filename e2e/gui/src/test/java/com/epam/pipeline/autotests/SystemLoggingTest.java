@@ -133,7 +133,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 }
                 validateErrorPage(Collections.singletonList("User is blocked!"));
                 Selenide.clearBrowserCookies();
-                sleep(1, SECONDS);
+                sleep(10, SECONDS);
             }
             loginAs(admin);
             SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
@@ -141,7 +141,6 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .switchToSystemLogs();
             if (impersonateMode()) {
                 systemLogsAO
-                        .filterByUser(userWithoutCompletedRuns.login)
                         .validateRow(format("Authentication failed! User %s is blocked!",
                                 userWithoutCompletedRuns.login), userWithoutCompletedRuns.login, TYPE)
                         .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",
