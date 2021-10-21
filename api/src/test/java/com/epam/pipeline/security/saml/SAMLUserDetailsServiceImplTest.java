@@ -106,9 +106,7 @@ public class SAMLUserDetailsServiceImplTest {
     private RoleManager mockRoleManager;
 
     @Spy
-    private final UserAccessService spyAccessService =
-            new UserAccessService(mockUserManager, mockRoleManager, mockMessageHelper, mockPermissionManager,
-                    true, EXPLICIT, false);
+    private final UserAccessService spyAccessService = new UserAccessService();
 
     @InjectMocks
     private SAMLUserDetailsServiceImpl userDetailsService;

@@ -32,6 +32,7 @@ import com.epam.pipeline.security.jwt.TokenVerificationException;
 import com.epam.pipeline.security.saml.SamlUserRegisterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.GrantedAuthority;
@@ -48,30 +49,20 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UserAccessService {
 
-    private final UserManager userManager;
-    private final RoleManager roleManager;
-    private final MessageHelper messageHelper;
-    private final GrantPermissionManager permissionManager;
-    private final boolean validateUser;
-    private final SamlUserRegisterStrategy autoCreateUsers;
-    private final boolean allowAnonymous;
-
-    public UserAccessService(
-            final UserManager userManager,
-            final RoleManager roleManager,
-            final MessageHelper messageHelper,
-            final GrantPermissionManager permissionManager,
-            final @Value("${jwt.validate.token.user:false}") boolean validateUser,
-            final @Value("${saml.user.auto.create: EXPLICIT}") SamlUserRegisterStrategy autoCreateUsers,
-            final @Value("${saml.user.allow.anonymous: false}") boolean allowAnonymous) {
-        this.userManager = userManager;
-        this.roleManager = roleManager;
-        this.messageHelper = messageHelper;
-        this.permissionManager = permissionManager;
-        this.validateUser = validateUser;
-        this.autoCreateUsers = autoCreateUsers;
-        this.allowAnonymous = allowAnonymous;
-    }
+    @Autowired
+    private UserManager userManager;
+    @Autowired
+    private RoleManager roleManager;
+    @Autowired
+    private MessageHelper messageHelper;
+    @Autowired
+    private GrantPermissionManager permissionManager;
+    @Value("${jwt.validate.token.user:false}")
+    private boolean validateUser;
+    @Value("${saml.user.auto.create: EXPLICIT}")
+    private SamlUserRegisterStrategy autoCreateUsers;
+    @Value("${saml.user.allow.anonymous: false}")
+    private boolean allowAnonymous;
 
     public UserContext parseUser(final String userName,
                                  final List<String> groups,
