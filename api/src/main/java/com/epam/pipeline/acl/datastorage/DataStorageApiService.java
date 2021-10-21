@@ -216,7 +216,7 @@ public class DataStorageApiService {
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final boolean proceedOnCloud,
                                                                final boolean skipPolicy) {
-        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
+        return dataStorageManager.create(dataStorageVO, proceedOnCloud, false, true, skipPolicy);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#dataStorageVO.id, 'WRITE')")
@@ -349,5 +349,15 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public void requestDataStorageDavMount(final Long id, final Long time) {
+        dataStorageManager.requestDataStorageDavMount(id, time);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public void callOffDataStorageDavMount(final Long id) {
+        dataStorageManager.callOffDataStorageDavMount(id);
     }
 }
