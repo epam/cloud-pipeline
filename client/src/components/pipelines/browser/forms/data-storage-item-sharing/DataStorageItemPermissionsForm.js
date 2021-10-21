@@ -243,6 +243,7 @@ class DataStorageItemPermissionsForm extends React.Component {
   };
 
   render () {
+    console.log(this.props.saveEnabled);
     return (
       <div>
         <Row>
@@ -260,7 +261,7 @@ class DataStorageItemPermissionsForm extends React.Component {
           </Button>
           <Button
             type="primary"
-            disabled={!this.modified}
+            disabled={!this.modified && !this.props.saveEnabled}
             onClick={this.onSaveAndShareClicked}
           >
             SAVE AND SHARE
@@ -278,6 +279,7 @@ const SIDPropType = PropTypes.shape({
 
 DataStorageItemPermissionsForm.propTypes = {
   sids: PropTypes.arrayOf(SIDPropType),
+  saveEnabled: PropTypes.bool,
   mask: PropTypes.number,
   onSave: PropTypes.func,
   onCancel: PropTypes.func,

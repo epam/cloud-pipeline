@@ -379,6 +379,7 @@ class SharedItemInfo extends React.Component {
         mask={this.state.mask}
         onSave={this.onShare}
         onCancel={onCancel}
+        saveEnabled={!this.state.sharedLink}
       />
     );
   }
