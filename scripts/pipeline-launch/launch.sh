@@ -1386,6 +1386,27 @@ echo "------"
 echo
 ######################################################
 
+
+
+######################################################
+# Setup cluster users sharing if required
+######################################################
+
+echo "Setup cluster users sharing"
+echo "-"
+
+if check_cp_cap CP_CAP_SHARE_USERS; then
+    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+else
+    echo "Cluster users sharing is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
 CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
 if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
       if [ "$RESUMED_RUN" == true ]; then
