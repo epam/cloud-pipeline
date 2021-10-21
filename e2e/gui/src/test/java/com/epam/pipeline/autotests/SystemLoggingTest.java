@@ -86,6 +86,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToSystemLogs();
         SelenideElement adminInfo;
         SelenideElement userInfo;
+        sleep(20, SECONDS);
         try {
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
