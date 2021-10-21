@@ -369,5 +369,12 @@
         "description": "Enables users synchronization.",
         "defaultValue": "true",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SSH_MODE",
+        "type": "string",
+        "description": "SSH connection mode. Allowed values are: user, owner, owner-sshpass and root.",
+        "defaultValue": "root",
+        "passToWorkers": true
     }
 ]
