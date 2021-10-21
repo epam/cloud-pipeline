@@ -75,7 +75,8 @@ import RunCapabilities, {
   applyCapabilities,
   checkRunCapabilitiesModified,
   addCapability,
-  hasPlatformSpecificCapabilities
+  hasPlatformSpecificCapabilities,
+  isCustomCapability
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
 const Panels = {
@@ -293,7 +294,12 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          applyCapabilities(this.props.platform, parameters, this.state.runCapabilities);
+          applyCapabilities(
+            parameters,
+            this.state.runCapabilities,
+            this.props.preferences,
+            this.props.platform
+          );
           for (let i = 0; i < params.length; i++) {
             parameters[params[i].name] = {
               type: params[i].type,
@@ -433,6 +439,7 @@ export default class EditToolForm extends React.Component {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
         await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+        await this.props.preferences.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
           props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -762,7 +769,8 @@ export default class EditToolForm extends React.Component {
     const additionalCapabilitiesChanged = () => {
       return checkRunCapabilitiesModified(
         this.state.runCapabilities,
-        getEnabledCapabilities(this.props.configuration.parameters)
+        getEnabledCapabilities(this.props.configuration.parameters),
+        this.props.preferences
       );
     };
 
@@ -1322,7 +1330,7 @@ export default class EditToolForm extends React.Component {
                 )}
               </Form.Item>
               {
-                hasPlatformSpecificCapabilities(this.props.platform) && (
+                hasPlatformSpecificCapabilities(this.props.platform, this.props.preferences) && (
                   <Form.Item
                     {...this.formItemLayout}
                     label="Run capabilities"
@@ -1388,12 +1396,16 @@ export default class EditToolForm extends React.Component {
             }
             skippedSystemParameters={getSkippedSystemParametersList(this)}
             value={this.defaultSystemProperties}
-            onInitialized={this.onEditToolFormSystemParametersInitialized} />
+            onInitialized={this.onEditToolFormSystemParametersInitialized}
+            testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
+          />
           {this.renderSeparator('Custom parameters')}
           <EditToolFormParameters
             readOnly={!this.props.configuration || this.props.readOnly || this.state.pending}
             value={this.defaultProperties}
-            onInitialized={this.onEditToolFormParametersInitialized} />
+            onInitialized={this.onEditToolFormParametersInitialized}
+            testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
+          />
         </div>
       );
     };

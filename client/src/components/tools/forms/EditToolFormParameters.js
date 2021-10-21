@@ -34,7 +34,8 @@ export default class EditToolFormParameters extends React.Component {
     readOnly: PropTypes.bool,
     isSystemParameters: PropTypes.bool,
     getSystemParameterDisabledState: PropTypes.func,
-    skippedSystemParameters: PropTypes.array
+    skippedSystemParameters: PropTypes.array,
+    testSkipParameter: PropTypes.func
   };
 
   state = {
@@ -363,10 +364,19 @@ export default class EditToolFormParameters extends React.Component {
     );
   }
 
+  filterPropsParameter = (parameter) => {
+    const {testSkipParameter} = this.props;
+    return testSkipParameter
+      ? !testSkipParameter(parameter.name)
+      : true;
+  };
+
   reset = () => {
     const mapParameter = p => ({name: p.name, value: p.value, type: p.type});
     this.setState({
-      parameters: (this.props.value || []).map(mapParameter)
+      parameters: (this.props.value || [])
+        .filter(this.filterPropsParameter.bind(this))
+        .map(mapParameter)
     });
   };
 
@@ -412,7 +422,7 @@ export default class EditToolFormParameters extends React.Component {
 
   @computed
   get modified () {
-    const propsValue = this.props.value || [];
+    const propsValue = (this.props.value || []).filter(this.filterPropsParameter.bind(this));
     const currentValue = this.state.parameters || [];
     if (propsValue.length !== currentValue.length) {
       return true;
