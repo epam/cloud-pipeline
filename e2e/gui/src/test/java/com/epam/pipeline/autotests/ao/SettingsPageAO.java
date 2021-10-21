@@ -1569,7 +1569,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
             return containerLogs.stream()
-                    .filter(r -> r.has(matchText(message)) && r.has(text(user)) && r.has(text(type)))
+                    .filter(r -> r.has(matchText(message)) && r.has(text(type)))
                     .findFirst()
                     .orElseThrow(() -> {
                         String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
@@ -1616,7 +1616,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemLogsAO validateRow(final String message, final String user, final String type) {
-            getInfoRow(message, user, type).should(exist);
+            final SelenideElement infoRow = getInfoRow(message, user, type);
+            infoRow.should(exist);
+            infoRow.findAll("td").get(3).shouldHave(text(user));
             return this;
         }
 
