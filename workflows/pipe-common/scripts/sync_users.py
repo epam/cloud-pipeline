@@ -12,15 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import grp
 import logging
 import os
-import traceback
+import pwd
+import shutil
+import stat
 import time
+import traceback
 from functools import reduce
 
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 from pipeline.utils.account import create_user
+from pipeline.utils.path import mkdir
+
+_ROOT_HOME_DIR = '/root'
+_ROOT_SSH_DIR = os.path.join(_ROOT_HOME_DIR, '.ssh')
+_SSH_FILE_PATHS = ['id_rsa', 'id_rsa.pub', 'authorized_keys']
 
 
 def _get_run_shared_users_and_groups(api, run_id):
@@ -95,8 +104,22 @@ def sync_users():
             logger.info('Creating {} users...'.format(len(users_to_create)))
             logger.debug('Creating users {}...'.format(users_to_create))
             for user in users_to_create:
+                logger.debug('Creating {} user...'.format(user))
                 user_home_dir = os.path.join(shared_home_dir, user)
                 create_user(user, user, home_dir=user_home_dir, skip_existing=True, logger=logger)
+                logger.debug('Configuring passwordless SSH for {} user...'.format(user))
+                user_uid = pwd.getpwnam(user).pw_uid
+                user_gid = grp.getgrnam(user).gr_gid
+                user_ssh_dir = os.path.join(user_home_dir, '.ssh')
+                mkdir(user_ssh_dir)
+                os.chown(user_ssh_dir, user_uid, user_gid)
+                os.chmod(user_ssh_dir, stat.S_IRWXU)
+                for ssh_file_path in _SSH_FILE_PATHS:
+                    ssh_file_source_path = os.path.join(_ROOT_SSH_DIR, ssh_file_path)
+                    ssh_file_target_path = os.path.join(user_ssh_dir, ssh_file_path)
+                    shutil.copy(ssh_file_source_path, ssh_file_target_path)
+                    os.chown(ssh_file_target_path, user_uid, user_gid)
+                    os.chmod(ssh_file_target_path, stat.S_IRUSR | stat.S_IWUSR)
 
             logger.info('Finishing users synchronization...')
         except KeyboardInterrupt:
