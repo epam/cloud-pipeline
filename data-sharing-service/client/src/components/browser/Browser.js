@@ -533,14 +533,14 @@ export default class Browser extends React.Component {
         item.name.toLowerCase().endsWith('.vsi') ||
         item.name.toLowerCase().endsWith('.mrxs')
       );
-      if (extensionCorrect && this.props.storage.loaded &&
-        this.props.storage.value &&
-        this.props.storage.value.results) {
-        const name = item.name.split('.').shift();
-        const items = this.props.storage.value.results;
-
-        return !!items.some(item => item.name === `${name}.tiles`);
-      }
+      // if (extensionCorrect && this.props.storage.loaded &&
+      //   this.props.storage.value &&
+      //   this.props.storage.value.results) {
+      //   const name = item.name.split('.').shift();
+      //   const items = this.props.storage.value.results;
+      //
+      //   return !!items.some(item => item.name === `${name}.tiles`);
+      // }
 
       return extensionCorrect;
     };

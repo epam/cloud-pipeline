@@ -37,6 +37,7 @@ import styles from '../preview.css';
 import './girder-mock';
 import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
+import roleModel from '../../../../utils/roleModel';
 
 const {SA, SAM, $} = window;
 
@@ -47,7 +48,7 @@ const magnificationTagName = 'Magnification';
 
 function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
-  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
+  return `${SERVER + API_PATH}/datastorage/${storageId}/item/content?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
 }
 
 function getFolderContents (storageId, folder) {
@@ -215,11 +216,13 @@ class VSIPreview extends React.Component {
         storageInfo.fetchIfNeededOrWait()
           .then(() => {
             if (!this.s3Storage && this.storage && this.storage.type === 'S3') {
-              const {delimiter, path} = this.storage;
+              const {delimiter, path, mask} = this.storage;
               const storage = {
                 id: this.storage.id,
                 path,
-                delimiter
+                delimiter,
+                read: true,
+                write: roleModel.writeAllowed(mask)
               };
               return wrapCreateStorageCredentials(new S3Storage(storage));
             } else {

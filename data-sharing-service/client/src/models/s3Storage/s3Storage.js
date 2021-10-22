@@ -94,7 +94,7 @@ class S3Storage {
         id: this._storage.id,
         read: true,
         readVersion: false,
-        write: true,
+        write: this._storage.write === undefined ? true : this._storage.write,
         writeVersion: false
       }]);
       if (request.error) {
