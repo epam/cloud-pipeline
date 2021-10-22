@@ -112,7 +112,8 @@ class DataStorageItemPermissionsForm extends React.Component {
       sids = []
     } = this.state;
     const {
-      readonly
+      readonly,
+      writeAvailable
     } = this.props;
     if (sids.length > 0) {
       const columns = [
@@ -132,7 +133,7 @@ class DataStorageItemPermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={item.allowMask === 0 || readonly}
+              disabled={item.allowMask === 0 || readonly || (!item.isRead && !writeAvailable)}
               checked={item.allowed}
               onChange={
                 this.onAllowDenyValueChanged(
@@ -150,7 +151,7 @@ class DataStorageItemPermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={item.denyMask === 0 || readonly}
+              disabled={item.denyMask === 0 || readonly || (!item.isRead && !writeAvailable)}
               checked={item.denied}
               onChange={
                 this.onAllowDenyValueChanged(
@@ -243,7 +244,6 @@ class DataStorageItemPermissionsForm extends React.Component {
   };
 
   render () {
-    console.log(this.props.saveEnabled);
     return (
       <div>
         <Row>
@@ -283,7 +283,8 @@ DataStorageItemPermissionsForm.propTypes = {
   mask: PropTypes.number,
   onSave: PropTypes.func,
   onCancel: PropTypes.func,
-  readonly: PropTypes.bool
+  readonly: PropTypes.bool,
+  writeAvailable: PropTypes.bool
 };
 
 export default DataStorageItemPermissionsForm;

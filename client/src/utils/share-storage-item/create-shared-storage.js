@@ -51,7 +51,7 @@ export default function createSharedStorage (preferences, sharedStorage, sharedF
             : ServiceTypes.objectStorage;
           const payload = {
             parentFolderId: preferences.sharedStoragesSystemDirectory,
-            name: `${sharedStorage.name}-${sharedFolder}`,
+            name: `${sharedStorage.name}-${(sharedFolder || '').replace(/\//g, '-')}`,
             path,
             shared: true,
             serviceType,

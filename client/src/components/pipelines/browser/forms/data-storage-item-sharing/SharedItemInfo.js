@@ -35,6 +35,7 @@ import {
 } from '../../../../../utils/share-storage-item';
 import UserName from '../../../../special/UserName';
 import styles from './SharedItemInfo.css';
+import roleModel from "../../../../../utils/roleModel";
 
 const MAX_SIDS_TO_PREVIEW = 10;
 
@@ -89,6 +90,8 @@ class SharedItemInfo extends React.Component {
 
   updateFromProps () {
     if (this.props.storage && this.props.path) {
+      const writeAvailable = roleModel.writeAllowed(this.props.storage);
+      const extraMask = writeAvailable ? 0b1111 : 0b0011;
       this.setState({pending: true, initialized: false}, async () => {
         const newState = {
           editPermissionsMode: true,
@@ -138,7 +141,7 @@ class SharedItemInfo extends React.Component {
               mask = 1,
               groups = []
             } = this.props.preferences.sharedStoragesDefaultPermissions;
-            newState.mask = mask;
+            newState.mask = mask & extraMask;
             newState.usersToShare = parseGroups(groups)
               .map(g => ({name: g, principal: false}));
           }
@@ -380,6 +383,7 @@ class SharedItemInfo extends React.Component {
         onSave={this.onShare}
         onCancel={onCancel}
         saveEnabled={!this.state.sharedLink}
+        writeAvailable={roleModel.writeAllowed(this.props.storage)}
       />
     );
   }
