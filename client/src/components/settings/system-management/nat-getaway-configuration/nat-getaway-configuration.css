@@ -1,0 +1,29 @@
+.table  thead tr {
+    text-transform: uppercase;
+}
+
+.table thead tr:first-child {
+    text-transform: capitalize;
+    font-size: large;
+    border-right: 4px solid #b9b9b9;
+}
+
+.table thead tr:first-child th:first-child,
+.table thead tr th.external-column:nth-child(3),
+.table tbody tr td.external-column:nth-child(3) {
+    border-right: 4px solid #e9e9e9;
+}
+.table thead tr:first-child th {
+    background: #e9e9e9;
+}
+
+.table-actions {
+    display:flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 15px;
+}
+
+.table-actions > button {
+    margin-right: 10px;
+}

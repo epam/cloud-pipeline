@@ -67,9 +67,9 @@ const SettingsTabs = [
     available: (user) => user ? user.admin : false
   },
   {
-    key: 'logs',
+    key: 'management',
     path: '/settings/logs',
-    title: 'System Logs',
+    title: 'System Management',
     available: (user) => user ? user.admin : false
   },
   {

@@ -1,0 +1,25 @@
+.input-container {
+    display: flex;
+    flex-direction: column;
+}
+.port-container {
+    display: flex;
+    align-items:flex-start;
+    justify-content: left;
+}
+.form-item-port {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 0px;
+    width: 100%;
+}
+.form-item-port > div {
+    width: 100%;
+}
+.port-container {
+    margin-bottom: 5px;
+}
+.port-container > button {
+    margin-left: 5px;
+    height: 32px;
+}
