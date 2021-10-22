@@ -29,7 +29,7 @@ import {
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import FileSaver from 'file-saver';
-import S3Storage from '../../../../models/s3Storage/s3Storage';
+import {S3Storage} from '../../../../models/s3Storage/s3Storage';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
@@ -138,6 +138,12 @@ function getTilesInfo (file) {
 }
 
 @inject('dataStorageCache', 'dataStorages')
+@inject(({dataStorages}, params) => {
+  const {storageId} = params;
+  return {
+    storageInfo: storageId ? dataStorages.load(storageId) : null
+  };
+})
 @observer
 class VSIPreview extends React.Component {
   state = {
@@ -174,9 +180,9 @@ class VSIPreview extends React.Component {
 
   @computed
   get storage () {
-    const {storageId, dataStorages} = this.props;
-    if (storageId && dataStorages.loaded) {
-      return (dataStorages.value || []).find(s => +(s.id) === +storageId);
+    const {storageInfo} = this.props;
+    if (storageInfo && storageInfo.loaded) {
+      return storageInfo.value;
     }
     return undefined;
   }
@@ -204,37 +210,44 @@ class VSIPreview extends React.Component {
       s3storageWrapperError: undefined,
       s3storageWrapperPending: true
     }, () => {
-      const {dataStorages, storageId} = this.props;
-      dataStorages.fetchIfNeededOrWait()
-        .then(() => {
-          if (!this.s3Storage && this.storage && this.storage.type === 'S3') {
-            const {delimiter, path} = this.storage;
-            const storage = {
-              id: storageId,
-              path,
-              delimiter
-            };
-            return wrapCreateStorageCredentials(new S3Storage(storage));
-          } else {
-            return Promise.resolve(this.s3Storage);
-          }
-        })
-        .then((storage) => {
-          if (storage) {
-            this.s3Storage = storage;
-          }
-          this.setState({
-            s3storageWrapperError: undefined,
-            s3storageWrapperPending: false
+      const {storageInfo} = this.props;
+      if (storageInfo) {
+        storageInfo.fetchIfNeededOrWait()
+          .then(() => {
+            if (!this.s3Storage && this.storage && this.storage.type === 'S3') {
+              const {delimiter, path} = this.storage;
+              const storage = {
+                id: this.storage.id,
+                path,
+                delimiter
+              };
+              return wrapCreateStorageCredentials(new S3Storage(storage));
+            } else {
+              return Promise.resolve(this.s3Storage);
+            }
+          })
+          .then((storage) => {
+            if (storage) {
+              this.s3Storage = storage;
+            }
+            this.setState({
+              s3storageWrapperError: undefined,
+              s3storageWrapperPending: false
+            });
+          })
+          .catch(e => {
+            message.error(e.message, 5);
+            this.setState({
+              s3storageWrapperError: e.message,
+              s3storageWrapperPending: false
+            });
           });
-        })
-        .catch(e => {
-          message.error(e.message, 5);
-          this.setState({
-            s3storageWrapperError: e.message,
-            s3storageWrapperPending: false
-          });
+      } else {
+        this.setState({
+          s3storageWrapperError: 'Storage info not available',
+          s3storageWrapperPending: false
         });
+      }
     });
   };
 
@@ -568,7 +581,7 @@ class VSIPreview extends React.Component {
       `x=${x}`,
       `y=${y}`
     ];
-    return new URL(`${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`, document.location.origin).href;
+    return new URL(`${PUBLIC_URL || ''}?wsi=true&${query.join('&')}`, document.location.origin).href;
   };
 
   openShareUrlModal = (e) => {

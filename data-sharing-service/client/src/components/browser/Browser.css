@@ -424,3 +424,18 @@ tr.table-row-selected {
 .fire-cloud-method-row {
   cursor: pointer;
 }
+
+.app-link {
+  padding: 0;
+  display: inline-block;
+}
+
+.app-link span,
+.app-link img {
+  vertical-align: middle;
+}
+
+.app-link img {
+  width: 20px;
+  height: 20px;
+}

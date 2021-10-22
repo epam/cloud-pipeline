@@ -42,6 +42,7 @@ import roleModel from '../../utils/roleModel';
 import styles from './Browser.css';
 import {NoStorage} from '../main/App';
 import PreviewModal from './preview/preview-modal';
+import VSIPreviewPage from '../vsi-preview';
 
 const PAGE_SIZE = 40;
 
@@ -49,6 +50,7 @@ const PAGE_SIZE = 40;
 @inject(({routing, dataStorages}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   return {
+    wsi: queryParameters.wsi,
     storageId: queryParameters.id,
     path: queryParameters.path,
     storage: queryParameters.id
@@ -527,7 +529,10 @@ export default class Browser extends React.Component {
       }
     };
     const vsiPreviewAvailable = (item) => {
-      const extensionCorrect = item.type.toLowerCase() === 'file' && item.name.toLowerCase().endsWith('.vsi');
+      const extensionCorrect = item.type.toLowerCase() === 'file' && (
+        item.name.toLowerCase().endsWith('.vsi') ||
+        item.name.toLowerCase().endsWith('.mrxs')
+      );
       if (extensionCorrect && this.props.storage.loaded &&
         this.props.storage.value &&
         this.props.storage.value.results) {
@@ -554,16 +559,17 @@ export default class Browser extends React.Component {
         const apps = [];
         if (vsiPreviewAvailable(item)) {
           apps.push(
-            <Icon
-              className={styles.itemApp}
-              key="vsi-preview-trigger"
-              type="picture"
-              onClick={e => {
+            <div
+              className={styles.appLink}
+              onClick={(e) => {
                 e && e.stopPropagation();
                 e && e.preventDefault();
                 this.setPreview(item);
               }}
-            />
+              key={item.key}
+            >
+              <img src="vsi.png" />
+            </div>
           );
         }
         return apps;
@@ -736,6 +742,13 @@ export default class Browser extends React.Component {
   };
 
   render () {
+    if (this.props.wsi) {
+      return (
+        <VSIPreviewPage
+          router={this.props.router}
+        />
+      );
+    }
     if (!this.props.storageId) {
       return <NoStorage />;
     }
@@ -1042,6 +1055,9 @@ export default class Browser extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
+    if (this.props.wsi) {
+      return;
+    }
     if (this.props.info.value.type === 'S3') {
       if ((prevProps.path !== this.props.path) || !this.props.S3Storage.prefix) {
         this.props.S3Storage.prefix = this.props.path ? this.props.path : '';

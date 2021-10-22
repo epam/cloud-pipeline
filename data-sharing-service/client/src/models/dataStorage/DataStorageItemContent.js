@@ -32,6 +32,6 @@ export default class DataStorageItemContent extends Remote {
     ]
       .filter(Boolean)
       .join('&');
-    this.url = `/datastorage/${this.id}/content${!!query && query.length > 0 ? '?' : ''}${query}`;
+    this.url = `/datastorage/${this.id}/item/content${!!query && query.length > 0 ? '?' : ''}${query}`;
   }
 }

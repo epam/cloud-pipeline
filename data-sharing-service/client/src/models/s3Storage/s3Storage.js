@@ -24,6 +24,31 @@ const asyncForEach = async (array, callback) => {
   }
 };
 
+// https://github.com/aws/aws-sdk-js/issues/1895#issuecomment-518466151
+AWS.util.update(AWS.S3.prototype, {
+  reqRegionForNetworkingError (resp, done) {
+    if (AWS.util.isBrowser() && resp.error) {
+      if (/^ExpiredToken$/i.test(resp.error.code)) {
+        // we got 'expired token' error; we don't need to stop uploading process by setting
+        // error (via "done(error)")
+        done();
+      } else if (/^CredentialsError$/i.test(resp.error.code)) {
+        const details = resp.error.originalError
+          ? ` (${resp.error.originalError.message})`
+          : '';
+        done(
+          `Could not load credentials${details}`
+        );
+      } else {
+        done(resp.error.message);
+      }
+    } else {
+      done();
+    }
+  }
+});
+// ====================================================================
+
 class S3Storage {
 
   _s3;
@@ -103,8 +128,20 @@ class S3Storage {
       success = false;
       return Promise.reject(new Error(err.message));
     }
-    this._s3 = new AWS.S3();
+    this._s3 = new AWS.S3({signatureVersion: 'v4'});
     return success;
+  };
+
+  getSignedUrl = (file = '') => {
+    const params = {
+      Bucket: this._storage.path,
+      Key: this.prefix + file
+    };
+    this._credentials.get();
+    if (this._credentials.needsRefresh()) {
+      return undefined;
+    }
+    return this._s3.getSignedUrl('getObject', params);
   };
 
   listObjects = () => {
@@ -279,4 +316,5 @@ class S3Storage {
 
 }
 
+export {S3Storage};
 export default new S3Storage();
