@@ -254,11 +254,8 @@ export default class DataStorage extends React.Component {
 
   get sharingEnabled () {
     const {preferences, info} = this.props;
-    const {selectedItems} = this.state;
     if (info && info.loaded && info.value) {
       return info.value.type !== 'NFS' &&
-        selectedItems.length === 1 &&
-        selectedItems[0].type === 'Folder' &&
         preferences &&
         preferences.loaded &&
         preferences.sharedStoragesSystemDirectory;
@@ -967,10 +964,10 @@ export default class DataStorage extends React.Component {
     this.setState({shareStorageDialogVisible: false});
   };
 
-  openShareItemDialog = (event, item) => {
+  openShareItemDialog = (event, path) => {
     event && event.stopPropagation();
-    if (item) {
-      this.setState({itemToShare: item});
+    if (path) {
+      this.setState({itemToShare: path});
     }
   };
 
@@ -1689,16 +1686,35 @@ export default class DataStorage extends React.Component {
             <div style={{paddingRight: 8}}>
               {
                 this.sharingEnabled &&
-                <Button
-                  id="share-selected-button"
-                  size="small"
-                  onClick={(e) => this.openShareItemDialog(e, this.state.selectedItems[0])
-                  }
-                >
-                  {`Share ${this.state.selectedItems[0]
-                    ? this.state.selectedItems[0].type.toLowerCase()
-                    : ''}`}
-                </Button>
+                this.props.path &&
+                (
+                  !this.state.selectedItems ||
+                  this.state.selectedItems.length === 0
+                ) && (
+                  <Button
+                    id="share-selected-button"
+                    size="small"
+                    onClick={(e) => this.openShareItemDialog(e, this.props.path)
+                    }
+                  >
+                    Share <b>current</b> folder
+                  </Button>
+                )
+              }
+              {
+                this.sharingEnabled &&
+                this.state.selectedItems &&
+                this.state.selectedItems.length === 1 &&
+                /^folder$/i.test(this.state.selectedItems[0].type) && (
+                  <Button
+                    id="share-selected-button"
+                    size="small"
+                    onClick={(e) => this.openShareItemDialog(e, this.state.selectedItems[0].path)
+                    }
+                  >
+                    Share <b>{this.state.selectedItems[0].name}</b> folder
+                  </Button>
+                )
               }
               {
                 this.bulkDownloadEnabled &&
@@ -2186,7 +2202,7 @@ export default class DataStorage extends React.Component {
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
         <SharedItemInfo
-          path={this.state.itemToShare ? this.state.itemToShare.path : undefined}
+          path={this.state.itemToShare}
           storage={this.props.info.value}
           visible={!!this.state.itemToShare}
           close={this.closeShareItemDialog}

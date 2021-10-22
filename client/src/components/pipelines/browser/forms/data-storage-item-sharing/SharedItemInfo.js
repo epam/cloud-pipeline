@@ -35,7 +35,7 @@ import {
 } from '../../../../../utils/share-storage-item';
 import UserName from '../../../../special/UserName';
 import styles from './SharedItemInfo.css';
-import roleModel from "../../../../../utils/roleModel";
+import roleModel from '../../../../../utils/roleModel';
 
 const MAX_SIDS_TO_PREVIEW = 10;
 
@@ -90,8 +90,6 @@ class SharedItemInfo extends React.Component {
 
   updateFromProps () {
     if (this.props.storage && this.props.path) {
-      const writeAvailable = roleModel.writeAllowed(this.props.storage);
-      const extraMask = writeAvailable ? 0b1111 : 0b0011;
       this.setState({pending: true, initialized: false}, async () => {
         const newState = {
           editPermissionsMode: true,
@@ -141,7 +139,15 @@ class SharedItemInfo extends React.Component {
               mask = 1,
               groups = []
             } = this.props.preferences.sharedStoragesDefaultPermissions;
-            newState.mask = mask & extraMask;
+            const writeAvailable = roleModel.writeAllowed(this.props.storage);
+            const correctMask = writeAvailable
+              ? roleModel.buildPermissionsMask(1, 1, 1, 1, 0, 0)
+              : roleModel.buildPermissionsMask(1, 1, 0, 0, 0, 0);
+            let extraMask = 0;
+            if (!writeAvailable && roleModel.writeDenied({mask}, true)) {
+              extraMask = roleModel.buildPermissionsMask(0, 0, 0, 1, 0, 0);
+            }
+            newState.mask = (mask & correctMask) | extraMask;
             newState.usersToShare = parseGroups(groups)
               .map(g => ({name: g, principal: false}));
           }
@@ -304,7 +310,7 @@ class SharedItemInfo extends React.Component {
                 ))
             }
           </div>
-        )
+        );
       }
     }
     return (
