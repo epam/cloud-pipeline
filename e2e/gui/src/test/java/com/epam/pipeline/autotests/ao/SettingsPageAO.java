@@ -1671,11 +1671,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public class MyProfileAO implements AccessObject<MyProfileAO> {
         private final Map<Primitive,SelenideElement> elements = initialiseElements(
-                entry(USER_NAME, $(byClassName("ser-profile__header")))
+                entry(USER_NAME, $(byClassName("ser-profile__header"))),
+                entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input")))
         );
 
         public MyProfileAO validateUserName(String user) {
             return ensure(USER_NAME, text(user));
+        }
+
+        public SelectLimitMountsPopupAO<MyProfileAO> limitMountsPerUser() {
+            click(LIMIT_MOUNTS);
+            return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
         }
 
         @Override
