@@ -906,10 +906,10 @@ class WsiFileParser:
             log_info('This file is processed by another parser, skipping...')
             return 0
         target_image_details = self.calculate_target_series()
-        target_series = target_image_details.id
-        if target_series is None:
+        if target_image_details is None or target_image_details.id is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation... ')
             return 1
+        target_series = target_image_details.id
         self.create_tmp_stat_file(target_image_details)
         tags_processing_result = self.try_process_tags(target_image_details)
         if TAGS_PROCESSING_ONLY:
