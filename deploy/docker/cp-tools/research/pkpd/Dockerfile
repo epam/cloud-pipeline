@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 # docker build -t pkpd:latest --build-arg BASE_IMAGE=<CentOS-based NoMachine image> \
+#                             --build-arg no_proxy=perl.org \
 #                             --build-arg NONMEM_ZIP_PASSWORD=<password to open NONMEM zip archive> .
 #
 
@@ -229,4 +230,4 @@ RUN (echo y;echo o conf prerequisites_policy follow;echo o conf commit)|cpan && 
 
 ADD psn_submit.sh $NONMEM_HOME/
 RUN chmod +x $NONMEM_HOME/psn_submit.sh && \
-    ln -s $NONMEM_HOME/psn_submit.sh /usr/bin/psn_submit \
+    ln -s $NONMEM_HOME/psn_submit.sh /usr/bin/psn_submit
