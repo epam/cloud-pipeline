@@ -61,11 +61,13 @@ if ! [ "$NUM_CORES" -eq "$NUM_CORES" ] 2>/dev/null; then
 	exit 1
 fi
 
-psn_invocation_service_dir=$(mktemp -q -p "$PKPD_NONMEM_JOBS_ROOT_DIR" -d "psn_wrapper.XXXXXXXXXX")
+psn_invocation_service_dir=$(mktemp -q -p "$PKPD_NONMEM_JOBS_ROOT_DIR" -d "psn_wrapper.$PSN_COMMAND.XXXXXXXXXX")
 psn_parafile="$psn_invocation_service_dir/pfile.pnm"
 psn_invocation_log="$psn_invocation_service_dir/exec.log"
+psn_invocation_script="$psn_invocation_service_dir/script.sh"
+psn_invocation_summary="$psn_invocation_service_dir/summary"
 
-psn_multithreading_options="-run_on_sge"
+psn_multithreading_options=""
 if [ $NUM_CORES -ne 1 ]; then
     cat <<EOF >"$psn_parafile"
 \$DEFAULTS
@@ -84,7 +86,7 @@ NODES=[nodes] PARSE_TYPE=2 PARSE_NUM=200 TIMEOUTI=600 TIMEOUT=10000 PARAPRINT=0 
 1:NONE
 2-[nodes]:worker{#-1}
 EOF
-    psn_multithreading_options="$psn_multithreading_options -parafile=$psn_parafile -nodes=$NUM_CORES"
+    psn_multithreading_options="$psn_multithreading_options -parafile=$psn_parafile"
 fi
 
 echo "Processing [$PSN_COMMAND] on a cluster
@@ -94,5 +96,12 @@ Service dir: [$psn_invocation_service_dir]
 Execution logs: [$psn_invocation_log]"
 
 psn_full_command_text="$PSN_COMMAND $psn_multithreading_options $PSN_COMMAND_OPTIONS > $psn_invocation_log 2>&1;"
-bash -c "cd $psn_invocation_service_dir; $psn_full_command_text"
+cat <<EOF >"$psn_invocation_script"
+cd $psn_invocation_service_dir
+echo "Start time: \$(date)" >> $psn_invocation_summary
+$psn_full_command_text
+echo "End time: \$(date)" >> $psn_invocation_summary
+EOF
+
+qsub -N $(basename "$psn_invocation_service_dir") -pe mpi $NUM_CORES "$psn_invocation_script"
 exit $?
