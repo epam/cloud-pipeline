@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.external.datastorage.exception;
 
-public class PipleineResponseException extends RuntimeException {
+public class PipelineResponseException extends RuntimeException {
 
-    public PipleineResponseException(String message) {
+    public PipelineResponseException(String message) {
         super(message);
     }
 
-    public PipleineResponseException(Throwable cause) {
+    public PipelineResponseException(Throwable cause) {
         super(cause);
     }
 }

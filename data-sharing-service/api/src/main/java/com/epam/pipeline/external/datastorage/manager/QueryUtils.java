@@ -18,7 +18,7 @@ package com.epam.pipeline.external.datastorage.manager;
 
 import com.epam.pipeline.external.datastorage.controller.Result;
 import com.epam.pipeline.external.datastorage.controller.ResultStatus;
-import com.epam.pipeline.external.datastorage.exception.PipleineResponseException;
+import com.epam.pipeline.external.datastorage.exception.PipelineResponseException;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -37,14 +37,14 @@ public final class QueryUtils {
             }
 
             if (!response.isSuccessful()) {
-                throw new PipleineResponseException(String.format("Unexpected status: %d, %s", response.code(),
+                throw new PipelineResponseException(String.format("Unexpected status: %d, %s", response.code(),
                         response.errorBody() != null ? response.errorBody().string() : ""));
             } else {
-                throw new PipleineResponseException(String.format("Unexpected status: %s, %s",
+                throw new PipelineResponseException(String.format("Unexpected status: %s, %s",
                         response.body().getStatus(), response.body().getMessage()));
             }
         } catch (IOException e) {
-            throw  new PipleineResponseException(e);
+            throw  new PipelineResponseException(e);
         }
     }
 

@@ -26,6 +26,7 @@ import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTempora
 import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
 import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
 import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageFile;
 import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
 import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
 import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
@@ -125,4 +126,10 @@ public interface PipelineDataStorageClient {
     Call<Result<DataStorageDownloadFileUrl>> generateUploadUrl(@Path(ID) long id,
                                                                  @Query(PATH) String path,
                                                                  @Header(AUTHORIZATION) String token);
+
+    @POST("restapi/datastorage/{id}/content")
+    Call<Result<DataStorageFile>> createDataStorageFile(@Path(ID) long id,
+                                                        @Query(PATH) String path,
+                                                        @Body String content,
+                                                        @Header(AUTHORIZATION) String token);
 }

@@ -16,13 +16,19 @@
 
 package com.epam.pipeline.external.datastorage.controller;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
-
+import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTemporaryCredentials;
+import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
+import com.epam.pipeline.external.datastorage.entity.datastorage.DataStorage;
+import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageFile;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
+import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
+import com.epam.pipeline.external.datastorage.entity.item.UpdateDataStorageItemVO;
+import com.epam.pipeline.external.datastorage.manager.datastorage.DataStorageManager;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -35,24 +41,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.epam.pipeline.external.datastorage.entity.datastorage.DataStorage;
-import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTemporaryCredentials;
-import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
-import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
-import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
-import com.epam.pipeline.external.datastorage.entity.item.UpdateDataStorageItemVO;
-import com.epam.pipeline.external.datastorage.manager.datastorage.DataStorageManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @Api(value = "Datastorage API")
 public class DataStorageController {
 
     private static final String FALSE = "false";
+    private static final String ID = "id";
+    private static final String PATH = "path";
     private final DataStorageManager dataStorageManager;
 
     @Autowired
@@ -163,6 +165,14 @@ public class DataStorageController {
             @PathVariable long id,
             @RequestBody List<DataStorageAction> operations) {
         return Result.success(dataStorageManager.generateCredentials(id, operations));
+    }
+
+    @PostMapping(value = "/datastorage/{id}/content")
+    public Result<DataStorageFile> uploadStorageItem(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestBody String content) {
+        return Result.success(dataStorageManager.createDataStorageFile(id, path, content));
     }
 
     protected void writeStreamToResponse(HttpServletResponse response, InputStream stream, String contentDisposition)

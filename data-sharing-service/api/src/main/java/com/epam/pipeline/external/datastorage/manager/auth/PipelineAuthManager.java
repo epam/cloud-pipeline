@@ -66,6 +66,10 @@ public class PipelineAuthManager {
         return authentication.getPrincipal();
     }
 
+    public String getHeader() {
+        return "Bearer " + getToken();
+    }
+
     public String getToken() {
         try {
             return getUser().getToken();

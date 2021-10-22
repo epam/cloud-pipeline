@@ -21,6 +21,7 @@ import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTempora
 import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
 import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
 import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
+import com.epam.pipeline.external.datastorage.entity.item.DataStorageFile;
 import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
 import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
 import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
@@ -121,7 +122,15 @@ public class DataStorageManager {
         return QueryUtils.execute(storageClient.generateUploadUrl(storageId, path, getToken()));
     }
 
+    public DataStorageFile createDataStorageFile(final Long id,
+                                                 final String path,
+                                                 final String content) {
+        return QueryUtils.execute(storageClient.createDataStorageFile(id, path, content, getToken()));
+    }
+
     private String getToken() {
         return "Bearer " + pipelineAuthManager.getToken();
     }
+
+
 }
