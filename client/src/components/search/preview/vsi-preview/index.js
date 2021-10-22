@@ -37,6 +37,7 @@ import styles from '../preview.css';
 import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
+import roleModel from '../../../../utils/roleModel';
 
 const {SA, SAM, $} = window;
 
@@ -212,7 +213,8 @@ class VSIPreview extends React.Component {
             const storage = {
               id: storageId,
               path,
-              delimiter
+              delimiter,
+              write: roleModel.writeAllowed(this.storage)
             };
             return wrapCreateStorageCredentials(new S3Storage(storage));
           } else {
@@ -770,6 +772,10 @@ class VSIPreview extends React.Component {
       >
         {/* eslint-disable-next-line */}
         <div
+          className={classNames(
+            styles.vsiSaView,
+            {[styles.readOnly]: !roleModel.writeAllowed(this.storage)}
+          )}
           ref={initializeTiles}
           style={{
             width: '100%',

@@ -301,6 +301,10 @@
   overflow: hidden;
 }
 
+.vsi-sa-view.read-only img[class~="saEditToggle"] {
+  display: none !important;
+}
+
 .wsi-page .vsi-content-preview {
   width: 100vw;
 }
