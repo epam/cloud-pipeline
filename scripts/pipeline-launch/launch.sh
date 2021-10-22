@@ -1879,6 +1879,9 @@ echo "CWD is now at $ANALYSIS_DIR"
 # This is used, when we don't want to fix some issue on a docker-per-docker basis
 custom_fixes
 
+# Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
+custom_cap_setup
+
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
