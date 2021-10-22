@@ -48,7 +48,7 @@ const magnificationTagName = 'Magnification';
 
 function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
-  return `${SERVER + API_PATH}/datastorage/${storageId}/item/content?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
+  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
 }
 
 function getFolderContents (storageId, folder) {
@@ -222,7 +222,7 @@ class VSIPreview extends React.Component {
                 path,
                 delimiter,
                 read: true,
-                write: roleModel.writeAllowed(mask)
+                write: roleModel.writeAllowed({mask})
               };
               return wrapCreateStorageCredentials(new S3Storage(storage));
             } else {
