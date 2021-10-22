@@ -106,6 +106,7 @@ public class C {
         EXTENSION_PATH = conf.getProperty("e2e.ui.extension.path");
         INVALID_EXTENSION_PATH = conf.getProperty("e2e.ui.invalid.extension.path");
         ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
+        ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -193,4 +194,5 @@ public class C {
     public static final String EXTENSION_PATH;
     public static final String INVALID_EXTENSION_PATH;
     public static final String ANONYM_EXTENSION_PATH;
+    public static final String ADMIN_TOKEN_IS_SERVICE;
 }

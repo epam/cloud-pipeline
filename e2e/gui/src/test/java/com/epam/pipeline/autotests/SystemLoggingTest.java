@@ -86,18 +86,19 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToSystemLogs();
         SelenideElement adminInfo;
         SelenideElement userInfo;
+        sleep(20, SECONDS);
         try {
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
             }
-            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login),
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login.toUpperCase()),
                     stopAction, admin);
-            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login), startAction,
+            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login.toUpperCase()), startAction,
                     user);
         } catch (NoSuchElementException e) {
-            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", admin.login),
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", admin.login.toUpperCase()),
                     stopAction, admin);
-            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", user.login), startAction,
+            userInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", user.login.toUpperCase()), startAction,
                     user);
         }
         systemLogsAO.validateTimeOrder(adminInfo, userInfo);
@@ -113,9 +114,9 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .settings()
                     .switchToUserManagement()
                     .switchToUsers()
-                    .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                    .searchForUserEntry(userWithoutCompletedRuns.login)
                     .edit()
-                    .blockUser(userWithoutCompletedRuns.login.toUpperCase())
+                    .blockUser(userWithoutCompletedRuns.login)
                     .ok();
             logout();
             loginAs(userWithoutCompletedRuns);
@@ -133,7 +134,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 }
                 validateErrorPage(Collections.singletonList("User is blocked!"));
                 Selenide.clearBrowserCookies();
-                sleep(1, SECONDS);
+                sleep(10, SECONDS);
             }
             loginAs(admin);
             SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
@@ -142,15 +143,15 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
             if (impersonateMode()) {
                 systemLogsAO
                         .validateRow(format("Authentication failed! User %s is blocked!",
-                                userWithoutCompletedRuns.login), userWithoutCompletedRuns.login, TYPE)
+                                userWithoutCompletedRuns.login), admin.login, TYPE)
                         .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",
-                                userWithoutCompletedRuns.login), userWithoutCompletedRuns.login, TYPE);
+                                userWithoutCompletedRuns.login), admin.login, TYPE);
                 return;
             }
             systemLogsAO
-                    .filterByUser(userWithoutCompletedRuns.login.toUpperCase())
+                    .filterByUser(userWithoutCompletedRuns.login)
                     .validateRow(format("Authentication failed! User %s is blocked!", userWithoutCompletedRuns.login),
-                            userWithoutCompletedRuns.login, TYPE);
+                            admin.login, TYPE);
         } finally {
             logoutIfNeeded();
             loginAs(admin);
@@ -158,9 +159,9 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .settings()
                     .switchToUserManagement()
                     .switchToUsers()
-                    .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                    .searchForUserEntry(userWithoutCompletedRuns.login)
                     .edit()
-                    .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
+                    .unblockUser(userWithoutCompletedRuns.login)
                     .ok();
         }
     }
@@ -174,7 +175,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
-                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .searchForUserEntry(userWithoutCompletedRuns.login)
                 .edit()
                 .blockUser(userWithoutCompletedRuns.login.toUpperCase())
                 .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
@@ -192,7 +193,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
-                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .searchForUserEntry(userWithoutCompletedRuns.login)
                 .edit()
                 .sleep(1, SECONDS)
                 .deleteRoleOrGroup(C.ROLE_USER)
@@ -201,7 +202,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
-                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .searchForUserEntry(userWithoutCompletedRuns.login)
                 .edit()
                 .addRoleOrGroup(C.ROLE_USER)
                 .sleep(2, SECONDS)
@@ -211,8 +212,8 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
                 .filterByMessage(format("id=%s", userId))
-                .validateRow(format("Assing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login, TYPE)
-                .validateRow(format("Unassing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login, TYPE);
+                .validateRow(format("Assing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login.toUpperCase(), TYPE)
+                .validateRow(format("Unassing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login.toUpperCase(), TYPE);
     }
 
     @Test
@@ -314,9 +315,9 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         clearFiltersIfNeeded(systemLogsAO);
         return impersonateMode()
                 ? systemLogsAO.getInfoRow(
-                        format("Successful impersonation action: %s, user: %s", action, account.login), account.login,
+                        format("Successful impersonation action: %s, user: %s", action, account.login.toUpperCase()), account.login.toUpperCase(),
                         TYPE)
-                : systemLogsAO.filterByUser(account.login).getInfoRow(message, account.login, TYPE);
+                : systemLogsAO.filterByUser(account.login.toUpperCase()).getInfoRow(message, account.login, TYPE);
     }
 
     private void clearFiltersIfNeeded(final SettingsPageAO.SystemLogsAO systemLogsAO) {
