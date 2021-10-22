@@ -5,7 +5,7 @@
   "dependencies": {
     "ansi_up": "^2.0.2",
     "antd": "2.13.11",
-    "aws-sdk": "^2.282.1",
+    "aws-sdk": "^2.700.0",
     "classnames": "^2.2.6",
     "history": "^3.3.0",
     "html2canvas": "^1.0.0-rc.5",

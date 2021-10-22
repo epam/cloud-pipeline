@@ -216,13 +216,13 @@ class VSIPreview extends React.Component {
         storageInfo.fetchIfNeededOrWait()
           .then(() => {
             if (!this.s3Storage && this.storage && this.storage.type === 'S3') {
-              const {delimiter, path, mask} = this.storage;
+              const {delimiter, path} = this.storage;
               const storage = {
                 id: this.storage.id,
                 path,
                 delimiter,
                 read: true,
-                write: roleModel.writeAllowed({mask})
+                write: roleModel.writeAllowed(this.storage)
               };
               return wrapCreateStorageCredentials(new S3Storage(storage));
             } else {
@@ -318,7 +318,7 @@ class VSIPreview extends React.Component {
     const {
       file,
       storageId,
-      dataStorageCache,
+      dataStorageCache
     } = this.props;
     if (this.saViewer) {
       this.saViewer = undefined;
@@ -782,6 +782,10 @@ class VSIPreview extends React.Component {
       >
         {/* eslint-disable-next-line */}
         <div
+          className={classNames(
+            styles.vsiSaView,
+            {[styles.readOnly]: !roleModel.writeAllowed(this.storage)}
+          )}
           ref={initializeTiles}
           style={{
             width: '100%',

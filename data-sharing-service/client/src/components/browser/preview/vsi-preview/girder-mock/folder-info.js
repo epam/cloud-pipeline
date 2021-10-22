@@ -14,8 +14,21 @@
  *  limitations under the License.
  */
 
+import getStorageInfo from './utilities/get-storage-info';
+import roleModel from '../../../../../utils/roleModel';
+
 function folderInfo (item, resolve) {
-  resolve({_accessLevel: 1});
+  getStorageInfo(item ? item.storage : undefined)
+    .then((info) => {
+      if (info && info.mask) {
+        resolve({_accessLevel: roleModel.writeAllowed(info) ? 1 : 0});
+      } else {
+        resolve({_accessLevel: 0});
+      }
+    })
+    .catch(() => {
+      resolve({_accessLevel: 0});
+    });
 }
 
 folderInfo.test = function (url) {
