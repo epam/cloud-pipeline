@@ -66,18 +66,16 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM,
-  CP_DISABLE_HYPER_THREADING
+  CP_CAP_DESKTOP_NM
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
-  dinDEnabled,
-  noMachineEnabled,
-  singularityEnabled,
-  systemDEnabled,
-  moduleEnabled,
-  disableHyperThreadingEnabled,
-  RUN_CAPABILITIES
+  RUN_CAPABILITIES,
+  getEnabledCapabilities,
+  applyCapabilities,
+  checkRunCapabilitiesModified,
+  addCapability,
+  isCustomCapability
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
 const Panels = {
@@ -155,12 +153,7 @@ export default class EditToolForm extends React.Component {
     slurmEnabled: false,
     kubeEnabled: false,
     launchCluster: false,
-    dinD: false,
-    singularity: false,
-    systemD: false,
-    noMachine: false,
-    module: false,
-    disableHyperThreading: false
+    runCapabilities: []
   };
 
   @observable defaultLimitMounts;
@@ -179,7 +172,8 @@ export default class EditToolForm extends React.Component {
   }
 
   get hyperThreadingDisabled () {
-    return this.state.disableHyperThreading;
+    return (this.state.runCapabilities || [])
+      .indexOf(RUN_CAPABILITIES.disableHyperThreading) >= 0;
   }
 
   showLabelInput = () => {
@@ -294,49 +288,11 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          if (this.state.dinD) {
-            params.push({
-              name: CP_CAP_DIND_CONTAINER,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.systemD) {
-            params.push({
-              name: CP_CAP_SYSTEMD_CONTAINER,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.singularity) {
-            params.push({
-              name: CP_CAP_SINGULARITY,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.noMachine) {
-            params.push({
-              name: CP_CAP_DESKTOP_NM,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.module) {
-            params.push({
-              name: CP_CAP_MODULES,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.disableHyperThreading) {
-            params.push({
-              name: CP_DISABLE_HYPER_THREADING,
-              type: 'boolean',
-              value: true
-            });
-          }
-
+          applyCapabilities(
+            parameters,
+            this.state.runCapabilities,
+            this.props.preferences
+          );
           for (let i = 0; i < params.length; i++) {
             parameters[params[i].name] = {
               type: params[i].type,
@@ -468,6 +424,7 @@ export default class EditToolForm extends React.Component {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
         await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+        await this.props.preferences.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
           props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -483,12 +440,7 @@ export default class EditToolForm extends React.Component {
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
-        state.dinD = dinDEnabled(props.configuration.parameters);
-        state.singularity = singularityEnabled(props.configuration.parameters);
-        state.systemD = systemDEnabled(props.configuration.parameters);
-        state.noMachine = noMachineEnabled(props.configuration.parameters);
-        state.module = moduleEnabled(props.configuration.parameters);
-        state.disableHyperThreading = disableHyperThreadingEnabled(props.configuration.parameters);
+        state.runCapabilities = getEnabledCapabilities(props.configuration.parameters);
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
@@ -723,27 +675,6 @@ export default class EditToolForm extends React.Component {
     }
   }
 
-  @computed
-  get selectedRunCapabilities () {
-    const {
-      dinD,
-      singularity,
-      systemD,
-      noMachine,
-      module,
-      disableHyperThreading
-    } = this.state;
-
-    return [
-      dinD ? RUN_CAPABILITIES.dinD : false,
-      singularity ? RUN_CAPABILITIES.singularity : false,
-      systemD ? RUN_CAPABILITIES.systemD : false,
-      noMachine ? RUN_CAPABILITIES.noMachine : false,
-      module ? RUN_CAPABILITIES.module : false,
-      disableHyperThreading ? RUN_CAPABILITIES.disableHyperThreading : false
-    ].filter(Boolean);
-  };
-
   modified = () => {
     const arrayIsNullOrEmpty = (array) => {
       return !array || !array.length;
@@ -821,20 +752,11 @@ export default class EditToolForm extends React.Component {
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
     const additionalCapabilitiesChanged = () => {
-      const dinD = dinDEnabled(this.props.configuration.parameters);
-      const singularity = singularityEnabled(this.props.configuration.parameters);
-      const systemD = systemDEnabled(this.props.configuration.parameters);
-      const noMachine = noMachineEnabled(this.props.configuration.parameters);
-      const module = moduleEnabled(this.props.configuration.parameters);
-      const disableHyperThreading = disableHyperThreadingEnabled(
-        this.props.configuration.parameters
+      return checkRunCapabilitiesModified(
+        this.state.runCapabilities,
+        getEnabledCapabilities(this.props.configuration.parameters),
+        this.props.preferences
       );
-      return dinD !== this.state.dinD ||
-        singularity !== this.state.singularity ||
-        systemD !== this.state.systemD ||
-        noMachine !== this.state.noMachine ||
-        module !== this.state.module ||
-        disableHyperThreading !== this.state.disableHyperThreading;
     };
 
     return configurationFormFieldChanged('is_spot') ||
@@ -904,10 +826,13 @@ export default class EditToolForm extends React.Component {
       kubeEnabled,
       autoScaledPriceType
     } = configuration;
-    let {dinD, systemD} = this.state;
+    let {runCapabilities} = this.state;
     if (kubeEnabled) {
-      dinD = true;
-      systemD = true;
+      runCapabilities = addCapability(
+        runCapabilities,
+        RUN_CAPABILITIES.dinD,
+        RUN_CAPABILITIES.systemD
+      );
     }
     this.setState({
       launchCluster,
@@ -920,8 +845,7 @@ export default class EditToolForm extends React.Component {
       slurmEnabled,
       kubeEnabled,
       autoScaledPriceType,
-      dinD,
-      systemD
+      runCapabilities
     }, () => {
       this.closeConfigureClusterDialog();
       const priceType = this.props.form.getFieldValue('is_spot') || this.getPriceTypeInitialValue();
@@ -1103,12 +1027,7 @@ export default class EditToolForm extends React.Component {
 
   onRunCapabilitiesSelect = (capabilities) => {
     this.setState({
-      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
-      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
-      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
-      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
-      module: capabilities.includes(RUN_CAPABILITIES.module),
-      disableHyperThreading: capabilities.includes(RUN_CAPABILITIES.disableHyperThreading)
+      runCapabilities: (capabilities || []).slice()
     });
   };
 
@@ -1367,7 +1286,7 @@ export default class EditToolForm extends React.Component {
               >
                 <RunCapabilities
                   disabled={this.state.pending || this.props.readOnly}
-                  values={this.selectedRunCapabilities}
+                  values={this.state.runCapabilities}
                   onChange={this.onRunCapabilitiesSelect}
                 />
               </Form.Item>
@@ -1422,12 +1341,16 @@ export default class EditToolForm extends React.Component {
             }
             skippedSystemParameters={getSkippedSystemParametersList(this)}
             value={this.defaultSystemProperties}
-            onInitialized={this.onEditToolFormSystemParametersInitialized} />
+            onInitialized={this.onEditToolFormSystemParametersInitialized}
+            testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
+          />
           {this.renderSeparator('Custom parameters')}
           <EditToolFormParameters
             readOnly={!this.props.configuration || this.props.readOnly || this.state.pending}
             value={this.defaultProperties}
-            onInitialized={this.onEditToolFormParametersInitialized} />
+            onInitialized={this.onEditToolFormParametersInitialized}
+            testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
+          />
         </div>
       );
     };
@@ -1453,7 +1376,6 @@ export default class EditToolForm extends React.Component {
   render () {
     const {getFieldDecorator} = this.props.form;
     const isTool = this.props.mode === 'tool';
-
     return (
       <Form>
         {

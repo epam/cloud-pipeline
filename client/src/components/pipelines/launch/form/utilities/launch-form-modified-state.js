@@ -33,11 +33,9 @@ import {
   CP_CAP_LIMIT_MOUNTS
 } from './parameters';
 import {
-  dinDEnabled,
-  noMachineEnabled,
-  singularityEnabled,
-  systemDEnabled,
-  moduleEnabled, disableHyperThreadingEnabled
+  checkRunCapabilitiesModified,
+  getEnabledCapabilities,
+  isCustomCapability
 } from './run-capabilities';
 
 function formItemInitialized (form, formName) {
@@ -202,7 +200,7 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
   return code !== parameters['cmd_template'];
 }
 
-function parametersCheck (form, parameters, state) {
+function parametersCheck (form, parameters, state, preferences) {
   if (!formItemInitialized(form, PARAMETERS) || !formItemInitialized(form, SYSTEM_PARAMETERS)) {
     return false;
   }
@@ -216,7 +214,7 @@ function parametersCheck (form, parameters, state) {
         continue;
       }
       const parameter = formParams.params[key];
-      if (parameter && parameter.name) {
+      if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
         formValue[parameter.name] = parameter.value || '';
       }
     }
@@ -232,7 +230,7 @@ function parametersCheck (form, parameters, state) {
         continue;
       }
       const parameter = formSystemParams.params[key];
-      if (parameter && parameter.name) {
+      if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
         formValue[parameter.name] = parameter.value || '';
       }
     }
@@ -242,6 +240,7 @@ function parametersCheck (form, parameters, state) {
       CP_CAP_LIMIT_MOUNTS,
       ...getSkippedSystemParametersList({state})
     ].indexOf(key) === -1)
+    .filter(key => !isCustomCapability(key, preferences))
     .map(key => ({key, value: parameters.parameters[key].value || ''}))
     .reduce((r, c) => ({...r, [c.key]: c.value}), {});
   const check = (source, test) => {
@@ -259,17 +258,12 @@ function parametersCheck (form, parameters, state) {
     check(initialValue, formValue);
 }
 
-function runCapabilitiesCheck (state, parameters) {
-  const dinD = dinDEnabled(parameters.parameters);
-  const singularity = singularityEnabled(parameters.parameters);
-  const systemD = systemDEnabled(parameters.parameters);
-  const noMachine = noMachineEnabled(parameters.parameters);
-  const module = moduleEnabled(parameters.parameters);
-  const disableHyperThreading = disableHyperThreadingEnabled(parameters.parameters);
-  return dinD !== state.dinD || singularity !== state.singularity ||
-    systemD !== state.systemD || noMachine !== state.noMachine ||
-    module !== state.module ||
-    disableHyperThreading !== state.disableHyperThreading;
+function runCapabilitiesCheck (state, parameters, preferences) {
+  return checkRunCapabilitiesModified(
+    state.runCapabilities,
+    getEnabledCapabilities(parameters.parameters),
+    preferences
+  );
 }
 
 function checkRootEntityModified (props, state) {
@@ -290,7 +284,7 @@ function checkRootEntityModified (props, state) {
 }
 
 export default function (props, state, options) {
-  const {form, parameters} = props;
+  const {form, parameters, preferences} = props;
   const {
     defaultCloudRegionId
   } = options;
@@ -331,9 +325,9 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters) ||
+    parametersCheck(form, parameters, undefined, preferences) ||
     // check additional run capabilities
-    runCapabilitiesCheck(state, parameters) ||
+    runCapabilitiesCheck(state, parameters, preferences) ||
     // check root entity id
     checkRootEntityModified(props, state);
 }

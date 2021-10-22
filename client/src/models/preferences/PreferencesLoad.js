@@ -164,6 +164,43 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  @computed
+  get launchCapabilities () {
+    const value = this.getPreferenceValue('launch.capabilities');
+    if (value) {
+      try {
+        const capabilities = JSON.parse(value);
+        const parsePlatforms = o => {
+          if (!o) {
+            return [];
+          }
+          if (Array.isArray(o)) {
+            return o.slice();
+          }
+          if (typeof o === 'string') {
+            return o.split(',').map(o => o.trim());
+          }
+          return [];
+        };
+        return Object
+          .entries(capabilities || {})
+          .map(([key, entry]) => ({
+            value: `CP_CAP_CUSTOM_${key}`,
+            name: key,
+            description: entry?.description,
+            platforms: parsePlatforms(entry?.platforms),
+            custom: true
+          }));
+      } catch (e) {
+        console.warn(
+          'Error parsing "launch.capabilities" preference:',
+          e
+        );
+      }
+    }
+    return [];
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
