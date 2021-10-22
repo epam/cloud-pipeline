@@ -35,7 +35,6 @@ import parseQueryParameters from '../../utils/queryParameters';
 })
 class VSIPreviewPage extends React.Component {
   onCameraChanged = (opts) => {
-    console.log(this.props);
     const {router, storageId, file} = this.props;
     const {
       zoom,
@@ -43,7 +42,6 @@ class VSIPreviewPage extends React.Component {
       x,
       y
     } = opts || {};
-    console.log('camera');
     // eslint-disable-next-line
     router.push(`${process.env.PUBLIC_URL}?wsi=true&storage=${storageId}&file=${encodeURIComponent(file)}&roll=${roll}&zoom=${zoom}&x=${x}&y=${y}`);
   };
