@@ -268,7 +268,8 @@ class PreferencesLoad extends Remote {
           .entries(capabilities || {})
           .map(([key, entry]) => ({
             value: `CP_CAP_CUSTOM_${key}`,
-            name: entry?.description || key,
+            name: key,
+            description: entry?.description,
             platforms: parsePlatforms(entry?.platforms),
             custom: true
           }));

@@ -98,12 +98,13 @@ class RunCapabilities extends React.Component {
       >
         {
           capabilities
-            .map(custom => (
+            .map(capability => (
               <Select.Option
-                key={custom.value}
-                value={custom.value}
+                key={capability.value}
+                value={capability.value}
+                title={capability.description || capability.name}
               >
-                {custom.name}
+                {capability.name}
               </Select.Option>
             ))
         }
