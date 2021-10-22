@@ -45,8 +45,9 @@ for var in $(compgen -e); do
         continue
     fi
 
-    echo "'$_cap_name' capability is enabled, processing details"
     _cap_name=${var#"$_custom_cap_prefix"}
+    echo "'$_cap_name' capability is enabled, processing details"
+
     _cap_commands=$(echo "$_all_custom_caps" | jq -r ".${_cap_name}.commands")
     if is_jq_null "$_cap_commands"; then
         echo "[ERROR] '$_cap_name' capability is enabled via '$var', but cannot get commands from 'launch.capabilities'"
