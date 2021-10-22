@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import displayDate from '../../utils/displayDate';
 import roleModel from '../../utils/roleModel';
 import styles from './Browser.css';
 import {NoStorage} from '../main/App';
+import PreviewModal from './preview/preview-modal';
 
 const PAGE_SIZE = 40;
 
@@ -50,7 +51,9 @@ const PAGE_SIZE = 40;
   return {
     storageId: queryParameters.id,
     path: queryParameters.path,
-    storage: queryParameters.id ? new DataStorageRequest(queryParameters.id, queryParameters.path, false, PAGE_SIZE) : null,
+    storage: queryParameters.id
+      ? new DataStorageRequest(queryParameters.id, queryParameters.path, false, PAGE_SIZE)
+      : null,
     info: queryParameters.id ? dataStorages.load(queryParameters.id) : null
   };
 })
@@ -440,6 +443,36 @@ export default class Browser extends React.Component {
     this.setState({selectedItems});
   };
 
+  closePreview = () => {
+    this.setState({preview: undefined});
+  };
+
+  onKeyDown = (event) => {
+    const {preview} = this.state;
+    if (preview && event.key && event.key.toLowerCase() === 'escape') {
+      this.closePreview();
+    }
+  };
+
+  setPreview = (info) => {
+    this.setState({preview: info});
+  };
+
+  renderPreview = () => {
+    const {preview} = this.state;
+    if (!preview) {
+      return null;
+    }
+    return (
+      <PreviewModal
+        lightMode
+        storageId={this.props.storageId}
+        preview={preview}
+        onClose={this.closePreview}
+      />
+    );
+  };
+
   getStorageItemsTable = () => {
     const getList = () => {
       const items = [];
@@ -493,6 +526,19 @@ export default class Browser extends React.Component {
         }
       }
     };
+    const vsiPreviewAvailable = (item) => {
+      const extensionCorrect = item.type.toLowerCase() === 'file' && item.name.toLowerCase().endsWith('.vsi');
+      if (extensionCorrect && this.props.storage.loaded &&
+        this.props.storage.value &&
+        this.props.storage.value.results) {
+        const name = item.name.split('.').shift();
+        const items = this.props.storage.value.results;
+
+        return !!items.some(item => item.name === `${name}.tiles`);
+      }
+
+      return extensionCorrect;
+    };
     const typeColumn = {
       dataIndex: 'type',
       key: 'type',
@@ -500,6 +546,28 @@ export default class Browser extends React.Component {
       className: styles.itemTypeCell,
       onCellClick: (item) => this.didSelectDataStorageItem(item),
       render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
+    };
+    const appsColumn = {
+      key: 'apps',
+      className: styles.itemAppsCell,
+      render: (text, item) => {
+        const apps = [];
+        if (vsiPreviewAvailable(item)) {
+          apps.push(
+            <Icon
+              className={styles.itemApp}
+              key="vsi-preview-trigger"
+              type="picture"
+              onClick={e => {
+                e && e.stopPropagation();
+                e && e.preventDefault();
+                this.setPreview(item);
+              }}
+            />
+          );
+        }
+        return apps;
+      }
     };
     const nameColumn = {
       dataIndex: 'name',
@@ -547,6 +615,7 @@ export default class Browser extends React.Component {
     const columns = [];
     columns.push(selectionColumn);
     columns.push(typeColumn);
+    columns.push(appsColumn);
     columns.push(nameColumn);
     columns.push(sizeColumn);
     columns.push(changedColumn);
@@ -744,7 +813,7 @@ export default class Browser extends React.Component {
               {
                 roleModel.writeAllowed(this.props.info.value) &&
                 <UploadButton
-                  multiple={true}
+                  multiple
                   onRefresh={this.refreshList}
                   title={'Upload'}
                   storageId={this.props.storageId}
@@ -819,7 +888,7 @@ export default class Browser extends React.Component {
               }
               <EditableField
                 allowEpmty={false}
-                readOnly={true}
+                readOnly
                 editStyle={{flex: 1}}
                 text={this.props.info.value.name}
                 onSave={() => {}} />
@@ -851,6 +920,7 @@ export default class Browser extends React.Component {
               navigateFull={this.navigateFull} />
           </Row>
           {contents}
+          {this.state.preview && this.renderPreview()}
         </div>
         <Modal
           title="Download file url"
@@ -962,6 +1032,14 @@ export default class Browser extends React.Component {
       pageMarkers
     });
   };
+
+  componentDidMount () {
+    window.addEventListener('keydown', this.onKeyDown);
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('keydown', this.onKeyDown);
+  }
 
   componentDidUpdate (prevProps) {
     if (this.props.info.value.type === 'S3') {
