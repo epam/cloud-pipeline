@@ -41,6 +41,9 @@ jar {
 }
 
 dependencies {
+    // Core library
+    implementation project(":cloud-pipeline-common:model")
+
     // Spring Boot
     compile("org.springframework.boot:spring-boot-starter")
     compile("org.springframework.boot:spring-boot-starter-web")

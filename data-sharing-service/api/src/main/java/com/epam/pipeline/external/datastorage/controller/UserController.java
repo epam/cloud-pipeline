@@ -15,8 +15,9 @@
 
 package com.epam.pipeline.external.datastorage.controller;
 
-import com.epam.pipeline.external.datastorage.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.external.datastorage.manager.user.UserManager;
+import com.epam.pipeline.rest.Result;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

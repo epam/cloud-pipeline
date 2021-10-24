@@ -15,30 +15,27 @@
 
 package com.epam.pipeline.external.datastorage.manager.user;
 
-import com.epam.pipeline.external.datastorage.entity.user.PipelineUser;
+import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
-import com.epam.pipeline.external.datastorage.manager.QueryUtils;
 import com.epam.pipeline.external.datastorage.manager.auth.PipelineAuthManager;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import retrofit2.Retrofit;
 
 @Service
 public class UserManager {
-    private final PipelineAuthManager pipelineAuthManager;
+    private final PipelineAuthManager authManager;
+    private final CloudPipelineApiExecutor apiExecutor;
     private final PipelineUserClient userClient;
 
-    public UserManager(@Value("${pipeline.api.base.url}") final String pipelineBaseUrl,
-                       @Value("${pipeline.client.connect.timeout}") final long connectTimeout,
-                       @Value("${pipeline.client.read.timeout}") final long readTimeout,
+    public UserManager(final CloudPipelineApiBuilder builder,
+                       final CloudPipelineApiExecutor apiExecutor,
                        final PipelineAuthManager pipelineAuthManager) {
-        this.pipelineAuthManager = pipelineAuthManager;
-        final Retrofit retrofit = new CloudPipelineApiBuilder(connectTimeout, readTimeout, pipelineBaseUrl)
-                .buildClient();
-        this.userClient = retrofit.create(PipelineUserClient.class);
+        this.authManager = pipelineAuthManager;
+        this.userClient = builder.getClient(PipelineUserClient.class);
+        this.apiExecutor = apiExecutor;
     }
 
     public PipelineUser getCurrentUser() {
-        return QueryUtils.execute(userClient.getCurrentUser(pipelineAuthManager.getHeader()));
+        return apiExecutor.execute(userClient.getCurrentUser(authManager.getHeader()));
     }
 }
