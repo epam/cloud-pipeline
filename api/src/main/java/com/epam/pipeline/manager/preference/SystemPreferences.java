@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
+import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
@@ -503,6 +504,9 @@ public class SystemPreferences {
             "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
+    public static final ObjectPreference<Map<String, LaunchCapability>> LAUNCH_CAPABILITIES = new ObjectPreference<>(
+            "launch.capabilities", null, new TypeReference<Map<String, LaunchCapability>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, LaunchCapability>>() {}));
 
     public static final BooleanPreference KUBE_POD_DOMAINS_ENABLED = new BooleanPreference(
             "launch.kube.pod.domains.enabled", true, LAUNCH_GROUP, pass);
@@ -512,6 +516,7 @@ public class SystemPreferences {
             "pods", LAUNCH_GROUP, pass);
     public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
+
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
