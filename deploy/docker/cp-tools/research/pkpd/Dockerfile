@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 # docker build -t pkpd:latest --build-arg BASE_IMAGE=<CentOS-based NoMachine image> \
-#                             --build-arg no_proxy=perl.org \
+#                             --build-arg no_proxy="perl.org" \
 #                             --build-arg NONMEM_ZIP_PASSWORD=<password to open NONMEM zip archive> .
 #
 
