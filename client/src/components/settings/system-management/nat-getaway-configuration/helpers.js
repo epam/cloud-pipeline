@@ -31,6 +31,7 @@ export function validate (key, value) {
         return {error: true, message: 'Field is required'};
       }
     }
+    // validate additional port fields
     default : {
       if (!value) {
         return {error: true, message: 'Field is required'};

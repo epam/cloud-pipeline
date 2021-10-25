@@ -17,13 +17,38 @@
     background: #e9e9e9;
 }
 
-.table-actions {
+.table-content-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-route-action {
     display:flex;
     justify-content: flex-start;
     align-items: center;
     padding: 15px;
 }
 
-.table-actions > button {
+.add-route-action > button {
     margin-right: 10px;
+}
+.removed {
+    background-color: rgba(240, 65, 52, 0.1);
+    opacity: 0.9;
+}
+.revert-action-block {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.revert-icon {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.revert-icon:hover {
+    color: #108ee9;
 }

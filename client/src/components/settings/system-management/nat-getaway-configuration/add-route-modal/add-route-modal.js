@@ -7,169 +7,217 @@ import styles from './add-route-modal.css';
 const FormItem = Form.Item;
 export default class AddRouteForm extends React.Component {
     state={
-      formData: {
+      form: {
         ports: {'port': undefined},
         ip: undefined,
         serverName: undefined
       },
-      formErrors: {}
+      errors: {}
     }
 
     get ports () {
-      return Object.entries(this.state.formData.ports);
+      return Object.entries(this.state.form.ports);
     }
 
     get formIsInvalid () {
-      const {formData} = this.state;
-      const ports = formData.ports || {};
-      const flattenFormData = {
-        ip: formData.ip,
-        serverName: formData.serverName,
+      const {form, errors} = this.state;
+      const ports = form.ports || {};
+      const flattenform = {
+        ip: form.ip,
+        serverName: form.serverName,
         ...ports};
-      return !!Object.entries(this.state.formErrors)
-        .map(([key, status]) => (status && status.error) || false)
+      return !!Object.entries(errors)
+        .map(([field, status]) => (status && status.error) || false)
         .filter(error => error)
-        .length || Object.values(flattenFormData).includes(undefined);
+        .length || Object.values(flattenform).includes(undefined);
     }
+
     handleChange = (event) => {
       const {name, value} = event.target;
-      const {formData, formErrors} = this.state;
+      const {form, errors} = this.state;
 
       if (!name.startsWith('port')) {
         this.setState({
-          formData: {
-            ...formData,
+          form: {
+            ...form,
             [name]: value
           },
-          formErrors: {
-            ...formErrors,
+          errors: {
+            ...errors,
             [name]: validate(name, value)
           }
         });
       } else {
-        const ports = {...formData.ports};
-        ports[name] = value;
         this.setState({
-          formData: {
-            ...formData,
-            ports: ports
+          form: {
+            ...form,
+            ports: {
+              ...form.ports,
+              [name]: value
+            }
           },
-          formErrors: {
-            ...formErrors,
+          errors: {
+            ...errors,
             [name]: validate(name, value)
           }
         });
       }
     }
+
     addPortInput = () => {
       this.setState({
-        formData: {
-          ...this.state.formData,
+        form: {
+          ...this.state.form,
           ports: {
-            ...this.state.formData.ports,
-            [`port${this.ports.length - 1}`]: undefined
+            ...this.state.form.ports,
+            [`port${this.ports.length - 1}${Math.ceil(Math.random() * 100)}`]: undefined
           }
         }
       });
     }
 
+    removePortInput = (name) => {
+      const {form, errors} = this.state;
+      const ports = {...form.ports};
+      delete ports[name];
+      delete errors[name];
+      this.setState({
+        form: {
+          ...form,
+          ports: ports
+        },
+        errors: errors
+      });
+    }
+
+    resetForm = () => {
+      this.setState({
+        form: {
+          ports: {'port': undefined},
+          ip: undefined,
+          serverName: undefined
+        },
+        errors: {}
+      });
+    }
+
+    cancelForm = () => {
+      this.props.onCancel();
+      this.resetForm();
+    }
+
     getValidationStatus = (key) => {
-      return this.state.formErrors[key] && this.state.formErrors[key].error ? 'error' : 'success';
+      const {errors} = this.state;
+      return errors[key] && errors[key].error ? 'error' : 'success';
     }
     getValidationMessage = (key) => {
-      return (this.state.formErrors[key] && this.state.formErrors[key].message) || '';
+      const {errors} = this.state;
+      return (errors[key] && errors[key].message) || '';
     }
 
     onSubmit = async () => {
       if (!this.formIsInvalid) {
-        this.props.onAdd(this.state.formData);
+        this.props.onAdd(this.state.form);
+        this.resetForm();
       }
     }
-    removePortInput = (portName) => {
-      const ports = {...this.state.formData.ports};
-      const formErrors = {...this.state.formErrors};
-      delete ports[portName];
-      delete formErrors[portName];
-      this.setState({
-        formData: {
-          ...this.state.formData,
-          ports: ports
-        },
-        formErrors: formErrors
-      });
-    }
+
+    renderFooter = () => (
+      <div className={styles.footerButtonsContainer}>
+        <Button
+          onClick={this.cancelForm}
+        >
+          CANCEL
+        </Button>
+        <Button
+          type="primary"
+          disabled={this.formIsInvalid}
+          onClick={this.onSubmit}
+        >
+          ADD
+        </Button>
+      </div>
+    );
+
+    renderPorts = () => this.ports.map(([name, _value]) => (
+      <div className={styles.portContainer} key={name}>
+        <FormItem
+          className={styles.formItemPort}
+          validateStatus={this.getValidationStatus(name)}
+          help={this.getValidationMessage(name)}
+        >
+          <Input
+            name={name}
+            value={this.state.form.ports[name]}
+            onChange={this.handleChange} />
+        </FormItem>
+        {this.ports.length > 1 && <Button
+          type="danger"
+          icon="delete"
+          onClick={() => this.removePortInput(name)}
+        />}
+      </div>)
+    );
 
     render () {
       const {onCancel, visible} = this.props;
-      const {formData} = this.state;
+      const {form} = this.state;
+
       return (
         <Modal
-          visible={visible}
           title="Add new route"
+          visible={visible}
           onCancel={onCancel}
-          footer={false}
+          footer={this.renderFooter()}
         >
           <div className={styles.modalContent}>
             <Form>
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>Server name:</span>
                 <FormItem
-                  required
                   validateStatus={this.getValidationStatus('serverName')}
                   help={this.getValidationMessage('serverName')}
                 >
                   <Input
                     name="serverName"
                     placeholder="Server name"
-                    value={formData.serverName}
+                    value={form.serverName}
                     onChange={this.handleChange} />
                 </FormItem>
               </div>
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>IP:</span>
-                <FormItem
-                  validateStatus={this.getValidationStatus('ip')}
-                  help={this.getValidationMessage('ip')}
-                >
-                  <Input
-                    name="ip"
-                    placeholder="181.161.0.1"
-                    value={formData.ip}
-                    onChange={this.handleChange} />
-                </FormItem>
+                <div className={styles.ipContainer}>
+                  <FormItem
+                    validateStatus={this.getValidationStatus('ip')}
+                    help={this.getValidationMessage('ip')}
+                  >
+                    <Input
+                      name="ip"
+                      placeholder="127.0.0.1"
+                      value={form.ip}
+                      onChange={this.handleChange} />
+                  </FormItem>
+                  <Button
+                    disabled={!form.ip || (this.getValidationStatus('ip') === 'error')}
+                    size="large"
+                  >
+                    Resolve
+                  </Button>
+                </div>
               </div>
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>PORT:</span>
-                {
-                  this.ports.map(([portName, _value], index) => (
-                    <div className={styles.portContainer} key={portName}>
-                      <FormItem
-                        required
-                        className={styles.formItemPort}
-                        validateStatus={this.getValidationStatus(portName)}
-                        help={this.getValidationMessage(portName)}
-                      >
-                        <Input
-                          name={portName}
-                          placeholder="3000"
-                          value={formData.ports[portName]}
-                          onChange={this.handleChange} />
-                      </FormItem>
-                      <Button
-                        type={index === 0 ? 'primary' : 'default'}
-                        icon={index === 0 ? 'plus' : 'delete'}
-                        onClick={index === 0 ? this.addPortInput : () => this.removePortInput(portName)}
-                      />
-                    </div>)
-                  )}
+                {this.renderPorts()}
               </div>
-              <Button
-                type="primary"
-                disabled={this.formIsInvalid}
-                onClick={this.onSubmit}
-              >
-                ADD
-              </Button>
+              <div className={styles.addButtonContainer}>
+                <Button
+                  icon="plus"
+                  onClick={this.addPortInput}
+                >
+                  Add
+                </Button>
+              </div>
             </Form>
           </div>
         </Modal>

@@ -9,10 +9,8 @@ const {Column, ColumnGroup} = Table;
 
 export default class NATGetaway extends React.Component {
     state = {
-      initialContent: this.tableContent,
+      initialContent: this.tableContent || [],
       tableContent: this.tableContent || [],
-      backup: [],
-      revertAction: false,
       addRouteModalIsOpen: false,
       pending: false,
       savingError: null
@@ -29,159 +27,165 @@ export default class NATGetaway extends React.Component {
     }
 
     get tableContentChanged () {
-      return !contentIsEqual(this.state.initialContent, this.state.tableContent);
+      return !contentIsEqual(
+        this.state.initialContent,
+        this.state.tableContent.filter(item => !item.isRemoved)
+      );
     }
 
-  removeRow = (record) => {
-    const newContent = this.state.tableContent
-      .filter(item => item.key !== record.key);
-    this.setState({
-      tableContent: newContent,
-      revertAction: true,
-      backup: [...this.state.backup, this.state.tableContent]
-    });
-  }
+    getRowClassName (record) {
+      return record.isRemoved ? styles.removed : '';
+    }
 
-  undoLastAction = () => {
-    this.setState({
-      tableContent: this.state.backup.pop(),
-      revertAction: !!this.state.backup.length
-    });
-  }
-  addNewDataToTable = async (formData) => {
-    const {serverName, ip, ports} = formData;
-    const formattedData = Object.entries(ports).map(([name, port]) => ({
-      serverName,
-      ip,
-      port
-    }));
-    // mocking request result
-    this.setState({
-      pending: true
-    });
-    try {
-      const newRows = await mockedRequest(formattedData);
+    removeRow = (record) => {
+      const index = this.state.tableContent.findIndex(item => record.key === item.key);
+      const newContent = [...this.state.tableContent];
+      if (index > -1) {
+        newContent[index].isRemoved = true;
+      }
       this.setState({
-        tableContent: [...this.state.tableContent, ...newRows],
-        backup: [...this.state.backup, this.state.tableContent]
-      });
-      this.closeAddRouteModal();
-    } catch (e) {
-      console.error(e);
-    } finally {
+        tableContent: newContent
+      }, () => console.log(this.tableContent));
+    }
+
+    revertRow = (record) => {
+      const index = this.state.tableContent.findIndex(item => record.key === item.key);
+      const newContent = [...this.state.tableContent];
+      if (index > -1) {
+        newContent[index].isRemoved = false;
+      }
       this.setState({
-        pending: false
+        tableContent: newContent
       });
     }
-  }
 
-  openAddRouteModal = () => {
-    this.setState({
-      addRouteModalIsOpen: true
-    });
-  }
+    addNewDataToTable = async (formData) => {
+      const {serverName, ip, ports} = formData;
+      const formattedData = Object.entries(ports).map(([name, port]) => ({
+        serverName,
+        ip,
+        port
+      }));
+      // mocking request result
+      this.setState({
+        pending: true
+      });
+      try {
+        const newRows = await mockedRequest(formattedData);
+        this.setState({
+          tableContent: [...this.state.tableContent, ...newRows]
+        });
+        this.closeAddRouteModal();
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.setState({
+          pending: false
+        });
+      }
+    }
 
-  closeAddRouteModal = () => {
-    this.setState({
-      addRouteModalIsOpen: false
-    });
-  }
+    openAddRouteModal = () => {
+      this.setState({
+        addRouteModalIsOpen: true
+      });
+    }
 
-  clearBackupState = () => {
-    this.setState({
-      initialContent: this.tableContent,
-      tableContent: this.tableContent || [],
-      backup: [],
-      revertAction: false
-    });
-  }
+    closeAddRouteModal = () => {
+      this.setState({
+        addRouteModalIsOpen: false
+      });
+    }
 
-  onSave = () => {
-    this.setState({pending: true});
-    try {
-      setTimeout(() => {
+    onSave = () => {
+      this.setState({pending: true});
+      try {
+        setTimeout(() => {
+          this.setState({
+            pending: false,
+            savingError: null
+          }, () => {
+            message.success('Saved');
+          });
+        }, 1000);
+      } catch (e) {
+        console.error(e);
         this.setState({
           pending: false,
-          savingError: null
-        }, () => {
-          message.success('Saved');
-          this.clearBackupState();
-        });
-      }, 1000);
-    } catch (e) {
-      console.error(e);
-      this.setState({
-        pending: false,
-        savingError: e.message
-      }, () => message.error(e.toString(), 5));
+          savingError: e.message
+        }, () => message.error(e.toString(), 5));
+      }
     }
-  }
 
-  render () {
-    return (
-      <div className={styles.natTableContainer}>
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          <div className={styles.tableActions}>
-            <Button icon="plus" onClick={() => this.openAddRouteModal()}>Add route</Button>
-            {
-              this.state.revertAction && (
-                <Button
-                  type="primary"
-                  icon="rollback"
-                  onClick={() => this.undoLastAction()}
-                >
-                  Undo
-                </Button>
-              )}
+    render () {
+      return (
+        <div className={styles.natTableContainer}>
+          <div className={styles.tableContentActions}>
+            <div className={styles.addRouteAction}>
+              <Button icon="plus" onClick={() => this.openAddRouteModal()}>Add route</Button>
+            </div>
+            <Button
+              type="primary"
+              disabled={!this.tableContentChanged}
+              onClick={this.onSave}
+            >
+              SAVE
+            </Button>
           </div>
-          <Button
-            type="primary"
-            disabled={!this.tableContentChanged}
-            onClick={this.onSave}
-          >
-            SAVE
-          </Button>
+          <Spin spinning={this.state.pending}>
+            <Table
+              className={styles.table}
+              dataSource={this.state.tableContent}
+              pagination={false}
+              rowKey="key"
+              rowClassName={this.getRowClassName}
+            >
+              <ColumnGroup title="External resources">
+                {this.tableExternalColumns.map((col) => (
+                  <Column
+                    title={col.prettyName || col.name}
+                    dataIndex={col.name}
+                    key={col.name}
+                    className={styles.externalColumn}
+                  />))
+                }
+              </ColumnGroup>
+              <ColumnGroup title="Internal config">
+                {this.tableInternalColumns.map((col) => (
+                  <Column
+                    title={col.prettyName || col.name}
+                    dataIndex={col.name}
+                    key={col.name}
+                  />))
+                }
+                <Column
+                  key="remover"
+                  render={(record) => {
+                    return !record.isRemoved ? (
+                      <Button type="danger" onClick={() => this.removeRow(record)}>
+                        <Icon type="delete" />
+                      </Button>
+                    ) : (
+                      <div className={styles.revertActionBlock}>
+                        <Icon
+                          title="revert"
+                          type="rollback"
+                          className={styles.revertIcon}
+                          onClick={() => this.revertRow(record)}
+                        />
+                        <p>deleted</p>
+                      </div>
+                    );
+                  }}
+                />
+              </ColumnGroup>
+            </Table>
+          </Spin>
+          <AddRouteForm
+            visible={this.state.addRouteModalIsOpen}
+            onAdd={this.addNewDataToTable}
+            onCancel={this.closeAddRouteModal} />
         </div>
-        <Spin spinning={this.state.pending}>
-          <Table
-            className={styles.table}
-            dataSource={this.state.tableContent}
-            pagination={false}
-            rowKey="key"
-          >
-            <ColumnGroup title="External resources">
-              {this.tableExternalColumns.map((col) => (
-                <Column
-                  title={col.prettyName || col.name}
-                  dataIndex={col.name}
-                  key={col.name}
-                  className={styles.externalColumn}
-                />))
-              }
-            </ColumnGroup>
-            <ColumnGroup title="Internal config">
-              {this.tableInternalColumns.map((col) => (
-                <Column
-                  title={col.prettyName || col.name}
-                  dataIndex={col.name}
-                  key={col.name}
-                />))
-              }
-              <Column
-                key="remover"
-                render={(opts) => (
-                  <Button onClick={() => this.removeRow(opts)}>
-                    <Icon type="delete" />
-                  </Button>)}
-              />
-            </ColumnGroup>
-          </Table>
-        </Spin>
-        <AddRouteForm
-          visible={this.state.addRouteModalIsOpen}
-          onAdd={this.addNewDataToTable}
-          onCancel={this.closeAddRouteModal} />
-      </div>
-    );
-  }
+      );
+    }
 }

@@ -23,3 +23,22 @@
     margin-left: 5px;
     height: 32px;
 }
+.ip-container {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items:flex-start;
+    justify-content: space-between;
+    width: 100%;
+}
+.ip-container > div {
+    width: 100%;
+    margin-right: 5px !important; 
+}
+.footer-buttons-container {
+    display: flex;
+    justify-content: space-between;
+}
+.add-button-container {
+    display: flex;
+    justify-content: flex-end;
+}

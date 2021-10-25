@@ -10,7 +10,6 @@ const SYSTEM_LOGS_TITLE = 'LOGS';
 const NAT_GATEAWAY_TITLE = 'NAT GETAWAY';
 
 export default class SystemManagement extends React.Component {
-
   state = {
     contentToShow: this.systemManagementItems[0].title
   }
@@ -47,8 +46,16 @@ export default class SystemManagement extends React.Component {
   render () {
     const {contentToShow} = this.state;
     return (
-      <SplitPanel>
-        <div className={styles.leftSidebar}>{this.renderSidebarList()}</div>
+      <SplitPanel
+        contentInfo={[
+          {
+            key: 'list',
+            size: {
+              percentDefault: 25
+            }
+          }
+        ]}>
+        <div key="list" className={styles.leftSidebar}>{this.renderSidebarList()}</div>
         <div className={styles.contentPanel}>
           {contentToShow === SYSTEM_LOGS_TITLE && <SystemLogs />}
           {contentToShow === NAT_GATEAWAY_TITLE && <NATGetaway />}
