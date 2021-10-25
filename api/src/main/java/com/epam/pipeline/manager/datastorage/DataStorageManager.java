@@ -84,9 +84,9 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -101,7 +101,6 @@ import org.springframework.util.Assert;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -793,8 +792,10 @@ public class DataStorageManager implements SecuredEntityManager {
         // check that storage exists
         final AbstractDataStorage storage = load(id);
         Assert.isTrue(0 < time, "Time should be greater then 0!");
-        final MetadataEntry metadata = metadataManager.loadMetadataItem(storage.getId(), AclClass.DATA_STORAGE);
-        final PipeConfValue davMountTimestamp = metadata.getData().get(DAV_MOUNT_TAG);
+        final Map<String, PipeConfValue> metadata = Optional.ofNullable(
+                metadataManager.loadMetadataItem(storage.getId(), AclClass.DATA_STORAGE)
+        ).map(MetadataEntry::getData).orElse(Collections.emptyMap());
+        final PipeConfValue davMountTimestamp = metadata.get(DAV_MOUNT_TAG);
         final long now = DateUtils.nowUTC().toEpochSecond(ZoneOffset.UTC);
         if (davMountTimestamp != null) {
             final long timestamp = NumberUtils.isDigits(davMountTimestamp.getValue())
