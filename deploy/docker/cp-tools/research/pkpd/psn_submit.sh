@@ -17,10 +17,12 @@
 # Wraps PsN call to be processed using SGE cluster
 
 PKPD_NONMEM_JOBS_ROOT_DIR=${PKPD_NONMEM_JOBS_ROOT_DIR:-$COMMON_DIR/nonmem-sge}
+PKPD_NONMEM_SYNC_REFRESH_RATE=${PKPD_NONMEM_SYNC_REFRESH_RATE:-10}
 mkdir -p "$PKPD_NONMEM_JOBS_ROOT_DIR"
 
 PSN_COMMAND=""
 PSN_COMMAND_OPTIONS=""
+SYNC_MODE=1
 POSITIONAL=()
 
 while [[ $# -gt 0 ]]
@@ -28,8 +30,20 @@ do
 key="$1"
 case $key in
     -cores)
-    NUM_CORES="$2"
-    shift
+    if [ -z "$PSN_COMMAND" ];then
+      NUM_CORES="$2"
+      shift
+    else
+      PSN_COMMAND_OPTIONS="$PSN_COMMAND_OPTIONS $key"
+    fi
+    shift;
+    ;;
+    -async)
+    if [ -z "$PSN_COMMAND" ];then
+      SYNC_MODE=0
+    else
+      PSN_COMMAND_OPTIONS="$PSN_COMMAND_OPTIONS $key"
+    fi
     shift
     ;;
     -nodes=* | --nodes=* | -parafile=* | --parafile=*)
@@ -49,7 +63,8 @@ esac
 done
 
 if [ -z "$PSN_COMMAND" ]; then
-    NUM_CORES=${PKPD_DEFAULT_NONMEM_JOB_CORES:-1}
+    echo "No PsN command was detected, exiting..."
+    exit 1
 fi
 
 if [ -z "$NUM_CORES" ]; then
@@ -103,5 +118,18 @@ $psn_full_command_text
 echo "End time: \$(date)" >> $psn_invocation_summary
 EOF
 
-qsub -N $(basename "$psn_invocation_service_dir") -pe mpi $NUM_CORES "$psn_invocation_script"
-exit $?
+psn_job_name=$(basename "$psn_invocation_service_dir")
+qsub -N "$psn_job_name" -pe mpi $NUM_CORES "$psn_invocation_script"
+submission_exit_code=$?
+if [ $submission_exit_code -eq 0 -a $SYNC_MODE -eq 1 ]; then
+    echo "Command is called in synchronized mode waiting for PsN command invocation to finish (use '-async' to execute in non-blocking mode)..."
+    while true; do
+        qstat -j "$psn_job_name" &> /dev/null
+        if [ $? -ne 0 ]; then
+          exit 0
+        fi
+        sleep $PKPD_NONMEM_SYNC_REFRESH_RATE
+    done
+    echo "Execution is finished!"
+fi
+exit $submission_exit_code
