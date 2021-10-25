@@ -53,7 +53,7 @@ case $key in
     *)
     if [ -z "$PSN_COMMAND" ];then
         PSN_COMMAND="$key"
-        echo "Reached unknown flag, consider as PsN command [$PSN_COMMAND]"
+        echo "[$PSN_COMMAND] considered as PsN command"
     else
         PSN_COMMAND_OPTIONS="$PSN_COMMAND_OPTIONS $key"
     fi
@@ -122,14 +122,14 @@ psn_job_name=$(basename "$psn_invocation_service_dir")
 qsub -N "$psn_job_name" -pe mpi $NUM_CORES "$psn_invocation_script"
 submission_exit_code=$?
 if [ $submission_exit_code -eq 0 -a $SYNC_MODE -eq 1 ]; then
-    echo "Command is called in synchronized mode waiting for PsN command invocation to finish (use '-async' to execute in non-blocking mode)..."
+    echo "The command is called in synchronized mode, waiting for PsN command invocation to finish (use '-async' to execute in non-blocking mode)..."
     while true; do
         qstat -j "$psn_job_name" &> /dev/null
         if [ $? -ne 0 ]; then
+          echo "Execution is finished"
           exit 0
         fi
         sleep $PKPD_NONMEM_SYNC_REFRESH_RATE
     done
-    echo "Execution is finished!"
 fi
 exit $submission_exit_code
