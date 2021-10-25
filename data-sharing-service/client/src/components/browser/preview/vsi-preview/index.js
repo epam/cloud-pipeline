@@ -749,7 +749,10 @@ class VSIPreview extends React.Component {
         .each(function () {
           $(this).addClass(styles.vsiSaViewHidden);
         });
-      html2canvas(this.saViewer.GetDiv()[0])
+      html2canvas(this.saViewer.GetDiv()[0], {
+        allowTaint: true,
+        useCORS: true
+      })
         .then((canvas) => {
           const ctx = canvas.getContext('2d');
           const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
