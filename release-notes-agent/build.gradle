@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version "2.0.2.RELEASE"
+    id 'checkstyle'
+    id 'pmd'
+}
+
+group 'com.epam.release.notes.agent'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 8
+targetCompatibility = 8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // Spring
+    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
+
+    // OAuth
+    implementation "com.google.oauth-client:google-oauth-client:$googleOauthClientVersion"
+
+    // Retrofit
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-jackson:$retrofitVersion"
+    implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
+
+    // Thymeleaf
+    implementation "org.thymeleaf:thymeleaf:$thymeleafVersion"
+
+
+    // Javax mail
+    implementation "com.sun.mail:javax.mail:$javaxMailVersion"
+
+
+    // Lombok
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    testCompileOnly "org.projectlombok:lombok:$lombokVersion"
+    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+    // Test
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
+    testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+}
+
+test {
+    useJUnitPlatform()
+}
