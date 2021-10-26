@@ -225,8 +225,8 @@ public class MetadataController extends AbstractRestController {
     @GetMapping(value = "/metadata/search/entry")
     @ResponseBody
     @ApiOperation(
-            value = "Loads metadata by entity class and key-value pair. Value is not required.",
-            notes = "Loads metadata by entity class and key-value pair. Value is not required.",
+            value = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
+            notes = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

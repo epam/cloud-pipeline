@@ -216,7 +216,7 @@ public class DataStorageApiService {
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final boolean proceedOnCloud,
                                                                final boolean skipPolicy) {
-        return dataStorageManager.create(dataStorageVO, proceedOnCloud, false, true, skipPolicy);
+        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#dataStorageVO.id, 'WRITE')")

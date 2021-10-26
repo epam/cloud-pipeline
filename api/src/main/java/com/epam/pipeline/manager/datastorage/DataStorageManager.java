@@ -788,10 +788,11 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public void requestDataStorageDavMount(final Long id, final Long time) {
-        log.debug(String.format("Request mount storage with id %d to dav service for %d sec", id, time));
+        log.debug(messageHelper.getMessage(MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST, id, time));
         // check that storage exists
         final AbstractDataStorage storage = load(id);
-        Assert.isTrue(0 < time, "Time should be greater then 0!");
+        Assert.isTrue(0 < time,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME));
         final Map<String, PipeConfValue> metadata = Optional.ofNullable(
                 metadataManager.loadMetadataItem(storage.getId(), AclClass.DATA_STORAGE)
         ).map(MetadataEntry::getData).orElse(Collections.emptyMap());
@@ -802,14 +803,15 @@ public class DataStorageManager implements SecuredEntityManager {
                     ? Long.parseLong(davMountTimestamp.getValue()) : 0;
             final long remain = timestamp - now;
             if (remain > time) {
-                throw new IllegalStateException("Storage already mounted to dav service for: " +
-                        String.format("%dh %dm %ds", DateUtils.convertSecsToHours(remain),
-                                DateUtils.convertSecsToMinOfHour(remain),
-                                DateUtils.convertSecsToSecsOfMin(remain)));
+                throw new IllegalStateException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED,
+                        DateUtils.convertSecsToHours(remain), DateUtils.convertSecsToMinOfHour(remain),
+                        DateUtils.convertSecsToSecsOfMin(remain)));
             }
         }
         checkDavMountQuotas();
-        log.info(String.format("Allow mount storage with id %d to dav service for %d sec", storage.getId(), time));
+        log.info(messageHelper.getMessage(
+                MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED, storage.getId(), time));
         metadataManager.updateMetadataItemKey(
                 MetadataVO.builder()
                         .entity(new EntityVO(storage.getId(), AclClass.DATA_STORAGE))
@@ -822,6 +824,8 @@ public class DataStorageManager implements SecuredEntityManager {
     public void callOffDataStorageDavMount(final Long id) {
         // check that storage exists
         final AbstractDataStorage storage = load(id);
+        log.info(messageHelper.getMessage(
+                MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF, storage.getId()));
         metadataManager.deleteMetadataItemKey(new EntityVO(storage.getId(), AclClass.DATA_STORAGE), DAV_MOUNT_TAG);
     }
 
@@ -1196,6 +1200,6 @@ public class DataStorageManager implements SecuredEntityManager {
         final List<EntityVO> davMountedStorages = ListUtils.emptyIfNull(
                 metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
         Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
-                "Max value for dav mounted storages is reached! Can't request this storage to be mounted, increase quotas!");
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
     }
 }
