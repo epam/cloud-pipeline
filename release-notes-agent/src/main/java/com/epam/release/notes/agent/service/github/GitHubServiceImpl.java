@@ -17,13 +17,24 @@ package com.epam.release.notes.agent.service.github;
 
 import com.epam.release.notes.agent.entity.github.Commit;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-public interface GitHubService {
+@Service
+@AllArgsConstructor
+public class GitHubServiceImpl implements GitHubService{
 
-    List<Commit> fetchCommits(String shaFrom, String shaTo);
+    private final GitHubApiClient client;
 
-    GitHubIssue fetchIssue(String number);
+    @Override
+    public List<Commit> fetchCommits(final String shaFrom, final String shaTo) {
+        return client.listCommit(shaFrom, shaTo);
+    }
 
+    @Override
+    public GitHubIssue fetchIssue(String number) {
+        return client.getIssue(Long.parseLong(number));
+    }
 }

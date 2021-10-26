@@ -16,6 +16,8 @@
 package com.epam.release.notes.agent;
 
 import com.epam.release.notes.agent.service.ReleaseNotificationService;
+import com.epam.release.notes.agent.service.ReleaseNotificationServiceImpl;
+import com.epam.release.notes.agent.service.github.GitHubService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -26,17 +28,19 @@ import java.util.Optional;
 @SpringBootApplication
 public class Application implements CommandLineRunner {
 
+    GitHubService gitHubService;
+
     public static void main(final String[] args) {
         SpringApplication.run(Application.class, args);
     }
 
     @Bean
-    public ReleaseNotificationService notificationService() {
-        return null;
+    public ReleaseNotificationService notificationService(GitHubService gitHubService) {
+        return new ReleaseNotificationServiceImpl(gitHubService);
     }
 
     @Override
     public void run(final String... args) {
-        Optional.ofNullable(notificationService()).ifPresent(ReleaseNotificationService::perform);
+        Optional.ofNullable(notificationService(gitHubService)).ifPresent(ReleaseNotificationService::perform);
     }
 }

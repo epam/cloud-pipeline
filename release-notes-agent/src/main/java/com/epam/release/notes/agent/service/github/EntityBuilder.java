@@ -16,14 +16,27 @@
 package com.epam.release.notes.agent.service.github;
 
 import com.epam.release.notes.agent.entity.github.Commit;
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import lombok.AllArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-public interface GitHubService {
+@AllArgsConstructor
+public class EntityBuilder {
 
-    List<Commit> fetchCommits(String shaFrom, String shaTo);
+    private static final String COMMIT = "commit";
+    private static final String SHA = "sha";
+    private static final String MESSAGE = "message";
 
-    GitHubIssue fetchIssue(String number);
+    private final List<Map<String, Object>> data;
 
+    public List<Commit> getCommits() {
+        return data.stream()
+                .map(commit -> Commit.builder()
+                        .commitSha(GitHubUtils.getValueFromHierarchicalMap(commit, SHA))
+                        .commitMessage(GitHubUtils.getValueFromHierarchicalMap(commit, COMMIT, MESSAGE))
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
