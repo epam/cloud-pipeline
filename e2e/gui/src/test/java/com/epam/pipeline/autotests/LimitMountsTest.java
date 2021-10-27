@@ -188,6 +188,10 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
+                .openStorageFromLimitMountsParameter(storage3)
+                .validateHeader(storage3);
+        runsMenu()
+                .showLog(getLastRunId())
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
                 .click(taskWithName(mountDataStoragesTask))
@@ -204,7 +208,13 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase(value = {"2210_4"})
     public void validateLimitMountsPriorityOrderApplying() {
         logout();
-        loginAs(user);
+        loginAs(admin);
+        tools()
+                .perform(registry, group, testTool, tool ->
+                                tool
+                                        .settings()
+                                        .expandTab(EXEC_ENVIRONMENT)
+                );
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
