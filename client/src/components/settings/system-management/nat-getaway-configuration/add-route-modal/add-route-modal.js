@@ -32,8 +32,18 @@ export default class AddRouteForm extends React.Component {
         .length || Object.values(flattenform).includes(undefined);
     }
 
-    handleChange = (event) => {
-      const {name, value} = event.target;
+    get portsDuplicates () {
+      const portsObj = Object.values(this.state.form.ports)
+        .reduce((r, c) => {
+          r[c] = (r[c] || 0) + 1;
+          return r;
+        }, {});
+      const duplicates = Object.entries(portsObj).filter(([key, value]) => value > 1);
+      return Object.fromEntries(duplicates);
+    }
+
+    handleChange = (name) => (event) => {
+      const {value} = event.target;
       const {form, errors} = this.state;
 
       if (!name.startsWith('port')) {
@@ -55,11 +65,14 @@ export default class AddRouteForm extends React.Component {
               ...form.ports,
               [name]: value
             }
-          },
-          errors: {
-            ...errors,
-            [name]: validate(name, value)
-          }
+          }}, () => {
+          this.setState({
+            ...this.state,
+            errors: {
+              ...errors,
+              [name]: validate(name, value, this.portsDuplicates)
+            }
+          });
         });
       }
     }
@@ -122,6 +135,8 @@ export default class AddRouteForm extends React.Component {
       }
     }
 
+    onResolveIP = () => {}
+
     renderFooter = () => (
       <div className={styles.footerButtonsContainer}>
         <Button
@@ -147,9 +162,8 @@ export default class AddRouteForm extends React.Component {
           help={this.getValidationMessage(name)}
         >
           <Input
-            name={name}
             value={this.state.form.ports[name]}
-            onChange={this.handleChange} />
+            onChange={this.handleChange(name)} />
         </FormItem>
         {this.ports.length > 1 && <Button
           type="danger"
@@ -179,10 +193,9 @@ export default class AddRouteForm extends React.Component {
                   help={this.getValidationMessage('serverName')}
                 >
                   <Input
-                    name="serverName"
                     placeholder="Server name"
                     value={form.serverName}
-                    onChange={this.handleChange} />
+                    onChange={this.handleChange('serverName')} />
                 </FormItem>
               </div>
               <div className={styles.inputContainer}>
@@ -193,14 +206,14 @@ export default class AddRouteForm extends React.Component {
                     help={this.getValidationMessage('ip')}
                   >
                     <Input
-                      name="ip"
                       placeholder="127.0.0.1"
                       value={form.ip}
-                      onChange={this.handleChange} />
+                      onChange={this.handleChange('ip')} />
                   </FormItem>
                   <Button
                     disabled={!form.ip || (this.getValidationStatus('ip') === 'error')}
                     size="large"
+                    onClick={this.onResolveIP}
                   >
                     Resolve
                   </Button>

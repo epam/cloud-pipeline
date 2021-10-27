@@ -1,45 +1,116 @@
-/* eslint-disable max-len */
+const validationConfig = {
+  port: {
+    min: 3000,
+    max: 5000,
+    message: rangeMessage
+  },
+  ip: new RegExp(/^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/),
+  server: {
+    min: 5,
+    max: 15,
+    message: rangeMessage
+  },
+  messages: {
+    required: 'Field is required',
+    invalid: 'Invalid format',
+    duplicate: 'Value should be unique'
+  }
+};
 
-const IP_PATTERN = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
-const PORT_PATTERN = /([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])/;
+function rangeMessage (min, max, isStringLength = false) {
+  if (min && !max) {
+    return isStringLength
+      ? `The length should be at least ${min} symbols`
+      : `The value should be at least ${min}`;
+  }
+  if (max && !min) {
+    return isStringLength
+      ? `The length should be less than ${max}`
+      : `The value should be less than ${max}`;
+  }
+  if (max && min) {
+    return isStringLength
+      ? `The length should be at least ${min} symbols and less than ${max}`
+      : `The value should be between ${min} and ${max}`;
+  }
+}
 
-export function validate (key, value) {
+function validatePort (value, config, ...rest) {
+  const [portsDuplicates] = rest;
+  const {port, messages} = config;
+
+  const portIsValid = value && Number(value) > 0 &&
+  (port.min ? Number(value) >= port.min : true) &&
+  (port.max ? Number(value) <= port.max : true);
+
+  if (!value) {
+    return {error: true, message: messages.required};
+  }
+  if (!portsDuplicates || !portsDuplicates[value]) {
+    if (Number(value) > 0 && port.min && !port.max) {
+      return Number(value) >= port.min
+        ? {error: false}
+        : {error: true, message: port.message(port.min, port.max)};
+    } else if (Number(value) > 0 && port.max && !port.min) {
+      return Number(value) <= port.max
+        ? {error: false}
+        : {error: true, message: port.message(port.min, port.max)};
+    } else if (!portIsValid) {
+      return {error: true, message: port.message(port.min, port.max)};
+    } else {
+      return {error: false};
+    }
+  } else if (portsDuplicates && portsDuplicates[value]) {
+    return {error: true, message: messages.duplicate};
+  }
+}
+
+function validateServerName (value, config) {
+  const {server, messages} = config;
+  const serverIsValid = value && value.trim() &&
+  (server.min ? value.length >= server.min : true) &&
+  (server.max ? value.length <= server.max : true);
+
+  if (!value || !value.trim()) {
+    return {error: true, message: messages.required};
+  } else if (server.min && !server.max) {
+    return server.min <= value.length
+      ? {error: false}
+      : {error: true, message: server.message(server.min, server.max, true)};
+  } else if (!server.min && server.max) {
+    return server.max >= value.length
+      ? {error: false}
+      : {error: true, message: server.message(server.min, server.max, true)};
+  } else if (!serverIsValid) {
+    return {error: true, message: server.message(server.min, server.max, true)};
+  } else {
+    return {error: false};
+  }
+}
+
+function validateIP (value, config) {
+  const {ip, messages} = config;
+  if (!value) {
+    return {error: true, message: messages.required};
+  } else if (!ip.test(value)) {
+    return {error: true, message: messages.invalid};
+  } else {
+    return {error: false};
+  }
+}
+
+export function validate (key, value, ...rest) {
+
   switch (key) {
-    case 'ip' : {
-      if (!value) {
-        return {error: true, message: 'Field is required'};
-      } else if (!IP_PATTERN.test(value)) {
-        return {error: true, message: 'Invalid format'};
-      } else {
-        return {error: false};
-      }
-    }
-    case 'port': {
-      if (!value) {
-        return {error: true, message: 'Field is required'};
-      } else if (value && Number(value) > 0 && PORT_PATTERN.test(value)) {
-        return {error: false};
-      } else {
-        return {error: true, message: 'Invalid format'};
-      }
-    }
-
-    case 'serverName': {
-      if (value && value.trim()) {
-        return {error: false};
-      } else {
-        return {error: true, message: 'Field is required'};
-      }
-    }
+    case 'ip' :
+      return validateIP(value, validationConfig);
+    case 'port':
+      return validatePort(value, validationConfig, ...rest);
+    case 'serverName':
+      return validateServerName(value, validationConfig);
     // validate additional port fields
     default : {
-      if (!value) {
-        return {error: true, message: 'Field is required'};
-      } else if (value && Number(value) > 0 && PORT_PATTERN.test(value)) {
-        return {error: false};
-      } else {
-        return {error: true, message: 'Invalid format'};
-      }
+      return validatePort(value, validationConfig, ...rest);
     }
   }
 }
@@ -114,7 +185,7 @@ export const mockedColumns = {
     {name: 'serverName', prettyName: 'server name'},
     {name: 'ip', prettyName: 'ip'},
     {name: 'port', prettyName: 'port'}],
-  internal:  [
+  internal: [
     {name: 'int_serverName', prettyName: 'server name'},
     {name: 'int_ip', prettyName: 'ip'},
     {name: 'int_port', prettyName: 'port'}
