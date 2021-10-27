@@ -56,7 +56,11 @@ function validatePort (value, config, ...rest) {
         ? {error: false}
         : {error: true, message: port.message(port.min, port.max)};
     } else if (!portIsValid) {
-      return {error: true, message: port.message(port.min, port.max)};
+      return {
+        error: true,
+        message: (port.min || port.max)
+          ? port.message(port.min, port.max)
+          : messages.invalid};
     } else {
       return {error: false};
     }
@@ -82,7 +86,12 @@ function validateServerName (value, config) {
       ? {error: false}
       : {error: true, message: server.message(server.min, server.max, true)};
   } else if (!serverIsValid) {
-    return {error: true, message: server.message(server.min, server.max, true)};
+    return {
+      error: true,
+      message: (server.min || server.max)
+        ? server.message(server.min, server.max, true)
+        : messages.invalid
+    };
   } else {
     return {error: false};
   }
@@ -100,7 +109,6 @@ function validateIP (value, config) {
 }
 
 export function validate (key, value, ...rest) {
-
   switch (key) {
     case 'ip' :
       return validateIP(value, validationConfig);
