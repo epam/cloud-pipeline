@@ -36,4 +36,5 @@ public class AWSRegionDTO extends AbstractCloudRegionDTO {
     private String tempCredentialsRole;
     private Integer backupDuration;
     private boolean versioningEnabled;
+    private String iamRole;
 }
