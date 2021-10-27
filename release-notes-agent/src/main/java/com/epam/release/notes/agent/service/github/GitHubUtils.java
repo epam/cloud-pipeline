@@ -16,8 +16,6 @@
 package com.epam.release.notes.agent.service.github;
 
 import com.epam.release.notes.agent.entity.github.Commit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.http.ParseException;
 
 import java.util.ArrayList;
@@ -30,18 +28,21 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GitHubUtils {
 
     private static final String ZERO = "0";
     private static final String ISSUE_REGEX = "(?i)Issue #\\d.*";
     private static final String ISSUE_NUMBER_REGEX = "#\\d+";
 
+    private GitHubUtils() {
+    }
+
     /**
      * Retrieves string field value from hierarchical structured map object
      * by the path to the field.
-     * E.g. the {@code fieldNamesHierarchy} array {@code "commit", "author", "name"} points at the author name in the map:
-     * {@code "commit":..."author":..."name":"AurtorName"}
+     * E.g. the {@code fieldNamesHierarchy} array {@code "commit", "author", "name"}
+     * points at the {@code  authorName} in the map:
+     * {@code "commit":..."author":..."name":"authorName"}
      *
      * @param map                 hierarchical structured Map
      * @param fieldNamesHierarchy the path to the field which stored in the map
@@ -62,7 +63,7 @@ public final class GitHubUtils {
     /**
      * Returns a list of elements which is taken from the source list unless not matches the predicate condition.
      *
-     * @param list the source list
+     * @param list      the source list
      * @param predicate the predicate that defines not valid condition
      * @return the list of the elements unless not matches the predicate condition
      */
@@ -97,7 +98,8 @@ public final class GitHubUtils {
             if (matcher.find()) {
                 return commit.getCommitMessage().substring(matcher.start() + 1, matcher.end());
             }
-            return ZERO;};
+            return ZERO;
+        };
     }
 
     private static <T> T assertThatFieldExists(final T field, final String fieldName) {

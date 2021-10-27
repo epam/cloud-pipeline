@@ -64,13 +64,13 @@ public class GitHubApiClient {
         int currentSize = 0;
         while (currentPage == START_PAGE || currentSize == PAGE_SIZE) {
             List<Commit> addedList = GitHubUtils.takeWhileNot(
-                    createEntityBuilder(gitHubApi.listCommits(PROJECT_NAME, OWNER_NAME,
-                            Optional.ofNullable(shaFrom).orElse(DEFAULT_BRANCH_NAME), currentPage, PAGE_SIZE))
-                            .getCommits(),
-                    commit -> commit.getCommitSha().equals(shaTo));
+                createEntityBuilder(gitHubApi.listCommits(PROJECT_NAME, OWNER_NAME,
+                    Optional.ofNullable(shaFrom).orElse(DEFAULT_BRANCH_NAME), currentPage, PAGE_SIZE))
+                    .getCommits(),
+                commit -> commit.getCommitSha().equals(shaTo));
             resultList.addAll(addedList);
             currentSize = addedList.size();
-            currentPage ++;
+            currentPage++;
         }
         return resultList;
     }
@@ -80,7 +80,7 @@ public class GitHubApiClient {
     }
 
     private EntityBuilder createEntityBuilder(Call<List<Map<String, Object>>> call) {
-                return new EntityBuilder(execute(call));
+        return new EntityBuilder(execute(call));
     }
 
     private GitHubApi createApi(final String token) {
@@ -107,7 +107,7 @@ public class GitHubApiClient {
                 .build();
     }
 
-    private  <R> R execute(Call<R> call) {
+    private <R> R execute(Call<R> call) {
         try {
             Response<R> response = call.execute();
             if (response.isSuccessful()) {
