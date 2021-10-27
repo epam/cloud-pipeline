@@ -15,46 +15,223 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import com.epam.pipeline.autotests.mixins.Tools;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
+import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
+import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static java.lang.String.format;
 
-public class LimitMountsTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
+public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization, Tools {
 
     private String storage1 = "limitMountsStorage" + Utils.randomSuffix();
+    private String storage2 = "limitMountsStorage" + Utils.randomSuffix();
+    private String storage3 = "limitMountsStorage" + Utils.randomSuffix();
+    private String storage4 = "limitMountsStorage" + Utils.randomSuffix();
+    private final String registry = C.DEFAULT_REGISTRY;
+    private final String testTool = C.TESTING_TOOL_NAME;
+    private final String group = C.DEFAULT_GROUP;
+    private final String mountDataStoragesTask = "MountDataStorages";
 
     @BeforeClass(alwaysRun = true)
     public void setPreferences() {
         library()
-                .createStorage(storage1);
+                .createStorage(storage1)
+                .createStorage(storage2)
+                .createStorage(storage3)
+                .clickOnCreateStorageButton()
+                .setStoragePath(storage4)
+                .clickSensitiveStorageCheckbox()
+                .ok();
+        givePermissionsToStorage(user, storage2);
+        givePermissionsToStorage(user, storage3);
+        givePermissionsToStorage(user, storage4);
+        tools()
+                .perform(registry, group, testTool, tool ->
+                        tool.settings()
+                                .doNotMountStoragesSelect(true)
+                                .doNotMountStoragesSelect(false)
+                                .save());
     }
 
-    @Test
-    @TestCase(value = {"2210"})
-    public void validatePerUserDefaultMountLimits() {
+    @AfterClass(alwaysRun = true)
+    public void deleteTestEntities() {
+        open(C.ROOT_ADDRESS);
+        library()
+                .removeStorageIfExists(storage1)
+                .removeStorageIfExists(storage2)
+                .removeStorageIfExists(storage3)
+                .removeStorageIfExists(storage4);
+        tools()
+                .perform(registry, group, testTool, tool ->
+                        tool.settings()
+                                .doNotMountStoragesSelect(true)
+                                .doNotMountStoragesSelect(false)
+                                .save());
+        logout();
+        loginAs(user);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
+                .doNotMountStoragesSelect(true)
+                .doNotMountStoragesSelect(false);
+    }
+
+    @Test(priority = 0)
+    @TestCase(value = {"2210_1"})
+    public void validateSelectDataStoragesToLimitMountsForm() {
+        logout();
+        loginAs(user);
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                .assertDoNotMountStoragesIsNotChecked()
                 .limitMountsPerUser()
+                .ensureAll(disabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE)
+                .ensureAll(enabled, CLEAR_SELECTION, CANCEL, OK)
+                .storagesCountShouldBeGreaterThan(2)
+                .searchStorage(storage1)
+                .ensure(TABLE, not(text(storage1)))
                 .clearSelection()
                 .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
                 .ensureNotVisible(CLEAR_SELECTION)
-                .searchStorage(storage1)
-                .selectStorage(storage1)
-                .ensureVisible(CLEAR_SELECTION)
-                .ensureAll(enabled, OK)
-                .ok()
-                .ensure(LIMIT_MOUNTS, text(storage1));
+                .searchStorage(storage4)
+                .ensure(TABLE, not(text(storage4)))
+                .cancel();
+    }
+
+    @Test(priority = 1)
+    @TestCase(value = {"2210_2"})
+    public void validateDoNotMountStoragesOptionInUserProfile() {
+        logout();
+        loginAs(user);
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .doNotMountStoragesSelect(true);
+        tools()
+                .perform(registry, group, testTool, tool ->
+                    tool.run(this))
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
+                .waitForSshLink()
+                .waitForTask(mountDataStoragesTask)
+                .click(taskWithName(mountDataStoragesTask))
+                .ensure(log(), containsMessages(
+                        "Run is launched with mount limits (None) Only 0 storages will be mounted",
+                        "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
+                .ssh(shell -> shell
+                        .execute("ls -l cloud-data/")
+                        .assertOutputContains("total 0")
+                        .close());
+    }
+
+    @Test(priority = 1)
+    @TestCase(value = {"2210_3"})
+    public void validateLimitMountsValuesFromUserProfile() {
+        logout();
+        loginAs(user);
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .doNotMountStoragesSelect(true)
+                .doNotMountStoragesSelect(false)
+                .limitMountsPerUser()
+                .clearSelection()
+                .searchStorage(storage3)
+                .selectStorage(storage3)
+                .ok();
+        tools()
+                .perform(registry, group, testTool, tool ->
+                        tool
+                                .settings()
+                                .expandTab(EXEC_ENVIRONMENT)
+                                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                                .runWithCustomSettings()
+                )
+                .expandTab(ADVANCED_PANEL)
+                .ensure(LIMIT_MOUNTS, text(storage3))
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
+                .waitForSshLink()
+                .waitForTask(mountDataStoragesTask)
+                .click(taskWithName(mountDataStoragesTask))
+                .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
+                .ensure(log(), containsMessages("Only 1 storages will be mounted"))
+                .ensure(log(), containsMessages(mountStorageMessage(storage3)))
+                .ssh(shell -> shell
+                        .execute("ls /cloud-data/")
+                        .assertOutputContains(storage3.toLowerCase())
+                        .close());
+    }
+
+    @Test(dependsOnMethods = "validateLimitMountsValuesFromUserProfile")
+    @TestCase(value = {"2210_4"})
+    public void validateLimitMountsPriorityOrderApplying() {
+        logout();
+        loginAs(user);
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .doNotMountStoragesSelect(true)
+                .doNotMountStoragesSelect(false)
+                .limitMountsPerUser()
+                .clearSelection()
+                .searchStorage(storage3)
+                .selectStorage(storage3)
+                .ok();
+    }
+
+    private void givePermissionsToStorage(Account user, String storage) {
+        library()
+                .selectStorage(storage)
+                .clickEditStorageButton()
+                .clickOnPermissionsTab()
+                .addNewUser(user.login)
+                .selectByName(user.login)
+                .showPermissions()
+                .set(READ, ALLOW)
+                .set(WRITE, ALLOW)
+                .set(EXECUTE, ALLOW)
+                .closeAll();
+    }
+
+    private String mountStorageMessage(String storage) {
+        return format("%s mounted to /cloud-data/%s", storage.toLowerCase(), storage.toLowerCase());
     }
 }

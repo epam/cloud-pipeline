@@ -1672,7 +1672,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public class MyProfileAO implements AccessObject<MyProfileAO> {
         private final Map<Primitive,SelenideElement> elements = initialiseElements(
                 entry(USER_NAME, $(byClassName("ser-profile__header"))),
-                entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input")))
+                entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
         );
 
         public MyProfileAO validateUserName(String user) {
@@ -1682,6 +1683,24 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public SelectLimitMountsPopupAO<MyProfileAO> limitMountsPerUser() {
             click(LIMIT_MOUNTS);
             return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
+        }
+
+        public MyProfileAO doNotMountStoragesSelect (boolean isSelected) {
+            if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                    (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+                click(DO_NOT_MOUNT_STORAGES);
+            }
+            return this;
+        }
+
+        public MyProfileAO assertDoNotMountStoragesIsChecked() {
+            get(DO_NOT_MOUNT_STORAGES).shouldHave(cssClass("ant-checkbox-checked"));
+            return this;
+        }
+
+        public MyProfileAO assertDoNotMountStoragesIsNotChecked() {
+            get(DO_NOT_MOUNT_STORAGES).shouldNotHave(cssClass("ant-checkbox-checked"));
+            return this;
         }
 
         @Override
