@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import os
 import traceback
 
 import click
@@ -27,11 +29,13 @@ from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_creds_info, is_frozen
+from src.utilities.clean_operations_manager import CleanOperationsManager
 from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
@@ -44,13 +48,19 @@ from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_t
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
-from src.version import __version__
+from src.version import __version__, __bundle_info__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
+DEFAULT_LOGGING_LEVEL = logging.ERROR
+DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
+LOGGING_LEVEL_OPTION_DESCRIPTION = 'Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. ' \
+                                   'Defaults to ERROR.'
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only.'
 RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
-TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying.'
+DEBUG_OPTION_DESCRIPTION = 'Enables verbose logging.'
+TRACE_OPTION_DESCRIPTION = 'Enables verbose errors.'
+NO_CLEAN_OPTION_DESCRIPTION = 'Disables temporary resources cleanup.'
 EDGE_REGION_OPTION_DESCRIPTION = 'The edge region name. If not specified the default edge region will be used.'
 SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
                         ' until the expected status of the operation won\'t be returned'
@@ -79,8 +89,9 @@ def print_version(ctx, param, value):
     silent_print_creds_info()
     ctx.exit()
 
+
 def enable_debug_logging(ctx, param, value):
-    if value is False:
+    if not value:
         return
     # Enable body/headers logging from httplib requests
     try:
@@ -88,56 +99,165 @@ def enable_debug_logging(ctx, param, value):
     except ImportError:
         from httplib import HTTPConnection      # py2
     HTTPConnection.debuglevel = 5
+    log_level = logging.DEBUG
+    log_format = os.getenv('CP_LOGGING_FORMAT') or ctx.params.get('log_format') or DEFAULT_LOGGING_FORMAT
     # Enable urlib3/boto/requests logging
-    import logging
-    logging.basicConfig(level='DEBUG')
+    logging.basicConfig(level=log_level, format=log_format)
     stream = logging.StreamHandler()
-    stream.setLevel(logging.DEBUG)
+    stream.setLevel(log_level)
     # Print current configuration
     click.echo('=====================Configuration=========================')
     _current_config = Config.instance(raise_config_not_found_exception=False)
     click.echo(_current_config.__dict__ if _current_config and _current_config.initialized else 'Not configured')
     # Print current environment
     click.echo('=====================Environment============================')
-    import os
     for k, v in sorted(os.environ.items()):
         click.echo('{}={}'.format(k, v))
     click.echo('============================================================')
 
+
 def set_user_token(ctx, param, value):
     if value:
+        logging.debug('Setting user %s access token...', value)
         UserTokenOperations().set_user_token(value)
 
 
-def stacktracing(func):
-    def _stacktracing_decorator(f):
+def click_decorator(decorator_func):
+    """
+    Transforms a function to a click command decorator.
+
+    :param decorator_func: Function accepting the following arguments: click command, click context, args and kwargs.
+    :return: click command decorator.
+    """
+    def _decorator(decorating_func):
         @click.pass_context
-        def _stacktracing_wrapper(ctx, *args, **kwargs):
-            trace = ctx.params.get('trace') or False
-            try:
-                return ctx.invoke(f, *args, **kwargs)
-            except Exception as runtime_error:
-                click.echo('Error: {}'.format(str(runtime_error)), err=True)
-                if trace:
-                    traceback.print_exc()
-                sys.exit(1)
-        return functools.update_wrapper(_stacktracing_wrapper, f)
-    return _stacktracing_decorator(func)
+        @functools.wraps(decorating_func)
+        def _wrapper(ctx, *args, **kwargs):
+            return decorator_func(decorating_func, ctx, *args, **kwargs)
+        return _wrapper
+    return _decorator
 
 
-def common_options(func):
-    @click.option(
-        '--debug',
-        is_eager=False,
-        is_flag=True,
-        expose_value=False,
-        callback=enable_debug_logging,
-        help='Enable verbose logging'
-    )
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-    return wrapper
+@click_decorator
+def stacktracing(func, ctx, *args, **kwargs):
+    """
+    Enables error stack traces printing in a decorating click command.
+    """
+    trace = (os.getenv('CP_TRACE', 'false').lower().strip() == 'true') or ctx.params.get('trace') or False
+    try:
+        return ctx.invoke(func, *args, **kwargs)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if trace:
+            traceback.print_exc()
+        sys.exit(1)
+
+
+@click_decorator
+def console_logging(func, ctx, *args, **kwargs):
+    """
+    Configures console logging in a decorating click command.
+    """
+    if not ctx.params.get('debug'):
+        log_level = os.getenv('CP_LOGGING_LEVEL') or ctx.params.get('log_level') or DEFAULT_LOGGING_LEVEL
+        log_format = os.getenv('CP_LOGGING_FORMAT') or ctx.params.get('log_format') or DEFAULT_LOGGING_FORMAT
+        logging.basicConfig(level=log_level, format=log_format)
+    return ctx.invoke(func, *args, **kwargs)
+
+
+@click_decorator
+def signals_handling(func, ctx, *args, **kwargs):
+    """
+    Configures explicit signals handling in a decorating click command.
+
+    Relates to https://github.com/pyinstaller/pyinstaller/issues/2379.
+    """
+    def throw_keyboard_interrupt(signum, frame):
+        logging.debug('Received signal (%s). Gracefully exiting...', signum)
+        raise KeyboardInterrupt()
+
+    import signal
+    logging.debug('Configuring graceful signal (%s) handling...', signal.SIGTERM)
+    signal.signal(signal.SIGTERM, throw_keyboard_interrupt)
+    return ctx.invoke(func, *args, **kwargs)
+
+
+@click_decorator
+def resources_cleaning(func, ctx, *args, **kwargs):
+    """
+    Enables automated temporary resources cleaning in a decorating click command.
+
+    Removes temporary directories which are not locked by :func:`frozen_locking` decorator.
+    """
+    if ctx.params.get('noclean'):
+        return ctx.invoke(func, *args, **kwargs)
+    try:
+        CleanOperationsManager().clean(quiet=ctx.params.get('quiet'))
+    except Exception:
+        logging.warn('Temporary directories cleaning has failed: %s', traceback.format_exc())
+    ctx.invoke(func, *args, **kwargs)
+
+
+@click_decorator
+def frozen_locking(func, ctx, *args, **kwargs):
+    """
+    Enables temporary resources directory locking in a decorating click command.
+    """
+    if not is_frozen() or __bundle_info__['bundle_type'] != 'one-file':
+        return ctx.invoke(func, *args, **kwargs)
+    LockOperationsManager().execute(Config.get_base_source_dir(),
+                                    lambda: ctx.invoke(func, *args, **kwargs))
+
+
+@click_decorator
+def disabled_resources_cleaning(func, ctx, *args, **kwargs):
+    ctx.params['noclean'] = True
+    return ctx.invoke(func, *args, **kwargs)
+
+
+def common_options(_func=None, skip_user=False, skip_clean=False):
+    """
+    Decorates a click command with common pipe cli options and decorators.
+
+    :param _func: Decorating click command. Can be omitted.
+    :param skip_user: Disables default user option configuration.
+    :param skip_clean: Disables automated temporary resources cleanup.
+    :return:
+    """
+    def _decorator(func):
+        @click.option('--debug', required=False, is_flag=True,
+                      callback=enable_debug_logging, expose_value=False,
+                      default=False, is_eager=False,
+                      help=DEBUG_OPTION_DESCRIPTION)
+        @click.option('--trace', required=False, is_flag=True,
+                      default=False,
+                      help=TRACE_OPTION_DESCRIPTION)
+        @stacktracing
+        @console_logging
+        @signals_handling
+        @frozen_locking
+        @resources_cleaning
+        @Config.validate_access_token(quiet_flag_property_name='quiet')
+        @functools.wraps(func)
+        def _wrapper(*args, **kwargs):
+            kwargs.pop('trace', None)
+            kwargs.pop('noclean', None)
+            return func(*args, **kwargs)
+
+        if skip_clean:
+            _wrapper = disabled_resources_cleaning(_wrapper)
+        else:
+            _wrapper = click.option('--noclean', required=False, is_flag=True,
+                                    default=False,
+                                    help=NO_CLEAN_OPTION_DESCRIPTION)(_wrapper)
+        if not skip_user:
+            _wrapper = click.option('-u', '--user', required=False,
+                                    callback=(lambda ctx, param, value: None) if skip_user else set_user_token,
+                                    expose_value=False,
+                                    help=USER_OPTION_DESCRIPTION)(_wrapper)
+        return _wrapper
+
+    return _decorator(_func) if _func else _decorator
 
 
 @click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
@@ -228,8 +348,7 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
     """
@@ -363,8 +482,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_runs(run_id,
               status,
               date_from,
@@ -555,8 +673,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_cluster(node_name):
     """Lists cluster nodes
     """
@@ -763,9 +880,7 @@ def view_cluster_for_node(node_name):
                    'An admin can launch a run on behalf of a different user '
                    'exactly the same way the user would launch the same run by herself/himself. '
                    'Therefore no ORIGINAL_OWNER run parameter is set for admins.')
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-@Config.validate_access_token(quiet_flag_property_name='quiet')
-@stacktracing
+@common_options(skip_user=True)
 def run(pipeline,
         config,
         parameters,
@@ -790,8 +905,7 @@ def run(pipeline,
         status_notifications_recipient,
         status_notifications_subject,
         status_notifications_body,
-        user,
-        trace):
+        user):
     """
     Launches a new run.
 
@@ -841,11 +955,8 @@ def run(pipeline,
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-@Config.validate_access_token
-@stacktracing
-def stop(run_id, yes, trace):
+@common_options
+def stop(run_id, yes):
     """Stops a running pipeline
     """
     PipelineRunOperations.stop(run_id, yes)
@@ -855,7 +966,7 @@ def stop(run_id, yes, trace):
 @click.argument('run-id', required=True, type=int)
 @click.option('--check-size', is_flag=True, help='Checks if free disk space is enough for the commit operation')
 @click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def pause(run_id, check_size, sync):
     """Pauses a running pipeline
     """
@@ -865,7 +976,7 @@ def pause(run_id, check_size, sync):
 @cli.command(name='resume')
 @click.argument('run-id', required=True, type=int)
 @click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def resume(run_id, sync):
     """Resumes a paused pipeline
     """
@@ -875,8 +986,7 @@ def resume(run_id, sync):
 @cli.command(name='terminate-node')
 @click.argument('node-name', required=True, type=str)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def terminate_node(node_name, yes):
     """Terminates a calculation node
     """
@@ -942,8 +1052,7 @@ def storage():
               prompt='Cloud Region ID where the datastorage shall be created')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
               help=USER_OPTION_DESCRIPTION, prompt=USER_OPTION_DESCRIPTION, default='')
-@Config.validate_access_token
-@common_options
+@common_options(skip_user=True)
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
     """Creates a new object storage
@@ -956,8 +1065,6 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 @click.option('-n', '--name', required=True, help='Name of the storage to delete')
 @click.option('-c', '--on_cloud', help='Delete a datastorage from the Cloud', is_flag=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def delete(name, on_cloud, yes):
     """Deletes an object storage
@@ -977,8 +1084,6 @@ def delete(name, on_cloud, yes):
               prompt='Do you want to enable versioning for this datastorage?',
               help='Enable versioning for this datastorage')
 @click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the datastorage')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
     """Updates the policy of the datastorage
@@ -993,7 +1098,6 @@ def update_policy(name, short_term_storage, long_term_storage, versioning, backu
 @storage.command(name='mvtodir')
 @click.argument('name', required=True)
 @click.argument('directory', required=True)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @common_options
 def mvtodir(name, directory):
     """Moves an object storage to a new parent folder
@@ -1008,8 +1112,6 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_list(path, show_details, show_versions, recursive, page, all):
     """Lists storage contents
@@ -1019,8 +1121,6 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 
 @storage.command(name='mkdir')
 @click.argument('folders', required=True, nargs=-1)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_mk_dir(folders):
     """ Creates a directory in a storage
@@ -1038,8 +1138,6 @@ def storage_mk_dir(folders):
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
     """ Removes file or folder from a datastorage
@@ -1079,11 +1177,7 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
               help='The number of threads to be used for a single file io operations')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-@Config.validate_access_token(quiet_flag_property_name='quiet')
 @common_options
-@stacktracing
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks, threads, io_threads, verify_destination):
     """ Moves a file or a folder from one datastorage to another one
@@ -1126,13 +1220,9 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               help='The number of threads to be used for a single file io operations')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-@Config.validate_access_token(quiet_flag_property_name='quiet')
 @common_options
-@stacktracing
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, verify_destination, trace):
+                      symlinks, threads, io_threads, verify_destination):
     """ Copies files from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
@@ -1147,9 +1237,6 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-f', '--format', help='Format for size [G/M/K]',
               type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
-              help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token(quiet_flag_property_name='quiet')
 @common_options
 def du(name, relative_path, format, depth):
     DataStorageOperations.du(name, relative_path, format, depth)
@@ -1163,8 +1250,6 @@ def du(name, relative_path, format, depth):
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_restore_item(path, version, recursive, exclude, include):
     """ Restores file version in a datastorage.\n
@@ -1178,8 +1263,6 @@ def storage_restore_item(path, version, recursive, exclude, include):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Set tags for a specified version')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_set_object_tags(path, tags, version):
     """ Sets tags for a specified object.\n
@@ -1196,8 +1279,6 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_get_object_tags(path, version):
     """ Gets tags for a specified object.\n
@@ -1212,8 +1293,6 @@ def storage_get_object_tags(path, version):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Delete tags for a specified version')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
 @common_options
 def storage_delete_object_tags(path, tags, version):
     """ Deletes tags for a specified object.\n
@@ -1232,16 +1311,15 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-o', '--options', required=False, help='Any mount options supported by underlying FUSE implementation')
 @click.option('-c', '--custom-options', required=False, help='Mount options supported only by pipe fuse')
 @click.option('-l', '--log-file', required=False, help='Log file for mount')
-@click.option('-v', '--log-level', required=False, help='Log level for mount: '
-                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
 @click.option('-q', '--quiet', help='Enables quiet mode', is_flag=True)
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
               default=1000, type=int)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
-def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode, timeout):
+@common_options
+def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode,
+                  timeout):
     """ Mounts either all available file systems or a single bucket into a local folder.
         Either -f\\--file flag or -b\\--bucket argument should be specified.
         Command is supported for Linux distributions and MacOS and requires
@@ -1255,7 +1333,7 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
 @storage.command('umount')
 @click.argument('mountpoint', required=True)
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
-@Config.validate_access_token
+@common_options
 def umount_storage(mountpoint, quiet):
     """ Unmounts a mountpoint.
         Command is supported for Linux distributions and MacOS and requires
@@ -1273,8 +1351,7 @@ def umount_storage(mountpoint, quiet):
     required=True,
     type=click.Choice(ACLOperations.get_classes())
 )
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_acl(identifier, object_type):
     """ View object permissions.\n
     - IDENTIFIER: defines name or id of an object
@@ -1295,8 +1372,7 @@ def view_acl(identifier, object_type):
 @click.option('-a', '--allow', help='Allow permissions')
 @click.option('-d', '--deny', help='Deny permissions')
 @click.option('-i', '--inherit', help='Inherit permissions')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     """ Set object permissions.\n
     - IDENTIFIER: defines name or id of an object
@@ -1312,8 +1388,7 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_user_objects(username, object_type):
     ACLOperations.print_sid_objects(username, True, object_type)
 
@@ -1326,8 +1401,7 @@ def view_user_objects(username, object_type):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_group_objects(group_name, object_type):
     ACLOperations.print_sid_objects(group_name, False, object_type)
 
@@ -1343,8 +1417,7 @@ def tag():
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('data', required=True, nargs=-1)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def set_tag(entity_class, entity_id, data):
     """ Sets tags for a specified object.\n
     If a specific tag key already exists for an object - it will be overwritten\n
@@ -1361,8 +1434,7 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def get_tag(entity_class, entity_id):
     """ Lists all tags for a specific object or list of objects.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
@@ -1377,8 +1449,7 @@ def get_tag(entity_class, entity_id):
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('keys', required=False, nargs=-1)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def delete_tag(entity_class, entity_id, keys):
     """ Deletes specified tags for a specified object.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
@@ -1394,8 +1465,7 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('user_name', required=True)
 @click.argument('entity_class', required=True)
 @click.argument('entity_name', required=True)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def chown(user_name, entity_class, entity_name):
     """ Changes current owner to specified.\n
     - USER_NAME: desired object owner\n
@@ -1411,13 +1481,10 @@ def chown(user_name, entity_class, entity_name):
     ignore_unknown_options=True,
     allow_extra_args=True))
 @click.argument('run-id', required=True, type=str)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @click.pass_context
-@Config.validate_access_token
-@stacktracing
-def ssh(ctx, run_id, retries, trace):
+@common_options
+def ssh(ctx, run_id, retries):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
@@ -1446,12 +1513,9 @@ def ssh(ctx, run_id, retries, trace):
 @click.option('-r', '--recursive', required=False, is_flag=True, default=False,
               help='Recursive transferring (required for directories transferring)')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True, default=False)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-@Config.validate_access_token
-@stacktracing
-def scp(source, destination, recursive, quiet, retries, trace):
+@common_options
+def scp(source, destination, recursive, quiet, retries):
     """
     Transfers files or directories between local workstation and run instance.
 
@@ -1504,12 +1568,9 @@ def tunnel():
               help='Tunnels stopping timeout in ms.')
 @click.option('-f', '--force', required=False, is_flag=True, default=False,
               help='Killing tunnels rather than stopping them.')
-@click.option('-v', '--log-level', required=False, help='Explicit logging level: '
-                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
-@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
-@Config.validate_access_token
-@stacktracing
-def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@common_options
+def stop_tunnel(run_id, local_port, timeout, force, log_level):
     """
     Stops background tunnel processes.
 
@@ -1589,10 +1650,7 @@ def start_tunnel_arguments(start_tunnel_command):
                   help='Replaces existing tunnel on the same local port.')
     @click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel on the same local port if it has different configuration.')
-    @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
-                  help=USER_OPTION_DESCRIPTION)
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
-    @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
     def _start_tunnel_command_decorator(*args, **kwargs):
         return start_tunnel_command(*args, **kwargs)
     return functools.update_wrapper(_start_tunnel_command_decorator, start_tunnel_command)
@@ -1606,13 +1664,12 @@ def return_tunnel_args(*args, **kwargs):
 
 @tunnel.command(name='start')
 @start_tunnel_arguments
-@Config.validate_access_token
-@stacktracing
+@common_options
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
                  keep_existing, keep_same, replace_existing, replace_different,
-                 retries, trace):
+                 retries):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1703,8 +1760,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
 
 @cli.command(name='update')
 @click.argument('path', required=False)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def update_cli_version(path):
     """
     Install latest Cloud Pipeline CLI version.
@@ -1725,8 +1781,7 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def view_tools(tool_path,
                registry,
                group,
@@ -1816,7 +1871,7 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
 @cli.command(name='token')
 @click.argument('user-id', required=True)
 @click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
-@Config.validate_access_token
+@common_options
 def token(user_id, duration):
     """
     Prints a JWT token for specified user
@@ -1833,8 +1888,7 @@ def share():
 
 @share.command(name='get')
 @click.argument('run-id', required=True)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def get_share_run(run_id):
     """
     Returns users and groups this run shared
@@ -1849,8 +1903,7 @@ def get_share_run(run_id):
 @click.option('-sg', '--shared-group', required=False, multiple=True,
               help='The group to enable run sharing. Multiple options supported.')
 @click.option('-ssh', '--share-ssh', required=False, is_flag=True, default=False, help='Indicates ssh share')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def add_share_run(run_id, shared_user, shared_group, share_ssh):
     """
     Shares specified pipeline run with users or groups
@@ -1865,8 +1918,7 @@ def add_share_run(run_id, shared_user, shared_group, share_ssh):
 @click.option('-sg', '--shared-group', required=False, multiple=True,
               help='The group to disable run sharing. Multiple options supported.')
 @click.option('-ssh', '--share-ssh', required=False, is_flag=True, default=False, help='Indicates ssh unshare')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def remove_share_run(run_id, shared_user, shared_group, share_ssh):
     """
     Disables shared pipeline run for specified users or groups
@@ -1897,8 +1949,7 @@ def cluster():
                                                        'number of minutes/hours. Default: 1m.')
 @click.option('-rt', '--report-type', required=False, default='CSV',
               help='Exported report type (case insensitive). Currently `CSV` and `XLS` are supported. Default: CSV')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def monitor(instance_id, run_id, output, date_from, date_to, interval, report_type):
     """
     Downloads node utilization report
@@ -1919,13 +1970,37 @@ def users():
 @click.option('-cg', '--create-group', required=False, is_flag=True, default=False, help='Allow new group creation')
 @click.option('-cm', '--create-metadata', required=False, multiple=True,
               help='Allow to create a new metadata with specified key. Multiple options supported.')
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@Config.validate_access_token
+@common_options
 def import_users(file_path, create_user, create_group, create_metadata):
     """
     Registers a new users, roles and metadata specified in input file
     """
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
+
+
+@cli.command(name='clean')
+@click.option('--force', required=False, is_flag=True,
+              help='Removes all temporary resources even the ones that may be still in use. '
+                   'This option is safe to use only if there are no running pipe processes.')
+@common_options(skip_user=True, skip_clean=True)
+def clean(force):
+    """
+    Cleans pipe cli local temporary resources.
+
+    Removes all temporary directories that pipe cli generated during previous launches in a user home directory.
+
+    Examples:
+
+    I.  Cleans pipe cli local temporary resources.
+
+        pipe clean
+
+    II. Cleans all pipe cli local temporary resources even if they are still in use if possible.
+
+        pipe clean --force
+
+    """
+    CleanOperationsManager().clean(force=force)
 
 
 # Used to run a PyInstaller "freezed" version
