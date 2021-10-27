@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @PropertySource("private.properties")
@@ -48,6 +49,7 @@ public class GitHubApiClient {
     private static final String ACCEPT_HEADER = "application/vnd.github.v3+json";
     private static final int START_PAGE = 1;
     private static final int PAGE_SIZE = 100;
+    private static final int TIMEOUT = 10;
     private final String gitHubBaseUrl;
     private final String defaultBranchName;
     private final String ownerName;
@@ -105,6 +107,8 @@ public class GitHubApiClient {
     private OkHttpClient getOkHttpClient(final String token) {
         return new OkHttpClient.Builder()
                 .connectionSpecs(Arrays.asList(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS))
+                .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT, TimeUnit.SECONDS)
                 .addInterceptor(chain -> {
                     final Request original = chain.request();
                     final Request request = original.newBuilder()
