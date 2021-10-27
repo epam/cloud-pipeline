@@ -262,7 +262,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             final List<NFSObserverEvent> scrollingPageEvents = mapHitsToPossibleEvents(folderResponse, folderEvent);
             if (CollectionUtils.isNotEmpty(scrollingPageEvents)) {
                 allFilesEvents.addAll(scrollingPageEvents);
-                folderResponse = getElasticsearchServiceClient().nextScrollPage(folderResponse.getScrollId(), TIME_SCROLL);
+                folderResponse = getElasticsearchServiceClient()
+                        .nextScrollPage(folderResponse.getScrollId(), TIME_SCROLL);
             } else {
                 break;
             }
