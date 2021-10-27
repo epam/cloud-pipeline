@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
+import retrofit2.HttpException;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
@@ -43,18 +44,26 @@ public class GitHubApiClient {
 
     private static final String TOKEN_PREFIX = "token ";
     private static final String TOKEN_HEADER = "Authorization";
-    private static final String GITHUB_BASE_URL = "https://api.github.com";
     private static final String ACCEPT_HEADER_TITLE = "accept";
     private static final String ACCEPT_HEADER = "application/vnd.github.v3+json";
-    private static final String PROJECT_NAME = "cloud-pipeline";
-    private static final String OWNER_NAME = "epam";
-    private static final String DEFAULT_BRANCH_NAME = "develop";
     private static final int START_PAGE = 1;
     private static final int PAGE_SIZE = 100;
+    private final String gitHubBaseUrl;
+    private final String defaultBranchName;
+    private final String ownerName;
+    private final String projectName;
 
     private final GitHubApi gitHubApi;
 
-    public GitHubApiClient(@Value("${github.token}") final String token) {
+    public GitHubApiClient(@Value("${github.token}") final String token,
+                           @Value("${github.baseurl:https://api.github.com}") final String gitHubBaseUrl,
+                           @Value("${github.default.branch.name:develop}") final String defaultBranchName,
+                           @Value("${github.owner.name:epam}") final String ownerName,
+                           @Value("${github.project.name:cloud-pipeline}") final String projectName) {
+        this.gitHubBaseUrl = gitHubBaseUrl;
+        this.defaultBranchName = defaultBranchName;
+        this.ownerName = ownerName;
+        this.projectName = projectName;
         gitHubApi = createApi(TOKEN_PREFIX + token);
     }
 
@@ -64,8 +73,8 @@ public class GitHubApiClient {
         int currentSize = 0;
         while (currentPage == START_PAGE || currentSize == PAGE_SIZE) {
             List<Commit> addedList = GitHubUtils.takeWhileNot(
-                createEntityBuilder(gitHubApi.listCommits(PROJECT_NAME, OWNER_NAME,
-                    Optional.ofNullable(shaFrom).orElse(DEFAULT_BRANCH_NAME), currentPage, PAGE_SIZE))
+                createEntityBuilder(gitHubApi.listCommits(projectName, ownerName,
+                    Optional.ofNullable(shaFrom).orElse(defaultBranchName), currentPage, PAGE_SIZE))
                     .getCommits(),
                 commit -> commit.getCommitSha().equals(shaTo));
             resultList.addAll(addedList);
@@ -76,7 +85,7 @@ public class GitHubApiClient {
     }
 
     public GitHubIssue getIssue(final long number) {
-        return execute(gitHubApi.getIssue(PROJECT_NAME, OWNER_NAME, number));
+        return execute(gitHubApi.getIssue(projectName, ownerName, number));
     }
 
     private EntityBuilder createEntityBuilder(Call<List<Map<String, Object>>> call) {
@@ -85,7 +94,7 @@ public class GitHubApiClient {
 
     private GitHubApi createApi(final String token) {
         return new Retrofit.Builder()
-                .baseUrl(GITHUB_BASE_URL)
+                .baseUrl(gitHubBaseUrl)
                 .addConverterFactory(JacksonConverterFactory
                         .create(new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
                 .client(getOkHttpClient(token))
@@ -113,7 +122,7 @@ public class GitHubApiClient {
             if (response.isSuccessful()) {
                 return response.body();
             } else {
-                throw new IllegalStateException();
+                throw new HttpException(response);
             }
         } catch (IOException e) {
             throw new IllegalStateException(e);
