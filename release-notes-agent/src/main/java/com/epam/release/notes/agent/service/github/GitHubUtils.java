@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public final class GitHubUtils {
 
     private static final String ZERO = "0";
-    private static final String ISSUE_REGEX = "(?i)Issue #\\d.*";
+    private static final String ISSUE_REGEX = "(?i)\\(?issue #.+";
     private static final String ISSUE_NUMBER_REGEX = "#\\d+";
 
     private GitHubUtils() {

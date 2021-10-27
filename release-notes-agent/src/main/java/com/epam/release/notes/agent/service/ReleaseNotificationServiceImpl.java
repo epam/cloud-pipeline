@@ -33,7 +33,8 @@ public class ReleaseNotificationServiceImpl implements ReleaseNotificationServic
 
     @Override
     public void perform() {
-        List<GitHubIssue> list = getCommitRelatedIssueList(gitHubService.fetchCommits(null, null));
+        List<Commit> commits = gitHubService.fetchCommits(null, "975c422a796a56bb6d8bcbfd7dc50dd89ecbb5fe");
+        List<GitHubIssue> list = getCommitRelatedIssueList(commits);
         System.out.println(list);
     }
 
