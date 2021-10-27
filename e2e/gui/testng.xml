@@ -472,6 +472,12 @@
         </classes>
     </test>
 
+    <test name="LimitMountsTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.LimitMountsTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>

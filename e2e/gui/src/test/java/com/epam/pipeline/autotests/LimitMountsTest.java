@@ -77,41 +77,28 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
         givePermissionsToStorage(user, storage2);
         givePermissionsToStorage(user, storage3);
         givePermissionsToStorage(user, storage4);
-        tools()
-                .perform(registry, group, testTool, tool ->
-                        tool.settings()
-                                .doNotMountStoragesSelect(true)
-                                .doNotMountStoragesSelect(false)
-                                .save());
+        cleanToolLimitMounts();
+        cleanUserLimitMounts();
+        logout();
     }
 
     @AfterClass(alwaysRun = true)
     public void deleteTestEntities() {
         open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
         library()
                 .removeStorageIfExists(storage1)
                 .removeStorageIfExists(storage2)
                 .removeStorageIfExists(storage3)
                 .removeStorageIfExists(storage4);
-        tools()
-                .perform(registry, group, testTool, tool ->
-                        tool.settings()
-                                .doNotMountStoragesSelect(true)
-                                .doNotMountStoragesSelect(false)
-                                .save());
-        logout();
-        loginAs(user);
-        navigationMenu()
-                .settings()
-                .switchToMyProfile()
-                .doNotMountStoragesSelect(true)
-                .doNotMountStoragesSelect(false);
+        cleanToolLimitMounts();
+        cleanUserLimitMounts();
     }
 
     @Test(priority = 0)
     @TestCase(value = {"2210_1"})
     public void validateSelectDataStoragesToLimitMountsForm() {
-        logout();
         loginAs(user);
         navigationMenu()
                 .settings()
@@ -135,7 +122,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 1)
     @TestCase(value = {"2210_2"})
     public void validateDoNotMountStoragesOptionInUserProfile() {
-        logout();
+        logoutIfNeeded();
         loginAs(user);
         navigationMenu()
                 .settings()
@@ -159,10 +146,10 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                         .close());
     }
 
-    @Test(priority = 1)
+    @Test(priority = 2)
     @TestCase(value = {"2210_3"})
     public void validateLimitMountsValuesFromUserProfile() {
-        logout();
+        logoutIfNeeded();
         loginAs(user);
         navigationMenu()
                 .settings()
@@ -178,7 +165,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, testTool, tool ->
                         tool
                                 .settings()
-                                .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                                 .runWithCustomSettings()
                 )
@@ -204,27 +190,37 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                         .close());
     }
 
-    @Test(dependsOnMethods = "validateLimitMountsValuesFromUserProfile")
+    @Test(priority = 3, dependsOnMethods = "validateLimitMountsValuesFromUserProfile")
     @TestCase(value = {"2210_4"})
     public void validateLimitMountsPriorityOrderApplying() {
-        logout();
+        logoutIfNeeded();
         loginAs(admin);
         tools()
                 .perform(registry, group, testTool, tool ->
                                 tool
                                         .settings()
-                                        .expandTab(EXEC_ENVIRONMENT)
+                                        .selectDataStoragesToLimitMounts()
+                                        .clearSelection()
+                                        .searchStorage(storage1)
+                                        .selectStorage(storage1)
+                                        .searchStorage(storage2)
+                                        .selectStorage(storage2)
+                                        .ok()
                 );
-        navigationMenu()
-                .settings()
-                .switchToMyProfile()
-                .doNotMountStoragesSelect(true)
-                .doNotMountStoragesSelect(false)
-                .limitMountsPerUser()
-                .clearSelection()
-                .searchStorage(storage3)
-                .selectStorage(storage3)
-                .ok();
+        logout();
+        loginAs(user);
+        tools()
+                .perform(registry, group, testTool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .ensure(LIMIT_MOUNTS, text(storage2))
+                .ensure(LIMIT_MOUNTS, not(text(storage3)))
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage2), exist)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), not(exist))
+                .openStorageFromLimitMountsParameter(storage2)
+                .validateHeader(storage2);
     }
 
     private void givePermissionsToStorage(Account user, String storage) {
@@ -243,5 +239,26 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
 
     private String mountStorageMessage(String storage) {
         return format("%s mounted to /cloud-data/%s", storage.toLowerCase(), storage.toLowerCase());
+    }
+
+    private void cleanToolLimitMounts() {
+        tools()
+                .perform(registry, group, testTool, tool ->
+                        tool.settings()
+                                .doNotMountStoragesSelect(true)
+                                .doNotMountStoragesSelect(false)
+                                .save());
+    }
+
+    private void cleanUserLimitMounts() {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(user.login.toUpperCase())
+                .edit()
+                .doNotMountStoragesSelect(true)
+                .doNotMountStoragesSelect(false)
+                .ok();
     }
 }
