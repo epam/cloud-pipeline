@@ -206,6 +206,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                                         .searchStorage(storage2)
                                         .selectStorage(storage2)
                                         .ok()
+                                        .save()
                 );
         logout();
         loginAs(user);
