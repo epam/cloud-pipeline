@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from functools import update_wrapper
 import base64
 import click
@@ -128,6 +129,7 @@ class Config(object):
                 if not skip_validation:
                     config = Config.instance(raise_config_not_found_exception=False)
                     if config is not None and config.initialized:
+                        logging.debug('Validating access token...')
                         config.validate()
                 return ctx.invoke(f, *args, **kwargs)
             return update_wrapper(validate_access_token_wrapper, f)
