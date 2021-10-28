@@ -17,10 +17,11 @@ package com.epam.release.notes.agent.entity.github;
 
 import lombok.Builder;
 import lombok.Value;
-
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 public class GitHubIssue {
     Long id;
     Long number;
