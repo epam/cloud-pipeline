@@ -187,7 +187,7 @@ def frozen_cleaning(func, ctx, *args, **kwargs):
     if ctx.params.get('noclean'):
         return ctx.invoke(func, *args, **kwargs)
     try:
-        CleanOperationsManager().clean()
+        CleanOperationsManager().clean(quiet=ctx.params.get('quiet'))
     except Exception:
         logging.warn('Temporary directories cleaning has failed: %s', traceback.format_exc())
     ctx.invoke(func, *args, **kwargs)
@@ -198,7 +198,7 @@ def frozen_locking(func, ctx, *args, **kwargs):
     """
     todo: Add proper doc
     """
-    if not is_frozen() or __bundle_info__['bundle_type'] != 'one-file' or ctx.params.get('noclean'):
+    if not is_frozen() or __bundle_info__['bundle_type'] != 'one-file':
         return ctx.invoke(func, *args, **kwargs)
     CleanOperationsManager().lock(lambda: ctx.invoke(func, *args, **kwargs))
 

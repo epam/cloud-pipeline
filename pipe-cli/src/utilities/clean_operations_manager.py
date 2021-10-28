@@ -16,6 +16,8 @@ import logging
 import os
 import platform
 import shutil
+
+import click
 import sys
 import traceback
 
@@ -29,13 +31,14 @@ class CleanOperationsManager:
     def __init__(self):
         pass
 
-    def clean(self, force=False):
+    def clean(self, force=False, quiet=False):
         logging.debug('Cleaning temporary directories...')
         current_tmp_dir_path = sys._MEIPASS if is_frozen() else None
         config_folder = os.path.dirname(Config.get_home_dir_config_path())
         root_tmp_dir_path = os.path.join(config_folder, 'tmp')
         if not os.path.isdir(root_tmp_dir_path):
             return
+        any_tmp_dir_without_lock = False
         for tmp_dir_name in os.listdir(root_tmp_dir_path):
             tmp_dir_path = os.path.join(root_tmp_dir_path, tmp_dir_name)
             tmp_dir_lock_path = os.path.join(tmp_dir_path, self._LOCK_NAME)
@@ -44,11 +47,22 @@ class CleanOperationsManager:
             if not os.path.exists(tmp_dir_lock_path) and not force:
                 logging.debug('Skipping temporary directory without lock deletion '
                               'because --force flag is not used %s...', tmp_dir_path)
+                any_tmp_dir_without_lock = True
                 continue
             if os.path.exists(tmp_dir_lock_path) and self._is_dir_locked(tmp_dir_path, tmp_dir_lock_path):
                 logging.debug('Skipping locked temporary directory deletion %s...', tmp_dir_path)
                 continue
             self._remove_dir(tmp_dir_path)
+        if any_tmp_dir_without_lock and not quiet:
+            pipe_command = sys.argv[0] if is_frozen() else (sys.executable + sys.argv[0])
+            click.echo(click.style('Outdated pipe temporary resources have been detected.\n'
+                                   'To free up disk space in temporary directory and get rid of this warning please: \n'
+                                   '- stop all running pipe cli processes if there are any \n'
+                                   '- and execute the following command once. \n\n'
+                                   '{pipe_command} clean --force\n'
+                                   .format(pipe_command=pipe_command),
+                                   fg='yellow'),
+                       err=True)
 
     def _is_dir_locked(self, dir_path, dir_lock_path):
         logging.debug('Trying to lock temporary directory %s...', dir_path)
