@@ -25,16 +25,20 @@ function wrapRequest (url, method, body, authToken, ignoreCertificateErrors = fa
       response.on('end', () => {
         log(`${method} ${url}: data received (${data.length} bytes)`);
         try {
-          const json = JSON.parse(data);
-          if (json && /^ok$/i.test(json.status)) {
-            resolve(json.payload);
+          if (data && data.length > 0) {
+            const json = JSON.parse(data);
+            if (json && /^ok$/i.test(json.status)) {
+              resolve(json.payload);
+            } else {
+              error(`${method} ${url}: ${json.message}`);
+              reject(new Error(json.message || 'Request error'));
+            }
           } else {
-            error(`${method} ${url}: ${json.message}`);
-            reject(new Error(json.message || 'Request error'));
+            resolve(undefined);
           }
         } catch (e) {
           error(`${method} ${url}: ${e.message}`);
-          resolve(null);
+          reject(e);
         }
       });
     });
@@ -111,29 +115,31 @@ class RequestStorageAccessApi {
   }
 
   getStoragesWithMetadata() {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const storages = await this.getStorages();
-        const entities = (storages || []).map(o => ({
-          entityId: o.id,
-          entityClass: 'DATA_STORAGE'
-        }));
-        const metadata = await this.getMetadata(entities);
-        storages.forEach(storage => {
-          const metadataEntry = (metadata || [])
-            .find(o => o.entity && o.entity.entityId === storage.id);
-          const {
-            data = {}
-          } = metadataEntry || {};
-          storage.metadata = Object.entries(data || {})
-            .filter(([key, value]) => !!value && value.value !== undefined)
-            .map(([key, value]) => ({[key]: value.value}))
-            .reduce((r, c) => ({...r, ...c}), {});
-        });
-        resolve(storages);
-      } catch (e) {
-        reject(e);
-      }
+    return new Promise( (resolve, reject) => {
+      this.getStorages()
+        .then((storages) => {
+          const entities = (storages || []).map(o => ({
+            entityId: o.id,
+            entityClass: 'DATA_STORAGE'
+          }));
+          this.getMetadata(entities)
+            .then((metadata) => {
+              (storages || []).forEach(storage => {
+                const metadataEntry = (metadata || [])
+                  .find(o => o.entity && o.entity.entityId === storage.id);
+                const {
+                  data = {}
+                } = metadataEntry || {};
+                storage.metadata = Object.entries(data || {})
+                  .filter(([key, value]) => !!value && value.value !== undefined)
+                  .map(([key, value]) => ({[key]: value.value}))
+                  .reduce((r, c) => ({...r, ...c}), {});
+              });
+              resolve(storages);
+            })
+            .catch(reject);
+        })
+        .catch(reject);
     });
   }
 

@@ -136,7 +136,7 @@ function RequestStorageAccess (
         .initialize()
         .getStoragesWithMetadata()
         .then((storages = []) => setStorages(
-          storages
+          (storages || [])
             .filter(o => !/^nfs$/i.test(o.type))
             .sort((a, b) => {
               const aName = (a.name || '').toLowerCase();
