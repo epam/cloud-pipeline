@@ -15,26 +15,21 @@
 
 package com.epam.release.notes.agent;
 
-import com.epam.release.notes.agent.service.ReleaseNotificationService;
-import lombok.AllArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
+import com.epam.release.notes.agent.configuration.ApplicationConfiguration;
+import com.epam.release.notes.agent.configuration.CommandLineRunnerConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Import;
 
-import java.util.Optional;
-
-@AllArgsConstructor
+@Import({CommandLineRunnerConfiguration.class, ApplicationConfiguration.class})
 @SpringBootApplication
-public class Application implements CommandLineRunner {
+@ComponentScan(basePackages = {"com.epam.release.notes.agent"})
+@SuppressWarnings({"HideUtilityClassConstructor"})
+public class Application {
 
-    private final ReleaseNotificationService notificationService;
-
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 
-    @Override
-    public void run(final String... args) {
-        Optional.ofNullable(notificationService).ifPresent(ReleaseNotificationService::perform);
-    }
 }

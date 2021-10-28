@@ -47,18 +47,30 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
     }
 
     @Override
-    public Version fetchVersion() {
-        final ApplicationInfo applicationInfo = executor.execute(cloudPipelineAPI.fetchVersion());
-        return buildVersion(applicationInfo);
+    public Version fetchCurrentVersion() {
+        return buildVersion(
+                executor.execute(cloudPipelineAPI.fetchVersion())
+        );
     }
 
     @Override
-    public VersionStatus getVersionStatus() {
-        final Version savedVersion = readVersionFromFile(versionFilePath);
-        final Version currentVersion = fetchVersion();
-        if (savedVersion.toString().equals(currentVersion.toString())) {
+    public Version loadPreviousVersion() {
+        try {
+            final String savedVersion = Files.lines(Paths.get(versionFilePath))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Provided versioned file is empty. Check file and set correct version."));
+            return Version.buildVersion(savedVersion);
+        } catch (IOException e) {
+            throw new IllegalStateException(format("Unable to get file from path %s", versionFilePath));
+        }
+    }
+
+    @Override
+    public VersionStatus getVersionStatus(final Version old, final Version current) {
+        if (old.toString().equals(current.toString())) {
             return VersionStatus.NOT_CHANGED;
-        } else if (!savedVersion.getMajor().equals(currentVersion.getMajor())) {
+        } else if (!old.getMajor().equals(current.getMajor())) {
             return VersionStatus.MAJOR_CHANGED;
         }
         return VersionStatus.MINOR_CHANGED;
@@ -66,7 +78,7 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
 
     @Override
     public void storeVersion(Version version) {
-        updateVersionInFile(version, versionFilePath);
+        updateVersionInFile(version);
     }
 
     private Version buildVersion(final ApplicationInfo applicationInfo) {
@@ -75,23 +87,11 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
                 .orElseThrow(() -> new IllegalArgumentException("The application version is empty"));
     }
 
-    Version readVersionFromFile(final String versionFilePath) {
-        try {
-            final String savedVersion = Files.lines(Paths.get(versionFilePath))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Provided versioned file is empty. Check file and set correct version."));
-            return Version.buildVersion(savedVersion);
-        } catch (IOException e) {
-            throw new RuntimeException(format("Unable to get file from path %s", versionFilePath));
-        }
-    }
-
-    void updateVersionInFile(final Version version, final String versionFilePath) {
+    void updateVersionInFile(final Version version) {
         try {
             Files.write(Paths.get(versionFilePath), Collections.singleton(version.toString()));
         } catch (IOException e) {
-            throw new RuntimeException(format("Unable to update version %s in file %s, cause: %s", version.toString(),
+            throw new IllegalStateException(format("Unable to update version %s in file %s, cause: %s", version,
                     versionFilePath, e.getMessage()), e);
         }
     }
