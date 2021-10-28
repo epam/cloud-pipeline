@@ -27,23 +27,23 @@ import static java.lang.String.format;
 @Builder
 public class Version {
 
+    private static final String VERSION_PATTERN = "^(\\d+\\.\\d+\\.\\d+)\\.(\\d+)\\.(\\w+)$";
+    private static final Pattern PATTERN = Pattern.compile(VERSION_PATTERN);
+
     String major;
     String buildNumber;
     String sha;
 
     public static Version buildVersion(final String version) {
-        final String versionPattern = "^0.\\d+.0.\\d+.\\w+$";
-        final Pattern pattern = Pattern.compile(versionPattern);
-        Matcher matcher = pattern.matcher(version);
+        Matcher matcher = PATTERN.matcher(version);
         if (!matcher.matches()) {
             throw new IllegalArgumentException(format("The application version %s doesn't match the pattern %s ", version,
-                    versionPattern));
+                    VERSION_PATTERN));
         }
-        final String[] versionParts = version.split("\\.");
         return Version.builder()
-                .major(format("0.%s.0", versionParts[1]))
-                .buildNumber(versionParts[3])
-                .sha(versionParts[4])
+                .major(matcher.group(1))
+                .buildNumber(matcher.group(2))
+                .sha(matcher.group(3))
                 .build();
     }
 

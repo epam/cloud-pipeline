@@ -23,10 +23,13 @@ import com.epam.release.notes.agent.entity.version.VersionStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Optional;
 
-import static com.epam.release.notes.agent.utils.VersionUtils.readVersionFromFile;
 import static com.epam.release.notes.agent.utils.VersionUtils.updateVersionInFile;
+import static java.lang.String.format;
 
 @Service
 public class ApplicationVersionServiceImpl implements ApplicationVersionService {
@@ -66,9 +69,21 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
         updateVersionInFile(version, versionFilePath);
     }
 
-    public Version buildVersion(final ApplicationInfo applicationInfo) {
+    private Version buildVersion(final ApplicationInfo applicationInfo) {
         return Optional.ofNullable(applicationInfo.getVersion())
                 .map(Version::buildVersion)
                 .orElseThrow(() -> new IllegalArgumentException("The application version is empty"));
+    }
+
+    private Version readVersionFromFile(final String versionFilePath) {
+        try {
+            final String savedVersion = Files.lines(Paths.get(versionFilePath))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Provided versioned file is empty. Check file and set correct version."));
+            return Version.buildVersion(savedVersion);
+        } catch (IOException e) {
+            throw new RuntimeException(format("Unable to get file from path %s", versionFilePath));
+        }
     }
 }

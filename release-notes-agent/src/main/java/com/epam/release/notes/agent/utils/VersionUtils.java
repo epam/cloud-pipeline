@@ -21,24 +21,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 
-import static com.epam.release.notes.agent.entity.version.Version.buildVersion;
 import static java.lang.String.format;
 
 public final class VersionUtils {
 
     private VersionUtils() {
-    }
-
-    public static Version readVersionFromFile(final String versionFilePath) {
-        try {
-            final String savedVersion = Files.lines(Paths.get(versionFilePath))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Provided versioned file is empty. Check file and set correct version."));
-            return buildVersion(savedVersion);
-        } catch (IOException e) {
-            throw new RuntimeException(format("Unable to get file from path %s", versionFilePath));
-        }
     }
 
     public static void updateVersionInFile(final Version version, final String versionFilePath) {
