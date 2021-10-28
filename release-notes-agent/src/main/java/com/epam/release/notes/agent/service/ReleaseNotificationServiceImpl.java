@@ -12,27 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.release.notes.agent.service;
 
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
-import com.epam.release.notes.agent.service.github.GitHubService;
-import lombok.AllArgsConstructor;
+import com.epam.release.notes.agent.entity.version.Version;
+import com.epam.release.notes.agent.entity.version.VersionStatus;
+import com.epam.release.notes.agent.service.version.ApplicationVersionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
-@AllArgsConstructor
 public class ReleaseNotificationServiceImpl implements ReleaseNotificationService {
 
-    private final GitHubService gitHubService;
+    @Autowired
+    private ApplicationVersionService applicationVersionService;
 
     @Override
     public void perform() {
-        List<GitHubIssue> issues = gitHubService.fetchIssues(null, "83b4e30140f8ff880ce829ef316adbd814ee1a30");
-        System.out.println(issues);
+        final Version version = applicationVersionService.fetchVersion();
+        final VersionStatus versionStatus = applicationVersionService.getVersionStatus();
+        if (versionStatus == VersionStatus.NOT_CHANGED) {
+            return;
+        } else if (versionStatus == VersionStatus.MAJOR_CHANGED) {
+            // send notification to admin
+            return;
+        }
+        // send notifications with changes
+        applicationVersionService.storeVersion(version);
     }
-
-
 }

@@ -1871,7 +1871,11 @@ export default class DataStorage extends React.Component {
     const storageTitleClassName = this.props.info.value.locked ? styles.readonly : undefined;
 
     return (
-      <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: 'calc(100vh - 25px)'
+      }}>
         <Row type="flex" justify="space-between" align="middle">
           <Col className={styles.itemHeader}>
             <Breadcrumbs
@@ -1963,7 +1967,7 @@ export default class DataStorage extends React.Component {
           contentContainerStyle={{overflow: 'inherit'}}>
           <div
             key={CONTENT_PANEL_KEY}
-            style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+            style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
             <Row className={styles.dataStorageInfoContainer}>
               {
                 this.props.info.value.description &&

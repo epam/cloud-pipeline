@@ -17,8 +17,15 @@ repositories {
 
 dependencies {
 
+    // Pipeline library
+    compile project(":cloud-pipeline-common:model")
+
     // Spring
     implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
+
+    configurations {
+        all*.exclude module : 'spring-boot-starter-data-jpa'
+    }
 
     // OAuth
     implementation "com.google.oauth-client:google-oauth-client:$googleOauthClientVersion"
@@ -34,7 +41,6 @@ dependencies {
 
     // Javax mail
     implementation "com.sun.mail:javax.mail:$javaxMailVersion"
-
 
     // Lombok
     compileOnly "org.projectlombok:lombok:$lombokVersion"
