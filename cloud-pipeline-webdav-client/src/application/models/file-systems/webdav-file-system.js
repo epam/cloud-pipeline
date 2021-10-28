@@ -1,4 +1,4 @@
-import {createClient} from 'webdav';
+import {axios, createClient} from 'webdav';
 import electron from 'electron';
 import https from 'https';
 import moment from 'moment-timezone';
@@ -6,6 +6,9 @@ import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
+import URL from "url";
+
+axios.defaults.adapter = require('axios/lib/adapters/http');
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
@@ -27,7 +30,8 @@ class WebdavFileSystem extends FileSystem {
       certificates,
       ignoreCertificateErrors,
       maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
-      pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
+      pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds,
+      api
     } = webdavClientConfig || {};
     super(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds});
     this.username = username;
@@ -37,6 +41,7 @@ class WebdavFileSystem extends FileSystem {
     this.rootName = `${appName} Root`;
     this.appName = appName;
     this.separator = '/';
+    this.api = api;
     log(`Initializing webdav client: URL ${server}; IGNORE CERTIFICATE ERRORS: ${ignoreCertificateErrors}; USER: ${username}`);
     if (this.pingAfterCopy) {
       log(`Webdav client ping after copy operation config: ping ${pingTimeoutSeconds}sec. for ${maxWaitSeconds}sec.`);
@@ -349,6 +354,104 @@ class WebdavFileSystem extends FileSystem {
       this.getItemType(path)
         .then((type) => resolve(!!type))
         .catch(() => resolve(false));
+    });
+  }
+
+  async safelyStopLogging () {
+    try {
+      const result = await electron.remote.netLog.stopLogging();
+      return result;
+    } catch (e) {
+      error(e);
+      return undefined;
+    }
+  }
+
+  diagnose(options, callback) {
+    const logCallback = o => {
+      log(o);
+      if (callback) {
+        callback(o);
+      }
+    };
+    return new Promise(async (resolve) => {
+      const diagnoseResult = {};
+      try {
+        axios.defaults.adapter = require('axios/lib/adapters/xhr');
+        const {
+          ignoreCertificateErrors
+        } = options || {};
+        if (ignoreCertificateErrors) {
+          https.globalAgent.options.rejectUnauthorized = false;
+        }
+        const path = electron.remote.getGlobal('networkLogFile').replace('[DATE]', moment().format('YYYY-MM-DD-HH-mm-ss'))
+        await electron.remote.netLog.startLogging(path);
+        diagnoseResult.webdavError = await this.diagnoseWebdav(options, logCallback);
+        diagnoseResult.apiError = await this.diagnoseAPI(options, logCallback);
+      } catch (e) {
+        diagnoseResult.error = e.message;
+        logCallback(`Error: ${e.message}`);
+      } finally {
+        diagnoseResult.filePath = await this.safelyStopLogging();
+        if (this.ignoreCertificateErrors) {
+          https.globalAgent.options.rejectUnauthorized = false;
+        }
+        axios.defaults.adapter = require('axios/lib/adapters/http');
+        resolve(diagnoseResult);
+      }
+    });
+  }
+
+  async apiGetRequest (endpoint) {
+    let api = this.api || '';
+    if (api.endsWith('/')) {
+      api = api.slice(0, -1);
+    }
+    await fetch(`${api}/${endpoint}`, {
+      headers: {
+        "Authorization": `Bearer ${this.password}`,
+        "Content-type": "application/json",
+        "Accept": "application/json",
+        "Accept-Charset": "utf-8"
+      }
+    });
+  }
+
+  diagnoseAPI(options, callback) {
+    const logCallback = callback || (() => {});
+    return new Promise(async (resolve) => {
+      console.log(this.api);
+      try {
+        if (this.api) {
+          logCallback('Testing API...');
+          await this.apiGetRequest('whoami');
+        } else {
+          logCallback('No API endpoint');
+        }
+        resolve();
+      } catch (e) {
+        resolve(e.message);
+      }
+    });
+  }
+
+  diagnoseWebdav(options, callback) {
+    const logCallback = callback || (() => {});
+    return new Promise(async (resolve) => {
+      try {
+        const {
+          server,
+          password,
+          username,
+          ignoreCertificateErrors
+        } = options || {};
+        const client = createClient(server, {username, password});
+        logCallback('Fetching webdav directory contents...');
+        await client.getDirectoryContents('');
+        resolve();
+      } catch (e) {
+        resolve(e.message);
+      }
     });
   }
 }

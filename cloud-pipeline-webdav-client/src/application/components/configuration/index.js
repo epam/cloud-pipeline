@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Modal, Input} from 'antd';
+import {Button, Checkbox, Modal, Input} from 'antd';
 import electron from 'electron';
 import './configuration.css';
 import writeWebDavConfiguration from '../../../write-webdav-configuration';
@@ -16,7 +16,10 @@ class Configuration extends React.Component {
     version: undefined,
     pingAfterCopy: false,
     maxWaitSeconds: undefined,
-    pingTimeoutSeconds: undefined
+    pingTimeoutSeconds: undefined,
+    pending: false,
+    diagnoseState: undefined,
+    diagnoseFile: undefined
   };
   componentDidMount() {
     this.updateSettings();
@@ -61,6 +64,9 @@ class Configuration extends React.Component {
       pingAfterCopy,
       maxWaitSeconds,
       pingTimeoutSeconds,
+      pending: false,
+      diagnoseState: undefined,
+      diagnoseFile: undefined
     });
   };
 
@@ -113,9 +119,48 @@ class Configuration extends React.Component {
     }
   };
 
+  diagnose = () => {
+    const {fileSystem} = this.props;
+    const {
+      server,
+      password,
+      username,
+      ignoreCertificateErrors
+    } = this.state;
+    if (fileSystem) {
+      this.setState({
+        pending: true,
+        diagnoseFile: undefined
+      }, () => {
+        const cb = (o) => this.setState({diagnoseState: o});
+        fileSystem
+          .diagnose(
+            {
+              server,
+              password,
+              username,
+              ignoreCertificateErrors
+            },
+            cb
+          )
+          .then((result) => {
+            const {
+              filePath
+            } = result || {};
+            this.setState({
+              diagnoseState: undefined,
+              pending: false,
+              diagnoseFile: filePath
+            })
+          });
+      });
+    }
+  };
+
   render () {
     const {
       visible,
+      fileSystem
     } = this.props;
     const {
       server,
@@ -125,7 +170,10 @@ class Configuration extends React.Component {
       name = 'Cloud Data',
       maxWaitSeconds,
       pingTimeoutSeconds,
-      pingAfterCopy
+      pingAfterCopy,
+      pending,
+      diagnoseState,
+      diagnoseFile
     } = this.state;
     return (
       <Modal
@@ -134,6 +182,7 @@ class Configuration extends React.Component {
         footer={null}
         onCancel={this.onClose}
         onClose={this.onClose}
+        width="60%"
       >
         <div
           className="configuration"
@@ -149,6 +198,17 @@ class Configuration extends React.Component {
               value={server}
               onChange={this.onSettingChanged('server')}
             />
+            {
+              fileSystem && (
+                <Button
+                  disabled={pending}
+                  onClick={this.diagnose}
+                  style={{marginLeft: 5}}
+                >
+                  TEST
+                </Button>
+              )
+            }
           </div>
           <div
             className="row"
@@ -235,6 +295,37 @@ class Configuration extends React.Component {
               </div>
             )
           }
+          {
+            (diagnoseState || diagnoseFile) && (
+              <div
+                className="row"
+                style={{
+                  justifyContent: 'space-between',
+                  marginTop: 10,
+                  paddingTop: 5,
+                  borderTop: '1px solid #ccc'
+                }}
+              >
+                {
+                  diagnoseFile && (
+                    <span style={{marginRight: 5}}>Network Log file:</span>
+                  )
+                }
+                <div style={{flex: 1}}>
+                  {
+                    diagnoseFile && (
+                      <Input
+                        value={diagnoseFile}
+                        readOnly
+                        style={{width: '100%'}}
+                      />
+                    )
+                  }
+                  {diagnoseState}
+                </div>
+              </div>
+            )
+          }
         </div>
       </Modal>
     );
@@ -243,7 +334,8 @@ class Configuration extends React.Component {
 
 Configuration.propTypes = {
   visible: PropTypes.bool,
-  onClose: PropTypes.func
+  onClose: PropTypes.func,
+  fileSystem: PropTypes.object
 };
 
 export default Configuration;
