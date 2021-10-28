@@ -19,7 +19,7 @@ import {
   BarsOutlined,
   ForkOutlined,
   HomeOutlined,
-  PlayCircleOutlined,
+  PlayCircleFilled,
   PoweroffOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -78,7 +78,7 @@ export default [
   {
     key: Pages.runs,
     title: 'Runs',
-    icon: PlayCircleOutlined,
+    icon: PlayCircleFilled,
     path: '/runs',
     keys: ['runs'],
     isDefault: false,
