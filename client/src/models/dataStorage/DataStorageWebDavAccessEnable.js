@@ -14,7 +14,11 @@
  *  limitations under the License.
  */
 
-.storage-size {
-  padding: 4px 6px;
-  color: #333;
+import RemotePost from '../basic/RemotePost';
+
+export default class DataStorageWebDavAccessEnable extends RemotePost {
+  constructor () {
+    super();
+    this.url = '/datastorage/webdav';
+  }
 }
