@@ -12,21 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.release.notes.agent;
+package com.epam.release.notes.agent.configuration;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
 @Configuration
-@ComponentScan(basePackages = { "com.epam.release.notes.agent.service" })
-public class AppConfiguration {
+public class ApplicationConfiguration {
 
     @Bean
     public CloudPipelineApiExecutor cloudPipelineApiExecutor(
@@ -39,8 +37,8 @@ public class AppConfiguration {
     public CloudPipelineApiBuilder cloudPipelineApiBuilder(
             @Value("${pipeline.api.url}") final String pipelineApiUrl,
             @Value("${pipeline.api.token}") final String pipelineApiToken,
-            @Value("${pipeline.client.connect.timeout}") final int connectTimeout,
-            @Value("${pipeline.client.read.timeout}") final int readTimeout) {
+            @Value("${pipeline.client.connect.timeout:30}") final int connectTimeout,
+            @Value("${pipeline.client.read.timeout:30}") final int readTimeout) {
         return new CloudPipelineApiBuilder(connectTimeout, readTimeout, pipelineApiUrl, pipelineApiToken);
     }
 }

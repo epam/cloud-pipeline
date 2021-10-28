@@ -37,8 +37,8 @@ public class Version {
     public static Version buildVersion(final String version) {
         final Matcher matcher = PATTERN.matcher(version);
         if (!matcher.matches()) {
-            throw new IllegalArgumentException(format("The application version %s doesn't match the pattern %s ", version,
-                    VERSION_PATTERN));
+            throw new IllegalArgumentException(format("The application version %s doesn't match the pattern %s ",
+                    version, VERSION_PATTERN));
         }
         return Version.builder()
                 .major(matcher.group(1))
