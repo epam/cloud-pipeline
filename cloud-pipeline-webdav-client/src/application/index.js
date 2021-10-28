@@ -184,6 +184,7 @@ function Application() {
               onDropCommand={onDropCommand}
               sorting={rightTab.sorting}
               setSorting={rightTab.setSorting}
+              requestStorageAction
             />
           </div>
         </SplitPanel>

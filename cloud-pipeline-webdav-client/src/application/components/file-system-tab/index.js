@@ -17,6 +17,7 @@ import SplitPanel, {useSplitPanel}  from '../utilities/split-panel';
 import FileSystemElement, {getElementIdentifier} from './file-system-element';
 import PathNavigation from './path-navigation';
 import {SortingProperty, PropertySorters} from './sorting';
+import RequestStorageAccess from '../request-storage-access';
 import './file-system-tab.css';
 import './file-system-element.css';
 
@@ -66,8 +67,17 @@ function FileSystemTab (
     sorting,
     setSorting,
     lastSelectionIndex,
+    requestStorageAction
   }
 ) {
+  const [requestStorageModalVisible, setRequestStorageModalVisible] = useState(false);
+  const openRequestStorageModal = useCallback(() => {
+    setRequestStorageModalVisible(true);
+  }, [setRequestStorageModalVisible]);
+  const closeRequestStorageModal = useCallback(() => {
+    setRequestStorageModalVisible(false);
+    onRefresh();
+  }, [setRequestStorageModalVisible, onRefresh]);
   const [columnSizes, onSetColumnSizes] = useSplitPanel([undefined, 100, 150]);
   const [hovered, setHovered] = useState(undefined);
   const [dropTarget, setDropTarget] = useState(undefined);
@@ -329,12 +339,28 @@ function FileSystemTab (
             <Button disabled={pending} onClick={onRefresh}>
               Reload (F2)
             </Button>
+            {
+              requestStorageAction && (
+                <Divider type="vertical" />
+              )
+            }
+            {
+              requestStorageAction && (
+                <Button onClick={openRequestStorageModal}>
+                  Request storage access
+                </Button>
+              )
+            }
           </ConfigProvider>
         </div>
         <PathNavigation
           onNavigate={onNavigate}
           path={path}
           fileSystem={fileSystem}
+        />
+        <RequestStorageAccess
+          visible={requestStorageModalVisible}
+          onClose={closeRequestStorageModal}
         />
         <div className="directory-contents-container">
           <SplitPanel
@@ -411,6 +437,7 @@ FileSystemTab.propTypes = {
   onDropCommand: PropTypes.func,
   sorting: PropTypes.string,
   setSorting: PropTypes.func,
+  requestStorageAction: PropTypes.bool,
 };
 
 export default React.memo(FileSystemTab);
