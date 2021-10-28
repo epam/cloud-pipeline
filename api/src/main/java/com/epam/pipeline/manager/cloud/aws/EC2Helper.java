@@ -100,13 +100,15 @@ public class EC2Helper {
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
 
-    public AmazonEC2 getEC2Client(String awsRegion) {
-        AmazonEC2ClientBuilder builder = AmazonEC2ClientBuilder.standard();
-        builder.setRegion(awsRegion);
-        return builder.build();
+    public AmazonEC2 getEC2Client(final AwsRegion awsRegion) {
+        return AmazonEC2ClientBuilder
+                .standard()
+                .withCredentials(AWSUtils.getCredentialsProvider(awsRegion))
+                .withRegion(awsRegion.getRegionCode())
+                .build();
     }
 
-    public Optional<NetworkInterface> getNetworkInterface(final String interfaceId, final String region) {
+    public Optional<NetworkInterface> getNetworkInterface(final String interfaceId, final AwsRegion region) {
         final DescribeNetworkInterfacesResult result = getEC2Client(region).describeNetworkInterfaces(
                 new DescribeNetworkInterfacesRequest().withNetworkInterfaceIds(interfaceId));
         return ListUtils.emptyIfNull(result.getNetworkInterfaces())
@@ -116,7 +118,7 @@ public class EC2Helper {
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {
-        AmazonEC2 client = getEC2Client(region.getRegionCode());
+        AmazonEC2 client = getEC2Client(region);
         Collection<String> availabilityZones = getAvailabilityZones(client, region.getRegionCode());
         if (CollectionUtils.isEmpty(availabilityZones)) {
             LOGGER.debug("Failed to find availability zones;");
@@ -141,7 +143,7 @@ public class EC2Helper {
                 .orElse(0.0);
     }
 
-    public void stopInstance(String instanceId, String awsRegion) {
+    public void stopInstance(String instanceId, AwsRegion awsRegion) {
         AmazonEC2 client = getEC2Client(awsRegion);
         StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instanceId);
         client.stopInstances(stopInstancesRequest);
@@ -149,7 +151,7 @@ public class EC2Helper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
-    public void terminateInstance(String instanceId, String awsRegion) {
+    public void terminateInstance(String instanceId, AwsRegion awsRegion) {
         AmazonEC2 client = getEC2Client(awsRegion);
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest()
                 .withInstanceIds(instanceId);
@@ -158,7 +160,7 @@ public class EC2Helper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
-    public CloudInstanceOperationResult startInstance(String instanceId, String awsRegion) {
+    public CloudInstanceOperationResult startInstance(String instanceId, AwsRegion awsRegion) {
         try {
             AmazonEC2 client = getEC2Client(awsRegion);
             StartInstancesRequest startInstancesRequest = new StartInstancesRequest().withInstanceIds(instanceId);
@@ -178,7 +180,7 @@ public class EC2Helper {
         );
     }
 
-    public Optional<StateReason> getInstanceStateReason(String instanceId, String awsRegion) {
+    public Optional<StateReason> getInstanceStateReason(String instanceId, AwsRegion awsRegion) {
         try {
             return ListUtils.emptyIfNull(
                     getEC2Client(awsRegion)
@@ -209,7 +211,7 @@ public class EC2Helper {
      * @param awsRegion Instance aws region.
      * @return Instance launch time in UTC.
      */
-    public LocalDateTime getInstanceLaunchTime(final String runId, final String awsRegion) {
+    public LocalDateTime getInstanceLaunchTime(final String runId, final AwsRegion awsRegion) {
         final Instance instance = getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId));
         final Date launchTime = instance.getLaunchTime();
         return LocalDateTime.ofInstant(launchTime.toInstant(), UTC);
@@ -222,7 +224,7 @@ public class EC2Helper {
      * @param awsRegion Instance aws region.
      * @return Required instance.
      */
-    public Instance getActiveInstance(final String runId, final String awsRegion) {
+    public Instance getActiveInstance(final String runId, final AwsRegion awsRegion) {
         return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
                 new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE));
     }
@@ -234,13 +236,13 @@ public class EC2Helper {
      * @param awsRegion Instance aws region.
      * @return Required instance.
      */
-    public Instance getAliveInstance(final String runId, final String awsRegion) {
+    public Instance getAliveInstance(final String runId, final AwsRegion awsRegion) {
         return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
                 new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE,
                         STOPPING_STATE, STOPPED_STATE));
     }
 
-    private Instance getInstance(final String runId, final String awsRegion, final Filter... filters) {
+    private Instance getInstance(final String runId, final AwsRegion awsRegion, final Filter... filters) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final List<Reservation> reservations = client.describeInstances(new DescribeInstancesRequest()
                 .withFilters(filters))
@@ -258,7 +260,7 @@ public class EC2Helper {
         return instances.get(0);
     }
 
-    public Optional<Instance> findInstance(final String instanceId, final String awsRegion) {
+    public Optional<Instance> findInstance(final String instanceId, final AwsRegion awsRegion) {
         return getEC2Client(awsRegion)
                 .describeInstances(new DescribeInstancesRequest()
                         .withInstanceIds(instanceId)
@@ -274,7 +276,7 @@ public class EC2Helper {
     }
 
     public void createAndAttachVolume(final String runId, final Long size,
-                                      final String awsRegion, final String kmsKeyArn) {
+                                      final AwsRegion awsRegion, final String kmsKeyArn) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
         final String device = getVacantDeviceName(instance);
@@ -372,7 +374,7 @@ public class EC2Helper {
                 .withVolumeId(volumeId));
     }
 
-    public List<InstanceDisk> loadAttachedVolumes(final String runId, final String awsRegion) {
+    public List<InstanceDisk> loadAttachedVolumes(final String runId, final AwsRegion awsRegion) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
         return attachedVolumes(client, instance).map(this::toDisk).collect(Collectors.toList());

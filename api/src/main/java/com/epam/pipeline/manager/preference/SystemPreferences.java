@@ -110,6 +110,8 @@ public class SystemPreferences {
     private static final String GCP_GROUP = "GCP";
     private static final String BILLING_GROUP = "Billing Reports";
     private static final String LUSTRE_GROUP = "Lustre FS";
+    private static final String CLOUD_REGION_GROUP = "Cloud region";
+
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
 
@@ -729,6 +731,11 @@ public class SystemPreferences {
             isValidEnum(LustreDeploymentType.class));
     public static final BooleanPreference LUSTRE_FS_MOUNT_IP = new BooleanPreference(
             "lustre.fs.mount.ip", false, LUSTRE_GROUP, pass);
+    // Cloud Region
+    public static final IntPreference CLOUD_REGION_TEMP_CREDENTIALS_DURATION = new IntPreference(
+            "cloud.temp.credentials.duration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
+    public static final IntPreference CLOUD_REGION_TEMP_CREDENTIALS_EXPIRATION = new IntPreference(
+            "cloud.temp.credentials.expiration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

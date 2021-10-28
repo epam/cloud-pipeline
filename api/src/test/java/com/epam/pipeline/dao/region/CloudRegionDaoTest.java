@@ -314,6 +314,7 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertThat(expectedRegion.getTempCredentialsRole(), is(actualRegion.getTempCredentialsRole()));
         assertThat(expectedRegion.getBackupDuration(), is(actualRegion.getBackupDuration()));
         assertThat(expectedRegion.isVersioningEnabled(), is(actualRegion.isVersioningEnabled()));
+        assertThat(expectedRegion.getIamRole(), is(actualRegion.getIamRole()));
     }
 
     private void assertRegionEquals(final AzureRegion expectedRegion, final AzureRegion actualRegion) {
