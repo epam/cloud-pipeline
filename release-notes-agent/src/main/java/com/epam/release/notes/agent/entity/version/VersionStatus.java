@@ -17,5 +17,6 @@ package com.epam.release.notes.agent.entity.version;
 public enum VersionStatus {
     NOT_CHANGED,
     MAJOR_CHANGED,
-    MINOR_CHANGED
+    MINOR_CHANGED,
+    NOT_FOUND
 }
