@@ -53,7 +53,8 @@
                         project,
                         application_name,
                         impersonated_account,
-                        custom_instance_types)
+                        custom_instance_types,
+                        aws_iam_role)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -85,7 +86,8 @@
                         :PROJECT,
                         :APPLICATION_NAME,
                         :IMPERSONATED_ACCOUNT,
-                        :CUSTOM_INSTANCE_TYPES)
+                        :CUSTOM_INSTANCE_TYPES,
+                        :AWS_IAM_ROLE)
                 ]]>
             </value>
         </constructor-arg>
@@ -125,6 +127,7 @@
                         r.custom_instance_types,
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
+                        r.aws_iam_role,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -172,6 +175,7 @@
                         r.custom_instance_types,
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
+                        r.aws_iam_role,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -219,6 +223,7 @@
                         r.custom_instance_types,
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
+                        r.aws_iam_role,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -266,6 +271,7 @@
                         r.custom_instance_types,
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
+                        r.aws_iam_role,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -313,6 +319,7 @@
                         r.custom_instance_types,
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
+                        r.aws_iam_role,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -359,7 +366,8 @@
                         mount_credentials_rule = :MOUNT_CREDENTIALS_RULE,
                         application_name = :APPLICATION_NAME,
                         impersonated_account = :IMPERSONATED_ACCOUNT,
-                        custom_instance_types = :CUSTOM_INSTANCE_TYPES
+                        custom_instance_types = :CUSTOM_INSTANCE_TYPES,
+                        aws_iam_role = :AWS_IAM_ROLE
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -411,6 +419,7 @@
                         r.custom_instance_types,
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
+                        r.aws_iam_role,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,

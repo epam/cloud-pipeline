@@ -491,6 +491,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_JSON_WRITING_FAILED = "error.region.json.writing.failed";
     public static final String ERROR_REGION_CORS_RULES_INVALID = "error.region.cors.rules.invalid";
     public static final String ERROR_REGION_POLICY_INVALID = "error.region.policy.invalid";
+    public static final String ERROR_MISSING_IAM_ROLE = "error.missing.iam.role";
 
     //Contextual preferences
     public static final String ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND = "error.contextual.preference.not.found";

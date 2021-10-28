@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -33,7 +34,7 @@ public interface TemporaryCredentialsGenerator<T extends AbstractDataStorage> {
     AbstractCloudRegion getRegion(T dataStorage);
 
     static String expirationTimeWithUTC(final Date expiration) {
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(AWSUtils.AWS_DATE_FORMAT);
         simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         return simpleDateFormat.format(expiration);
     }

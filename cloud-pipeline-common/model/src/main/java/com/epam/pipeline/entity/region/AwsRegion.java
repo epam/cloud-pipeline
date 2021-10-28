@@ -46,6 +46,7 @@ public class AwsRegion extends AbstractCloudRegion {
     private String tempCredentialsRole;
     private Integer backupDuration;
     private boolean versioningEnabled;
+    private String iamRole;
 
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
