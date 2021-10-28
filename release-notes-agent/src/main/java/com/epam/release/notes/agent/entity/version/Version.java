@@ -18,6 +18,11 @@ package com.epam.release.notes.agent.entity.version;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.lang.String.format;
+
 @Value
 @Builder
 public class Version {
@@ -26,4 +31,24 @@ public class Version {
     String buildNumber;
     String sha;
 
+    public static Version buildVersion(final String version) {
+        final String versionPattern = "^0.\\d+.0.\\d+.\\w+$";
+        final Pattern pattern = Pattern.compile(versionPattern);
+        Matcher matcher = pattern.matcher(version);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(format("The application version %s doesn't match the pattern %s ", version,
+                    versionPattern));
+        }
+        final String[] versionParts = version.split("\\.");
+        return Version.builder()
+                .major(format("0.%s.0", versionParts[1]))
+                .buildNumber(versionParts[3])
+                .sha(versionParts[4])
+                .build();
+    }
+
+    @Override
+    public String toString() {
+        return format("%s.%s.%s", major, buildNumber, sha);
+    }
 }
