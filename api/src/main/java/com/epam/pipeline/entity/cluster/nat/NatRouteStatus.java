@@ -31,7 +31,8 @@ public enum NatRouteStatus {
     TERMINATION_SCHEDULED(true),
     TERMINATING(true),
     RESOURCE_RELEASED(true),
-    FAILED(true);
+    FAILED(true),
+    UNKNOWN(false);
 
     private final boolean isTerminationState;
 }

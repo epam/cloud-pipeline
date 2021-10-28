@@ -22,10 +22,13 @@ import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRulesRequest;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +48,15 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
 
     @SpyBean
     private NatGatewayDao natGatewayDao;
+
+    @MockBean
+    private KubernetesManager kubernetesManager;
+
+    @Before
+    public void init() {
+        Mockito.doReturn(Collections.emptyList()).when(kubernetesManager)
+            .getCloudPipelineServiceInstances(Mockito.anyString());
+    }
 
     @Test
     public void testRulesRegistration() {
