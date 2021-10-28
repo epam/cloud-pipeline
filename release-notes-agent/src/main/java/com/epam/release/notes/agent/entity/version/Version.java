@@ -35,7 +35,7 @@ public class Version {
     String sha;
 
     public static Version buildVersion(final String version) {
-        Matcher matcher = PATTERN.matcher(version);
+        final Matcher matcher = PATTERN.matcher(version);
         if (!matcher.matches()) {
             throw new IllegalArgumentException(format("The application version %s doesn't match the pattern %s ", version,
                     VERSION_PATTERN));

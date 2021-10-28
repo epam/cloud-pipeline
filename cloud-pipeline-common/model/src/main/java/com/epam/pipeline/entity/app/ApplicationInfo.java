@@ -15,14 +15,13 @@
  */
 package com.epam.pipeline.entity.app;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Value;
 
-@Data
+@Value
+@Builder
 public class ApplicationInfo {
 
-    private final String version;
+    String version;
 
-    public ApplicationInfo() {
-        this.version = getClass().getPackage().getImplementationVersion();
-    }
 }

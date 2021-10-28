@@ -26,9 +26,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Optional;
 
-import static com.epam.release.notes.agent.utils.VersionUtils.updateVersionInFile;
 import static java.lang.String.format;
 
 @Service
@@ -75,7 +75,7 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
                 .orElseThrow(() -> new IllegalArgumentException("The application version is empty"));
     }
 
-    private Version readVersionFromFile(final String versionFilePath) {
+    Version readVersionFromFile(final String versionFilePath) {
         try {
             final String savedVersion = Files.lines(Paths.get(versionFilePath))
                     .findFirst()
@@ -84,6 +84,15 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
             return Version.buildVersion(savedVersion);
         } catch (IOException e) {
             throw new RuntimeException(format("Unable to get file from path %s", versionFilePath));
+        }
+    }
+
+    void updateVersionInFile(final Version version, final String versionFilePath) {
+        try {
+            Files.write(Paths.get(versionFilePath), Collections.singleton(version.toString()));
+        } catch (IOException e) {
+            throw new RuntimeException(format("Unable to update version %s in file %s, cause: %s", version.toString(),
+                    versionFilePath, e.getMessage()), e);
         }
     }
 }
