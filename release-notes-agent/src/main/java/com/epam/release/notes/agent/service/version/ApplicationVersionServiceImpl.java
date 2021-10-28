@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Optional;
@@ -56,13 +57,16 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
     @Override
     public Version loadPreviousVersion() {
         try {
-            final String savedVersion = Files.lines(Paths.get(versionFilePath))
+            final Path path = Paths.get(versionFilePath);
+            if (Files.notExists(path)) {
+                Files.createFile(path);
+            }
+            final String savedVersion = Files.lines(path)
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Provided versioned file is empty. Check file and set correct version."));
+                    .orElseGet(this::setCurrentVersion);
             return Version.buildVersion(savedVersion);
         } catch (IOException e) {
-            throw new IllegalStateException(format("Unable to get file from path %s", versionFilePath));
+            throw new IllegalStateException(format("Unable to create or read file from path %s", versionFilePath), e);
         }
     }
 
@@ -94,5 +98,11 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
             throw new IllegalStateException(format("Unable to update version %s in file %s, cause: %s", version,
                     versionFilePath, e.getMessage()), e);
         }
+    }
+
+    private String setCurrentVersion() {
+        final Version currentVersion = fetchCurrentVersion();
+        storeVersion(currentVersion);
+        return currentVersion.toString();
     }
 }
