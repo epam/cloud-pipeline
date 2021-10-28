@@ -33,8 +33,10 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A class responsible for getting entities from the GitHub repository.
+ */
 @Component
-@PropertySource("private.properties")
 public class GitHubApiClient implements RestApiClient {
 
     private static final String TOKEN_PREFIX = "token ";
@@ -43,12 +45,12 @@ public class GitHubApiClient implements RestApiClient {
     private static final String ACCEPT_HEADER = "application/vnd.github.v3+json";
     private static final int START_PAGE = 1;
     private static final int PAGE_SIZE = 100;
+
     private final String gitHubBaseUrl;
     private final String defaultBranchName;
     private final String ownerName;
     private final String projectName;
     private final Integer timeout;
-
     private final GitHubApi gitHubApi;
 
     public GitHubApiClient(@Value("${github.token}") final String token,
@@ -65,6 +67,15 @@ public class GitHubApiClient implements RestApiClient {
         gitHubApi = createApi(TOKEN_PREFIX + token);
     }
 
+    /**
+     * Returns a commit list that starts with the {@code shaFrom} (newer) commit
+     * to the {@code shaTo} (older) commit exclusively.
+     *
+     * @param shaFrom the first latest commit (e.g. the commit if the actual newest project version)
+     * @param shaTo   the oldest commit - it isn't included in the result list
+     *                (e.g. the commit if the previous project version)
+     * @return the result commit list
+     */
     public List<Commit> listCommit(final String shaFrom, final String shaTo) {
         final List<Commit> resultList = new ArrayList<>();
         int currentPage = START_PAGE;
@@ -83,6 +94,12 @@ public class GitHubApiClient implements RestApiClient {
         return resultList;
     }
 
+    /**
+     * Returns {@link GitHubIssue} by the issue number.
+     *
+     * @param number the first latest commit (e.g. the commit if the actual newest project version)
+     * @return the issue
+     */
     public GitHubIssue getIssue(final long number) {
         return execute(gitHubApi.getIssue(projectName, ownerName, number));
     }

@@ -22,6 +22,9 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * An util class responsible for handling GitHub repository entities.
+ */
 public final class GitHubUtils {
 
     private static final String ZERO = "0";
@@ -32,7 +35,7 @@ public final class GitHubUtils {
     /**
      * Returns a predicate that matches to issue-related commits.
      *
-     * @param issueRegex
+     * @param issueRegex the regex that detects an issue-related commit
      * @return the predicate that matches to issue-related commits
      */
     public static Predicate<Commit> isIssueRelatedCommit(final String issueRegex) {
@@ -40,9 +43,10 @@ public final class GitHubUtils {
     }
 
     /**
-     * Returns issue-related commits to issue number function.
+     * Returns a function that extracts an issue number from the issue-related commit.
      *
-     * @return the issue-related commits to issue number function
+     * @param issueNumberRegex the issue number regex
+     * @return the Function-extractor
      */
     public static Function<Commit, String> mapCommitToIssueNumber(final String issueNumberRegex) {
         return commit -> {

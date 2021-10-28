@@ -15,7 +15,7 @@
 
 package com.epam.release.notes.agent.entity.github;
 
-import com.epam.release.notes.agent.service.github.CommitDeserializer;
+import com.epam.release.notes.agent.service.github.GitHubCommitDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Value;
@@ -25,7 +25,7 @@ import java.util.List;
 
 @Value
 @Builder
-@JsonDeserialize(using = CommitDeserializer.class)
+@JsonDeserialize(using = GitHubCommitDeserializer.class)
 public class Commit {
     String commitSha;
     String commitMessage;
