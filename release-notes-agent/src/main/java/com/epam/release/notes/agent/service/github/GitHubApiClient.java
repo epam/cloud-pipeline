@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;

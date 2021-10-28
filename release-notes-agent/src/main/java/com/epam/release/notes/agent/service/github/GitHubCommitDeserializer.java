@@ -20,7 +20,7 @@ public class GitHubCommitDeserializer extends StdDeserializer<Commit> {
         this(null);
     }
 
-    protected GitHubCommitDeserializer(Class<?> vc) {
+    protected GitHubCommitDeserializer(final Class<?> vc) {
         super(vc);
     }
 
