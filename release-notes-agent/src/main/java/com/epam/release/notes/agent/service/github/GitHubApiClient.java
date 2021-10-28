@@ -17,31 +17,25 @@ package com.epam.release.notes.agent.service.github;
 
 import com.epam.release.notes.agent.entity.github.Commit;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import com.epam.release.notes.agent.service.RestApiClient;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
-import retrofit2.Call;
-import retrofit2.HttpException;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @Component
 @PropertySource("private.properties")
-public class GitHubApiClient {
+public class GitHubApiClient implements RestApiClient {
 
     private static final String TOKEN_PREFIX = "token ";
     private static final String TOKEN_HEADER = "Authorization";
@@ -49,11 +43,11 @@ public class GitHubApiClient {
     private static final String ACCEPT_HEADER = "application/vnd.github.v3+json";
     private static final int START_PAGE = 1;
     private static final int PAGE_SIZE = 100;
-    private static final int TIMEOUT = 10;
     private final String gitHubBaseUrl;
     private final String defaultBranchName;
     private final String ownerName;
     private final String projectName;
+    private final Integer timeout;
 
     private final GitHubApi gitHubApi;
 
@@ -61,37 +55,36 @@ public class GitHubApiClient {
                            @Value("${github.baseurl:https://api.github.com}") final String gitHubBaseUrl,
                            @Value("${github.default.branch.name:develop}") final String defaultBranchName,
                            @Value("${github.owner.name:epam}") final String ownerName,
-                           @Value("${github.project.name:cloud-pipeline}") final String projectName) {
+                           @Value("${github.project.name:cloud-pipeline}") final String projectName,
+                           @Value("${github.timeout:30}") final Integer timeout) {
         this.gitHubBaseUrl = gitHubBaseUrl;
         this.defaultBranchName = defaultBranchName;
         this.ownerName = ownerName;
         this.projectName = projectName;
+        this.timeout = timeout;
         gitHubApi = createApi(TOKEN_PREFIX + token);
     }
 
     public List<Commit> listCommit(final String shaFrom, final String shaTo) {
         final List<Commit> resultList = new ArrayList<>();
         int currentPage = START_PAGE;
-        int currentSize = 0;
-        while (currentPage == START_PAGE || currentSize == PAGE_SIZE) {
-            List<Commit> addedList = GitHubUtils.takeWhileNot(
-                createEntityBuilder(gitHubApi.listCommits(projectName, ownerName,
-                    Optional.ofNullable(shaFrom).orElse(defaultBranchName), currentPage, PAGE_SIZE))
-                    .getCommits(),
-                commit -> commit.getCommitSha().equals(shaTo));
-            resultList.addAll(addedList);
-            currentSize = addedList.size();
-            currentPage++;
+        List<Commit> commits = execute(gitHubApi.listCommits(projectName, ownerName,
+                Optional.ofNullable(shaFrom).orElse(defaultBranchName), START_PAGE, PAGE_SIZE));
+        while (!commits.isEmpty()) {
+            for (Commit commit : commits) {
+                if (commit.getCommitSha().equals(shaTo)) {
+                    return resultList;
+                }
+                resultList.add(commit);
+            }
+            commits = execute(gitHubApi.listCommits(projectName, ownerName,
+                    Optional.ofNullable(shaFrom).orElse(defaultBranchName), ++currentPage, PAGE_SIZE));
         }
         return resultList;
     }
 
     public GitHubIssue getIssue(final long number) {
         return execute(gitHubApi.getIssue(projectName, ownerName, number));
-    }
-
-    private EntityBuilder createEntityBuilder(Call<List<Map<String, Object>>> call) {
-        return new EntityBuilder(execute(call));
     }
 
     private GitHubApi createApi(final String token) {
@@ -106,9 +99,8 @@ public class GitHubApiClient {
 
     private OkHttpClient getOkHttpClient(final String token) {
         return new OkHttpClient.Builder()
-                .connectionSpecs(Arrays.asList(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS))
-                .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
-                .readTimeout(TIMEOUT, TimeUnit.SECONDS)
+                .connectTimeout(timeout, TimeUnit.SECONDS)
+                .readTimeout(timeout, TimeUnit.SECONDS)
                 .addInterceptor(chain -> {
                     final Request original = chain.request();
                     final Request request = original.newBuilder()
@@ -118,18 +110,5 @@ public class GitHubApiClient {
                     return chain.proceed(request);
                 })
                 .build();
-    }
-
-    private <R> R execute(Call<R> call) {
-        try {
-            Response<R> response = call.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                throw new HttpException(response);
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

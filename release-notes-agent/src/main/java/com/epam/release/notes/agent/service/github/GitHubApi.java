@@ -15,6 +15,7 @@
 
 package com.epam.release.notes.agent.service.github;
 
+import com.epam.release.notes.agent.entity.github.Commit;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import retrofit2.Call;
 import retrofit2.http.GET;
@@ -22,7 +23,6 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import java.util.List;
-import java.util.Map;
 
 public interface GitHubApi {
 
@@ -37,25 +37,25 @@ public interface GitHubApi {
      * Gets a list of commits for the specified project branch.
      * This command provides essentially the same functionality as the git log command.
      *
-     * @param project the URL-encoded name of the project
-     * @param owner the URL-encoded name of the repository owner
-     * @param branch (optional) SHA or branch to start listing commits from. Default: the repository’s default branch
-     * @param page (optional) the number of the page to return
+     * @param project  the URL-encoded name of the project
+     * @param owner    the URL-encoded name of the repository owner
+     * @param branch   (optional) SHA or branch to start listing commits from.
+     * @param page     (optional) the number of the page to return
      * @param pageSize (optional) the size of the page to return
      */
     @GET("/repos/{owner}/{project}/commits")
-    Call<List<Map<String, Object>>> listCommits(@Path(PROJECT) String project,
-                                                @Path(OWNER) String owner,
-                                                @Query(BRANCH_NAME) String branch,
-                                                @Query(PAGE) Integer page,
-                                                @Query(PAGE_SIZE) Integer pageSize);
+    Call<List<Commit>> listCommits(@Path(PROJECT) String project,
+                                   @Path(OWNER) String owner,
+                                   @Query(BRANCH_NAME) String branch,
+                                   @Query(PAGE) Integer page,
+                                   @Query(PAGE_SIZE) Integer pageSize);
 
     /**
      * Gets an issue that matches the requested issue number.
      *
      * @param project the URL-encoded name of the project
-     * @param owner the URL-encoded name of the repository owner
-     * @param issue the issue number
+     * @param owner   the URL-encoded name of the repository owner
+     * @param issue   the issue number
      */
     @GET("/repos/{owner}/{project}/issues/{issue_number}")
     Call<GitHubIssue> getIssue(@Path(PROJECT) String project,

@@ -24,6 +24,7 @@ public interface GitHubService {
 
     List<Commit> fetchCommits(String shaFrom, String shaTo);
 
-    GitHubIssue fetchIssue(String number);
+    List<GitHubIssue> fetchIssues(String shaFrom, String shaTo);
 
+    GitHubIssue fetchIssue(String number);
 }

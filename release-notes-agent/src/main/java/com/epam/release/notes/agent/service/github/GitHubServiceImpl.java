@@ -17,16 +17,26 @@ package com.epam.release.notes.agent.service.github;
 
 import com.epam.release.notes.agent.entity.github.Commit;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
-public class GitHubServiceImpl implements GitHubService{
+public class GitHubServiceImpl implements GitHubService {
 
+    private final String issueRegex;
+    private final String issueNumberRegex;
     private final GitHubApiClient client;
+
+    public GitHubServiceImpl(final GitHubApiClient client,
+                             @Value("${github.issue.regex:(?i)\\(?issue #.+}") final String issueRegex,
+                             @Value("${github.issue.number.regex:#\\d+}") final String issueNumberRegex) {
+        this.issueRegex = issueRegex;
+        this.issueNumberRegex = issueNumberRegex;
+        this.client = client;
+    }
 
     @Override
     public List<Commit> fetchCommits(final String shaFrom, final String shaTo) {
@@ -34,7 +44,17 @@ public class GitHubServiceImpl implements GitHubService{
     }
 
     @Override
-    public GitHubIssue fetchIssue(String number) {
+    public List<GitHubIssue> fetchIssues(final String shaCommitFrom, final String shaCommitTo) {
+        return fetchCommits(shaCommitFrom, shaCommitTo).stream()
+                .filter(GitHubUtils.isIssueRelatedCommit(issueRegex))
+                .map(GitHubUtils.mapCommitToIssueNumber(issueNumberRegex))
+                .distinct()
+                .map(this::fetchIssue)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public GitHubIssue fetchIssue(final String number) {
         return client.getIssue(Long.parseLong(number));
     }
 }

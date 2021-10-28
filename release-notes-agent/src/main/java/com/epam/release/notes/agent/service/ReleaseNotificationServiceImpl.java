@@ -15,35 +15,24 @@
 
 package com.epam.release.notes.agent.service;
 
-import com.epam.release.notes.agent.entity.github.Commit;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.service.github.GitHubService;
-import com.epam.release.notes.agent.service.github.GitHubUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
-public class ReleaseNotificationServiceImpl implements ReleaseNotificationService{
+public class ReleaseNotificationServiceImpl implements ReleaseNotificationService {
 
     private final GitHubService gitHubService;
 
     @Override
     public void perform() {
-        List<Commit> commits = gitHubService.fetchCommits(null, null);
-        List<GitHubIssue> list = getCommitRelatedIssueList(commits);
-        System.out.println(list);
+        List<GitHubIssue> issues = gitHubService.fetchIssues(null, "83b4e30140f8ff880ce829ef316adbd814ee1a30");
+        System.out.println(issues);
     }
 
-    private List<GitHubIssue> getCommitRelatedIssueList(final List<Commit> commits) {
-        return commits.stream()
-                .filter(GitHubUtils.isIssueRelatedCommit())
-                .map(GitHubUtils.mapCommitToIssueNumber())
-                .distinct()
-                .map(gitHubService::fetchIssue)
-                .collect(Collectors.toList());
-    }
+
 }
