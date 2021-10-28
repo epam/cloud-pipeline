@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="60">
+    <Properties>
+        <Property name="log-path">logs</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console-Appender" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern>
+                    %msg%n
+                </pattern>>
+            </PatternLayout>
+        </Console>
+        <RollingFile  name="App-Appender" fileName="${log-path}/release-notes-agent.log"
+                      filePattern="${log-path}/release-notes-agent-%d{yyyyMMdd}.log">
+            <DefaultRolloverStrategy>
+                <Delete basePath="${log-path}" maxDepth="1">
+                    <IfFileName glob="release-notes-agent-*.log">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="20"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+            <PatternLayout>
+                <pattern>
+                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>
+            </PatternLayout>
+        </RollingFile >
+    </Appenders>
+    <Loggers>
+        <Logger name="com.epam.release.notes.agent" level="debug" additivity="false">
+            <AppenderRef ref="Console-Appender"/>
+            <AppenderRef ref="App-Appender"/>
+        </Logger>
+        <Logger name="org.springframework" level="error" additivity="false">
+            <AppenderRef ref="Console-Appender"/>
+            <AppenderRef ref="App-Appender"/>
+        </Logger>
+        <Logger name="com.epam.release.notes.agent.Application" level="error" additivity="false">
+            <AppenderRef ref="Console-Appender"/>
+            <AppenderRef ref="App-Appender"/>
+        </Logger>
+        <Root>
+            <AppenderRef ref="Console-Appender"/>
+        </Root>
+    </Loggers>
+</Configuration>

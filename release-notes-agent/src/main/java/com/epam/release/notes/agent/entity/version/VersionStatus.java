@@ -12,20 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.release.notes.agent.entity.version;
 
-package com.epam.release.notes.agent.service.version;
-
-import com.epam.release.notes.agent.entity.version.Version;
-import com.epam.release.notes.agent.entity.version.VersionStatus;
-
-public interface ApplicationVersionService {
-
-    Version fetchCurrentVersion();
-
-    Version loadPreviousVersion();
-
-    VersionStatus getVersionStatus(Version old, Version current);
-
-    void storeVersion(Version version);
-
+public enum VersionStatus {
+    NOT_CHANGED,
+    MAJOR_CHANGED,
+    MINOR_CHANGED,
+    NOT_FOUND
 }
