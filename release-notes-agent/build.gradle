@@ -38,6 +38,7 @@ dependencies {
     // Thymeleaf
     implementation "org.thymeleaf:thymeleaf:$thymeleafVersion"
 
+
     // Javax mail
     implementation "com.sun.mail:javax.mail:$javaxMailVersion"
 
