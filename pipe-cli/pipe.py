@@ -125,7 +125,10 @@ def set_user_token(ctx, param, value):
 
 def click_decorator(decorator_func):
     """
-    todo: Add proper doc
+    Transforms a function to a click command decorator.
+
+    :param decorator_func: Function accepting the following arguments: click command, click context, args and kwargs.
+    :return: click command decorator.
     """
     def _decorator(decorating_func):
         @click.pass_context
@@ -139,9 +142,9 @@ def click_decorator(decorator_func):
 @click_decorator
 def stacktracing(func, ctx, *args, **kwargs):
     """
-    todo: Add proper doc
+    Enables error stack traces printing in a decorating click command.
     """
-    trace = ctx.params.get('trace') or False
+    trace = (os.getenv('CP_TRACE', 'false').lower().strip() == 'true') or ctx.params.get('trace') or False
     try:
         return ctx.invoke(func, *args, **kwargs)
     except Exception as runtime_error:
@@ -154,7 +157,7 @@ def stacktracing(func, ctx, *args, **kwargs):
 @click_decorator
 def console_logging(func, ctx, *args, **kwargs):
     """
-    todo: Add proper doc
+    Configures console logging in a decorating click command.
     """
     if not ctx.params.get('debug'):
         log_level = os.getenv('CP_LOGGING_LEVEL') or ctx.params.get('log_level') or DEFAULT_LOGGING_LEVEL
@@ -166,7 +169,9 @@ def console_logging(func, ctx, *args, **kwargs):
 @click_decorator
 def signals_handling(func, ctx, *args, **kwargs):
     """
-    todo: Add proper doc
+    Configures explicit signals handling in a decorating click command.
+
+    Relates to https://github.com/pyinstaller/pyinstaller/issues/2379.
     """
     def throw_keyboard_interrupt(signum, frame):
         logging.debug('Received signal (%s). Gracefully exiting...', signum)
@@ -179,11 +184,11 @@ def signals_handling(func, ctx, *args, **kwargs):
 
 
 @click_decorator
-def frozen_cleaning(func, ctx, *args, **kwargs):
+def resources_cleaning(func, ctx, *args, **kwargs):
     """
-    Relates to https://github.com/pyinstaller/pyinstaller/issues/2379
+    Enables automated temporary resources cleaning in a decorating click command.
 
-    todo: Add proper doc
+    Removes temporary directories which are not locked by :func:`frozen_locking` decorator.
     """
     if ctx.params.get('noclean'):
         return ctx.invoke(func, *args, **kwargs)
@@ -197,7 +202,7 @@ def frozen_cleaning(func, ctx, *args, **kwargs):
 @click_decorator
 def frozen_locking(func, ctx, *args, **kwargs):
     """
-    todo: Add proper doc
+    Enables temporary resources directory locking in a decorating click command.
     """
     if not is_frozen() or __bundle_info__['bundle_type'] != 'one-file':
         return ctx.invoke(func, *args, **kwargs)
@@ -206,14 +211,19 @@ def frozen_locking(func, ctx, *args, **kwargs):
 
 
 @click_decorator
-def skipped_cleaning(func, ctx, *args, **kwargs):
+def disabled_resources_cleaning(func, ctx, *args, **kwargs):
     ctx.params['noclean'] = True
     return ctx.invoke(func, *args, **kwargs)
 
 
 def common_options(_func=None, skip_user=False, skip_clean=False):
     """
-    todo: Add proper doc
+    Decorates a click command with common pipe cli options and decorators.
+
+    :param _func: Decorating click command. Can be omitted.
+    :param skip_user: Disables default user option configuration.
+    :param skip_clean: Disables automated temporary resources cleanup.
+    :return:
     """
     def _decorator(func):
         @click.option('--debug', required=False, is_flag=True,
@@ -227,7 +237,7 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
         @console_logging
         @signals_handling
         @frozen_locking
-        @frozen_cleaning
+        @resources_cleaning
         @Config.validate_access_token(quiet_flag_property_name='quiet')
         @functools.wraps(func)
         def _wrapper(*args, **kwargs):
@@ -236,7 +246,7 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
             return func(*args, **kwargs)
 
         if skip_clean:
-            _wrapper = skipped_cleaning(_wrapper)
+            _wrapper = disabled_resources_cleaning(_wrapper)
         else:
             _wrapper = click.option('--noclean', required=False, is_flag=True,
                                     default=False,
@@ -2006,7 +2016,8 @@ def dts():
 @click.option('--preference', required=False, type=str, multiple=True,
               help='String, describing preference''s key and value: key=value. Multiple options supported')
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
-@common_options
+# Skipping user option because -u/--url and -u/--user has conflicting parameter names.
+@common_options(skip_user=True)
 def create_dts(url, name, schedulable, prefix, preference, json_out):
     """
     Registers new data transfer service.
