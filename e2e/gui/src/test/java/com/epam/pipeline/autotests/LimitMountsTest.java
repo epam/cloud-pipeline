@@ -122,8 +122,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 1)
     @TestCase(value = {"2210_2"})
     public void validateDoNotMountStoragesOptionInUserProfile() {
-        logoutIfNeeded();
-        loginAs(user);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
@@ -149,8 +147,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 2)
     @TestCase(value = {"2210_3"})
     public void validateLimitMountsValuesFromUserProfile() {
-        logoutIfNeeded();
-        loginAs(user);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
