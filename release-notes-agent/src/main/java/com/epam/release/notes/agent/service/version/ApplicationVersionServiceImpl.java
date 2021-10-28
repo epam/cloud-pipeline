@@ -59,20 +59,22 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
         try {
             final Path path = Paths.get(versionFilePath);
             if (Files.notExists(path)) {
-                Files.createFile(path);
+                return null;
             }
             final String savedVersion = Files.lines(path)
                     .findFirst()
-                    .orElseGet(this::setCurrentVersion);
+                    .orElse(null);
             return Version.buildVersion(savedVersion);
         } catch (IOException e) {
-            throw new IllegalStateException(format("Unable to create or read file from path %s", versionFilePath), e);
+            throw new IllegalStateException(format("Unable to get file from path %s", versionFilePath), e);
         }
     }
 
     @Override
     public VersionStatus getVersionStatus(final Version old, final Version current) {
-        if (old.toString().equals(current.toString())) {
+        if (old == null) {
+            return VersionStatus.NOT_FOUND;
+        } else if (old.toString().equals(current.toString())) {
             return VersionStatus.NOT_CHANGED;
         } else if (!old.getMajor().equals(current.getMajor())) {
             return VersionStatus.MAJOR_CHANGED;
@@ -98,11 +100,5 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
             throw new IllegalStateException(format("Unable to update version %s in file %s, cause: %s", version,
                     versionFilePath, e.getMessage()), e);
         }
-    }
-
-    private String setCurrentVersion() {
-        final Version currentVersion = fetchCurrentVersion();
-        storeVersion(currentVersion);
-        return currentVersion.toString();
     }
 }

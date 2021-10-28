@@ -56,7 +56,10 @@ public class ReleaseNotesNotifier {
         }
 
         final VersionStatus versionStatus = applicationVersionService.getVersionStatus(old, current);
-        if (versionStatus == VersionStatus.NOT_CHANGED) {
+        if (versionStatus == VersionStatus.NOT_FOUND) {
+            applicationVersionService.storeVersion(current);
+            return;
+        } else if (versionStatus == VersionStatus.NOT_CHANGED) {
             log.info(format(
                     "The current API version %s has not changed.", current.toString()));
             return;
