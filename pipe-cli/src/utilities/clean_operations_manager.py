@@ -14,7 +14,6 @@
 
 import logging
 import os
-import platform
 import shutil
 
 import click
@@ -22,14 +21,13 @@ import sys
 import traceback
 
 from src.config import Config, is_frozen
+from src.utilities.lock_operations_manager import LockOperationsManager
 
 
 class CleanOperationsManager:
 
-    _LOCK_NAME = 'pipe.frozen.lock'
-
     def __init__(self):
-        pass
+        self._lock_operations_manager = LockOperationsManager()
 
     def clean(self, force=False, quiet=False):
         config_dir_path = os.path.dirname(Config.get_home_dir_config_path())
@@ -45,7 +43,7 @@ class CleanOperationsManager:
         any_tmp_dir_without_lock = False
         for tmp_dir_name in os.listdir(root_tmp_dir_path):
             tmp_dir_path = os.path.join(root_tmp_dir_path, tmp_dir_name)
-            tmp_dir_lock_path = os.path.join(tmp_dir_path, self._LOCK_NAME)
+            tmp_dir_lock_path = self._lock_operations_manager.get_lock_path(tmp_dir_path)
             if not tmp_dir_name.startswith('_MEI') or tmp_dir_path == current_tmp_dir_path:
                 continue
             if not os.path.isdir(tmp_dir_path):
@@ -55,12 +53,12 @@ class CleanOperationsManager:
                               'because --force flag is not used %s...', tmp_dir_path)
                 any_tmp_dir_without_lock = True
                 continue
-            if os.path.exists(tmp_dir_lock_path) and self._is_dir_locked(tmp_dir_path, tmp_dir_lock_path):
+            if os.path.exists(tmp_dir_lock_path) and self._lock_operations_manager.is_locked(tmp_dir_path):
                 logging.debug('Skipping running pipe temporary directory deletion %s...', tmp_dir_path)
                 continue
             self._remove_dir(tmp_dir_path)
         if any_tmp_dir_without_lock and not quiet:
-            pipe_command = sys.argv[0] if is_frozen() else (sys.executable + sys.argv[0])
+            pipe_command = sys.argv[0] if is_frozen() else (sys.executable + ' ' + sys.argv[0])
             click.echo(click.style('Outdated pipe temporary resources have been detected.\n'
                                    'To free up disk space in temporary directory and get rid of this warning please: \n'
                                    '- stop all running pipe cli processes if there are any \n'
@@ -69,18 +67,6 @@ class CleanOperationsManager:
                                    .format(pipe_command=pipe_command),
                                    fg='yellow'),
                        err=True)
-
-    def _is_dir_locked(self, dir_path, dir_lock_path):
-        logging.debug('Trying to lock temporary directory %s...', dir_path)
-        with open(dir_lock_path, 'w+') as tmp_dir_lock_descriptor:
-            try:
-                self._lock(tmp_dir_lock_descriptor)
-                return False
-            except (IOError, OSError):
-                return True
-            finally:
-                logging.debug('Unlocking temporary directory %s...', dir_path)
-                self._unlock(tmp_dir_lock_descriptor)
 
     def _clean_pipe_fuse_tmp_dirs(self, config_dir_path):
         logging.debug('Cleaning pipe fuse temporary directories...')
@@ -127,31 +113,3 @@ class CleanOperationsManager:
             os.remove(file_path)
         except Exception:
             logging.warn('Temporary file deletion has failed: %s', traceback.format_exc())
-
-    def lock(self, operation):
-        tmp_dir_path = Config.get_base_source_dir()
-        tmp_dir_lock_path = os.path.join(tmp_dir_path, self._LOCK_NAME)
-        logging.debug('Locking temporary directory %s...', tmp_dir_path)
-        with open(tmp_dir_lock_path, 'w+') as tmp_dir_lock_descriptor:
-            try:
-                self._lock(tmp_dir_lock_descriptor)
-                return operation()
-            finally:
-                logging.debug('Unlocking temporary directory %s...', tmp_dir_path)
-                self._unlock(tmp_dir_lock_descriptor)
-
-    def _lock(self, descriptor):
-        if platform.system() == 'Windows':
-            import msvcrt
-            msvcrt.locking(descriptor.fileno(), msvcrt.LK_NBLCK, 1)
-        else:
-            import fcntl
-            fcntl.lockf(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-
-    def _unlock(self, descriptor):
-        if platform.system() == 'Windows':
-            import msvcrt
-            msvcrt.locking(descriptor.fileno(), msvcrt.LK_UNLCK, 1)
-        else:
-            import fcntl
-            fcntl.lockf(descriptor, fcntl.LOCK_UN)

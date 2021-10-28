@@ -35,6 +35,7 @@ from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
@@ -200,7 +201,8 @@ def frozen_locking(func, ctx, *args, **kwargs):
     """
     if not is_frozen() or __bundle_info__['bundle_type'] != 'one-file':
         return ctx.invoke(func, *args, **kwargs)
-    CleanOperationsManager().lock(lambda: ctx.invoke(func, *args, **kwargs))
+    LockOperationsManager().execute(Config.get_base_source_dir(),
+                                    lambda: ctx.invoke(func, *args, **kwargs))
 
 
 @click_decorator
