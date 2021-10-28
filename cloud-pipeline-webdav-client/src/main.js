@@ -1,12 +1,14 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, netLog } = require('electron');
 const {log} = require('./application/models/log');
 const readWebdavConfiguration = require('./read-webdav-configuration');
 const readCustomConfiguration = require('./read-custom-configuration');
+const getNetworkLogFile = require('./network-logging-path');
 
 const LOGS_ENABLED = app.commandLine.hasSwitch('enable-logs');
 
 global.logsEnabled = LOGS_ENABLED;
 global.settings = readCustomConfiguration();
+global.networkLogFile = getNetworkLogFile();
 
 log('');
 log(`--------------------------------------------`);
@@ -14,7 +16,7 @@ log('');
 
 // IMPORTANT!!!
 // You should remove "browser": ... config from package.json of axios module MANUALLY!
-require('axios').defaults.adapter = require('axios/lib/adapters/http');
+// require('axios').defaults.adapter = require('axios/lib/adapters/http');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require

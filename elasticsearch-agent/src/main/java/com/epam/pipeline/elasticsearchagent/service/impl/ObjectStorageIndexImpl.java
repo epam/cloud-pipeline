@@ -36,6 +36,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
@@ -78,9 +79,11 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started {} files synchronization", getStorageType());
         updateSearchMasks();
-        cloudPipelineAPIClient.loadAllDataStorages()
+        final List<AbstractDataStorage> allStorages = cloudPipelineAPIClient.loadAllDataStorages();
+        allStorages
                 .stream()
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
+                .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
                 .forEach(this::indexStorage);
     }
 
@@ -185,5 +188,23 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer,
                         getDocumentType()));
+    }
+
+    private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
+                                    final List<AbstractDataStorage> allStorages) {
+        if (!dataStorage.isShared()) {
+            return true;
+        }
+        final boolean isPrefixStorage = ListUtils.emptyIfNull(allStorages)
+                .stream()
+                .anyMatch(parentStorage -> !parentStorage.getId().equals(dataStorage.getId()) &&
+                        dataStorage.getPath()
+                        .startsWith(
+                                withTrailingDelimiter(parentStorage.getPath(), parentStorage.getDelimiter())));
+        return !isPrefixStorage;
+    }
+
+    private String withTrailingDelimiter(final String path, final String delimiter) {
+        return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
     }
 }

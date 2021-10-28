@@ -18,7 +18,12 @@ repositories {
 dependencies {
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude module : 'spring-boot-starter-data-jpa'
     }
+
+    // Pipeline library
+    compile project(":cloud-pipeline-common:model")
+
     // Spring
     implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
     implementation "org.springframework.shell:spring-shell-starter:$springShellVersion"
@@ -37,7 +42,6 @@ dependencies {
 
     // Javax mail
     implementation "com.sun.mail:javax.mail:$javaxMailVersion"
-
 
     // Lombok
     compileOnly "org.projectlombok:lombok:$lombokVersion"

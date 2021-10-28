@@ -12,19 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.release.notes.agent.entity.version;
 
-package com.epam.release.notes.agent.service.github;
-
-import com.epam.release.notes.agent.entity.github.Commit;
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
-
-import java.util.List;
-
-public interface GitHubService {
-
-    List<Commit> fetchCommits(String shaFrom, String shaTo);
-
-    List<GitHubIssue> fetchIssues(String shaFrom, String shaTo);
-
-    GitHubIssue fetchIssue(String number);
+public enum VersionStatus {
+    NOT_CHANGED,
+    MAJOR_CHANGED,
+    MINOR_CHANGED
 }

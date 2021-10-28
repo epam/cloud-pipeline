@@ -16,10 +16,15 @@
 package com.epam.release.notes.agent.service.version;
 
 import com.epam.release.notes.agent.entity.version.Version;
+import com.epam.release.notes.agent.entity.version.VersionStatus;
 
 public interface ApplicationVersionService {
 
-    Version fetchVersion();
+    Version fetchCurrentVersion();
+
+    Version loadPreviousVersion();
+
+    VersionStatus getVersionStatus(Version old, Version current);
 
     void storeVersion(Version version);
 

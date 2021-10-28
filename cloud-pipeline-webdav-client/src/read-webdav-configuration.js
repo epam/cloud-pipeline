@@ -130,7 +130,8 @@ async function readGlobalConfiguration() {
               ignoreCertificateErrors: true,
               username: userName,
               password: config.access_key,
-              server: webdavAuthSSO
+              server: webdavAuthSSO,
+              api: config.api
             };
           } else {
             log(`Global configuration: NO base.dav.auth.url preference`);
@@ -139,7 +140,8 @@ async function readGlobalConfiguration() {
       }
       return {
         password: config.access_key,
-        username: 'pipe cli user'
+        username: 'pipe cli user',
+        api: config ? config.api : undefined
       };
     } catch (e) {
       log(`Error reading global configuration at path ${pipeCliConfig}`);
@@ -159,6 +161,7 @@ module.exports = async function () {
   const globalConfig = await readGlobalConfiguration();
   const config =  localConfiguration || predefinedConfiguration || globalConfig || {};
   config.version = getAppVersion();
+  config.api = globalConfig ? globalConfig.api : undefined;
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
   return config;
 }

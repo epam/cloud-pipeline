@@ -15,15 +15,17 @@
 
 package com.epam.release.notes.agent;
 
-import com.epam.release.notes.agent.configuration.ApplicationRunnerConfiguration;
+import com.epam.release.notes.agent.configuration.ApplicationConfiguration;
+import com.epam.release.notes.agent.configuration.CommandLineRunnerConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
-@Import(ApplicationRunnerConfiguration.class)
+@Import({CommandLineRunnerConfiguration.class, ApplicationConfiguration.class})
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.epam.release.notes.agent"})
+@SuppressWarnings({"HideUtilityClassConstructor"})
 public class Application {
 
     public static void main(String[] args) {

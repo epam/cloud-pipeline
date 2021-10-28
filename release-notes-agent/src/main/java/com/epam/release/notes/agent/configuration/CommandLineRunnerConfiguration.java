@@ -26,7 +26,7 @@ import org.springframework.shell.ExitRequest;
 import org.springframework.shell.Shell;
 
 @Configuration
-public class ApplicationRunnerConfiguration {
+public class CommandLineRunnerConfiguration {
 
     @Autowired
     private Shell shell;

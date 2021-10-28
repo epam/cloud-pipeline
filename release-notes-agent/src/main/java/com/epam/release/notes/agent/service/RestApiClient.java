@@ -13,18 +13,26 @@
  * limitations under the License.
  */
 
-package com.epam.release.notes.agent.service.github;
+package com.epam.release.notes.agent.service;
 
-import com.epam.release.notes.agent.entity.github.Commit;
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import retrofit2.Call;
+import retrofit2.HttpException;
+import retrofit2.Response;
 
-import java.util.List;
+import java.io.IOException;
 
-public interface GitHubService {
+public interface RestApiClient {
 
-    List<Commit> fetchCommits(String shaFrom, String shaTo);
-
-    List<GitHubIssue> fetchIssues(String shaFrom, String shaTo);
-
-    GitHubIssue fetchIssue(String number);
+    default  <R> R execute(Call<R> call) {
+        try {
+            Response<R> response = call.execute();
+            if (response.isSuccessful()) {
+                return response.body();
+            } else {
+                throw new HttpException(response);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }

@@ -15,17 +15,29 @@
 
 package com.epam.release.notes.agent.cli;
 
+import com.epam.release.notes.agent.entity.version.Version;
+import com.epam.release.notes.agent.entity.version.VersionStatus;
+import com.epam.release.notes.agent.service.github.GitHubService;
+import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 @Slf4j
 @ShellComponent
 public class ReleaseNotesSender {
+
+    @Autowired
+    private ApplicationVersionService applicationVersionService;
+
+    @Autowired
+    private GitHubService gitHubService;
 
     @Value("${release.notes.agent.subsribers:}")
     private List<String> subscribers;
@@ -34,15 +46,37 @@ public class ReleaseNotesSender {
     public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) String from,
                                  @ShellOption(defaultValue = ShellOption.NULL) String to,
                                  @ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {
-        if (from == null) {
-            from = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
-        }
+
+        final Version old = getVersion(from, () -> applicationVersionService.loadPreviousVersion());
+        final Version current = getVersion(to, () -> applicationVersionService.fetchCurrentVersion());
+
         if (emails == null) {
             emails = subscribers;
         }
+
+        final VersionStatus versionStatus = applicationVersionService.getVersionStatus(old, current);
+        if (versionStatus == VersionStatus.NOT_CHANGED) {
+            return;
+        } else if (versionStatus == VersionStatus.MAJOR_CHANGED) {
+            // send notification to admin
+            return;
+        }
+        // send notifications with changes
         log.info(String.format(
-                "Creating release notes report. Old version: %s, new version: %s. Report will be sent to: %s",
-                from, to, emails));
+                "Creating release notes report. Old current: %s, new current: %s. Report will be sent to: %s",
+                old.getSha(), current.getSha(), emails));
+        gitHubService.fetchIssues(current.getSha(), old.getSha())
+                .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
+    }
+
+    private Version getVersion(String version, Supplier<Version> orDefault) {
+        final Version result;
+        if (version == null) {
+            result = orDefault.get();
+        } else {
+            result = Version.buildVersion(version);
+        }
+        return result;
     }
 
 }
