@@ -1142,7 +1142,7 @@ export default class WdlGraph extends Graph {
   };
 
   selectElement = (label, option) => {
-    const name = option.props.step.name;
+    const name = option.step.name;
     this.wdlVisualizer && this.wdlVisualizer.paper.model.getElements().forEach(e => {
       if (name && e.step && e.step.name === name && graphSelectableTypes.includes(e.attributes.type)) {
         const view = this.wdlVisualizer.paper.findViewByModel(e);

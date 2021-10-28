@@ -225,7 +225,7 @@ class EditRoleDialog extends React.Component {
     });
   };
 
-  onUserSelect = (key) => {
+  onUserSelect = (value, {key}) => {
     const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
     if (user) {
       this.setState({

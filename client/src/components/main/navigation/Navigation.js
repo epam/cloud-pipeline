@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER, VERSION} from '../../../config';
 import {LeftOutlined, RightOutlined} from '@ant-design/icons';
-import {Button, message, Popover, Row, Tooltip} from 'antd';
+import {Button, message, Popover, Tooltip} from 'antd';
 import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';

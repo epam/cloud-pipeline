@@ -19,7 +19,14 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Link} from 'react-router-dom';
-import {DatabaseOutlined, ExclamationCircleOutlined, ExportOutlined, RightOutlined} from '@ant-design/icons';
+import {
+  DatabaseOutlined,
+  ExclamationCircleOutlined,
+  ExportOutlined,
+  FilterFilled,
+  FilterOutlined,
+  RightOutlined
+} from '@ant-design/icons';
 import {Alert, Checkbox, Input, message, Modal, Popover, Row, Table} from 'antd';
 import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
@@ -210,8 +217,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (!visible) {
       filterParameter.searchString = null;
       filterParameter.value = filterParameter.finalValue ? filterParameter.finalValue : nullValue;
-      filterParameter.filtered = filterParameter.finalValue !== null &&
-        filterParameter.finalValue !== '';
+      filterParameter.filtered = filterParameter.finalValue !== null && filterParameter.finalValue !== '' &&
+        (filterParameter.isDate || (
+          filterParameter.finalValue.hasOwnProperty('length') && filterParameter.finalValue.length > 0
+        ));
     }
     const newState = Object.assign(state, {[filterParameterName]: filterParameter});
     this.setState(newState);
@@ -227,23 +236,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
     } else {
       filterParameter.finalValue = filterParameter.value;
     }
-    filterParameter.filtered = filterParameter.finalValue !== null &&
-      filterParameter.finalValue !== '';
+    filterParameter.filtered = filterParameter.finalValue !== null && filterParameter.finalValue !== '' &&
+      (filterParameter.isDate || (
+        filterParameter.finalValue.hasOwnProperty('length') && filterParameter.finalValue.length > 0
+      ));
     const newState = Object.assign(state, {[filterParameterName]: filterParameter});
-    if (this.table) {
-      const nextFilters = this.table.state.filters;
-      if (filterParameter.isDate) {
-        nextFilters[filterParameterName] = filterParameter.filtered
-          ? [this.getDateStr(filterParameter.finalValue)] : [];
-      } else if (filterParameter.isArray) {
-        nextFilters[filterParameterName] = filterParameter.filtered
-          ? filterParameter.finalValue.map(p => p) : [];
-      } else {
-        nextFilters[filterParameterName] = filterParameter.filtered
-          ? [filterParameter.finalValue] : [];
-      }
-      this.table.handleFilter(filterParameterName, nextFilters);
-    }
     this.setState(newState);
   };
 
@@ -259,6 +256,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const newState = Object.assign(state, {[filterParameterName]: filterParameter});
     this.setState(newState);
   };
+
+  getFilterIcon = filtered => filtered ? <FilterFilled style={{color: '#1890ff'}} /> : <FilterOutlined />;
 
   getStatusesFilter = () => {
     const parameter = 'statuses';
@@ -290,19 +289,17 @@ export default class RunTable extends localization.LocalizedReactComponent {
           <div style={{maxHeight: 400, overflowY: 'auto'}}>
             {
               allStatuses
-                .map(status => {
-                  return (
-                    <Row
-                      style={{margin: 5}}
-                      key={status}>
-                      <Checkbox
-                        onChange={onChange(status)}
-                        checked={this.state.statuses.value.indexOf(status.toUpperCase()) >= 0}>
-                        {status}
-                      </Checkbox>
-                    </Row>
-                  );
-                })
+                .map(status => (
+                  <Row
+                    style={{margin: 5}}
+                    key={status}>
+                    <Checkbox
+                      onChange={onChange(status)}
+                      checked={this.state.statuses.value.indexOf(status.toUpperCase()) >= 0}>
+                      {status}
+                    </Checkbox>
+                  </Row>
+                ))
             }
           </div>
         </Row>
@@ -314,8 +311,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
     );
     return {
       filterDropdown,
+      filterIcon: this.getFilterIcon,
       filterDropdownVisible: this.state[parameter].visible,
       filtered: this.state[parameter].filtered,
+      onFilter: (value, record) => value.toLowerCase() === record.status.toLowerCase(),
       onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter, []),
       filteredValue: this.state[parameter].filtered
         ? this.state[parameter].finalValue : []
@@ -355,8 +354,12 @@ export default class RunTable extends localization.LocalizedReactComponent {
     );
     return {
       filterDropdown,
+      filterIcon: this.getFilterIcon,
       filterDropdownVisible: this.state[parameter].visible,
       filtered: this.state[parameter].filtered,
+      onFilter: (value, record) => parameter === 'started'
+        ? record.startDate && new Date(record.startDate) >= new Date(value)
+        : record.endDate && new Date(record.endDate) <= new Date(value),
       onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter),
       filteredValue: this.state[parameter].filtered
         ? [this.getDateStr(this.state[parameter].finalValue)] : []
@@ -440,8 +443,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       );
       return {
         filterDropdown,
+        filterIcon: this.getFilterIcon,
         filterDropdownVisible: this.state[parameter].visible,
         filtered: this.state[parameter].filtered,
+        onFilter: (value, record) => record.pipelineId && record.pipelineId === value,
         onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter, []),
         filteredValue: this.state[parameter].filtered
           ? this.state[parameter].finalValue : []
@@ -535,8 +540,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       );
       return {
         filterDropdown,
+        filterIcon: this.getFilterIcon,
         filterDropdownVisible: this.state[parameter].visible,
         filtered: this.state[parameter].filtered,
+        onFilter: (value, record) => record.dockerImage && record.dockerImage.includes(value),
         onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter, []),
         filteredValue: this.state[parameter].filtered
           ? this.state[parameter].finalValue : []
@@ -568,8 +575,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       );
       return {
         filterDropdown,
+        filterIcon: this.getFilterIcon,
         filterDropdownVisible: this.state[parameter].visible,
         filtered: this.state[parameter].filtered,
+        onFilter: (value, record) => record.owner && record.owner === value,
         onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter),
         filteredValue: this.state[parameter].filtered ? [this.state[parameter].value] : []
       };
@@ -598,8 +607,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
     );
     return {
       filterDropdown,
+      filterIcon: this.getFilterIcon,
       filterDropdownVisible: this.state[parameter].visible,
       filtered: this.state[parameter].filtered,
+      onFilter: (value, record) => (record.children && record.children.some(c => `${value}` === `${c.parentRunId}`)) ||
+        `${value}` === `${record.parentRunId}`,
       onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter),
       filteredValue: this.state[parameter].filtered ? [this.state[parameter].value] : []
     };
@@ -994,8 +1006,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 {
                   instanceOrSensitiveFlag &&
                   <span style={{marginLeft: 18}}>
-                  {instanceOrSensitiveFlag}
-                </span>
+                    {instanceOrSensitiveFlag}
+                  </span>
                 }
               </Popover>
             </div>
@@ -1252,7 +1264,6 @@ export default class RunTable extends localization.LocalizedReactComponent {
       <Table
         className={`${styles.table} runs-table`}
         {...style}
-        ref={(ele) => { this.table = ele; }}
         columns={this.getColumns()}
         rowKey={record => record.id}
         rowClassName={(record) => `${

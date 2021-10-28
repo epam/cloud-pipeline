@@ -83,7 +83,7 @@ export default class UserAutoComplete extends React.Component {
       });
     }
   };
-  onUserSelect = (key) => {
+  onUserSelect = (value, {key}) => {
     const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
     if (user) {
       this.setState({
@@ -141,7 +141,6 @@ export default class UserAutoComplete extends React.Component {
           style={{flex: 1, width: '100%'}}
           placeholder={this.props.placeholder}
           value={this.state.valueInput !== null ? this.state.valueInput : this.props.value}
-          onPressEnter={this.props.onPressEnter}
           onBlur={this.onBlur}
           onSelect={this.onUserSelect}
           onSearch={this.operationWrapper(this.findUser)}>
