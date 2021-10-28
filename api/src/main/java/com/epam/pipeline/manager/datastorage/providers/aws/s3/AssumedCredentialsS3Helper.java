@@ -20,11 +20,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 
 public class AssumedCredentialsS3Helper extends S3Helper {
-
-    private static final String ROLE_SESSION_NAME = "CLOUD_PIPELINE_SESSION";
-    private static final int MIN_SESSION_DURATION = 900;
 
     private final String roleArn;
     private final AwsRegion region;
@@ -40,8 +38,8 @@ public class AssumedCredentialsS3Helper extends S3Helper {
     @Override
     public AmazonS3 getDefaultS3Client() {
         STSAssumeRoleSessionCredentialsProvider credentialsProvider =
-                new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, ROLE_SESSION_NAME)
-                .withRoleSessionDurationSeconds(MIN_SESSION_DURATION)
+                new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, AWSUtils.ROLE_SESSION_NAME)
+                .withRoleSessionDurationSeconds(AWSUtils.MIN_SESSION_DURATION)
                 .build();
         return AmazonS3ClientBuilder.standard()
                 .withCredentials(credentialsProvider)
