@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -42,8 +43,11 @@ import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -77,9 +81,12 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private static final String BACKSLASH = "/";
     private static final String COMMA = ",";
-    private static final String PATH_FIELD = "path";
+    private static final String FILE_ID_FIELD = "id";
     private static final String STORAGE_ID_FIELD = "storage_id";
     private static final String DOC_MAPPING_TYPE = "_doc";
+    private static final String FOLDER_EVENT_WILDCARD = "/*";
+    private static final int SCROLLING_PAGE_SIZE = 1000;
+    private static final Scroll TIME_SCROLL = new Scroll(new TimeValue(60000));
 
     private final String eventsBucketName;
     private final String eventsBucketFolderPath;
@@ -114,6 +121,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
+        log.debug("Started NFS events synchronization");
         final Map<String, AbstractDataStorage> storagePathMapping = getCloudPipelineAPIClient().loadAllDataStorages()
             .stream()
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
@@ -183,20 +191,100 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private void processStorageEvents(final IndexRequestContainer requestContainer,
                                       final AbstractDataStorage dataStorage,
                                       final Collection<NFSObserverEvent> events) {
-        final Map<String, SearchHit> searchHitMap = findIndexedFiles(dataStorage, events);
+        final List<NFSObserverEvent> allEvents = flattenEvents(dataStorage, events);
+        final Map<String, SearchHit> searchHitMap = findIndexedFilesEvent(dataStorage, allEvents);
         final String indexForNewFiles = createIndexForStorageIfNotExists(dataStorage);
         final Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
         if (mountFolder == null) {
             log.warn("Unable to retrieve mount for [{}], skipping...", dataStorage.getName());
             return;
         }
-        final Stream<DataStorageFile> fileUpdates = events.stream()
+        final Stream<DataStorageFile> fileUpdates = allEvents.stream()
             .map(event -> mapUpdateEventToFile(requestContainer, mountFolder, searchHitMap, event))
             .filter(Objects::nonNull);
         final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
         processFilesTagsInChunks(dataStorage, fileUpdates)
             .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file))
             .forEach(requestContainer::add);
+    }
+
+    private List<NFSObserverEvent> flattenEvents(final AbstractDataStorage dataStorage,
+                                                 final Collection<NFSObserverEvent> events) {
+        final List<NFSObserverEvent> allEvents = events.stream()
+            .filter(event -> !event.getFilePath().endsWith(FOLDER_EVENT_WILDCARD))
+            .collect(Collectors.toList());
+        final List<NFSObserverEvent> flattenFolderEvents = events.stream()
+            .filter(event -> event.getFilePath().endsWith(FOLDER_EVENT_WILDCARD))
+            .map(event -> mapFolderEventToFileEvents(dataStorage, event))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+        allEvents.addAll(flattenFolderEvents);
+        return allEvents;
+    }
+
+    private List<NFSObserverEvent> mapFolderEventToFileEvents(final AbstractDataStorage dataStorage,
+                                                              final NFSObserverEvent folderEvent) {
+        final NFSObserverEventType eventType = folderEvent.getEventType();
+        switch (eventType) {
+            case DELETED:
+                return searchEventRelatedFiles(dataStorage, folderEvent);
+            case FOLDER_MOVED:
+                final List<NFSObserverEvent> filesForMovedFolder = searchEventRelatedFiles(dataStorage, folderEvent);
+                return filesForMovedFolder.stream()
+                    .flatMap(oldFileEvent -> splitFolderMoveFileEvent(oldFileEvent, folderEvent))
+                    .collect(Collectors.toList());
+            default:
+                return Collections.emptyList();
+        }
+    }
+
+    private Stream<NFSObserverEvent> splitFolderMoveFileEvent(final NFSObserverEvent event,
+                                                              final NFSObserverEvent folderEvent) {
+        final String oldFolderPath = extractFolderFromFolderEvent(folderEvent.getFilePath());
+        final String newFolderPath = extractFolderFromFolderEvent(folderEvent.getFilePathTo());
+        final String oldFilePath = event.getFilePath();
+        final String newFilePath = newFolderPath + event.getFilePath().substring(oldFolderPath.length());
+
+        final Long oldFileEventTimestamp = event.getTimestamp();
+        final String storage = event.getStorage();
+        return Stream.of(
+            new NFSObserverEvent(oldFileEventTimestamp, NFSObserverEventType.MOVED_FROM, storage, oldFilePath),
+            new NFSObserverEvent(oldFileEventTimestamp + 1, NFSObserverEventType.MOVED_TO, storage, newFilePath)
+        );
+    }
+
+    private List<NFSObserverEvent> searchEventRelatedFiles(final AbstractDataStorage dataStorage,
+                                                           final NFSObserverEvent folderEvent) {
+        final List<NFSObserverEvent> allFilesEvents = new ArrayList<>();
+        SearchResponse folderResponse = getElasticsearchServiceClient()
+            .search(buildFolderSearchRequest(dataStorage, folderEvent));
+        do {
+            final List<NFSObserverEvent> scrollingPageEvents = mapHitsToPossibleEvents(folderResponse, folderEvent);
+            if (CollectionUtils.isNotEmpty(scrollingPageEvents)) {
+                allFilesEvents.addAll(scrollingPageEvents);
+                folderResponse = getElasticsearchServiceClient()
+                        .nextScrollPage(folderResponse.getScrollId(), TIME_SCROLL);
+            } else {
+                break;
+            }
+        } while (true);
+        return allFilesEvents;
+    }
+
+    private List<NFSObserverEvent> mapHitsToPossibleEvents(final SearchResponse folderResponse,
+                                                           final NFSObserverEvent folderEvent) {
+        return Optional.ofNullable(folderResponse.getHits())
+            .map(SearchHits::getHits)
+            .map(Stream::of)
+            .orElse(Stream.empty())
+            .map(hit -> Optional.ofNullable(hit.getSourceAsMap())
+                .map(source -> source.get(FILE_ID_FIELD))
+                .map(String.class::cast)
+                .map(path -> new NFSObserverEvent(folderEvent.getTimestamp(), folderEvent.getEventType(),
+                                                  folderEvent.getStorage(), path))
+                .orElse(null))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 
     private IndexRequest mapToElasticRequest(final AbstractDataStorage dataStorage,
@@ -228,17 +316,17 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         }
     }
 
-    private Map<String, SearchHit> findIndexedFiles(final AbstractDataStorage dataStorage,
-                                                    final Collection<NFSObserverEvent> events) {
+    private Map<String, SearchHit> findIndexedFilesEvent(final AbstractDataStorage dataStorage,
+                                                         final Collection<NFSObserverEvent> events) {
         final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
-        events.stream().map(event -> buildSearchRequest(dataStorage, event)).forEach(multiSearchRequest::add);
+        events.stream().map(event -> buildFileSearchRequest(dataStorage, event)).forEach(multiSearchRequest::add);
         final MultiSearchResponse multiSearchResponse = getElasticsearchServiceClient().search(multiSearchRequest);
         return Stream.of(multiSearchResponse.getResponses())
             .map(MultiSearchResponse.Item::getResponse)
             .map(SearchResponse::getHits)
             .filter(hits -> hits.getTotalHits() == 1)
             .map(hits -> hits.getAt(0))
-            .collect(Collectors.toMap(hit -> (String)hit.getSourceAsMap().get(PATH_FIELD), Function.identity()));
+            .collect(Collectors.toMap(hit -> (String)hit.getSourceAsMap().get(FILE_ID_FIELD), Function.identity()));
     }
 
     private IndexRequest updateIndexRequest(final AbstractDataStorage dataStorage, final DataStorageFile file,
@@ -248,15 +336,35 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         return updateRequest;
     }
 
-    private SearchRequest buildSearchRequest(final AbstractDataStorage dataStorage, final NFSObserverEvent event) {
+    private SearchRequest buildFileSearchRequest(final AbstractDataStorage dataStorage, final NFSObserverEvent event) {
         final SearchSourceBuilder source = new SearchSourceBuilder()
             .query(QueryBuilders.boolQuery()
-                       .must(QueryBuilders.termQuery(PATH_FIELD, event.getFilePath()))
+                       .must(QueryBuilders.termQuery(FILE_ID_FIELD, event.getFilePath()))
                        .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
             .size(1);
         return new SearchRequest("*")
             .indicesOptions(IndicesOptions.lenientExpandOpen())
             .source(source);
+    }
+
+    private SearchRequest buildFolderSearchRequest(final AbstractDataStorage dataStorage,
+                                                   final NFSObserverEvent event) {
+        final String eventPath = event.getFilePath();
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+            .query(QueryBuilders.boolQuery()
+                       .must(QueryBuilders.prefixQuery(FILE_ID_FIELD, extractFolderFromFolderEvent(eventPath)))
+                       .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
+            .size(SCROLLING_PAGE_SIZE);
+        return new SearchRequest("*")
+            .scroll(TIME_SCROLL)
+            .indicesOptions(IndicesOptions.lenientExpandOpen())
+            .source(source);
+    }
+
+    private String extractFolderFromFolderEvent(final String folderEventPath) {
+        return folderEventPath.equals(FOLDER_EVENT_WILDCARD)
+               ? StringUtils.EMPTY
+               : folderEventPath.substring(0, folderEventPath.length() - 1);
     }
 
     private PermissionsContainer getPermissionContainer(final AbstractDataStorage dataStorage) {
@@ -334,10 +442,12 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private NFSObserverEvent mapStringToEvent(final String line) {
         final String[] eventDetails = line.split(COMMA);
+        final String pathTo = eventDetails.length == 5 ? eventDetails[4] : null;
         return new NFSObserverEvent(Long.parseLong(eventDetails[0]),
                                     NFSObserverEventType.fromCode(eventDetails[1]),
                                     eventDetails[2],
-                                    eventDetails[3]);
+                                    eventDetails[3],
+                                    pathTo);
     }
 
     private String getProducerName(final DataStorageFile file) {

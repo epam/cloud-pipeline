@@ -355,5 +355,26 @@
         "description": "Disables BROWSE button for the job",
         "defaultValue": "false",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_USERS",
+        "type": "boolean",
+        "description": "Enables cluster users sharing.",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SYNC_USERS",
+        "type": "boolean",
+        "description": "Enables users synchronization.",
+        "defaultValue": "true",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SSH_MODE",
+        "type": "string",
+        "description": "SSH connection mode. Allowed values are: user, owner, owner-sshpass and root.",
+        "defaultValue": "root",
+        "passToWorkers": true
     }
 ]

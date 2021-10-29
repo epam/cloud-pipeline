@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ public final class Constants {
     public static final String PATH_DELIMITER = "/";
     public static final String X509_BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
     public static final String X509_END_CERTIFICATE = "-----END CERTIFICATE-----";
+    public static final String COMMA = ",";
+    public static final String NEWLINE = "\n";
 
     public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
 

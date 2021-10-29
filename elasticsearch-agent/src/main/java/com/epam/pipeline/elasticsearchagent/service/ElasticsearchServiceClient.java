@@ -21,6 +21,7 @@ import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.Scroll;
 
 import java.util.List;
 
@@ -33,5 +34,6 @@ public interface ElasticsearchServiceClient {
     void createIndexAlias(String indexName, String indexAlias);
     String getIndexNameByAlias(String alias);
     SearchResponse search(SearchRequest request);
+    SearchResponse nextScrollPage(String scrollId, Scroll scroll);
     MultiSearchResponse search(MultiSearchRequest request);
 }

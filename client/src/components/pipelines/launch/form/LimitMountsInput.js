@@ -43,6 +43,7 @@ export class LimitMountsInput extends React.Component {
   };
 
   componentDidMount () {
+    this.props.dataStorageAvailable.fetch();
     this.updateFromProps();
   }
 

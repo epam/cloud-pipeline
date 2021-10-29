@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Select, Icon} from 'antd';
 import Roles from '../../../models/user/Roles';
+import GroupFind from '../../../models/user/GroupFind';
 import UserName from '../UserName';
 
 const MINIMUM_SEARCH_LENGTH = 2;
@@ -64,12 +65,32 @@ function nameSorter (a, b) {
   return 0;
 }
 
+function findGroups (prefix) {
+  if (!prefix) {
+    return Promise.resolve([]);
+  }
+  return new Promise((resolve) => {
+    const request = new GroupFind(prefix);
+    request
+      .fetch()
+      .then(() => {
+        if (request.loaded) {
+          resolve((request.value || []).slice());
+        } else {
+          resolve([]);
+        }
+      })
+      .catch(() => resolve([]));
+  });
+}
+
 @inject('usersInfo')
 @inject(({usersInfo}) => ({roles, users: usersInfo}))
 @observer
 class UsersRolesSelect extends React.Component {
   state = {
-    searchString: undefined
+    searchString: undefined,
+    adGroups: []
   };
 
   @computed
@@ -104,34 +125,64 @@ class UsersRolesSelect extends React.Component {
   }
 
   get items () {
-    const {searchString = ''} = this.state;
+    const {
+      searchString = '',
+      adGroups = []
+    } = this.state;
     const {value = []} = this.props;
-    const items = [
+    const usersAndRoles = [
       ...this.users,
-      ...this.roles
+      ...this.roles,
+      ...adGroups
     ];
     const itemIsSelected = (item) => !!value
       .find(v => v.name === item.name && v.principal === item.principal);
+    const unknownItems = (value || [])
+      .filter(o => !usersAndRoles.find(i => i.name === o.name && i.principal === o.principal))
+      .map(item => ({
+        name: item.name,
+        search: [item.name.toLowerCase()],
+        displayName: item.name,
+        principal: item.principal
+      }));
+    const items = usersAndRoles.concat(unknownItems);
     if (searchString.length >= MINIMUM_SEARCH_LENGTH) {
       const lowerCasedSearchString = searchString.toLowerCase();
       return items.filter(item => itemIsSelected(item) ||
         !!item.search.find(o => o.includes(lowerCasedSearchString))
-      );
+      )
+        .sort(nameSorter);
     }
     return items
-      .filter(itemIsSelected);
+      .filter(itemIsSelected)
+      .sort(nameSorter);
   }
 
   onChangeSearchString = (e) => {
     this.setState({
       searchString: e || ''
+    }, () => {
+      findGroups(e)
+        .then((groups = []) => {
+          if (this.state.searchString === e) {
+            this.setState({
+              adGroups: groups.map(group => ({
+                name: group,
+                search: [group.toLowerCase()],
+                displayName: group,
+                principal: false
+              }))
+            });
+          }
+        });
     });
   };
 
   onChange = (keys) => {
     const payload = (keys || []).map(getDataSourceItemFromValue);
     this.setState({
-      searchString: undefined
+      searchString: undefined,
+      adGroups: []
     }, () => {
       const {onChange} = this.props;
       onChange && onChange(payload);

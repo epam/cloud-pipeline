@@ -15,14 +15,35 @@
  */
 
 import AWS from 'aws-sdk/index';
-import DataStorageTempCredentials from '../dataStorage/DataStorageTempCredentials';
 import Credentials from './Credentials';
+import fetchTempCredentials from './fetch-temp-credentials';
 
-const asyncForEach = async (array, callback) => {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
+const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
+
+// https://github.com/aws/aws-sdk-js/issues/1895#issuecomment-518466151
+AWS.util.update(AWS.S3.prototype, {
+  reqRegionForNetworkingError (resp, done) {
+    if (AWS.util.isBrowser() && resp.error) {
+      if (/^ExpiredToken$/i.test(resp.error.code)) {
+        // we got 'expired token' error; we don't need to stop uploading process by setting
+        // error (via "done(error)")
+        done();
+      } else if (/^CredentialsError$/i.test(resp.error.code)) {
+        const details = resp.error.originalError
+          ? ` (${resp.error.originalError.message})`
+          : '';
+        done(
+          `Could not load credentials${details}`
+        );
+      } else {
+        done(resp.error.message);
+      }
+    } else {
+      done();
+    }
   }
-};
+});
+// ====================================================================
 
 class S3Storage {
 
@@ -62,40 +83,49 @@ class S3Storage {
 
   updateCredentials = async () => {
     let success = true;
-    const request = new DataStorageTempCredentials(this._storage.id);
-    let tempCredentials = {};
     try {
-      await request.send([{
-        id: this._storage.id,
-        read: true,
-        readVersion: false,
-        write: true,
-        writeVersion: false
-      }]);
-      if (request.error) {
-        tempCredentials = {};
-        return Promise.reject(new Error(request.error));
-      } else {
-        tempCredentials = request.value;
+      const updateCredentialsAttempt = (attempt = 0, error = undefined) => {
+        if (attempt >= FETCH_CREDENTIALS_MAX_ATTEMPTS) {
+          return Promise.reject(error || new Error('credentials API is not available'));
+        }
+        return new Promise((resolve, reject) => {
+          fetchTempCredentials(
+            this._storage.id,
+            {
+              read: true,
+              write: this._storage.write === undefined ? true : this._storage.write
+            })
+            .then(resolve)
+            .catch((e) => {
+              updateCredentialsAttempt(attempt + 1, e)
+                .then(resolve)
+                .catch(reject);
+            });
+        });
+      };
+      const {error, payload} = await updateCredentialsAttempt();
+      if (error) {
+        return Promise.reject(new Error(error));
       }
       if (this._credentials) {
-        this._credentials.accessKeyId = tempCredentials.keyID;
-        this._credentials.secretAccessKey = tempCredentials.accessKey;
-        this._credentials.sessionToken = tempCredentials.token;
-
-        AWS.config.update({
-          region: tempCredentials.region,
-          credentials: this._credentials
-        });
+        this._credentials.update(
+          payload.keyID,
+          payload.accessKey,
+          payload.token,
+          payload.expiration
+        );
       } else {
         this._credentials = new Credentials(
-          tempCredentials.keyID,
-          tempCredentials.accessKey,
-          tempCredentials.token,
-          this.updateCredentials);
-
+          payload.keyID,
+          payload.accessKey,
+          payload.token,
+          payload.expiration,
+          this.updateCredentials
+        );
+      }
+      if (this._credentials) {
         AWS.config.update({
-          region: tempCredentials.region,
+          region: payload.region || this._storage.region,
           credentials: this._credentials
         });
       }
@@ -103,8 +133,20 @@ class S3Storage {
       success = false;
       return Promise.reject(new Error(err.message));
     }
-    this._s3 = new AWS.S3();
+    this._s3 = new AWS.S3({signatureVersion: 'v4'});
     return success;
+  };
+
+  getSignedUrl = (file = '') => {
+    const params = {
+      Bucket: this._storage.path,
+      Key: this.prefix + file
+    };
+    this._credentials.get();
+    if (this._credentials.needsRefresh()) {
+      return undefined;
+    }
+    return this._s3.getSignedUrl('getObject', params);
   };
 
   listObjects = () => {
@@ -128,7 +170,7 @@ class S3Storage {
     return this._s3.getObject(params).promise();
   };
 
-  completeMultipartUploadStorageObject = async (name, parts, uploadId) => {
+  completeMultipartUploadStorageObject = (name, parts, uploadId) => {
     const params = {
       Bucket: this._storage.path,
       Key: this.prefix + name,
@@ -137,7 +179,6 @@ class S3Storage {
       },
       UploadId: uploadId
     };
-
     const upload = this._s3.completeMultipartUpload(params);
     return upload.promise();
   };
@@ -152,10 +193,15 @@ class S3Storage {
     return upload.promise();
   };
 
-  createMultipartUpload = async (name) => {
+  createMultipartUpload = (name, tags) => {
+    const tagging = Object.entries(tags || {})
+      .filter(([, value]) => !!value)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
     let params = {
+      ACL: 'bucket-owner-full-control',
       Bucket: this._storage.path,
-      Key: this.prefix + name
+      Key: this.prefix + name,
+      Tagging: tagging.length > 0 ? tagging.join('&') : undefined
     };
     return this._s3.createMultipartUpload(params).promise();
   };
@@ -172,111 +218,7 @@ class S3Storage {
     upload.on('httpUploadProgress', uploadProgress);
     return upload;
   };
-
-  uploadStorageObject = async (name, body, uploadProgress) => {
-    const params = {
-      Body: body,
-      Bucket: this._storage.path,
-      Key: this.prefix + name
-    };
-    const upload = this._s3.upload(params);
-    upload.on('httpUploadProgress', uploadProgress);
-    return upload.promise();
-  };
-
-  putStorageObject = async (name, buffer) => {
-    const params = {
-      Body: buffer,
-      Bucket: this._storage.path,
-      Key: this._prefix + name
-    };
-
-    return this._s3.putObject(params).promise();
-  };
-
-  renameStorageObject = async (key, newName) => {
-    let success = true;
-
-    let params = {
-      Bucket: this._storage.path,
-      Prefix: key
-    };
-
-    if (key.endsWith(this._storage.delimiter)) {
-      try {
-        const data = await this._s3.listObjects(params).promise();
-        await asyncForEach(data.Contents, async file => {
-          params = {
-            Bucket: this._storage.path,
-            CopySource: this._storage.path + this._storage.delimiter + file.Key,
-            Key: file.Key.replace(key, this._prefix + newName + this._storage.delimiter)
-          };
-
-          await this._s3.copyObject(params).promise();
-          await this.deleteStorageObjects([file.Key]);
-        });
-        success = true;
-      } catch (err) {
-        success = false;
-        return Promise.reject(new Error(err.message));
-      }
-    } else {
-      params = {
-        Bucket: this._storage.path,
-        CopySource: this._storage.path + this._storage.delimiter + key,
-        Key: this._prefix + newName
-      };
-      try {
-        await this._s3.copyObject(params).promise();
-        await this.deleteStorageObjects([key]);
-      } catch (err) {
-        success = false;
-        return Promise.reject(new Error(err.message));
-      }
-    }
-    return success;
-  };
-
-  deleteStorageObjects = async (keys) => {
-    let deleteObjects = [];
-    let success = true;
-
-    try {
-      await asyncForEach(keys, async key => {
-        if (key.endsWith(this._storage.delimiter)) {
-          let params = {
-            Bucket: this._storage.path,
-            Prefix: key
-          };
-
-          const data = await this._s3.listObjects(params).promise();
-          data.Contents.forEach(content => {
-            deleteObjects.push({
-              Key: content.Key
-            });
-          });
-        } else {
-          deleteObjects.push({
-            Key: key
-          });
-        }
-      });
-
-      const params = {
-        Bucket: this._storage.path,
-        Delete: {
-          Objects: deleteObjects
-        }
-      };
-
-      await this._s3.deleteObjects(params).promise();
-    } catch (err) {
-      success = false;
-      return Promise.reject(new Error(err.message));
-    }
-    return success;
-  };
-
 }
 
+export {S3Storage};
 export default new S3Storage();

@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
+import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
@@ -34,6 +35,7 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -115,6 +117,10 @@ public class SystemPreferences {
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
     private static final String FACETED_FILTER_GROUP = "Faceted Filter";
+    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
+            new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
+            new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
+            isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -503,6 +509,9 @@ public class SystemPreferences {
             "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
+    public static final ObjectPreference<Map<String, LaunchCapability>> LAUNCH_CAPABILITIES = new ObjectPreference<>(
+            "launch.capabilities", null, new TypeReference<Map<String, LaunchCapability>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, LaunchCapability>>() {}));
 
     public static final BooleanPreference KUBE_POD_DOMAINS_ENABLED = new BooleanPreference(
             "launch.kube.pod.domains.enabled", true, LAUNCH_GROUP, pass);
@@ -512,6 +521,7 @@ public class SystemPreferences {
             "pods", LAUNCH_GROUP, pass);
     public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
+
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -597,14 +607,17 @@ public class SystemPreferences {
                                                         null, BASE_URLS_GROUP, PreferenceValidators.isValidUrl);
     public static final StringPreference BASE_DAV_AUTH_URL = new StringPreference("base.dav.auth.url",
             null, BASE_URLS_GROUP, pass);
-    public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH = new StringPreference(
-            "base.invalidate.edge.auth.path", "/invalidate", BASE_URLS_GROUP, pass);
+    public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH =
+            new StringPreference("base.invalidate.edge.auth.path", "/invalidate", BASE_URLS_GROUP, pass);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
             DATA_SHARING_GROUP, PreferenceValidators.isEmptyOrValidUrlSyntax);
     public static final StringPreference DATA_SHARING_DISCLAIMER = new StringPreference("data.sharing.disclaimer", null,
             DATA_SHARING_GROUP, pass);
+    public static final StringPreference DATA_SHARING_FOLDERS_DIR =
+            new StringPreference("data.sharing.storage.folders.directory", null, DATA_SHARING_GROUP, pass);
+    private static final String CLOUD_REGION_GROUP = "Cloud region";
 
     // SYSTEM_GROUP
     /**
@@ -820,6 +833,11 @@ public class SystemPreferences {
             isValidEnum(LustreDeploymentType.class));
     public static final BooleanPreference LUSTRE_FS_MOUNT_IP = new BooleanPreference(
             "lustre.fs.mount.ip", false, LUSTRE_GROUP, pass);
+    // Cloud Region
+    public static final IntPreference CLOUD_REGION_TEMP_CREDENTIALS_DURATION = new IntPreference(
+            "cloud.temp.credentials.duration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
+    public static final IntPreference CLOUD_REGION_TEMP_CREDENTIALS_EXPIRATION = new IntPreference(
+            "cloud.temp.credentials.expiration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

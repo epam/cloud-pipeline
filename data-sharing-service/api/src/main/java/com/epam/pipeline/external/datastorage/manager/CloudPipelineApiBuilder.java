@@ -52,6 +52,10 @@ public class CloudPipelineApiBuilder {
                 .build();
     }
 
+    public <T> T getClient(Class<T> clientClass) {
+        return buildClient().create(clientClass);
+    }
+
     private OkHttpClient buildHttpClient() {
         final TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {

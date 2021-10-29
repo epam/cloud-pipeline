@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 public enum NFSObserverEventType {
     CREATED("c"),
     MODIFIED("m"),
+    FOLDER_MOVED("fm"),
     MOVED_FROM("mf"),
     MOVED_TO("mt"),
     DELETED("d");

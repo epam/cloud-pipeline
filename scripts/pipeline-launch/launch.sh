@@ -1386,6 +1386,46 @@ echo "------"
 echo
 ######################################################
 
+
+
+######################################################
+# Setup cluster users sharing if required
+######################################################
+
+echo "Setup cluster users sharing"
+echo "-"
+
+if check_cp_cap CP_CAP_SHARE_USERS; then
+    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+else
+    echo "Cluster users sharing is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
+######################################################
+# Setup users synchronization if required
+######################################################
+
+echo "Setup users synchronization"
+echo "-"
+
+if check_cp_cap CP_CAP_SYNC_USERS; then
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+else
+    echo "Users synchronization is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
 CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
 if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
       if [ "$RESUMED_RUN" == true ]; then
@@ -1838,6 +1878,9 @@ echo "CWD is now at $ANALYSIS_DIR"
 # Apply the "custom fixes" script, which contains very specific modifications to fix the docker images
 # This is used, when we don't want to fix some issue on a docker-per-docker basis
 custom_fixes
+
+# Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
+custom_cap_setup
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"

@@ -16,33 +16,60 @@
 package com.epam.pipeline.security;
 
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
+import com.epam.pipeline.security.saml.SamlUserRegisterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class UserAccessService {
 
-    private final UserManager userManager;
-    private final boolean validateUser;
+    @Autowired
+    private UserManager userManager;
+    @Autowired
+    private RoleManager roleManager;
+    @Autowired
+    private MessageHelper messageHelper;
+    @Autowired
+    private GrantPermissionManager permissionManager;
+    @Value("${jwt.validate.token.user:false}")
+    private boolean validateUser;
+    @Value("${saml.user.auto.create: EXPLICIT}")
+    private SamlUserRegisterStrategy autoCreateUsers;
+    @Value("${saml.user.allow.anonymous: false}")
+    private boolean allowAnonymous;
 
-    public UserAccessService(final UserManager userManager,
-                             final @Value("${jwt.validate.token.user:false}") boolean validateUser) {
-        this.userManager = userManager;
-        this.validateUser = validateUser;
+    public UserContext parseUser(final String userName,
+                                 final List<String> groups,
+                                 final Map<String, String> attributes) {
+        return Optional.ofNullable(userManager.loadUserByName(userName))
+                .map(loadedUser -> processRegisteredUser(userName, groups, attributes, loadedUser))
+                .orElseGet(() -> processNewUser(userName, groups, attributes));
     }
 
     public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
@@ -93,5 +120,77 @@ public class UserAccessService {
                     user.getUserName());
             throw new LockedException("User: " + user.getUserName() + " is blocked!");
         }
+    }
+
+    private UserContext processRegisteredUser(final String userName, final List<String> groups,
+                                              final Map<String, String> attributes, final PipelineUser loadedUser) {
+        log.debug("Found user by name {}", userName);
+        loadedUser.setUserName(userName);
+        validateUserBlockStatus(loadedUser);
+        final List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
+        if (loadedUser.getFirstLoginDate() == null) {
+            userManager.updateUserFirstLoginDate(loadedUser.getId(), DateUtils.nowUTC());
+        }
+        if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
+            final PipelineUser updatedUser =
+                    userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
+            log.debug("Updated user groups {} ", groups);
+            return new UserContext(updatedUser);
+        } else {
+            return new UserContext(loadedUser);
+        }
+    }
+
+    private UserContext processNewUser(final String userName, final List<String> groups,
+                                       final Map<String, String> attributes) {
+        log.debug(messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
+        switch (autoCreateUsers) {
+            case EXPLICIT:
+                return allowAnonymous ? createAnonymousUser(userName, groups) :
+                        throwUserNotExplicitlyRegistered(userName);
+            case EXPLICIT_GROUP:
+                if (permissionManager.isGroupRegistered(groups)) {
+                    return createUser(userName, groups, attributes);
+                } else {
+                    return allowAnonymous ? createAnonymousUser(userName, groups) :
+                            throwGroupNotExplicitlyRegistered(userName, groups);
+                }
+            default:
+                return createUser(userName, groups, attributes);
+        }
+    }
+
+    private UserContext throwUserNotExplicitlyRegistered(final String userName) {
+        log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
+        throw new UsernameNotFoundException(
+                messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
+    }
+
+    private UserContext throwGroupNotExplicitlyRegistered(final String userName, final List<String> groups) {
+        log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY, userName));
+        throw new UsernameNotFoundException(
+                messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY,
+                        String.join(", ", groups), userName));
+    }
+
+    private UserContext createUser(final String userName, final List<String> groups,
+                                   final Map<String, String> attributes) {
+        final List<Long> roles = roleManager.getDefaultRolesIds();
+        final PipelineUser createdUser = userManager.createUser(userName,
+                roles, groups, attributes, null);
+        userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
+        log.debug("Created user {} with groups {}", userName, groups);
+        final UserContext userContext = new UserContext(createdUser.getId(), userName);
+        userContext.setGroups(createdUser.getGroups());
+        userContext.setRoles(createdUser.getRoles());
+        return userContext;
+    }
+
+    private UserContext createAnonymousUser(final String userName, final List<String> groups) {
+        log.debug("Created anonymous user {} with groups {}", userName, groups);
+        final UserContext userContext = new UserContext(null, userName);
+        userContext.setGroups(groups);
+        userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ANONYMOUS_USER.getRole()));
+        return userContext;
     }
 }

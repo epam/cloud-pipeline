@@ -44,6 +44,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
@@ -109,7 +110,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
-        return new SystemLogsAO();
+        if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
+            return new SystemLogsAO();
+        }
+        return new SystemLogsAO().setIncludeServiceAccountEventsOption();
     }
 
     public MyProfileAO switchToMyProfile() {
@@ -545,11 +549,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UserEntry searchForUserEntry(String login) {
                 sleep(1, SECONDS);
-                while (!getUser(login).isDisplayed()
+                while (!getUser(login.toUpperCase()).isDisplayed()
                         && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
                     click(byTitle(NEXT_PAGE));
                 }
-                SelenideElement entry = getUser(login).shouldBe(visible);
+                SelenideElement entry = getUser(login.toUpperCase()).shouldBe(visible);
                 return new UserEntry(this, login, entry);
             }
 
@@ -889,7 +893,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
-                searchGroupBySubstring(group);
+                searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
                 performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }
@@ -1565,7 +1569,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
             return containerLogs.stream()
-                    .filter(r -> r.has(matchText(message)) && r.has(text(user)) && r.has(text(type)))
+                    .filter(r -> r.has(matchText(message)) && r.has(text(type)))
                     .findFirst()
                     .orElseThrow(() -> {
                         String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
@@ -1604,6 +1608,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
+            sleep(5, SECONDS);
             LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
             LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
             screenshot(format("SystemLogsValidateTimeOrder-%s", Utils.randomSuffix()));
@@ -1611,7 +1616,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemLogsAO validateRow(final String message, final String user, final String type) {
-            getInfoRow(message, user, type).should(exist);
+            final SelenideElement infoRow = getInfoRow(message, user, type);
+            infoRow.should(exist);
+            infoRow.findAll("td").get(3).shouldHave(text(user));
             return this;
         }
 
@@ -1648,6 +1655,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
                 $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
             }
+        }
+
+        public SystemLogsAO setIncludeServiceAccountEventsOption() {
+            if($(byId("show-hide-advanced")).shouldBe(enabled).has(text("Show advanced"))) {
+                click(byId("show-hide-advanced"));
+            }
+            if(!$(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
+                    .has(cssClass("ant-checkbox-checked"))) {
+                click(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"));
+            }
+            return this;
         }
     }
 

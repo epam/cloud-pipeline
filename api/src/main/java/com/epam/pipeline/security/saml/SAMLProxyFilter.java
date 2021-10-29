@@ -19,23 +19,27 @@ package com.epam.pipeline.security.saml;
 import com.coveo.saml.SamlResponse;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opensaml.common.SAMLException;
 import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.Attribute;
+import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.saml2.core.Audience;
 import org.opensaml.saml2.core.Response;
+import org.opensaml.xml.schema.XSAny;
+import org.opensaml.xml.schema.XSString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -46,9 +50,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_EXTERNAL_SERVICES_ENDPOINTS;
 
@@ -58,13 +67,13 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
     private static final int RESPONSE_SKEW = 1200;
 
     @Autowired
-    private UserManager userManager;
-
-    @Autowired
     private MessageHelper messageHelper;
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private UserAccessService accessService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -124,20 +133,91 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
 
             SamlResponse parsedResponse = client.validate(decoded);
             String userName = parsedResponse.getNameID().toUpperCase();
+            final Map<String, List<String>> attributes = readAttributes(parsedResponse);
+            final List<String> groups = readAuthorities(attributes, endpoint.getAuthorities());
+            final Map<String, String> userAttributes = readAttributes(attributes, endpoint.getSamlAttributes());
 
-            PipelineUser loadedUser = userManager.loadUserByName(userName);
-            if (loadedUser == null) {
-                throw new UsernameNotFoundException(messageHelper.getMessage(
-                    MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
-            }
-
+            UserContext userContext = accessService.parseUser(userName, groups, userAttributes);
             LOGGER.debug("Found user by name {}", userName);
 
-            UserContext userContext = new UserContext(loadedUser);
             userContext.setExternal(endpoint.isExternal());
             SecurityContextHolder.getContext()
                     .setAuthentication(new SAMLProxyAuthentication(samlResponse, userContext));
         }
+    }
+
+    private Map<String, String> readAttributes(final Map<String, List<String>> attributes,
+                                               final Set<String> samlAttributes) {
+        if (MapUtils.isEmpty(attributes) || CollectionUtils.isEmpty(samlAttributes)) {
+            return Collections.emptyMap();
+        }
+        return samlAttributes
+                .stream()
+                .filter(attribute -> attribute.contains("="))
+                .map(attribute -> {
+                    String[] splittedRecord = attribute.split("=");
+                    String key = splittedRecord[0];
+                    String value = splittedRecord[1];
+                    if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
+                        LOGGER.error("Can not parse saml user attributes property.");
+                        return null;
+                    }
+                    List<String> attributeValues = attributes.get(value);
+                    return ListUtils.emptyIfNull(attributeValues)
+                            .stream()
+                            .findFirst()
+                            .map(v -> new ImmutablePair<>(key, v))
+                            .orElse(null);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(ImmutablePair::getLeft, ImmutablePair::getRight, (v1, v2) -> v1));
+    }
+
+    private List<String> readAuthorities(final Map<String, List<String>> attributes,
+                                         final List<String> authorities) {
+        if (CollectionUtils.isEmpty(authorities) || MapUtils.isEmpty(attributes)) {
+            return Collections.emptyList();
+        }
+        return authorities
+                .stream()
+                .filter(StringUtils::isNotBlank)
+                .map(attributes::get)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, List<String>> readAttributes(final SamlResponse parsedResponse) {
+        return ListUtils.emptyIfNull(
+                parsedResponse.getAssertion().getAttributeStatements())
+                .stream()
+                .map(this::readStatement)
+                .flatMap(m -> m.entrySet().stream())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        ListUtils::sum));
+    }
+
+    private Map<String, List<String>> readStatement(final AttributeStatement statement) {
+        return statement.getAttributes()
+                .stream()
+                .collect(Collectors.toMap(
+                    Attribute::getName,
+                    a -> a.getAttributeValues()
+                        .stream()
+                        .map(value -> {
+                            if (value instanceof XSString) {
+                                return ((XSString) value).getValue();
+                            } else if (value instanceof XSAny) {
+                                return ((XSAny) value).getTextContent();
+                            } else {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList())));
     }
 
     private boolean urlMatches(HttpServletRequest request) {

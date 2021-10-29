@@ -113,6 +113,7 @@ function Application() {
         <Configuration
           visible={configurationTabVisible}
           onClose={onCloseConfigurationTab}
+          fileSystem={rightTab ? rightTab.fileSystem : undefined}
         />
         <SplitPanel
           style={{height: '100%'}}

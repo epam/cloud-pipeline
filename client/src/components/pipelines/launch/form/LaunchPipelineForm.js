@@ -103,6 +103,7 @@ import RunCapabilities, {
   applyCapabilities,
   getEnabledCapabilities,
   hasPlatformSpecificCapabilities,
+  isCustomCapability,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
 import {
@@ -482,7 +483,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderAdditionalRunCapabilities = () => {
-    if (hasPlatformSpecificCapabilities(this.toolPlatform)) {
+    if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -1160,7 +1161,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    applyCapabilities(this.toolPlatform, payload[PARAMETERS], this.state.runCapabilities);
+    applyCapabilities(
+      payload[PARAMETERS],
+      this.state.runCapabilities,
+      this.props.preferences,
+      this.toolPlatform
+    );
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
       payload.pipelineVersion = this.state.version;
@@ -1356,7 +1362,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
-    applyCapabilities(this.toolPlatform, payload.params, this.state.runCapabilities);
+    applyCapabilities(
+      payload.params,
+      this.state.runCapabilities,
+      this.props.preferences,
+      this.toolPlatform
+    );
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1742,7 +1753,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.props.parameters.parameters) {
       for (let key in this.props.parameters.parameters) {
         if (this.props.parameters.parameters.hasOwnProperty(key)) {
-          if (this.isSystemParameter({name: key}) !== system) {
+          if (
+            this.isSystemParameter({name: key}) !== system ||
+            isCustomCapability(key, this.props.preferences)
+          ) {
             continue;
           }
           if ([CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList()].indexOf(key) >= 0) {
@@ -2608,7 +2622,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderParameters = (isSystemParametersSection) => {
     const sectionName = isSystemParametersSection ? SYSTEM_PARAMETERS : PARAMETERS;
-    if (!this.props.runDefaultParameters.loaded && this.props.runDefaultParameters.pending) {
+    if (
+      (!this.props.runDefaultParameters.loaded && this.props.runDefaultParameters.pending) ||
+      (!this.props.preferences.loaded && this.props.preferences.pending)
+    ) {
       return null;
     }
     let parameters;

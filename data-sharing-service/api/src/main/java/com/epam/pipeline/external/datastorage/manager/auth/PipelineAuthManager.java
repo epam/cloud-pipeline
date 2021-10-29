@@ -18,12 +18,11 @@ package com.epam.pipeline.external.datastorage.manager.auth;
 
 import java.util.Base64;
 
+import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.external.datastorage.exception.TokenExpiredException;
 import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
-import com.epam.pipeline.external.datastorage.manager.QueryUtils;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.xml.util.XMLHelper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml.SAMLCredential;
@@ -33,20 +32,18 @@ import org.springframework.stereotype.Service;
 import com.epam.pipeline.external.datastorage.entity.PipelineToken;
 import com.epam.pipeline.external.datastorage.exception.PipelineAuthenticationException;
 import com.epam.pipeline.external.datastorage.security.UserContext;
-import retrofit2.Retrofit;
 
 @Service
 public class PipelineAuthManager {
     public static final String UNAUTHORIZED_USER = "Unauthorized";
 
     private final PipelineAuthClient authClient;
+    private final CloudPipelineApiExecutor apiExecutor;
 
-    public PipelineAuthManager(@Value("${pipeline.api.base.url}") final String pipelineBaseUrl,
-                               @Value("${pipeline.client.connect.timeout}") final long connectTimeout,
-                               @Value("${pipeline.client.read.timeout}") final long readTimeout) {
-        final Retrofit retrofit = new CloudPipelineApiBuilder(connectTimeout, readTimeout, pipelineBaseUrl)
-                .buildClient();
-        authClient = retrofit.create(PipelineAuthClient.class);
+    public PipelineAuthManager(final CloudPipelineApiBuilder builder,
+                               final CloudPipelineApiExecutor apiExecutor) {
+        this.authClient = builder.getClient(PipelineAuthClient.class);
+        this.apiExecutor = apiExecutor;
     }
 
     public UserContext getUser() {
@@ -66,6 +63,10 @@ public class PipelineAuthManager {
         return authentication.getPrincipal();
     }
 
+    public String getHeader() {
+        return "Bearer " + getToken();
+    }
+
     public String getToken() {
         try {
             return getUser().getToken();
@@ -83,7 +84,7 @@ public class PipelineAuthManager {
             final String samlToken = XMLHelper.nodeToString(
                 SAMLUtil.marshallMessage(credential.getAuthenticationAssertion().getParent()));
             final String base64 = Base64.getEncoder().encodeToString(samlToken.getBytes());
-            final PipelineToken response = QueryUtils.execute(authClient.getToken(base64));
+            final PipelineToken response = apiExecutor.execute(authClient.getToken(base64));
             return response.getToken();
         } catch (MessageEncodingException e) {
             throw new PipelineAuthenticationException(e);

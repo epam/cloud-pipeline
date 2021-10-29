@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Select} from 'antd';
+import {inject, observer} from 'mobx-react';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
 import {
   CP_CAP_DIND_CONTAINER,
@@ -41,14 +42,24 @@ const OS_SPECIFIC_CAPABILITIES = {
   windows: []
 };
 
-function getPlatformSpecificCapabilities (platform) {
-  if (OS_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)) {
-    return OS_SPECIFIC_CAPABILITIES[platform];
-  }
-  return OS_SPECIFIC_CAPABILITIES.default;
+function getPlatformSpecificCapabilities (platform, preferences) {
+  const capabilities = platform && OS_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)
+    ? OS_SPECIFIC_CAPABILITIES[platform]
+    : OS_SPECIFIC_CAPABILITIES.default;
+  const custom = preferences ? preferences.launchCapabilities : [];
+  const filterCustomCapability = capability => (capability.platforms || []).length === 0 ||
+    platform === undefined ||
+    capability.platforms.indexOf(platform) >= 0;
+  return capabilities.map(o => ({
+    value: o,
+    name: o
+  }))
+    .concat((custom || []).filter(filterCustomCapability));
 }
 
-export default class RunCapabilities extends React.Component {
+@inject('preferences')
+@observer
+class RunCapabilities extends React.Component {
   static propTypes = {
     disabled: PropTypes.bool,
     values: PropTypes.arrayOf(PropTypes.string),
@@ -68,9 +79,10 @@ export default class RunCapabilities extends React.Component {
   };
 
   render () {
-    const {disabled, values, platform} = this.props;
-    const capabilities = getPlatformSpecificCapabilities(platform);
-    const filteredValues = (values || []).filter(value => capabilities.indexOf(value) >= 0);
+    const {disabled, values, platform, preferences} = this.props;
+    const capabilities = getPlatformSpecificCapabilities(platform, preferences);
+    const filteredValues = (values || [])
+      .filter(value => capabilities.find(o => o.value === value));
     return (
       <Select
         allowClear
@@ -84,10 +96,28 @@ export default class RunCapabilities extends React.Component {
           (input, option) => option.props.children.toLowerCase().includes(input.toLowerCase())
         }
       >
-        {capabilities.map(o => (<Select.Option key={o}>{o}</Select.Option>))}
+        {
+          capabilities
+            .map(capability => (
+              <Select.Option
+                key={capability.value}
+                value={capability.value}
+                title={capability.description || capability.name}
+              >
+                {capability.name}
+              </Select.Option>
+            ))
+        }
       </Select>
     );
   }
+}
+
+export function isCustomCapability (parameterName, preferences) {
+  if (!preferences) {
+    return false;
+  }
+  return !!preferences.launchCapabilities.find(o => o.value === parameterName);
 }
 
 export function getRunCapabilitiesSkippedParameters () {
@@ -100,10 +130,19 @@ export function capabilityEnabled (parameters, capability) {
 
 export function getEnabledCapabilities (parameters) {
   const result = [];
-  Object.keys(RUN_CAPABILITIES_PARAMETERS)
-    .forEach(capability => {
-      if (capabilityEnabled(parameters, capability)) {
-        result.push(capability);
+  const predefinedCapabilities = Object
+    .entries(RUN_CAPABILITIES_PARAMETERS)
+    .map(([name, parameterName]) => ({name, parameterName}));
+  Object
+    .keys(parameters || {})
+    .forEach((parameterName) => {
+      if (booleanParameterIsSetToValue(parameters, parameterName)) {
+        const predefined = predefinedCapabilities.find(o => o.parameterName === parameterName);
+        if (predefined) {
+          result.push(predefined.name);
+        } else {
+          result.push(parameterName);
+        }
       }
     });
   return result;
@@ -112,22 +151,25 @@ export function getEnabledCapabilities (parameters) {
 export function addCapability (capabilities, ...capability) {
   const result = (capabilities || []).slice();
   capability.forEach(c => {
-    if (!result.includes(capability)) {
-      result.push(capability);
+    if (!result.includes(c)) {
+      result.push(c);
     }
   });
   return result;
 }
 
-export function applyCapabilities (platform, parameters, capabilities = []) {
+export function applyCapabilities (parameters, capabilities = [], preferences, platform) {
   if (!parameters) {
     parameters = {};
   }
-  const platformSpecificCapabilities = getPlatformSpecificCapabilities(platform);
+  const platformSpecificCapabilities = getPlatformSpecificCapabilities(platform, preferences);
   capabilities
-    .filter(capability => platformSpecificCapabilities.indexOf(capability) >= 0)
+    .map(capability => platformSpecificCapabilities.find(psc => psc.value === capability))
+    .filter(Boolean)
     .forEach(capability => {
-      const parameterName = RUN_CAPABILITIES_PARAMETERS[capability];
+      const parameterName = capability.custom
+        ? capability.value
+        : RUN_CAPABILITIES_PARAMETERS[capability.value];
       parameters[parameterName] = {
         type: 'boolean',
         value: true
@@ -136,12 +178,21 @@ export function applyCapabilities (platform, parameters, capabilities = []) {
   return parameters;
 }
 
-export function hasPlatformSpecificCapabilities (platform) {
-  return getPlatformSpecificCapabilities(platform).length > 0;
+export function hasPlatformSpecificCapabilities (platform, preferences) {
+  return getPlatformSpecificCapabilities(platform, preferences).length > 0;
 }
 
-export function checkRunCapabilitiesModified (capabilities1, capabilities2) {
-  const sorted = array => [...(new Set((array || []).sort()))];
+export function checkRunCapabilitiesModified (capabilities1, capabilities2, preferences) {
+  const wellKnownCapabilities = Object.values(RUN_CAPABILITIES)
+    .concat(
+      (preferences ? preferences.launchCapabilities : [])
+        .map(o => o.value)
+    );
+  const sorted = array => [
+    ...(
+      new Set((array || []).sort().filter(o => wellKnownCapabilities.includes(o)))
+    )
+  ];
   const sorted1 = sorted(capabilities1 || []);
   const sorted2 = sorted(capabilities2 || []);
   if (sorted1.length !== sorted2.length) {
@@ -154,3 +205,5 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2) {
   }
   return false;
 }
+
+export default RunCapabilities;

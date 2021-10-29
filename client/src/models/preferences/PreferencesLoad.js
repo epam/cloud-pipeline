@@ -221,6 +221,68 @@ class PreferencesLoad extends Remote {
     return 1;
   }
 
+  @computed
+  get sharedStoragesSystemDirectory () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get sharedStoragesDefaultPermissions () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.default.permissions');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "data.sharing.storage.folders.default.permissions" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get launchCapabilities () {
+    const value = this.getPreferenceValue('launch.capabilities');
+    if (value) {
+      try {
+        const capabilities = JSON.parse(value);
+        const parsePlatforms = o => {
+          if (!o) {
+            return [];
+          }
+          if (Array.isArray(o)) {
+            return o.slice();
+          }
+          if (typeof o === 'string') {
+            return o.split(',').map(o => o.trim());
+          }
+          return [];
+        };
+        return Object
+          .entries(capabilities || {})
+          .map(([key, entry]) => ({
+            value: `CP_CAP_CUSTOM_${key}`,
+            name: key,
+            description: entry?.description,
+            platforms: parsePlatforms(entry?.platforms),
+            custom: true
+          }));
+      } catch (e) {
+        console.warn(
+          'Error parsing "launch.capabilities" preference:',
+          e
+        );
+      }
+    }
+    return [];
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
