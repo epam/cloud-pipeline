@@ -66,22 +66,25 @@ function RequestDavAccess (
     storageId,
     storageMask = 0
   } = info || {};
-  const readOnly = disabled || !roleModel.isOwner({mask: storageMask}) || !storageId;
+  const readOnly = disabled || !roleModel.readAllowed({mask: storageMask}) || !storageId;
   const {value = undefined} = metadata;
   const accessInfo = davAccessInfo(value);
-  let infoString = 'Request DAV access.';
+  let infoString = 'Request file system access';
   if (readOnly) {
-    infoString = 'DAV access disabled';
+    infoString = 'File system access disabled';
   }
   if (accessInfo && accessInfo.available) {
-    infoString = 'DAV access enabled.';
+    infoString = 'File system access enabled';
     if (accessInfo.expiresAt) {
-      infoString = `DAV access enabled till ${accessInfo.expiresAt}.`;
+      infoString = `File system access enabled till ${accessInfo.expiresAt}`;
+    }
+    if (!readOnly) {
+      infoString = infoString.concat('.');
     }
   }
   const enabled = accessInfo && accessInfo.available;
   const enableAccess = () => {
-    const hide = message.loading('Enabling DAV access...', 0);
+    const hide = message.loading('Enabling file system access...', 0);
     const request = new DSWebDavAccessEnable();
     preferences
       .fetchIfNeededOrWait()
@@ -103,7 +106,7 @@ function RequestDavAccess (
       .then(() => reload ? reload() : undefined);
   };
   const disableAccess = () => {
-    const hide = message.loading('Disabling DAV access...', 0);
+    const hide = message.loading('Disabling file system access...', 0);
     const request = new DSWebDavAccessRemove(storageId);
     request
       .send()
