@@ -67,6 +67,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     private static final int ALL_PERMISSIONS = 15;
     private static final DataStorageConvertRequest CONVERT_REQUEST = new DataStorageConvertRequest(
             DataStorageConvertRequestType.VERSIONED_STORAGE, DataStorageConvertRequestAction.LEAVE);
+    public static final long SECS_IN_HOUR = 3600L;
 
     private final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
     private final DataStorageWithShareMount storageShareMount =
@@ -107,6 +108,38 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
         assertThat(dataStorageApiService.getDataStorages()).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldAbleToRequestDavMountWhenPermissionIsGranted() {
+        initAclEntity(s3bucket, AclPermission.READ);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldAbleToCallOffRequestDavMountWhenPermissionIsGranted() {
+        initAclEntity(s3bucket, AclPermission.READ);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldNotBeAbleToCallOffRequestDavMountWhenPermissionIsNotGranted() {
+        initAclEntity(s3bucket, AclPermission.NO_READ);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldNotAbleToRequestDavMountWhenPermissionIsNotGranted() {
+        initAclEntity(s3bucket, AclPermission.NO_READ);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
     }
 
     @Test
