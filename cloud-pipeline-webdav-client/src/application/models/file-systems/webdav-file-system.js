@@ -6,7 +6,7 @@ import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
-import URL from "url";
+import requestStorageAccessApi from '../request-storage-access-api';
 
 axios.defaults.adapter = require('axios/lib/adapters/http');
 
@@ -116,6 +116,29 @@ class WebdavFileSystem extends FileSystem {
   }
 
   getDirectoryContents(directory) {
+    const checkStorageType = (contents, skip) => {
+      if (skip) {
+        return Promise.resolve(contents);
+      }
+      return new Promise((resolve) => {
+        const result = (contents || []).slice();
+        requestStorageAccessApi
+          .initialize()
+          .getStorages()
+          .then((allStorages) => {
+            const objectStorageNames = (allStorages || [])
+              .filter(storage => !/^nfs$/i.test(storage.type))
+              .map(storage => (storage.name || '').replace(/-/g, '_'));
+            result.forEach(content => {
+              if (content.isDirectory && objectStorageNames.includes(content.name)) {
+                content.isObjectStorage = true;
+              }
+            });
+          })
+          .catch(() => {})
+          .then(() => resolve(result));
+      });
+    };
     return new Promise((resolve, reject) => {
       const directoryCorrected = directory || '';
       if (!this.webdavClient) {
@@ -129,7 +152,9 @@ class WebdavFileSystem extends FileSystem {
           log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
           contents.map(c => log(c.filename));
           log('');
-          resolve(
+          if (!directoryCorrected || !directoryCorrected.length) {
+          }
+          return checkStorageType(
             (
               directoryCorrected === ''
                 ? []
@@ -156,9 +181,11 @@ class WebdavFileSystem extends FileSystem {
                       changed: moment(item.lastmod)
                     };
                   })
-              )
+              ),
+            directoryCorrected && directoryCorrected.length > 0
           );
         })
+        .then(resolve)
         .catch(
           utilities.rejectError(
             reject,

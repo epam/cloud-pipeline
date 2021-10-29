@@ -1,17 +1,18 @@
 import React, {useCallback, useState, useLayoutEffect} from 'react';
 import {Button, Layout} from 'antd';
-import {SettingOutlined} from '@ant-design/icons';
+import {InboxOutlined, SettingOutlined} from '@ant-design/icons';
 import electron from 'electron';
 import SplitPanel, {useSplitPanel} from './components/utilities/split-panel';
 import FileSystemTab from './components/file-system-tab';
 import Configuration from './components/configuration';
-import Operations, {OPERATION_HEIGHT} from './operations';
+import Operations from './operations';
 import useFileSystem from './components/file-system-tab/use-file-system';
 import useFileSystemTabActions from './use-file-system-tab-actions';
 import Tabs, {RootDirectories} from './file-system-tabs';
 import useTokenExpirationWarning from './components/utilities/use-token-expiration-warning';
 import useHotKeys from './components/utilities/use-hot-keys';
 import CreateDirectoryDialog from './components/file-system-tab/create-directory-dialog';
+import RequestStorageAccess from './components/request-storage-access';
 import './application.css';
 
 function Application() {
@@ -97,11 +98,25 @@ function Application() {
     hotKeysBlocked
   );
   const [sizes, setPanelSizes] = useSplitPanel([undefined, undefined]);
+  const [requestStorageModalVisible, setRequestStorageModalVisible] = useState(false);
+  const openRequestStorageModal = useCallback(() => {
+    setRequestStorageModalVisible(true);
+  }, [setRequestStorageModalVisible]);
+  const closeRequestStorageModal = useCallback(() => {
+    setRequestStorageModalVisible(false);
+    refresh();
+  }, [setRequestStorageModalVisible, refresh]);
   return (
     <Layout className="layout">
       <Layout.Header
         className="header"
       >
+        <Button
+          size="small"
+          onClick={openRequestStorageModal}
+        >
+          <InboxOutlined />
+        </Button>
         <Button
           size="small"
           onClick={onOpenConfigurationTab}
@@ -114,6 +129,10 @@ function Application() {
           visible={configurationTabVisible}
           onClose={onCloseConfigurationTab}
           fileSystem={rightTab ? rightTab.fileSystem : undefined}
+        />
+        <RequestStorageAccess
+          visible={requestStorageModalVisible}
+          onClose={closeRequestStorageModal}
         />
         <SplitPanel
           style={{height: '100%'}}
@@ -184,7 +203,6 @@ function Application() {
               onDropCommand={onDropCommand}
               sorting={rightTab.sorting}
               setSorting={rightTab.setSorting}
-              requestStorageAction
             />
           </div>
         </SplitPanel>
