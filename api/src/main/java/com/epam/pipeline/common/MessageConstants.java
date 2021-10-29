@@ -257,7 +257,8 @@ public final class MessageConstants {
             "error.datastorage.convert.source.type.invalid";
     public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
     public static final String ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME = "error.datastorage.dav.mount.illegal.time";
-    public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED = "error.datastorage.dav.mount.quota.exceeded";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED =
+            "error.datastorage.dav.mount.quota.exceeded";
     public static final String ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED =
             "error.datastorage.dav.mount.already.mounted";
     public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST = "info.datastorage.dav.mount.request";

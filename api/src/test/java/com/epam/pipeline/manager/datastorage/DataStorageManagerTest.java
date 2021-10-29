@@ -106,6 +106,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final Date TEST_LAST_MODIFIED_DATE = new Date();
     public static final String PLATFORM = "linux";
     public static final String DAV_MOUNT_TAG = "dav-mount";
+    public static final long SECS_IN_HOUR = 3600L;
+    public static final long SECS_IN_MIN = 60L;
 
 
     @Mock
@@ -370,7 +372,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
-        storageManager.requestDataStorageDavMount(saved.getId(), 3600L);
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
@@ -386,13 +388,14 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
-        storageManager.requestDataStorageDavMount(saved.getId(), 3600L);
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
         Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
 
-        storageManager.requestDataStorageDavMount(saved.getId(), 60L);
+        storageManager.requestDataStorageDavMount(saved.getId(),
+                SECS_IN_MIN);
     }
 
     @Test
@@ -403,14 +406,14 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
-        storageManager.requestDataStorageDavMount(saved.getId(), 3600L);
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
         Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
         long firstValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
 
-        storageManager.requestDataStorageDavMount(saved.getId(), 7200L);
+        storageManager.requestDataStorageDavMount(saved.getId(), 2 * SECS_IN_HOUR);
         metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
         Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
@@ -427,7 +430,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
-        storageManager.requestDataStorageDavMount(saved.getId(), 3600L);
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
