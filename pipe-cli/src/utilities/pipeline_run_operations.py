@@ -17,7 +17,6 @@ from time import sleep
 import click
 import json
 import sys
-import requests
 from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
@@ -30,7 +29,6 @@ from src.utilities.cluster_manager import ClusterManager
 from src.utilities.user_token_operations import UserTokenOperations
 
 from src.api.pipeline import Pipeline
-from src.config import ConfigNotFoundError
 
 DELAY = 30
 
@@ -285,51 +283,33 @@ class PipelineRunOperations(object):
 
     @classmethod
     def resume(cls, run_id, sync):
-        try:
-            pipeline_run_model = Pipeline.resume_pipeline(run_id)
-            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
-            pipeline_version = pipeline_run_model.version
-            image_name = cls.build_image_name(pipeline_name, pipeline_version)
-            click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
-            if sync:
-                status = cls.get_resuming_pipeline_status(run_id)
-                if status == 'RUNNING':
-                    click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
-                    sys.exit(1)
-                else:
-                    click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        pipeline_run_model = Pipeline.resume_pipeline(run_id)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        pipeline_version = pipeline_run_model.version
+        image_name = cls.build_image_name(pipeline_name, pipeline_version)
+        click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
+        if sync:
+            status = cls.get_resuming_pipeline_status(run_id)
+            if status == 'RUNNING':
+                click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
+                sys.exit(1)
+            else:
+                click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
 
     @classmethod
     def pause(cls, run_id, check_size, sync):
-        try:
-            pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
-            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
-            pipeline_version = pipeline_run_model.version
-            image_name = cls.build_image_name(pipeline_name, pipeline_version)
-            click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
-            if sync:
-                status = cls.get_pausing_pipeline_status(run_id)
-                if status == 'PAUSED':
-                    click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
-                    sys.exit(1)
-                else:
-                    click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        pipeline_version = pipeline_run_model.version
+        image_name = cls.build_image_name(pipeline_name, pipeline_version)
+        click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
+        if sync:
+            status = cls.get_pausing_pipeline_status(run_id)
+            if status == 'PAUSED':
+                click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
+                sys.exit(1)
+            else:
+                click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
 
     @staticmethod
     @wait_for_server_enabling_if_needed()
