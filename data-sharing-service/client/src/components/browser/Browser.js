@@ -46,7 +46,7 @@ import VSIPreviewPage from '../vsi-preview';
 
 const PAGE_SIZE = 40;
 
-@inject('dataStorages', 'S3Storage')
+@inject('dataStorages', 'S3Storage', 'preferences')
 @inject(({routing, dataStorages}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   return {
@@ -476,6 +476,7 @@ export default class Browser extends React.Component {
   };
 
   getStorageItemsTable = () => {
+    const {preferences} = this.props;
     const getList = () => {
       const items = [];
       if (this.canGoToParent()) {
@@ -497,7 +498,8 @@ export default class Browser extends React.Component {
         return {
           key: `${i.type}_${i.path}`,
           ...i,
-          downloadable: i.type.toLowerCase() === 'file' && !i.deleteMarker &&
+          downloadable: preferences.dataSharingDownloadEnabled &&
+            i.type.toLowerCase() === 'file' && !i.deleteMarker &&
           (
             !i.labels ||
             !i.labels['StorageClass'] ||
