@@ -37,7 +37,7 @@ from src.utilities.du_format_type import DuFormatType
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
-from src.utilities import date_utilities, time_zone_param_type, state_utilities
+from src.utilities import date_utilities, time_zone_param_type, state_utilities, cp_preference_utilities
 from src.utilities.acl_operations import ACLOperations
 from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
@@ -350,8 +350,9 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
+@click.option('-h', '--show-hidden', help='List all pipelines, even if it is hidden', is_flag=True)
 @common_options
-def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
+def view_pipes(pipeline, versions, parameters, storage_rules, permissions, show_hidden):
     """Lists pipelines definitions
     """
 
@@ -360,14 +361,19 @@ def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
         view_pipe(pipeline, versions, parameters, storage_rules, permissions)
     # If no argument is specified - list brief details of all pipelines
     else:
-        view_all_pipes()
+        view_all_pipes(show_hidden)
 
 
-def view_all_pipes():
+def view_all_pipes(show_hidden):
     pipes_table = prettytable.PrettyTable()
     pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
     pipes_table.align = "r"
-    pipelines = Pipeline.list()
+    pipelines = []
+    if show_hidden:
+        pipelines = Pipeline.list()
+    else:
+        pipelines = [p for p in Pipeline.list() if not cp_preference_utilities.is_object_hidden('pipeline', p.identifier)]
+
     if len(pipelines) > 0:
         for pipeline_model in pipelines:
             pipes_table.add_row([pipeline_model.identifier,
@@ -1051,11 +1057,12 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
+@click.option('-h', '--show-hidden', is_flag=True, help='Show all results at once ignoring page settings')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all):
+def storage_list(path, show_details, show_versions, recursive, page, all, show_hidden):
     """Lists storage contents
     """
-    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all)
+    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_hidden)
 
 
 @storage.command(name='mkdir')
@@ -1737,12 +1744,14 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
+@click.option('-h', '--show-hidden', is_flag=True, help='Include in result hidden tools.')
 @common_options
 def view_tools(tool_path,
                registry,
                group,
                tool,
-               version):
+               version,
+               show_hidden):
     """
     Either shows details of a tool / tool version or lists tools / tool groups.
 
@@ -1794,15 +1803,15 @@ def view_tools(tool_path,
             sys.exit(1)
 
     if not registry and not group and not tool and not version:
-        ToolOperations.view_default_group()
+        ToolOperations.view_default_group(show_hidden)
     elif group and tool and version:
         ToolOperations.view_version(group, tool, version, registry)
     elif group and tool:
         ToolOperations.view_tool(group, tool, registry)
     elif group:
-        ToolOperations.view_group(group, registry)
+        ToolOperations.view_group(group, registry, show_hidden)
     elif registry:
-        ToolOperations.view_registry(registry)
+        ToolOperations.view_registry(registry, show_hidden)
     else:
         click.echo('Specify either registry, group, tool or version parameters', err=True)
         sys.exit(1)

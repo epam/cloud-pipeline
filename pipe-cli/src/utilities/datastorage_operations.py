@@ -33,6 +33,7 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, UploadResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
+from src.utilities import cp_preference_utilities
 
 FOLDER_MARKER = '.DS_Store'
 
@@ -284,7 +285,7 @@ class DataStorageOperations(object):
         manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_hidden):
         """Lists storage contents
         """
         if path:
@@ -303,7 +304,8 @@ class DataStorageOperations(object):
                                                   page_size=page, show_versions=show_versions, show_all=show_all)
         else:
             # If no argument is specified - list brief details of all buckets
-            cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all)
+            cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
+                                              show_hidden=show_hidden)
 
     @classmethod
     def storage_mk_dir(cls, folders):
@@ -405,8 +407,9 @@ class DataStorageOperations(object):
         return table
 
     @classmethod
-    def __print_data_storage_contents(cls, bucket_model, relative_path,
-                                      show_details, recursive, page_size=None, show_versions=False, show_all=False):
+    def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
+                                      show_versions=False, show_all=False, show_hidden=False):
+
         items = []
         header = None
         if bucket_model is not None:
@@ -415,7 +418,11 @@ class DataStorageOperations(object):
             items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
         else:
             # If no argument is specified - list brief details of all buckets
-            items = list(DataStorage.list())
+            if show_hidden:
+                items = DataStorage.list()
+            else:
+                items = [s for s in list(DataStorage.list()) if not cp_preference_utilities.is_object_hidden('data_storage', s.identifier)]
+
             if not items:
                 click.echo("No datastorages available.")
                 sys.exit(0)
