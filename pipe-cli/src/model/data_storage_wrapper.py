@@ -291,17 +291,7 @@ class S3BucketWrapper(CloudDataStorageWrapper):
         return self.is_empty_flag
 
     def get_file_download_uri(self, relative_path):
-        download_url_model = None
-        try:
-            download_url_model = DataStorage.generate_download_url(self.bucket.identifier, relative_path)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        download_url_model = DataStorage.generate_download_url(self.bucket.identifier, relative_path)
         if download_url_model is not None:
             return download_url_model.url
         return None

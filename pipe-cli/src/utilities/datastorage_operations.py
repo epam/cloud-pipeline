@@ -33,7 +33,6 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
-ALL_ERRORS = Exception
 FOLDER_MARKER = '.DS_Store'
 
 
@@ -183,61 +182,52 @@ class DataStorageOperations(object):
     def storage_remove_item(cls, path, yes, version, hard_delete, recursive, exclude, include):
         """ Removes file or folder
         """
-        try:
-            if version and hard_delete:
-                click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
-                sys.exit(1)
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version is not None or hard_delete)
-            if source_wrapper is None or not source_wrapper.exists():
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
-                sys.exit(1)
-            if len(source_wrapper.path) == 0:
-                click.echo('Cannot remove root folder \'{}\''.format(path), err=True)
-                sys.exit(1)
-            if not source_wrapper.is_file() and not recursive:
-                click.echo('Flag --recursive (-r) is required to remove folders.', err=True)
-                sys.exit(1)
-            if (version or hard_delete) and not source_wrapper.bucket.policy.versioning_enabled:
-                click.echo('Error: versioning is not enabled for storage.', err=True)
-                sys.exit(1)
-            if not yes:
-                click.confirm('Are you sure you want to remove everything at path \'{}\'?'.format(path),
-                              abort=True)
-            click.echo('Removing {} ...'.format(path), nl=False)
-
-            manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
-            manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
-                                 exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
-        except ALL_ERRORS as error:
-            if not type(error) is click.Abort:
-                click.echo('Error: %s' % str(error), err=True)
+        if version and hard_delete:
+            click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
             sys.exit(1)
+        source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version is not None or hard_delete)
+        if source_wrapper is None or not source_wrapper.exists():
+            click.echo('Storage path "{}" was not found'.format(path), err=True)
+            sys.exit(1)
+        if len(source_wrapper.path) == 0:
+            click.echo('Cannot remove root folder \'{}\''.format(path), err=True)
+            sys.exit(1)
+        if not source_wrapper.is_file() and not recursive:
+            click.echo('Flag --recursive (-r) is required to remove folders.', err=True)
+            sys.exit(1)
+        if (version or hard_delete) and not source_wrapper.bucket.policy.versioning_enabled:
+            click.echo('Error: versioning is not enabled for storage.', err=True)
+            sys.exit(1)
+        if not yes:
+            click.confirm('Are you sure you want to remove everything at path \'{}\'?'.format(path),
+                          abort=True)
+        click.echo('Removing {} ...'.format(path), nl=False)
+
+        manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
+        manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
+                             exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
         click.echo(' done.')
 
     @classmethod
     def save_data_storage(cls, name, description, sts_duration, lts_duration, versioning,
                           backup_duration, type, parent_folder, on_cloud, path, region_id):
-        try:
-            directory = None
-            if parent_folder:
-                directory = Folder.load(parent_folder)
-                if directory is None:
-                    click.echo("Error: Directory with name '{}' not found! "
-                               "Check if it exists and you have permission to read it".format(parent_folder), err=True)
-                    sys.exit(1)
-            if region_id == 'default':
-                region_id = None
-            else:
-                try:
-                    region_id = int(region_id)
-                except ValueError:
-                    click.echo("Error: Given region id '{}' is not a number.".format(region_id))
-                    sys.exit(1)
-            DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
-                             directory.id if directory else None, on_cloud, region_id)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        directory = None
+        if parent_folder:
+            directory = Folder.load(parent_folder)
+            if directory is None:
+                click.echo("Error: Directory with name '{}' not found! "
+                           "Check if it exists and you have permission to read it".format(parent_folder), err=True)
+                sys.exit(1)
+        if region_id == 'default':
+            region_id = None
+        else:
+            try:
+                region_id = int(region_id)
+            except ValueError:
+                click.echo("Error: Given region id '{}' is not a number.".format(region_id))
+                sys.exit(1)
+        DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
+                         directory.id if directory else None, on_cloud, region_id)
 
     @classmethod
     def delete(cls, name, on_cloud, yes):
@@ -251,62 +241,46 @@ class DataStorageOperations(object):
                     'Are you sure you want to delete datastorage {}?'.format(name),
                     abort=True)
 
-        try:
-            DataStorage.delete(name, on_cloud)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        DataStorage.delete(name, on_cloud)
 
     @classmethod
     def policy(cls, storage_name, sts_duration, lts_duration, backup_duration, versioning):
-        try:
-            DataStorage.policy(storage_name, sts_duration, lts_duration, backup_duration, versioning)
-        except ALL_ERRORS as error:
-            click.echo(str(error), err=True)
-            sys.exit(1)
+        DataStorage.policy(storage_name, sts_duration, lts_duration, backup_duration, versioning)
 
     @classmethod
     def mvtodir(cls, name, directory):
         folder_id = None
-        try:
-            if directory is not "/":
-                if os.path.split(directory)[0]:  # case with path
-                    folder = Folder.load(directory)
-                else:
-                    folder = Folder.load_by_name(directory)
-                if folder is None:
-                    click.echo("Directory with name {} does not exist!".format(directory), err=True)
-                    sys.exit(1)
-                folder_id = folder.id
-            DataStorage.mvtodir(name, folder_id)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        if directory is not "/":
+            if os.path.split(directory)[0]:  # case with path
+                folder = Folder.load(directory)
+            else:
+                folder = Folder.load_by_name(directory)
+            if folder is None:
+                click.echo("Directory with name {} does not exist!".format(directory), err=True)
+                sys.exit(1)
+            folder_id = folder.id
+        DataStorage.mvtodir(name, folder_id)
 
     @classmethod
     def restore(cls, path, version, recursive, exclude, include):
-        try:
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, True)
-            if source_wrapper is None:
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
-                sys.exit(1)
-            if (recursive or exclude or include) and not isinstance(source_wrapper, S3BucketWrapper):
-                click.echo('Folder restore allowed for S3 provider only', err=True)
-                sys.exit(1)
-            if not source_wrapper.bucket.policy.versioning_enabled:
-                click.echo('Versioning is not enabled for storage "{}"'.format(source_wrapper.bucket.name), err=True)
-                sys.exit(1)
-            if version and recursive:
-                click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
-                sys.exit(1)
-            if not recursive and not source_wrapper.is_file():
-                click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
-                sys.exit(1)
-            manager = source_wrapper.get_restore_manager()
-            manager.restore_version(version, exclude, include, recursive=recursive)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, True)
+        if source_wrapper is None:
+            click.echo('Storage path "{}" was not found'.format(path), err=True)
             sys.exit(1)
+        if (recursive or exclude or include) and not isinstance(source_wrapper, S3BucketWrapper):
+            click.echo('Folder restore allowed for S3 provider only', err=True)
+            sys.exit(1)
+        if not source_wrapper.bucket.policy.versioning_enabled:
+            click.echo('Versioning is not enabled for storage "{}"'.format(source_wrapper.bucket.name), err=True)
+            sys.exit(1)
+        if version and recursive:
+            click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
+            sys.exit(1)
+        if not recursive and not source_wrapper.is_file():
+            click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
+            sys.exit(1)
+        manager = source_wrapper.get_restore_manager()
+        manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all):
@@ -315,11 +289,7 @@ class DataStorageOperations(object):
         if path:
             root_bucket = None
             original_path = ''
-            try:
-                root_bucket, original_path, _ = DataStorage.load_from_uri(path)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             if show_versions and not root_bucket.policy.versioning_enabled:
                 click.echo('Error: versioning is not enabled for storage.', err=True)
                 sys.exit(1)
@@ -344,12 +314,7 @@ class DataStorageOperations(object):
                 click.echo('Cannot create folder \'{}\': already exists'.format(original_path), err=True)
                 continue
             click.echo('Creating folder {}...'.format(original_path), nl=False)
-            result = None
-            try:
-                result = DataStorage.create_folder(bucket.identifier, relative_path)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            result = DataStorage.create_folder(bucket.identifier, relative_path)
             if result is not None and result.error is None:
                 click.echo('done.')
             elif result is not None and result.error is not None:
@@ -358,40 +323,28 @@ class DataStorageOperations(object):
 
     @classmethod
     def set_object_tags(cls, path, tags, version):
-        try:
-            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
-            updated_tags = DataStorage.set_object_tags(root_bucket.identifier, relative_path,
-                                                       cls.convert_input_pairs_to_json(tags), version)
-            if not updated_tags:
-                raise RuntimeError("Failed to set tags for path '{}'.".format(path))
-        except BaseException as e:
-            click.echo(str(e), err=True)
-            sys.exit(1)
+        root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
+        updated_tags = DataStorage.set_object_tags(root_bucket.identifier, relative_path,
+                                                   cls.convert_input_pairs_to_json(tags), version)
+        if not updated_tags:
+            raise RuntimeError("Failed to set tags for path '{}'.".format(path))
 
     @classmethod
     def get_object_tags(cls, path, version):
-        try:
-            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
-            tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
-            if not tags:
-                click.echo("No tags available for path '{}'.".format(path))
-            else:
-                click.echo(cls.create_table(tags))
-        except BaseException as e:
-            click.echo(str(e), err=True)
-            sys.exit(1)
+        root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
+        tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
+        if not tags:
+            click.echo("No tags available for path '{}'.".format(path))
+        else:
+            click.echo(cls.create_table(tags))
 
     @classmethod
     def delete_object_tags(cls, path, tags, version):
         if not tags:
             click.echo("Error: Missing argument \"tags\"", err=True)
             sys.exit(1)
-        try:
-            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
-            DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
-        except BaseException as e:
-            click.echo(str(e), err=True)
-            sys.exit(1)
+        root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
+        DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
 
     @classmethod
     def du(cls, storage_name, relative_path=None, format='M', depth=None):
@@ -406,31 +359,27 @@ class DataStorageOperations(object):
         items_table.border = False
         items_table.padding_width = 2
         items_table.align['Size'] = 'r'
-        try:
-            if storage_name:
-                if not relative_path or relative_path == "/":
-                    relative_path = ''
-                storage = DataStorage.get(storage_name)
-                if storage is None:
-                    raise RuntimeError('Storage "{}" was not found'.format(storage_name))
-                if storage.type.lower() == 'nfs':
-                    if depth:
-                        raise RuntimeError('--depth option is not supported for NFS storages')
-                    items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
-                else:
-                    for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
-                        items_table.add_row(item)
+        if storage_name:
+            if not relative_path or relative_path == "/":
+                relative_path = ''
+            storage = DataStorage.get(storage_name)
+            if storage is None:
+                raise RuntimeError('Storage "{}" was not found'.format(storage_name))
+            if storage.type.lower() == 'nfs':
+                if depth:
+                    raise RuntimeError('--depth option is not supported for NFS storages')
+                items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
             else:
-                # If no argument is specified - list all buckets
-                items = du_helper.get_total_summary()
-                if items is None:
-                    click.echo("No datastorages available.")
-                    sys.exit(0)
-                for item in items:
+                for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
                     items_table.add_row(item)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        else:
+            # If no argument is specified - list all buckets
+            items = du_helper.get_total_summary()
+            if items is None:
+                click.echo("No datastorages available.")
+                sys.exit(0)
+            for item in items:
+                items_table.add_row(item)
         click.echo(items_table)
         click.echo()
 
@@ -460,23 +409,15 @@ class DataStorageOperations(object):
         items = []
         header = None
         if bucket_model is not None:
-            try:
-                wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
-                manager = wrapper.get_list_manager(show_versions=show_versions)
-                items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
+            manager = wrapper.get_list_manager(show_versions=show_versions)
+            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
         else:
             # If no argument is specified - list brief details of all buckets
-            try:
-                items = list(DataStorage.list())
-                if not items:
-                    click.echo("No datastorages available.")
-                    sys.exit(0)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            items = list(DataStorage.list())
+            if not items:
+                click.echo("No datastorages available.")
+                sys.exit(0)
 
         if recursive and header is not None:
             click.echo(header)
@@ -548,33 +489,25 @@ class DataStorageOperations(object):
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
                       custom_options=None, quiet=False, threading=False, mode=700, timeout=1000):
-        try:
-            if not file and not bucket:
-                click.echo('Either file system mode should be enabled (-f/--file) '
-                           'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
-                sys.exit(1)
-            cls.check_platform("mount")
-            Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
-                                   log_file=log_file, log_level=log_level,  threading=threading,
-                                   mode=mode, timeout=timeout)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        if not file and not bucket:
+            click.echo('Either file system mode should be enabled (-f/--file) '
+                       'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
+        cls.check_platform("mount")
+        Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
+                               log_file=log_file, log_level=log_level,  threading=threading,
+                               mode=mode, timeout=timeout)
 
     @classmethod
     def umount_storage(cls, mountpoint, quiet=False):
-        try:
-            cls.check_platform("umount")
-            if not os.path.isdir(mountpoint):
-                click.echo('Mountpoint "%s" is not a folder.' % mountpoint, err=True)
-                sys.exit(1)
-            if not os.path.ismount(mountpoint):
-                click.echo('Directory "%s" is not a mountpoint.' % mountpoint, err=True)
-                sys.exit(1)
-            Umount().umount_storages(mountpoint, quiet=quiet)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        cls.check_platform("umount")
+        if not os.path.isdir(mountpoint):
+            click.echo('Mountpoint "%s" is not a folder.' % mountpoint, err=True)
             sys.exit(1)
+        if not os.path.ismount(mountpoint):
+            click.echo('Directory "%s" is not a mountpoint.' % mountpoint, err=True)
+            sys.exit(1)
+        Umount().umount_storages(mountpoint, quiet=quiet)
 
     @classmethod
     def check_platform(self, command):

@@ -12,25 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
-import requests
-import sys
 from src.api.user import User
-
 from src.api.entity import Entity
-from src.config import ConfigNotFoundError
 
 
 class PermissionsOperations(object):
 
     @classmethod
     def chown(cls, user_name, class_name, object_name):
-        try:
-            if object_name.isdigit():
-                object_id = object_name
-            else:
-                object_id = Entity.load_by_id_or_name(object_name, class_name)['id']
-            User.change_owner(user_name, class_name, object_id)
-        except (ConfigNotFoundError, requests.exceptions.RequestException, RuntimeError, ValueError) as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        if object_name.isdigit():
+            object_id = object_name
+        else:
+            object_id = Entity.load_by_id_or_name(object_name, class_name)['id']
+        User.change_owner(user_name, class_name, object_id)

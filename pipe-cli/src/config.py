@@ -33,7 +33,6 @@ from .utilities.access_token_validation import check_token
 OWNER_ONLY_PERMISSION = 0o600
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
-ALL_ERRORS = Exception
 
 
 def is_frozen():
