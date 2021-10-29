@@ -35,7 +35,7 @@ public class GitHubServiceImpl implements GitHubService {
 
     public GitHubServiceImpl(final GitHubApiClient client,
                              @Value("${github.issue.regex:(?i)\\(?issue #.+}") final String issueRegex,
-                             @Value("${github.issue.number.regex:#\\d+}") final String issueNumberRegex) {
+                             @Value("${github.issue.number.regex:.+#(\\d+).*}") final String issueNumberRegex) {
         this.issueRegex = issueRegex;
         this.issueNumberRegex = issueNumberRegex;
         this.client = client;
