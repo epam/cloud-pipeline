@@ -495,7 +495,6 @@ export default class Browser extends React.Component {
         results = this.props.storage.value.results || [];
       }
       const masks = preferences.dataSharingHiddenMask;
-      console.log(results, masks);
       items.push(
         ...results
           .filter(o => o.path &&
