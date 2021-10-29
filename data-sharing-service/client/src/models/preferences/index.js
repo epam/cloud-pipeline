@@ -17,6 +17,22 @@
 import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
+const escapeSymbols = '\\/.-!@?()[]{}^$'
+  .split('')
+  .map((o) => ({test: new RegExp('\\'.concat(o), 'g'), replace: '\\'.concat(o)}));
+
+function buildFileMask (glob) {
+  let _result = glob || '*';
+  _result = _result.replace(/\*\*\//g, '\u00A0');
+  for (const symbol of escapeSymbols) {
+    _result = _result.replace(symbol.test, symbol.replace);
+  }
+  _result = _result.replace(/\*/g, '[^\\/]*');
+  _result = _result.replace(new RegExp('\u00A0', 'g'), '(.+/|)');
+  const before = glob.startsWith('/') ? '^' : '(/|^)';
+  return new RegExp(`${before}${_result}$`);
+}
+
 class Preferences extends Remote {
   constructor () {
     super();
@@ -62,6 +78,20 @@ class Preferences extends Remote {
       return `${value}` === 'true';
     }
     return true;
+  }
+
+  @computed
+  get dataSharingHiddenMask () {
+    const value = this.getPreferenceValue('data.sharing.hidden.mask');
+    let masks = [];
+    if (value) {
+      if (typeof value === 'string') {
+        masks = value.split(',').map(o => o.trim());
+      } else if (Array.isArray(value)) {
+        masks = value;
+      }
+    }
+    return masks.map(buildFileMask);
   }
 }
 
