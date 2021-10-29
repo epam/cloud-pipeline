@@ -73,20 +73,7 @@ public class NatGatewayManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutingRulesCreation(final NatRoutingRulesRequest request) {
-        final List<NatRoutingRuleDescription> requestedRules = validateRequestIsNotEmpty(request);
-        final List<NatRoute> updatedRoutes = updateStatusForQueuedRoutes(requestedRules,
-                                                                         NatRouteStatus.CREATION_SCHEDULED);
-
-        final Set<NatRoutingRuleDescription> existingRules = getActiveNatRules(route -> true);
-        final List<NatRoutingRuleDescription> newRules = requestedRules.stream()
-            .filter(rule -> !existingRules.contains(rule))
-            .collect(Collectors.toList());
-        final List<NatRoute> queuedRoutes = CollectionUtils.isNotEmpty(newRules)
-                                         ? natGatewayDao.registerRoutingRules(newRules,
-                                                                              NatRouteStatus.CREATION_SCHEDULED)
-                                         : Collections.emptyList();
-        updatedRoutes.addAll(queuedRoutes);
-        return updatedRoutes;
+        return updateRoutesInDatabase(request, NatRouteStatus.CREATION_SCHEDULED, route -> true);
     }
 
     public List<NatRoute> loadAllRoutes() {
@@ -106,17 +93,20 @@ public class NatGatewayManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutingRulesRemoval(final NatRoutingRulesRequest request) {
+        return updateRoutesInDatabase(request, NatRouteStatus.TERMINATION_SCHEDULED, this::hasTerminatingState);
+    }
+
+    private List<NatRoute> updateRoutesInDatabase(final NatRoutingRulesRequest request, final NatRouteStatus status,
+                                                  final Predicate<NatRoute> additionalFilter) {
         final List<NatRoutingRuleDescription> requestedRules = validateRequestIsNotEmpty(request);
-        final List<NatRoute> updatedRoutes = updateStatusForQueuedRoutes(requestedRules,
-                                                                         NatRouteStatus.TERMINATION_SCHEDULED);
-        final Set<NatRoutingRuleDescription> existingTerminatingRules = getActiveNatRules(this::hasTerminatingState);
+        final List<NatRoute> updatedRoutes = updateStatusForQueuedRoutes(requestedRules, status);
+        final Set<NatRoutingRuleDescription> existingRules = getActiveNatRules(additionalFilter);
         final List<NatRoutingRuleDescription> newRules = requestedRules.stream()
-            .filter(rule -> !existingTerminatingRules.contains(rule))
+            .filter(rule -> !existingRules.contains(rule))
             .collect(Collectors.toList());
         final List<NatRoute> queuedRoutes = CollectionUtils.isNotEmpty(newRules)
-                                         ? natGatewayDao.registerRoutingRules(newRules,
-                                                                              NatRouteStatus.TERMINATION_SCHEDULED)
-                                         : Collections.emptyList();
+                                            ? natGatewayDao.registerRoutingRules(newRules, status)
+                                            : Collections.emptyList();
         updatedRoutes.addAll(queuedRoutes);
         return updatedRoutes;
     }
