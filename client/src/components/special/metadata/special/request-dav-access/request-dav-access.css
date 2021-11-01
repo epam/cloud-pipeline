@@ -14,7 +14,25 @@
  *  limitations under the License.
  */
 
-.storage-size {
-  padding: 4px 6px;
-  color: #333;
+.container {
+  cursor: pointer;
+}
+
+.container:not(.enabled):not(.read-only):hover {
+  text-decoration: underline;
+}
+
+.container.enabled,
+.container.read-only {
+  color: #666;
+  cursor: default;
+}
+
+.container.enabled .disable-button {
+  color: red;
+  cursor: pointer;
+}
+
+.container.enabled .disable-button:hover {
+  text-decoration: underline;
 }
