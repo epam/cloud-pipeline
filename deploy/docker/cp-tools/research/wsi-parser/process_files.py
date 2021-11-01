@@ -83,7 +83,7 @@ class ImageDetails(object):
 
 class WsiParsingUtils:
 
-    TILES_DIR_SUFFIX = '.tiles'
+    TILES_DIR = 'tiles'
 
     @staticmethod
     def get_file_without_extension(file_path):
@@ -161,7 +161,8 @@ class WsiProcessingFileGenerator:
             full_file_path = os.path.join(parent_dir, file)
             if os.path.isdir(full_file_path):
                 file_basename = WsiParsingUtils.get_basename_without_extension(file_path)
-                if not full_file_path.endswith(WsiParsingUtils.TILES_DIR_SUFFIX) and file_basename in os.path.basename(full_file_path):
+                if not full_file_path.endswith(WsiParsingUtils.TILES_DIR) \
+                        and file_basename in os.path.basename(full_file_path):
                     related_subdirectories.add(full_file_path)
         return related_subdirectories
 
@@ -787,13 +788,15 @@ class WsiFileParser:
             output_file.write(json.dumps(details, indent=4))
 
     def update_dz_info_file(self, original_width, original_height):
-        file_name = WsiParsingUtils.get_basename_without_extension(self.file_path)
-        tiles_dir = os.path.join(os.path.dirname(self.file_path), file_name + WsiParsingUtils.TILES_DIR_SUFFIX)
+        tiles_dir = self._get_tiles_dir()
         max_zoom = self._max_zoom_level(tiles_dir)
         if max_zoom < 0:
             self.log_processing_info('Unable to determine DZ depth calculation, skipping json file creation')
             return
         self._write_dz_info_to_file(os.path.join(tiles_dir, 'info.json'), original_width, original_height, max_zoom)
+
+    def _get_tiles_dir(self):
+        return os.path.join(WsiParsingUtils.get_service_directory(self.file_path), WsiParsingUtils.TILES_DIR)
 
     def _is_same_series_selected(self, selected_series):
         stat_file = WsiParsingUtils.get_stat_file_name(self.file_path)
@@ -911,6 +914,7 @@ class WsiFileParser:
             return 1
         target_series = target_image_details.id
         self.create_tmp_stat_file(target_image_details)
+        self._mkdir(self._get_tiles_dir())
         tags_processing_result = self.try_process_tags(target_image_details)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
@@ -929,7 +933,7 @@ class WsiFileParser:
                                               local_file_path,
                                               target_series,
                                               DZ_TILES_SIZE,
-                                              os.path.dirname(self.file_path),
+                                              self._get_tiles_dir(),
                                               self.tmp_local_dir))
         if conversion_result == 0:
             self.update_stat_file(target_image_details)

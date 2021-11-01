@@ -15,7 +15,7 @@
 _FILE_PATH="$1"
 _SERIES_NUM="$2"
 _TILES_SIZE="$3"
-_TILES_PARENT_DIR="$4"
+_TILES_FINAL_LOCATION="$4"
 _PARSER_LOCAL_TMP_DIR="$5"
 
 WSI_PROCESSING_TASK_NAME="WSI processing"
@@ -96,7 +96,7 @@ function tmp_dir_cleanup() {
 log_info "Generating deep zoom structure..."
 _FILE_BASENAME=$(get_file_basename "$_FILE_PATH")
 dz_tmp="$_PARSER_LOCAL_TMP_DIR/$_FILE_BASENAME.tiles"
-dz_final="$_TILES_PARENT_DIR/$_FILE_BASENAME.tiles"
+dz_final="$_TILES_FINAL_LOCATION"
 
 log_info "Generating DZ in [$dz_tmp]"
 rm -rf "$dz_tmp"
