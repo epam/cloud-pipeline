@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import {Dropdown, Icon} from 'antd';
@@ -152,18 +153,23 @@ class YearPicker extends React.Component {
     const canNavigateRight = (selectedYear + 9) < +maximumValue.get('Y');
     const leftClassNames = [
       styles.navigation,
-      !canNavigateLeft && styles.disabled
+      'cp-billing-calendar-navigation',
+      !canNavigateLeft && 'disabled'
     ].filter(Boolean);
     const rightClassNames = [
       styles.navigation,
-      !canNavigateRight && styles.disabled
+      'cp-billing-calendar-navigation',
+      !canNavigateRight && 'disabled'
     ].filter(Boolean);
     const renderYear = (shift) => {
       const date = moment({year: selectedYear + shift});
       const classNames = [
         styles.item,
-        year === selectedYear + shift ? styles.selected : undefined,
-        date < minimumValue || date > maximumValue ? styles.disabled : undefined
+        'cp-billing-calendar-row-item',
+        year === selectedYear + shift
+          ? 'selected' : undefined,
+        date < minimumValue ||
+        date > maximumValue ? 'disabled' : undefined
       ].filter(Boolean);
       return (
         <div
@@ -177,8 +183,14 @@ class YearPicker extends React.Component {
       );
     };
     return (
-      <div className={styles.overlay}>
-        <div className={styles.yearsContainer}>
+      <div className={classNames(
+        styles.overlay,
+        'cp-billing-calendar-container'
+      )}>
+        <div className={classNames(
+          styles.yearsContainer,
+          'cp-billing-calendar-years-container'
+        )}>
           <Icon
             role="button"
             className={leftClassNames.join(' ')}

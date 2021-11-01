@@ -1,0 +1,394 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.code-highlight {
+  color: @application-color;
+  background-color: @code-background-color;
+  border: 1px solid @card-border-color;
+  border-radius: 4px;
+}
+
+.markdown pre {
+  color: @application-color;
+  background-color: @code-background-color;
+  border: 1px solid @card-border-color;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 5px 0;
+  white-space: pre-line;
+}
+
+.code-highlight code,
+.markdown code {
+  color: @color-pink;
+  background-color: @color-pink-light;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.markdown pre > code {
+  display: block;
+  background-color: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+.markdown code {
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 5px 0;
+}
+
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin: 2px 0;
+}
+
+.hljs {
+  color: @application-color;
+  background: @card-background-color;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: @application-color-faded;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: @application-color;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr {
+  color: @color-aqua;
+}
+
+.hljs-string,
+.hljs-doctag {
+  color: @color-pink;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: @color-red;
+}
+
+.hljs-type,
+.hljs-class .hljs-title {
+  color: @color-blue-dimmed;
+}
+
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: @primary-color;
+  font-weight: normal;
+}
+
+.hljs-regexp,
+.hljs-link {
+  color: @color-green;
+}
+
+.hljs-symbol,
+.hljs-bullet {
+  color: @color-violet;
+}
+
+.hljs-built_in,
+.hljs-builtin-name {
+  color: @primary-color;
+}
+
+.hljs-meta {
+  color: @application-color-faded;
+  font-weight: bold;
+}
+
+.hljs-deletion {
+  background: @alert-error-background;
+}
+
+.hljs-addition {
+  background: @alert-success-background;
+}
+
+.cp-code-editor {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+
+.CodeMirror {
+  background-color: @card-background-color;
+  color: @application-color;
+  border: 1px solid @card-border-color;
+}
+
+.CodeMirror-cursor {
+  border-color: @application-color;
+}
+
+.CodeMirror-gutters {
+  background-color: @card-header-background;
+  border-color: @card-border-color;
+}
+
+.CodeMirror-linenumber {
+  color: @application-color-faded;
+}
+
+.cm-s-default .cm-header {
+  color: @color-blue;
+}
+
+.cm-s-default .cm-quote {
+  color: @color-green;
+}
+
+.cm-negative {
+  color: @color-sensitive;
+}
+
+.cm-positive {
+  color: @color-green;
+}
+
+.cm-s-default .cm-keyword {
+  color: @color-violet;
+}
+
+.cm-s-default .cm-atom {
+  color: @color-blue;
+}
+
+.cm-s-default .cm-number {
+  color: @color-aqua;
+}
+
+.cm-s-default .cm-def {
+  color: @color-blue-dimmed;
+}
+
+.cm-s-default .cm-variable-2 {
+  color: @color-blue-dimmed;
+}
+
+.cm-s-default .cm-variable-3,
+.cm-s-default .cm-type {
+  color: @color-green;
+}
+
+.cm-s-default .cm-comment {
+  color: @color-yellow;
+}
+
+.cm-s-default .cm-string {
+  color: @color-red;
+}
+
+.cm-s-default .cm-string-2 {
+  color: @color-yellow;
+}
+
+.cm-s-default .cm-meta,
+.cm-s-default .cm-qualifier {
+  color: @application-color-disabled;
+}
+
+.cm-s-default .cm-builtin {
+  color: @color-blue-dimmed;
+}
+
+.cm-s-default .cm-bracket {
+  color: @color-grey;
+}
+
+.cm-s-default .cm-tag {
+  color: @color-green;
+}
+
+.cm-s-default .cm-hr {
+  color: @application-color-faded;
+}
+
+.cm-s-default .cm-attribute,
+.cm-s-default .cm-link {
+  color: @primary-color;
+}
+
+.cm-s-default .cm-error,
+.cm-invalidchar {
+  color: @color-red;
+}
+
+div.CodeMirror span.CodeMirror-matchingbracket {
+  color: @color-green;
+}
+
+div.CodeMirror span.CodeMirror-nonmatchingbracket {
+  color: @color-red;
+}
+
+.CodeMirror-matchingtag { background: fadeout(@color-yellow, 50%); }
+
+.CodeMirror-activeline-background {
+  background: @card-header-background;
+}
+
+.handsontable {
+  color: @application-color;
+}
+
+.handsontable th {
+  background-color: @card-header-background;
+}
+
+.handsontable td {
+  background-color: @card-background-color;
+}
+
+.handsontable tr th,
+.handsontable tr td,
+.handsontable tr:first-child th,
+.handsontable tr:first-child td {
+  color: @application-color;
+}
+
+.handsontable tr th,
+.handsontable tr td,
+.handsontable tr:first-child th,
+.handsontable tr:first-child td,
+.handsontable.htRowHeaders thead tr th:nth-child(2) {
+  border-color: darken(@card-border-color, 5%);
+}
+
+.handsontable tbody th.ht__highlight,
+.handsontable thead th.ht__highlight {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+
+.handsontable td.area {
+  background-image: linear-gradient(to bottom, @primary-color-semi-transparent 0%, @primary-color-semi-transparent 100%);
+  background-color: @card-background-color;
+}
+
+.cp-pipeline-code-editor-readonly .handsontable td,
+.cp-pipeline-code-editor-readonly .handsontable td.area,
+.cp-pipeline-code-editor-readonly .CodeMirror {
+  background-color: lighten(@card-header-background, 2%);
+}
+
+.joint-paper.joint-theme-default {
+  background-color: @card-background-color;
+}
+
+.joint-type-visualstep .body,
+.joint-type-visualgroup .body,
+.joint-type-visualworkflow .body {
+  fill: @card-background-color;
+  stroke: @primary-color;
+}
+
+.joint-type-visualstep .port-body.empty,
+.joint-type-visualgroup .port-body.empty,
+.joint-type-visualworkflow .port-body.empty {
+  fill: @card-background-color;
+  stroke: @primary-color;
+}
+
+.joint-type-visualstep .port-body,
+.joint-type-visualgroup .port-body,
+.joint-type-visualworkflow .port-body {
+  fill: @card-background-color;
+  stroke: @color-aqua;
+}
+
+.joint-type-visualstep .port-label,
+.joint-type-visualgroup .port-label,
+.joint-type-visualworkflow .port-label,
+.marker-source,
+.marker-target,
+.joint-type-visualdeclaration .label {
+  fill: @color-aqua;
+  stroke: @color-aqua;
+}
+
+.joint-link .marker-arrowheads .marker-arrowhead,
+.joint-link .marker-vertex-group .marker-vertex,
+.joint-link .marker-vertex-group .marker-vertex:hover {
+  fill: @primary-color;
+}
+
+.marker-vertex-remove-area {
+  fill: @application-color;
+}
+
+.joint-link.joint-theme-default .marker-vertex-remove {
+  fill: @card-background-color;
+}
+
+.joint-link.joint-theme-default .connection-wrap,
+.joint-link .connection {
+  stroke: @color-aqua;
+}
+
+.joint-type-visualstep .label,
+.joint-type-visualgroup .label,
+.joint-type-visualworkflow .label {
+  fill: @primary-color;
+}
+
+.joint-link .link-tools .link-tool .tool-remove circle {
+  fill: @color-red;
+}
+
+.cp-pipeline-graph-side-panel:hover {
+  background-color: @card-background-color;
+  box-shadow: 5px 0 15px @card-hovered-shadow-color;
+}
+
+.cp-pipeline-graph-properties-panel {
+
+}
+
+.cp-issue-markdown-link {
+  color: @primary-color;
+  background-color: @card-background-color;
+  box-shadow: inset 0 -1px 0 @card-hovered-shadow-color;
+  transition: none;
+  border-radius: 5px;
+  padding: 2px 4px;
+}
+
+.cp-issue-markdown-link:hover {
+  color: @primary-text-color;
+  background-color: @primary-color;
+}

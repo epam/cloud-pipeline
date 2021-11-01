@@ -46,8 +46,7 @@ export default class ToolGroupPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -168,18 +167,13 @@ export default class ToolGroupPreview extends React.Component {
     if (this.props.dockerRegistries.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.dockerRegistries.error}</span>
+          <span className={'cp-search-preview-error'}>{this.props.dockerRegistries.error}</span>
         </div>
       );
     }
     if (!this.tools.length) {
       return null;
     }
-
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
 
     return (
       <div className={styles.contentPreview}>
@@ -190,8 +184,9 @@ export default class ToolGroupPreview extends React.Component {
                 return (
                   <tr
                     key={item.id}
-                    style={index % 2 === 0 ? {backgroundColor: 'rgba(255, 255, 255, 0.05)'} : {}}>
-                    <td style={firstCellStyle}>
+                    className={classNames({'cp-search-even-table-row': index % 2 === 0})}
+                  >
+                    <td className={styles.firstCell}>
                       {this.renderImageName(item)}
                     </td>
                   </tr>
@@ -243,25 +238,23 @@ export default class ToolGroupPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
-          <Row key="name" className={styles.title} type="flex" align="middle">
+          <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle" >
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.path}</span>
           </Row>
           {
             this.props.item.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.props.item.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {attributes && renderSeparator()}

@@ -61,8 +61,7 @@ export default class PipelinePreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -96,11 +95,7 @@ export default class PipelinePreview extends React.Component {
         return (
           <div className={styles.contentPreview}>
             <span
-              style={
-                this.props.lightMode
-                  ? {color: '#ff0000'}
-                  : {color: '#ff556b'}
-              }
+              className="cp-search-preview-error"
             >
               {this.props.versions.error}
             </span>
@@ -143,11 +138,7 @@ export default class PipelinePreview extends React.Component {
         return (
           <div className={styles.contentPreview}>
             <span
-              style={
-                this.props.lightMode
-                  ? {color: '#ff0000'}
-                  : {color: '#ff556b'}
-              }
+              className="cp-search-preview-error"
             >
               {this.props.history.error}
             </span>
@@ -178,22 +169,22 @@ export default class PipelinePreview extends React.Component {
           }
           <table className={styles.runTable}>
             <tbody>
-              <tr className={styles.run}>
-                <th className={styles.run}>RUN</th>
-                <th className={styles.run}>VERSION</th>
-                <th className={styles.run}>STARTED</th>
-                <th className={styles.run}>COMPLETED</th>
-                <th className={styles.run}>OWNER</th>
+              <tr className={classNames(styles.run, 'cp-search-content-preview-run')}>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>RUN</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>VERSION</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>STARTED</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>COMPLETED</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>OWNER</th>
               </tr>
               {
                 runs.map((run, index) => {
                   return (
                     <tr key={index}>
-                      <td className={styles.run}>{runName(run)}</td>
-                      <td className={styles.run}>{run.version}</td>
-                      <td className={styles.run}>{displayDate(run.startDate)}</td>
-                      <td className={styles.run}>{displayDate(run.endDate)}</td>
-                      <td className={styles.run}><UserName userName={run.owner} /></td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{runName(run)}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{run.version}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{displayDate(run.startDate)}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{displayDate(run.endDate)}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}><UserName userName={run.owner} /></td>
                     </tr>
                   );
                 })
@@ -219,25 +210,23 @@ export default class PipelinePreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {versions && renderSeparator()}

@@ -64,9 +64,10 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
               className={
                 classNames(
                   styles.filter,
+                  'cp-search-faceted-button',
                   {
-                    [styles.selected]: f.enabled,
-                    [styles.disabled]: !f.enabled && f.count === 0
+                    'selected': f.enabled,
+                    'disabled': !f.enabled && f.count === 0
                   }
                 )
               }
@@ -74,7 +75,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
               onClick={this.handleFilterClick(f)}
             >
               <Icon
-                className={styles.icon}
+                className={classNames('cp-icon-larger', styles.icon)}
                 type={f.icon}
               />
               {f.title(this.localizedString)()}

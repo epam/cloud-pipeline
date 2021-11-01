@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import {
   message,
   Button,
@@ -389,7 +390,7 @@ export default class EditEmailNotification extends React.Component {
             )}
             <CodeEditor
               ref={editor => this.editor = editor}
-              className={styles.codeEditor}
+              className={classNames(styles.codeEditor, 'cp-code-editor')}
               language="application/x-jsp"
               onChange={this.bodyValueChanged}
               lineWrapping
@@ -398,7 +399,7 @@ export default class EditEmailNotification extends React.Component {
           </Form.Item>
           <Row style={{display: this.state.previewMode ? 'flex' : 'none'}}>
             <EmailPreview
-              className={styles.codeEditor}
+              className={classNames(styles.codeEditor, 'cp-code-editor')}
               style={{
                 lineHeight: 'inherit',
                 backgroundColor: 'transparent',

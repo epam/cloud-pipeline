@@ -55,21 +55,41 @@ function DockerImageDetails ({
   return (
     <div key={docker} className={classNames(styles.container, className)}>
       <span
-        className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
+        className={
+          classNames(
+            'cp-text-not-important',
+            {[styles.hidden]: onlyImage}
+          )
+        }
       >
         {registry}
       </span>
       <Icon
-        className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
+        className={
+          classNames(
+            'cp-text-not-important',
+            {[styles.hidden]: onlyImage}
+          )
+        }
         type="right"
       />
       <span
-        className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
+        className={
+          classNames(
+            'cp-text-not-important',
+            {[styles.hidden]: onlyImage}
+          )
+        }
       >
         {g}
       </span>
       <Icon
-        className={classNames(styles.sub, {[styles.hidden]: onlyImage})}
+        className={
+          classNames(
+            'cp-text-not-important',
+            {[styles.hidden]: onlyImage}
+          )
+        }
         type="right"
       />
       {
@@ -81,6 +101,8 @@ function DockerImageDetails ({
       }
       <span
         className={classNames(
+          'cp-text',
+          'cp-text-not-important-after',
           styles.main,
           {[styles.aligned]: (!id || !iconId) && alignImages}
         )}
@@ -89,9 +111,7 @@ function DockerImageDetails ({
       </span>
       {
         v && v !== 'latest' && (
-          <span
-            className={styles.version}
-          >
+          <span className={'cp-text-not-important'}>
             {v}
           </span>
         )

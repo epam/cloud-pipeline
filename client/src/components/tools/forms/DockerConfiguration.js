@@ -21,10 +21,9 @@ import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import {Modal, Row, Button, Collapse} from 'antd';
 import styles from '../Tools.css';
+import BashCode from '../../special/bash-code';
 import roleModel from '../../../utils/roleModel';
 import UserToken from '../../../models/user/UserToken';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 
 const SECONDS_IN_MONTH = 60 * 60 * 24 * 30;
 
@@ -77,11 +76,11 @@ export default class DockerConfiguration extends React.Component {
         <Row key="header" type="flex" align="middle" justify="space-between">
           <h2>Login into cloud registry</h2>
         </Row>,
-        <Row key="body" type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            <code dangerouslySetInnerHTML={{__html: hljs.highlight('bash', loginIntoRegistryCode).value}} />
-          </pre>
-        </Row>
+        <BashCode
+          key="body"
+          className={styles.code}
+          code={loginIntoRegistryCode}
+        />
       ];
     }
     return null;
@@ -100,11 +99,11 @@ export default class DockerConfiguration extends React.Component {
         <Row key="header" type="flex">
           <h2>Push a local docker image to the cloud registry</h2>
         </Row>,
-        <Row key="body" type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            <code dangerouslySetInnerHTML={{__html: hljs.highlight('bash', code).value}} />
-          </pre>
-        </Row>
+        <BashCode
+          key="body"
+          className={styles.code}
+          code={code}
+        />
       ];
     }
     return null;
@@ -121,19 +120,19 @@ export default class DockerConfiguration extends React.Component {
         <Row key="header 1" style={{marginTop: 0}}>
           <h3>Ask administrator to download registry certificate from URL</h3>
         </Row>,
-        <Row key="body" type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            <code dangerouslySetInnerHTML={{__html: hljs.highlight('bash', code).value}} />
-          </pre>
-        </Row>,
+        <BashCode
+          key="body"
+          className={styles.code}
+          code={code}
+        />,
         <Row key="header 2" type="flex">
           <h3>And place it into docker daemon directory</h3>
         </Row>,
-        <Row key="body docker daemon directory" type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            <code dangerouslySetInnerHTML={{__html: hljs.highlight('bash', placeIntoDockerDaemonDirectoryCode).value}} />
-          </pre>
-        </Row>
+        <BashCode
+          key="body docker daemon directory"
+          className={styles.code}
+          code={placeIntoDockerDaemonDirectoryCode}
+        />
       ];
     }
     return null;
@@ -150,11 +149,11 @@ export default class DockerConfiguration extends React.Component {
         <Row key="header" style={{marginTop: 0}}>
           <h3>Configure docker engine trust to system-wide CAs</h3>
         </Row>,
-        <Row key="body" type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            <code dangerouslySetInnerHTML={{__html: hljs.highlight('bash', code).value}} />
-          </pre>
-        </Row>
+        <BashCode
+          key="body"
+          className={styles.code}
+          code={code}
+        />
       ];
     }
     return null;

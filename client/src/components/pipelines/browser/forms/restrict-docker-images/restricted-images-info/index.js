@@ -20,6 +20,7 @@ import {
   Icon,
   Popover
 } from 'antd';
+import classNames from 'classnames';
 import DockerImageDetails from '../../../../../cluster/hot-node-pool/docker-image-details';
 import styles from './restricted-images-info.css';
 import FSMountStatus, {MountStatus} from '../../../../../special/fs-mount-status';
@@ -56,8 +57,15 @@ function RestrictedImagesInfo ({
         {
           toolsToMount && toolsToMount.length > 0 && (
             <div
-              className={styles.title}
-              style={displayStatus ? {borderTop: '1px solid #ccc'} : {}}
+              className={
+                classNames(
+                  styles.title,
+                  {
+                    'cp-divider': displayStatus,
+                    'top': displayStatus
+                  }
+                )
+              }
             >
               Storage is automatically mounted to:
             </div>
@@ -95,7 +103,7 @@ function RestrictedImagesInfo ({
       >
         <Icon
           type="exclamation-circle-o"
-          className={styles.popoverIcon}
+          className={classNames('cp-icon-larger', 'cp-danger')}
         />
       </Popover>
     </div>

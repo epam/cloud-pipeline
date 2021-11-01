@@ -17,21 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Modal} from 'antd';
-import hljs from 'highlight.js';
 import styles from './import-users.css';
-
-function processBashScript (script) {
-  let command = hljs.highlight('bash', script).value;
-  const r = /\[URL\](.+)\[\/URL\]/ig;
-  let e = r.exec(command);
-  while (e) {
-    command = command.substring(0, e.index) +
-      `<a href="${e[1]}" target="_blank">${e[1]}</a>` +
-      command.substring(e.index + e[0].length);
-    e = r.exec(command);
-  }
-  return command;
-}
+import BashCode from '../../special/bash-code';
 
 function mapLogItem (log) {
   return `[${log.created}] ${log.status} ${log.message}`;
@@ -55,13 +42,15 @@ function ImportResult (
     );
   } else {
     content = (
-      <pre style={{width: '100%', maxHeight: '70vh', overflow: 'auto', fontSize: 'smaller'}}>
-        <code
-          id="users-import-logs"
-          dangerouslySetInnerHTML={{
-            __html: processBashScript(logs.map(mapLogItem).join('\n'))
-          }} />
-      </pre>
+      <BashCode
+        id="users-import-logs"
+        style={{
+          width: '100%',
+          maxHeight: '70vh',
+          overflow: 'auto'
+        }}
+        code={logs.map(mapLogItem).join('\n')}
+      />
     );
   }
   if (/^inline$/i.test(mode)) {

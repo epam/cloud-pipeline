@@ -117,7 +117,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           actions.push({
             title: 'STOP',
             icon: 'close-circle-o',
-            style: {color: 'red'},
+            className: 'cp-danger',
             action: callbacks ? callbacks.stop : undefined
           });
         }
@@ -141,7 +141,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         actions.push({
           title: 'TERMINATE',
           icon: 'close-circle-o',
-          style: {color: 'red'},
+          className: 'cp-danger',
           action: callbacks ? callbacks.terminate : undefined
         });
         break;

@@ -45,8 +45,7 @@ export default class MetadataEntityPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -84,7 +83,9 @@ export default class MetadataEntityPreview extends React.Component {
     if (this.props.metadataEntity.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.metadataEntity.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.metadataEntity.error}
+          </span>
         </div>
       );
     }
@@ -92,17 +93,12 @@ export default class MetadataEntityPreview extends React.Component {
       return null;
     }
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
-
     const items = [];
     for (let key in this.rowData) {
       if (this.rowData.hasOwnProperty(key)) {
         items.push(
           <tr key={key}>
-            <td style={firstCellStyle}>{key}</td>
+            <td className={styles.firstCell}>{key}</td>
             <td>{this.rowData[key].value}</td>
           </tr>
         );
@@ -133,25 +129,23 @@ export default class MetadataEntityPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {items && renderSeparator()}

@@ -26,10 +26,6 @@
   text-align: right;
 }
 
-.validation-error {
-  color: red;
-}
-
 .parameter-row {
   margin-top: 5px;
   display: flex;
@@ -40,7 +36,6 @@
 .parameter-name {
   white-space: nowrap;
   text-align: right;
-  color: #000;
   padding-right: 5px;
   width: 25%;
 }

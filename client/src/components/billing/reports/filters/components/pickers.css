@@ -32,28 +32,8 @@
   justify-content: space-between;
 }
 
-.button,
-.button span {
-  color: #bbb;
-}
-
-.button i {
-  color: #888;
-  margin-right: 2px;
-}
-
-.button .value-is-set {
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.button .value-is-set i.close {
-  color: rgba(0, 0, 0, 0.5);
-}
-
 .overlay {
-  background-color: white;
   width: 200px;
-  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.1);
   border-radius: 5px;
   user-select: none;
 }
@@ -64,21 +44,11 @@
   align-items: center;
   justify-content: space-between;
   line-height: 36px;
-  border-bottom: 1px solid #ccc;
 }
 
 .overlay .years-container .navigation {
   cursor: pointer;
   margin: 5px 10px;
-}
-
-.overlay .years-container .navigation:hover {
-  color: rgb(0, 143, 229);
-}
-
-.overlay .years-container .navigation.disabled {
-  color: #aaa;
-  cursor: default;
 }
 
 .overlay .row {
@@ -91,23 +61,5 @@
   display: inline-block;
   text-align: center;
   font-size: large;
-  border: 1px solid #fafafa;
   cursor: pointer;
-}
-
-.overlay .row .item.selected {
-  color: rgb(0, 143, 229);
-  background-color: white;
-}
-
-.overlay .row .item:hover {
-  color: white;
-  background-color: rgb(0, 143, 229);
-}
-
-.overlay .row .item.disabled {
-  color: #ccc;
-  cursor: default;
-  font-weight: normal;
-  background-color: unset;
 }

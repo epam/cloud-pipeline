@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {action, computed, observable} from 'mobx';
 import {
   Alert,
@@ -1674,9 +1675,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.estimatedPrice.pending) {
       return undefined;
     }
-    const className = this.state.estimatedPrice.pending
-      ? styles.priceLoading
-      : styles.price;
+    const className = classNames(
+      styles.price,
+      {'cp-text-not-important': this.state.estimatedPrice.pending}
+    );
     if (this.state.estimatedPrice.averagePrice > 0) {
       const info = (
         <Popover
@@ -3637,10 +3639,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (lines.length > 0) {
       return [
         <div key="summary" className={styles.summaryContainer}>
-          <div className={styles.summary}>
+          <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={styles.summaryItem}>
+                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
                   {l}
                 </div>
               ))
@@ -4490,7 +4492,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           descriptions.filter(d => d && d.length).map((description, index) =>
             <span
               key={`description-${index}`}
-              className={styles.panelDescription}>
+              className={classNames(styles.panelDescription, 'cp-text-not-important')}>
               {description}
             </span>
           )
@@ -4975,7 +4977,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
-          <table style={{width: '100%'}} className={styles.layoutHeader}>
+          <table
+            style={{width: '100%'}}
+            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
+          >
             <tbody>
               <tr>
                 {renderFormTitle()}
