@@ -151,7 +151,7 @@ function getTilesInfo (file) {
     const filePathWithoutExtension = `${e[1] || ''}${e[2]}`;
     return {
       tilesFolders: [
-        `.wsipreview/${filePathWithoutExtension}/tiles`,
+        `.wsiparser/${filePathWithoutExtension}/tiles`,
         `${filePathWithoutExtension}.tiles`
       ],
       folder: filePathWithoutExtension
