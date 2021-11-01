@@ -194,7 +194,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                 })
             }
             cardClassName={run => classNames({
-              [styles.runServiceCard]: run.initialized && run.serviceUrl
+              'cp-card-service': run.initialized && run.serviceUrl
             })}
             childRenderer={renderRunCard}>
             {this.getActiveRuns()}

@@ -55,6 +55,24 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/continuelist';
 import 'codemirror/addon/edit/trailingspace';
 
+function addClassListElement(object, className) {
+  if (!object || !className) {
+    return;
+  }
+  if (!object.classList.contains(className)) {
+    object.classList.add(className);
+  }
+}
+
+function removeClassListElement(object, className) {
+  if (!object || !className) {
+    return;
+  }
+  if (object.classList.contains(className)) {
+    object.classList.remove(className);
+  }
+}
+
 @observer
 export default class CodeEditor extends React.Component {
 
@@ -182,8 +200,11 @@ export default class CodeEditor extends React.Component {
       return;
     }
     this.codeMirrorInstance.setSize('100%', '100%');
-    this.codeMirrorInstance.display.wrapper.style.backgroundColor = this.props.readOnly
-      ? '#f0f0f0' : 'white';
+    if (this.props.readOnly) {
+      addClassListElement(this.codeMirrorInstance.display.wrapper, 'cp-code-editor-readonly');
+    } else {
+      removeClassListElement(this.codeMirrorInstance.display.wrapper, 'cp-code-editor-readonly');
+    }
     this.codeMirrorInstance.setOption('mode', this._getFileLanguage());
     this.codeMirrorInstance.setOption('readOnly', this.props.readOnly);
     this.codeMirrorInstance.off('change', this._onCodeChange);

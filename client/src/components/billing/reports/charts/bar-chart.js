@@ -15,9 +15,8 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import Chart from './base';
-import {colors} from './colors';
 import {
   BarchartDataLabelPlugin,
   ChartClickPlugin
@@ -70,7 +69,8 @@ function BarChart (
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
     onImageDataReceived,
-    itemNameFn = o => o
+    itemNameFn = o => o,
+    reportThemes
   }
 ) {
   if (!request) {
@@ -114,10 +114,10 @@ function BarChart (
         data: previousData,
         borderWidth: 2,
         borderDash: [4, 4],
-        borderColor: colors.blue,
-        backgroundColor: colors.blue,
+        borderColor: reportThemes.blue,
+        backgroundColor: reportThemes.blue,
         borderSkipped: '',
-        textColor: colors.blue,
+        textColor: reportThemes.blue,
         textBold: false,
         showDataLabels: false,
         maxBarThickness: 70
@@ -126,10 +126,10 @@ function BarChart (
         label: 'Current',
         data: currentData,
         borderWidth: 2,
-        borderColor: colors.current,
-        backgroundColor: colors.lightCurrent,
+        borderColor: reportThemes.current,
+        backgroundColor: reportThemes.lightCurrent,
         borderSkipped: '',
-        textColor: colors.darkCurrent,
+        textColor: reportThemes.darkCurrent,
         textBold: false,
         maxBarThickness: 70
       }
@@ -141,17 +141,25 @@ function BarChart (
       xAxes: [{
         id: 'x-axis',
         gridLines: {
-          drawOnChartArea: false
+          drawOnChartArea: false,
+          color: reportThemes.lineColor,
+          zeroLineColor: reportThemes.lineColor
         },
         scaleLabel: {
           display: !disabled && subChart,
-          labelString: title
+          labelString: title,
+          fontColor: reportThemes.subTextColor
+        },
+        ticks: {
+          fontColor: reportThemes.subTextColor
         }
       }],
       yAxes: [{
         position: axisPosition,
         gridLines: {
-          display: !disabled
+          display: !disabled,
+          color: reportThemes.lineColor,
+          zeroLineColor: reportThemes.lineColor
         },
         ticks: {
           display: !disabled,
@@ -162,13 +170,15 @@ function BarChart (
             }
             return valueFormatter(value);
           },
-          max: !disabled ? maximum : undefined
+          max: !disabled ? maximum : undefined,
+          fontColor: reportThemes.subTextColor
         }
       }]
     },
     title: {
       display: !subChart && !!title,
-      text: top ? `${title} (TOP ${top})` : title
+      text: top ? `${title} (TOP ${top})` : title,
+      fontColor: reportThemes.textColor
     },
     legend: {
       display: false
@@ -255,4 +265,4 @@ function BarChart (
   );
 }
 
-export default observer(BarChart);
+export default inject('reportThemes')(observer(BarChart));

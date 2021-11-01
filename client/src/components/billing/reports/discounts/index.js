@@ -188,7 +188,7 @@ class ButtonComponent extends React.Component {
   render () {
     const {className, discounts} = this.props;
     const {modalVisible} = this.state;
-    const classNames = [className, styles.button].filter(Boolean).join(' ');
+    const classNames = [className, styles.button, 'cp-billing-button-link'].filter(Boolean).join(' ');
     const parts = [];
     const round = a => Math.round(a * 100.0) / 100.0;
     if (discounts.compute !== 0) {

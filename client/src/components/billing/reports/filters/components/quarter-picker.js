@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import {Dropdown, Icon} from 'antd';
@@ -161,18 +162,23 @@ class QuarterPicker extends React.Component {
     const canNavigateRight = selectedYear < +maximumValue.get('Y');
     const leftClassNames = [
       styles.navigation,
-      !canNavigateLeft && styles.disabled
+      'cp-billing-calendar-navigation',
+      !canNavigateLeft && 'disabled'
     ].filter(Boolean);
     const rightClassNames = [
       styles.navigation,
-      !canNavigateRight && styles.disabled
+      'cp-billing-calendar-navigation',
+      !canNavigateRight && 'disabled'
     ].filter(Boolean);
     const renderQuarter = (q) => {
       const date = moment.utc(`${selectedYear}-${(q - 1) * 3 + 1}-01`, 'YYYY-MM-DD');
       const classNames = [
         styles.item,
-        year === selectedYear && quarter === q ? styles.selected : undefined,
-        date < minimumValue || date > maximumValue ? styles.disabled : undefined
+        'cp-billing-calendar-row-item',
+        year === selectedYear && quarter === q
+          ? 'selected' : undefined,
+        date < minimumValue ||
+        date > maximumValue ? 'disabled' : undefined
       ].filter(Boolean);
       return (
         <div
@@ -186,8 +192,14 @@ class QuarterPicker extends React.Component {
       );
     };
     return (
-      <div className={styles.overlay}>
-        <div className={styles.yearsContainer}>
+      <div className={classNames(
+        styles.overlay,
+        'cp-billing-calendar-container'
+      )}>
+        <div className={classNames(
+          styles.yearsContainer,
+          'cp-billing-calendar-years-container'
+        )}>
           <Icon
             role="button"
             className={leftClassNames.join(' ')}

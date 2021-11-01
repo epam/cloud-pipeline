@@ -130,7 +130,8 @@ export default class EmailPreview extends React.Component {
           style={this.props.iFrameStyle || {
             width: '100%',
             height: '100%',
-            border: 'none'
+            border: 'none',
+            backgroundColor: 'white'
           }}
           src={`data:text/html;charset=utf-8,${encodeURIComponent(this.getValue())}`} />
       </div>

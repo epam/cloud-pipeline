@@ -22,19 +22,6 @@
   filter: none !important;
 }
 
-.region-row {
-  cursor: pointer;
-}
-
-.region-row td {
-  padding: 6px !important;
-}
-
-.region-row.selected {
-  background-color: #ebf6fd;
-  font-weight: bold;
-}
-
 .region-row .region {
   margin-left: 20px;
 }
@@ -60,7 +47,6 @@
 .code-editor {
   line-height: 1.25;
   width: 100%;
-  border: 1px solid #ddd;
 }
 
 .permission-icon {
@@ -78,10 +64,6 @@
 
 .hidden-item {
   display: none;
-}
-
-.file-share-mount-row {
-  border-bottom: 1px solid #ddd;
 }
 
 .file-share-mount-row:last-child {

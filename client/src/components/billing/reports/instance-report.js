@@ -586,7 +586,7 @@ class InstanceReport extends React.Component {
   }
 }
 
-export default inject('awsRegions')(
+export default inject('awsRegions', 'reportThemes')(
   inject(injection)(
     Filters.attach(
       observer(InstanceReport)

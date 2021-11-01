@@ -26,12 +26,31 @@ export default function KeyValue ({document, field, name}) {
           classNames(
             styles.attribute,
             styles.ellipsis,
-            styles.keyValue
+            styles.keyValue,
+            'cp-search-result-item-tag'
           )
         }
       >
-        <span className={styles.key}>{name || field}</span>
-        <span className={styles.value}>{document[field]}</span>
+        <span
+          className={
+            classNames(
+              styles.key,
+              'cp-search-result-item-tag-key'
+            )
+          }
+        >
+          {name || field}
+        </span>
+        <span
+          className={
+            classNames(
+              styles.value,
+              'cp-search-result-item-tag-value'
+            )
+          }
+        >
+          {document[field]}
+        </span>
       </div>
     );
   }

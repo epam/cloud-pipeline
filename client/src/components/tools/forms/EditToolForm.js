@@ -31,6 +31,8 @@ import {
   Select,
   Tag
 } from 'antd';
+import classNames from 'classnames';
+
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
 import CodeEditor from '../../special/CodeEditor';
 import {getSpotTypeName} from '../../special/spot-instance-names';
@@ -941,10 +943,10 @@ export default class EditToolForm extends React.Component {
     if (lines.length > 0) {
       return (
         <div className={styles.summaryContainer}>
-          <div className={styles.summary}>
+          <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={styles.summaryItem}>
+                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
                   {l}
                 </div>
               ))

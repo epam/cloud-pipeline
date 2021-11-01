@@ -21,7 +21,6 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER, VERSION} from '../../../config';
 import {Button, Icon, message, Popover, Row, Tooltip} from 'antd';
-import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import RunsCounterMenuItem from './RunsCounterMenuItem';
@@ -58,19 +57,22 @@ export default class Navigation extends React.Component {
   }
 
   menuItemClassSelector = (navigationItem, activeItem) => {
-    if (navigationItem.key === activeItem) {
-      return styles.navigationMenuItemSelected;
-    } else {
-      return styles.navigationMenuItem;
-    }
+    return classNames(
+      'cp-navigation-menu-item',
+      {
+        'selected': navigationItem.key === activeItem
+      }
+    );
   };
 
   highlightedMenuItemClassSelector = (navigationItem, activeItem) => {
-    if (navigationItem.key === activeItem) {
-      return styles.highlightedNavigationMenuItemSelected;
-    } else {
-      return styles.highlightedNavigationMenuItem;
-    }
+    return classNames(
+      'cp-navigation-menu-item',
+      'cp-runs-menu-item',
+      {
+        'selected': navigationItem.key === activeItem
+      }
+    );
   };
 
   navigate = ({key}) => {
@@ -135,9 +137,18 @@ export default class Navigation extends React.Component {
       .filter(item => this.getNavigationItemVisible(item))
       .map((navigationItem, index) => {
         if (navigationItem.isDivider) {
-          return <div
-            key={`divider_${index}`}
-            style={{height: 1, width: '100%', backgroundColor: '#fff', opacity: 0.5}} />;
+          return (
+            <div
+              className={
+                classNames(
+                  'cp-divider',
+                  'horizontal',
+                  'cp-navigation-divider'
+                )
+              }
+              key={`divider_${index}`}
+            />
+          );
         }
         if (navigationItem.key === 'billing' && !this.props.billingEnabled) {
           return null;
@@ -150,7 +161,6 @@ export default class Navigation extends React.Component {
             <Link
               id={`navigation-button-${navigationItem.key}`}
               key={navigationItem.key}
-              style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               to={navigationItem.path}>
               <Tooltip
@@ -159,7 +169,7 @@ export default class Navigation extends React.Component {
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
                 <Icon
-                  style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
+                  style={navigationItem.iconStyle}
                   type={navigationItem.icon}
                 />
               </Tooltip>
@@ -171,10 +181,6 @@ export default class Navigation extends React.Component {
               key={navigationItem.key}
               tooltip={this.getNavigationItemTitle(navigationItem.title)}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              highlightedClassName={this.highlightedMenuItemClassSelector(
-                navigationItem,
-                activeTabPath
-              )}
               onClick={() => this.navigate({key: navigationItem.key})}
               icon={navigationItem.icon} />
           );
@@ -183,7 +189,6 @@ export default class Navigation extends React.Component {
             <Link
               id={`navigation-button-${navigationItem.key}`}
               key={navigationItem.key}
-              style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               to={navigationItem.path}>
               <Tooltip
@@ -192,7 +197,7 @@ export default class Navigation extends React.Component {
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
                 <Icon
-                  style={Object.assign({marginTop: 12}, navigationItem.iconStyle || {})}
+                  style={navigationItem.iconStyle}
                   type={navigationItem.icon}
                 />
               </Tooltip>
@@ -222,23 +227,31 @@ export default class Navigation extends React.Component {
         }
       })
       .filter(Boolean);
-    const searchStyle = [searchStyles.searchBlur];
-    if (this.props.searchControlVisible) {
-      searchStyle.push(searchStyles.enabled);
-    }
     return (
       <div
         id="navigation-container"
         className={
           classNames(
-            styles.navigationContainer,
+            'cp-navigation-panel',
             {
-              [styles.impersonated]: impersonation.isImpersonated
+              impersonated: impersonation.isImpersonated
             }
           )
         }
+        style={{
+          height: '100vh'
+        }}
       >
-        <div className={`${styles.navigationInsideContainer} ${searchStyle.join(' ')}`}>
+        <div
+          className={
+            classNames(
+              searchStyles.searchBlur,
+              {
+                [searchStyles.enabled]: this.props.searchControlVisible
+              }
+            )
+          }
+        >
           {
             VERSION &&
             <Popover
@@ -258,14 +271,16 @@ export default class Navigation extends React.Component {
               visible={this.state.versionInfoVisible}>
               <Button
                 id="navigation-button-logo"
-                className={styles.logoMenuItem}>
-                <img src="logo.png" style={{height: 26}} />
+                className="cp-navigation-menu-item">
+                <div className="cp-navigation-item-logo">
+                  {'\u00A0'}
+                </div>
               </Button>
             </Popover>
           }
           {menuItems}
           <SupportMenu
-            itemClassName={styles.navigationMenuItem}
+            itemClassName="cp-navigation-menu-item"
             containerStyle={{
               position: 'absolute',
               left: 0,
@@ -278,8 +293,9 @@ export default class Navigation extends React.Component {
             <Button
               id="expand-collapse-library-tree-button"
               onClick={this.props.onLibraryCollapsedChange}
-              className={styles.navigationMenuItem}
-              style={{position: 'absolute', left: 0, bottom: 0, right: 0}}>
+              className="cp-navigation-menu-item"
+              style={{position: 'absolute', left: 0, bottom: 0, right: 0}}
+            >
               <Icon type={this.props.collapsed ? 'right' : 'left'} />
             </Button>
           }

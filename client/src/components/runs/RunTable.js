@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
@@ -294,7 +295,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       this.setState({statuses});
     };
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer} style={{width: 120}}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container'
+      )} style={{width: 120}}>
         <Row>
           <div style={{maxHeight: 400, overflowY: 'auto'}}>
             {
@@ -351,9 +355,12 @@ export default class RunTable extends localization.LocalizedReactComponent {
     };
 
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container'
+      )}>
         <DayPicker
-          className={styles.datePicker}
+          className={classNames(styles.datePicker, 'cp-runs-day-picker')}
           selectedDays={this.state[parameter].value}
           onDayClick={onDateChanged} />
         <Row type="flex" justify="space-between" className={styles.filterActionsButtonsContainer}>
@@ -410,7 +417,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       });
 
       const filterDropdown = (
-        <div className={styles.filterPopoverContainer}>
+        <div className={classNames(
+          styles.filterPopoverContainer,
+          'cp-filter-popover-container'
+        )}>
           <Row>
             <Input.Search
               placeholder="Filter"
@@ -504,7 +514,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
           (image.group || '').toLowerCase().indexOf(searchString) >= 0;
       };
       const filterDropdown = (
-        <div className={styles.filterPopoverContainer}>
+        <div className={classNames(
+          styles.filterPopoverContainer,
+          'cp-filter-popover-container'
+        )}>
           <Row>
             <Input.Search
               value={this.state[parameter].searchString}
@@ -562,7 +575,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
         this.onFilterChanged(parameter)();
       };
       const filterDropdown = (
-        <div className={styles.filterPopoverContainer} style={{width: 300}}>
+        <div className={classNames(
+          styles.filterPopoverContainer,
+          'cp-filter-popover-container'
+        )} style={{width: 300}}>
           <UserAutoComplete
             placeholder="Owners"
             value={this.state[parameter].value}
@@ -592,7 +608,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       this.onFilterChanged(parameter)();
     };
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container'
+      )}>
         <Input
           placeholder={placeholder}
           value={this.state[parameter].value}
@@ -960,12 +979,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 run.sensitive
                   ? (
                     <span
-                      style={
-                        Object.assign(
-                          {color: '#ff5c33'},
-                          run.instance ? {marginLeft: 5} : {}
-                        )
-                      }
+                      className="cp-sensitive"
+                      style={run.instance ? {marginLeft: 5} : {}}
                     >
                       sensitive
                     </span>
@@ -1262,6 +1277,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
   render () {
     const source = this.props.dataSource && this.props.dataSource.map(this.prepareSourceItem);
     const style = this.props.className ? {className: this.props.className} : {};
+    const serviceClass = 'cp-runs-table-service-url-run';
     return (
       <Table
         className={`${styles.table} runs-table`}
@@ -1278,7 +1294,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
             record.status === 'RESUMING'
           ) &&
           record.initialized
-            ? styles.serviceUrlRun : styles.run
+            ? serviceClass : styles.run
         } run-${record.id}`}
         dataSource={source}
         onChange={this.props.handleTableChange}

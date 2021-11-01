@@ -96,7 +96,7 @@ function Schedule ({schedule}) {
       {
         entries.map((entry, index) => (
           <div key={index} className={styles.scheduleRow}>
-            <span className={styles.schedule}>
+            <span className={classNames(styles.schedule, 'cp-text-not-important')}>
               {entry}
             </span>
           </div>
@@ -152,7 +152,17 @@ function PoolCard ({
   const fontSize = total >= 100 ? 10 : 12;
   return (
     <div
-      className={classNames(styles.container, {[styles.poolDisabled]: nodeCount === 0})}
+      className={
+        classNames(
+          styles.container,
+          'cp-panel-card',
+          'cp-hot-node-pool',
+          {
+            [styles.poolDisabled]: nodeCount === 0,
+            'cp-disabled': nodeCount === 0
+          }
+        )
+      }
       onClick={onClick}
     >
       <div className={styles.headerContainer}>
@@ -160,7 +170,10 @@ function PoolCard ({
           className={
             classNames(
               styles.infoBlock,
-              {[styles.hasRuns]: runs > 0}
+              'cp-text-not-important',
+              {
+                'cp-success': runs > 0
+              }
             )
           }
           style={{fontSize: `${fontSize}pt`}}

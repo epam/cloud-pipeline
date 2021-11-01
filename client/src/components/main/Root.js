@@ -47,8 +47,6 @@ import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
 import UsersInfo from '../../models/user/UsersInfo';
 import AppLocalization from '../../utils/localization';
-import IssuesRenderer from '../../components/special/issues/utilities/IssueRenderer';
-import NotificationRenderer from '../special/notifications/utilities/NotificationRenderer';
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
@@ -63,19 +61,13 @@ import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CloudPipelineThemes from '../../themes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
-const issuesRenderer = new IssuesRenderer(
-  pipelinesLibrary,
-  dockerRegistries,
-  preferences,
-  hiddenObjects
-);
-const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
 const fireCloudMethods = new FireCloudMethods(googleApi);
@@ -113,6 +105,8 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
 
+const themes = new CloudPipelineThemes();
+
 const Root = () =>
   <Provider
     {...{
@@ -149,8 +143,6 @@ const Root = () =>
       dataStorageAvailable,
       dtsList,
       dockerRegistries,
-      issuesRenderer,
-      notificationsRenderer,
       myIssues,
       users,
       usersInfo,
@@ -165,7 +157,8 @@ const Root = () =>
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
       uiNavigation,
-      vsActions
+      vsActions,
+      themes
     }}>
     <AppRouter />
   </Provider>;

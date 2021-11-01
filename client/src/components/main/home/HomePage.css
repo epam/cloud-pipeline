@@ -38,7 +38,6 @@
 
 .sticky-header-background {
   position: absolute;
-  background-color: #eee;
   top: -20px;
   bottom: 0;
   left: -50px;
@@ -55,8 +54,6 @@
 }
 
 .panel {
-  border: 1px solid #ccc;
-  background-color: #fff;
   position: relative;
   height: 100%;
   display: flex;

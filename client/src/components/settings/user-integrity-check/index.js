@@ -504,7 +504,7 @@ class UserIntegrityCheck extends React.Component {
                   classNames(
                     styles.userNameCellContainer,
                     {
-                      [styles.blocked]: blocked
+                      'cp-text-not-important': blocked
                     }
                   )
                 }
@@ -532,7 +532,7 @@ class UserIntegrityCheck extends React.Component {
                     >
                       <Icon
                         type="exclamation-circle-o"
-                        className={styles.issues}
+                        className={classNames(styles.issues, 'cp-setting-warning')}
                       />
                     </Tooltip>
                   )
@@ -549,12 +549,14 @@ class UserIntegrityCheck extends React.Component {
                       <div className={styles.cell}>
                         <Select
                           className={
-                            classNames({
-                              [styles.modifiedValue]:
-                                this.isModifiedValue(user.id, column),
-                              [styles.newValue]:
-                                this.isNewValue(dictionary, userMetadata[column])
-                            })
+                            classNames(
+                              'cp-settings-users-integrity-check',
+                              {
+                                modified:
+                                  this.isModifiedValue(user.id, column),
+                                new:
+                                  this.isNewValue(dictionary, userMetadata[column])
+                              })
                           }
                           mode="combobox"
                           size="large"
@@ -632,11 +634,10 @@ class UserIntegrityCheck extends React.Component {
                       disabled={actionInProgress}
                       className={
                         classNames(
+                          'cp-settings-users-integrity-check',
                           {
-                            [styles.modifiedValue]:
-                              this.isModifiedValue(user.id, column)
-                          },
-                          styles.input
+                            modified: this.isModifiedValue(user.id, column)
+                          }
                         )
                       }
                       size="large"
@@ -718,7 +719,7 @@ class UserIntegrityCheck extends React.Component {
         className={styles.tableContainer}
         onScroll={blur}
       >
-        <table className={styles.table}>
+        <table className={classNames(styles.table, 'cp-settings-table')}>
           <thead>
             {this.renderTableHead()}
           </thead>

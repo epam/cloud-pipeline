@@ -22,6 +22,7 @@ import {
   Modal,
   Radio
 } from 'antd';
+import classNames from 'classnames';
 import DockerImagesEdit from './DockerImagesEdit';
 import styles from './RestrictDockerDialog.css';
 
@@ -126,7 +127,7 @@ class RestrictDockerDialog extends React.Component {
   renderRadioBlock = () => {
     const {limitMounts} = this.state;
     return (
-      <div className={styles.modalRadioContainer}>
+      <div className={classNames(styles.modalRadioContainer, 'cp-divider', 'bottom')}>
         <Radio.Group
           onChange={this.onChangeLimitMountsRadio}
           value={limitMounts ? KEYS.limitMounts : KEYS.mountAll}

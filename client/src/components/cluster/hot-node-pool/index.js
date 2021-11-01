@@ -243,7 +243,9 @@ class HotCluster extends React.Component {
       pending
     } = this.state;
     return (
-      <div>
+      <div
+        className="cp-panel cp-panel-transparent"
+      >
         <div
           className={styles.header}
         >

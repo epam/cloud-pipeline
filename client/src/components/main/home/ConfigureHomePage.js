@@ -80,6 +80,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
     return (
       <Modal
         width="33%"
+        className="cp-dashboard-configure"
         title="Configure dashboard"
         visible={this.props.visible}
         onCancel={this.props.onCancel}
@@ -95,15 +96,12 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         <table style={{borderCollapse: 'collapse', width: '100%'}}>
           <tbody>
             {
-              this.state.panels.map((panel, index) => {
+              this.state.panels.map((panel) => {
                 return (
                   <tr
                     key={panel.key}
-                    style={
-                      index % 2 === 0
-                        ? {height: 22}
-                        : {height: 22, backgroundColor: '#f4f4f4'}
-                    }>
+                    className="cp-even-odd-element"
+                    style={{height: 22}}>
                     <td style={{borderCollapse: 'separate'}}>
                       <Checkbox
                         disabled={
