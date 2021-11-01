@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, Row} from 'antd';
+import classNames from 'classnames';
 import LoadingView from '../../../special/LoadingView';
 import CardsPanel from './components/CardsPanel';
 import highlightText from '../../../special/highlightText';
@@ -72,8 +73,26 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     const renderTag = (tag, index) => {
       return (
         <div className={styles.projectTag} key={index}>
-          <Row className={styles.projectTagKey}>{tag.key}</Row>
-          <Row className={styles.projectTagValue}>{highlightText(tag.value, search)}</Row>
+          <Row
+            className={
+              classNames(
+                styles.projectTagKey,
+                'cp-project-tag-key'
+              )
+            }
+          >
+            {tag.key}
+          </Row>
+          <Row
+            className={
+              classNames(
+                styles.projectTagValue,
+                'cp-project-tag-value'
+              )
+            }
+          >
+            {highlightText(tag.value, search)}
+          </Row>
         </div>
       );
     };

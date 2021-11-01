@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
 import {
   Alert,
@@ -73,7 +74,7 @@ export default class ToolVersion extends React.Component {
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
         <Card
-          className={styles.toolVersionCard}
+          className={classNames(styles.toolVersionCard, 'cp-panel', 'cp-panel-transparent')}
           bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
           <Alert type="error" message="You have no permissions to view tool details" />
         </Card>
@@ -100,7 +101,7 @@ export default class ToolVersion extends React.Component {
 
     return (
       <Card
-        className={styles.toolVersionCard}
+        className={classNames(styles.toolVersionCard, 'cp-panel', 'cp-panel-transparent')}
         bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
         <Row>
           <Row className={styles.title}>

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 // import {Menu} from 'antd';
 // import Quotas from './quotas';
 import * as Reports from './reports';
@@ -47,7 +48,7 @@ function billing ({children, location, router, preferences, authenticatedUserInf
   //   }
   // };
   return (
-    <div className={styles.container}>
+    <div className={classNames(styles.container, 'cp-panel', 'cp-panel-transparent')}>
       {/*
       <div className={styles.menuContainer}>
         <Menu

@@ -142,7 +142,6 @@ function renderRegion (run) {
     const {cloudProvider, cloudRegionId} = run.instance;
     return (
       <AWSRegionTag
-        darkMode
         key="region"
         style={{fontSize: 'medium'}}
         provider={cloudProvider}

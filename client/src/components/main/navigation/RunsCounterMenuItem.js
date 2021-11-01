@@ -16,8 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row, Button, Tooltip} from 'antd';
-import styles from './Navigation.css';
+import classNames from 'classnames';
+import {Icon, Button, Tooltip} from 'antd';
 import PropTypes from 'prop-types';
 
 @inject('counter')
@@ -35,32 +35,27 @@ export default class RunsCounterMenuItem extends React.Component {
       <Tooltip overlay={this.props.tooltip} placement="right" mouseEnterDelay={0.5}>
         <Button
           id="navigation-button-runs"
-          style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
           className={
-            this.props.counter &&
-            this.props.counter.value > 0
-              ? this.props.highlightedClassName : this.props.className
+            classNames(
+              this.props.className,
+              'cp-runs-menu-item',
+              {
+                active: this.props.counter && this.props.counter.value > 0
+              }
+            )
           }
           onClick={this.props.onClick}
         >
-          <Row
-            type="flex"
-            justify="center"
-            align="middle"
-            style={{height: '100%'}}>
-            <Icon
-              type={this.props.icon}
-              className={
-                this.props.counter &&
-                this.props.counter.value > 0
-                ? styles.highlightedIcon : styles.icon
-              } />
-            {
-              this.props.counter &&
-              this.props.counter.value > 0 &&
-              <span className={styles.counterBadge}>{this.props.counter.value}</span>
-            }
-          </Row>
+          <Icon
+            type={this.props.icon}
+          />
+          {
+            this.props.counter &&
+            this.props.counter.value > 0 &&
+            <span>
+              {this.props.counter.value}
+            </span>
+          }
         </Button>
       </Tooltip>
     );

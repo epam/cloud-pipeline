@@ -18,8 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import styles from './AWSRegionTag.css';
-import './AWSRegionTagFlags.less';
 
 @inject('awsRegions')
 @observer
@@ -243,9 +243,13 @@ class AWSRegionTag extends React.Component {
         parts.push(
           <span
             className={
-              `${styles.provider} provider ${this.provider} ${this.props.darkMode && styles.dark}`
+              classNames(
+                styles.provider,
+                'provider',
+                this.provider.toLowerCase(),
+                {[styles.dark]: this.props.darkMode}
+              )
             }
-            data-provider={this.provider}
             key="provider"
             style={this.props.providerStyle}
           />
@@ -257,10 +261,19 @@ class AWSRegionTag extends React.Component {
       if (this.props.plainMode) {
         parts.push(info.zone);
       } else {
-        const flagClassName = `${styles.flag} flag ${info.result} ${info.zone.toLowerCase()}`;
         parts.push(
           <span
-            className={`${flagClassName} ${this.props.darkMode && styles.dark}`}
+            className={
+              classNames(
+                styles.flag,
+                'flag',
+                info.result,
+                info.zone.toLowerCase(),
+                {
+                  [styles.dark]: this.props.darkMode
+                }
+              )
+            }
             key="flag"
             style={this.props.flagStyle}
           />
@@ -290,7 +303,12 @@ class AWSRegionTag extends React.Component {
         return (
           <span
             style={this.props.style}
-            className={`${styles.container} ${this.props.className || ''}`}>
+            className={
+              classNames(
+                styles.container,
+                this.props.className
+              )
+            }>
             {parts}
           </span>
         );
