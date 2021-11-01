@@ -17,6 +17,7 @@ package com.epam.release.notes.agent.cli;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
 import com.epam.release.notes.agent.service.github.GitHubService;
+import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,9 @@ public class ReleaseNotesNotifier {
 
     @Autowired
     private GitHubService gitHubService;
+
+    @Autowired
+    private JiraIssueService jiraIssueService;
 
     @Value("${release.notes.agent.subscribers:}")
     private List<String> subscribers;
@@ -77,6 +81,10 @@ public class ReleaseNotesNotifier {
                 old.getSha(), current.getSha(), emails));
         gitHubService.fetchIssues(current.getSha(), old.getSha())
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
+        jiraIssueService.fetchIssue(current.toString()).forEach(i -> System.out.printf(
+                "Id: %s Title: %s Description: %s URL: %s Github: %s Version: %s Url: %s%n",
+                i.getId(), i.getTitle(), i.getDescription(), i.getUrl(), i.getGithubId(), i.getVersion(),
+                i.getUrl()));
         applicationVersionService.storeVersion(current);
     }
 }

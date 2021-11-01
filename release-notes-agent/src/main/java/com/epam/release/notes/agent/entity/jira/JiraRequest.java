@@ -12,35 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.release.notes.agent.entity.jira;
 
-import com.epam.pipeline.utils.URLUtils;
-import com.epam.release.notes.agent.service.jira.JiraIssueDeserializer;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Value;
 
-import static java.lang.String.format;
+import java.util.List;
 
-@Data
+@Value
 @Builder
-@JsonDeserialize(using = JiraIssueDeserializer.class)
-public class JiraIssue {
-
-    String id;
-    String title;
-    String githubId;
-    String description;
-    String key;
-
-    @JsonIgnore
-    String url;
-    @JsonIgnore
-    String version;
-
-    public void buildUrl(final String jiraUrl) {
-        this.url = format("%sbrowse/%s", URLUtils.normalizeUrl(jiraUrl), this.key);
-    }
+public class JiraRequest {
+    String jql;
+    List<String> fields;
 }
