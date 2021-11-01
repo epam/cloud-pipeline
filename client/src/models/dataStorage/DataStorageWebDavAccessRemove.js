@@ -27,6 +27,6 @@ export default class DataStorageWebDavAccessRemove extends RemotePost {
       credentials: 'include',
       method: 'DELETE'
     };
-    this.url = `/datastorage/${id}/webdav`;
+    this.url = `/datastorage/${id}/davmount`;
   }
 }

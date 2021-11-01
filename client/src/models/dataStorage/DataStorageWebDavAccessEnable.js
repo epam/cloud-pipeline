@@ -19,6 +19,6 @@ import RemotePost from '../basic/RemotePost';
 export default class DataStorageWebDavAccessEnable extends RemotePost {
   constructor () {
     super();
-    this.url = '/datastorage/webdav';
+    this.url = '/datastorage/davmount';
   }
 }
