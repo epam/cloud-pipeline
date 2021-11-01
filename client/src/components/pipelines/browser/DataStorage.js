@@ -1062,10 +1062,10 @@ export default class DataStorage extends React.Component {
       return;
     }
     const {storageId} = this.props;
-    const {tilesFolder} = getTilesInfo(file.path);
-    if (tilesFolder) {
+    const info = getTilesInfo(file.path);
+    if (info) {
       this.setState({previewPending: true}, () => {
-        getTiles(storageId, tilesFolder)
+        getTiles(storageId, info.tilesFolders)
           .then((tiles) => {
             if (tiles) {
               this.setState({
