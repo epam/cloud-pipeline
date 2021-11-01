@@ -82,9 +82,8 @@ public class ReleaseNotesNotifier {
         gitHubService.fetchIssues(current.getSha(), old.getSha())
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
         jiraIssueService.fetchIssue(current.toString()).forEach(i -> System.out.printf(
-                "Id: %s Title: %s Description: %s URL: %s Github: %s Version: %s Url: %s%n",
-                i.getId(), i.getTitle(), i.getDescription(), i.getUrl(), i.getGithubId(), i.getVersion(),
-                i.getUrl()));
+                "Id: %s Title: %s Description: %s URL: %s Github: %s Version: %s%n",
+                i.getId(), i.getTitle(), i.getDescription(), i.getUrl(), i.getGithubId(), i.getVersion()));
         applicationVersionService.storeVersion(current);
     }
 }

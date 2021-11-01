@@ -15,6 +15,7 @@
 package com.epam.release.notes.agent.service.jira;
 
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
+import com.epam.release.notes.agent.entity.jira.JiraIssueVO;
 import com.epam.release.notes.agent.entity.jira.JiraRequest;
 import com.epam.release.notes.agent.service.RestApiClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,7 +49,7 @@ public class JiraApiClient implements RestApiClient {
      * @param jiraRequest {@link JiraRequest} a request consisting of a JQL query
      * @return Jira issues
      */
-    public List<JiraIssue> getIssue(final JiraRequest jiraRequest) {
+    public List<JiraIssueVO> getIssue(final JiraRequest jiraRequest) {
         return execute(jiraApi.getIssues(jiraRequest)).getJiraIssues();
     }
 }

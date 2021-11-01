@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,11 +27,6 @@ import static java.lang.String.format;
 
 @Service
 public class JiraIssueServiceImpl implements JiraIssueService {
-
-    public static final String ID = "id";
-    public static final String SUMMARY = "summary";
-    public static final String DESCRIPTION = "description";
-    public static final String KEY = "key";
 
     @Autowired
     private JiraApiClient jiraApiClient;
@@ -50,13 +44,11 @@ public class JiraIssueServiceImpl implements JiraIssueService {
     public List<JiraIssue> fetchIssue(final String version) {
         final JiraRequest jiraRequest = JiraRequest.builder()
                 .jql(format("cf[%s]~%s", jiraVersionCustomFieldId, version))
-                .fields(Arrays.asList(ID, KEY, SUMMARY, DESCRIPTION, format("customfield_%s", jiraGithubCustomFieldId)))
                 .build();
-        return jiraApiClient.getIssue(jiraRequest).stream()
-                .peek(issue -> {
-                    issue.setVersion(version);
-                    issue.buildUrl(jiraBaseUrl);
-                })
+        return jiraApiClient.getIssue(jiraRequest)
+                .stream()
+                .map(issueVO -> JiraIssueMapper.toJiraIssue(issueVO, format("customfield_%s", jiraGithubCustomFieldId),
+                        jiraBaseUrl, version))
                 .collect(Collectors.toList());
     }
 }

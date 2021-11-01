@@ -14,20 +14,24 @@
  */
 package com.epam.release.notes.agent.service.jira;
 
-import com.epam.release.notes.agent.entity.jira.JiraIssue;
+import com.epam.release.notes.agent.entity.jira.JiraIssueVO;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
-public class JiraIssueDeserializer extends StdDeserializer<JiraIssue> {
+public class JiraIssueDeserializer extends StdDeserializer<JiraIssueVO> {
 
+    private static final String ID = "id";
+    private static final String KEY = "key";
     private static final String FIELDS = "fields";
 
     protected JiraIssueDeserializer() {
@@ -39,30 +43,18 @@ public class JiraIssueDeserializer extends StdDeserializer<JiraIssue> {
     }
 
     @Override
-    public JiraIssue deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
+    public JiraIssueVO deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
         final JsonNode node = p.getCodec().readTree(p);
-        JiraIssue.JiraIssueBuilder jiraIssueBuilder = JiraIssue.builder()
-                .id(Optional.ofNullable(node.get(JiraIssueServiceImpl.ID).asText()).orElse(EMPTY))
-                .key(Optional.ofNullable(node.get(JiraIssueServiceImpl.KEY).asText()).orElse(EMPTY));
+        JiraIssueVO.JiraIssueVOBuilder jiraIssueBuilder = JiraIssueVO.builder()
+                .id(Optional.ofNullable(node.get(ID).asText()).orElse(EMPTY))
+                .key(Optional.ofNullable(node.get(KEY).asText()).orElse(EMPTY));
         final JsonNode jsonFieldNode = node.get(FIELDS);
         final Iterator<String> fieldNames = jsonFieldNode.fieldNames();
+        final Map<String, String> fields = new HashMap<>();
         while (fieldNames.hasNext()) {
             final String key = fieldNames.next();
-            final String value = Optional.ofNullable(jsonFieldNode.get(key).asText()).orElse(EMPTY);
-            switch (key) {
-                case JiraIssueServiceImpl.SUMMARY:
-                    jiraIssueBuilder.title(value);
-                    break;
-                case JiraIssueServiceImpl.DESCRIPTION:
-                    jiraIssueBuilder.description(value);
-                    break;
-                default:
-                    if (key.startsWith("customfield_")) {
-                        jiraIssueBuilder.githubId(value);
-                    }
-                    break;
-            }
+            fields.put(key, Optional.ofNullable(jsonFieldNode.get(key).asText()).orElse(EMPTY));
         }
-        return jiraIssueBuilder.build();
+        return jiraIssueBuilder.fields(fields).build();
     }
 }

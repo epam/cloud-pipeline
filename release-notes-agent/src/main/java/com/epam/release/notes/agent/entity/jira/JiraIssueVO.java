@@ -14,18 +14,20 @@
  */
 package com.epam.release.notes.agent.entity.jira;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.epam.release.notes.agent.service.jira.JiraIssueDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
-import java.util.List;
+import java.util.Map;
 
 @Value
 @Builder
-@Jacksonized
-public class JiraIssueHolder {
+@JsonDeserialize(using = JiraIssueDeserializer.class)
+public class JiraIssueVO {
 
-    @JsonProperty("issues")
-    List<JiraIssueVO> jiraIssues;
+    String id;
+    String key;
+    Map<String, String> fields;
+
 }
