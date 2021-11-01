@@ -1,13 +1,31 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Modal, Input} from 'antd';
+import {Button, Checkbox, Modal, Input, Tooltip} from 'antd';
+import {CheckCircleFilled, CloseCircleFilled} from '@ant-design/icons';
 import electron from 'electron';
 import './configuration.css';
 import writeWebDavConfiguration from '../../../write-webdav-configuration';
 import copyPingConfiguration from '../../models/file-systems/copy-ping-configuration';
 
+function TestState({tested = false, error}) {
+  if (!tested) {
+    return null;
+  }
+  if (error) {
+    return (
+      <Tooltip title={error}>
+        <CloseCircleFilled style={{color: 'red'}} />
+      </Tooltip>
+    );
+  }
+  return (
+    <CheckCircleFilled style={{color: 'green'}}/>
+  );
+}
+
 class Configuration extends React.Component {
   state = {
+    api: undefined,
     server: undefined,
     password: undefined,
     username: undefined,
@@ -18,8 +36,14 @@ class Configuration extends React.Component {
     maxWaitSeconds: undefined,
     pingTimeoutSeconds: undefined,
     pending: false,
-    diagnoseState: undefined,
-    diagnoseFile: undefined
+    webDavDiagnoseState: undefined,
+    webDavDiagnoseFile: undefined,
+    webDavError: undefined,
+    webDavTested: false,
+    apiDiagnoseState: undefined,
+    apiDiagnoseFile: undefined,
+    apiError: undefined,
+    apiTested: false
   };
   componentDidMount() {
     this.updateSettings();
@@ -54,6 +78,7 @@ class Configuration extends React.Component {
       !Number.isNaN(Number(pingTimeoutSeconds)) &&
       Number(maxWaitSeconds) > 0;
     this.setState({
+      api: webdavClientConfig.api,
       server: webdavClientConfig.server,
       password: webdavClientConfig.password,
       username: webdavClientConfig.username,
@@ -65,8 +90,14 @@ class Configuration extends React.Component {
       maxWaitSeconds,
       pingTimeoutSeconds,
       pending: false,
-      diagnoseState: undefined,
-      diagnoseFile: undefined
+      webDavDiagnoseState: undefined,
+      webDavDiagnoseFile: undefined,
+      webDavError: undefined,
+      webDavTested: false,
+      apiDiagnoseState: undefined,
+      apiDiagnoseFile: undefined,
+      apiError: undefined,
+      apiTested: false
     });
   };
 
@@ -119,9 +150,17 @@ class Configuration extends React.Component {
     }
   };
 
-  diagnose = () => {
+  diagnose = (options = {}) => {
+    const {
+      logStatePropertyName,
+      fileStatePropertyName,
+      resultStatePropertyName,
+      resultErrorStatePropertyName,
+      testOptions = {}
+    } = options || {};
     const {fileSystem} = this.props;
     const {
+      api,
       server,
       password,
       username,
@@ -130,16 +169,20 @@ class Configuration extends React.Component {
     if (fileSystem) {
       this.setState({
         pending: true,
-        diagnoseFile: undefined
+        [fileStatePropertyName]: undefined,
+        [resultStatePropertyName]: false,
+        [resultErrorStatePropertyName]: undefined
       }, () => {
-        const cb = (o) => this.setState({diagnoseState: o});
+        const cb = (o) => this.setState({[logStatePropertyName]: o});
         fileSystem
           .diagnose(
             {
+              api,
               server,
               password,
               username,
-              ignoreCertificateErrors
+              ignoreCertificateErrors,
+              ...testOptions
             },
             cb
           )
@@ -148,13 +191,73 @@ class Configuration extends React.Component {
               filePath
             } = result || {};
             this.setState({
-              diagnoseState: undefined,
+              [logStatePropertyName]: undefined,
               pending: false,
-              diagnoseFile: filePath
+              [fileStatePropertyName]: filePath,
+              [resultStatePropertyName]: true,
+              [resultErrorStatePropertyName]: result.error
             })
           });
       });
     }
+  };
+
+  diagnoseWebDav = () => {
+    this.diagnose({
+      logStatePropertyName: 'webDavDiagnoseState',
+      fileStatePropertyName: 'webDavDiagnoseFile',
+      resultStatePropertyName: 'webDavTested',
+      resultErrorStatePropertyName: 'webDavError',
+      testOptions: {
+        testWebdav: true
+      }
+    });
+  };
+
+  diagnoseAPI = () => {
+    this.diagnose({
+      logStatePropertyName: 'apiDiagnoseState',
+      fileStatePropertyName: 'apiDiagnoseFile',
+      resultStatePropertyName: 'apiTested',
+      resultErrorStatePropertyName: 'apiError',
+      testOptions: {
+        testApi: true
+      }
+    });
+  };
+
+  renderDiagnoseInfo = (title, log, filePath) => {
+    if ((log || filePath)) {
+      return (
+        <div
+          className="row network-logs"
+        >
+          {
+            filePath && (
+              <span
+                className="label"
+                style={{marginRight: 5}}
+              >
+                {title} Network Log file:
+              </span>
+            )
+          }
+          <div style={{flex: 1}}>
+            {
+              filePath && (
+                <Input
+                  value={filePath}
+                  readOnly
+                  style={{width: '100%'}}
+                />
+              )
+            }
+            {log}
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   render () {
@@ -163,6 +266,7 @@ class Configuration extends React.Component {
       fileSystem
     } = this.props;
     const {
+      api,
       server,
       username,
       password,
@@ -172,8 +276,14 @@ class Configuration extends React.Component {
       pingTimeoutSeconds,
       pingAfterCopy,
       pending,
-      diagnoseState,
-      diagnoseFile
+      webDavDiagnoseFile,
+      webDavDiagnoseState,
+      webDavError,
+      webDavTested,
+      apiDiagnoseFile,
+      apiDiagnoseState,
+      apiError,
+      apiTested
     } = this.state;
     return (
       <Modal
@@ -191,18 +301,47 @@ class Configuration extends React.Component {
             className="row"
           >
             <span className="label">
-              Server:
+              Data Server:
             </span>
             <Input
               className="input"
               value={server}
               onChange={this.onSettingChanged('server')}
+              suffix={(
+                <TestState tested={webDavTested} error={webDavError} />
+              )}
             />
             {
               fileSystem && (
                 <Button
                   disabled={pending}
-                  onClick={this.diagnose}
+                  onClick={this.diagnoseWebDav}
+                  style={{marginLeft: 5}}
+                >
+                  TEST
+                </Button>
+              )
+            }
+          </div>
+          <div
+            className="row"
+          >
+            <span className="label">
+              API Server:
+            </span>
+            <Input
+              className="input"
+              value={api}
+              onChange={this.onSettingChanged('api')}
+              suffix={(
+                <TestState tested={apiTested} error={apiError} />
+              )}
+            />
+            {
+              fileSystem && (
+                <Button
+                  disabled={pending}
+                  onClick={this.diagnoseAPI}
                   style={{marginLeft: 5}}
                 >
                   TEST
@@ -295,37 +434,8 @@ class Configuration extends React.Component {
               </div>
             )
           }
-          {
-            (diagnoseState || diagnoseFile) && (
-              <div
-                className="row"
-                style={{
-                  justifyContent: 'space-between',
-                  marginTop: 10,
-                  paddingTop: 5,
-                  borderTop: '1px solid #ccc'
-                }}
-              >
-                {
-                  diagnoseFile && (
-                    <span style={{marginRight: 5}}>Network Log file:</span>
-                  )
-                }
-                <div style={{flex: 1}}>
-                  {
-                    diagnoseFile && (
-                      <Input
-                        value={diagnoseFile}
-                        readOnly
-                        style={{width: '100%'}}
-                      />
-                    )
-                  }
-                  {diagnoseState}
-                </div>
-              </div>
-            )
-          }
+          {this.renderDiagnoseInfo('WebDav', webDavDiagnoseState, webDavDiagnoseFile)}
+          {this.renderDiagnoseInfo('API', apiDiagnoseState, apiDiagnoseFile)}
         </div>
       </Modal>
     );
