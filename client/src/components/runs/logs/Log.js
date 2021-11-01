@@ -899,11 +899,11 @@ class Logs extends localization.LocalizedReactComponent {
             onChange={resizeGraph}
             pane1Style={{display: 'flex', flexDirection: 'column'}}
             pane2Style={{display: 'flex', flexDirection: 'column'}}
+            resizerClassName="cp-split-panel-resizer"
             resizerStyle={{
-              width: 10,
-              margin: '0 -4px',
+              width: 8,
+              margin: 0,
               cursor: 'col-resize',
-              backgroundColor: 'transparent',
               boxSizing: 'border-box',
               backgroundClip: 'padding',
               zIndex: 1
@@ -981,11 +981,11 @@ class Logs extends localization.LocalizedReactComponent {
           defaultSize={300}
           pane1Style={{display: 'flex', flexDirection: 'column'}}
           pane2Style={{display: 'flex', flexDirection: 'column'}}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
-            width: 10,
-            margin: '0 -4px',
+            width: 8,
+            margin: 0,
             cursor: 'col-resize',
-            backgroundColor: 'transparent',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1
@@ -1594,7 +1594,12 @@ class Logs extends localization.LocalizedReactComponent {
               {
                 sensitive ? (
                   <tr>
-                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                    <th
+                      className="cp-sensitive"
+                      colSpan={2}
+                    >
+                      SENSITIVE
+                    </th>
                   </tr>
                 ) : undefined
               }

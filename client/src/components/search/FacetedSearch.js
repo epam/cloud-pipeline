@@ -578,7 +578,7 @@ class FacetedSearch extends React.Component {
     const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;
     return (
       <div
-        className={styles.container}
+        className={classNames(styles.container, 'cp-panel', 'cp-panel-no-hover', 'cp-panel-borderless')}
       >
         <div
           className={styles.search}
@@ -591,7 +591,7 @@ class FacetedSearch extends React.Component {
                 ? (
                   <Icon
                     type="close-circle"
-                    className={styles.clearQuery}
+                    className={classNames(styles.clearQuery, 'cp-search-clear-button')}
                     onClick={this.onClearQuery}
                   />
                 )
@@ -623,7 +623,9 @@ class FacetedSearch extends React.Component {
         </div>
         {
           userDocumentTypes.length === 0 && (
-            <div className={styles.actions}>
+            <div
+              className={classNames(styles.actions, 'cp-search-actions')}
+            >
               <DocumentTypeFilter
                 values={this.documentTypeFilter.values}
                 selection={(activeFilters || {})[DocumentTypeFilterName]}
@@ -649,8 +651,7 @@ class FacetedSearch extends React.Component {
                   percentDefault: 25
                 }
               }]}
-              resizerSize={14}
-              resizerStyle={{backgroundColor: '#ececec'}}
+              resizerSize={8}
             >
               <div
                 key="faceted-filter"
@@ -659,7 +660,10 @@ class FacetedSearch extends React.Component {
                 <span
                   className={classNames(
                     styles.clearFiltersBtn,
-                    {[styles.disabled]: this.activeFiltersIsEmpty}
+                    'cp-search-clear-filters-button',
+                    {
+                      [styles.disabled]: this.activeFiltersIsEmpty
+                    }
                   )}
                   onClick={this.onClearFilters}
                 >

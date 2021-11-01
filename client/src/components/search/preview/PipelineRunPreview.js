@@ -345,7 +345,8 @@ export default class PipelineRunPreview extends React.Component {
       if (sensitive) {
         details.push({
           key: 'sensitive',
-          additionalStyle: {backgroundColor: '#ff5c33', fontWeight: 'bold', color: '#222'},
+          additionalClassName: 'cp-sensitive-tag',
+          additionalStyle: {fontWeight: 'bold'},
           value: 'Sensitive'
         });
       }
@@ -358,7 +359,7 @@ export default class PipelineRunPreview extends React.Component {
                   <span
                     key={d.key}
                     style={d.additionalStyle}
-                    className={styles.instanceHeaderItem}>
+                    className={d.additionalClassName}>
                     {d.value}
                   </span>
                 );

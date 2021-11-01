@@ -17,6 +17,7 @@
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
 import {Card, Icon, Input, message, Row, Tree} from 'antd';
+import classNames from 'classnames';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
 import {observable} from 'mobx';
@@ -314,13 +315,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     let sensitive = false;
     let subTitle;
     let iconStyle = {};
+    let iconClassName;
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
       case ItemTypes.versionedStorage:
         icon = 'inbox';
-        iconStyle = {
-          color: '#2696dd'
-        };
+        iconClassName = 'cp-versioned-storage';
         break;
       case ItemTypes.folder:
         if (item.id === 'pipelines') {
@@ -383,15 +383,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           icon && (
             <Icon
               type={icon}
-              style={
-                Object.assign(
-                  {},
-                  iconStyle || {},
-                  sensitive
-                    ? {color: '#ff5c33'}
-                    : {}
-                )
-              }
+              className={classNames({'cp-sensitive': sensitive}, iconClassName)}
+              style={iconStyle}
             />
           )
         }
@@ -399,15 +392,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           subIcon && (
             <Icon
               type={subIcon}
-              style={
-                Object.assign(
-                  {},
-                  iconStyle || {},
-                  sensitive
-                    ? {color: '#ff5c33'}
-                    : {}
-                )
-              }
+              className={classNames({'cp-sensitive': sensitive}, iconClassName)}
+              style={iconStyle}
             />
           )
         }
@@ -479,7 +465,14 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       <Card
         id="pipelines-library-tree-container"
         style={{overflowY: 'auto'}}
-        className={styles.libraryCard}
+        className={
+          classNames(
+            styles.libraryCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 0}}>
         <Row
           type="flex"
@@ -537,11 +530,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           defaultSize="15%"
           pane1Style={{overflowY: 'auto', display: 'flex', flexDirection: 'column'}}
           pane2Style={{overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column'}}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
-            width: 10,
-            margin: '0 -4px',
+            width: 8,
+            margin: 0,
             cursor: 'col-resize',
-            backgroundColor: 'transparent',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1

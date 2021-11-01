@@ -1,0 +1,75 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cp-billing-menu {
+  width: fit-content;
+  margin-left: 0;
+  min-height: 100%;
+}
+
+.cp-billing-menu .ant-menu-submenu-title,
+.cp-billing-menu .ant-menu-item,
+.cp-billing-menu .cp-billing-sub-menu .ant-menu-item {
+  height: 32px;
+  line-height: 32px;
+}
+
+.cp-billing-menu .cp-billing-sub-menu .ant-menu-submenu-title {
+  position: relative;
+  left: 1px;
+  margin-left: -1px;
+  z-index: 1;
+  height: 32px;
+  line-height: 32px;
+}
+
+.cp-billing-menu .cp-billing-sub-menu.ant-menu-submenu-open .ant-menu-submenu-title {
+  background-color: transparent;
+  color: @menu-color;
+}
+
+.cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title {
+  background-color: transparent;
+  color: @menu-active-color;
+}
+
+.cp-billing-menu .cp-billing-sub-menu .ant-menu-submenu-title::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-right: 3px solid @menu-active-color;
+  transform: scaleY(0.0001);
+  opacity: 0;
+  transition: transform 0.15s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.15s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title::after {
+  transition: transform 0.15s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.15s cubic-bezier(0.645, 0.045, 0.355, 1);
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.cp-billing-table td {
+  border: 1px solid @panel-border-color;
+}
+
+.cp-billing-table td.cp-billing-table-pending {
+  background-color: @card-background-color;
+}

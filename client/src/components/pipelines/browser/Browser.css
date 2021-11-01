@@ -400,28 +400,6 @@ tr.table-row-selected {
   min-height: 37px;
 }
 
-.menu-container > .menu > .actions-sub-menu > div,
-.menu-container > .menu > .menu-item,
-.menu-container > .menu .actions-sub-menu .menu-item {
-  padding: 7px 8px;
-}
-
-.menu-container > .menu {
-  padding-top: 0;
-  padding-bottom: 0;
-  cursor: pointer;
-}
-
-.menu-item {
-  cursor: pointer;
-}
-
-.actions-sub-menu ul {
-  right: 100% !important;
-  left: auto !important;
-  margin-right: 5px;
-}
-
 .action-link:hover {
   text-decoration: underline;
 }
@@ -596,41 +574,6 @@ tr.table-row-selected {
 .md-preview li {
   display: list-item;
   margin: 5px;
-}
-
-.download-button {
-  padding: 0 7px;
-  font-size: 12px;
-  border-radius: 4px;
-  height: 22px;
-  margin-bottom: 0;
-  font-weight: 500;
-  text-align: center;
-  touch-action: manipulation;
-  cursor: pointer;
-  background-image: none;
-  border: 1px solid #d9d9d9;
-  white-space: nowrap;
-  line-height: 22px;
-  user-select: none;
-  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-  position: relative;
-  color: rgba(0, 0, 0, 0.65);
-  background-color: #fff;
-  text-decoration: none !important;
-}
-
-.download-button i,
-.download-button span {
-  line-height: 1;
-  text-decoration: none !important;
-}
-
-.download-button:hover {
-  color: #108ee9;
-  background-color: #fff;
-  border-color: #108ee9;
-  text-decoration: none;
 }
 
 .noData {

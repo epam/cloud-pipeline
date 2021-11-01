@@ -1802,8 +1802,7 @@ export default class Metadata extends React.Component {
       menuItems.push((
         <MenuItem
           key={Actions.deleteClass}
-          className={classNames(styles.menuItem, Actions.deleteClass)}
-          style={{color: 'red'}}
+          className={classNames(styles.menuItem, Actions.deleteClass, 'cp-danger')}
         >
           <Icon
             type="delete"

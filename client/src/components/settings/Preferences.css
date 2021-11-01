@@ -29,8 +29,3 @@
 .preference-group-row td {
   padding: 6px !important;
 }
-
-.preference-group-row.selected {
-  background-color: #ebf6fd;
-  font-weight: bold;
-}

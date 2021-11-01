@@ -497,11 +497,11 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
             overflowX: 'hidden'
           }}
           pane2Style={pane2Style}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
             width: 3,
             margin: '0 5px',
             cursor: 'col-resize',
-            backgroundColor: '#efefef',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1

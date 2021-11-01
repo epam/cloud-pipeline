@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {Alert, Button, Card, Dropdown, Icon, Menu, Modal, Row, Table} from 'antd';
 import RunTable from './RunTable';
@@ -470,7 +471,17 @@ class RunsFilter extends React.Component {
       return <LoadingView />;
     }
     return (
-      <Card className={styles.runsCard} bodyStyle={{padding: 15}}>
+      <Card
+        className={
+          classNames(
+            styles.runsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+        bodyStyle={{padding: 15}}
+      >
         <Row type="flex" align="middle">
           <table style={{width: '100%', marginBottom: 10}}>
             <tbody>

@@ -145,10 +145,9 @@ export default class S3BucketPreview extends React.Component {
               this.props.dataStorageInfo.value.sensitive &&
               (
                 <span
+                  className="cp-sensitive-tag"
                   style={{
-                    backgroundColor: '#ff5c33',
                     fontWeight: 'bold',
-                    color: '#222',
                     padding: '2px 5px',
                     borderRadius: 5,
                     lineHeight: 1,

@@ -17,6 +17,7 @@
 import React from 'react';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {
   Alert,
   Button,
@@ -252,15 +253,14 @@ class SystemDictionaries extends React.Component {
         .sort(nameSorter)
     );
     const getRowClassName = (group) => {
-      if (newDictionary) {
-        if (group.isNew) {
-          return `${styles.dictionaryRow} ${styles.selected}`;
+      return classNames(
+        styles.dictionaryRow,
+        {
+          'cp-table-element-selected': (newDictionary && group.isNew) ||
+            group.name === currentDictionary,
+          'cp-table-element-disabled': newDictionary && !group.isNew
         }
-        return `${styles.dictionaryRow} ${styles.disabled}`;
-      }
-      return group.name === currentDictionary
-        ? `${styles.dictionaryRow} ${styles.selected}`
-        : styles.dictionaryRow;
+      );
     };
     return (
       <Table
@@ -317,9 +317,6 @@ class SystemDictionaries extends React.Component {
           style={{flex: 1, minHeight: 0}}
         >
           <SplitPanel
-            style={{
-              borderTop: '1px solid #ddd'
-            }}
             contentInfo={[
               {
                 key: 'dictionaries',

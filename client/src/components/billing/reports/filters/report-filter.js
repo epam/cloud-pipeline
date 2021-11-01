@@ -18,8 +18,6 @@ import React from 'react';
 import {Menu} from 'antd';
 import classNames from 'classnames';
 
-import styles from './report-filter.css';
-
 export default function ({onChange, filter}) {
   const onSelect = ({key}) => {
     onChange && onChange(key);
@@ -27,9 +25,14 @@ export default function ({onChange, filter}) {
   const isSubMenuSelected = (t) => (t === filter);
   const storagesMenu = (
     <Menu.SubMenu
-      className={classNames(styles.styledSubMenu, {
-        [styles.styledSubMenuSelected]: isSubMenuSelected('storages')
-      })}
+      className={
+        classNames(
+          'cp-billing-sub-menu',
+          {
+            'cp-billing-sub-menu-selected': isSubMenuSelected('storages')
+          }
+        )
+      }
       key="storages"
       title="Storages"
       onTitleClick={onSelect}
@@ -40,9 +43,14 @@ export default function ({onChange, filter}) {
   );
   const instancesMenu = (
     <Menu.SubMenu
-      className={classNames(styles.styledSubMenu, {
-        [styles.styledSubMenuSelected]: isSubMenuSelected('instances')
-      })}
+      className={
+        classNames(
+          'cp-billing-sub-menu',
+          {
+            'cp-billing-sub-menu-selected': isSubMenuSelected('instances')
+          }
+        )
+      }
       key="instances"
       title="Compute instances"
       onTitleClick={onSelect}
@@ -53,7 +61,7 @@ export default function ({onChange, filter}) {
   );
   return (
     <Menu
-      className={styles.styledMenu}
+      className="cp-billing-menu"
       mode="inline"
       inlineIndent={12}
       onClick={onSelect}
