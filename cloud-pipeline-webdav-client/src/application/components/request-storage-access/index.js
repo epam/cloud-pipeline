@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {Alert, Button, Input, Modal, message, Spin} from 'antd';
 import moment from 'moment-timezone';
 import requestStorageAccessApi from '../../models/request-storage-access-api';
+import displayDate from '../file-system-tab/display-date';
 import './request-storage-access.css';
 
 function davAccessInfo (value) {
@@ -17,7 +18,7 @@ function davAccessInfo (value) {
     const now = moment.utc();
     return {
       available: now < time,
-      expiresAt: time.format('D MMM YYYY, HH:mm')
+      expiresAt: displayDate(time, 'D MMM YYYY, HH:mm')
     };
   }
   if (typeof value === 'boolean') {

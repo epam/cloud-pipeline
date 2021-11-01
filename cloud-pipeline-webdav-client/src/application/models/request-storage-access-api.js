@@ -158,7 +158,7 @@ class RequestStorageAccessApi {
   }
 
   requestDavAccess(identifier, duration) {
-    return this.apiPostRequest('datastorage/webdav', {id: identifier, time: duration});
+    return this.apiPostRequest('datastorage/davmount', {id: identifier, time: duration});
   }
 }
 
