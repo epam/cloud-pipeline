@@ -35,7 +35,7 @@ export default function GeneralPresentation (
     if (PreviewIcons[document?.type]) {
       return (
         <Icon
-          className={styles.icon}
+          className={classNames('cp-icon-larger', styles.icon)}
           type={PreviewIcons[document?.type]} />
       );
     }
@@ -51,13 +51,13 @@ export default function GeneralPresentation (
       }
     >
       <div className={styles.main}>
-        <div className={styles.name}>
+        <div className={classNames(styles.name, 'cp-search-result-item-main')}>
           {renderIcon()}
           <span>
             {getDocumentName(document) || '\u00A0'}
           </span>
         </div>
-        <div className={styles.sub}>
+        <div className={classNames(styles.sub, 'cp-search-result-item-sub')}>
           {
             showDescription && document?.description && (
               <span className={classNames(styles.description, styles.ellipsis)}>
@@ -69,7 +69,10 @@ export default function GeneralPresentation (
         </div>
         <div
           className={
-            classNames(styles.tags)
+            classNames(
+              styles.tags,
+              'cp-search-result-item-sub'
+            )
           }
         >
           {children}
@@ -77,7 +80,7 @@ export default function GeneralPresentation (
       </div>
       {
         document?.owner && (
-          <div className={styles.author}>
+          <div className={classNames(styles.author, 'cp-search-result-item-sub')}>
             {
               document?.owner && (
                 <Icon type="user" />

@@ -97,12 +97,34 @@ class SearchResults extends React.Component {
   };
 
   renderResultsItemActions = (resultItem) => {
+    const {disabled} = this.props;
     return (
-      <div className={styles.actionsContainer}>
+      <div className="cp-search-result-item-actions">
+        <Icon
+          type="info-circle-o"
+          className={
+            classNames(
+              'cp-search-result-item-action',
+              'cp-icon-larger'
+            )
+          }
+          onClick={(e) => {
+            if (!disabled) {
+              e && e.stopPropagation();
+              e && e.preventDefault();
+              this.setPreview(resultItem);
+            }
+          }}
+        />
         <OpenInToolAction
           file={resultItem.path}
           storageId={resultItem.parentId}
-          className={classNames(styles.previewBtn, styles.action)}
+          className={
+            classNames(
+              'cp-search-result-item-action',
+              'cp-icon-larger'
+            )
+          }
           style={{
             borderRadius: '0px',
             borderLeft: 'none',
@@ -119,27 +141,23 @@ class SearchResults extends React.Component {
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
         key={resultItem.elasticId}
-        className={styles.resultItemContainer}
+        className={
+          classNames(
+            styles.resultItemContainer,
+            'cp-panel-card',
+            'cp-search-result-item',
+            'cp-search-result-list-item',
+            {
+              disabled
+            }
+          )
+        }
         onClick={this.navigate(resultItem)}
       >
-        <Icon
-          type="info-circle-o"
-          className={styles.previewBtn}
-          onClick={(e) => {
-            e && e.stopPropagation();
-            e && e.preventDefault();
-            this.setPreview(resultItem);
-          }}
-        />
         {this.renderResultsItemActions(resultItem)}
         <div
           id={`search-result-item-${resultItem.elasticId}`}
-          className={
-            classNames(
-              styles.resultItem,
-              {[styles.disabled]: disabled}
-            )
-          }
+          className={styles.resultItem}
         >
           <DocumentListPresentation
             className={styles.title}
@@ -336,27 +354,43 @@ class SearchResults extends React.Component {
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
-        className={styles.tableRow}
+        className={
+          classNames(
+            'cp-search-result-item',
+            'cp-search-result-table-item',
+            {
+              disabled
+            }
+          )
+        }
         style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
         onClick={this.navigate(resultItem)}
       >
-        {columns.map(({key, renderFn}, index) => (
+        {columns.map(({key, className, renderFn}, index) => (
           [
             <div
-              className={styles.tableCell}
+              className={classNames('cp-search-results-table-cell', 'cp-search-result-item-main')}
               key={index}
               style={{width: columnWidths[key], minWidth: '0px'}}
             >
               {renderFn
                 ? renderFn(resultItem[key], resultItem, this.setPreview)
-                : <span className={styles.cellValue}>{resultItem[key]}</span>
+                : (
+                  <span
+                    className={classNames('cp-ellipsis-text', className)}
+                  >
+                    {resultItem[key]}
+                  </span>
+                )
               }
             </div>,
             <div
               className={classNames(
-                styles.tableDivider,
-                {[styles.dividerActive]: resizingColumn === key}
+                'cp-search-results-table-divider',
+                {
+                  active: resizingColumn === key
+                }
               )}
             />
           ]
@@ -408,8 +442,9 @@ class SearchResults extends React.Component {
     return (
       <div
         className={classNames(
-          styles.tableRow,
-          styles.tableHeader
+          'cp-search-result-item',
+          'cp-search-result-table-item',
+          'cp-search-results-table-header'
         )}
         style={{gridTemplate: this.getGridTemplate(true)}}
         ref={header => (this.headerRef = header)}
@@ -417,7 +452,12 @@ class SearchResults extends React.Component {
         {columns.map(({key, name}, index) => ([
           <div
             key={index}
-            className={styles.headerCell}
+            className={
+              classNames(
+                'cp-ellipsis-text',
+                'cp-search-results-table-header-cell'
+              )
+            }
             ref={ref => (this.dividerRefs[key] = ref)}
             style={{
               width: columnWidths[key],
@@ -433,8 +473,10 @@ class SearchResults extends React.Component {
           </div>,
           <div
             className={classNames(
-              styles.tableDivider,
-              {[styles.dividerActive]: resizingColumn === key}
+              'cp-search-results-table-divider',
+              {
+                active: resizingColumn === key
+              }
             )}
             onMouseDown={e => this.initResizing(e, key)}
           />
@@ -468,7 +510,7 @@ class SearchResults extends React.Component {
     }
     return (
       <div
-        className={styles.tableContainer}
+        className={classNames(styles.tableContainer, 'cp-panel')}
         onBlur={this.stopResizing}
       >
         <InfiniteScroll

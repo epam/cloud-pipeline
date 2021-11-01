@@ -14,7 +14,9 @@
  *  limitations under the License.
  */
 
-.breadcrumb {
+@import "variables";
+
+.cp-versioned-storage-breadcrumb {
   cursor: pointer;
   transition: all 0.2s ease;
   line-height: 20px;
@@ -22,10 +24,16 @@
   margin: 0 -5px;
 }
 
-.breadcrumb:not(.last-breadcrumb):hover {
-  color: #108ee9;
+.cp-versioned-storage-breadcrumb:not(.last):hover {
+  color: @primary-color;
 }
 
-.last-breadcrumb {
+.cp-versioned-storage-breadcrumb.last {
   cursor: default;
+}
+
+.cp-versioned-storage-table-header {
+  border-color: @card-border-color;
+  background-color: @card-header-background;
+  color: @application-color;
 }

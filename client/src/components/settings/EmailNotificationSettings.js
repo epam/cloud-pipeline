@@ -17,12 +17,13 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import NotificationSettings from '../../models/settings/NotificationSettings';
 import NotificationSettingUpdate from '../../models/settings/NotificationSettingUpdate';
 import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
 import NotificationTemplates from '../../models/settings/NotificationTemplates';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel/SplitPanel';
+import {SplitPanel} from '../special/splitPanel';
 import Users from '../../models/user/Users';
 import {Alert, message, Modal, Table} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
@@ -207,12 +208,13 @@ export default class EmailNotificationSettings extends React.Component {
         pagination={false}
         rowKey="id"
         rowClassName={
-          (template) => {
-            const disabledClass = template.enabled ? '' : `${styles.disabled}`;
-            return template.id === this.state.selectedTemplateId
-              ? `${styles.templateRow} ${styles.selected} ${disabledClass}`
-              : `${styles.templateRow} ${disabledClass}`;
-          }
+          (template) => classNames(
+            styles.templateRow,
+            {
+              'cp-table-element-disabled': !template.enabled,
+              'cp-table-element-selected': template.id === this.state.selectedTemplateId
+            }
+          )
         }
         onRowClick={this.selectTemplate}
         size="medium" />

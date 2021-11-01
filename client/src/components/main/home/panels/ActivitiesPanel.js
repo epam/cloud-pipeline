@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Link} from 'react-router';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import IssueCommentPreview from '../../../special/issues/controls/IssueCommentPreview';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
@@ -35,12 +36,11 @@ const UPDATE_COMMENT_EVENT = 'update comment';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @inject('pipelinesLibrary', 'dockerRegistries', 'myIssues')
-@inject((stores, parameters) => ({
+@inject((stores) => ({
   issues: stores.myIssues
 }))
 @observer
 export default class ActivitiesPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onInitialize: PropTypes.func
   };
@@ -278,7 +278,14 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
         break;
     }
     return [
-      <Row type="flex" key="title" style={{backgroundColor: '#fafafa', padding: 5}}>{title}</Row>,
+      <Row
+        type="flex"
+        key="title"
+        className="cp-dashboard-panel-card-header"
+        style={{padding: 5}}
+      >
+        {title}
+      </Row>,
       <Row type="flex" key="content" style={{padding: 5}}>{content}</Row>
     ];
   };
@@ -298,7 +305,14 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
             const isNew = !lastVisited || lastVisited < moment.utc(event.date);
             return (
               <Card
-                className={isNew ? styles.newNotification : undefined}
+                className={
+                  classNames(
+                    'cp-panel-card',
+                    {
+                      'cp-new-notification': isNew
+                    }
+                  )
+                }
                 key={index}
                 bodyStyle={{padding: 0}} style={{margin: 2, marginBottom: 5}}>
                 {this.renderEvent(event)}

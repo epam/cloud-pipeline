@@ -64,7 +64,8 @@ export default class DockerRegistryGroupsList extends React.Component {
                       width: '100%',
                       border: 'none',
                       fontWeight: group.privateGroup ? 'bold' : 'normal',
-                      fontStyle: group.privateGroup ? 'italic' : 'normal'
+                      fontStyle: group.privateGroup ? 'italic' : 'normal',
+                      backgroundColor: 'transparent'
                     }}
                     onClick={
                       () => this.onSelectGroup(group.id)

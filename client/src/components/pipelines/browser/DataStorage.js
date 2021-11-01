@@ -885,7 +885,7 @@ export default class DataStorage extends React.Component {
           key="open-in-tool"
           file={item.path}
           storageId={this.props.storageId}
-          className={styles.downloadButton}
+          className="cp-button"
           style={{
             display: 'flex',
             textDecoration: 'none',
@@ -897,7 +897,7 @@ export default class DataStorage extends React.Component {
         <a
           key="download"
           id={`download ${item.name}`}
-          className={styles.downloadButton}
+          className="cp-button"
           href={GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)}
           target="_blank"
           download={item.name}
@@ -1602,7 +1602,7 @@ export default class DataStorage extends React.Component {
                 className="convert-storage-action-button"
                 key="convert"
               >
-                <Icon type="inbox" style={{color: '#2696dd'}} /> Convert to Versioned Storage
+                <Icon type="inbox" className="cp-versioned-storage" /> Convert to Versioned Storage
               </MenuItem>
             </Menu>
           }

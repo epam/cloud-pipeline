@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import {API_PATH, SERVER} from '../../config';
 import {
   Alert,
@@ -278,7 +279,7 @@ export default class CLIForm extends React.Component {
             {pipInstallCommand}
           </pre>
         </Row>
-        <div style={{backgroundColor: '#ddd', height: 1, width: '100%'}} />
+        <div className={classNames('cp-divider', 'horizontal')} />
         <Row style={{fontSize: 'large', marginBottom: 10}}>Access keys:</Row>
         <Row>
           <b>Valid till: </b>
@@ -552,14 +553,17 @@ export default class CLIForm extends React.Component {
   render () {
     return (
       <div style={{flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0}}>
-        <div style={{width: 200, height: '100%', borderRight: '1px solid #eee'}}>
+        <div className={classNames('cp-divider', 'right')} style={{width: 200, height: '100%'}}>
           <Table
             columns={this.columns}
             dataSource={this.getTabs()}
             showHeader={false}
             bordered={false}
             size="medium"
-            rowClassName={row => row.key === this.state.activeTab ? styles.tabSelected : styles.tab}
+            rowClassName={row => classNames(
+              styles.tab,
+              {'cp-table-element-selected': row.key === this.state.activeTab})
+            }
             onRowClick={this.selectTab}
             pagination={false} />
         </div>

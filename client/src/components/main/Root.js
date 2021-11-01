@@ -63,6 +63,7 @@ import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CloudPipelineThemes from '../../themes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -112,6 +113,8 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
+
+const themes = new CloudPipelineThemes(preferences, authenticatedUserInfo);
 
 const Root = () =>
   <Provider
@@ -165,7 +168,8 @@ const Root = () =>
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
       uiNavigation,
-      vsActions
+      vsActions,
+      themes
     }}>
     <AppRouter />
   </Provider>;

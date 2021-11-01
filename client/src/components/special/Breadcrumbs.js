@@ -20,6 +20,7 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {Icon} from 'antd';
+import classNames from 'classnames';
 import EditableField from './EditableField';
 import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
@@ -145,6 +146,20 @@ export default class Breadcrumbs extends React.Component {
         {
           this.items.map((item, index, array) => {
             const isLast = index === array.length - 1;
+            const icon = item.icon ? (
+              <Icon
+                type={item.icon}
+                className={classNames(item.iconClassName, {'cp-sensitive': item.sensitive})}
+                style={{marginRight: 5}}
+              />
+            ) : null;
+            const lock = item.lock ? (
+              <Icon
+                type="lock"
+                className={classNames(item.lockClassName, {'cp-sensitive': item.sensitive})}
+                style={{marginRight: 5}}
+              />
+            ) : null;
             if (isLast) {
               return [
                 <div
@@ -153,34 +168,8 @@ export default class Breadcrumbs extends React.Component {
                     display: 'inline-block',
                     marginLeft: -2
                   }}>
-                  {
-                    item.icon ? (
-                      <Icon
-                        type={item.icon}
-                        className={item.iconClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
-                  {
-                    item.lock ? (
-                      <Icon
-                        type="lock"
-                        className={item.lockClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
+                  {icon}
+                  {lock}
                   <EditableField
                     text={this.props.textEditableField}
                     displayText={this.props.displayTextEditableField || `${this.props.textEditableField || item.name}`}
@@ -201,97 +190,21 @@ export default class Breadcrumbs extends React.Component {
                   />
                 </div>
               ];
-            } else {
-              if (this.props.onNavigate) {
-                return [
-                  <div
-                    key={`item-${index}`}
-                    onClick={this.navigateToItem(item)}
-                    style={{
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      display: 'inline-block',
-                      verticalAlign: 'baseline'
-                    }}>
-                    {
-                      item.icon ? (
-                        <Icon
-                          type={item.icon}
-                          className={item.iconClassName}
-                          style={
-                            Object.assign(
-                              {marginRight: 5},
-                              item.sensitive ? {color: '#ff5c33'} : {}
-                            )
-                          }
-                        />
-                      ) : null
-                    }
-                    {
-                      item.lock ? (
-                        <Icon
-                          type="lock"
-                          className={item.lockClassName}
-                          style={
-                            Object.assign(
-                              {marginRight: 5},
-                              item.sensitive ? {color: '#ff5c33'} : {}
-                            )
-                          }
-                        />
-                      ) : null
-                    }
-                    {item.name}
-                  </div>,
-                  <Icon
-                    key={`divider-${index}`}
-                    type="caret-right"
-                    style={{
-                      lineHeight: 2,
-                      verticalAlign: 'middle',
-                      margin: '0px 5px',
-                      fontSize: 'small'
-                    }} />
-                ];
-              }
+            } else if (this.props.onNavigate) {
               return [
-                <Link
+                <div
                   key={`item-${index}`}
-                  to={item.url}
+                  onClick={this.navigateToItem(item)}
                   style={{
-                    verticalAlign: 'baseline',
-                    color: 'inherit'
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    display: 'inline-block',
+                    verticalAlign: 'baseline'
                   }}>
-                  {
-                    item.icon ? (
-                      <Icon
-                        type={item.icon}
-                        className={item.iconClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
-                  {
-                    item.lock ? (
-                      <Icon
-                        type="lock"
-                        className={item.lockClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
+                  {icon}
+                  {lock}
                   {item.name}
-                </Link>,
+                </div>,
                 <Icon
                   key={`divider-${index}`}
                   type="caret-right"
@@ -300,9 +213,33 @@ export default class Breadcrumbs extends React.Component {
                     verticalAlign: 'middle',
                     margin: '0px 5px',
                     fontSize: 'small'
-                  }} />
+                  }}
+                />
               ];
             }
+            return [
+              <Link
+                key={`item-${index}`}
+                to={item.url}
+                style={{
+                  verticalAlign: 'baseline',
+                  color: 'inherit'
+                }}>
+                {icon}
+                {lock}
+                {item.name}
+              </Link>,
+              <Icon
+                key={`divider-${index}`}
+                type="caret-right"
+                style={{
+                  lineHeight: 2,
+                  verticalAlign: 'middle',
+                  margin: '0px 5px',
+                  fontSize: 'small'
+                }}
+              />
+            ];
           }).reduce((result, itemsArray) => {
             result.push(...itemsArray.filter(i => !!i));
             return result;

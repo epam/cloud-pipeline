@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Icon, message, Button} from 'antd';
 import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -38,7 +39,6 @@ import DockerConfiguration from './forms/DockerConfiguration';
 import registryName from './registryName';
 import deleteToolConfirmModal from './tool-deletion-warning';
 import DropDownWrapper from '../special/dropdown-wrapper';
-import styles from './Tools.css';
 
 @roleModel.authenticationInfo
 @observer
@@ -354,7 +354,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       registryActions.push(
         <MenuItem
           key="add-registry"
-          className={styles.menuItem}
         >
           <Icon type="plus" /> Create
         </MenuItem>
@@ -364,7 +363,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       registryActions.push(
         <MenuItem
           key="edit-registry"
-          className={styles.menuItem}
         >
           <Icon type="edit" /> Edit
         </MenuItem>
@@ -378,7 +376,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       groupActions.push(
         <MenuItem
           key="add-private-group"
-          className={styles.menuItem}
         >
           <Icon type="plus" /> Create personal
         </MenuItem>
@@ -390,7 +387,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       groupActions.push(
         <MenuItem
           key="add-group"
-          className={styles.menuItem}
         >
           <Icon type="plus" /> Create
         </MenuItem>
@@ -406,7 +402,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       groupActions.push(
         <MenuItem
           key="edit-group"
-          className={styles.menuItem}
         >
           <Icon type="edit" /> Edit
         </MenuItem>
@@ -415,8 +410,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         groupActions.push(
           <MenuItem
             key="delete-group"
-            className={styles.menuItem}
-            style={{color: 'red'}}
+            className="cp-danger"
           >
             <Icon type="delete" /> Delete
           </MenuItem>
@@ -428,7 +422,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       toolActions.push(
         <MenuItem
           key="enable-tool"
-          className={styles.menuItem}
         >
           <Icon type="plus" /> Enable tool
         </MenuItem>
@@ -440,7 +433,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <SubMenu
           key="registry"
           title="Registry"
-          className={styles.actionsSubMenu}
         >
           {registryActions}
         </SubMenu>
@@ -451,7 +443,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <SubMenu
           key="group"
           title="Group"
-          className={styles.actionsSubMenu}
         >
           {groupActions}
         </SubMenu>
@@ -467,7 +458,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
       subMenus.push(
         <MenuItem
           key="configure-registry"
-          className={styles.menuItem}
         >
           <Icon type="question-circle-o" /> How to configure
         </MenuItem>
@@ -476,7 +466,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
     if (subMenus.length > 0) {
       return (
         <Menu
-          className={styles.actionsMenu}
           mode="vertical"
           selectedKeys={[]}
           onClick={this._onMenuSelect}
@@ -508,8 +497,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
             visible={overlayVisible}
             onVisibleChange={this.handleOverlayVisibility}
             overlay={(
-              <div
-                className={styles.menuContainer}>
+              <div>
                 {menu}
               </div>
             )}

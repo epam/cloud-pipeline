@@ -136,6 +136,8 @@
     "lint:fix": "npm run lint -- --fix",
     "stylelint": "stylelint src/**/*.css",
     "stylelint:fix": "npm run stylelint -- --fix",
-    "serve-build": "serve"
+    "serve-build": "serve",
+    "gui-themes-prepare": "node scripts/gui-themes/build.js",
+    "gui-themes-update": "node scripts/gui-themes/start.js"
   }
 }
