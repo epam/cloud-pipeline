@@ -14,7 +14,19 @@
  *  limitations under the License.
  */
 
-.storage-size {
-  padding: 4px 6px;
-  color: #333;
+import RemotePost from '../basic/RemotePost';
+
+export default class DataStorageWebDavAccessRemove extends RemotePost {
+  constructor (id) {
+    super();
+    this.constructor.fetchOptions = {
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8'
+      },
+      mode: 'cors',
+      credentials: 'include',
+      method: 'DELETE'
+    };
+    this.url = `/datastorage/${id}/davmount`;
+  }
 }

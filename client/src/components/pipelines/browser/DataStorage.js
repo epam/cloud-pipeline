@@ -77,8 +77,12 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
-import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
-  from '../../special/metadata/special/fs-notifications';
+import {
+  METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
+} from '../../special/metadata/special/fs-notifications';
+import {
+  METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
+} from '../../special/metadata/special/request-dav-access';
 import StorageSize from '../../special/storage-size';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 
@@ -1637,16 +1641,21 @@ export default class DataStorage extends React.Component {
                   : undefined
               }
               fileIsEmpty={this.isFileSelectedEmpty}
-              extraKeys={
+              extraKeys={[
                 this.props.info.value.type === 'NFS'
-                  ? [FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE]
-                  : []
-              }
+                  ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
+                  : false,
+                this.props.info.value.type !== 'NFS' && !this.state.selectedFile
+                  ? REQUEST_DAV_ACCESS_ATTRIBUTE
+                  : false
+              ].filter(Boolean)}
               extraInfo={[
                 <StorageSize storage={this.props.info.value} />
               ]}
               specialTagsProperties={{
-                storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined
+                storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
+                storageMask: this.props.info.value.mask,
+                storageId: Number(this.props.storageId)
               }}
             />
           }
