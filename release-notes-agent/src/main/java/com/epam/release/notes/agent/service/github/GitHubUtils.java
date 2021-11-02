@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 public final class GitHubUtils {
 
     private static final String ZERO = "0";
+    private static final int GROUP_OF_ISSUE_NUMBER_REGEX = 1;
 
     private GitHubUtils() {
     }
@@ -52,7 +53,7 @@ public final class GitHubUtils {
         return commit -> {
             final Matcher matcher = Pattern.compile(issueNumberRegex).matcher(commit.getCommitMessage());
             if (matcher.find()) {
-                return commit.getCommitMessage().substring(matcher.start() + 1, matcher.end());
+                return matcher.group(GROUP_OF_ISSUE_NUMBER_REGEX);
             }
             return ZERO;
         };
