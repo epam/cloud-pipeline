@@ -20,11 +20,14 @@ import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class GitHubServiceImpl implements GitHubService {
+
+    private static final int START_PAGE = 1;
 
     private final String issueRegex;
     private final String issueNumberRegex;
@@ -32,15 +35,36 @@ public class GitHubServiceImpl implements GitHubService {
 
     public GitHubServiceImpl(final GitHubApiClient client,
                              @Value("${github.issue.regex:(?i)\\(?issue #.+}") final String issueRegex,
-                             @Value("${github.issue.number.regex:#\\d+}") final String issueNumberRegex) {
+                             @Value("${github.issue.number.regex:.+#(\\d+).*}") final String issueNumberRegex) {
         this.issueRegex = issueRegex;
         this.issueNumberRegex = issueNumberRegex;
         this.client = client;
     }
 
+    /**
+     * Returns a commit list that starts with the {@code shaFrom} (newer) commit
+     * to the {@code shaTo} (older) commit exclusively.
+     *
+     * @param shaFrom the first latest commit (e.g. the commit if the actual newest project version)
+     * @param shaTo   the oldest commit - it isn't included in the result list
+     *                (e.g. the commit if the previous project version)
+     * @return the result commit list
+     */
     @Override
     public List<Commit> fetchCommits(final String shaFrom, final String shaTo) {
-        return client.listCommit(shaFrom, shaTo);
+        final List<Commit> resultList = new ArrayList<>();
+        int currentPage = START_PAGE;
+        List<Commit> commits = client.listCommits(shaFrom, currentPage);
+        while (!commits.isEmpty()) {
+            for (Commit commit : commits) {
+                if (commit.getCommitSha().equals(shaTo)) {
+                    return resultList;
+                }
+                resultList.add(commit);
+            }
+            commits = client.listCommits(shaFrom, ++currentPage);
+        }
+        return resultList;
     }
 
     @Override

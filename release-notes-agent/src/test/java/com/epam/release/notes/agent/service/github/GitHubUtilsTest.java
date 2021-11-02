@@ -25,7 +25,7 @@ public class GitHubUtilsTest {
     private static final String TEST_ISSUE_NUMBER = "767";
     private static final String ZERO = "0";
     private static final String ISSUE_REGEX = "(?i)\\(?issue #.+";
-    private static final String ISSUE_NUMBER_REGEX = "#\\d+";
+    private static final String ISSUE_NUMBER_REGEX = ".+#(\\d+).*";
 
     @Test
     void isIssueRelatedCommit() {
