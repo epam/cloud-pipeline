@@ -98,6 +98,7 @@ public class KubernetesManager {
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String NEW_LINE = "\n";
     private static final String TCP = "TCP";
+    private static final int MILLIS_TO_SECONDS = 1000;
 
     private ObjectMapper mapper = new JsonMapper();
 
@@ -334,7 +335,7 @@ public class KubernetesManager {
             LOGGER.debug("Waiting for pods of {} to be ready.", coreServiceName);
             attempts -= 1;
             try {
-                Thread.sleep(retryTimeoutSeconds * 1000);
+                Thread.sleep(retryTimeoutSeconds * MILLIS_TO_SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Interruption occurred during {} refreshing, exiting...", coreServiceName);
