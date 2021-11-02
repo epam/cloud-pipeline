@@ -1175,6 +1175,28 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public String getPreference(String preference) {
+            searchPreference(preference);
+            String[] strings = context().$(byClassName("CodeMirror-code"))
+                    .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
+            return String.join("\n", strings);
+        }
+
+        public PreferencesAO clearAndSetPreference(String preference, String value, boolean eyeIsChecked) {
+            SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
+            searchPreference(preference);
+            Utils.clearTextField(pref);
+            Utils.clickAndSendKeysWithSlashes(pref, value);
+//            setValue(pref, value);
+            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon"));
+            if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
+                    (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
+                eye.click();
+            }
+            return this;
+        }
+
         public PreferencesAO setCheckboxPreference(String preference, boolean checkboxIsEnable, boolean eyeIsChecked) {
             searchPreference(preference);
             final SelenideElement checkBox = context().shouldBe(visible)

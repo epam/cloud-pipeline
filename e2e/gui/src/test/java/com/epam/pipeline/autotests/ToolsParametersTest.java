@@ -16,11 +16,13 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Selenide.open;
@@ -34,12 +36,32 @@ public class ToolsParametersTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String invalidEndpoint = "8700";
+    private final String launchCapabilities = "launch.capabilities";
+    private final String customCapabilities = "{\n\"testCapability1\": {\n \"description\": \"Custom test capability 1\",\n" +
+            "  \"commands\": [\n \"echo cap1\",\n \"echo 'cap1' > ~/testFile1.txt\"\n ]\n },\n \"testCapability2\": {\n" +
+            "  \"description\": \"Custom test capability 2\",\n \"commands\": [\n \"echo cap2\",\n" +
+            "   \"echo 'cap2' > ~/testFile2.txt\"\n ]\n }\n}";
+    private String prefInitialValue = "";
 
     @BeforeClass
+    public void getPreferencesValue() {
+        open(C.ROOT_ADDRESS);
+        fallbackToToolDefaultState(registry, group, tool);
+        prefInitialValue = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getPreference(launchCapabilities);
+    }
+
     @AfterClass(alwaysRun = true)
     public void fallBackToDefaultToolSettings() {
         open(C.ROOT_ADDRESS);
         fallbackToToolDefaultState(registry, group, tool);
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setPreference(launchCapabilities, prefInitialValue, true)
+                .saveIfNeeded();
     }
 
     @Test
@@ -60,5 +82,18 @@ public class ToolsParametersTest
                 .clickEndpoint()
                 .screenshot("test501screenshot")
                 .assertPageTitleIs("502 Bad Gateway");
+    }
+
+    @Test
+    @TestCase(value = {"2234"})
+    public void customCapabilitiesImplementation() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .clearAndSetPreference(launchCapabilities, customCapabilities, true)
+                .saveIfNeeded();
+
+
+
     }
 }
