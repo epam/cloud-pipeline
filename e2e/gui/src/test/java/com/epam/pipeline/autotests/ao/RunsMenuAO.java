@@ -327,7 +327,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO stopRunIfPresent(String id) {
-        activeRuns();
+        activeRuns().viewAvailableActiveRuns();
         sleep(10, SECONDS);
         if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
             stopRun(id);
