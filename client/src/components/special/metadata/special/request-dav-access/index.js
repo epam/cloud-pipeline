@@ -56,7 +56,6 @@ function davAccessInfo (value) {
 function RequestDavAccess (
   {
     metadata = {},
-    readOnly: disabled = false,
     info,
     reload,
     preferences
@@ -66,7 +65,7 @@ function RequestDavAccess (
     storageId,
     storageMask = 0
   } = info || {};
-  const readOnly = disabled || !roleModel.readAllowed({mask: storageMask}) || !storageId;
+  const readOnly = !roleModel.readAllowed({mask: storageMask}) || !storageId;
   const {value = undefined} = metadata;
   const accessInfo = davAccessInfo(value);
   let infoString = 'Request file system access';
