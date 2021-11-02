@@ -12,21 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.release.notes.agent.entity.jira;
 
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.List;
+
 @Value
 @Builder
-public class JiraIssue {
-
-    String version;
-    String id;
-    String title;
-    String githubId;
-    String description;
-    String url;
-
+public class JiraRequest {
+    String jql;
+    List<String> fields;
 }

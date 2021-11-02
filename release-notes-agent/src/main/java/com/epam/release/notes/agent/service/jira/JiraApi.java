@@ -12,21 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.release.notes.agent.service.jira;
 
-package com.epam.release.notes.agent.entity.jira;
+import com.epam.release.notes.agent.entity.jira.JiraIssueHolder;
+import com.epam.release.notes.agent.entity.jira.JiraRequest;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
 
-import lombok.Builder;
-import lombok.Value;
+public interface JiraApi {
 
-@Value
-@Builder
-public class JiraIssue {
-
-    String version;
-    String id;
-    String title;
-    String githubId;
-    String description;
-    String url;
-
+    /**
+     * Gets a list of issues by JQL query.
+     *
+     * @param jiraRequest {@link JiraRequest} a request consisting of a JQL query
+     *
+     */
+    @POST("/rest/api/2/search")
+    Call<JiraIssueHolder> getIssues(@Body JiraRequest jiraRequest);
 }
