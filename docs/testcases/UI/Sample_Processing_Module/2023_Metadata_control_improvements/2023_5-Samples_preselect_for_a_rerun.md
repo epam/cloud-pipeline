@@ -12,11 +12,11 @@ Test verifies
 
 1. Login as admin user from the prerequisites
 2. Open the **Library** page
-3. Create a new project (`Project1`), open it
+3. Find a project created at [_2023_1_](2023_1-Column_sorting_extension.md) case (`Project1`), open it
 4. Hover over **+Create** button
 5. Select *Configuration* option
 6. Enter `config1` into the *Name* field and click **Create** button
-7. Fill required fields on the Configuration page
+7. Open the `config1` configuration and fill required fields on the Configuration page
 8. In the ***Parameters*** section
     - Select `Sample` in the *Root entity type:* field
     - Add parameter `SampleName` with value `this.SampleName`
@@ -46,7 +46,7 @@ Test verifies
 | 19 | Go to the **Runs** page. Switch to the ***Completed Runs tab*** | |
 | 20 | Click the **Rerun** hyperlink for run with `run_id` from step 9 | *Launch* form opens |
 | 21 | Click **Launch** button. Confirm launch | |
-| 22 | Repeat steps 9-10 | Parameter `SampleName:` with value equals `Sample1` SampleName and Parameter `R1_Fastq:` are shown in the ***Parameters*** section |
+| 22 | Repeat steps 9-10 | Parameter `SampleName:` with value equals `Sample1` SampleName and Parameter `R1_Fastq:` with value equals `Sample1` R1_Fastq are shown in the ***Parameters*** section |
 | 23 | Repeat steps 11-13 | *Launch* form opens <li> arrow isn't shown near the **Launch** button |
 
-***NOTE:*** Stops all runs.
+***NOTE:*** Stop all runs.

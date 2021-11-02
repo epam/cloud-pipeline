@@ -20,8 +20,9 @@ Test verifies
 | 8 | Navigate to 2nd page of table | Unchecked columns aren't shown in the table |
 | 9 | Click ***Show columns*** button | |
 | 10 | Try to uncheck all checkboxes | Last unchecked checkbox is disabled |
-| 11 |  Move ***Sample Name*** row to the top of list | ***Sample Name*** is shown as first column in the table |
-| 12 | Navigate to 1st page of table | Columns order isn't changed |
-| 13 | Navigate to any other entity and return to the Sample metadata table | All columns are shown in default order |
-| 14 | Repeat steps 6-7, 11 | |
-| 15 | Click **Reset columns** button on the ***Show columns*** control | All columns are shown in default order |
+| 11 | Tick all checkboxes again | |
+| 12 | Holding the icon near the checkbox, move ***Sample Name*** row to the top of list | ***Sample Name*** is shown as first column in the table |
+| 13 | Navigate to 1st page of table | Columns order isn't changed |
+| 14 | Navigate to any other entity and return to the Sample metadata table | All columns are shown in default order |
+| 15 | Repeat steps 6-7, 11 | |
+| 16 | Click **Reset columns** button on the ***Show columns*** control | All columns are shown in default order |
