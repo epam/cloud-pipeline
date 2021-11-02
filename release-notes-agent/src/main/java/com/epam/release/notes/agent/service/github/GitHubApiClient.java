@@ -52,11 +52,11 @@ public class GitHubApiClient implements RestApiClient {
         this.ownerName = ownerName;
         this.projectName = projectName;
         gitHubApi = createApi(GitHubApi.class, gitHubBaseUrl,
-                chain -> chain.proceed(chain.request().newBuilder()
-                        .header(TOKEN_HEADER, TOKEN_PREFIX + token)
-                        .header(ACCEPT_HEADER_TITLE, ACCEPT_HEADER)
-                        .build()),
-                connectTimeout, readTimeout);
+            chain -> chain.proceed(chain.request().newBuilder()
+                    .header(TOKEN_HEADER, TOKEN_PREFIX + token)
+                    .header(ACCEPT_HEADER_TITLE, ACCEPT_HEADER)
+                    .build()),
+            connectTimeout, readTimeout);
     }
 
     /**

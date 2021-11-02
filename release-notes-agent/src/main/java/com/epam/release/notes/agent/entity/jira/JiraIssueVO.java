@@ -12,21 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.release.notes.agent.entity.jira;
 
+import com.epam.release.notes.agent.service.jira.JiraIssueDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.Map;
+
 @Value
 @Builder
-public class JiraIssue {
+@JsonDeserialize(using = JiraIssueDeserializer.class)
+public class JiraIssueVO {
 
-    String version;
     String id;
-    String title;
-    String githubId;
-    String description;
-    String url;
+    String key;
+    Map<String, String> fields;
 
 }
