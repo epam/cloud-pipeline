@@ -16,40 +16,8 @@
 
 package com.epam.pipeline.controller.vo.data.storage;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum UpdateDataStorageItemActionTypes {
-    Create(0),
-    Move(1);
-
-    private long id;
-    private static Map<Long, UpdateDataStorageItemActionTypes> idMap = new HashMap<>();
-    static {
-        idMap.put(Create.id, Create);
-        idMap.put(Move.id, Move);
-    }
-    private static Map<String, UpdateDataStorageItemActionTypes> namesMap = new HashMap<>();
-    static {
-        namesMap.put(Create.name(), Create);
-        namesMap.put(Move.name(), Move);
-    }
-
-    UpdateDataStorageItemActionTypes(long id) {
-        this.id = id;
-    }
-
-    public static UpdateDataStorageItemActionTypes getById(Long id) {
-        if (id == null) {
-            return null;
-        }
-        return idMap.get(id);
-    }
-
-    public static UpdateDataStorageItemActionTypes getByName(String name) {
-        if (name == null) {
-            return null;
-        }
-        return namesMap.get(name);
-    }
+    Create,
+    Move,
+    Copy;
 }

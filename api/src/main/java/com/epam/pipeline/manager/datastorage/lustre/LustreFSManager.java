@@ -34,6 +34,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.NetworkConfiguration;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -77,7 +78,7 @@ public class LustreFSManager {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
-                .map(fs -> convert(fs, region.getRegionCode()))
+                .map(fs -> convert(fs, region))
                 .orElseGet(() -> createLustreFs(runId, size, fsxClient));
     }
 
@@ -85,21 +86,31 @@ public class LustreFSManager {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
-                .map(fs -> convert(fs, region.getRegionCode()))
+                .map(fs -> convert(fs, region))
                 .orElseThrow(() -> new LustreFSException(
                         messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
+    }
+
+    public Optional<LustreFS> findLustreFS(final FileShareMount share) {
+        final AwsRegion region = getAwsRegion(regionManager.load(share.getRegionId()));
+        final DescribeFileSystemsResult result = buildFsxClient(region)
+            .describeFileSystems(new DescribeFileSystemsRequest().withNextToken(null));
+        return ListUtils.emptyIfNull(result.getFileSystems()).stream()
+            .filter(fs -> getLustreMountPath(fs, region).equals(share.getMountRoot()))
+            .map(fs -> convert(fs, region))
+            .findAny();
     }
 
     public LustreFS deleteLustreFs(final Long runId) {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
-                .map(fs -> deleteFs(fs, fsxClient, region.getRegionCode()))
+                .map(fs -> deleteFs(fs, fsxClient, region))
                 .orElseThrow(() -> new LustreFSException(
                         messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
     }
 
-    private LustreFS deleteFs(final FileSystem fs, final AmazonFSx fsxClient, final String region) {
+    private LustreFS deleteFs(final FileSystem fs, final AmazonFSx fsxClient, final AwsRegion region) {
         log.debug("Deleting lustre fs with id {}.", fs.getFileSystemId());
         fsxClient.deleteFileSystem(new DeleteFileSystemRequest()
                 .withFileSystemId(fs.getFileSystemId()));
@@ -129,7 +140,7 @@ public class LustreFSManager {
             log.debug("Lustre fs creation failed: {}", fs);
             throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_CREATED, runId));
         }
-        return convert(fs, regionForRun.getRegionCode());
+        return convert(fs, regionForRun);
     }
 
     private boolean isPersistent(final LustreDeploymentType deploymentType) {
@@ -156,7 +167,7 @@ public class LustreFSManager {
     }
 
     private String getSubnetId(final PipelineRun run, final AwsRegion region) {
-        final Instance instance = ec2Helper.findInstance(run.getInstance().getNodeId(), region.getRegionCode())
+        final Instance instance = ec2Helper.findInstance(run.getInstance().getNodeId(), region)
                 .orElseThrow(() -> new LustreFSException(messageHelper.getMessage(
                         MessageConstants.ERROR_LUSTRE_MISSING_INSTANCE, run.getInstance().getNodeId(), run.getId())));
         return instance.getSubnetId();
@@ -195,17 +206,22 @@ public class LustreFSManager {
         return sizeStep * (1 + initialSize / sizeStep);
     }
 
-    private LustreFS convert(final FileSystem lustre, final String region) {
+    private LustreFS convert(final FileSystem lustre, final AwsRegion region) {
         return LustreFS.builder()
                 .id(lustre.getFileSystemId())
-                .mountPath(String.format(LUSTRE_MOUNT_TEMPLATE, getMountPath(lustre, region),
-                        lustre.getLustreConfiguration().getMountName()))
+                .mountPath(getLustreMountPath(lustre, region))
                 .status(lustre.getLifecycle())
                 .mountOptions(preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_MOUNT_OPTIONS))
+                .capacityGb(lustre.getStorageCapacity())
                 .build();
     }
 
-    private String getMountPath(final FileSystem lustre, final String region) {
+    private String getLustreMountPath(final FileSystem lustre, final AwsRegion region) {
+        return String.format(LUSTRE_MOUNT_TEMPLATE, getMountPath(lustre, region),
+                             lustre.getLustreConfiguration().getMountName());
+    }
+
+    private String getMountPath(final FileSystem lustre, final AwsRegion region) {
         if (preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_MOUNT_IP) &&
                 CollectionUtils.isNotEmpty(lustre.getNetworkInterfaceIds())) {
             final NetworkInterface networkInterface =
@@ -245,7 +261,7 @@ public class LustreFSManager {
 
     private AmazonFSx buildFsxClient(final AwsRegion region) {
         return AmazonFSxClient.builder()
-                .withCredentials(AWSUtils.getCredentialsProvider(region.getProfile()))
+                .withCredentials(AWSUtils.getCredentialsProvider(region))
                 .withRegion(region.getRegionCode())
                 .build();
     }

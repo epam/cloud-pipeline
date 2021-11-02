@@ -16,21 +16,29 @@
 
 package com.epam.pipeline.dts.transfer;
 
+import com.epam.pipeline.dts.security.service.SecurityService;
 import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
 import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.service.CmdExecutorsProvider;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
 import com.epam.pipeline.dts.transfer.service.DataUploaderProvider;
+import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
 import com.epam.pipeline.dts.transfer.service.PipelineCliProvider;
+import com.epam.pipeline.dts.transfer.service.TaskService;
+import com.epam.pipeline.dts.transfer.service.TransferService;
 import com.epam.pipeline.dts.transfer.service.impl.AzureDataUploader;
 import com.epam.pipeline.dts.transfer.service.impl.CmdExecutorsProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.DataUploaderProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.GSDataUploader;
+import com.epam.pipeline.dts.transfer.service.impl.ImpersonatingTransferServiceImpl;
 import com.epam.pipeline.dts.transfer.service.impl.PipelineCliProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.S3DataUploader;
+import com.epam.pipeline.dts.transfer.service.impl.TransferServiceImpl;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -93,5 +101,31 @@ public class TransferConfiguration {
     @Bean
     public DataUploader gsDataUploader(final PipelineCliProvider pipelineCliProvider) {
         return new GSDataUploader(pipelineCliProvider);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
+    public TransferService transferService(final TaskService taskService,
+                                           final @Qualifier("commonDataUploaderProviderManager")
+                                               DataUploaderProviderManager providerManager,
+                                           final SecurityService securityService,
+                                           @Value("${dts.impersonation.name.metadata.key}")
+                                               final String dtsNameMetadataKey) {
+        return new ImpersonatingTransferServiceImpl(taskService, providerManager, securityService, dtsNameMetadataKey);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "false")
+    public TransferService transferService(final TaskService taskService,
+                                           final @Qualifier("commonDataUploaderProviderManager")
+                                               DataUploaderProviderManager providerManager) {
+        return new TransferServiceImpl(taskService, providerManager);
+    }
+
+    @Bean
+    public TransferService autonomousTransferService(
+        final TaskService taskService,
+        final @Qualifier("autonomousDataUploaderProviderManager") DataUploaderProviderManager providerManager) {
+        return new TransferServiceImpl(taskService, providerManager);
     }
 }

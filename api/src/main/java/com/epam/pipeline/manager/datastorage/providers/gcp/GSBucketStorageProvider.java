@@ -170,6 +170,16 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
+    public DataStorageFile copyFile(final GSBucketStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final GSBucketStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean checkStorage(final GSBucketStorage dataStorage) {
         return getHelper(dataStorage).checkStorageExists(dataStorage.getPath());
     }

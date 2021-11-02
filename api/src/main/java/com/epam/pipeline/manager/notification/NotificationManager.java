@@ -16,8 +16,12 @@
 
 package com.epam.pipeline.manager.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationGroup;
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
+import com.epam.pipeline.entity.notification.NotificationGroup;
+import com.epam.pipeline.entity.notification.NotificationType;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -25,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,7 +81,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 @Service
-public class NotificationManager { // TODO: rewrite with Strategy pattern?
+public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
     private static final double PERCENT = 100.0;
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationManager.class);
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
@@ -92,6 +97,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
     @Autowired
     private NotificationSettingsManager notificationSettingsManager;
+
+    @Autowired
+    private ContextualNotificationManager contextualNotificationManager;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -114,6 +122,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @param duration Running duration of a run in seconds.
      * @param settings defines, if a long initialization or long running message template should be used
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
@@ -150,6 +159,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @param issue an issue to notify about
      * @param entity an entity for wich issue was created
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIssue(Issue issue, AbstractSecuredEntity entity, String htmlText) {
         NotificationSettings newIssueSettings = notificationSettingsManager.load(NotificationType.NEW_ISSUE);
@@ -175,6 +185,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.createMonitoringNotification(message);
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIssueComment(IssueComment comment, Issue issue, String htmlText) {
         NotificationSettings newIssueCommentSettings = notificationSettingsManager
@@ -218,10 +229,12 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.createMonitoringNotification(message);
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyRunStatusChanged(PipelineRun pipelineRun) {
-        NotificationSettings runStatusSettings = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
+        contextualNotificationManager.notifyRunStatusChanged(pipelineRun);
 
+        NotificationSettings runStatusSettings = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
         if (runStatusSettings == null || !runStatusSettings.isEnabled()) {
             LOGGER.info("No template configured for pipeline run status changes notifications or it was disabled!");
             return;
@@ -237,7 +250,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(runStatusSettings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(pipelineRun, null));
+        message.setTemplateParameters(PipelineRunMapper.map(pipelineRun));
 
         message.setCopyUserIds(getCCUsers(runStatusSettings));
 
@@ -257,6 +270,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      *                         IDLE_RUN_STOPPED
      * @throws IllegalArgumentException if notificationType is not from IDLE_RUN group
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIdleRuns(List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
                                NotificationType notificationType) {
@@ -297,6 +311,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         }
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyHighResourceConsumingRuns(
             final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
@@ -331,7 +346,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final List<NotificationMessage> messages = filtered.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
             message.getTemplateParameters().put("memoryThreshold", memThreshold);
             message.getTemplateParameters().put("memoryRate",
                     pair.getRight().getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
@@ -351,6 +366,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyStuckInStatusRuns(final List<PipelineRun> runs) {
         final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_STATUS);
@@ -386,6 +402,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * Creates notifications for long paused runs.
      * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyLongPausedRuns(final List<PipelineRun> pausedRuns) {
         final List<PipelineRun> longPausedRuns = createNotificationsForLongPausedRuns(pausedRuns,
@@ -406,9 +423,64 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
      * @return the list of the {@link PipelineRun} objects that in long paused state
      */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public List<PipelineRun> notifyLongPausedRunsBeforeStop(final List<PipelineRun> pausedRuns) {
         return createNotificationsForLongPausedRuns(pausedRuns, NotificationType.LONG_PAUSED_STOPPED);
+    }
+
+    /**
+     * Creates notifications regarding storage quotas.
+     * @param storage the NFS storage that exceeding the quota
+     * @param exceededQuota the quota, that was exceeded
+     * @param recipients list of users to be notified
+     */
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyOnStorageQuotaExceeding(final NFSDataStorage storage,
+                                              final NFSStorageMountStatus newStatus,
+                                              final NFSQuotaNotificationEntry exceededQuota,
+                                              final List<NFSQuotaNotificationRecipient> recipients) {
+        final NotificationSettings notificationSettings =
+            notificationSettingsManager.load(NotificationType.STORAGE_QUOTA_EXCEEDING);
+        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+            LOGGER.info("No template configured for storage quotas notifications or it was disabled!");
+            return;
+        }
+        LOGGER.info("Storage quota exceeding notification for datastorage id={} will be sent!", storage.getId());
+
+        final List<Long> ccUserIds = mapRecipientsToUserIds(recipients);
+        if (CollectionUtils.isEmpty(ccUserIds)) {
+            LOGGER.info("Resolved list of users is empty, skipping notification creation...");
+            return;
+        }
+
+        final NotificationMessage quotaNotificationMessage = new NotificationMessage();
+        quotaNotificationMessage.setCopyUserIds(ccUserIds);
+        quotaNotificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
+        quotaNotificationMessage.setTemplateParameters(buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus));
+        monitoringNotificationDao.createMonitoringNotification(quotaNotificationMessage);
+    }
+
+    private List<Long> mapRecipientsToUserIds(List<NFSQuotaNotificationRecipient> recipients) {
+        return recipients.stream()
+            .map(NFSQuotaNotificationRecipient::getName)
+            .map(userManager::loadUserByName)
+            .filter(Objects::nonNull)
+            .map(PipelineUser::getId)
+            .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> buildQuotasPlaceholdersDict(final NFSDataStorage storage,
+                                                            final NFSQuotaNotificationEntry quota,
+                                                            final NFSStorageMountStatus newStatus) {
+        final Map<String, Object> templateParameters = new HashMap<>();
+        templateParameters.put("storageId", storage.getId());
+        templateParameters.put("storageName", storage.getName());
+        templateParameters.put("threshold", quota.toThreshold());
+        templateParameters.put("previousMountStatus", storage.getMountStatus());
+        templateParameters.put("newMountStatus", newStatus);
+        return templateParameters;
     }
 
     private boolean isRunStuckInStatus(final NotificationSettings settings,
@@ -621,7 +693,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         LOGGER.debug("Sending idle run notification for run '{}'.", pair.getLeft().getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+        message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
         message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
         message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
         if (idleRunSettings.isKeepInformedOwner()) {

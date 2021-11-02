@@ -94,7 +94,11 @@ public class ToolVersionManager {
      * @param version tool version (tag)
      */
     public ToolVersion loadToolVersion(final Long toolId, final String version) {
-        return toolVersionDao.loadToolVersion(toolId, version).orElse(null);
+        return findToolVersion(toolId, version).orElse(null);
+    }
+    
+    public Optional<ToolVersion> findToolVersion(final Long toolId, final String version) {
+        return toolVersionDao.loadToolVersion(toolId, version);
     }
 
     /**

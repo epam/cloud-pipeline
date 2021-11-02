@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,24 @@ import {
   Checkbox,
   message,
   Modal,
-  Upload
+  Upload,
+  Dropdown,
+  Menu
 } from 'antd';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import displaySize from '../../../utils/displaySize';
 import importUsersUrl from '../../../models/user/Import';
 import styles from './import-users.css';
+import ImportResultsCheckDialog from './import-results-check-dialog';
+import UserIntegrityCheck from '../user-integrity-check';
 
+const DROPDOWN_KEYS = {
+  checkUsers: 'checkUsers'
+};
+
+@inject('systemDictionaries', 'users', 'preferences')
+@observer
 class ImportUsersButton extends React.Component {
   state = {
     attributes: [],
@@ -38,7 +48,13 @@ class ImportUsersButton extends React.Component {
     pending: false,
     dialogVisible: false,
     createUsers: false,
-    createGroups: false
+    createGroups: false,
+    performCheck: false,
+    integrityErrors: [],
+    fixUsers: [],
+    importLogs: [],
+    importResultsVisible: false,
+    importResultsMode: []
   };
 
   onFileSelected = file => {
@@ -64,7 +80,8 @@ class ImportUsersButton extends React.Component {
           metadata: [],
           dialogVisible: false,
           createUsers: false,
-          createGroups: false
+          createGroups: false,
+          performCheck: false
         });
       };
       const onLoad = (data) => {
@@ -94,7 +111,8 @@ class ImportUsersButton extends React.Component {
           pending: false,
           dialogVisible: true,
           createUsers: false,
-          createGroups: false
+          createGroups: false,
+          performCheck: false
         });
       };
       fileReader.onload = function () {
@@ -108,6 +126,68 @@ class ImportUsersButton extends React.Component {
     return false;
   };
 
+  checkUsers = async () => {
+    return new Promise((resolve) => {
+      const {
+        users: usersRequest,
+        systemDictionaries: systemDictionariesRequest,
+        preferences: preferencesRequest
+      } = this.props;
+      Promise.all([
+        preferencesRequest.fetchIfNeededOrWait(),
+        usersRequest.fetchIfNeededOrWait(),
+        systemDictionariesRequest.fetchIfNeededOrWait()
+      ])
+        .then(() => {
+          if (usersRequest.loaded && systemDictionariesRequest.loaded) {
+            const users = (usersRequest.value || []).slice();
+            const systemDictionaries = (systemDictionariesRequest.value || []).slice();
+            return UserIntegrityCheck.check(
+              users,
+              systemDictionaries,
+              preferencesRequest.metadataMandatoryKeys
+            );
+          } else {
+            return Promise.resolve();
+          }
+        })
+        .then(resolve)
+        .catch(() => resolve());
+    });
+  };
+
+  checkUsersIntegrityClick = () => {
+    return new Promise((resolve) => {
+      const hide = message.loading('Checking users integrity...', 0);
+      this.checkUsers()
+        .then(checkResult => {
+          const {importResultsMode = []} = this.state;
+          const {errors = [], users = []} = checkResult || {};
+          const checkOnly = importResultsMode.length === 1 &&
+            importResultsMode.includes('check');
+          if (users.length === 0 && checkOnly) {
+            message.success('No issues found', 5);
+          }
+          this.setState({
+            integrityErrors: errors || [],
+            fixUsers: users || [],
+            importResultsVisible: users.length > 0 || !checkOnly
+          });
+        })
+        .catch(() => {})
+        .then(() => hide())
+        .then(() => resolve());
+    });
+  };
+
+  onDropdownMenuClick = ({key}) => {
+    if (key === DROPDOWN_KEYS.checkUsers) {
+      this.setState({
+        importResultsMode: ['check']
+      }, this.checkUsersIntegrityClick);
+    }
+  };
+
   onCreateUsersChanged = e => {
     this.setState({
       createUsers: e.target.checked
@@ -117,6 +197,12 @@ class ImportUsersButton extends React.Component {
   onCreateGroupsChanged = e => {
     this.setState({
       createGroups: e.target.checked
+    });
+  };
+
+  onPerformCheckChanged = e => {
+    this.setState({
+      performCheck: e.target.checked
     });
   };
 
@@ -147,9 +233,22 @@ class ImportUsersButton extends React.Component {
       dialogVisible: false,
       file: undefined,
       metadata: [],
-      pending: false
+      pending: false,
+      importLogs: [],
+      importResultsVisible: false,
+      importResultsMode: []
     });
   }
+
+  onCloseImportResultsDialog = () => {
+    this.setState({
+      importLogs: [],
+      importResultsVisible: false,
+      importResultsMode: [],
+      integrityErrors: [],
+      fixUsers: []
+    });
+  };
 
   onImport = () => {
     const {
@@ -157,7 +256,8 @@ class ImportUsersButton extends React.Component {
       file,
       metadata,
       createGroups,
-      createUsers
+      createUsers,
+      performCheck
     } = this.state;
     const {
       onImportDone
@@ -187,9 +287,25 @@ class ImportUsersButton extends React.Component {
           pending: false,
           dialogVisible: false,
           createUsers: false,
-          createGroups: false
+          createGroups: false,
+          performCheck: false,
+          importLogs: logs,
+          importResultsVisible: false,
+          importResultsMode: performCheck ? ['check', 'logs'] : ['logs']
         }, () => {
-          onImportDone && onImportDone({error, logs});
+          onImportDone && onImportDone();
+          if (performCheck) {
+            this.checkUsersIntegrityClick()
+              .then(() => {
+                this.setState({
+                  importResultsVisible: true
+                });
+              });
+          } else {
+            this.setState({
+              importResultsVisible: true
+            });
+          }
         });
       };
       const request = new XMLHttpRequest();
@@ -238,9 +354,24 @@ class ImportUsersButton extends React.Component {
       users,
       metadata,
       createGroups,
-      createUsers
+      createUsers,
+      performCheck,
+      integrityErrors,
+      fixUsers,
+      importLogs,
+      importResultsVisible,
+      importResultsMode
     } = this.state;
     const disabled = d || (systemDictionaries.pending && !systemDictionaries.loaded);
+    const dropdownMenu = (
+      <Menu
+        onClick={this.onDropdownMenuClick}
+      >
+        <Menu.Item key={DROPDOWN_KEYS.checkUsers}>
+          Check users integrity
+        </Menu.Item>
+      </Menu>
+    );
     return (
       <div
         className={classNames(className)}
@@ -253,12 +384,19 @@ class ImportUsersButton extends React.Component {
           beforeUpload={this.onFileSelected}
           showUploadList={false}
         >
-          <Button
-            disabled={disabled || pending}
-            size={size}
-          >
-            Import users
-          </Button>
+          <div onClick={(event) => {
+            if (event?.target?.classList.contains('ant-dropdown-trigger')) {
+              event.stopPropagation();
+            }
+          }}>
+            <Dropdown.Button
+              disabled={disabled || pending}
+              size={size}
+              overlay={dropdownMenu}
+            >
+              Import users
+            </Dropdown.Button>
+          </div>
         </Upload>
         <Modal
           visible={dialogVisible && !!file}
@@ -312,6 +450,14 @@ class ImportUsersButton extends React.Component {
               Create groups
             </Checkbox>
           </div>
+          <div className={styles.formItem}>
+            <Checkbox
+              checked={performCheck}
+              onChange={this.onPerformCheckChanged}
+            >
+              Perform integrity check
+            </Checkbox>
+          </div>
           {
             metadata.length > 0 && (
               <div style={{fontWeight: 'bold', marginTop: 5, marginBottom: 5}}>
@@ -351,6 +497,14 @@ class ImportUsersButton extends React.Component {
             ))
           }
         </Modal>
+        <ImportResultsCheckDialog
+          visible={importResultsVisible}
+          logs={importLogs}
+          mode={importResultsMode}
+          users={fixUsers}
+          errors={integrityErrors}
+          onClose={this.onCloseImportResultsDialog}
+        />
       </div>
     );
   }
@@ -364,4 +518,4 @@ ImportUsersButton.propTypes = {
   onImportDone: PropTypes.func
 };
 
-export default inject('systemDictionaries')(observer(ImportUsersButton));
+export default ImportUsersButton;

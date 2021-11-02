@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,8 @@ import {
   Button,
   Checkbox,
   Col,
-  Dropdown,
   Icon,
   Input,
-  Menu,
   message,
   Modal,
   Popover,
@@ -35,6 +33,8 @@ import {
   Spin,
   Table
 } from 'antd';
+import Dropdown from 'rc-dropdown';
+import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
@@ -42,7 +42,8 @@ import dataStorages from '../../../models/dataStorage/DataStorages';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageUpdateStoragePolicy
+from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
@@ -51,15 +52,20 @@ import DataStorageItemDelete from '../../../models/dataStorage/DataStorageItemDe
 import GenerateDownloadUrlRequest from '../../../models/dataStorage/GenerateDownloadUrl';
 import GenerateDownloadUrlsRequest from '../../../models/dataStorage/GenerateDownloadUrls';
 import GenerateFolderDownloadUrl from '../../../models/dataStorage/GenerateFolderDownloadUrl';
+import DataStorageConvert from '../../../models/dataStorage/DataStorageConvert';
 import EditItemForm from './forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import DataStorageNavigation from './forms/DataStorageNavigation';
+import RestrictedImagesInfo from './forms/restrict-docker-images/restricted-images-info';
+import ConvertToVersionedStorage from './forms/convert-to-vs';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
 import Metadata from '../../special/metadata/Metadata';
+import PreviewModal from '../../search/preview/preview-modal';
+import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
 import UploadButton from '../../special/UploadButton';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -71,11 +77,21 @@ import moment from 'moment-timezone';
 import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
-  from '../../../models/dataStorage/DataStorageGenerateSharedLink';
+from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
+import OpenInToolAction from '../../special/file-actions/open-in-tool';
+import {
+  METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
+} from '../../special/metadata/special/fs-notifications';
+import {
+  METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
+} from '../../special/metadata/special/request-dav-access';
+import StorageSize from '../../special/storage-size';
+import {extractFileShareMountList} from './forms/DataStoragePathInput';
+import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 
 const PAGE_SIZE = 40;
 
@@ -83,7 +99,7 @@ const PAGE_SIZE = 40;
   dataStorages, folders, pipelinesLibrary
 })
 @roleModel.authenticationInfo
-@inject('awsRegions')
+@inject('awsRegions', 'pipelines')
 @HiddenObjects.checkStorages(props => props.params.id)
 @inject(({
   authenticatedUserInfo,
@@ -118,13 +134,15 @@ const PAGE_SIZE = 40;
 })
 @observer
 export default class DataStorage extends React.Component {
-
   state = {
     editDialogVisible: false,
+    editDropdownVisible: false,
+    convertToVSDialogVisible: false,
     downloadUrlModalVisible: false,
     downloadFolderUrlModal: false,
     generateFolderUrlWriteAccess: false,
     selectedItems: [],
+    itemToShare: undefined,
     renameItem: null,
     createFolder: false,
     createFile: false,
@@ -134,7 +152,10 @@ export default class DataStorage extends React.Component {
     pagePerformed: false,
     selectedFile: null,
     editFile: null,
-    shareStorageDialogVisible: false
+    shareStorageDialogVisible: false,
+    previewModal: null,
+    previewAvailable: false,
+    previewPending: false
   };
 
   @observable
@@ -179,7 +200,17 @@ export default class DataStorage extends React.Component {
 
   @computed
   get generateFolderURLAvailable () {
-    return /^azure$/i.test(this.provider);
+    return /^azure$/i.test(this.provider) && this.storageAllowSignedUrls;
+  }
+
+  @computed
+  get storageAllowSignedUrls () {
+    return this.props.authenticatedUserInfo.loaded
+      ? (
+        this.props.authenticatedUserInfo.value.admin ||
+        this.props.preferences.storageAllowSignedUrls
+      )
+      : false;
   }
 
   @computed
@@ -193,6 +224,49 @@ export default class DataStorage extends React.Component {
     return null;
   }
 
+  @computed
+  get toolsToMount () {
+    const {info = {}} = this.props;
+    if (info.loaded && info.value.toolsToMount) {
+      return (info.value.toolsToMount || []).map(t => t);
+    }
+    return undefined;
+  }
+
+  @computed
+  get fileShareMountList () {
+    const {awsRegions} = this.props;
+    if (awsRegions && awsRegions.loaded) {
+      return extractFileShareMountList(awsRegions.value || []);
+    }
+    return [];
+  }
+
+  @computed
+  get fileShareMount () {
+    if (this.props.info && this.props.info.loaded) {
+      const {
+        fileShareMountId,
+        type
+      } = this.props.info.value || {};
+      if (/^nfs$/i.test(type)) {
+        return this.fileShareMountList.find(mount => mount.id === fileShareMountId);
+      }
+    }
+    return undefined;
+  }
+
+  get sharingEnabled () {
+    const {preferences, info} = this.props;
+    if (info && info.loaded && info.value) {
+      return info.value.type !== 'NFS' &&
+        preferences &&
+        preferences.loaded &&
+        preferences.sharedStoragesSystemDirectory;
+    }
+    return false;
+  }
+
   onDataStorageEdit = async (storage) => {
     const dataStorage = {
       id: this.props.storageId,
@@ -202,7 +276,8 @@ export default class DataStorage extends React.Component {
       path: storage.path,
       mountPoint: storage.mountPoint,
       mountOptions: storage.mountOptions,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      toolsToMount: storage.toolsToMount
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
@@ -211,9 +286,16 @@ export default class DataStorage extends React.Component {
       hide();
       message.error(request.error, 5);
     } else {
-      if (this.props.info.value.policySupported && storage.serviceType !== ServiceTypes.fileShare && (storage.longTermStorageDuration !== undefined ||
-      storage.shortTermStorageDuration !== undefined ||
-      storage.backupDuration !== undefined || !storage.versioningEnabled)) {
+      if (
+        this.props.info.value.policySupported &&
+        storage.serviceType !== ServiceTypes.fileShare &&
+        (
+          storage.longTermStorageDuration !== undefined ||
+          storage.shortTermStorageDuration !== undefined ||
+          storage.backupDuration !== undefined ||
+          !storage.versioningEnabled
+        )
+      ) {
         const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.props.storageId,
@@ -486,7 +568,7 @@ export default class DataStorage extends React.Component {
     if (clearSelection) {
       this.setState({
         renameItem: null,
-        selectedFile: null,
+        selectedFile: null
       });
     } else {
       this.setState({renameItem: null});
@@ -582,7 +664,7 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  saveEditableFile = async(path, content) => {
+  saveEditableFile = async (path, content) => {
     const currentItemContent = this.props.dataStorageCache.getContent(
       this.props.storageId,
       this.state.selectedFile.path,
@@ -597,7 +679,7 @@ export default class DataStorage extends React.Component {
       message.error(request.error, 5);
     } else {
       await this.props.storage.fetch();
-			await currentItemContent.fetch();
+      await currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
     }
@@ -796,6 +878,19 @@ export default class DataStorage extends React.Component {
       );
     };
     if (item.downloadable) {
+      actions.push((
+        <OpenInToolAction
+          key="open-in-tool"
+          file={item.path}
+          storageId={this.props.storageId}
+          className={styles.downloadButton}
+          style={{
+            display: 'flex',
+            textDecoration: 'none',
+            alignItems: 'center'
+          }}
+        />
+      ));
       actions.push(
         <a
           key="download"
@@ -873,6 +968,17 @@ export default class DataStorage extends React.Component {
     this.setState({shareStorageDialogVisible: false});
   };
 
+  openShareItemDialog = (event, path) => {
+    event && event.stopPropagation();
+    if (path) {
+      this.setState({itemToShare: path});
+    }
+  };
+
+  closeShareItemDialog = () => {
+    return this.setState({itemToShare: undefined});
+  };
+
   openEditFileForm = (item) => {
     const sensitive = this.props.info.loaded
       ? this.props.info.value.sensitive
@@ -888,6 +994,95 @@ export default class DataStorage extends React.Component {
     this.setState({editFile: null});
   };
 
+  renderPreviewModal = () => {
+    const {previewModal} = this.state;
+    if (!previewModal) {
+      return null;
+    }
+    return (
+      <PreviewModal
+        preview={previewModal}
+        onClose={this.closePreviewModal}
+        lightMode
+      />
+    );
+  };
+
+  metadataRenderFn = () => {
+    const {selectedFile} = this.state;
+    if (!selectedFile) {
+      return null;
+    }
+    const extension = (selectedFile.path || '')
+      .split('.')
+      .pop()
+      .toLowerCase();
+    if (extension === 'vsi' || extension === 'mrxs') {
+      return (
+        <Row
+          key="preview body"
+          style={{
+            color: '#777',
+            marginTop: 5,
+            marginBottom: 5
+          }}
+        >
+          <span
+            onClick={() => this.openPreviewModal(selectedFile)}
+            className={styles.metadataPreviewBtn}
+          >
+            Click
+          </span>
+          {`to preview ${extension.toUpperCase()} file.`}
+        </Row>
+      );
+    }
+    return null;
+  };
+
+  openPreviewModal = (file, event) => {
+    const {storageId} = this.props;
+    event && event.stopPropagation();
+    if (storageId && file) {
+      this.setState({previewModal: {
+        id: file.path,
+        name: file.name,
+        parentId: storageId,
+        type: 'S3_FILE'
+      }});
+    }
+  };
+
+  closePreviewModal = () => {
+    this.setState({previewModal: null});
+  };
+
+  checkPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    const {storageId} = this.props;
+    const info = getTilesInfo(file.path);
+    if (info) {
+      this.setState({previewPending: true}, () => {
+        getTiles(storageId, info.tilesFolders)
+          .then((tiles) => {
+            if (tiles) {
+              this.setState({
+                previewPending: false,
+                previewAvailable: true
+              });
+            } else {
+              this.setState({
+                previewPending: false,
+                previewAvailable: false
+              });
+            }
+          });
+      });
+    }
+  };
+
   getStorageItemsTable = () => {
     const getList = () => {
       const items = [];
@@ -899,7 +1094,8 @@ export default class DataStorage extends React.Component {
           type: 'folder',
           downloadable: false,
           editable: false,
-          selectable: false
+          selectable: false,
+          shareAvailable: false
         });
       }
       const getChildList = (item, versions, sensitive) => {
@@ -925,6 +1121,7 @@ export default class DataStorage extends React.Component {
               !versions[version].deleteMarker,
               deletable: roleModel.writeAllowed(this.props.info.value),
               selectable: false,
+              shareAvailable: false,
               latest: versions[version].version === item.version,
               isVersion: true
             });
@@ -962,12 +1159,17 @@ export default class DataStorage extends React.Component {
               i.labels['StorageClass'].toLowerCase() !== 'glacier'
             ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
+          shareAvailable: i.type.toLowerCase() !== 'file' && !i.deleteMarker,
           deletable: roleModel.writeAllowed(this.props.info.value),
           children: getChildList(i, i.versions, sensitive),
           selectable: !i.deleteMarker,
           miew: !i.deleteMarker &&
                 i.type.toLowerCase() === 'file' &&
-                i.path.toLowerCase().endsWith('.pdb')
+                i.path.toLowerCase().endsWith('.pdb'),
+          vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
+            i.path.toLowerCase().endsWith('.vsi') ||
+            i.path.toLowerCase().endsWith('.mrxs')
+          )
         };
       }));
       return items;
@@ -979,7 +1181,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew) {
+      if (item.miew || item.vsi) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -991,7 +1193,7 @@ export default class DataStorage extends React.Component {
       title: '',
       className: (this.showVersions || hasVersions) ? styles.checkboxCellVersions : styles.checkboxCell,
       render: (item) => {
-        if (item.selectable && (item.downloadable || item.editable)) {
+        if (item.selectable && (item.downloadable || item.editable || item.shareAvailable)) {
           return (
             <Checkbox
               checked={this.fileIsSelected(item)}
@@ -1023,7 +1225,7 @@ export default class DataStorage extends React.Component {
               content={
                 <div className={styles.miewPopoverContainer}>
                   <EmbeddedMiew
-                    previewMode={true}
+                    previewMode
                     s3item={{
                       storageId: this.props.storageId,
                       path: item.path,
@@ -1043,6 +1245,17 @@ export default class DataStorage extends React.Component {
                 <img src="miew_logo.png" />
               </Link>
             </Popover>
+          );
+        }
+        if (item.vsi) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openPreviewModal(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/vsi.png" />
+            </div>
           );
         }
         return apps;
@@ -1128,9 +1341,17 @@ export default class DataStorage extends React.Component {
         selectedItems: []
       });
     } else if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
+      const extension = (item.path || '')
+        .split('.')
+        .pop()
+        .toLowerCase();
       this.setState({
         selectedFile: item,
         metadata: true
+      }, () => {
+        if (extension === 'vsi' || extension === 'mrxs') {
+          this.checkPreviewAvailability(item);
+        }
       });
     }
   };
@@ -1242,6 +1463,159 @@ export default class DataStorage extends React.Component {
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
   };
 
+  openConvertToVersionedStorageDialog = (callback) => {
+    this.setState({
+      convertToVSDialogVisible: true
+    }, callback);
+  };
+
+  closeConvertToVersionedStorageDialog = (callback) => {
+    this.setState({
+      convertToVSDialogVisible: false
+    }, callback);
+  };
+
+  onConvertStorageToVS = () => {
+    return new Promise((resolve) => {
+      const hide = message.loading('Converting to Versioned Storage...', 0);
+      const request = new DataStorageConvert(this.props.storageId);
+      request.send({})
+        .then(() => {
+          if (request.loaded) {
+            return Promise.resolve(request.value);
+          } else {
+            throw new Error(request.error || 'Error converting to Versioned Storage');
+          }
+        })
+        .catch(e => {
+          message.error(e.message, 5);
+          return Promise.resolve();
+        })
+        .then((vs) => {
+          if (vs) {
+            this.props.pipelines.fetch();
+            if (this.props.info.value.parentFolderId) {
+              this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
+            }
+            this.props.pipelinesLibrary.invalidateCache();
+            if (this.props.onReloadTree) {
+              this.props.onReloadTree(
+                true,
+                this.props.info.value.parentFolderId
+              );
+            }
+          }
+          hide();
+          if (vs) {
+            let hideInfo;
+            const openLink = () => {
+              const {router} = this.props;
+              router && router.push(`/vs/${vs.id}`);
+              hideInfo && hideInfo();
+            };
+            hideInfo = message.info(
+              (
+                <div style={{display: 'inline'}}>
+                  <a onClick={openLink}><b>{vs.name}</b> versioned storage</a> was created.
+                </div>
+              ),
+              5
+            );
+          }
+          this.closeConvertToVersionedStorageDialog(resolve);
+        });
+    });
+  };
+
+  renderEditAction = () => {
+    const convertToVersionedStorageActionAvailable = this.props.info &&
+      this.props.info.loaded &&
+      roleModel.isOwner(this.props.info.value) &&
+      this.props.info.value.type === 'NFS' &&
+      (
+        this.props.path ||
+        (
+          this.props.storage.loaded &&
+          ((this.props.storage.value || {}).results || []).length > 0
+        ) ||
+        (this.state.pageMarkers || []).length > 1
+      );
+    if (convertToVersionedStorageActionAvailable) {
+      const {editDropdownVisible} = this.state;
+      const editActionSelect = ({key}) => {
+        this.setState({
+          editDropdownVisible: false
+        }, () => {
+          switch (key) {
+            case 'edit':
+              this.openEditDialog();
+              break;
+            case 'convert':
+              this.openConvertToVersionedStorageDialog();
+              break;
+          }
+        });
+      };
+      return (
+        <Dropdown
+          placement="bottomRight"
+          trigger={['click']}
+          visible={editDropdownVisible}
+          onVisibleChange={visible => this.setState({editDropdownVisible: visible})}
+          overlay={
+            <Menu
+              selectedKeys={[]}
+              onClick={editActionSelect}
+              style={{width: 200, cursor: 'pointer'}}>
+              <MenuItem
+                id="edit-storage-action-button"
+                className="edit-storage-button"
+                key="edit"
+              >
+                <Icon type="edit" /> Edit
+              </MenuItem>
+              <MenuItem
+                id="convert-storage-button"
+                className="convert-storage-action-button"
+                key="convert"
+              >
+                <Icon type="inbox" style={{color: '#2696dd'}} /> Convert to Versioned Storage
+              </MenuItem>
+            </Menu>
+          }
+          key="edit actions"
+        >
+          <Button
+            id="edit-storage-button"
+            size="small"
+          >
+            <Icon
+              type="setting"
+              style={{
+                lineHeight: 'inherit',
+                verticalAlign: 'middle'
+              }}
+            />
+          </Button>
+        </Dropdown>
+      );
+    }
+    return (
+      <Button
+        id="edit-storage-button"
+        size="small"
+        onClick={() => this.openEditDialog()}>
+        <Icon
+          type="setting"
+          style={{
+            lineHeight: 'inherit',
+            verticalAlign: 'middle'
+          }}
+        />
+      </Button>
+    );
+  };
+
   render () {
     if (
       (!this.props.info.loaded && this.props.info.pending) ||
@@ -1303,19 +1677,52 @@ export default class DataStorage extends React.Component {
                 this.props.info.value.type !== 'NFS' &&
                 this.props.info.value.storagePolicy &&
                 this.props.info.value.storagePolicy.versioningEnabled
-                ? (
-                  <Checkbox
-                    checked={this.showVersions}
-                    onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}>
-                    Show files versions
-                  </Checkbox>
-                ) : undefined
+                  ? (
+                    <Checkbox
+                      checked={this.showVersions}
+                      onChange={this.showFilesVersionsChanged}
+                      style={{marginLeft: 10}}>
+                      Show files versions
+                    </Checkbox>
+                  ) : undefined
               }
             </div>
             <div style={{paddingRight: 8}}>
               {
+                this.sharingEnabled &&
+                this.props.path &&
+                (
+                  !this.state.selectedItems ||
+                  this.state.selectedItems.length === 0
+                ) && (
+                  <Button
+                    id="share-selected-button"
+                    size="small"
+                    onClick={(e) => this.openShareItemDialog(e, this.props.path)
+                    }
+                  >
+                    Share <b>current</b> folder
+                  </Button>
+                )
+              }
+              {
+                this.sharingEnabled &&
+                this.state.selectedItems &&
+                this.state.selectedItems.length === 1 &&
+                /^folder$/i.test(this.state.selectedItems[0].type) && (
+                  <Button
+                    id="share-selected-button"
+                    size="small"
+                    onClick={(e) => this.openShareItemDialog(e, this.state.selectedItems[0].path)
+                    }
+                  >
+                    Share <b>{this.state.selectedItems[0].name}</b> folder
+                  </Button>
+                )
+              }
+              {
                 this.bulkDownloadEnabled &&
+                this.storageAllowSignedUrls &&
                 <Button
                   id="bulk-url-button"
                   size="small"
@@ -1347,19 +1754,19 @@ export default class DataStorage extends React.Component {
                     <Menu
                       selectedKeys={[]}
                       onClick={onCreateActionSelect}
-                      style={{width: 200}}>
-                      <Menu.Item
+                      style={{width: 200, cursor: 'pointer'}}>
+                      <MenuItem
                         id="create-folder-button"
                         className="create-folder-button"
                         key={folderKey}>
                         <Icon type="folder" /> Folder
-                      </Menu.Item>
-                      <Menu.Item
+                      </MenuItem>
+                      <MenuItem
                         id="create-file-button"
                         className="create-file-button"
                         key={fileKey}>
                         <Icon type="file" /> File
-                      </Menu.Item>
+                      </MenuItem>
                     </Menu>
                   }
                   key="create actions">
@@ -1468,7 +1875,11 @@ export default class DataStorage extends React.Component {
     const storageTitleClassName = this.props.info.value.locked ? styles.readonly : undefined;
 
     return (
-      <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: 'calc(100vh - 25px)'
+      }}>
         <Row type="flex" justify="space-between" align="middle">
           <Col className={styles.itemHeader}>
             <Breadcrumbs
@@ -1490,7 +1901,7 @@ export default class DataStorage extends React.Component {
               sensitive={this.props.info.value.sensitive}
               displayTextEditableField={
                 <span>
-                    {this.props.info.value.name}
+                  {this.props.info.value.name}
                   <AWSRegionTag
                     className={styles.storageRegion}
                     darkMode
@@ -1500,13 +1911,22 @@ export default class DataStorage extends React.Component {
                     regionId={this.props.info.value.regionId}
                     style={{marginLeft: 5, fontSize: 'medium'}}
                   />
-                  </span>
+                </span>
               }
               subject={this.props.info.value}
             />
           </Col>
           <Col>
-            <Row type="flex" justify="end" className={styles.currentFolderActions}>
+            <Row
+              type="flex"
+              justify="end"
+              align="middle"
+              className={styles.currentFolderActions}
+            >
+              <RestrictedImagesInfo
+                toolsToMount={this.toolsToMount}
+                status={this.props.info.value.mountStatus}
+              />
               {
                 this.generateFolderURLAvailable && (
                   <Button
@@ -1536,12 +1956,7 @@ export default class DataStorage extends React.Component {
                   Share
                 </Button>
               }
-              <Button
-                id="edit-storage-button"
-                size="small"
-                onClick={() => this.openEditDialog()}>
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-              </Button>
+              {this.renderEditAction()}
               <Button
                 id="refresh-storage-button"
                 size="small"
@@ -1556,7 +1971,7 @@ export default class DataStorage extends React.Component {
           contentContainerStyle={{overflow: 'inherit'}}>
           <div
             key={CONTENT_PANEL_KEY}
-            style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+            style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
             <Row className={styles.dataStorageInfoContainer}>
               {
                 this.props.info.value.description &&
@@ -1564,8 +1979,8 @@ export default class DataStorage extends React.Component {
               }
               {
                 this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined ?
-                  (
+                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined
+                  ? (
                     <Row>
                       <b>Short-Term Storage duration: </b>
                       {`${this.props.info.value.storagePolicy.shortTermStorageDuration} days`}
@@ -1574,8 +1989,8 @@ export default class DataStorage extends React.Component {
               }
               {
                 this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined ?
-                  (
+                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined
+                  ? (
                     <Row>
                       <b>Long-Term Storage duration: </b>
                       {`${this.props.info.value.storagePolicy.longTermStorageDuration} days`}
@@ -1595,6 +2010,7 @@ export default class DataStorage extends React.Component {
           {
             this.showMetadata &&
             <Metadata
+              pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
               readOnly={!roleModel.isOwner(this.props.info.value)}
               downloadable={!this.props.info.value.sensitive}
@@ -1602,6 +2018,11 @@ export default class DataStorage extends React.Component {
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
+              metadataRenderFn={
+                this.state.previewAvailable
+                  ? this.metadataRenderFn
+                  : undefined
+              }
               entityName={
                 this.state.selectedFile
                   ? this.state.selectedFile.name
@@ -1633,6 +2054,19 @@ export default class DataStorage extends React.Component {
                   : undefined
               }
               fileIsEmpty={this.isFileSelectedEmpty}
+              extraKeys={
+                this.props.info.value.type === 'NFS'
+                  ? [FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE]
+                  : [REQUEST_DAV_ACCESS_ATTRIBUTE]
+              }
+              extraInfo={[
+                <StorageSize storage={this.props.info.value} />
+              ]}
+              specialTagsProperties={{
+                storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
+                storageMask: this.props.info.value.mask,
+                storageId: Number(this.props.storageId)
+              }}
             />
           }
         </ContentMetadataPanel>
@@ -1644,6 +2078,12 @@ export default class DataStorage extends React.Component {
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
+        <ConvertToVersionedStorage
+          storageName={this.props.info.loaded ? this.props.info.value.name : undefined}
+          visible={this.state.convertToVSDialogVisible}
+          onCancel={() => this.closeConvertToVersionedStorageDialog()}
+          onConvert={this.onConvertStorageToVS}
+        />
         <Modal
           title="Download file url"
           width="80%"
@@ -1724,10 +2164,11 @@ export default class DataStorage extends React.Component {
                     <Input
                       autosize
                       type="textarea"
-                      value={this._shareStorageLink.value}/>
+                      value={this._shareStorageLink.value}
+                    />
                   )
                   : <LoadingView />)
-                : <Alert message={this._shareStorageLink.error} type="error"/>)
+                : <Alert message={this._shareStorageLink.error} type="error" />)
             }
             {
               this.dataStorageShareLinkDisclaimer &&
@@ -1770,6 +2211,12 @@ export default class DataStorage extends React.Component {
           visible={!!this.state.renameItem}
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
+        <SharedItemInfo
+          path={this.state.itemToShare}
+          storage={this.props.info.value}
+          visible={!!this.state.itemToShare}
+          close={this.closeShareItemDialog}
+        />
         <Modal
           visible={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
@@ -1818,7 +2265,9 @@ export default class DataStorage extends React.Component {
           downloadable={!this.props.info.value.sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
-          save={this.saveEditableFile} />
+          save={this.saveEditableFile}
+        />
+        {this.renderPreviewModal()}
       </div>
     );
   }
@@ -1841,6 +2290,10 @@ export default class DataStorage extends React.Component {
       pageMarkers
     });
   };
+
+  componentWillUnmount () {
+    message.destroy();
+  }
 
   componentDidUpdate (prevProps) {
     if (prevProps.storageId !== this.props.storageId) {

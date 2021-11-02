@@ -17,8 +17,8 @@ export default function useTokenExpirationWarning (...dependencies) {
           content: (
             <div>
               <div>Issued to <b>{token.sub}</b></div>
-              <div>Issued at <b>{token.iat.format('d MMMM YYYY, HH:mm')}</b></div>
-              <div>Expired at <b>{token.exp.format('d MMMM YYYY, HH:mm')}</b></div>
+              <div>Issued at <b>{token.iat.format('D MMMM YYYY, HH:mm')}</b></div>
+              <div>Expired at <b>{token.exp.format('D MMMM YYYY, HH:mm')}</b></div>
             </div>
           )
         });
@@ -28,8 +28,8 @@ export default function useTokenExpirationWarning (...dependencies) {
           content: (
             <div>
               <div>Issued to <b>{token.sub}</b></div>
-              <div>Issued at <b>{token.iat.format('d MMMM YYYY, HH:mm')}</b></div>
-              <div>Expires at <b>{token.exp.format('d MMMM YYYY, HH:mm')}</b></div>
+              <div>Issued at <b>{token.iat.format('D MMMM YYYY, HH:mm')}</b></div>
+              <div>Expires at <b>{token.exp.format('D MMMM YYYY, HH:mm')}</b></div>
             </div>
           )
         });
@@ -39,8 +39,8 @@ export default function useTokenExpirationWarning (...dependencies) {
           content: (
             <div>
               <div>Issued to <b>{token.sub}</b></div>
-              <div>Issued at <b>{token.iat.format('d MMMM YYYY, HH:mm')}</b></div>
-              <div>Expires at <b>{token.exp.format('d MMMM YYYY, HH:mm')}</b></div>
+              <div>Issued at <b>{token.iat.format('D MMMM YYYY, HH:mm')}</b></div>
+              <div>Expires at <b>{token.exp.format('D MMMM YYYY, HH:mm')}</b></div>
             </div>
           )
         });

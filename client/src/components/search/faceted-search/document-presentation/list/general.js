@@ -20,14 +20,15 @@ import {Icon} from 'antd';
 import classNames from 'classnames';
 import styles from './document-list-presentation.css';
 import UserName from '../../../../special/UserName';
-import {PreviewIcons} from "../../../preview/previewIcons";
+import {PreviewIcons} from '../../../preview/previewIcons';
 
 export default function GeneralPresentation (
   {
     className,
     children,
     document,
-    showDescription = true
+    showDescription = true,
+    extra
   }
 ) {
   const renderIcon = () => {
@@ -64,6 +65,13 @@ export default function GeneralPresentation (
               </span>
             )
           }
+          {extra}
+        </div>
+        <div
+          className={
+            classNames(styles.tags)
+          }
+        >
           {children}
         </div>
       </div>

@@ -49,15 +49,28 @@ export default function getVersionRunningInfo (
         countHighVulnerabilities > scanPolicy.maxHighVulnerabilities ||
         countMediumVulnerabilities > scanPolicy.maxMediumVulnerabilities;
     };
-    const versionObject = versions[version];
-    const allowedToExecuteFlag = versionObject
-      ? versionObject.allowedToExecute
+    const versionScanResult = versions[version]
+      ? versions[version].scanResult
+      : undefined;
+    const versionPlatform = versions[version] && versions[version].attributes
+      ? versions[version].attributes.platform
+      : undefined;
+    if (/^windows$/i.test(versionPlatform)) {
+      return {
+        allowedToExecute: true,
+        tooltip: null,
+        launchTooltip: null,
+        notLoaded: false
+      };
+    }
+    const allowedToExecuteFlag = versionScanResult
+      ? versionScanResult.allowedToExecute
       : false;
     const {
       distribution,
       version: distrVersion,
       isAllowed = true
-    } = (versionObject ? versionObject.toolOSVersion : undefined) || {};
+    } = (versionScanResult ? versionScanResult.toolOSVersion : undefined) || {};
     let tooltip, launchTooltip;
     let defaultTag;
     if (versions['latest']) {
@@ -65,9 +78,9 @@ export default function getVersionRunningInfo (
     } else if (Object.keys(versions).length === 1) {
       defaultTag = Object.keys(versions)[0];
     }
-    const isGrace = isGracePeriod(versionObject);
+    const isGrace = isGracePeriod(versionScanResult);
     let gracePeriodEnd = isGrace && !isAdmin
-      ? displayDate(versionObject.gracePeriod, 'D MMMM YYYY')
+      ? displayDate(versionScanResult.gracePeriod, 'D MMMM YYYY')
       : null;
     const isLatest = version === defaultTag;
     let allowedToExecute = allowedToExecuteFlag || isAdmin || isGrace;
@@ -77,10 +90,10 @@ export default function getVersionRunningInfo (
         : '';
       tooltip = `This distribution${distributionDescription} is not supported.`;
       launchTooltip = `This distribution${distributionDescription} is not supported. Run anyway?`;
-    } else if (versionObject && checkVulnerabilitiesNumber(versionObject)) {
+    } else if (versionScanResult && checkVulnerabilitiesNumber(versionScanResult)) {
       tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).vulnerabilitiesNumberExceeds;
       launchTooltip = LaunchMessages(gracePeriodEnd).vulnerabilitiesNumberExceeds;
-    } else if (versionObject && versionObject.status === ScanStatuses.notScanned) {
+    } else if (versionScanResult && versionScanResult.status === ScanStatuses.notScanned) {
       tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).notScanned;
       launchTooltip = LaunchMessages(gracePeriodEnd).launchNotScanned;
     } else if (!allowedToExecuteFlag) {

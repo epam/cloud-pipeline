@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,11 +70,6 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     protected PipelineHistoryTabAO open() {
         changeTabTo(HISTORY_TAB);
         return this;
-    }
-
-    public PipelineRunFormAO rerun() {
-        click(RERUN);
-        return new PipelineRunFormAO(pipelineName);
     }
 
     public PipelineHistoryTabAO recordsCountShouldBe(int size) {

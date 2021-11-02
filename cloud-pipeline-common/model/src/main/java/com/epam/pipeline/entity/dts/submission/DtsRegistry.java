@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.epam.pipeline.entity.dts.submission;
 
 import com.epam.pipeline.entity.BaseEntity;
 import java.util.List;
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,5 +32,6 @@ import lombok.Setter;
 public class DtsRegistry extends BaseEntity {
     private String url;
     private List<String> prefixes;
+    private Map<String, String> preferences;
     private boolean schedulable = false;
 }

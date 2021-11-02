@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.security;
 
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.UserContext;
@@ -32,6 +33,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.web.authentication.switchuser.SwitchUserGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;
@@ -119,6 +121,10 @@ public class AuthManager {
      */
     public PipelineUser getCurrentUser() {
         Object principal = getPrincipal();
+        return mapToPipelineUser(principal);
+    }
+
+    private PipelineUser mapToPipelineUser(final Object principal) {
         if (principal instanceof UserContext) {
             return ((UserContext)principal).toPipelineUser();
         } else if (principal instanceof User) {
@@ -132,6 +138,19 @@ public class AuthManager {
         } else {
             return null;
         }
+    }
+
+    public ImpersonationStatus getImpersonationStatus() {
+        final PipelineUser activeUser = getCurrentUser();
+        return getAuthentication().getAuthorities().stream()
+            .filter(SwitchUserGrantedAuthority.class::isInstance)
+            .map(SwitchUserGrantedAuthority.class::cast)
+            .findAny()
+            .map(SwitchUserGrantedAuthority::getSource)
+            .map(Authentication::getPrincipal)
+            .map(this::mapToPipelineUser)
+            .map(originalUser -> new ImpersonationStatus(originalUser, activeUser))
+            .orElseGet(() -> new ImpersonationStatus(activeUser, null));
     }
 
     public UserContext getUserContext() {

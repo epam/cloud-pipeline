@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Checkbox, Col, Dropdown, Icon, Input, Menu, Row, Select} from 'antd';
+import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
@@ -26,14 +28,14 @@ import styles from './EditToolFormParameters.css';
 
 @observer
 export default class EditToolFormParameters extends React.Component {
-
   static propTypes = {
     value: PropTypes.object,
     onInitialized: PropTypes.func,
     readOnly: PropTypes.bool,
     isSystemParameters: PropTypes.bool,
     getSystemParameterDisabledState: PropTypes.func,
-    skippedSystemParameters: PropTypes.array
+    skippedSystemParameters: PropTypes.array,
+    testSkipParameter: PropTypes.func
   };
 
   state = {
@@ -102,13 +104,13 @@ export default class EditToolFormParameters extends React.Component {
     };
 
     const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect}>
-        <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
-        <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
-        <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
-        <Menu.Item id="add-input-parameter" key="input">Input path parameter</Menu.Item>
-        <Menu.Item id="add-output-parameter" key="output">Output path parameter</Menu.Item>
-        <Menu.Item id="add-common-parameter" key="common">Common path parameter</Menu.Item>
+      <Menu selectedKeys={[]} onClick={onSelect} style={{cursor: 'pointer'}}>
+        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
+        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
+        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
+        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
+        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
+        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
       </Menu>
     );
 
@@ -123,14 +125,14 @@ export default class EditToolFormParameters extends React.Component {
         {
           !this.props.readOnly
             ? (
-            <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
-              <Button
-                id="add-parameter-dropdown-button"
-                disabled={this.props.readOnly}>
-                <Icon type="down" />
-              </Button>
-            </Dropdown>
-          ) : undefined
+              <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
+                <Button
+                  id="add-parameter-dropdown-button"
+                  disabled={this.props.readOnly}>
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
+            ) : undefined
         }
       </Button.Group>
     );
@@ -362,10 +364,19 @@ export default class EditToolFormParameters extends React.Component {
     );
   }
 
+  filterPropsParameter = (parameter) => {
+    const {testSkipParameter} = this.props;
+    return testSkipParameter
+      ? !testSkipParameter(parameter.name)
+      : true;
+  };
+
   reset = () => {
     const mapParameter = p => ({name: p.name, value: p.value, type: p.type});
     this.setState({
-      parameters: (this.props.value || []).map(mapParameter)
+      parameters: (this.props.value || [])
+        .filter(this.filterPropsParameter.bind(this))
+        .map(mapParameter)
     });
   };
 
@@ -380,8 +391,8 @@ export default class EditToolFormParameters extends React.Component {
       } else if ((parameters[i].name || '').toUpperCase() === CP_CAP_LIMIT_MOUNTS) {
         validation[i].error = 'Parameter name is reserved';
       } else if (parameters
-          .map(p => (p.name || '').toLowerCase())
-          .filter(n => n === (parameters[i].name || '').toLowerCase()).length > 1) {
+        .map(p => (p.name || '').toLowerCase())
+        .filter(n => n === (parameters[i].name || '').toLowerCase()).length > 1) {
         validation[i].error = 'Parameter name should be unique';
       } else if (this.props.isSystemParameters &&
         (((parameters[i].type || '').toLowerCase() === 'boolean' && parameters[i].value === undefined) ||
@@ -411,7 +422,7 @@ export default class EditToolFormParameters extends React.Component {
 
   @computed
   get modified () {
-    const propsValue = this.props.value || [];
+    const propsValue = (this.props.value || []).filter(this.filterPropsParameter.bind(this));
     const currentValue = this.state.parameters || [];
     if (propsValue.length !== currentValue.length) {
       return true;
@@ -425,5 +436,4 @@ export default class EditToolFormParameters extends React.Component {
     }
     return false;
   }
-
 }

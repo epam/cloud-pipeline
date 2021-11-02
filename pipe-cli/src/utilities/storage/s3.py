@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
@@ -36,6 +37,7 @@ from s3transfer import upload, tasks, copies
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
+from src.utilities.debug_utils import debug_log_proxies
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
@@ -96,12 +98,14 @@ class StorageItemManager(object):
     def __init__(self, session, bucket=None, region_name=None, cross_region=False):
         self.session = session
         self.region_name = region_name
-        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config(cross_region=cross_region),
+        _boto_config = S3BucketOperations.get_proxy_config(cross_region=cross_region)
+        self.s3 = session.resource('s3', config=_boto_config,
                                    region_name=self.region_name)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
             self.bucket = self.s3.Bucket(bucket)
+        debug_log_proxies(_boto_config)
 
     @classmethod
     def show_progress(cls, quiet, size, lock=None):
@@ -120,9 +124,11 @@ class StorageItemManager(object):
         return '&'.join(formatted_tags)
 
     def _get_client(self):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=self.region_name)
+        _boto_config = S3BucketOperations.get_proxy_config()
+        client = self.session.client('s3', config=_boto_config, region_name=self.region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        debug_log_proxies(_boto_config)
         return client
 
     def get_s3_file_size(self, bucket, key):
@@ -154,34 +160,44 @@ class StorageItemManager(object):
     def get_local_file_size(path):
         return StorageOperations.get_local_file_size(path)
 
+    def get_transfer_config(self, io_threads):
+        transfer_config = TransferConfig()
+        if io_threads is not None:
+            transfer_config.max_concurrency = max(io_threads, 1)
+            transfer_config.use_threads = transfer_config.max_concurrency > 1
+        return transfer_config
+
 
 class DownloadManager(StorageItemManager, AbstractTransferManager):
 
     def __init__(self, session, bucket, region_name=None):
         super(DownloadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
+    def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
+            return os.path.join(destination_wrapper.path, relative_path)
         else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            remote_size = self.get_s3_file_size(source_wrapper.bucket.path, source_key)
-            local_size = self.get_local_file_size(destination_key)
-            if local_size is not None and remote_size == local_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return destination_wrapper.path
+
+    def get_source_key(self, source_wrapper, path):
+        return path or source_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_local_file_size(destination_key)
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None,
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         self.create_local_folder(destination_key, lock)
+        transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
-            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size))
+            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
+                                      Config=transfer_config)
         else:
-            self.bucket.download_file(source_key, destination_key)
+            self.bucket.download_file(source_key, destination_key,
+                                      Config=transfer_config)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -191,20 +207,23 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
     def __init__(self, session, bucket, region_name=None):
         super(UploadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
-        if path:
-            source_key = os.path.join(source_wrapper.path, path)
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        if source_path:
+            return os.path.join(source_wrapper.path, source_path)
         else:
-            source_key = source_wrapper.path
-        destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
-        if skip_existing:
-            local_size = self.get_local_file_size(source_key)
-            remote_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if remote_size is not None and local_size == remote_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
+                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         tags += ("CP_SOURCE={}".format(source_key),)
         tags += ("CP_OWNER={}".format(self._get_user()),)
         extra_args = {
@@ -212,11 +231,12 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
+        transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
-                                    ExtraArgs=extra_args)
+                                    Config=transfer_config, ExtraArgs=extra_args)
         else:
-            self.bucket.upload_file(source_key, destination_key, ExtraArgs=extra_args)
+            self.bucket.upload_file(source_key, destination_key, Config=transfer_config, ExtraArgs=extra_args)
         if clean:
             source_wrapper.delete_item(source_key)
         tags = StorageOperations.parse_tags(tags)
@@ -230,26 +250,26 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
     def __init__(self, session, bucket, region_name=None):
         super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket, region_name=region_name)
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        if destination_wrapper.path.endswith(os.path.sep):
+            return os.path.join(destination_wrapper.path, relative_path)
+        else:
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
         if clean:
             raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
                                  "is not supported for ftp/http sources.")
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            remote_size = size
-            s3_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if s3_size is not None and remote_size == s3_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         tags += ("CP_SOURCE={}".format(source_key),)
         tags += ("CP_OWNER={}".format(self._get_user()),)
         extra_args = {
@@ -276,25 +296,27 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name,
                                                             cross_region=cross_region)
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region
-        destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
         copy_source = {
             'Bucket': source_bucket,
             'Key': path
         }
         source_client = self.build_source_client(source_region)
 
-        if skip_existing:
-            from_size = self.get_s3_file_size(source_bucket, path)
-            to_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if to_size is not None and to_size == from_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
-                return
         extra_args = {
             'ACL': 'bucket-owner-full-control'
         }
@@ -310,12 +332,13 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                               tags=StorageOperations.parse_tags(tags))
 
     def build_source_client(self, source_region):
+        _boto_config = S3BucketOperations.get_proxy_config(cross_region=self.cross_region)
         source_s3 = self.session.resource('s3',
-                                          config=S3BucketOperations.get_proxy_config(
-                                              cross_region=self.cross_region),
+                                          config=_boto_config,
                                           region_name=source_region)
         source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        debug_log_proxies(_boto_config)
         return source_s3.meta.client
 
     @classmethod
@@ -814,9 +837,11 @@ class S3BucketOperations(object):
 
     @classmethod
     def _get_client(cls, session, region_name=None):
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=region_name)
+        _boto_config = S3BucketOperations.get_proxy_config()
+        client = session.client('s3', config=_boto_config, region_name=region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        debug_log_proxies(_boto_config)
         return client
 
     @classmethod

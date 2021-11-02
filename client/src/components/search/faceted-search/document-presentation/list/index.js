@@ -19,9 +19,10 @@ import GeneralPresentation from './general';
 import DatePresentation from './date';
 import Size from './size';
 import Folder from './folder';
+import KeyValue from './key-value';
 import {SearchItemTypes} from '../../../../../models/search';
 
-export default function DocumentListPresentation ({className, document}) {
+export default function DocumentListPresentation ({className, document, extraColumns}) {
   if (!document) {
     return null;
   }
@@ -69,8 +70,19 @@ export default function DocumentListPresentation ({className, document}) {
       className={className}
       document={document}
       showDescription={document?.name !== document?.description}
+      extra={extra}
     >
-      {extra}
+      {
+        extraColumns && extraColumns.length && (extraColumns || [])
+          .map(column => (
+            <KeyValue
+              key={column.key}
+              field={column.key}
+              name={column.name}
+              document={document}
+            />
+          ))
+      }
     </GeneralPresentation>
   );
 }

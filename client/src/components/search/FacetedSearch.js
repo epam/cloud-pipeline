@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
+import {SearchGroupTypes} from './searchGroupTypes';
 import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
 import {
   PresentationModes,
@@ -40,7 +41,7 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
 
-@inject('systemDictionaries', 'preferences', 'pipelines')
+@inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
 @inject((stores, props) => {
   const {location = {}} = props || {};
   const {query = {}} = location;
@@ -54,6 +55,7 @@ class FacetedSearch extends React.Component {
 
   state = {
     activeFilters: {},
+    userDocumentTypes: [],
     continuousOptions: {},
     pending: false,
     facetsLoaded: false,
@@ -71,8 +73,11 @@ class FacetedSearch extends React.Component {
     facetsToken: undefined
   }
 
+  abortController;
+
   componentDidMount () {
     const {facetedFilters} = this.props;
+    this.initAbortController();
     if (facetedFilters) {
       const {query, filters} = facetedFilters;
       this.setState(
@@ -154,6 +159,13 @@ class FacetedSearch extends React.Component {
     return true;
   }
 
+  get abortSignal () {
+    if (this.abortController) {
+      return this.abortController.signal;
+    }
+    return undefined;
+  }
+
   getFilterPreferences = (filterName) => {
     const {systemDictionaries, preferences} = this.props;
     const {activeFilters} = this.state;
@@ -195,7 +207,13 @@ class FacetedSearch extends React.Component {
       };
     }
     return null;
-  }
+  };
+
+  initAbortController = () => {
+    if (window.AbortController) {
+      this.abortController = new AbortController();
+    }
+  };
 
   onChangeFilter = (group) => (selection) => {
     if (!group) {
@@ -208,17 +226,19 @@ class FacetedSearch extends React.Component {
     } else {
       delete newFilters[group];
     }
-    this.setState({activeFilters: newFilters}, () => this.doSearch());
-  }
+    this.setState({activeFilters: newFilters}, () => {
+      this.doSearch(undefined, true);
+    });
+  };
 
   onClearFilters = () => {
     if (this.activeFiltersIsEmpty) {
       return;
     }
     this.setState({activeFilters: {}}, () => this.doSearch());
-  }
+  };
 
-  doSearch = (continuousOptions = undefined) => {
+  doSearch = (continuousOptions = undefined, abortPendingRequests = false) => {
     this.setState({
       pending: true
     }, () => {
@@ -226,6 +246,7 @@ class FacetedSearch extends React.Component {
         .then(() => {
           const {
             activeFilters,
+            userDocumentTypes = [],
             documents: currentDocuments = [],
             facets,
             facetsCount: currentFacetsCount,
@@ -242,6 +263,13 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
+          const userDocumentTypesFilter = userDocumentTypes.length > 0
+            ? {[DocumentTypeFilterName]: userDocumentTypes}
+            : {};
+          const mergedFilters = {
+            ...(activeFilters || {}),
+            ...userDocumentTypesFilter
+          };
           const searchToken = getFacetFilterToken(
             query,
             activeFilters,
@@ -259,19 +287,30 @@ class FacetedSearch extends React.Component {
             if (this.props.router.location.search !== queryString) {
               this.props.router.push(`/search/advanced${queryString || ''}`);
             }
+            if (this.abortController && abortPendingRequests) {
+              this.abortController.abort();
+              this.initAbortController();
+            }
             facetsSearch(
               query,
-              activeFilters,
+              mergedFilters,
               pageSize,
               {
                 facets: facets.map(f => f.name),
                 facetsCount: currentFacetsCount,
                 facetsToken: currentFacetsToken,
-                stores: this.props
+                stores: this.props,
+                metadataFields: facets
+                  .map(f => f.name)
+                  .filter(facet => facet !== DocumentTypeFilterName)
               },
-              continuousOptions
+              continuousOptions,
+              this.abortSignal
             )
               .then(result => {
+                if (result && result.aborted) {
+                  return;
+                }
                 const {
                   error,
                   facetsCount,
@@ -331,15 +370,22 @@ class FacetedSearch extends React.Component {
     });
   };
 
-  loadFacets = () => {
+  loadFacets = (abortSignal) => {
     const {facetsLoaded} = this.state;
     if (facetsLoaded) {
       return Promise.resolve();
     }
-    const {systemDictionaries, preferences} = this.props;
+    const {systemDictionaries, preferences, uiNavigation} = this.props;
     return new Promise((resolve) => {
       const onDone = () => {
         const configuration = preferences.facetedFiltersDictionaries;
+        const searchDocumentTypes = uiNavigation.searchDocumentTypes || [];
+        const documentTypes = searchDocumentTypes
+          .map(type => SearchGroupTypes.hasOwnProperty(type)
+            ? SearchGroupTypes[type].types
+            : []
+          )
+          .reduce((r, c) => ([...r, ...c]), []);
         if (systemDictionaries.loaded && configuration) {
           const {dictionaries = []} = configuration || {};
           const orders = dictionaries
@@ -357,18 +403,31 @@ class FacetedSearch extends React.Component {
             name: DocumentTypeFilterName,
             values: []
           });
-          fetchFacets(facets.map(f => f.name), {}, '*')
+          fetchFacets(
+            facets.map(f => f.name),
+            documentTypes.length > 0
+              ? {
+                [DocumentTypeFilterName]: documentTypes
+              }
+              : {},
+            '*',
+            abortSignal
+          )
             .then((result) => {
               const {
                 facetsCount,
                 facetsToken
               } = result || {};
+              if (result && result.aborted) {
+                return;
+              }
               this.setState({
                 initialFacetsCount: facetsCount,
                 facetsCount,
                 facetsToken,
                 facetsLoaded: true,
-                facets
+                facets,
+                userDocumentTypes: documentTypes
               }, resolve);
             });
         } else {
@@ -377,7 +436,8 @@ class FacetedSearch extends React.Component {
       };
       Promise.all([
         systemDictionaries.fetchIfNeededOrWait(),
-        preferences.fetchIfNeededOrWait()
+        preferences.fetchIfNeededOrWait(),
+        uiNavigation.fetchSearchDocumentTypes()
       ])
         .then(() => {})
         .catch(() => {})
@@ -407,11 +467,26 @@ class FacetedSearch extends React.Component {
     this.setState({presentationMode: mode}, () => {
       FacetModeStorage.save(mode);
     });
-  }
+  };
 
   onQueryChange = (e) => {
     this.setState({
       query: e.target.value
+    });
+  };
+
+  initializeSearchRef = (input) => {
+    this.searchInput = input;
+  }
+
+  onClearQuery = () => {
+    this.setState({
+      query: undefined
+    }, () => {
+      this.onChangeQuery();
+      if (this.searchInput) {
+        this.searchInput.focus();
+      }
     });
   };
 
@@ -420,7 +495,7 @@ class FacetedSearch extends React.Component {
       return;
     }
     this.props.router.push(item.url);
-  }
+  };
 
   onPageSizeChanged = (newPageSize) => {
     const {
@@ -447,12 +522,25 @@ class FacetedSearch extends React.Component {
       presentationMode,
       showResults
     } = this.state;
+    const {
+      userDocumentTypes = []
+    } = this.state;
+    const documentTypes = Array.from(new Set([
+      ...((activeFilters || {})[DocumentTypeFilterName] || []),
+      ...(userDocumentTypes || [])
+    ]));
     return (
       <SearchResults
         key="search-results"
         className={classNames(styles.panel, styles.searchResults)}
         documents={documents}
+        extraColumns={
+          this.filters
+            .filter(f => f.values.length > 0 && f.name !== DocumentTypeFilterName)
+            .map(f => f.name)
+        }
         disabled={pending}
+        loading={pending}
         error={error}
         pageSize={pageSize}
         hasElementsAfter={!isLastPage}
@@ -463,10 +551,10 @@ class FacetedSearch extends React.Component {
         showResults={showResults}
         onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
         mode={presentationMode}
-        documentTypes={(activeFilters || {})[DocumentTypeFilterName]}
+        documentTypes={documentTypes}
       />
     );
-  }
+  };
 
   render () {
     const {systemDictionaries} = this.props;
@@ -474,7 +562,8 @@ class FacetedSearch extends React.Component {
       activeFilters,
       facetsLoaded,
       presentationMode,
-      query
+      query,
+      userDocumentTypes = []
     } = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
@@ -495,12 +584,33 @@ class FacetedSearch extends React.Component {
           className={styles.search}
         >
           <Input
+            ref={this.initializeSearchRef}
             size="large"
+            suffix={
+              query
+                ? (
+                  <Icon
+                    type="close-circle"
+                    className={styles.clearQuery}
+                    onClick={this.onClearQuery}
+                  />
+                )
+                : undefined
+            }
             className={styles.searchInput}
             value={query}
             onChange={this.onQueryChange}
             onPressEnter={this.onChangeQuery}
           />
+          {
+            userDocumentTypes.length > 0 && (
+              <TogglePresentationMode
+                className={styles.togglePresentationMode}
+                onChange={this.onChangePresentationMode}
+                mode={presentationMode}
+              />
+            )
+          }
           <Button
             className={styles.find}
             size="large"
@@ -511,19 +621,23 @@ class FacetedSearch extends React.Component {
             Search
           </Button>
         </div>
-        <div className={styles.actions}>
-          <DocumentTypeFilter
-            values={this.documentTypeFilter.values}
-            selection={(activeFilters || {})[DocumentTypeFilterName]}
-            onChange={this.onChangeFilter(DocumentTypeFilterName)}
-            onClearFilters={this.onClearFilters}
-          />
-          <TogglePresentationMode
-            className={styles.togglePresentationMode}
-            onChange={this.onChangePresentationMode}
-            mode={presentationMode}
-          />
-        </div>
+        {
+          userDocumentTypes.length === 0 && (
+            <div className={styles.actions}>
+              <DocumentTypeFilter
+                values={this.documentTypeFilter.values}
+                selection={(activeFilters || {})[DocumentTypeFilterName]}
+                onChange={this.onChangeFilter(DocumentTypeFilterName)}
+                onClearFilters={this.onClearFilters}
+              />
+              <TogglePresentationMode
+                className={styles.togglePresentationMode}
+                onChange={this.onChangePresentationMode}
+                mode={presentationMode}
+              />
+            </div>
+          )
+        }
         <div className={styles.content}>
           {!noFilters ? (
             <SplitPanel

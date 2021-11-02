@@ -43,28 +43,32 @@ class Remote {
   @observable _pending = true;
   @computed
   get pending () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._pending;
   }
 
   @observable _loaded = false;
   @computed
   get loaded () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._loaded;
   }
 
   @observable _value = this.constructor.defaultValue;
   @computed
   get value () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._value;
   }
 
   @observable _response = undefined;
   @computed
   get response () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._response;
   }
 
@@ -95,6 +99,10 @@ class Remote {
 
   _fetchPromise = null;
 
+  getData (response) {
+    return this.constructor.isJson ? (response.json()) : (response.blob());
+  }
+
   async fetch () {
     this._loadRequired = false;
     if (!this._fetchPromise) {
@@ -115,7 +123,7 @@ class Remote {
           if (!response.ok) {
             // throw new Error(response.statusText || `HTTP Error ${response.status}`);
           }
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          const data = await this.getData(response);
           this.update(data);
         } catch (e) {
           this.failed = true;

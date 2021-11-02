@@ -58,13 +58,23 @@ import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
+import multiZoneManager from '../../utils/multizone';
+import UINavigation from '../../utils/ui-navigation';
+import {VsActionsAvailable} from '../versioned-storages/vs-actions';
+import impersonation from '../../models/user/impersonation';
+import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
-const issuesRenderer = new IssuesRenderer(pipelinesLibrary, dockerRegistries, preferences, hiddenObjects);
+const issuesRenderer = new IssuesRenderer(
+  pipelinesLibrary,
+  dockerRegistries,
+  preferences,
+  hiddenObjects
+);
 const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
@@ -84,6 +94,15 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
+
+const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
+
+const vsActions = new VsActionsAvailable(pipelines);
+
+const currentUserAttributes = new CurrentUserAttributes(
+  authenticatedUserInfo,
+  dataStorageAvailable
+);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -123,6 +142,8 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
+      impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
       dataStorageAvailable,
@@ -141,7 +162,10 @@ const Root = () =>
       systemDictionaries,
       userMetadataKeys,
       cloudCredentialProfiles,
-      [HiddenObjects.injectionName]: hiddenObjects
+      [HiddenObjects.injectionName]: hiddenObjects,
+      multiZoneManager,
+      uiNavigation,
+      vsActions
     }}>
     <AppRouter />
   </Provider>;

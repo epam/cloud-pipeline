@@ -51,6 +51,7 @@ public class RunInstance {
     private String nodeId;
     private String nodeImage;
     private String nodeName;
+    private String nodePlatform;
     private Boolean spot;
     private Long cloudRegionId;
     private CloudProvider cloudProvider;

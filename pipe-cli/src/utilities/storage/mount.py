@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import time
 import uuid
 from abc import abstractmethod, ABCMeta
 from os.path import dirname
+
+from src.utilities.platform_utilities import is_windows
 from src.version import __bundle_info__
 
 import click
@@ -71,33 +73,38 @@ class FrozenMount(AbstractMount):
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         mount_bin = self.get_mount_executable(config)
-        mount_script = self.create_mount_script(os.path.dirname(Config.config_path()), mount_bin,
-                                                mountpoint, options, additional_arguments, mode)
-        return ['bash', mount_script]
+        config_folder = os.path.dirname(Config.get_home_dir_config_path())
+        return self.resolve_mount_cmd(config_folder, mount_bin, mountpoint, options, additional_arguments, mode)
 
-    def create_mount_script(self, config_folder, mount_bin, mountpoint, options, additional_arguments, mode):
+    def resolve_mount_cmd(self, config_folder, mount_bin, mountpoint, options, additional_arguments, mode):
         mount_cmd = '%s --mountpoint %s %s --mode %d' % (mount_bin, mountpoint, ' '.join(additional_arguments), mode)
+        mount_script = os.path.join(config_folder, 'pipe-fuse-script' + str(uuid.uuid4()))
         if options:
             mount_cmd += ' -o ' + options
-        mount_script = os.path.join(config_folder, 'pipe-fuse-script' + str(uuid.uuid4()))
-        with open(mount_script, 'w') as script:
-            # run pipe-fuse
-            script.write(mount_cmd + '\n')
-            # delete tmp pipe-fuse directory if it is "one-file" bundle
-            if self._needs_pipe_fuse_copy():
-                script.write('rm -rf %s\n' % os.path.dirname(mount_bin))
-            # self delete launch script
-            script.write('rm -- "$0"\n')
-        st = os.stat(mount_script)
-        os.chmod(mount_script, st.st_mode | stat.S_IEXEC)
-        return mount_script
+        if is_windows():
+            mount_script += '.ps1'
+            with open(mount_script, 'w') as script:
+                script.write(mount_cmd)
+            return ['powershell', '-file', mount_script]
+        else:
+            with open(mount_script, 'w') as script:
+                # run pipe-fuse
+                script.write(mount_cmd + '\n')
+                # delete tmp pipe-fuse directory if it is "one-file" bundle
+                if self._needs_pipe_fuse_copy():
+                    script.write('rm -rf %s\n' % os.path.dirname(mount_bin))
+                # self delete launch script
+                script.write('rm -- "$0"\n')
+            st = os.stat(mount_script)
+            os.chmod(mount_script, st.st_mode | stat.S_IEXEC)
+            return ['bash', mount_script]
 
     # The pipe-fuse "one-file" distr is copied to the ~/.pipe/pipe-fuseUID
     # This is required, as it shall keep running, when the "pipe" process exits and cleans it's temp dir
     # Otherwise (i.e. "one-folder") - packed binary is used directly
     def get_mount_executable(self, config):
         mount_packed = config.build_inner_module_path('mount')
-        config_folder = os.path.dirname(Config.config_path())
+        config_folder = os.path.dirname(Config.get_home_dir_config_path())
         mount_bin = os.path.join(mount_packed, 'pipe-fuse')
 
         if self._needs_pipe_fuse_copy():

@@ -1,0 +1,115 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  position: relative;
+}
+
+.link,
+.link > * {
+  text-decoration: none;
+}
+
+.link:hover > * {
+  text-decoration: none;
+}
+
+.modal-overlay {
+  width: 35vw;
+  height: 35vh;
+  min-width: 200px;
+  z-index: 100;
+}
+
+.modal-overlay div[class~="ant-popover-inner-content"] {
+  padding: 0 5px;
+}
+
+.modal-overlay div[class~="ant-popover-arrow"] {
+  display: none;
+}
+
+.tab-header-row {
+  margin: 5px 0;
+  border-bottom: 1px solid #dfdfdf;
+  line-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.close {
+  font-size: larger;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.close.absolute {
+  position: absolute;
+  top: 10px;
+  right: 0;
+}
+
+.close:hover {
+  color: black;
+}
+
+.tab-heading {
+  font-weight: bold;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.tab-heading-btn {
+  padding: 0 10px;
+  margin-right: 3px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.tab-heading-btn:hover {
+  background: #e6f7ff;
+}
+
+.tool-selection-container {
+  max-height: calc(100% - 30px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+.tool-tab-container {
+  max-height: calc(35vh - 16px);
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-item {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  height: 34px;
+  line-height: 34px;
+  transition: all 0.2s ease;
+}
+
+.tool-item:hover {
+  background-color: #eef8ff;
+}

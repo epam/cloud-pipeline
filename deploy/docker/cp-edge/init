@@ -72,11 +72,22 @@ export CP_DAV_EXTERNAL_MAPPING_URL="${CP_DAV_EXTERNAL_MAPPING_URL:-$EDGE_EXTERNA
 export CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}"
 export CP_EDGE_SSL_PROTOCOLS="${CP_EDGE_SSL_PROTOCOLS:-TLSv1.1 TLSv1.2}"
 export CP_EDGE_SSL_CIPHERS="EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
+export CP_EDGE_INVALIDATE_AUTH_PATH=${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}
 
 if [ -z "$CP_API_SRV_EXTERNAL_HOST" ] || [ -z "$CP_API_SRV_EXTERNAL_PORT" ]; then
     export CP_EDGE_FSBROWSER_CORS="*"
+    export CP_EDGE_INVALIDATE_URL_CORS="*"
 else
-    export CP_EDGE_FSBROWSER_CORS="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}"
+    if [ "$CP_API_SRV_EXTERNAL_PORT" == "443" ]; then
+        _api_schema="https"
+    elif [ "$CP_API_SRV_EXTERNAL_PORT" == "80" ]; then
+        _api_schema="http"
+    else
+        _api_schema="https"
+        _api_port=":$CP_API_SRV_EXTERNAL_PORT"
+    fi
+    export CP_EDGE_FSBROWSER_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
+    export CP_EDGE_INVALIDATE_URL_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
 fi
 # FIXME: !!! WebDAV tips For Windows Drive Mapping: 
 #        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
@@ -93,7 +104,7 @@ echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
 NGINX_COMMON_CONF="$(envsubst '${CP_EDGE_SSL_PROTOCOLS} ${CP_EDGE_SSL_CIPHERS}' < /etc/nginx/endpoints-config/server.common.conf)"
 echo "$NGINX_COMMON_CONF" > /etc/nginx/endpoints-config/server.common.conf
 
-NGINX_CONF="$(envsubst '${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
+NGINX_CONF="$(envsubst '${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 # Add the "ingress" configuration to the nginx, which will force all the client traffic to flow via EDGE

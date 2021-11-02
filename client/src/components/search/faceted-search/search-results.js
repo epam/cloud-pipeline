@@ -18,13 +18,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Icon} from 'antd';
-import Preview from '../preview';
+import {Alert, Icon, Spin} from 'antd';
+import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
 import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
+import OpenInToolAction from '../../special/file-actions/open-in-tool';
+import compareArrays from '../../../utils/compareArrays';
 
 const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
@@ -83,6 +85,9 @@ class SearchResults extends React.Component {
         this.infiniteScroll.forceUpdate();
       }
     }
+    if (!compareArrays(prevProps.extraColumns, this.props.extraColumns)) {
+      this.updateExtraColumns();
+    }
   }
 
   componentDidMount () {
@@ -90,13 +95,24 @@ class SearchResults extends React.Component {
     window.addEventListener('mouseup', this.stopResizing);
     window.addEventListener('keydown', this.onKeyDown);
     this.updateDocumentTypes();
+    this.updateExtraColumns();
+  }
+
+  updateExtraColumns = () => {
+    const {extraColumns = []} = this.props;
     parseExtraColumns(this.props.preferences)
       .then(extra => {
+        const extraColumnsConfiguration = extraColumns.map(key => ({key, name: key}));
         if (extra && extra.length) {
-          this.setState({extraColumnsConfiguration: extra}, this.updateDocumentTypes);
+          extra.forEach(column => {
+            if (!extraColumnsConfiguration.find(c => c.key === column.key)) {
+              extraColumnsConfiguration.push(column);
+            }
+          });
         }
+        this.setState({extraColumnsConfiguration}, this.updateDocumentTypes);
       });
-  }
+  };
 
   componentWillUnmount () {
     if (this.animationFrame) {
@@ -136,8 +152,26 @@ class SearchResults extends React.Component {
     this.infiniteScroll = infiniteScroll;
   };
 
+  renderResultsItemActions = (resultItem) => {
+    return (
+      <div className={styles.actionsContainer}>
+        <OpenInToolAction
+          file={resultItem.path}
+          storageId={resultItem.parentId}
+          className={classNames(styles.previewBtn, styles.action)}
+          style={{
+            borderRadius: '0px',
+            borderLeft: 'none',
+            height: '100%'
+          }}
+        />
+      </div>
+    );
+  };
+
   renderSearchResultItem = (resultItem) => {
     const {disabled} = this.props;
+    const {extraColumnsConfiguration} = this.state;
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
@@ -148,13 +182,13 @@ class SearchResults extends React.Component {
         <Icon
           type="info-circle-o"
           className={styles.previewBtn}
-          style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
           onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
+            e && e.stopPropagation();
+            e && e.preventDefault();
             this.setPreview(resultItem);
           }}
         />
+        {this.renderResultsItemActions(resultItem)}
         <div
           id={`search-result-item-${resultItem.elasticId}`}
           className={
@@ -163,11 +197,11 @@ class SearchResults extends React.Component {
               {[styles.disabled]: disabled}
             )
           }
-          style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
         >
           <DocumentListPresentation
             className={styles.title}
             document={resultItem}
+            extraColumns={extraColumnsConfiguration}
           />
         </div>
       </a>
@@ -179,7 +213,7 @@ class SearchResults extends React.Component {
     if (preview && event.key && event.key.toLowerCase() === 'escape') {
       this.closePreview();
     }
-  }
+  };
 
   setPreview = (info, delayed) => {
     if (this.previewTimeout) {
@@ -200,13 +234,7 @@ class SearchResults extends React.Component {
 
   closePreview = () => {
     this.setState({preview: undefined});
-  }
-
-  onPreviewWrapperClick = (event) => {
-    if (event && event.target === event.currentTarget) {
-      this.closePreview();
-    }
-  }
+  };
 
   navigate = (item) => (e) => {
     if (this.props.disabled) {
@@ -223,7 +251,7 @@ class SearchResults extends React.Component {
     if (onNavigate) {
       onNavigate(item);
     }
-  }
+  };
 
   renderPreview = () => {
     const {preview} = this.state;
@@ -231,21 +259,13 @@ class SearchResults extends React.Component {
       return null;
     }
     return (
-      <div
-        className={styles.previewWrapper}
-        onClick={(e) => this.onPreviewWrapperClick(e)}
-      >
-        <div
-          className={styles.preview}
-        >
-          <Preview
-            item={preview}
-            lightMode
-          />
-        </div>
-      </div>
+      <PreviewModal
+        lightMode
+        preview={preview}
+        onClose={this.closePreview}
+      />
     );
-  }
+  };
 
   renderResultsList = () => {
     const {
@@ -301,7 +321,7 @@ class SearchResults extends React.Component {
         </div>
       </div>
     );
-  }
+  };
 
   getGridTemplate = (headerTemplate) => {
     const {columnWidths} = this.state;
@@ -340,7 +360,7 @@ class SearchResults extends React.Component {
         this.setState({columnWidths: {...columnWidths}});
       }
     }
-  }
+  };
 
   stopResizing = (event) => {
     const {resizingColumn} = this.state;
@@ -348,7 +368,7 @@ class SearchResults extends React.Component {
     if (resizingColumn) {
       this.setState({resizingColumn: undefined});
     }
-  }
+  };
 
   initResizing = (event, key) => {
     const {resizingColumn} = this.state;
@@ -356,7 +376,7 @@ class SearchResults extends React.Component {
     if (!resizingColumn) {
       this.setState({resizingColumn: key});
     }
-  }
+  };
 
   renderTableRow = (resultItem, rowIndex) => {
     const {disabled} = this.props;
@@ -395,7 +415,7 @@ class SearchResults extends React.Component {
         }
       </a>
     );
-  }
+  };
 
   renderTableHeader = () => {
     const {columnWidths, resizingColumn} = this.state;
@@ -427,7 +447,7 @@ class SearchResults extends React.Component {
         ]))}
       </div>
     );
-  }
+  };
 
   renderResultsTable = () => {
     const {
@@ -474,14 +494,23 @@ class SearchResults extends React.Component {
         />
       </div>
     );
-  }
+  };
+
+  renderResultsSpinner = () => {
+    return (
+      <div className={styles.containerSpinner}>
+        <Spin />
+      </div>
+    );
+  };
 
   render () {
     const {
       className,
       style,
       showResults,
-      mode
+      mode,
+      loading
     } = this.props;
     const {preview} = this.state;
     if (!mode) {
@@ -491,6 +520,7 @@ class SearchResults extends React.Component {
       <div
         className={classNames(
           styles.container,
+          {[styles.loading]: loading},
           className
         )}
         style={style}
@@ -498,6 +528,7 @@ class SearchResults extends React.Component {
       >
         {mode === PresentationModes.table ? this.renderResultsTable() : this.renderResultsList()}
         {showResults && preview && this.renderPreview()}
+        {loading && this.renderResultsSpinner()}
       </div>
     );
   }
@@ -510,6 +541,8 @@ SearchResults.propTypes = {
   hasElementsAfter: PropTypes.bool,
   hasElementsBefore: PropTypes.bool,
   onLoadData: PropTypes.func,
+  loading: PropTypes.bool,
+  disabled: PropTypes.bool,
   onPageSizeChanged: PropTypes.func,
   onNavigate: PropTypes.func,
   pageSize: PropTypes.number,
@@ -518,7 +551,8 @@ SearchResults.propTypes = {
   onChangeDocumentType: PropTypes.func,
   onChangeBottomOffset: PropTypes.func,
   mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table]),
-  documentTypes: PropTypes.array
+  documentTypes: PropTypes.array,
+  extraColumns: PropTypes.array
 };
 
 SearchResults.defaultProps = {

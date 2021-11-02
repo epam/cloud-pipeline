@@ -69,7 +69,11 @@ import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.notification.ContextualNotificationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.manager.user.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
@@ -89,6 +93,7 @@ import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRep
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -97,6 +102,7 @@ import java.util.concurrent.Executor;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -112,6 +118,9 @@ public class AspectTestBeans {
 
     @MockBean(name = "flywayInitializer")
     protected FlywayMigrationInitializer mockFlywayMigrationInitializer;
+
+    @MockBean
+    protected ImpersonationManager impersonationManager;
 
     @MockBean
     protected JwtTokenGenerator mockJwtTokenGenerator;
@@ -361,4 +370,19 @@ public class AspectTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected PipelineRunServiceUrlRepository mockPipelineRunServiceUrlRepository;
+
+    @MockBean
+    protected ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    protected ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+
+    @MockBean
+    protected ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @MockBean
+    protected CacheManager cacheManager;
 }

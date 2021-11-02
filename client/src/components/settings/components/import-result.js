@@ -37,52 +37,64 @@ function mapLogItem (log) {
   return `[${log.created}] ${log.status} ${log.message}`;
 }
 
-class ImportResult extends React.Component {
-  render () {
-    const {
-      logs,
-      onClose,
-      visible
-    } = this.props;
-    let content;
-    if (!logs || !logs.length) {
-      content = (
-        <Alert
-          type="info"
-          message="No logs are available"
-        />
-      );
-    } else {
-      content = (
-        <pre style={{width: '100%', maxHeight: '70vh', overflow: 'auto', fontSize: 'smaller'}}>
-          <code
-            id="users-import-logs"
-            dangerouslySetInnerHTML={{
-              __html: processBashScript(logs.map(mapLogItem).join('\n'))
-            }} />
-        </pre>
-      );
-    }
-    return (
-      <Modal
-        onCancel={onClose}
-        footer={null}
-        title="Import logs"
-        visible={visible}
-        width="80%"
-      >
-        <div className={styles.logs}>
-          {content}
-        </div>
-      </Modal>
+function ImportResult (
+  {
+    logs,
+    onClose,
+    visible,
+    mode
+  }
+) {
+  let content;
+  if (!logs || !logs.length) {
+    content = (
+      <Alert
+        type="info"
+        message="No logs are available"
+      />
+    );
+  } else {
+    content = (
+      <pre style={{width: '100%', maxHeight: '70vh', overflow: 'auto', fontSize: 'smaller'}}>
+        <code
+          id="users-import-logs"
+          dangerouslySetInnerHTML={{
+            __html: processBashScript(logs.map(mapLogItem).join('\n'))
+          }} />
+      </pre>
     );
   }
+  if (/^inline$/i.test(mode)) {
+    return (
+      <div className={styles.logs}>
+        {content}
+      </div>
+    );
+  }
+  return (
+    <Modal
+      onCancel={onClose}
+      footer={null}
+      title="Import logs"
+      visible={visible}
+      width="80%"
+    >
+      <div className={styles.logs}>
+        {content}
+      </div>
+    </Modal>
+  );
 }
 
 ImportResult.propTypes = {
   logs: PropTypes.array,
   onClose: PropTypes.func,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  mode: PropTypes.oneOf(['inline', 'modal'])
+};
+
+ImportResult.defaultProps = {
+  mode: 'modal'
 };
 
 export default ImportResult;

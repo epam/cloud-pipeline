@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -37,7 +38,9 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityPermissionVO;
@@ -45,10 +48,14 @@ import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -59,14 +66,17 @@ public class CloudPipelineAPIClient {
 
     private final CloudPipelineAPI cloudPipelineAPI;
     private final CloudPipelineApiExecutor executor;
+    private final String storageSearchMasksPreferenceName;
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") String cloudPipelineToken,
+                                  @Value("${sync.search.files.hidden.masks.preference.key}") String preferenceName,
                                   CloudPipelineApiExecutor cloudPipelineApiExecutor) {
         this.cloudPipelineAPI =
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
         this.executor = cloudPipelineApiExecutor;
+        this.storageSearchMasksPreferenceName = preferenceName;
     }
 
     public List<AbstractDataStorage> loadAllDataStorages() {
@@ -195,5 +205,20 @@ public class CloudPipelineAPIClient {
 
     public Pipeline loadPipelineByRepositoryUrl(final String repositoryUrl) {
         return executor.execute(cloudPipelineAPI.loadPipelineByUrl(repositoryUrl));
+    }
+
+    public List<StorageFileSearchMask> getStorageSearchMasks() {
+        final Preference masksPreference = executor.execute(
+            cloudPipelineAPI.loadPreference(storageSearchMasksPreferenceName));
+        try {
+            return new ObjectMapper().readValue(masksPreference.getValue(),
+                                                new TypeReference<List<StorageFileSearchMask>>() {});
+        } catch (IOException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public FileShareMount loadFileShareMount(final Long id) {
+        return executor.execute(cloudPipelineAPI.loadShareMount(id));
     }
 }

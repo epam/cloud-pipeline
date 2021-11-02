@@ -18,9 +18,14 @@ package com.epam.pipeline.manager.cluster.pool;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
 import lombok.RequiredArgsConstructor;
@@ -42,12 +47,14 @@ public class NodePoolValidator {
     private static final String UP_THRESHOLD_FIELD = "scale up threshold";
     private static final String DOWN_THRESHOLD_FIELD = "scale down threshold";
     private static final double HUNDRED_PERCENT = 100.0;
+    private static final String WINDOWS = "windows";
 
     private final MessageHelper messageHelper;
     private final CloudRegionManager regionManager;
     private final InstanceOfferManager instanceOfferManager;
     private final NodeScheduleManager scheduleManager;
     private final ToolManager toolManager;
+    private final CloudFacade cloudFacade;
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -77,11 +84,34 @@ public class NodePoolValidator {
                 .ifPresent(scheduleManager::load);
 
         Optional.ofNullable(vo.getDockerImages())
-                .ifPresent(images -> images.forEach(toolManager::loadByNameOrId));
+                .ifPresent(images -> images.forEach(this::validatePoolImage));
+
+        validateInstanceImage(vo);
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
         }
+    }
+
+    private void validateInstanceImage(final NodePoolVO vo) {
+        final boolean isWindowsInstanceImage = Optional.ofNullable(vo.getInstanceImage())
+            .map(image -> cloudFacade.getInstanceImageDescription(vo.getRegionId(), image))
+            .map(InstanceImage::getPlatform)
+            .filter(WINDOWS::equalsIgnoreCase)
+            .isPresent();
+        Assert.isTrue(!isWindowsInstanceImage,
+                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED));
+    }
+
+    private void validatePoolImage(final String image) {
+        final boolean poolContainsWindowsImages = Optional.of(toolManager.loadByNameOrId(image))
+            .map(tool -> toolManager.loadToolVersionAttributes(tool.getId(), ToolUtils.getImageTag(tool.getImage())))
+            .map(ToolVersionAttributes::getAttributes)
+            .map(ToolVersion::getPlatform)
+            .filter(WINDOWS::equalsIgnoreCase)
+            .isPresent();
+        Assert.isTrue(!poolContainsWindowsImages,
+                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED));
     }
 
     private void validateAutoscalingParams(final NodePoolVO vo) {

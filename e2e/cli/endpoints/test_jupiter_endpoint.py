@@ -55,6 +55,8 @@ class TestJupiterEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_jupiter_and_no_machine_endpoint_friendly_url(self):
@@ -69,3 +71,5 @@ class TestJupiterEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)

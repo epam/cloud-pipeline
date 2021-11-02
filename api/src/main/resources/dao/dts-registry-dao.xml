@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -29,18 +29,22 @@
                         schedulable,
                         created_date,
                         url,
-                        prefixes)
+                        status,
+                        prefixes,
+                        preferences)
                     VALUES (
                         :ID,
                         :NAME,
                         :SCHEDULABLE,
                         :CREATED_DATE,
                         :URL,
-                        :PREFIXES)
+                        :STATUS,
+                        :PREFIXES,
+                        to_jsonb(:PREFERENCES::jsonb))
                 ]]>
             </value>
         </property>
-        <property name="loadDtsRegistryQuery">
+        <property name="loadDtsRegistryByIdQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -49,10 +53,32 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
-                        r.prefixes
+                        r.status,
+                        r.heartbeat,
+                        r.prefixes,
+                        r.preferences
                     FROM
                         pipeline.dts_registry r
                     WHERE r.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDtsRegistryByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id,
+                        r.name,
+                        r.schedulable,
+                        r.created_date,
+                        r.url,
+                        r.status,
+                        r.heartbeat,
+                        r.prefixes,
+                        r.preferences
+                    FROM
+                        pipeline.dts_registry r
+                    WHERE r.name = ?
                 ]]>
             </value>
         </property>
@@ -65,7 +91,10 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
-                        r.prefixes
+                        r.status,
+                        r.heartbeat,
+                        r.prefixes,
+                        r.preferences
                     FROM
                         pipeline.dts_registry r
                     ORDER BY
@@ -93,6 +122,55 @@
                         pipeline.dts_registry
                     WHERE
                         id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="upsertDtsRegistryPreferencesQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.dts_registry
+                    SET
+                        preferences = preferences|| to_jsonb(:PREFERENCES::jsonb)
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteDtsRegistryPreferencesQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.dts_registry
+                    SET
+                        preferences = preferences::jsonb #- @PREFERENCE_KEYS_EXPRESSION@
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateDtsRegistryHeartbeatQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.dts_registry
+                    SET
+                        heartbeat = :HEARTBEAT,
+                        status = :STATUS
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateDtsRegistryStatusQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.dts_registry
+                    SET
+                        status = :STATUS
+                    WHERE
+                        id = :ID
                 ]]>
             </value>
         </property>

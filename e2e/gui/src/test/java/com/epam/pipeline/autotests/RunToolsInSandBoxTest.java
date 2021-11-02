@@ -25,7 +25,6 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
 
-import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -106,11 +105,18 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-495"})
     public void validateEndpointLink() {
-        runsMenu()
-                .show(getLastRunId())
-                .clickEndpoint()
-                .sleep(10, SECONDS)
-                .validateEndpointPage(C.LOGIN);
+        ToolPageAO endpointPage = null;
+        try {
+            endpointPage = runsMenu()
+                    .show(getLastRunId())
+                    .clickEndpoint()
+                    .sleep(10, SECONDS)
+                    .validateEndpointPage(C.LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
@@ -134,7 +140,7 @@ public class RunToolsInSandBoxTest
         logout();
 
         // in order to avoid caching issue
-        Utils.restartBrowser(C.ROOT_ADDRESS);
+        restartBrowser(C.ROOT_ADDRESS);
 
         loginAs(user)
                 .runs()
@@ -239,6 +245,7 @@ public class RunToolsInSandBoxTest
                         .execute("singularity help version")
                         .assertOutputContains("Show the version for Singularity")
                         .execute(format("singularity build %s.sif library://%s", testDockerImage, testDockerImage))
+                        .waitForLog("Build complete")
                         .assertOutputContains(format("Build complete: %s.sif", testDockerImage))
                         .execute(format("singularity instance start %s.sif instance1", testDockerImage))
                         .assertOutputContains("instance started successfully")

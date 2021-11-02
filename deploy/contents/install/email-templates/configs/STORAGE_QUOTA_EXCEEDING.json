@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins":false,
+  "keepInformedOwner":false,
+  "enabled":true,
+  "subject":"Storage `#$templateParameters[\"storageName\"]` exceeds a quota"
+}

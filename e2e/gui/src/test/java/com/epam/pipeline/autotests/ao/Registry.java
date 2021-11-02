@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class Registry implements AccessObject<Registry> {
     }
 
     public Registry edit(final Consumer<RegistryEditionPopup> registry) {
-        hover(SETTINGS);
+        click(SETTINGS);
         hover(REGISTRY_SETTINGS);
         click(EDIT_REGISTRY);
         registry.accept(new RegistryEditionPopup());
@@ -73,7 +73,7 @@ public class Registry implements AccessObject<Registry> {
     }
 
     public Registry createGroup(final Consumer<ToolGroupAdditionPopup> group) {
-        hover(SETTINGS).hover(GROUP_SETTINGS).click(CREATE_GROUP);
+        click(SETTINGS).hover(GROUP_SETTINGS).click(CREATE_GROUP);
         group.accept(new ToolGroupAdditionPopup(this));
         return this;
     }

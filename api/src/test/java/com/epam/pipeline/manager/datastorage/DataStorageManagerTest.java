@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,26 +18,45 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolFingerprint;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
+import com.epam.pipeline.manager.docker.DockerClient;
+import com.epam.pipeline.manager.docker.DockerClientFactory;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -47,13 +66,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 public class DataStorageManagerTest extends AbstractSpringTest {
 
@@ -71,7 +93,29 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final String FORBIDDEN_MOUNT_POINT_3 = "/runs/run/dir";
     private static final String SHARED_BASE_URL = "https://localhost:9999/shared/";
     private static final String SHARED_BASE_URL_TEMPLATE = SHARED_BASE_URL + "%d";
+    private static final String TEST_VERSION = "latest";
+    private static final String TEST_IMAGE = "library/image";
+    private static final String TEST_USER = "test";
+    private static final String TEST_CPU = "500m";
+    private static final String TEST_RAM = "1Gi";
+    private static final String TOOL_GROUP = "library";
+    private static final String TEST_REPO = "repository";
 
+    private static final String TEST_DIGEST = "sha256:aaa";
+    private static final Long TEST_SIZE = 123L;
+    private static final Date TEST_LAST_MODIFIED_DATE = new Date();
+    public static final String PLATFORM = "linux";
+    public static final String DAV_MOUNT_TAG = "dav-mount";
+    public static final long SECS_IN_HOUR = 3600L;
+    public static final long SECS_IN_MIN = 60L;
+
+
+    @Mock
+    private DockerRegistry dockerRegistry;
+    @Mock
+    private DockerClient dockerClient;
+    @MockBean
+    private DockerClientFactory dockerClientFactory;
 
     @Autowired
     private DataStorageManager storageManager;
@@ -91,6 +135,21 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Autowired
     private CloudRegionDao cloudRegionDao;
 
+    @Autowired
+    private ToolManager toolManager;
+
+    @Autowired
+    private ToolVersionManager toolVersionManager;
+
+    @Autowired
+    private DockerRegistryDao registryDao;
+
+    @Autowired
+    private ToolGroupManager toolGroupManager;
+
+    @Autowired
+    private MetadataManager metadataManager;
+
     @Before
     public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
@@ -103,6 +162,161 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         preferenceManager.update(Collections.singletonList(systemIndependentBlackList));
         cloudRegionDao.create(ObjectCreatorUtils.getDefaultAwsRegion());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testAddRelationForDataStorageAndToolVersion() {
+        final Tool tool = createTool();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageVO.setToolsToMount(
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
+                        .versions(
+                                Collections.singletonList(ToolVersionFingerprint.builder()
+                                        .id(toolVersionManager.loadToolVersion(tool.getId(), TEST_VERSION).getId())
+                                        .version(TEST_VERSION)
+                                        .build())
+                        ).build()
+                )
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        AbstractDataStorage loaded = storageManager.load(saved.getId());
+        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+
+        storageVO.setId(loaded.getId());
+        storageVO.setToolsToMount(
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId()).build())
+        );
+
+        storageManager.update(storageVO);
+        storageVO.setId(loaded.getId());
+        storageManager.update(storageVO);
+        loaded = storageManager.load(saved.getId());
+        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+        Assert.assertTrue(
+                CollectionUtils.isEmpty(
+                        loaded.getToolsToMount().stream().filter(t -> t.getVersions() != null)
+                                .flatMap(v -> v.getVersions().stream())
+                                .collect(Collectors.toList())
+                )
+        );
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testCantAddRelationForDataStorageAndToolVersionIfItDoesNotExists() {
+        final Tool tool = createTool();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageVO.setToolsToMount(
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
+                        .versions(
+                                Collections.singletonList(ToolVersionFingerprint.builder()
+                                        .id(toolVersionManager.loadToolVersion(tool.getId(), TEST_VERSION).getId())
+                                        .version(TEST_VERSION + "_fake")
+                                        .build())
+                        ).build()
+                )
+        );
+        storageManager.create(storageVO, false, false, false);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersions() {
+        final Tool tool = createTool();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageVO.setToolsToMount(
+                    Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
+                            .versions(
+                                    Collections.singletonList(ToolVersionFingerprint.builder()
+                                            .id(toolVersionManager.loadToolVersion(tool.getId(), TEST_VERSION).getId())
+                                            .version(TEST_VERSION)
+                                            .build())
+                            ).build()
+                    )
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false,
+                false, false).getEntity();
+        AbstractDataStorage loaded = storageManager.load(saved.getId());
+        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+        toolVersionManager.deleteToolVersions(tool.getId());
+        loaded = storageManager.load(saved.getId());
+        Assert.assertTrue(loaded.getToolsToMount().isEmpty());
+
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersion() {
+        final Tool tool = createTool();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageVO.setToolsToMount(
+                Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
+                        .versions(
+                                Collections.singletonList(ToolVersionFingerprint.builder()
+                                        .id(toolVersionManager.loadToolVersion(tool.getId(), TEST_VERSION).getId())
+                                        .version(TEST_VERSION)
+                                        .build())
+                        ).build()
+                )
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false,
+                false, false).getEntity();
+        AbstractDataStorage loaded = storageManager.load(saved.getId());
+        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+        toolVersionManager.deleteToolVersion(tool.getId(), TEST_VERSION);
+        loaded = storageManager.load(saved.getId());
+        Assert.assertTrue(loaded.getToolsToMount().isEmpty());
+    }
+
+    private Tool createTool() {
+        TestUtils.configureDockerClientMock(dockerClient, dockerClientFactory);
+
+        final DockerRegistry registry = new DockerRegistry();
+        registry.setPath(TEST_REPO);
+        registry.setOwner(TEST_USER);
+        registryDao.createDockerRegistry(registry);
+
+        final ToolGroup firstGroup = new ToolGroup();
+        firstGroup.setName(TOOL_GROUP);
+        firstGroup.setRegistryId(registry.getId());
+        toolGroupManager.create(firstGroup);
+
+        Tool tool = new Tool();
+        tool.setImage(TEST_IMAGE);
+        tool.setRam(TEST_RAM);
+        tool.setCpu(TEST_CPU);
+        tool.setOwner(TEST_USER);
+        tool.setToolGroup(TOOL_GROUP);
+        tool.setToolGroupId(firstGroup.getId());
+        tool.setRegistryId(registry.getId());
+        tool = toolManager.create(tool, false);
+
+        ToolVersion toolVersion = ToolVersion
+                .builder()
+                .digest(TEST_DIGEST)
+                .size(TEST_SIZE)
+                .version(TEST_VERSION)
+                .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .platform(PLATFORM)
+                .toolId(tool.getId())
+                .build();
+        when(dockerClient.getVersionAttributes(any(DockerRegistry.class), anyString(), anyString()))
+                .thenReturn(toolVersion);
+
+        toolVersionManager.updateOrCreateToolVersion(
+                tool.getId(), TEST_VERSION, tool.getImage(), dockerRegistry, dockerClient
+        );
+
+        return tool;
     }
 
     @Test
@@ -152,6 +366,85 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void requestDavMountByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertFalse(metadataEntries.isEmpty());
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void failToRequestForSmallerTimeDavMountIfAlreadyExistsTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+
+        storageManager.requestDataStorageDavMount(saved.getId(),
+                SECS_IN_MIN);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void successToRequestForBiggerTimeDavMountIfAlreadyExistsTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        long firstValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
+
+        storageManager.requestDataStorageDavMount(saved.getId(), 2 * SECS_IN_HOUR);
+        metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        long secondValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
+
+        Assert.assertTrue(secondValue > firstValue);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void callOffRequestDavMountByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertFalse(metadataEntries.isEmpty());
+
+        storageManager.callOffDataStorageDavMount(saved.getId());
+
+        metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertTrue(metadataEntries.isEmpty());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void updateDataStorageTest() throws Exception {
 
         Folder folder = new Folder();
@@ -193,6 +486,20 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testUpdateDataStorageMountStatus() {
+        final DataStorageVO storageVO =
+            ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS, PATH, WITHOUT_PARENT_ID,
+                                                      TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        assertNfsMountStatus(saved, NFSStorageMountStatus.ACTIVE);
+        assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.ACTIVE);
+        final AbstractDataStorage updated = storageManager.updateMountStatus(saved, NFSStorageMountStatus.READ_ONLY);
+        assertNfsMountStatus(updated, NFSStorageMountStatus.READ_ONLY);
+        assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.READ_ONLY);
     }
 
     @Test
@@ -337,5 +644,11 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         }
 
         return path;
+    }
+
+    private void assertNfsMountStatus(final AbstractDataStorage storage, final NFSStorageMountStatus status) {
+        Assert.assertEquals(DataStorageType.NFS, storage.getType());
+        final NFSDataStorage nfsDataStorage = (NFSDataStorage) storage;
+        Assert.assertEquals(status, nfsDataStorage.getMountStatus());
     }
 }

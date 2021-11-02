@@ -151,6 +151,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
         when(toolManager.resolveSymlinks(TEST_IMAGE)).thenReturn(notScannedTool);
+        when(toolManager.findToolVersion(notScannedTool)).thenReturn(Optional.empty());
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);
@@ -169,8 +170,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
+        final ToolVersion toolVersion = ToolVersion.builder().size(1L).platform("linux").build();
         when(toolVersionManager.loadToolVersion(anyLong(), anyString()))
-                .thenReturn(ToolVersion.builder().size(1L).build());
+                .thenReturn(toolVersion);
+        when(toolVersionManager.findToolVersion(anyLong(), anyString()))
+                .thenReturn(Optional.of(toolVersion));
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
         doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());

@@ -232,7 +232,7 @@ class UploadButton extends React.Component {
         };
         if (uploadingFile) {
           if (this.props.uploadToNFS && file.size >= MAX_NFS_FILE_SIZE_MB * MB) {
-            updateError(`error: Maximum ${MAX_NFS_FILE_SIZE_MB}Gb per file`);
+            updateError(`error: Maximum ${MAX_NFS_FILE_SIZE_MB}Mb per file`);
             resolve();
             return;
           }

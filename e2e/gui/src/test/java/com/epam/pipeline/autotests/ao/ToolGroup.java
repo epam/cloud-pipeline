@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     public ToolGroup enableTool(final String toolName) {
-        hover(SETTINGS).click(ENABLE_TOOL);
+        click(SETTINGS).click(ENABLE_TOOL);
         return new ToolEnablePopup(this).name(toolName).ok();
     }
 
@@ -89,7 +89,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     public ToolGroup editGroup(final Consumer<ToolGroupEditionPopup> group) {
-        hover(SETTINGS);
+        click(SETTINGS);
         hover(GROUP_SETTINGS);
         click(EDIT_GROUP);
         group.accept(new ToolGroupEditionPopup(this));
@@ -97,7 +97,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     public Registry deleteGroup(final Consumer<ToolGroupDeletionPopup> group) {
-        hover(SETTINGS);
+        click(SETTINGS);
         hover(GROUP_SETTINGS);
         click(DELETE_GROUP);
         group.accept(new ToolGroupDeletionPopup(registry));
@@ -105,7 +105,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     public ToolGroup canCreatePersonalGroup() {
-        hover(SETTINGS);
+        click(SETTINGS);
         hover(GROUP_SETTINGS);
         ensure(CREATE_PERSONAL_GROUP_FROM_SETTINGS, visible);
         return this;

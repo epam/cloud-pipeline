@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttribu
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.Utils.getPopupByTitle;
+import static com.epam.pipeline.autotests.utils.Utils.resetClick;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
@@ -53,7 +54,7 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
             entry(VERSION, $(byId("version"))),
             entry(FIRST_VERSION, $(byCssSelector(".ant-table-row .anticon-tag")).closest(".ant-table-row")),
             entry(SETTINGS, $(byId("edit-pipeline-menu-button"))),
-            entry(EDIT, context().find(menuitem("ant-dropdown-menu-item", " Edit"))),
+            entry(EDIT, context().find(menuitem("rc-dropdown-menu-item", " Edit"))),
             entry(GIT_REPOSITORY, $(byId("pipeline-repository-button")))
     );
     private final String pipelineName;
@@ -143,10 +144,13 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public MetadataSectionAO showMetadata() {
-        hover(displayAttributes);
+        click(displayAttributes);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
-                page -> click(showAttributes),
+                page -> {
+                    click(showAttributes);
+                    resetClick();
+                },
                 page -> resetMouse()
         );
         return new MetadataSectionAO(this);

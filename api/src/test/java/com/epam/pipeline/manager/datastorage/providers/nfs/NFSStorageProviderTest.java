@@ -21,6 +21,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +46,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.*;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
+import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -69,6 +73,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     private static final String TEST_PATH = "localhost";
     private static final String TEST_STORAGE_NAME = "testStorage";
     private static final String STORAGE_NAME = "bucket";
+    private static final String TEST_PREFIX = ":/test";
 
     @Mock
     private CmdExecutor mockCmdExecutor;
@@ -100,6 +105,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     @Autowired
     private AuthManager authManager;
 
+    @Autowired
+    private NFSStorageMounter nfsStorageMounter;
+
     @MockBean
     CloudRegionAspect cloudRegionAspect;
 
@@ -122,9 +130,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     public void setUp() throws Exception {
 
         MockitoAnnotations.initMocks(this);
-        Whitebox.setInternalState(nfsProvider, "dataStorageDao", dataStorageDao);
-        Whitebox.setInternalState(nfsProvider, "rootMountPoint", testMountPoint.getAbsolutePath());
-        Whitebox.setInternalState(nfsProvider, "cmdExecutor", mockCmdExecutor);
+        Whitebox.setInternalState(nfsStorageMounter, "dataStorageDao", dataStorageDao);
+        Whitebox.setInternalState(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
+        Whitebox.setInternalState(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
@@ -231,7 +239,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Test
     public void testCreateFileFolderAndList() {
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + ":/test");
+        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + TEST_PREFIX);
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
         String testFileName = "testFile.txt";
@@ -278,6 +286,50 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     }
 
     @Test
+    public void testCopyFile() {
+        final NFSDataStorage storage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + TEST_PREFIX);
+        storage.setFileShareMountId(awsFileShareMount.getId());
+        nfsProvider.createStorage(storage);
+        final Path rootPath = Paths.get(testMountPoint.toString(), TEST_PATH,  "test");
+        final Path oldPath = rootPath.resolve("oldFilePath");
+        final Path newPath = rootPath.resolve("newFilePath");
+        nfsProvider.createFile(storage, oldPath.getFileName().toString(), CommonCreatorConstants.TEST_BYTES);
+
+        nfsProvider.copyFile(storage, oldPath.getFileName().toString(), newPath.getFileName().toString());
+
+        Assert.assertTrue(Files.exists(oldPath));
+        Assert.assertTrue(Files.isRegularFile(oldPath));
+        Assert.assertTrue(Files.exists(newPath));
+        Assert.assertTrue(Files.isRegularFile(newPath));
+        Assert.assertArrayEquals(CommonCreatorConstants.TEST_BYTES,
+                nfsProvider.getFile(storage, newPath.getFileName().toString(), null, Long.MAX_VALUE).getContent());
+
+        nfsProvider.deleteFile(storage, oldPath.getFileName().toString(), null, true);
+        nfsProvider.deleteFile(storage, newPath.getFileName().toString(), null, true);
+    }
+
+    @Test
+    public void testCopyFolder() {
+        final NFSDataStorage storage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + TEST_PREFIX);
+        storage.setFileShareMountId(awsFileShareMount.getId());
+        nfsProvider.createStorage(storage);
+        final Path rootPath = Paths.get(testMountPoint.toString(), TEST_PATH,  "test");
+        final Path oldPath = rootPath.resolve("oldFolderPath");
+        final Path newPath = rootPath.resolve("newFolderPath");
+        nfsProvider.createFolder(storage, oldPath.getFileName().toString());
+
+        nfsProvider.copyFolder(storage, oldPath.getFileName().toString(), newPath.getFileName().toString());
+
+        Assert.assertTrue(Files.exists(oldPath));
+        Assert.assertTrue(Files.isDirectory(oldPath));
+        Assert.assertTrue(Files.exists(newPath));
+        Assert.assertTrue(Files.isDirectory(newPath));
+
+        nfsProvider.deleteFolder(storage, oldPath.getFileName().toString(), true);
+        nfsProvider.deleteFolder(storage, newPath.getFileName().toString(), true);
+    }
+
+    @Test
     public void testMoveDeleteFile() {
         String rootPath = TEST_PATH + 1;
         FileShareMount awsFileShareMount = new FileShareMount();
@@ -286,7 +338,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         awsFileShareMount.setRegionId(awsRegionId);
         fileShareMountManager.save(awsFileShareMount);
 
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, "testStorage", rootPath + ":/test");
+        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, rootPath + TEST_PREFIX);
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
 
@@ -328,7 +380,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Test
     public void testEditFile() {
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, "testStorage", TEST_PATH + ":/test");
+        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + TEST_PREFIX);
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
 

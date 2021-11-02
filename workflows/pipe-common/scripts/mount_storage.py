@@ -18,7 +18,10 @@
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
 
 import argparse
+import platform
+import re
 import os
+import traceback
 from abc import ABCMeta, abstractmethod
 
 from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount
@@ -58,6 +61,24 @@ class PermissionHelper:
     def is_storage_readable(cls, storage):
         return cls.is_permission_set(storage, READ_MASK)
 
+    # Checks that tool with its version for the current run is allowed to mount this storage
+    # or there is no configured restriction for this storage
+    @classmethod
+    def is_storage_available_for_mount(cls, storage, run):
+        if not storage.tools_to_mount:
+            return True
+        if run is None or not run["actualDockerImage"]:
+            return False
+
+        tool = run["actualDockerImage"]
+        re_result = re.search(r"([^/]+)/([^:]+):?(:?.*)", tool)
+        registry, image, version = re_result.groups()
+        for tool_to_mount in storage.tools_to_mount:
+            if registry == tool_to_mount["registry"] and image == tool_to_mount["image"]:
+                tool_versions_to_mount = tool_to_mount.get('versions', [])
+                return not tool_versions_to_mount or version in [v["version"] for v in tool_versions_to_mount]
+        return False
+
     @classmethod
     def is_storage_writable(cls, storage):
         write_permission_granted = cls.is_permission_set(storage, WRITE_MASK)
@@ -83,7 +104,10 @@ class MountStorageTask:
     def __init__(self, task):
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.task_name = task
-        available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
+        if platform.system() == 'Windows':
+            available_mounters = [S3Mounter, GCPMounter]
+        else:
+            available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
 
     def run(self, mount_root, tmp_dir):
@@ -95,6 +119,15 @@ class MountStorageTask:
             if cloud_region_id == -1:
                 Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
                  and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
+
+            run_id = int(os.getenv('RUN_ID', -1))
+
+            run = None
+            if run_id != -1:
+                Logger.info('Fetching run info...', task_name=self.task_name)
+                run = self.api.load_run(run_id)
+            else:
+                Logger.warn('Cannot load run info, run id is not specified.', task_name=self.task_name)
 
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
@@ -114,16 +147,20 @@ class MountStorageTask:
                             available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
                     Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
-                    Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
+                    Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex)), task_name=self.task_name)
+                    traceback.print_exc()
 
             if not available_storages_with_mounts:
                 Logger.success('No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none', task_name=self.task_name)
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
-            sensitive_policy = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)['value']
+            sensitive_policy = None
+            sensitive_policy_preference = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)
+            if sensitive_policy_preference and 'value' in sensitive_policy_preference:
+                sensitive_policy = sensitive_policy_preference['value']
             for mounter in [mounter for mounter in self.mounters.values()]:
-                storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
+                storage_count_by_type = len(list(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts)))
                 if storage_count_by_type > 0:
                     mounter.check_or_install(self.task_name, sensitive_policy)
                     mounter.init_tmp_dir(tmp_dir, self.task_name)
@@ -134,6 +171,13 @@ class MountStorageTask:
             initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
+                    Logger.info('Storage is not readable', task_name=self.task_name)
+                    continue
+                if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
+                    Logger.info(
+                        'Storage {} is not allowed to be mount to {} image'.format(storage_and_mount.storage.name,
+                            run.get("actualDockerImage", "")),
+                        task_name=self.task_name)
                     continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,
@@ -150,11 +194,12 @@ class MountStorageTask:
                     mnt.mount(mount_root, self.task_name)
                 except RuntimeError as e:
                     Logger.warn(
-                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e.message),
+                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e),
                         task_name=self.task_name)
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
-            Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
+            Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
+            traceback.print_exc()
 
 
 class StorageMounter:
@@ -202,11 +247,15 @@ class StorageMounter:
 
     @staticmethod
     def create_directory(path, task_name):
-        result = common.execute_cmd_command('mkdir -p {path}'.format(path=path), silent=True)
-        if result != 0:
+        try:
+            expanded_path = os.path.expandvars(path)
+            if not os.path.exists(expanded_path):
+                os.makedirs(expanded_path)
+            return True
+        except:
             Logger.warn('Failed to create mount directory: {path}'.format(path=path), task_name=task_name)
+            traceback.print_exc()
             return False
-        return True
 
     def mount(self, mount_root, task_name):
         mount_point = self.build_mount_point(mount_root)
@@ -232,7 +281,7 @@ class StorageMounter:
 
     @staticmethod
     def execute_mount(command, params, task_name):
-        result = common.execute_cmd_command(command, silent=True, executable="/bin/bash")
+        result = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
         if result == 0:
             Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
         else:
@@ -253,6 +302,10 @@ class StorageMounter:
             raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
                                .format(region_id))
         return account_id, account_key, account_region, account_token
+
+    @staticmethod
+    def is_windows():
+        return platform.system() == 'Windows'
 
 
 class AzureMounter(StorageMounter):
@@ -381,6 +434,10 @@ class S3Mounter(StorageMounter):
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
+        if self.is_windows():
+            logging_file = os.path.join(os.getenv('LOG_DIR', 'c:\\logs'), 'fuse_{}.log'.format(self.storage.id))
+        else:
+            logging_file = '/var/log/fuse_{}.log'.format(self.storage.id)
         return {'mount': mount_point,
                 'storage_id': str(self.storage.id),
                 'path': self.get_path(),
@@ -396,7 +453,8 @@ class S3Mounter(StorageMounter):
                 'tmp_dir': self.fuse_tmp,
                 'bucket': bucket,
                 'relative_path': relative_path,
-                'mount_timeout': mount_timeout
+                'mount_timeout': mount_timeout,
+                'logging_file': logging_file
                 }
 
     def build_mount_command(self, params):
@@ -407,7 +465,7 @@ class S3Mounter(StorageMounter):
             if logging_level:
                 params['logging_level'] = logging_level
             return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
-                    + ('-l /var/log/fuse_{storage_id}.log ' if persist_logs else '')
+                    + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
                     + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
                     ).format(**params)
@@ -417,7 +475,7 @@ class S3Mounter(StorageMounter):
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
                     '--acl "bucket-owner-full-control" ' \
-                    '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
+                    '-f --gid 0 --region "{region_name}" {path} {mount} > {logging_file} 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
             params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
             ensure_diskfree_size = os.getenv('CP_S3_FUSE_ENSURE_DISKFREE')
@@ -426,7 +484,7 @@ class S3Mounter(StorageMounter):
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com" {ensure_diskfree_option} ' \
                     '-o default_acl="bucket-owner-full-control" ' \
-                    '-o dbglevel="info" -f > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
+                    '-o dbglevel="info" -f > {logging_file} 2>&1 &'.format(**params)
         else:
             return 'exit 1'
 
@@ -486,6 +544,10 @@ class GCPMounter(StorageMounter):
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
+        if self.is_windows():
+            logging_file = os.path.join(os.getenv('LOG_DIR', 'c:\\logs'), 'fuse_{}.log'.format(self.storage.id))
+        else:
+            logging_file = '/var/log/fuse_{}.log'.format(self.storage.id)
         return {'mount': mount_point,
                 'storage_id': str(self.storage.id),
                 'path': self.get_path(),
@@ -494,7 +556,8 @@ class GCPMounter(StorageMounter):
                 'fuse_type': self.fuse_type,
                 'tmp_dir': self.fuse_tmp,
                 'credentials': creds_named_pipe_path,
-                'mount_timeout': mount_timeout
+                'mount_timeout': mount_timeout,
+                'logging_file': logging_file
                 }
 
     def build_mount_command(self, params):
@@ -505,13 +568,13 @@ class GCPMounter(StorageMounter):
             if logging_level:
                 params['logging_level'] = logging_level
             return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
-                    + ('-l /var/log/fuse_{storage_id}.log ' if persist_logs else '')
+                    + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
                     + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
                     ).format(**params)
         else:
             return 'nohup gcsfuse --foreground -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
-                   '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
+                   '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > {logging_file} 2>&1 &'.format(**params)
 
     def _get_credentials(self, storage):
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))

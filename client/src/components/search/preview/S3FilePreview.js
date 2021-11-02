@@ -33,6 +33,7 @@ import Papa from 'papaparse';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import VSIPreview from './vsi-preview';
 
 const MarkdownRenderer = new Remarkable('commonmark', {
   html: true,
@@ -99,7 +100,11 @@ export default class S3FilePreview extends React.Component {
       name: PropTypes.string,
       description: PropTypes.string
     }),
-    lightMode: PropTypes.bool
+    lightMode: PropTypes.bool,
+    onPreviewLoaded: PropTypes.func,
+    fullscreen: PropTypes.bool,
+    onFullScreenChange: PropTypes.func,
+    fullScreenAvailable: PropTypes.bool
   };
 
   state = {
@@ -333,6 +338,20 @@ export default class S3FilePreview extends React.Component {
     return null;
   };
 
+  renderVSIPreview = () => {
+    return (
+      <VSIPreview
+        className={styles.contentPreview}
+        file={this.props.item.id}
+        storageId={this.props.item.parentId}
+        onPreviewLoaded={this.props.onPreviewLoaded}
+        fullscreen={this.props.fullscreen}
+        onFullScreenChange={this.props.onFullScreenChange}
+        fullScreenAvailable={this.props.fullScreenAvailable}
+      />
+    );
+  };
+
   renderPDBPreview = () => {
     const onError = (message) => {
       this.setState({
@@ -374,7 +393,9 @@ export default class S3FilePreview extends React.Component {
       tiff: this.renderImagePreview,
       svg: this.renderImagePreview,
       pdf: this.renderImagePreview,
-      md: this.renderMDPreview
+      md: this.renderMDPreview,
+      vsi: this.renderVSIPreview,
+      mrxs: this.renderVSIPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();

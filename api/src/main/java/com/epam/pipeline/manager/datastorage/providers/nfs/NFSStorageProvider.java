@@ -18,8 +18,6 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.dao.datastorage.DataStorageDao;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -31,32 +29,22 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
-import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.exception.CmdExecutionException;
-import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.FileContentUtils;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -68,7 +56,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.util.Arrays;
@@ -81,56 +68,25 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getNfsRootPath;
 
 /**
  * A {@link StorageProvider}, that integrates with NFS file systems. For browsing the filesystem, mounts it to the host
- * filesystem. Uses {@link CmdExecutor} for executing shell commands.
+ * filesystem using {@link NFSStorageMounter}.
  */
 @Service
+@RequiredArgsConstructor
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
-    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
-
-    /**
-     * -l is for "lazy" unmounting: Detach the filesystem from the filesystem hierarchy now, and cleanup all references
-     *    to the filesystem as soon as it is not busy anymore
-     * -f is for "force": in case of an unreachable NFS system
-     */
-    private static final String NFS_UNMOUNT_CMD_PATTERN = "sudo umount -l -f %s";
-
     private static final Set<PosixFilePermission> PERMISSIONS = Arrays.stream(PosixFilePermission.values())
                                                                       .filter(p -> !p.name().startsWith("OTHERS"))
                                                                       .collect(Collectors.toSet());
 
-    private CmdExecutor cmdExecutor;
-
-    @Autowired
-    private MessageHelper messageHelper;
-
-    @Autowired
-    private DataStorageDao dataStorageDao;
-
-    @Autowired
-    private PreferenceManager preferenceManager;
-
-    @Autowired
-    private CloudRegionManager regionManager;
-
-    @Autowired
-    private FileShareMountManager shareMountManager;
-
-    @Value("${data.storage.nfs.root.mount.point}")
-    private String rootMountPoint;
-
-    public NFSStorageProvider() {
-        this.cmdExecutor = new CmdExecutor();
-    }
-
-    public NFSStorageProvider(CmdExecutor cmdExecutor) {
-        this.cmdExecutor = cmdExecutor;
-    }
+    private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
+    private final FileShareMountManager shareMountManager;
+    private final NFSStorageMounter nfsStorageMounter;
 
     @Override
     public DataStorageType getStorageType() {
@@ -146,11 +102,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
      */
     @Override
     public String createStorage(NFSDataStorage storage) throws DataStorageException {
-        File dataStorageRoot = mount(storage);
+        File dataStorageRoot = nfsStorageMounter.mount(storage);
         if (!dataStorageRoot.exists()) {
             boolean created = dataStorageRoot.mkdirs();
             if (!created) {
-                unmountNFSIfEmpty(storage);
+                nfsStorageMounter.unmountNFSIfEmpty(storage);
 
                 throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, storage.getPath()));
@@ -165,90 +121,6 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return ActionStatus.notSupported();
     }
 
-    private synchronized File mount(final NFSDataStorage dataStorage) {
-        try {
-            final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-            final File mntDir = getStorageMountRoot(dataStorage, fileShareMount);
-            final File rootMount = getShareRootMount(fileShareMount);
-            if(!rootMount.exists()) {
-                Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
-
-                final AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
-                final String protocol = fileShareMount.getMountType().getProtocol();
-                final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
-                         regionManager.loadCredentials(cloudRegion) : null;
-
-                final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
-                        dataStorage.getMountOptions(), protocol);
-
-                final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
-
-                final String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
-                                                rootNfsPath, rootMount.getAbsolutePath());
-                try {
-                    cmdExecutor.executeCommand(mountCmd);
-                } catch (CmdExecutionException e) {
-                    NFSHelper.deleteFolderIfEmpty(rootMount);
-                    LOGGER.error(messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_2, mountCmd, e.getMessage()));
-                    throw new DataStorageException(messageHelper.getMessage(
-                            MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT, dataStorage.getName(),
-                            dataStorage.getPath()), e);
-                }
-            }
-            String storageName = getStorageName(dataStorage.getPath());
-            return new File(mntDir, storageName);
-        } catch (IOException e) {
-            throw new DataStorageException(messageHelper.getMessage(
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT, dataStorage.getName(),
-                                             dataStorage.getPath())), e);
-        }
-    }
-
-    private synchronized void unmountNFSIfEmpty(AbstractDataStorage storage) {
-        final FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
-        final File rootMount = getShareRootMount(fileShareMount);
-        final List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
-                storage.getFileShareMountId());
-        LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
-                .collect(Collectors.joining(";")) + " related with current file share mount");
-
-        if (rootMount.exists() && isStorageOnlyOnNFS(storage, remaining)) {
-            try {
-                final String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
-                cmdExecutor.executeCommand(umountCmd);
-                FileUtils.deleteDirectory(rootMount);
-            } catch (IOException e) {
-                throw new DataStorageException(e);
-            }
-        }
-    }
-
-    private File getStorageMountRoot(final NFSDataStorage dataStorage,  final FileShareMount fileShareMount) {
-        final String storageMountPath = MountType.LUSTRE == fileShareMount.getMountType()
-                                        ? normalizeLustrePath(getNfsRootPath(dataStorage.getPath()))
-                                        : normalizePath(getNfsRootPath(dataStorage.getPath()));
-        return Paths.get(rootMountPoint, storageMountPath).toFile();
-    }
-
-    private File getShareRootMount(final FileShareMount fileShareMount) {
-        final String shareMountPath = MountType.LUSTRE == fileShareMount.getMountType()
-                                      ? normalizeLustrePath(fileShareMount.getMountRoot())
-                                      : normalizePath(fileShareMount.getMountRoot());
-        return Paths.get(rootMountPoint, shareMountPath).toFile();
-    }
-
-    private boolean isStorageOnlyOnNFS(AbstractDataStorage storage, List<AbstractDataStorage> remaining) {
-        if (remaining.size() > 1) {
-            return false;
-        } else if (remaining.size() == 0){
-            throw new IllegalArgumentException("There are should be at least one storage with root path: "
-                    + getNfsRootPath(storage.getPath()));
-        }
-        return remaining.get(0).getId().equals(storage.getId());
-    }
-
     /**
      * Deletes NFS storage from the filesystem.
      * @param dataStorage a storage to delete
@@ -256,20 +128,20 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
      */
     @Override
     public void deleteStorage(NFSDataStorage dataStorage) throws DataStorageException {
-        File dataStorageRoot = mount(dataStorage);
+        File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         if (dataStorageRoot.exists()) {
             try {
                 FileUtils.deleteDirectory(dataStorageRoot);
                 LOGGER.debug("Storage: " + dataStorage.getPath() +
                         " with local path: " + dataStorageRoot + " was successfully deleted");
             } catch (IOException e) {
-                unmountNFSIfEmpty(dataStorage);
+                nfsStorageMounter.unmountNFSIfEmpty(dataStorage);
                 throw new DataStorageException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_DELETE_DIRECTORY), e);
             }
         }
 
-        unmountNFSIfEmpty(dataStorage);
+        nfsStorageMounter.unmountNFSIfEmpty(dataStorage);
     }
 
     @Override
@@ -285,7 +157,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public Stream<DataStorageFile> listDataStorageFiles(final NFSDataStorage dataStorage, final String path) {
-        final File dataStorageRoot = mount(dataStorage);
+        final File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         final File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
         try (Stream<Path> dirStream = Files.walk(dir.toPath(), 1)) {
             return dirStream
@@ -319,7 +191,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
                                        Integer pageSize, String marker) {
-        File dataStorageRoot = mount(dataStorage);
+        File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
 
         long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
@@ -370,7 +242,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public Optional<DataStorageFile> findFile(final NFSDataStorage dataStorage,
                                               final String path,
                                               final String version) {
-        final File dataStorageRoot = mount(dataStorage);
+        final File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         return Optional.of(new File(dataStorageRoot, path))
                 .filter(File::exists)
                 .map(file -> {
@@ -427,7 +299,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public DataStorageFile createFile(NFSDataStorage dataStorage, String path, InputStream dataStream)
         throws DataStorageException {
-        File dataStorageDir = mount(dataStorage);
+        File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);
 
         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
@@ -440,21 +312,9 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFile(path, file);
     }
 
-    private String getStorageName(String path) {
-        return  path.replace(getNfsRootPath(path), "");
-    }
-
-    private String normalizePath(String nfsPath) {
-        return nfsPath.replace(":", "/");
-    }
-
-    private String normalizeLustrePath(final String nfsPath) {
-        return nfsPath.replaceAll(":/", "/").replace(":", "_");
-    }
-
     @Override
     public DataStorageFolder createFolder(NFSDataStorage dataStorage, String path) throws DataStorageException {
-        File dataStorageDir = mount(dataStorage);
+        File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File folder = new File(dataStorageDir, path);
         if (!folder.mkdirs()) {
             throw new DataStorageException(messageHelper.getMessage(
@@ -469,10 +329,16 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFolder(path, folder);
     }
 
+    private void setUmask(File file) throws IOException {
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
+        }
+    }
+
     @Override
     public void deleteFile(NFSDataStorage dataStorage, String path, String version, Boolean totally)
         throws DataStorageException {
-        File dataStorageDir = mount(dataStorage);
+        File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);
 
         try {
@@ -485,7 +351,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public void deleteFolder(NFSDataStorage dataStorage, String path, Boolean totally)
         throws DataStorageException {
-        File dataStorageDir = mount(dataStorage);
+        File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File folder = new File(dataStorageDir, path);
 
         try {
@@ -502,14 +368,15 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFile(newPath, newFile);
     }
 
-    private void setUmask(File file) throws IOException {
-        if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
-        }
+    @Override
+    public DataStorageFolder moveFolder(NFSDataStorage dataStorage, String oldPath, String newPath)
+            throws DataStorageException {
+        File newFolder = move(dataStorage, oldPath, newPath);
+        return new DataStorageFolder(newPath, newFolder);
     }
 
     private File move(NFSDataStorage dataStorage, String oldPath, String newPath) {
-        File dataStorageDir = mount(dataStorage);
+        File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, oldPath);
         File newFile = new File(dataStorageDir, newPath);
 
@@ -527,16 +394,41 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageFolder moveFolder(NFSDataStorage dataStorage, String oldPath, String newPath)
-        throws DataStorageException {
-        File newFolder = move(dataStorage, oldPath, newPath);
+    public DataStorageFile copyFile(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        File newFile = copy(dataStorage, oldPath, newPath);
+        return new DataStorageFile(newPath, newFile);
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        File newFolder = copy(dataStorage, oldPath, newPath);
         return new DataStorageFolder(newPath, newFolder);
+    }
+
+    private File copy(final NFSDataStorage dataStorage, final String oldPath, final String newPath) {
+        final File dataStorageDir = nfsStorageMounter.mount(dataStorage);
+        final File oldFile = new File(dataStorageDir, oldPath);
+        final File newFile = new File(dataStorageDir, newPath);
+        copy(oldFile, newFile);
+        return newFile;
+    }
+
+    private void copy(final File oldFile, final File newFile) {
+        try {
+            if (oldFile.isDirectory()) {
+                FileUtils.copyDirectory(oldFile, newFile);
+            } else {
+                FileUtils.copyFile(oldFile, newFile);
+            }
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
     }
 
     @Override
     public boolean checkStorage(NFSDataStorage dataStorage) {
         try {
-            File storageRoot = mount(dataStorage);
+            File storageRoot = nfsStorageMounter.mount(dataStorage);
             return storageRoot.exists() && storageRoot.isDirectory();
         } catch (DataStorageException e) {
             return false;
@@ -563,7 +455,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public DataStorageItemContent getFile(NFSDataStorage dataStorage, String path, String version,
                                           Long maxDownloadSize) {
-        File mntDir = mount(dataStorage);
+        File mntDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(mntDir, path);
 
         try (FileInputStream fis = new FileInputStream(file)) {
@@ -591,7 +483,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageStreamingContent getStream(NFSDataStorage dataStorage, String path, String version) {
-        File mntDir = mount(dataStorage);
+        File mntDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(mntDir, path);
 
         try {

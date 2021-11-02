@@ -34,13 +34,11 @@ import styles from './DropdownWithMultiselect.css';
 
 @observer
 export default class DropdownWithMultiselect extends React.Component {
-
   static propTypes = {
     className: PropTypes.string,
     onColumnSelect: PropTypes.func,
     onSetOrder: PropTypes.func,
     onResetColumns: PropTypes.func,
-    selectedColumns: PropTypes.array,
     columns: PropTypes.array,
     columnNameFn: PropTypes.func,
     size: PropTypes.oneOf(['small', 'large', 'default']),
@@ -54,7 +52,7 @@ export default class DropdownWithMultiselect extends React.Component {
   };
 
   itemIsSelected = (item) => {
-    return this.state.selectedColumns.filter(column => column === item).length === 1;
+    return this.state.selectedColumns.filter(({key}) => key === item).length === 1;
   };
 
   onColumnSelect = (column) => () => {
@@ -106,8 +104,8 @@ export default class DropdownWithMultiselect extends React.Component {
     const SortableList = SortableContainer(({items}) => {
       return (
         <div style={{margin: '-2px -10px', width: 250}}>
-          {items.map((value, index) => (
-            <SortableItem key={`item-${index}`} index={index} value={value} />
+          {items.map(({key}, index) => (
+            <SortableItem key={`item-${index}`} index={index} value={key} />
           ))}
         </div>
       );
@@ -141,6 +139,7 @@ export default class DropdownWithMultiselect extends React.Component {
         placement="bottomRight"
         content={this.renderColumnsMenu()}>
         <Button
+          id="metadata-manage-columns-button"
           className={className}
           style={Object.assign({lineHeight: 1}, style || {})}
           onClick={this.openMenu}
@@ -154,7 +153,7 @@ export default class DropdownWithMultiselect extends React.Component {
 
   componentWillReceiveProps (props) {
     this.setState({
-      selectedColumns: props.selectedColumns,
+      selectedColumns: props.columns.filter(c => c.selected),
       columns: props.columns
     });
   }

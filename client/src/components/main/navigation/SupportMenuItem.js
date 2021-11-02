@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Button, Icon, Popover} from 'antd';
+import {computed} from 'mobx';
 
 function replaceLineBreaks (text) {
   if (!text) {
@@ -28,7 +29,11 @@ function replaceLineBreaks (text) {
     .replace(/\\t/g, '\t');
 }
 
-@inject('preferences', 'issuesRenderer')
+function processLinks (html) {
+  return (html || '').replace(/<a href/ig, '<a target="_blank" href');
+}
+
+@inject('issuesRenderer', 'uiNavigation')
 @observer
 class SupportMenuItem extends React.Component {
   static propTypes = {
@@ -38,26 +43,37 @@ class SupportMenuItem extends React.Component {
     style: PropTypes.object
   };
 
+  @computed
+  get template () {
+    if (
+      this.props.uiNavigation &&
+      this.props.uiNavigation.loaded
+    ) {
+      return this.props.uiNavigation.supportTemplate;
+    }
+    return null;
+  }
+
   render () {
     const {
       className,
       onVisibilityChanged,
       issuesRenderer,
       visible,
-      preferences,
       style
     } = this.props;
-    if (!preferences || !preferences.loaded || !issuesRenderer) {
+    if (!this.template || !issuesRenderer) {
       return null;
     }
-    const source = replaceLineBreaks(preferences.getPreferenceValue('ui.support.template'));
+    const source = replaceLineBreaks(this.template);
     if (!source) {
       return null;
     }
+    const html = processLinks(issuesRenderer.render(source));
     return (
       <Popover
         content={
-          <div dangerouslySetInnerHTML={{__html: issuesRenderer.render(source)}} />
+          <div dangerouslySetInnerHTML={{__html: html}} />
         }
         placement="rightBottom"
         trigger="click"

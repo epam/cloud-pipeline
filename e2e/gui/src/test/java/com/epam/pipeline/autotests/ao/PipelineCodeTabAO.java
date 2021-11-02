@@ -178,6 +178,11 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return this;
     }
 
+    public PipelineCodeTabAO shouldContainFile(final String fileName) {
+        $(".ant-table-tbody").shouldHave(text(fileName));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;

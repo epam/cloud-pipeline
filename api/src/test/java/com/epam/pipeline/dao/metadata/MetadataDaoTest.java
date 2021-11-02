@@ -19,8 +19,6 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.issue.IssueDao;
 import com.epam.pipeline.entity.issue.Issue;
-import com.epam.pipeline.entity.metadata.CategoricalAttribute;
-import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -46,6 +44,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.extractAttributesContent;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
@@ -214,6 +213,28 @@ public class MetadataDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void testShouldSearchMetadataByClassAndKey() {
+        EntityVO entityVO = new EntityVO(ID_1, CLASS_1);
+        Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(DATA_KEY_1, new PipeConfValue(null, DATA_VALUE_1));
+        MetadataEntry metadataToSave = new MetadataEntry();
+        metadataToSave.setEntity(entityVO);
+        metadataToSave.setData(data);
+        metadataDao.registerMetadataItem(metadataToSave);
+
+        EntityVO entityVO2 = new EntityVO(ID_2, CLASS_1);
+        metadataToSave.setEntity(entityVO2);
+        data.get(DATA_KEY_1).setValue(DATA_VALUE_2);
+        metadataToSave.setData(data);
+        metadataDao.registerMetadataItem(metadataToSave);
+
+        List<EntityVO> loadedEntities = metadataDao.searchMetadataByClassAndKey(CLASS_1, DATA_KEY_1);
+        Assert.assertEquals(2, loadedEntities.size());
+        Assert.assertEquals(entityVO, loadedEntities.get(0));
+        Assert.assertEquals(entityVO2, loadedEntities.get(1));
+    }
+
+    @Test
     public void testLoadUniqueAttributes() {
         createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
         createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
@@ -233,13 +254,8 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
         createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_2);
         createMetadataForEntityWithSensitiveValue(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1, DATA_VALUE_2);
-        final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict(
-                Collections.singletonList(SENSITIVE_DATA_KEY))
-                .stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey,
-                    attribute -> attribute.getValues().stream()
-                        .map(CategoricalAttributeValue::getValue)
-                        .collect(Collectors.toList())));
+        final Map<String, List<String>> metadataDict =
+            extractAttributesContent(metadataDao.buildFullMetadataDict(Collections.singletonList(SENSITIVE_DATA_KEY)));
         Assert.assertEquals(2, metadataDict.size());
         assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
         assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
@@ -249,6 +265,18 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         Assert.assertEquals(2, sensitiveEntryData.size());
         assertMetadataValue(sensitiveEntryData.get(DATA_KEY_2), DATA_TYPE_1, DATA_VALUE_1);
         assertMetadataValue(sensitiveEntryData.get(SENSITIVE_DATA_KEY), DATA_TYPE_1, DATA_VALUE_2);
+    }
+
+    @Test
+    public void testBuildFullMetadataDictWithoutSensitiveKeys() {
+        createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
+        createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_2);
+        createMetadataForEntity(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1);
+        final Map<String, List<String>> metadataDict =
+            extractAttributesContent(metadataDao.buildFullMetadataDict(Collections.emptyList()));
+        Assert.assertEquals(2, metadataDict.size());
+        assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
+        assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
     }
 
     @Test

@@ -48,7 +48,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -74,7 +75,8 @@
                         :SENSITIVE,
                         :S3_KMS_KEY_ARN,
                         :S3_USE_ASSUMED_CREDS,
-                        :S3_TEMP_CREDS_ROLE
+                        :S3_TEMP_CREDS_ROLE,
+                        :MOUNT_STATUS
                     )
                 ]]>
             </value>
@@ -134,7 +136,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -169,7 +172,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -206,7 +210,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -242,7 +247,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -278,7 +284,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -314,7 +321,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -350,7 +358,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -387,7 +396,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -423,7 +433,8 @@
                         sensitive,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -477,6 +488,7 @@
                             d.s3_kms_key_arn,
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
+                            d.mount_status,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -512,6 +524,7 @@
                             null as s3_kms_key_arn,
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
+                            null as mount_status,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -549,6 +562,7 @@
                             d.s3_kms_key_arn,
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
+                            d.mount_status,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -580,6 +594,7 @@
                             null as s3_kms_key_arn,
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
+                            null as mount_status,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -597,6 +612,56 @@
                 ]]>
             </value>
         </property>
+        <property name="addToolVersionToMountQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_tool_version(datastorage_id, tool_id, tool_version_id)
+                    VALUES (:DATASTORAGE_ID, :TOOL_ID, :TOOL_VERSION_ID);
+                ]]>
+            </value>
+        </property>
+        <property name="deleteToolsToMountQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    WHERE dtv.datastorage_id = ?;
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsToMountQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                    WHERE dtv.datastorage_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsToMountsForAllStoragesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                ]]>
+            </value>
+        </property>
         <property name="createDataStorageRootQuery">
             <value>
                 <![CDATA[
@@ -604,6 +669,16 @@
                     VALUES (:DATASTORAGE_ROOT_PATH)
                     ON CONFLICT (datastorage_root_path) 
                     DO NOTHING;
+                ]]>
+            </value>
+        </property>
+        <property name="updateDataStorageMountStatusQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.datastorage SET
+                        mount_status = :MOUNT_STATUS
+                    WHERE
+                        datastorage_id = :DATASTORAGE_ID
                 ]]>
             </value>
         </property>

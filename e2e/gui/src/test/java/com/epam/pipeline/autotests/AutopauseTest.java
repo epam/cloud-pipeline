@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTO_PAUSE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.runWithId;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 
 public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements Tools, Authorization {
 
@@ -104,7 +104,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .completedRuns()
                 .ensure(runWithId(run2), visible)
                 .activeRuns()
-                .resume(run1, getToolName())
+                .resume(run1, nameWithoutGroup(tool))
                 .waitUntilStopButtonAppear(run1)
                 .stopRun(run1);
     }
@@ -121,7 +121,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .activeRuns()
                 .waitUntilResumeButtonAppear(runId)
                 .validateStatus(runId, LogAO.Status.PAUSED)
-                .resume(runId, getToolName())
+                .resume(runId, nameWithoutGroup(tool))
                 .waitUntilStopButtonAppear(runId)
                 .stopRun(runId);
     }
@@ -163,10 +163,5 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .settings()
                 .switchToPreferences()
                 .switchToSystem());
-    }
-
-    private String getToolName() {
-        final String[] toolAndGroup = tool.split("/");
-        return toolAndGroup[toolAndGroup.length - 1];
     }
 }

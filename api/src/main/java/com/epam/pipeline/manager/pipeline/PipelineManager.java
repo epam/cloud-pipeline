@@ -130,6 +130,21 @@ public class PipelineManager implements SecuredEntityManager {
         return crudManager.save(pipeline);
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Pipeline createEmpty(final PipelineVO pipelineVO) throws GitClientException {
+        Assert.isTrue(GitUtils.checkGitNaming(pipelineVO.getName()),
+                messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVO.getName()));
+        Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
+        final GitProject project = gitManager.createEmptyRepository(pipelineVO.getName(), pipelineVO.getDescription());
+        pipelineVO.setRepository(project.getRepoUrl());
+        pipelineVO.setRepositorySsh(project.getRepoSsh());
+        final Pipeline pipeline = pipelineVO.toPipeline();
+        setFolderIfPresent(pipeline);
+        pipeline.setOwner(securityManager.getAuthorizedUser());
+        return crudManager.save(pipeline);
+    }
+
     private GitProject createGitRepositoryWithRepoUrl(final PipelineVO pipelineVO) throws GitClientException {
         if (pipelineVO.getPipelineType() == PipelineType.PIPELINE) {
             return gitManager.createRepository(

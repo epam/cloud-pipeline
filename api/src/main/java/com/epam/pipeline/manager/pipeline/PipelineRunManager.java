@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -49,6 +50,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -66,6 +68,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -200,6 +203,12 @@ public class PipelineRunManager {
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
 
+    @Autowired
+    private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
+
+    @Autowired
+    private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -228,7 +237,7 @@ public class PipelineRunManager {
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
         run.setParent(tool);
         run.setAclClass(AclClass.TOOL);
 
@@ -304,7 +313,7 @@ public class PipelineRunManager {
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
         run.setParent(pipeline);
 
         if (isClusterRun) {
@@ -336,9 +345,11 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun launchPipeline(PipelineConfiguration configuration, Pipeline pipeline, String version,
             String instanceType, Long parentNodeId, String configurationName, String clusterId,
-            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids) {
+            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids,
+            List<PipelineStartNotificationRequest> notificationRequests) {
         Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
         Tool tool = getToolForRun(configuration);
+        Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
         PipelineConfiguration toolConfiguration = configurationManager.getConfigurationForTool(tool, configuration);
         AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration, toolConfiguration);
         validateCloudRegion(toolConfiguration, region);
@@ -359,8 +370,8 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null),
-                entityIds, configurationId, sensitive);
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region, 
+                parentRun.orElse(null), entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
@@ -372,6 +383,7 @@ public class PipelineRunManager {
         run.setActualCmd(launchedCommand);
         save(run);
         dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(run));
+        contextualNotificationRegistrationManager.register(notificationRequests, run);
         return run;
     }
 
@@ -711,12 +723,14 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateServiceUrl(Long runId, PipelineRunServiceUrlVO serviceUrl) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
-        pipelineRun.setServiceUrl(serviceUrl.getServiceUrl());
-        pipelineRunDao.updateServiceUrl(pipelineRun);
+    public PipelineRun updateServiceUrl(final Long runId, final String region,
+                                        final PipelineRunServiceUrlVO serviceUrl) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+
+        pipelineRunServiceUrlManager.update(runId, region, serviceUrl);
+        pipelineRun.setServiceUrl(pipelineRunServiceUrlManager.loadByRunId(runId));
+
         //TODO: check if we need it
         setParent(pipelineRun);
         return pipelineRun;
@@ -767,8 +781,9 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration, Pipeline pipeline,
-                                         Tool tool, AbstractCloudRegion region, PipelineRun parentRun, 
-                                         List<Long> entityIds, Long configurationId, boolean sensitive) {
+                                         Tool tool, ToolVersion toolVersion, AbstractCloudRegion region, 
+                                         PipelineRun parentRun, List<Long> entityIds, Long configurationId, 
+                                         boolean sensitive) {
         validateRunParameters(configuration, pipeline);
 
         RunInstance instance = configureRunInstance(configuration, region);
@@ -796,6 +811,8 @@ public class PipelineRunManager {
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
         run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
+        run.setPlatform(Optional.ofNullable(toolVersion).map(ToolVersion::getPlatform).orElse("linux"));
+        instance.setNodePlatform(run.getPlatform());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
@@ -925,10 +942,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateRunsTags(final Collection<PipelineRun> runs) {
         pipelineRunDao.updateRunsTags(runs);
-    }
-
-    public List<PipelineRun> loadAllRunsByServiceURL(final String serviceUrl) {
-        return pipelineRunDao.loadAllRunsWithServiceURL(serviceUrl);
     }
 
     /**
@@ -1150,7 +1163,8 @@ public class PipelineRunManager {
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
                     runVO.getInstanceType(), runVO.getParentNodeId(),
-                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids());
+                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids(),
+                    runVO.getNotifications());
         }
     }
 
@@ -1397,6 +1411,7 @@ public class PipelineRunManager {
         restartedRun.setTimeout(run.getTimeout());
         restartedRun.setDockerImage(run.getDockerImage());
         restartedRun.setActualDockerImage(run.getActualDockerImage());
+        restartedRun.setPlatform(run.getPlatform());
         restartedRun.setCmdTemplate(run.getCmdTemplate());
         restartedRun.setNodeCount(run.getNodeCount());
         RunInstance instance = copyInstance(run.getInstance());
@@ -1429,6 +1444,7 @@ public class PipelineRunManager {
             runInstance.setNodeType(i.getNodeType());
             runInstance.setSpot(i.getSpot());
             runInstance.setCloudProvider(i.getCloudProvider());
+            runInstance.setNodePlatform(i.getNodePlatform());
             return runInstance;
         }).orElse(new RunInstance());
     }

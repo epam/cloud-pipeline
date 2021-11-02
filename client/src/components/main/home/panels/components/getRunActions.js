@@ -16,12 +16,12 @@
 
 import React from 'react';
 import {Link} from 'react-router';
-import {Row} from 'antd';
-import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import {canPauseRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
+import MultizoneUrl from '../../../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
-export default function (callbacks) {
+export default function ({multiZoneManager, vsActions}, callbacks) {
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -36,37 +36,43 @@ export default function (callbacks) {
         break;
       case 'RUNNING':
         if (run.initialized && run.serviceUrl) {
-          const urls = parseRunServiceUrl(run.serviceUrl);
-          if (urls.length === 1) {
+          const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
+          if (regionedUrls.length === 1) {
+            const regionedUrl = regionedUrls[0];
+            const defaultUrlRegion = multiZoneManager.getDefaultURLRegion(regionedUrl.url);
+            const url = regionedUrl.url[defaultUrlRegion];
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              action: callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(urls[0].url)
+              target: regionedUrl.sameTab ? '_top' : '_blank',
+              multiZoneUrl: regionedUrl.url,
+              action: url && callbacks && callbacks.openUrl
+                ? () => callbacks.openUrl(url, regionedUrl.sameTab ? '_top' : '_blank')
                 : undefined
             });
           } else {
-            const overlay = urls.map((url, index) => {
-              return (
-                <Row type="flex" key={index} style={{fontSize: 'larger'}}>
-                  <a href={url.url} target="_blank" style={`${url.isDefault}` === 'true' ? {fontWeight: 'bold'} : {}}>{url.name || url.url}</a>
-                </Row>
-              );
-            });
-            let defaultAction;
-            if (urls.filter(url => `${url.isDefault}` === 'true').length === 1) {
-              const [url] = urls.filter(url => `${url.isDefault}` === 'true');
-              if (url && url.url) {
-                defaultAction = callbacks && callbacks.openUrl
-                  ? () => callbacks.openUrl(url.url)
-                  : undefined;
-              }
-            }
+            const overlay = (
+              <div>
+                <ul>
+                  {
+                    regionedUrls.map(({name, url, sameTab}, index) =>
+                      <li key={index} style={{margin: 4}}>
+                        <MultizoneUrl
+                          target={sameTab ? '_top' : '_blank'}
+                          configuration={url}
+                        >
+                          {name}
+                        </MultizoneUrl>
+                      </li>
+                    )
+                  }
+                </ul>
+              </div>
+            );
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              overlay,
-              action: defaultAction
+              overlay
             });
           }
         }
@@ -74,9 +80,15 @@ export default function (callbacks) {
           actions.push({
             title: 'SSH',
             icon: 'code-o',
-            action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
+            runSSH: true,
+            runId: run.id
           });
-          if (!run.sensitive) {
+          if (
+            !run.sensitive &&
+            run.platform !== 'windows' &&
+            vsActions &&
+            vsActions.available
+          ) {
             actions.push({
               title: (
                 <VSActions
@@ -95,7 +107,7 @@ export default function (callbacks) {
             });
           }
         }
-        if (canPauseRun(run)) {
+        if (canPauseRun(run) && run.platform !== 'windows') {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
@@ -112,7 +124,10 @@ export default function (callbacks) {
         }
         break;
       case 'PAUSED':
-        if (run.initialized && run.instance && run.instance.spot !== undefined && !run.instance.spot) {
+        if (
+          run.initialized && run.instance && run.instance.spot !== undefined &&
+          !run.instance.spot && run.platform !== 'windows'
+        ) {
           actions.push({
             title: 'RESUME',
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
@@ -207,18 +222,18 @@ export default function (callbacks) {
         const overlay = (
           <table>
             <tbody>
-            {
-              inputParameters.length > 0
-                ? <tr><td colSpan={2}><b>Input:</b></td></tr>
-                : undefined
-            }
-            {inputParameters.map(renderRunParameter)}
-            {
-              outputParameters.length > 0
-                ? <tr><td colSpan={2}><b>Output:</b></td></tr>
-                : undefined
-            }
-            {outputParameters.map(renderRunParameter)}
+              {
+                inputParameters.length > 0
+                  ? <tr><td colSpan={2}><b>Input:</b></td></tr>
+                  : undefined
+              }
+              {inputParameters.map(renderRunParameter)}
+              {
+                outputParameters.length > 0
+                  ? <tr><td colSpan={2}><b>Output:</b></td></tr>
+                  : undefined
+              }
+              {outputParameters.map(renderRunParameter)}
             </tbody>
           </table>
         );

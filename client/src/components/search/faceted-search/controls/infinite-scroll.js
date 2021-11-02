@@ -23,6 +23,8 @@ import styles from './controls.css';
 const DEFAULT_PAGE_SIZE = 50;
 const SCROLL_BLOCK_DELAY = 100;
 
+const MORE_PLACEHOLDER_HEIGHT = 38;
+
 class InfiniteScroll extends React.Component {
   state = {
     rowKeyFn: (o, i) => `${i}`,
@@ -77,19 +79,14 @@ class InfiniteScroll extends React.Component {
   scrollToCurrent = () => {
     this.blockUpdateTrigger = true;
     if (this.scroller) {
-      const {
-        elements = [],
-        hasElementsBefore,
-        rowHeight: height,
-        rowMargin
-      } = this.props;
-      const rowHeight = height + rowMargin;
-      let scrollToIndex = 0;
-      const index = elements.findIndex(doc => doc.elasticId === this.currentDocumentId);
-      if (index >= 0) {
-        scrollToIndex = index;
+      const scrollTo = [...this.scroller.getElementsByClassName('infinite-scroll-element')]
+        .find(e => e.dataset &&
+          e.dataset.hasOwnProperty('documentId') &&
+          e.dataset['documentId'] === this.currentDocumentId
+        );
+      if (scrollTo) {
+        this.scroller.scrollTop = scrollTo.offsetTop;
       }
-      this.scroller.scrollTop = (scrollToIndex + !!hasElementsBefore) * rowHeight;
     }
     setTimeout(() => {
       this.blockUpdateTrigger = false;
@@ -126,23 +123,28 @@ class InfiniteScroll extends React.Component {
         hasElementsAfter,
         hasElementsBefore,
         elements,
-        pageSize,
-        rowHeight: height,
-        rowMargin
+        pageSize
       } = this.props;
-      const rowHeight = height + rowMargin;
       if (elements && elements.length > 0) {
         const page = Math.floor(pageSize / 2.0);
         const correctElementIndex = index => Math.max(0, Math.min(elements.length - 1, index));
-        const currentDocumentIndex = correctElementIndex(
-          Math.floor(obj.scrollTop / rowHeight) - !!hasElementsBefore
-        );
-        this.currentDocumentId = elements[currentDocumentIndex]?.elasticId;
-        if (hasElementsBefore && obj.scrollTop <= rowHeight) {
+        const getClosestDocumentId = () => {
+          const info = [...obj.getElementsByClassName('infinite-scroll-element')]
+            .filter(e => e.dataset && e.dataset.hasOwnProperty('documentId'))
+            .map(e => ({
+              id: e.dataset['documentId'],
+              position: e.offsetTop,
+              delta: Math.abs(e.offsetTop - obj.scrollTop)
+            }))
+            .sort((a, b) => a.delta - b.delta);
+          return info.length ? info[0].id : undefined;
+        };
+        this.currentDocumentId = getClosestDocumentId(obj.scrollTop);
+        if (hasElementsBefore && obj.scrollTop <= MORE_PLACEHOLDER_HEIGHT) {
           this.reportScroll(elements[correctElementIndex(page)], false);
         } else if (
           hasElementsAfter &&
-          (obj.scrollTop + obj.clientHeight + rowHeight) >= obj.scrollHeight
+          (obj.scrollTop + obj.clientHeight + MORE_PLACEHOLDER_HEIGHT) >= obj.scrollHeight
         ) {
           this.reportScroll(elements[correctElementIndex(elements.length - page)], true);
         }
@@ -212,7 +214,6 @@ class InfiniteScroll extends React.Component {
       style,
       hasElementsAfter,
       hasElementsBefore,
-      rowHeight,
       rowMargin,
       headerRenderer,
       rowRenderer
@@ -248,7 +249,7 @@ class InfiniteScroll extends React.Component {
                   )
                 }
                 style={{
-                  height: rowHeight,
+                  height: MORE_PLACEHOLDER_HEIGHT,
                   marginBottom: rowMargin
                 }}
               >
@@ -259,9 +260,10 @@ class InfiniteScroll extends React.Component {
           {
             rowRenderer && (elements || []).map((element, index) => (
               <div
+                className="infinite-scroll-element"
                 key={rowKeyFn(element, index)}
+                data-document-id={rowKeyFn(element)}
                 style={{
-                  height: rowHeight,
                   marginBottom: rowMargin
                 }}
               >
@@ -281,7 +283,7 @@ class InfiniteScroll extends React.Component {
                   )
                 }
                 style={{
-                  height: rowHeight,
+                  height: MORE_PLACEHOLDER_HEIGHT,
                   marginBottom: rowMargin
                 }}
               >

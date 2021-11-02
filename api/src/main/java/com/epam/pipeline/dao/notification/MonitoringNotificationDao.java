@@ -17,7 +17,6 @@
 package com.epam.pipeline.dao.notification;
 
 import static com.epam.pipeline.config.JsonMapper.parseData;
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +41,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {

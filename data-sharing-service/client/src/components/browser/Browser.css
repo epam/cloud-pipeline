@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -191,14 +191,17 @@ th.metadata-column-value {
   margin-bottom: 5px;
 }
 
+.item-apps-cell,
 .item-type-cell {
   width: 20px;
 }
 
+.item-apps-cell i,
 .item-type-cell i {
   vertical-align: middle;
 }
 
+.item-app,
 .item-type {
   font-size: larger;
 }
@@ -420,4 +423,19 @@ tr.table-row-selected {
 
 .fire-cloud-method-row {
   cursor: pointer;
+}
+
+.app-link {
+  padding: 0;
+  display: inline-block;
+}
+
+.app-link span,
+.app-link img {
+  vertical-align: middle;
+}
+
+.app-link img {
+  width: 20px;
+  height: 20px;
 }

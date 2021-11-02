@@ -21,7 +21,7 @@ from fsbrowser.src.git.git_task import GitTask
 from fsbrowser.src.model.git_repo_status import GitRepositoryStatus
 from fsbrowser.src.model.versioned_storage import VersionedStorage
 
-VERSION_STORAGE_IDENTIFIER = 'id'
+VERSION_STORAGE_IDENTIFIER = 'name'
 GIT_CREDENTIALS_DURATION_DAYS = 30
 
 
@@ -71,8 +71,6 @@ class GitManager:
             full_item_path = os.path.join(self.root_folder, item_name)
             if os.path.isfile(full_item_path):
                 continue
-            if not item_name.isdigit():
-                continue
             try:
                 versioned_storage = self.api_client.get_pipeline(item_name)
             except Exception as e:
@@ -85,7 +83,7 @@ class GitManager:
             versioned_storage_name = versioned_storage.get('name')
             repo_path = os.path.join(self.root_folder, item_name)
             repo = self.git_client.get_repo(repo_path)
-            items.append(VersionedStorage(item_name, versioned_storage_name, repo_path,
+            items.append(VersionedStorage(versioned_storage.get('id'), versioned_storage_name, repo_path,
                                           repo.get('revision'), repo.get('detached'))
                          .to_json())
         return items
@@ -237,7 +235,7 @@ class GitManager:
     @staticmethod
     def _is_latest_version(pipeline, revision):
         current_version = pipeline.get('currentVersion')
-        return revision and current_version and current_version.get('commitId') == revision
+        return revision and current_version and current_version.get('commitId').startswith(revision)
 
     @staticmethod
     def _build_version_storage_error(item_name, item_path, error_message):

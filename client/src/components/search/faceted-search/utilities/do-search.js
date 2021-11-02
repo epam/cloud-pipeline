@@ -19,13 +19,16 @@ import {FacetedSearch} from '../../../../models/search';
 function doSearch (
   query,
   filters,
+  metadataFields,
   pageSize,
   facets,
-  scrollingParameters
+  scrollingParameters,
+  abortSignal
 ) {
   const payload = {
     query: query || '*',
     filters: {...filters},
+    metadataFields,
     facets,
     pageSize,
     highlight: false,
@@ -33,9 +36,11 @@ function doSearch (
   };
   return new Promise((resolve) => {
     const request = new FacetedSearch();
-    request.send(payload)
+    request.send(payload, abortSignal)
       .then(() => {
-        if (request.error || !request.loaded) {
+        if (request.aborted) {
+          resolve({aborted: true});
+        } else if (request.error || !request.loaded) {
           resolve({error: request.error || 'Error performing faceted search'});
         } else {
           const {

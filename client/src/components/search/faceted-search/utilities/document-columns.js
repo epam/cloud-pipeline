@@ -25,6 +25,7 @@ import UserName from '../../../special/UserName';
 import displaySize from '../../../../utils/displaySize';
 import displayDate from '../../../../utils/displayDate';
 import styles from '../search-results.css';
+import OpenInToolAction from '../../../special/file-actions/open-in-tool';
 
 function parseExtraColumns (preferences) {
   return new Promise((resolve) => {
@@ -101,6 +102,16 @@ const DocumentColumns = [
             onClick && onClick(document);
           }}
         />
+        <OpenInToolAction
+          file={document.path}
+          storageId={document.parentId}
+          className={classNames(
+            styles.previewBtn,
+            styles.previewBtnTable,
+            styles.action
+          )}
+          titleStyle={{height: '1em'}}
+        />
         {renderIcon(document)}
         <b style={{marginLeft: '5px'}}>
           {getDocumentName(document)}
@@ -146,7 +157,7 @@ const DocumentColumns = [
     width: '15%',
     renderFn: value => (
       <span className={styles.overflowEllipsis}>
-        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+        {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
     types: new Set([
@@ -194,7 +205,7 @@ const DocumentColumns = [
     width: '15%',
     renderFn: value => (
       <span className={styles.overflowEllipsis}>
-        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+        {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
     types: new Set([SearchItemTypes.run])
@@ -205,7 +216,7 @@ const DocumentColumns = [
     width: '15%',
     renderFn: value => (
       <span className={styles.overflowEllipsis}>
-        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+        {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
     types: new Set([SearchItemTypes.run])

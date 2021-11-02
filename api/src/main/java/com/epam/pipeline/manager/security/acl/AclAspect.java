@@ -88,6 +88,13 @@ public class AclAspect {
         createEntity(pipeline);
     }
 
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.createEmpty(..))",
+            returning = "pipeline")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void createEmptyPipeline(JoinPoint joinPoint, Pipeline pipeline) {
+        createEntity(pipeline);
+    }
+
     @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.update(..))", returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateAclIdentity(JoinPoint joinPoint, AbstractSecuredEntity entity) {
@@ -147,8 +154,10 @@ public class AclAspect {
             returning = "page")
     @Transactional(propagation = Propagation.REQUIRED)
     public void setMaskForPage(JoinPoint joinPoint, PagedResult<List<PipelineRun>> page) {
-        page.getElements().forEach(entity ->
-                entity.setMask(permissionManager.getPermissionsMask(entity, true, true)));
+        page.getElements().forEach(entity -> {
+            entity.setMask(permissionManager.getPermissionsMask(entity, true, true));
+            ListUtils.emptyIfNull(entity.getChildRuns()).forEach(child -> child.setMask(entity.getMask()));
+        });
     }
 
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclTree)",

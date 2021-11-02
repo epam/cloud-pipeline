@@ -75,6 +75,8 @@ public class SearchRequestBuilder {
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String ES_DOC_ID_FIELD = "_id";
     private static final String ES_DOC_SCORE_FIELD = "_score";
+    private static final String SEARCH_HIDDEN = "is_hidden";
+    private static final String INDEX_WILDCARD_PREFIX = "*";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -113,9 +115,9 @@ public class SearchRequestBuilder {
     }
 
     public SearchRequest buildSumAggregationForStorage(final Long storageId, final DataStorageType storageType,
-                                                       final String path) {
+                                                       final String path, final boolean allowNoIndex) {
         final String searchIndex =
-                String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
+            String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
         final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
                 .field(SIZE_FIELD);
         final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAggregator);
@@ -123,7 +125,7 @@ public class SearchRequestBuilder {
             sizeSumSearch.query(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
         return new SearchRequest()
-                .indices(searchIndex)
+                .indices(allowNoIndex ? INDEX_WILDCARD_PREFIX + searchIndex : searchIndex)
                 .source(sizeSumSearch);
     }
 
@@ -133,7 +135,7 @@ public class SearchRequestBuilder {
 
         final QueryBuilder queryBuilder = prepareFacetedQuery(facetedSearchRequest.getQuery());
         boolQueryBuilder.must(queryBuilder);
-
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
         MapUtils.emptyIfNull(facetedSearchRequest.getFilters())
                 .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
 

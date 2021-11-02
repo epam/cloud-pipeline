@@ -134,6 +134,24 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get metadataSystemKeys () {
+    const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.sensitive.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get storageAllowSignedUrls () {
+    return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
+  }
+
+  @computed
   get hiddenObjects () {
     const value = this.getPreferenceValue('ui.hidden.objects');
     if (value) {
@@ -157,6 +175,121 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get versionStorageIgnoredFiles () {
+    const value = this.getPreferenceValue('storage.version.storage.ignored.files');
+    if (!value) {
+      return ['.gitkeep'];
+    }
+    return (value || '').split(',').map(o => o.trim());
+  }
+
+  @computed
+  get metadataMandatoryKeys () {
+    const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.mandatory.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get groupsUIPreferences () {
+    const value = this.getPreferenceValue('misc.groups.ui.preferences');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.groups.ui.preferences" preference:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get vsiPreviewMagnificationMultiplier () {
+    const value = this.getPreferenceValue('ui.wsi.magnification.factor');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 1;
+  }
+
+  @computed
+  get sharedStoragesSystemDirectory () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get sharedStoragesDefaultPermissions () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.default.permissions');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "data.sharing.storage.folders.default.permissions" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get launchCapabilities () {
+    const value = this.getPreferenceValue('launch.capabilities');
+    if (value) {
+      try {
+        const capabilities = JSON.parse(value);
+        const parsePlatforms = o => {
+          if (!o) {
+            return [];
+          }
+          if (Array.isArray(o)) {
+            return o.slice();
+          }
+          if (typeof o === 'string') {
+            return o.split(',').map(o => o.trim());
+          }
+          return [];
+        };
+        return Object
+          .entries(capabilities || {})
+          .map(([key, entry]) => ({
+            value: `CP_CAP_CUSTOM_${key}`,
+            name: key,
+            description: entry?.description,
+            platforms: parsePlatforms(entry?.platforms),
+            custom: true
+          }));
+      } catch (e) {
+        console.warn(
+          'Error parsing "launch.capabilities" preference:',
+          e
+        );
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get webdavStorageAccessDurationSeconds () {
+    const value = this.getPreferenceValue('storage.webdav.access.duration.seconds');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 0;
   }
 
   toolScanningEnabledForRegistry (registry) {

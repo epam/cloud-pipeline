@@ -16,13 +16,21 @@
 
 package com.epam.pipeline.external.datastorage.controller;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
-
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.external.datastorage.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.rest.Result;
+import com.epam.pipeline.vo.GenerateDownloadUrlVO;
+import com.epam.pipeline.vo.data.storage.UpdateDataStorageItemVO;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -35,24 +43,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.epam.pipeline.external.datastorage.entity.datastorage.DataStorage;
-import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTemporaryCredentials;
-import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
-import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
-import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
-import com.epam.pipeline.external.datastorage.entity.item.UpdateDataStorageItemVO;
-import com.epam.pipeline.external.datastorage.manager.datastorage.DataStorageManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @Api(value = "Datastorage API")
 public class DataStorageController {
 
     private static final String FALSE = "false";
+    private static final String ID = "id";
+    private static final String PATH = "path";
+    private static final String VERSION = "version";
     private final DataStorageManager dataStorageManager;
 
     @Autowired
@@ -62,10 +67,10 @@ public class DataStorageController {
 
     @GetMapping(value = "/datastorage/{id}/load")
     @ApiOperation(
-        value = "Returns a data storage, specified by id.",
-        notes = "Returns a data storage, specified by id.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result<DataStorage> loadDataStorage(@PathVariable final Long id) {
+            value = "Returns a data storage, specified by id.",
+            notes = "Returns a data storage, specified by id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result<AbstractDataStorage> loadDataStorage(@PathVariable final Long id) {
         return Result.success(dataStorageManager.loadStorage(id));
     }
 
@@ -87,15 +92,15 @@ public class DataStorageController {
 
     @PostMapping(value = "/datastorage/{id}/list")
     public Result<List<AbstractDataStorageItem>> updateDataStorageItems(
-                                                            @PathVariable long id,
-                                                            @RequestBody List<UpdateDataStorageItemVO> items) {
+            @PathVariable long id,
+            @RequestBody List<UpdateDataStorageItemVO> items) {
         return Result.success(dataStorageManager.updateDataStorageItems(id, items));
     }
 
     @DeleteMapping(value = "/datastorage/{id}/list")
     public Result<Integer> deleteDataStorageItems(@PathVariable long id,
                                                   @RequestBody List<UpdateDataStorageItemVO> items,
-            @RequestParam(defaultValue = FALSE) boolean totally) {
+                                                  @RequestParam(defaultValue = FALSE) boolean totally) {
         return Result.success(dataStorageManager.deleteDataStorageItems(id, items, totally));
     }
 
@@ -128,8 +133,9 @@ public class DataStorageController {
     }
 
     @GetMapping("/datastorage/{id}/item/tags")
-    public Result<AbstractDataStorageItem> getDataStorageItemsWithTags(@PathVariable long id,
-                                                                       @RequestParam final String path,
+    public Result<AbstractDataStorageItem> getDataStorageItemsWithTags(
+            @PathVariable long id,
+            @RequestParam final String path,
             @RequestParam(defaultValue = FALSE) final Boolean showVersion) {
         return Result.success(dataStorageManager.getItemWithTags(id, path, showVersion));
     }
@@ -159,21 +165,49 @@ public class DataStorageController {
     }
 
     @PostMapping(value = "/datastorage/{id}/tempCredentials")
-    public Result<AbstractTemporaryCredentials> generateTemporaryCredentials(
+    public Result<TemporaryCredentials> generateTemporaryCredentials(
             @PathVariable long id,
             @RequestBody List<DataStorageAction> operations) {
         return Result.success(dataStorageManager.generateCredentials(id, operations));
     }
 
-    protected void writeStreamToResponse(HttpServletResponse response, InputStream stream, String contentDisposition)
+    @PostMapping(value = "/datastorage/{id}/content")
+    public Result<DataStorageFile> uploadStorageItem(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestBody String content) {
+        return Result.success(dataStorageManager.createDataStorageFile(id, path, content));
+    }
+
+    @GetMapping(value = "/datastorage/{id}/download")
+    public void downloadStream(HttpServletResponse response, @PathVariable Long id,
+                               @RequestParam String path,
+                               @RequestParam(value = VERSION, required = false) final String version)
             throws IOException {
-        try (InputStream myStream = stream) {
+        writeStreamToResponse(response, dataStorageManager.downloadFile(id, path, version),
+                FilenameUtils.getName(path));
+    }
+
+    private void writeStreamToResponse(HttpServletResponse response, InputStream stream, String fileName)
+            throws IOException {
+        writeStreamToResponse(response, stream, fileName, MediaType.APPLICATION_OCTET_STREAM);
+    }
+
+    private void writeStreamToResponse(HttpServletResponse response, InputStream stream, String fileName,
+                                       MediaType contentType)
+            throws IOException {
+        writeStreamToResponse(response, stream, contentType, "attachment;filename=" + fileName);
+    }
+
+    private void writeStreamToResponse(HttpServletResponse response, InputStream stream,
+                                       MediaType contentType, String contnentDisposition) throws IOException {
+        try (InputStream s = stream) {
             // Set the content type and attachment header.
-            response.addHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
-            response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+            response.addHeader(HttpHeaders.CONTENT_DISPOSITION, contnentDisposition);
+            response.setContentType(contentType.toString());
 
             // Copy the stream to the response's output stream.
-            IOUtils.copy(myStream, response.getOutputStream());
+            IOUtils.copy(s, response.getOutputStream());
             response.flushBuffer();
         }
     }

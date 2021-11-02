@@ -121,7 +121,7 @@ public class DtsRunner implements ExecutionRunner<DtsRunConfigurationEntry> {
 
         Pipeline pipeline = entry.getPipelineId() == null ? null : pipelineManager.load(entry.getPipelineId());
         PipelineRun run = pipelineRunManager.createPipelineRun(
-                entry.getPipelineVersion(), configuration, pipeline, null, null, null,
+                entry.getPipelineVersion(), configuration, pipeline, null, null, null, null,
                 entitiesIds, configurationId, false);
 
         run.setConfigName(entry.getConfigName());

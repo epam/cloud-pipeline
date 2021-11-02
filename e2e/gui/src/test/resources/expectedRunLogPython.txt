@@ -1,7 +1,7 @@
 Running only one job on a node
 Init default variables if they are not set explicitly
 -
-COMMON_DIR is not defined, setting to /common 
+COMMON_DIR is not defined, setting to /common
 RUN_DIR is not defined, setting to /runs/{main_file_name}-{pipeline_id} 
 Cleaning any data in a runs root directory at /runs 
 Cleaning any data in a common root directory at /common 

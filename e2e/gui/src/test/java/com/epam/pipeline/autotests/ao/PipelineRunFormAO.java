@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -100,6 +101,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setLaunchOptions(String disk, String type, String timeOut) {
         return setDisk(disk)
+                .sleep(1, SECONDS)
                 .setTypeValue(type)
                 .setTimeOut(timeOut);
     }
@@ -109,9 +111,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .closest(".launch-pipeline-form__form-item")
                 .find(className("ant-select-selection"))
                 .shouldBe(visible)
-                .doubleClick();
-
+                .click();
+        $(byClassName("ant-select-dropdown-hidden")).shouldNotBe(exist);
         $(byClassName("ant-select-dropdown-menu"))
+                .shouldBe(enabled)
                 .findAll(byClassName("ant-select-dropdown-menu-item"))
                 .find(text(type))
                 .click();
@@ -127,7 +130,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public PipelineRunFormAO checkWarningMessage(String message, boolean isVisible) {
         sleep(5, SECONDS);
         screenshot("check" + Utils.randomSuffix());
-        assertEquals(context().findAll(byClassName("ant-alert-warning"))
+        assertEquals(context().findAll(byClassName("ant-alert-message"))
                 .stream()
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
@@ -255,25 +258,35 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         );
     }
 
-    public PipelineRunFormAO checkLaunchWarningMessage(String message, boolean isVisible) {
-        try {
-            $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
-            $$(byClassName("ant-modal-body"))
-                    .findBy(text("Launch"))
-                    .find(byClassName("ob-estimated-price-info__info"))
-                    .shouldBe(visible);
-            assertEquals(context().$(byClassName("ant-modal-body")).findAll(byClassName("ant-alert-warning"))
-                    .stream()
-                    .map(SelenideElement::getText)
-                    .filter(e -> e.contains(message))
-                    .count() == 1, isVisible);
-        } finally {
-            $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
-                    .find(button("Cancel"))
-                    .shouldBe(enabled)
-                    .click();
-            return this;
+    public PipelineRunFormAO checkLaunchMessage(final String typeMessage,
+                                                final String message,
+                                                final boolean isVisible) {
+        assertEquals(checkMessage(typeMessage, message), isVisible,
+                format("%s '%s' should be %s on Launch form: ", typeMessage, message,
+                        isVisible ? "visible" : "not visible"));
+        return this;
+    }
+
+    private boolean checkMessage(final String typeMessage, final String message) {
+        $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
+        $$(byClassName("ant-modal-body"))
+                .findBy(text("Launch"))
+                .find(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible);
+        boolean messageExist = context().$(byClassName("ant-modal-body"))
+                .findAll(byClassName(format("ant-alert-%s", typeMessage)))
+                .stream()
+                .map(SelenideElement::getText)
+                .filter(e -> e.contains(message))
+                .count() == 1;
+        if (messageExist) {
+            screenshot("check_launch_message" + Utils.randomSuffix());
         }
+        $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
+                .find(button("Cancel"))
+                .shouldBe(enabled)
+                .click();
+        return messageExist;
     }
 
     public PipelineRunFormAO checkLaunchItemName(String name) {
@@ -398,6 +411,17 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .map(e -> e.split(" ")[1])
                 .mapToInt(Integer::parseInt)
                 .min().getAsInt();
+    }
+
+    public String getNodeType(final int minRAM) {
+        sleep(1, SECONDS);
+        get(INSTANCE_TYPE).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).texts()
+                .stream()
+                .filter(n -> n.contains("RAM: " + minRAM))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchWindowException(String.format(
+                        "No such node type with RAM {%s}.", minRAM)));
     }
 
     public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {

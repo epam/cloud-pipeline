@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class PreferenceLoad extends Remote {
-  constructor(name) {
+  constructor (name) {
     super();
     this.url = `/preferences/${name}`;
   }

@@ -35,6 +35,15 @@ import {SplitPanel} from '../special/splitPanel';
 
 import styles from './SystemDictionaries.css';
 
+function nameSorter (a, b) {
+  const aName = (a.name || '').toLowerCase();
+  const bName = (b.name || '').toLowerCase();
+  if (aName === bName) {
+    return 0;
+  }
+  return aName < bName ? -1 : 1;
+}
+
 class SystemDictionaries extends React.Component {
   state = {
     newDictionary: false,
@@ -143,33 +152,24 @@ class SystemDictionaries extends React.Component {
       return;
     }
     const {router} = this.props;
-    router && router.push(`settings/dictionaries/${name}`);
+    router && router.push(`settings/dictionaries/${encodeURIComponent(name)}`);
   };
 
   onDictionaryChanged = (name, items, changed) => {
     this.setState({modified: changed});
   };
 
-  onDictionarySave = (name, items, previousName) => {
+  onDictionarySave = (id, name, items) => {
     const {currentDictionary} = this.props;
     const hide = message.loading('Saving dictionary...', 0);
     const {systemDictionaries, router} = this.props;
     this.setState({pending: true}, async () => {
-      if (previousName) {
-        const removeRequest = new SystemDictionariesDelete(previousName);
-        await removeRequest.send();
-        if (removeRequest.error) {
-          hide();
-          message.error(removeRequest.error, 5);
-          this.setState({pending: false});
-          return;
-        }
-      }
       const request = new SystemDictionariesUpdate();
-      await request.send([{
+      await request.send({
+        id: id,
         key: name,
         values: items
-      }]);
+      });
       if (request.error) {
         hide();
         message.error(request.error, 5);
@@ -184,7 +184,7 @@ class SystemDictionaries extends React.Component {
           navigating: true
         }, () => {
           if (currentDictionary !== name) {
-            router.push(`/settings/dictionaries/${name}`);
+            router.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
             this.setState({navigating: false});
           }
         });
@@ -241,13 +241,15 @@ class SystemDictionaries extends React.Component {
     if (newDictionary) {
       dataSource.push({name: 'New dictionary', isNew: true});
     }
+    const lowerCasedFilter = (filter || '').toLowerCase();
     dataSource.push(
       ...this.dictionaries
         .filter((dict) => !filter ||
           (dict.values || [])
-            .find(v => (v.value || '').toLowerCase().indexOf((filter || '').toLowerCase()) >= 0)
+            .find(v => (v.value || '').toLowerCase().indexOf(lowerCasedFilter) >= 0)
         )
         .map((dict) => ({name: dict.key}))
+        .sort(nameSorter)
     );
     const getRowClassName = (group) => {
       if (newDictionary) {
@@ -341,10 +343,10 @@ class SystemDictionaries extends React.Component {
               <SystemDictionaryForm
                 filter={this.state.filter}
                 disabled={this.state.pending}
-                isNew={this.state.newDictionary}
                 onDelete={this.onDictionaryDelete}
                 onSave={this.onDictionarySave}
                 onChange={this.onDictionaryChanged}
+                id={this.currentDictionary ? this.currentDictionary.id : undefined}
                 name={this.currentDictionary ? this.currentDictionary.key : undefined}
                 items={
                   this.currentDictionary
@@ -364,7 +366,7 @@ class SystemDictionaries extends React.Component {
 export default inject(({systemDictionaries}, {params = {}}) => {
   const {currentDictionary} = params;
   return {
-    currentDictionary: decodeURIComponent(currentDictionary),
+    currentDictionary,
     systemDictionaries
   };
 })(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.datastorage.nfs;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper;
@@ -32,6 +33,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class NFSDataStorage extends AbstractDataStorage {
+
+    private NFSStorageMountStatus mountStatus = NFSStorageMountStatus.ACTIVE;
 
     public NFSDataStorage(Long id, String name, String path) {
         super(id, name, normalizeNfsPath(path), DataStorageType.NFS);

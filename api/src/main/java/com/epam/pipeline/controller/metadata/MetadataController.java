@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,16 +210,42 @@ public class MetadataController extends AbstractRestController {
     @GetMapping(value = "/metadata/search")
     @ResponseBody
     @ApiOperation(
-            value = "Loads metadata by entity class and key-value pair.",
-            notes = "Loads metadata by entity class and key-value pair.",
+            value = "Loads metadata by entity class and key-value pair. Value is not required.",
+            notes = "Loads metadata by entity class and key-value pair. Value is not required.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<EntityVO>> searchMetadataByClassAndKeyValue(@RequestParam final AclClass entityClass,
                                                                    @RequestParam final String key,
-                                                                   @RequestParam final String value) {
+                                                                   @RequestParam(required = false) final String value) {
         return Result.success(metadataApiService.searchMetadataByClassAndKeyValue(entityClass, key, value));
     }
 
+    @GetMapping(value = "/metadata/search/entry")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
+            notes = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<MetadataEntry>> searchMetadataEntriesByClassAndKeyValue(
+            @RequestParam final AclClass entityClass, @RequestParam final String key,
+            @RequestParam(required = false) final String value) {
+        return Result.success(metadataApiService.searchMetadataEntriesByClassAndKeyValue(entityClass, key, value));
+    }
+
+    @PostMapping("/metadata/sync/categoricalAttributes")
+    @ApiOperation(
+        value = "Fill in categorical attributes table based on a current metadata.",
+        notes = "Fill in categorical attributes table based on a current metadata.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public void syncCategoricalAttributesWithMetadata() {
+        metadataApiService.syncWithCategoricalAttributes();
+    }
 }

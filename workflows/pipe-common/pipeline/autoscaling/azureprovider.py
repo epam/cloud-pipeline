@@ -26,9 +26,9 @@ from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
 
-from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from pipeline.autoscaling.cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
 
-import utils
+from pipeline.autoscaling import utils
 
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
@@ -53,12 +53,13 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         self.compute_client = get_client_from_auth_file(ComputeManagementClient)
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token, pre_pull_images=[]):
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, kms_encyr_key_id,
+                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[]):
         try:
             ins_key = utils.read_ssh_key(ins_key)
             swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
-            user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token,
+            user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, ins_platform, kube_ip,
+                                                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                           swap_size, pre_pull_images)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
             access_config = utils.get_access_config(self.cloud_region)
@@ -515,7 +516,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             nic.ip_configurations[0].public_ip_address = None
             self.network_client.network_interfaces.create_or_update(self.resource_group_name, vm_name + '-nic', nic).wait()
         except Exception as e:
-            print e
+            print(e)
 
     def get_any_network_from_location(self, location):
         resource_group, network, subnet = None, None, None

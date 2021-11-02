@@ -17,7 +17,7 @@
 import {FacetedSearch} from '../../../../models/search';
 import getFacetFilterToken from './facet-filter-token';
 
-function fetchFacetsGroup (facetNames, filters, query) {
+function fetchFacetsGroup (facetNames, filters, query, abortSignal) {
   return new Promise((resolve) => {
     const payload = {
       query: query || '*',
@@ -27,9 +27,11 @@ function fetchFacetsGroup (facetNames, filters, query) {
       highlight: false
     };
     const request = new FacetedSearch();
-    request.send(payload)
+    request.send(payload, abortSignal)
       .then(() => {
-        if (request.loaded) {
+        if (request.aborted) {
+          resolve({aborted: true});
+        } else if (request.loaded) {
           const {facets = {}} = request.value || {};
           resolve(facets);
         } else {
@@ -50,7 +52,7 @@ function removeSingleSelection (selection, name) {
   return result;
 }
 
-function fetchFacets (facets, selection, query = '*') {
+function fetchFacets (facets, selection, query = '*', abortSignal) {
   const facetsToken = getFacetFilterToken(
     query,
     selection,
@@ -60,12 +62,25 @@ function fetchFacets (facets, selection, query = '*') {
   const notSelectedFacets = facets.filter(f => selectedFacets.indexOf(f) === -1);
   return new Promise((resolve) => {
     Promise.all([
-      fetchFacetsGroup(notSelectedFacets, selection, query),
+      fetchFacetsGroup(
+        notSelectedFacets,
+        selection,
+        query,
+        abortSignal
+      ),
       ...selectedFacets
-        .map(f => fetchFacetsGroup([f], removeSingleSelection(selection, f), query))
+        .map(f => fetchFacetsGroup(
+          [f],
+          removeSingleSelection(selection, f),
+          query,
+          abortSignal
+        ))
     ])
       .then((payloads) => {
         let result = {};
+        if (payloads.some(p => p.aborted)) {
+          resolve({aborted: true});
+        }
         for (let p = 0; p < payloads.length; p++) {
           result = {...result, ...(payloads[p])};
         }

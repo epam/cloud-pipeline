@@ -37,18 +37,20 @@ except ImportError:
 
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
-SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint} }}'
+SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint}, "sameTab": {is_same_tab} }}'
 EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
+EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
-API_UPDATE_SVC = 'run/{run_id}/serviceUrl'
+API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
 API_POST_DNS_RECORD = 'cluster/dnsrecord'
 API_GET_HOSTED_ZONE_BASE_PREF = 'preferences/instance.dns.hosted.zone.base'
+API_GET_DEFAULT_EDGE_REGION_PREF = 'preferences/default.edge.region'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
 
@@ -56,6 +58,7 @@ EDGE_SVC_ROLE_LABEL = 'cloud-pipeline/role'
 EDGE_SVC_ROLE_LABEL_VALUE = 'EDGE'
 EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
+EDGE_SVC_REGION_LABEL = 'cloud-pipeline/region'
 
 nginx_custom_domain_config_ext = '.srv.conf'
 nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
@@ -378,13 +381,13 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
 
 def get_active_runs(pods):
         pod_run_ids = [x['metadata']['labels']['runid'] for x in pods]
-        get_runs_list_details_method = os.path.join(api_url, 
+        get_runs_list_details_method = os.path.join(api_url,
                                                     API_GET_RUNS_LIST_DETAILS.format(run_ids=','.join(pod_run_ids)))
         response_data = call_api(get_runs_list_details_method)
-        if not response_data:
+        if not response_data or 'payload' not in response_data:
                 do_log('Cannot get list of active runs from the API for the following IDs: {}'.format(pod_run_ids))
                 return []
-        
+
         return response_data["payload"]
 
 
@@ -413,6 +416,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 sensitive = run_info.get("sensitive") or False
 
                 cloud_region_id = run_info.get("instance", {}).get("cloudRegionId") or None
+                instance_ip = run_info.get("instance", {}).get("nodeIP") or None
 
 
                 do_log('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
@@ -451,6 +455,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                         is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
                                         is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
+                                        is_same_tab = str(endpoint["sameTab"]).lower() if "sameTab" in endpoint.keys() else 'false'
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -474,10 +479,18 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         else:
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
+                                        if EDGE_INSTANCE_IP in additional:
+                                                additional = additional.replace(EDGE_INSTANCE_IP, "") \
+                                                             + 'proxy_set_header Upgrade $http_upgrade;' \
+                                                               'proxy_set_header Connection "upgrade";'
+                                                target_ip = instance_ip
+                                        else:
+                                                target_ip = pod_ip
+
                                         edge_target = \
-                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
+                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=target_ip, endpoint_port=port, endpoint_path=path) \
                                                         if path \
-                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=pod_ip, endpoint_port=port)
+                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=target_ip, endpoint_port=port)
 
                                         # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
                                         # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
@@ -493,12 +506,13 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 
 
                                         service_list[edge_location_id] = {"pod_id": pod_id,
-                                                                        "pod_ip": pod_ip,
+                                                                        "pod_ip": target_ip,
                                                                         "pod_owner": pod_owner,
                                                                         "shared_users_sids": shared_users_sids,
                                                                         "shared_groups_sids": shared_groups_sids,
                                                                         "service_name": service_name,
                                                                         "is_default_endpoint": is_default_endpoint,
+                                                                        "is_same_tab": is_same_tab,
                                                                         "is_ssl_backend": is_ssl_backend,
                                                                         "edge_num": i,
                                                                         "edge_location": edge_location,
@@ -645,6 +659,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                                           edge_port=str(edge_service_port),
                                           service_name=service_spec["service_name"],
                                           is_default_endpoint=service_spec["is_default_endpoint"],
+                                          is_same_tab=service_spec["is_same_tab"],
                                           external_schema=edge_service_external_schema)
         run_id = service_spec["run_id"]
         if run_id in service_url_dict:
@@ -659,7 +674,7 @@ def update_svc_url_for_run(run_id):
         if run_id in service_url_dict:
                 # make array of json objects
                 service_urls_json = '[' + service_url_dict[run_id] + ']'
-                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id))
+                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id, region=edge_region))
                 do_log('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
                 data = json.dumps({'serviceUrl': service_urls_json})
                 response_data = call_api(update_svc_method, data=data)
@@ -671,39 +686,68 @@ def update_svc_url_for_run(run_id):
                 do_log('Asking for service url update for the run {}, but service_url_dict is empty for this run'.format(run_id))
 
 
+def find_preference(api_preference_query, preference_name):
+        load_method = os.path.join(api_url, api_preference_query)
+        response = call_api(load_method)
+        if response and "payload" in response and "name" in response["payload"] \
+                and response["payload"]["name"] == preference_name and "value" in response["payload"]:
+                return response["payload"]["value"]
+        return None
+
+
 do_log('============ Started iteration ============')
 
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
-edge_kube_service = Service.objects(kube_api).filter(selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE})
-if len(edge_kube_service.response['items']) == 0:
-        do_log('EDGE service is not found by label: cloud-pipeline/role=EDGE')
+default_edge_region = find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
+edge_region = os.environ.get('CP_EDGE_REGION') or default_edge_region
+
+# Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
+# service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't
+# applied yet - so we will wait
+edge_kube_service_object = None
+for n in range(NUMBER_OF_RETRIES):
+    edge_kube_service = Service.objects(kube_api).filter(selector={
+            EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region})
+    if len(edge_kube_service.response['items']) == 0:
+        do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
+               % (EDGE_SVC_REGION_LABEL, edge_region))
         exit(1)
-else:
+    else:
         edge_kube_service_object = edge_kube_service.response['items'][0]
         edge_kube_service_object_metadata = edge_kube_service_object['metadata']
 
         if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_HOST_LABEL in edge_kube_service_object_metadata['labels']:
-                edge_service_external_ip = edge_kube_service_object_metadata['labels'][EDGE_SVC_HOST_LABEL]
+            do_log('Getting EDGE service host from service label')
+            edge_service_external_ip = edge_kube_service_object_metadata['labels'][EDGE_SVC_HOST_LABEL]
 
         if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_PORT_LABEL in edge_kube_service_object_metadata['labels']:
-                edge_service_port = edge_kube_service_object_metadata['labels'][EDGE_SVC_PORT_LABEL]
+            do_log('Getting EDGE service host port from service label')
+            edge_service_port = edge_kube_service_object_metadata['labels'][EDGE_SVC_PORT_LABEL]
 
-        if not edge_service_external_ip:
-                edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
-        if not edge_service_port:
-                edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
-        do_log('EDGE service port: ' + str(edge_service_port))
-        do_log('EDGE service ip: ' + edge_service_external_ip)
+        if edge_service_external_ip and edge_service_port:
+            break
+        else:
+            do_log('Sleep for {} sec and perform kube API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 1, NUMBER_OF_RETRIES))
+            sleep(SECS_TO_WAIT_BEFORE_RETRY)
+
+if not edge_kube_service_object:
+    do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
+           % (EDGE_SVC_REGION_LABEL, edge_region))
+    exit(1)
+
+if not edge_service_external_ip:
+    do_log('Getting EDGE service host from externalIP')
+    edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
+if not edge_service_port:
+    do_log('Getting EDGE service host port from nodePort')
+    edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
+do_log('EDGE service port: ' + str(edge_service_port))
+do_log('EDGE service ip: ' + edge_service_external_ip)
 
 
-hosted_zone_base_value = None
-load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
-hosted_zone_response = call_api(load_hosted_zone_method)
-if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
-        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and "value" in hosted_zone_response["payload"]:
-        hosted_zone_base_value = hosted_zone_response["payload"]["value"]
+hosted_zone_base_value = find_preference(API_GET_HOSTED_ZONE_BASE_PREF, "instance.dns.hosted.zone.base")
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
 runs_with_endpoints = get_active_runs(pods_with_endpoints)
@@ -812,8 +856,15 @@ for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
-                runs_with_custom_dns.add(service_spec["run_id"])
-                dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record, (service_spec, added_route)))
+                if default_edge_region == edge_region:
+                        runs_with_custom_dns.add(service_spec["run_id"])
+                        dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record,
+                                                                               (service_spec, added_route)))
+                elif not default_edge_region:
+                        log_task_event("CreateDNSRecord",
+                                       "Can not determine default edge region, will not create any DNS records",
+                                       service_spec["run_id"],
+                                       service_spec["pod_id"])
         else:
                 create_service_location(service_spec, added_route, service_url_dict)
 

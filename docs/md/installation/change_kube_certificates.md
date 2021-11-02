@@ -1,5 +1,28 @@
 # Process of changing certificates on kube cluster
 
+## Kubernetes v1.15
+
+```
+# Check the expiration
+kubeadm certs check-expiration
+
+# It's also possible to renew specific certs only, instead of all
+# Check `kubeadm certs renew --help`
+kubeadm certs renew all
+
+# Restart kube containers
+systemctl stop docker
+systemctl stop kubelet
+systemctl start docker
+systemctl start kubelet
+
+# Renew auth tokens for the Cloud Pipeline API
+\cp /etc/kubernetes/admin.conf /root/.kube/config
+# Copy /root/.kube/config to all the API nodes
+```
+
+## Kubernetes v1.7.5
+
 There is a script to backup old one and generate new one certificates for kube cluster
 In order to change certificates:
  - Copy this script to some file on kube master node

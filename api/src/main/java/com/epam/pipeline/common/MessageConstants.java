@@ -127,6 +127,7 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_DISK_NOT_ENOUGH = "error.run.instance.disk.not.enough";
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
     public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
+    public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
@@ -208,6 +209,7 @@ public final class MessageConstants {
     public static final String ERROR_NODE_DOWN_TIMEOUT = "error.kube.node.down.timeout";
     public static final String LOG_WAS_TRUNCATED = "log.truncated";
     public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
+    public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
     public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
 
     // Data storage messages
@@ -249,6 +251,21 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
     public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
     public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
+    public static final String ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID =
+            "error.datastorage.convert.target.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
+            "error.datastorage.convert.source.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME = "error.datastorage.dav.mount.illegal.time";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED =
+            "error.datastorage.dav.mount.quota.exceeded";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED =
+            "error.datastorage.dav.mount.already.mounted";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST = "info.datastorage.dav.mount.request";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED =
+            "info.datastorage.dav.mount.request.allowed";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF =
+            "info.datastorage.dav.mount.request.called.off";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -324,6 +341,8 @@ public final class MessageConstants {
     public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
     public static final String ERROR_DEFAULT_STORAGE_CREATION = "user.storage.home.auto.fails";
     public static final String DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS = "user.storage.home.auto.exists";
+    public static final String ERROR_SELF_IMPERSONATION_NOT_ALLOWED = "impersonation.self.not.allowed";
+    public static final String ERROR_IMPERSONATION_EMPTY_USER = "impersonation.validation.empty.user";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
@@ -379,12 +398,26 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
-    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = 
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION =
             "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
     public static final String ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED = "error.notification.receiver.not.specified";
+
+    //Contextual notifications
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TYPE_MISSING =
+            "error.contextual.notification.type.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_TRIGGER_ID_MISSING =
+            "error.contextual.notification.trigger.id.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_RECIPIENTS_MISSING =
+            "error.contextual.notification.recipients.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_GLOBAL_TEMPLATE_NOT_FOUND =
+            "error.contextual.notification.global.template.not.found";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_SUBJECT_MISSING =
+            "error.contextual.notification.subject.missing";
+    public static final String ERROR_CONTEXTUAL_NOTIFICATION_BODY_MISSING =
+            "error.contextual.notification.body.missing";
 
     //Parameters mapping
     public static final String ERROR_PARAMETER_MISSING_REFERENCE = "error.parameter.missing.reference";
@@ -448,13 +481,22 @@ public final class MessageConstants {
     public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
 
     //DTS
-    public static final String ERROR_DTS_REGISTRY_DOES_NOT_EXIST = "error.dts.registry.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_IS_EMPTY = "error.dts.registry.is.empty";
     public static final String ERROR_DTS_REGISTRY_URL_IS_EMPTY = "error.dts.registry.url.is.empty";
     public static final String ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY = "error.dts.registry.prefixes.are.empty";
     public static final String ERROR_DTS_REGISTRY_ID_IS_EMPTY = "error.dts.registry.id.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_IS_EMPTY = "error.dts.registry.name.is.empty";
+    public static final String ERROR_DTS_REGISTRY_NAME_CONSIST_OF_NUMBERS = "error.dts.registry.name.numbers.only";
+    public static final String ERROR_DTS_REGISTRY_NAME_ALREADY_EXISTS = "error.dts.registry.name.already.exists";
     public static final String ERROR_DTS_NOT_SCHEDULABLE = "error.dts.registry.not.schedulable";
+    public static final String ERROR_DTS_PREFERENCES_DOESNT_EXIST = "error.dts.preferences.not.exist";
+    public static final String ERROR_DTS_PREFERENCES_UPDATE_EMPTY = "error.dts.preferences.update.empty";
+    public static final String ERROR_DTS_PREFERENCES_DELETE_EMPTY = "error.dts.preferences.delete.empty";
+    public static final String INFO_DTS_MONITORING_STATUS = "info.dts.monitoring.status";
+    public static final String INFO_DTS_MONITORING_STATUS_MISSING_HEARTBEAT =
+            "info.dts.monitoring.status.missing.heartbeat";
 
     //Cloud region
     public static final String ERROR_REGION_NOT_FOUND = "error.region.not.found";
@@ -469,6 +511,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_JSON_WRITING_FAILED = "error.region.json.writing.failed";
     public static final String ERROR_REGION_CORS_RULES_INVALID = "error.region.cors.rules.invalid";
     public static final String ERROR_REGION_POLICY_INVALID = "error.region.policy.invalid";
+    public static final String ERROR_MISSING_IAM_ROLE = "error.missing.iam.role";
 
     //Contextual preferences
     public static final String ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND = "error.contextual.preference.not.found";
@@ -543,8 +586,11 @@ public final class MessageConstants {
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //System dictionaries
-    public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_KEY_DOESNT_EXIST = "categorical.attribute.key.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_ID_DOESNT_EXIST = "categorical.attribute.id.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY = "categorical.attribute.exists.already";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME = "categorical.attribute.null.name.key";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
@@ -577,6 +623,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
     public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
     public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
+    public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
+    public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
+        "error.node.pool.win.instance.not.allowed";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
@@ -591,6 +640,13 @@ public final class MessageConstants {
     public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
     public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
     public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
+
+    // Storage quotas
+    public static final String STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN = "storage.quota.nfs.percentage.warn";
+    public static final String STORAGE_QUOTA_UNKNOWN_RESTRICTION = "storage.quota.unknown.restriction";
+    public static final String STORAGE_QUOTA_UNKNOWN_TYPE = "storage.quota.unknown.type";
+    public static final String STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE =
+        "storage.quota.unknown.share.type.for.percentage";
 
     private MessageConstants() {
         // no-op

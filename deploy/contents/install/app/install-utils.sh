@@ -201,6 +201,9 @@ function init_cloud_config {
                 if [[ "$cloud_image_name" == *"GPU" ]]; then
                     export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU="$cloud_image_id"
                 fi
+                if [[ "$cloud_image_name" == *"Common_Win" ]]; then
+                    export CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN="$cloud_image_id"
+                fi
             fi
         done < $CP_CLOUD_IMAGES_MANIFEST_FILE
 
@@ -210,6 +213,10 @@ function init_cloud_config {
 
         if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
             print_warn "GPU image is not defined in the manifest: $CP_CLOUD_IMAGES_MANIFEST_FILE"
+        fi
+
+        if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN" ]; then
+            print_warn "Common Windows image is not defined in the manifest: $CP_CLOUD_IMAGES_MANIFEST_FILE"
         fi
     else
         print_warn "Cloud images manifest file not found at $CP_CLOUD_IMAGES_MANIFEST_FILE"
@@ -223,6 +230,7 @@ function init_cloud_config {
     echo    "External host address: $CP_CLOUD_EXTERNAL_HOST"
     echo    "Common image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE"
     echo    "GPU image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU"
+    echo    "Common Windows image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN"
 
 }
 
@@ -369,6 +377,10 @@ EOF
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
         print_warn "Default GPU cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=\" option"
         export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=$CP_PREF_CLUSTER_INSTANCE_IMAGE
+    fi
+    if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN" ]; then
+        print_warn "Default Windows cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN=\" option"
+        export CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN=$CP_PREF_CLUSTER_INSTANCE_IMAGE
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ]; then
         if [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
@@ -1156,7 +1168,7 @@ function check_pod_exists {
 function wait_for_deletion {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         print_info "Waiting for pod \"$p\" final deletion and cleanup..."
         while check_pod_exists "$p"; do
@@ -1173,7 +1185,7 @@ function wait_for_deployment {
     print_info "Waiting for deployment/pod $DEPLOYMENT_NAME creation..."
     set -o pipefail
     while "true"; do
-        pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+        pods=$(get_deployment_pods $DEPLOYMENT_NAME)
         [ $? -eq 0 ] && [ "$pods" ] && break
     done
     set +o pipefail
@@ -1215,7 +1227,7 @@ function execute_deployment_command {
         CONTAINER_NAME=
     fi
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done
@@ -1224,10 +1236,18 @@ function execute_deployment_command {
 function delete_deployment_pods {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         kubectl delete po $p --grace-period=0 --force
     done
+}
+
+function get_deployment_pods() {
+    DEPLOYMENT_NAME=$1
+    # Since pod name is: {deployment-name}-{replica-set-hash}-{pod-hash} we can assume that all pods that have such
+    # name is related to the specific deployment
+    _pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ' | grep -E "^${DEPLOYMENT_NAME}-[a-zA-Z0-9]+-[a-zA-Z0-9]+$")
+    echo $_pods
 }
 
 function create_user_and_db {

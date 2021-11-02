@@ -40,6 +40,9 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
+            - mountPath: /opt/api/pki
+              name: api-pki
+              readOnly: true
       volumes:
         - name: share-pki
           hostPath:
@@ -56,5 +59,8 @@ spec:
         - name: common-pki
           hostPath:
             path: /opt/common/pki
+        - name: api-pki
+          hostPath:
+            path: /opt/api/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

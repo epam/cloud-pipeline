@@ -351,6 +351,9 @@ public class DockerClient {
                 .stream()
                 .mapToLong(ManifestV2.Config::getSize)
                 .sum());
+        RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+        String platform = DockerParsingUtils.getPlatform(rawImage).orElse("linux");
+        attributes.setPlatform(platform);
         attributes.setModificationDate(getLatestDate(registry, imageName, tag));
         return attributes;
     }

@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -67,6 +68,16 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                         .or(contains(nodeLabel("CP-SEARCH-ELK")))
                         .or(contains(nodeLabel("HEAPSTER")))
                         .or(contains(nodeLabel("DNS")))
+                        .test(element);
+            }
+        };
+    }
+
+    public static Condition windows() {
+        return new Condition("windows node") {
+            @Override
+            public boolean apply(final WebElement element) {
+                return contains(nodeLabel("WINDOWS"))
                         .test(element);
             }
         };
@@ -219,12 +230,18 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO validateSortedByIncrease(HeaderColumn column) {
-        validateSortedBy(column, Comparator.naturalOrder());
+        final Comparator<String> comparator = column == HeaderColumn.NAME
+                ? Comparator.naturalOrder()
+                : NaturalOrderComparators.createNaturalOrderRegexComparator();
+        validateSortedBy(column, comparator);
         return this;
     }
 
     public ClusterMenuAO validateSortedByDecrease(HeaderColumn column) {
-        validateSortedBy(column, Comparator.reverseOrder());
+        final Comparator<String> comparator = column == HeaderColumn.NAME
+                ? Comparator.reverseOrder()
+                : NaturalOrderComparators.createNaturalOrderRegexComparator().reversed();
+        validateSortedBy(column, comparator);
         return this;
     }
 

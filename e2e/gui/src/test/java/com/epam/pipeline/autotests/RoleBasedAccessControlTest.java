@@ -16,6 +16,8 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.WebDriverRunner;
+import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -23,6 +25,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Cookie;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -94,6 +97,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @AfterClass(alwaysRun = true)
     public void loginToDeleteEntities() {
         loginAs(admin);
+        library()
+                .removeStorageIfExists(format("%s-home", testUser));
     }
 
     @Test
@@ -107,32 +112,45 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
-        Utils.restartBrowser(C.ROOT_ADDRESS);
-        final Account wrongAccount = new Account(C.LOGIN, format("123%s", C.PASSWORD));
-        loginAs(wrongAccount);
-        if ("true".equals(C.AUTH_TOKEN)) {
-            validateErrorPage(singletonList("type=Unauthorized, status=401"));
-            Selenide.clearBrowserCookies();
-            sleep(1, SECONDS);
+        Selenide.close();
+        if ("true".equalsIgnoreCase(C.AUTH_TOKEN)) {
+            if (impersonateMode()) {
+                Selenide.clearBrowserCookies();
+                addExtension(C.INVALID_EXTENSION_PATH);
+                open(C.ROOT_ADDRESS);
+                checkFailedAuthentication();
+            } else {
+                open(C.ROOT_ADDRESS);
+                validateErrorPage(singletonList("type=Unauthorized, status=401"));
+                Selenide.clearBrowserCookies();
+                sleep(1, SECONDS);
+            }
         } else {
+            open(C.ROOT_ADDRESS);
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(format("123%s", C.PASSWORD))
+                    .signIn();
             validateErrorPage(singletonList("Incorrect user name or password"));
         }
-        loginAs(admin);
+        restartBrowser(C.ROOT_ADDRESS);
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-3019"})
     public void addTheUser() {
         loginAs(admin);
-        storageUserHomeAutoState = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getCheckboxPreferenceState("storage.user.home.auto");
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .setCheckboxPreference("storage.user.home.auto", false, true)
-                .saveIfNeeded();
+        if(!impersonateMode()) {
+            storageUserHomeAutoState = navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .getCheckboxPreferenceState("storage.user.home.auto");
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setCheckboxPreference("storage.user.home.auto", false, true)
+                    .saveIfNeeded();
+        }
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -228,8 +246,6 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             logout();
             loginAs(user);
             validateWhileErrorPageMessage();
-            loginAs(user);
-            validateWhileErrorPageMessage();
         } finally {
             loginAs(admin);
             navigationMenu()
@@ -246,7 +262,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         runsMenu()
                 .activeRuns()
                 .shouldContainRun("pipeline", getLastRunId())
-                .validatePipelineOwner(getLastRunId(), user.login.toLowerCase());
+                .validatePipelineOwner(getLastRunId(), user.login);
     }
 
     @Test
@@ -283,10 +299,19 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .waitEndpoint()
                 .attr("href");
         logout();
-        Utils.restartBrowser(endpoint);
-        new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
-        open(C.ROOT_ADDRESS);
-        loginAs(admin);
+        if (impersonateMode()) {
+            Selenide.close();
+            Selenide.clearBrowserCookies();
+            addExtension(C.ANONYM_EXTENSION_PATH);
+            open(endpoint);
+            checkFailedAuthentication();
+            restartBrowser(C.ROOT_ADDRESS);
+        } else {
+            restartBrowser(endpoint);
+            new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
+            open(C.ROOT_ADDRESS);
+            loginAs(admin);
+        }
         runsMenu()
                 .log(getLastRunId(), log -> log
                         .shareWithGroup("ROLE_ANONYMOUS_USER")
@@ -295,16 +320,43 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         sleep(1, MINUTES);
         logout();
         final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
-        loginAs(anonymousAccount);
+        if (impersonateMode()) {
+            Selenide.close();
+            Selenide.clearBrowserCookies();
+            final String edgeUrl = endpoint.split(format("pipeline-%s-%s-0", getLastRunId(), C.VALID_ENDPOINT))[0];
+            open(edgeUrl);
+            Cookie cookie = new Cookie("bearer", anonymousAccount.password);
+            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+        } else {
+            loginAs(anonymousAccount);
+        }
         sleep(2, SECONDS);
         open(endpoint);
         screenshot("Endpoint_page");
         new ShellAO().assertPageContains(C.ANONYMOUS_NAME);
-        Utils.restartBrowser(C.ROOT_ADDRESS);
+        restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
     }
 
+    @Test
+    @TestCase({"2144"})
+    public void allowToImpersonateAdministratorAsGeneralUser() {
+        logoutIfNeeded();
+        loginAs(admin);
+        impersonateAs(user.login);
+        checkUserName(user);
+        stopImpersonation();
+        checkUserName(admin);
+    }
+
     private void validateWhileErrorPageMessage() {
+        if (impersonateMode()) {
+            navigationMenu()
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(admin.login);
+            return;
+        }
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage(singletonList("User is blocked!"));
             Selenide.clearBrowserCookies();
@@ -312,9 +364,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             return;
         }
         validateErrorPage(Arrays.asList(
-                "Please contact",
-                format("%s support team", C.PLATFORM_NAME),
-                "to request the access",
+                "Please contact", "Support team", "to request the access",
                 format("login back to the %s", C.PLATFORM_NAME),
                 "if you already own an account")
         );
@@ -328,5 +378,12 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         }
         final Account userWithToken = new Account(user.login, token);
         loginAs(userWithToken);
+    }
+
+    private void checkUserName(Account user) {
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(user.login);
     }
 }

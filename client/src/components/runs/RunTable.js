@@ -51,10 +51,11 @@ import evaluateRunDuration from '../../utils/evaluateRunDuration';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
-import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
+import MultizoneUrl from '../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -436,7 +437,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
                         </Checkbox>
                       </Row>
                     );
-                })
+                  })
               }
             </div>
           </Row>
@@ -721,7 +722,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (roleModel.executeAllowed(record) && roleModel.isOwner(record) &&
       record.initialized && !(record.nodeCount > 0) &&
       !(record.parentRunId && record.parentRunId > 0) &&
-      record.instance && record.instance.spot !== undefined && !record.instance.spot) {
+      record.instance && record.instance.spot !== undefined &&
+      !record.instance.spot && record.platform !== 'windows'
+    ) {
       switch (record.status.toLowerCase()) {
         case 'pausing':
           return <span id={`run-${record.id}-pausing`}>PAUSING</span>;
@@ -772,43 +775,51 @@ export default class RunTable extends localization.LocalizedReactComponent {
   };
 
   renderStatusAction = (record) => {
-    if (roleModel.executeAllowed(record)) {
-      const isRemovedPipeline = !!record.version && !record.pipelineId;
-      switch (record.status.toLowerCase()) {
-        case 'paused':
-          if (roleModel.isOwner(record)) {
-            return <a
-              id={`run-${record.id}-terminate-button`}
-              style={{color: 'red'}}
-              onClick={(e) => this.showTerminateConfirmDialog(e, record)}>TERMINATE</a>;
-          }
-          break;
-        case 'running':
-        case 'pausing':
-        case 'resuming':
-          if (roleModel.isOwner(record) && canStopRun(record)) {
-            return <a
-              id={`run-${record.id}-stop-button`}
-              style={{color: 'red'}}
-              onClick={(e) => this.showStopConfirmDialog(e, record)}>STOP</a>;
-          } else if (record.commitStatus && record.commitStatus.toLowerCase() === 'committing') {
-            return <span style={{fontStyle: 'italic'}}>COMMITTING</span>;
-          }
-          break;
-        case 'stopped':
-        case 'failure':
-        case 'success':
-          if (!isRemovedPipeline) {
-            return (
-              <a
-                id={`run-${record.id}-rerun-button`}
-                onClick={(e) => this.reRunPipeline(e, record)}
-              >
-                RERUN
-              </a>
-            );
-          }
-      }
+    const isRemovedPipeline = !!record.version && !record.pipelineId;
+    switch (record.status.toLowerCase()) {
+      case 'paused':
+        if (roleModel.executeAllowed(record) && roleModel.isOwner(record)) {
+          return <a
+            id={`run-${record.id}-terminate-button`}
+            style={{color: 'red'}}
+            onClick={(e) => this.showTerminateConfirmDialog(e, record)}>TERMINATE</a>;
+        }
+        break;
+      case 'running':
+      case 'pausing':
+      case 'resuming':
+        if (
+          (
+            roleModel.executeAllowed(record) ||
+            record.sshPassword
+          ) &&
+          (
+            roleModel.isOwner(record) ||
+            record.sshPassword
+          ) &&
+          canStopRun(record)
+        ) {
+          return <a
+            id={`run-${record.id}-stop-button`}
+            style={{color: 'red'}}
+            onClick={(e) => this.showStopConfirmDialog(e, record)}>STOP</a>;
+        } else if (record.commitStatus && record.commitStatus.toLowerCase() === 'committing') {
+          return <span style={{fontStyle: 'italic'}}>COMMITTING</span>;
+        }
+        break;
+      case 'stopped':
+      case 'failure':
+      case 'success':
+        if (roleModel.executeAllowed(record) && !isRemovedPipeline) {
+          return (
+            <a
+              id={`run-${record.id}-rerun-button`}
+              onClick={(e) => this.reRunPipeline(e, record)}
+            >
+              RERUN
+            </a>
+          );
+        }
     }
     return <div />;
   };
@@ -820,13 +831,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
           <span>
             {moment.utc(item.endDate)
               .diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       } else {
         return (
           <span>
             Running for {moment.utc().diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       }
     };
@@ -854,10 +865,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
     }
     const diff = evaluateRunDuration(item) * item.pricePerHour;
     const price = Math.ceil(diff * 100.0) / 100.0;
-    if (item.nodeCount) {
+    if (item.masterRun) {
+      const {
+        workersPrice = 0
+      } = item;
       return (
         <JobEstimatedPriceInfo>
-          Cost: {(price * (+item.nodeCount + 1)).toFixed(2)}$ ({price.toFixed(2)}$)
+          Cost: {(price + workersPrice).toFixed(2)}$ ({price.toFixed(2)}$)
         </JobEstimatedPriceInfo>
       );
     }
@@ -913,7 +927,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       title: '',
       dataIndex: '',
       key: 'expandIcon',
-      className: styles.expandIconColumn,
+      className: styles.expandIconColumn
     };
     const runColumn = {
       title: <span>Run</span>,
@@ -927,7 +941,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const style = {
           display: 'inline-table',
-          marginLeft: run.parentRunId ? '10px' : 0,
+          marginLeft: run.parentRunId ? '10px' : 0
         };
         let instanceOrSensitiveFlag;
         if (run.instance || run.sensitive) {
@@ -963,7 +977,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const name = <b>{text}</b>;
         if (run.serviceUrl && run.initialized) {
-          const urls = parseRunServiceUrl(run.serviceUrl);
+          const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
           return (
             <div style={style}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
@@ -973,16 +987,22 @@ export default class RunTable extends localization.LocalizedReactComponent {
                   <div>
                     <ul>
                       {
-                        urls.map((url, index) =>
+                        regionedUrls.map(({name, url, sameTab}, index) =>
                           <li key={index} style={{margin: 4}}>
-                            <a href={url.url} target="_blank">{url.name || url.url}</a>
+                            <MultizoneUrl
+                              target={sameTab ? '_top' : '_blank'}
+                              configuration={url}
+                            >
+                              {name}
+                            </MultizoneUrl>
                           </li>
                         )
                       }
                     </ul>
                   </div>
                 }
-                trigger="hover">
+                trigger={['hover']}
+              >
                 {clusterIcon} <Icon type="export" /> {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
@@ -1268,7 +1288,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         size="small"
         indentSize={10}
         locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
-    />);
+      />);
   }
 
   componentDidMount () {

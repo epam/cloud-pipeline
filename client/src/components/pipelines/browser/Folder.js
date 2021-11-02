@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
@@ -33,9 +34,7 @@ import {
   Button,
   Checkbox,
   Col,
-  Dropdown,
   Icon,
-  Menu,
   message,
   Modal,
   Popover,
@@ -43,6 +42,8 @@ import {
   Table,
   Tooltip
 } from 'antd';
+import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
@@ -66,7 +67,8 @@ import ConfigurationUpdate from '../../../models/configuration/ConfigurationUpda
 import ConfigurationDelete from '../../../models/configuration/ConfigurationDelete';
 import CreateDataStorage from '../../../models/dataStorage/DataStorageSave';
 import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageUpdateStoragePolicy
+  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import Metadata from '../../special/metadata/Metadata';
 import Issues from '../../special/issues/Issues';
@@ -75,7 +77,8 @@ import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
+import DropDownWrapper from '../../special/dropdown-wrapper';
 import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
@@ -94,7 +97,7 @@ function splitFolderPaths (foldersStructure) {
   return uniquePaths.filter(filteredPath => !uniquePaths
     .some(path => filteredPath !== path && path.startsWith(filteredPath))
   );
-};
+}
 
 @localization.localizedComponent
 @connect({
@@ -160,6 +163,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     editableConfiguration: null,
     createConfigurationDialog: false,
     createDropDownVisible: false,
+    displayOptionsDropDownVisible: false,
     operationInProgress: false,
     cloneFolderDialogVisible: false,
     showDescription: true,
@@ -728,7 +732,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
         ? storage.regionId
         : undefined,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      toolsToMount: storage.toolsToMount
     });
     hide();
     if (request.error) {
@@ -759,7 +764,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      toolsToMount: storage.toolsToMount
     };
     if (storage.mountPoint) {
       payload.mountPoint = storage.mountPoint;
@@ -839,7 +845,22 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   openEditStorageDialog = (storage, event) => {
     event.stopPropagation();
-    this.setState({editableStorage: storage});
+    if (storage) {
+      const request = this.props.dataStorages.load(storage.id);
+      request
+        .fetch()
+        .then(() => {
+          if (request.loaded) {
+            const {toolsToMount = []} = request.value || {};
+            return Promise.resolve(toolsToMount);
+          }
+          return Promise.resolve([]);
+        })
+        .catch(() => {})
+        .then((toolsToMount) => {
+          this.setState({editableStorage: {toolsToMount, ...storage}});
+        });
+    }
   };
 
   closeEditStorageDialog = () => {
@@ -914,7 +935,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       await request.send({
         lastCommitId: opts.lastCommitId,
         path,
-        comment: `creating folders ${path}`
+        comment: `Creating folder ${path}`
       });
       if (request.error) {
         message.error(request.error, 5);
@@ -1347,8 +1368,13 @@ export default class Folder extends localization.LocalizedReactComponent {
       });
     };
 
-    if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly &&
-      this.props.folderId !== undefined && !this.props.listingMode && roleModel.isManager.entities(this)) {
+    if (
+      roleModel.writeAllowed(this.props.folder.value) &&
+      !this.props.readOnly &&
+      this.props.folderId !== undefined &&
+      !this.props.listingMode &&
+      roleModel.isManager.entities(this)
+    ) {
       actions.push(
         <UploadButton
           key="upload-metadata"
@@ -1365,15 +1391,20 @@ export default class Folder extends localization.LocalizedReactComponent {
       );
     }
 
-    if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly && !this.props.listingMode) {
+    if (
+      roleModel.writeAllowed(this.props.folder.value) &&
+      !this.props.readOnly &&
+      !this.props.listingMode
+    ) {
       let pipelineTemplatesMenu;
       if (!this.props.templates.pending && roleModel.isManager.pipeline(this)) {
         if (!this.props.templates.error && (this.props.templates.value || []).length > 0) {
-          const templates = (this.props.templates.value || []).filter(template => !template.defaultTemplate);
+          const templates = (this.props.templates.value || [])
+            .filter(template => !template.defaultTemplate);
           pipelineTemplatesMenu = [
-            <Menu.Item
+            <MenuItem
               id="create-pipeline-button"
-              className="create-pipeline-button"
+              className={classNames(styles.menuItem, 'create-pipeline-button')}
               key={pipelineKey}>
               <Row>
                 DEFAULT
@@ -1381,13 +1412,18 @@ export default class Folder extends localization.LocalizedReactComponent {
               <Row style={{fontSize: 'smaller'}}>
                 Create {this.localizedString('pipeline')} without template
               </Row>
-            </Menu.Item>,
-            <Menu.Divider key="divider" />,
+            </MenuItem>,
+            <Divider key="divider" />,
             ...templates.map(t => {
               return (
-                <Menu.Item
+                <MenuItem
                   id={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
-                  className={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
+                  className={
+                    classNames(
+                      styles.menuItem,
+                      `create-pipeline-by-template-button-${t.id.toLowerCase()}`
+                    )
+                  }
                   key={`${pipelineKey}_${t.id}`}>
                   <Row>
                     {t.id.toUpperCase()}
@@ -1395,7 +1431,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                   <Row style={{fontSize: 'smaller'}}>
                     {t.description}
                   </Row>
-                </Menu.Item>
+                </MenuItem>
               );
             })
           ];
@@ -1404,7 +1440,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       if (roleModel.isManager.pipeline(this)) {
         if (pipelineTemplatesMenu) {
           createActions.push(
-            <Menu.SubMenu
+            <SubMenu
               id="create-pipeline-sub-menu-button"
               onTitleClick={() => {
                 this.setState({
@@ -1415,18 +1451,19 @@ export default class Folder extends localization.LocalizedReactComponent {
               }}
               key={pipelineKey}
               title={<span><Icon type="fork" /> {this.localizedString('Pipeline')}</span>}
-              className={`${styles.actionsSubMenu} create-pipeline-sub-menu-button`}>
+              className={classNames(styles.actionsSubMenu, 'create-pipeline-sub-menu-button')}
+            >
               {pipelineTemplatesMenu}
-            </Menu.SubMenu>
+            </SubMenu>
           );
         } else {
           createActions.push(
-            <Menu.Item
+            <MenuItem
               id="create-pipeline-button"
-              className="create-pipeline-button"
+              className={classNames(styles.menuItem, 'create-pipeline-button')}
               key={pipelineKey}>
               <Icon type="fork" /> {this.localizedString('Pipeline')}
-            </Menu.Item>
+            </MenuItem>
           );
         }
       }
@@ -1434,7 +1471,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         const fsMountsAvailable = this.props.awsRegions.loaded &&
           extractFileShareMountList(this.props.awsRegions.value).length > 0;
         createActions.push(
-          <Menu.SubMenu
+          <SubMenu
             key={storageKey}
             onTitleClick={() => {
               this.setState({
@@ -1444,86 +1481,130 @@ export default class Folder extends localization.LocalizedReactComponent {
               });
             }}
             title={<span><Icon type="hdd" /> Storages</span>}
-            className={`${styles.actionsSubMenu} create-storage-sub-menu`}>
-            <Menu.Item
+            className={
+              classNames(
+                styles.actionsSubMenu,
+                'create-storage-sub-menu'
+              )
+            }
+          >
+            <MenuItem
               id="create-new-storage-button"
-              className="create-new-storage-button"
+              className={
+                classNames(
+                  styles.menuItem,
+                  'create-new-storage-button'
+                )
+              }
               key={`${storageKey}_new`}>
               Create new object storage
-            </Menu.Item>
-            <Menu.Item
+            </MenuItem>
+            <MenuItem
               id="add-existing-storage-button"
-              className="add-existing-storage-button"
+              className={
+                classNames(
+                  styles.menuItem,
+                  'add-existing-storage-button'
+                )
+              }
               key={`${storageKey}_existing`}>
               Add existing object storage
-            </Menu.Item>
-            {fsMountsAvailable && (<Menu.Divider key="storages_divider" />)}
+            </MenuItem>
+            {fsMountsAvailable && (<Divider key="storages_divider" />)}
             {fsMountsAvailable && (
-              <Menu.Item
+              <MenuItem
                 id="create-new-nfs-mount"
-                className="create-new-nfs-mount"
+                className={
+                  classNames(
+                    styles.menuItem,
+                    'create-new-nfs-mount'
+                  )
+                }
                 key={`${storageKey}_${nfsStorageKey}`}>
                 Create new FS mount
-              </Menu.Item>
+              </MenuItem>
             )}
-          </Menu.SubMenu>
+          </SubMenu>
         );
       }
       if (roleModel.isManager.configuration(this)) {
         createActions.push(
-          <Menu.Item
+          <MenuItem
             id="create-configuration-button"
-            className="create-configuration-button"
+            className={
+              classNames(
+                styles.menuItem,
+                'create-configuration-button'
+              )
+            }
             key={configurationKey}>
             <Icon type="setting" /> Configuration
-          </Menu.Item>
+          </MenuItem>
         );
       }
       let folderTemplatesMenu;
-      if (!this.props.folderTemplates.pending && roleModel.isManager.folder(this)) {
-        if (!this.props.folderTemplates.error && (this.props.folderTemplates.value || []).length > 0) {
-          folderTemplatesMenu =
-            (this.props.folderTemplates.value || []).map(t => {
-              return (
-                <Menu.Item
-                  id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                  className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                  key={`${folderKey}_${t.id}`}>
-                  <Row>
-                    {t.id.toUpperCase()}
-                  </Row>
-                  <Row style={{fontSize: 'smaller'}}>
-                    {t.description}
-                  </Row>
-                </Menu.Item>
-              );
-            });
-        }
+      if (
+        !this.props.folderTemplates.pending &&
+        roleModel.isManager.folder(this) &&
+        !this.props.folderTemplates.error &&
+        (this.props.folderTemplates.value || []).length > 0
+      ) {
+        folderTemplatesMenu =
+          (this.props.folderTemplates.value || []).map(t => {
+            return (
+              <MenuItem
+                id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
+                className={
+                  classNames(
+                    styles.menuItem,
+                    `create-folder-by-template-button-${t.id.toLowerCase()}`
+                  )
+                }
+                key={`${folderKey}_${t.id}`}>
+                <Row>
+                  {t.id.toUpperCase()}
+                </Row>
+                <Row style={{fontSize: 'smaller'}}>
+                  {t.description}
+                </Row>
+              </MenuItem>
+            );
+          });
       }
       if (roleModel.isManager.folder(this)) {
         let divider;
         createActions.push(
-          <Menu.Item
+          <MenuItem
             id="create-folder-button"
-            className="create-folder-button"
+            className={
+              classNames(
+                styles.menuItem,
+                'create-folder-button'
+              )
+            }
             key={folderKey}>
             <Icon type="folder" /> Folder
-          </Menu.Item>
+          </MenuItem>
         );
         if (folderTemplatesMenu) {
-          divider = <Menu.Divider key="divider one" />;
+          divider = <Divider key="divider one" />;
           createActions.push(divider);
           createActions.push(...folderTemplatesMenu);
         }
       }
       if (roleModel.isManager.pipeline(this)) {
         if (!folderTemplatesMenu) {
-          createActions.push(<Menu.Divider key="divider versioned storages" />);
+          createActions.push(<Divider key="divider versioned storages" />);
         }
         createActions.push(
-          <Menu.Item
+          <MenuItem
             id="create-versioned-storage-button"
-            className="create-versioned-storage-button"
+            className={
+              classNames(
+                styles.menuItem,
+                'create-versioned-storage-button'
+              )
+            }
             key={versionedStorageKey}
           >
             <Row style={{textTransform: 'uppercase'}}>
@@ -1532,35 +1613,53 @@ export default class Folder extends localization.LocalizedReactComponent {
             <Row style={{fontSize: 'smaller'}}>
               storage with revision control
             </Row>
-          </Menu.Item>
+          </MenuItem>
         );
       }
     }
     if (createActions.filter(action => !!action).length > 0) {
       actions.push(
-        <Dropdown
+        <DropDownWrapper
+          key="create actions"
           visible={this.state.createDropDownVisible}
-          onVisibleChange={(visible) => this.setState({createDropDownVisible: visible})}
-          placement="bottomRight"
-          trigger={['hover']}
-          overlay={
-            <Menu
-              selectedKeys={[]}
-              onClick={onCreateActionSelect}
-              style={{width: 200}}>
-              {createActions}
-            </Menu>
-          }
-          key="create actions">
-          <Button
-            type="primary"
-            id="create-button"
-            size="small">
-            <Icon type="plus" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-            <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}> Create </span>
-            <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-          </Button>
-        </Dropdown>
+        >
+          <Dropdown
+            trigger={['click']}
+            visible={this.state.createDropDownVisible}
+            onVisibleChange={(visible) => this.setState({createDropDownVisible: visible})}
+            minOverlayWidthMatchTrigger={false}
+            placement="bottomRight"
+            overlay={
+              <div
+                style={{backgroundColor: '#ffff', width: 200, cursor: 'pointer'}}
+                className={styles.menuContainer}>
+                <Menu
+                  className={styles.menu}
+                  mode="vertical"
+                  selectedKeys={[]}
+                  onClick={onCreateActionSelect}
+                  subMenuOpenDelay={0.2}
+                  subMenuCloseDelay={0.2}
+                  openAnimation="zoom"
+                  getPopupContainer={node => node.parentNode}
+                >
+                  {createActions}
+                </Menu>
+              </div>
+            }
+          >
+            <Button
+              type="primary"
+              id="create-button"
+              size="small"
+              className={styles.dropDownTrigger}
+            >
+              <Icon type="plus" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}> Create </span>
+              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+            </Button>
+          </Dropdown>
+        </DropDownWrapper>
       );
     }
     const onSelectDisplayOption = ({key}) => {
@@ -1579,57 +1678,92 @@ export default class Folder extends localization.LocalizedReactComponent {
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
+          className={styles.menuItem}
           id="show-hide-descriptions"
           key="descriptions">
           <Row type="flex" justify="space-between" align="middle">
             <span>Descriptions</span>
-            <Icon type="check-circle" style={{display: this.state.showDescription ? 'inherit' : 'none'}} />
+            <Icon
+              type="check-circle"
+              style={{
+                display: this.state.showDescription
+                  ? 'inherit'
+                  : 'none'
+              }}
+            />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (this.props.folderId !== undefined && !this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
-          id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
-          key="metadata">
+        <MenuItem
+          className={styles.menuItem}
+          id={
+            this.showMetadata
+              ? 'hide-metadata-button'
+              : 'show-metadata-button'
+          }
+          key="metadata"
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if ((this.showIssues || this.props.folderId !== undefined) && !this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
-          id={this.showIssues ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-          key="issues">
+        <MenuItem
+          className={styles.menuItem}
+          id={
+            this.showIssues
+              ? 'hide-issues-panel-button'
+              : 'show-issues-panel-button'
+          }
+          key="issues"
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
             <Icon type="check-circle" style={{display: this.showIssues ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
+        <Menu
+          onClick={onSelectDisplayOption}
+          style={{width: 125}}
+          className={styles.menu}
+          selectedKeys={[]}
+        >
           {displayOptionsMenuItems}
         </Menu>
       );
 
       actions.push(
-        <Dropdown
+        <DropDownWrapper
           key="display attributes"
-          overlay={displayOptionsMenu}>
-          <Button
-            id="display-attributes"
-            size="small">
-            <Icon type="appstore" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-          </Button>
-        </Dropdown>
+          visible={this.state.displayOptionsDropDownVisible}
+        >
+          <Dropdown
+            trigger={['click']}
+            overlay={displayOptionsMenu}
+            visible={this.state.displayOptionsDropDownVisible}
+            onVisibleChange={(visible) => this.setState({displayOptionsDropDownVisible: visible})}
+          >
+            <Button
+              id="display-attributes"
+              size="small"
+              className={styles.dropDownTrigger}
+            >
+              <Icon type="appstore" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+            </Button>
+          </Dropdown>
+        </DropDownWrapper>
       );
     }
 
@@ -1637,80 +1771,133 @@ export default class Folder extends localization.LocalizedReactComponent {
       const editActions = [];
       if (roleModel.readAllowed(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="edit-folder-button" key="edit">
-            <Icon type="edit" /> {roleModel.writeAllowed(this.props.folder.value) ? 'Edit folder' : 'Permissions'}
-          </Menu.Item>
+          <MenuItem
+            id="edit-folder-button"
+            key="edit"
+            className={styles.menuItem}
+          >
+            <Icon type="edit" style={{marginRight: 5}} />
+            {
+              roleModel.writeAllowed(this.props.folder.value)
+                ? 'Edit folder'
+                : 'Permissions'
+            }
+          </MenuItem>
         );
       }
       if (!this.props.readOnly && roleModel.isOwner(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item
+          <MenuItem
             key="clone"
-            id="clone-folder-button">
-            <Icon type="copy" /> Clone
-          </Menu.Item>
+            id="clone-folder-button"
+            className={styles.menuItem}
+          >
+            <Icon type="copy"/> Clone
+          </MenuItem>
         );
       }
       const folderIsReadOnly = this.props.folder.value.locked;
       if (folderIsReadOnly && roleModel.isOwner(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="unlock-button" key="unlock">
-            <Icon type="unlock" /> Unlock
-          </Menu.Item>
+          <MenuItem
+            id="unlock-button"
+            key="unlock"
+            className={styles.menuItem}
+          >
+            <Icon type="unlock"/> Unlock
+          </MenuItem>
         );
       } else if (!folderIsReadOnly && roleModel.writeAllowed(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="lock-button" key="lock">
-            <Icon type="lock" /> Lock
-          </Menu.Item>
+          <MenuItem
+            id="lock-button"
+            key="lock"
+            className={styles.menuItem}
+          >
+            <Icon type="lock"/> Lock
+          </MenuItem>
         );
       }
-      if (!this.props.readOnly && roleModel.writeAllowed(this.props.folder.value) && roleModel.isManager.folder(this)) {
+      if (
+        !this.props.readOnly &&
+        roleModel.writeAllowed(this.props.folder.value) &&
+        roleModel.isManager.folder(this)
+      ) {
         if (editActions.length > 0) {
-          editActions.push(<Menu.Divider key="divider" />);
+          editActions.push(<Divider key="divider"/>);
         }
         editActions.push(
-          <Menu.Item id="delete-folder-button" key="delete">
+          <MenuItem
+            id="delete-folder-button"
+            key="delete"
+            className={styles.menuItem}
+          >
             <Icon
               type="delete"
-              style={{color: 'red'}} /> Delete
-          </Menu.Item>
+              style={{color: 'red'}}/> Delete
+          </MenuItem>
         );
       }
       if (editActions.length > 0) {
         const onClick = ({key}) => {
-          switch (key) {
-            case 'edit': this.openRenameFolderDialog(this._currentFolder.folder); break;
-            case 'clone': this.openCloneFolderDialog(); break;
-            case 'delete': this.deleteFolderConfirm(this._currentFolder.folder); break;
-            case 'lock': this.lockUnLockFolderConfirm(true); break;
-            case 'unlock': this.lockUnLockFolderConfirm(false); break;
-          }
+          this.setState({
+            editDropDownVisible: false
+          }, () => {
+            switch (key) {
+              case 'edit':
+                this.openRenameFolderDialog(this._currentFolder.folder);
+                break;
+              case 'clone':
+                this.openCloneFolderDialog();
+                break;
+              case 'delete':
+                this.deleteFolderConfirm(this._currentFolder.folder);
+                break;
+              case 'lock':
+                this.lockUnLockFolderConfirm(true);
+                break;
+              case 'unlock':
+                this.lockUnLockFolderConfirm(false);
+                break;
+            }
+          });
         };
         actions.push(
-          <Dropdown
-            placement="bottomRight"
-            overlay={
-              <Menu
-                selectedKeys={[]}
-                onClick={onClick}
-                style={{width: 100}}>
-                {editActions}
-              </Menu>
-            }
-            key="edit">
-            <Button
-              key="edit"
-              id="edit-folder-menu-button"
-              size="small">
-              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-            </Button>
-          </Dropdown>
+          <DropDownWrapper
+            key="edit"
+            visible={this.state.editDropDownVisible}
+          >
+            <Dropdown
+              placement="bottomRight"
+              trigger={['click']}
+              overlay={
+                <Menu
+                  className={styles.menu}
+                  selectedKeys={[]}
+                  onClick={onClick}
+                  style={{width: 100}}>
+                  {editActions}
+                </Menu>
+              }
+              visible={this.state.editDropDownVisible}
+              onVisibleChange={(visible) => this.setState({editDropDownVisible: visible})}
+            >
+              <Button
+                key="edit"
+                id="edit-folder-menu-button"
+                size="small"
+                className={styles.dropDownTrigger}
+              >
+                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+              </Button>
+            </Dropdown>
+          </DropDownWrapper>
         );
       }
     }
     return actions.filter(action => !!action);
   };
+
   lockUnLockFolderConfirm = (lock) => {
     const onConfirm = () => {
       return this.lockUnLockFolder(lock);

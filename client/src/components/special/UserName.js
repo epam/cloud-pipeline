@@ -20,7 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row, Tooltip} from 'antd';
 
-@inject('users')
+@inject('usersInfo')
 @observer
 export default class UserName extends React.Component {
   static propTypes = {
@@ -32,9 +32,9 @@ export default class UserName extends React.Component {
 
   @computed
   get user () {
-    if (this.props.users.loaded && this.props.userName) {
-      const [user] = (this.props.users.value || [])
-        .filter(u => u.userName.toLowerCase() === this.props.userName.toLowerCase());
+    if (this.props.usersInfo.loaded && this.props.userName) {
+      const [user] = (this.props.usersInfo.value || [])
+        .filter(u => u.name.toLowerCase() === this.props.userName.toLowerCase());
       return user;
     }
     return null;
@@ -54,12 +54,12 @@ export default class UserName extends React.Component {
       const attributesString = getAttributesValues().join(', ');
       return (
         <Row type="flex" style={{flexDirection: 'column'}}>
-          <Row>{(user.userName || '').toLowerCase()}</Row>
+          <Row>{(user.name || '').toLowerCase()}</Row>
           <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
         </Row>
       );
     } else {
-      return (user.userName || '').toLowerCase();
+      return (user.name || '').toLowerCase();
     }
   };
 
@@ -67,7 +67,7 @@ export default class UserName extends React.Component {
     if (user.attributes && user.attributes.Name) {
       return <span>{user.attributes.Name}</span>;
     } else {
-      return <span>{(user.userName || '').toLowerCase()}</span>;
+      return <span>{(user.name || '').toLowerCase()}</span>;
     }
   };
 
@@ -95,6 +95,7 @@ export default class UserName extends React.Component {
         className={className}
         style={Object.assign({cursor: 'default'}, style)}
       >
+        {showIcon && <Icon type="user" />}
         {(this.props.userName || '').toLowerCase()}
       </span>
     );

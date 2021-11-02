@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.google.common.collect.Comparators;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
 
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byXpath;
@@ -169,9 +170,32 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO waitUntilTextLoads(final String runId) {
+        for (int i = 0; i < 3; i++) {
+            sleep(10, SECONDS);
+            if ($(withText(format("pipeline-%s", runId))).exists()) {
+                break;
+            }
+            sleep(1, MINUTES);
+            refresh();
+            sleep(5, SECONDS);
+        }
+        return this;
+    }
+
     public ShellAO checkVersionsListIsSorted(String command) {
         List<String> vers = versionsCreationData(command);
         assertTrue(Comparators.isInOrder(vers, Comparator.reverseOrder()));
+        return this;
+    }
+
+    public ShellAO waitForLog(final String message) {
+        for (int i = 0; i < 15; i++) {
+            if ($(withText(message)).is(matchText(message))) {
+                break;
+            }
+            sleep(20, SECONDS);
+        }
         return this;
     }
 

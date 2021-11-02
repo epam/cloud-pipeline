@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,10 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     private String dockerImage;
     private String actualDockerImage;
+    private String platform;
     private String cmdTemplate;
     private String actualCmd;
-    private String serviceUrl;
+    private Map<String, String> serviceUrl;
 
     private Boolean terminating = false;
     private Boolean sensitive;
@@ -103,7 +104,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;
     /**
-     * Pipeline run overall instance price per hour. 
+     * Pipeline run overall instance price per hour.
      */
     private BigDecimal pricePerHour;
     /**
@@ -127,6 +128,10 @@ public class PipelineRun extends AbstractSecuredEntity {
     private AclClass aclClass = AclClass.PIPELINE;
     private Map<String, String> tags;
     private boolean kubeServiceEnabled;
+    /**
+     * Cluster workers price estimation. This value shall be calculated for master runs only.
+     */
+    private BigDecimal workersPrice;
 
     public PipelineRun() {
         this.terminating = false;
@@ -142,12 +147,19 @@ public class PipelineRun extends AbstractSecuredEntity {
     }
 
     public boolean isClusterRun() {
-                //master node of autoscale cluster
+        return isMasterRun() || isWorkerRun();
+    }
+
+    public boolean isMasterRun() {
+        //master node of autoscale cluster
         return this.hasBooleanParameter(GE_AUTOSCALING)
                 // master node
-                || this.getNodeCount() != null && this.getNodeCount() != 0
-                // worker node
-                || this.getParentRunId() != null;
+                || this.getNodeCount() != null && this.getNodeCount() != 0;
+    }
+
+    public boolean isWorkerRun() {
+        // worker node
+        return this.getParentRunId() != null;
     }
 
     private boolean hasBooleanParameter(String parameterName) {

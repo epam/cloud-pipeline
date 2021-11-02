@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -75,6 +76,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String nodeTerminateScript;
     private final String kubeMasterIP;
     private final String kubeToken;
+    private final String kubeCertHash;
+    private final String kubeNodeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final ClusterCommandService commandService,
@@ -87,7 +90,9 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
                                 @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
                                 @Value("${kube.master.ip}") final String kubeMasterIP,
-                                @Value("${kube.kubeadm.token}") final String kubeToken) {
+                                @Value("${kube.kubeadm.token}") final String kubeToken,
+                                @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
+                                @Value("${kube.node.token}") final String kubeNodeToken) {
         this.instanceService = instanceService;
         this.commandService = commandService;
         this.cloudRegionManager = regionManager;
@@ -100,6 +105,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         this.nodeTerminateScript = nodeTerminateScript;
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
+        this.kubeCertHash = kubeCertHash;
+        this.kubeNodeToken = kubeNodeToken;
     }
 
     @Override
@@ -264,13 +271,20 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         }
     }
 
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AzureRegion region,
+                                                          final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Creation of DNS record doesn't work with Azure provider yet.");
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AzureRegion region,
+                                                     final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final AzureRegion region, final String imageName) {
+        return InstanceImage.EMPTY;
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
@@ -295,6 +309,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .kubeCertHash(kubeCertHash)
+                .kubeNodeToken(kubeNodeToken)
                 .region(region.getRegionCode())
                 .prePulledImages(instance.getPrePulledDockerImages())
                 .additionalLabels(labels);

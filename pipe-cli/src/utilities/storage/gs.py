@@ -701,18 +701,19 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
 
 class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return StorageOperations.normalize_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_path):
+        return destination_wrapper.get_list_manager().get_file_size(destination_path)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         full_path = path
-        destination_path = StorageOperations.normalize_path(destination_wrapper, relative_path)
-        if skip_existing:
-            from_size = source_wrapper.get_list_manager().get_file_size(full_path)
-            to_size = destination_wrapper.get_list_manager().get_file_size(destination_path)
-            if to_size is not None and to_size == from_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s'
-                               % (full_path, destination_path))
-                return
+        destination_path = self.get_destination_key(destination_wrapper, relative_path)
         source_client = GsBucketOperations.get_client(source_wrapper.bucket, read=True, write=clean)
         source_bucket = source_client.bucket(source_wrapper.bucket.path)
         source_blob = source_bucket.blob(full_path)
@@ -759,32 +760,30 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         GsManager.__init__(self, client)
         self._buffering = int(os.environ.get(CP_CLI_DOWNLOAD_BUFFERING_SIZE) or buffering)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
+    def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
+            return os.path.join(destination_wrapper.path, relative_path)
         else:
-            destination_key = destination_wrapper.path
-        if source_key.endswith(StorageOperations.PATH_SEPARATOR):
-            return
-        if skip_existing:
-            remote_size = source_wrapper.get_list_manager().get_file_size(source_key)
-            local_size = StorageOperations.get_local_file_size(destination_key)
-            if local_size is not None and remote_size == local_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         self.create_local_folder(destination_key, lock)
         if StorageOperations.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(source_key, size)
         else:
             progress_callback = None
         self._replace_default_download_chunk_size(self._buffering)
-        transfer_config = self._get_download_config()
+        transfer_config = self._get_transfer_config(io_threads)
         if size > transfer_config.multipart_threshold:
             bucket = self.client.bucket(source_wrapper.bucket.path)
             blob = self.custom_blob(bucket, source_key, None, size)
@@ -804,7 +803,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         if clean:
             blob.delete()
 
-    def _get_download_config(self):
+    def _get_transfer_config(self, io_threads=None):
         transfer_config = TransferConfig(multipart_threshold=200 * MB,
                                          multipart_chunksize=200 * MB)
         if os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD):
@@ -813,6 +812,8 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE))
         if os.getenv(CP_CLI_GCP_MAX_CONCURRENCY):
             transfer_config.max_concurrency = int(os.getenv(CP_CLI_GCP_MAX_CONCURRENCY))
+        if io_threads is not None:
+            transfer_config.max_concurrency = max(io_threads, 1)
         return transfer_config
 
     def _download_to_file(self, blob, destination_key):
@@ -840,25 +841,28 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                                  and number of threads can be configured via CP_CLI_GCP_MAX_CONCURRENCY environment variable.
     """
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
-        if path:
-            source_key = os.path.join(source_wrapper.path, path)
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return StorageOperations.normalize_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        if source_path:
+            return os.path.join(source_wrapper.path, source_path)
         else:
-            source_key = source_wrapper.path
-        destination_key = StorageOperations.normalize_path(destination_wrapper, relative_path)
-        if skip_existing:
-            local_size = StorageOperations.get_local_file_size(source_key)
-            remote_size = destination_wrapper.get_list_manager().get_file_size(destination_key)
-            if remote_size is not None and local_size == remote_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         if StorageOperations.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
-        transfer_config = self._get_upload_config(size)
+        transfer_config = self._get_transfer_config(size, io_threads)
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         if size > transfer_config.multipart_threshold:
             upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key,
@@ -879,7 +883,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=generation,
                             tags=destination_tags)
 
-    def _get_upload_config(self, size):
+    def _get_transfer_config(self, size, io_threads):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
                                                                                  multipart_threshold=150 * MB,
                                                                                  max_parts=32)
@@ -891,6 +895,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE))
         if os.getenv(CP_CLI_GCP_MAX_CONCURRENCY):
             transfer_config.max_concurrency = int(os.getenv(CP_CLI_GCP_MAX_CONCURRENCY))
+        if io_threads is not None:
+            transfer_config.max_concurrency = max(io_threads, 1)
         return transfer_config
 
     def _get_adjusted_parameters(self, size, multipart_threshold, max_parts):
@@ -919,26 +925,26 @@ class _SourceUrlIO:
 
 class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        if destination_wrapper.path.endswith(os.path.sep):
+            return os.path.join(destination_wrapper.path, relative_path)
+        else:
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            source_size = size
-            destination_size = destination_wrapper.get_list_manager().get_file_size(destination_key)
-            if destination_size is not None and source_size == destination_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         if StorageOperations.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:

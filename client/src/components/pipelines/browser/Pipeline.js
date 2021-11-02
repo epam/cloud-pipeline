@@ -30,7 +30,9 @@ import {
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import GitRepositoryControl from '../../special/git-repository-control';
-import {Alert, Button, Col, Dropdown, Icon, Menu, message, Row, Select, Table} from 'antd';
+import {Alert, Button, Col, Icon, message, Row, Select, Table} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';
@@ -578,19 +580,23 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
-          key="metadata">
+          key="metadata"
+          className={styles.menuItem}
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-          key="issues">
+          key="issues"
+          className={styles.menuItem}
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
             <Icon
@@ -602,12 +608,16 @@ export default class Pipeline extends localization.LocalizedReactComponent {
               }}
             />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
+        <Menu
+          onClick={onSelectDisplayOption}
+          style={{width: 125}}
+          selectedKeys={[]}
+        >
           {displayOptionsMenuItems}
         </Menu>
       );
@@ -637,18 +647,24 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     };
     if (!this.props.readOnly) {
       actions.push(
-        <Menu.Item id="edit-pipeline-button" key="edit">
+        <MenuItem
+          id="edit-pipeline-button"
+          key="edit"
+          className={styles.menuItem}
+        >
           <Icon type="edit" /> Edit
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (!this.props.readOnly && roleModel.isOwner(this.props.pipeline.value)) {
       actions.push(
-        <Menu.Item
+        <MenuItem
           key="clone"
-          id="clone-pipeline-button">
+          id="clone-pipeline-button"
+          className={styles.menuItem}
+        >
           <Icon type="copy" /> Clone
-        </Menu.Item>
+        </MenuItem>
       );
     }
     return (
@@ -658,7 +674,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           <Menu
             selectedKeys={[]}
             onClick={onClick}
-            style={{width: 100}}>
+            style={{width: 100}}
+          >
             {actions}
           </Menu>
         }

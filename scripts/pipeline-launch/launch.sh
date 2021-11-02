@@ -585,6 +585,12 @@ root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
 EOT
+    if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
+        # On centos this configuration file contains some default nproc limits
+        # which overrides the ones we set in /etc/security/limits.conf.
+        # To prevent this from happening we remove the limits beforehand.
+        sed -i "\|nproc|d" "/etc/security/limits.d/20-nproc.conf"
+    fi
 }
 
 function add_self_to_no_proxy() {
@@ -674,6 +680,16 @@ if [ ! -z "$CP_TZ" ] && [ -f "$CP_TZ" ]; then
   ln -s "$CP_TZ" /etc/localtime
 else
   echo "CP_TZ variable is not set, or that file doesn't exist, time zone will not be changed."
+fi
+
+######################################################
+# Setup DNS options
+######################################################
+# Check for ndots options
+if [ "$CP_DNS_NDOTS" ]; then
+    \cp /etc/resolv.conf /tmp/resolv.conf
+    sed -i "s/ndots:[[:digit:]]/ndots:$CP_DNS_NDOTS/g" /tmp/resolv.conf
+    \cp /tmp/resolv.conf /etc/resolv.conf
 fi
 
 
@@ -1223,7 +1239,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
       fi
 
-      fsbrowser_setup "$GIT_REPO" "$REPO_REVISION" "$RESUMED_RUN" "$BRANCH"
+      fsbrowser_setup "$REPO_REVISION" "$RESUMED_RUN"
       echo "------"
       echo
 fi
@@ -1370,6 +1386,46 @@ echo "------"
 echo
 ######################################################
 
+
+
+######################################################
+# Setup cluster users sharing if required
+######################################################
+
+echo "Setup cluster users sharing"
+echo "-"
+
+if check_cp_cap CP_CAP_SHARE_USERS; then
+    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+else
+    echo "Cluster users sharing is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
+######################################################
+# Setup users synchronization if required
+######################################################
+
+echo "Setup users synchronization"
+echo "-"
+
+if check_cp_cap CP_CAP_SYNC_USERS; then
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+else
+    echo "Users synchronization is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
 CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
 if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
       if [ "$RESUMED_RUN" == true ]; then
@@ -1398,8 +1454,10 @@ echo
 ######################################################
 
 
+######################################################
 echo "Setting up Gitlab credentials"
-
+echo "-"
+######################################################
 set_git_credentials
 
 _GIT_CREDS_RESULT=$?
@@ -1409,21 +1467,6 @@ then
     echo "Failed to get user's Gitlab credentials"
 fi
 echo "------"
-
-######################################################
-echo Checking if remote data storages shall be mounted
-echo "------"
-######################################################
-MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
-DATA_STORAGE_MOUNT_ROOT="/cloud-data"
-
-echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
-rm -Rf $DATA_STORAGE_MOUNT_ROOT
-create_sys_dir $DATA_STORAGE_MOUNT_ROOT
-mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
-
-echo "------"
-echo
 ######################################################
 
 MOUNT_GIT_TASK_NAME="MountRepository"
@@ -1460,8 +1503,8 @@ echo "Store allowed environment variables to /etc/profile for further reuse when
 echo "-"
 ######################################################
 
-export CP_ENV_FILE_TO_SOURCE="/etc/cp_env.sh"
-export CP_USER_ENV_FILE_TO_SOURCE="/etc/cp_env_user.sh"
+export CP_ENV_FILE_TO_SOURCE="${CP_ENV_FILE_TO_SOURCE:-/etc/cp_env.sh}"
+export CP_USER_ENV_FILE_TO_SOURCE="${CP_USER_ENV_FILE_TO_SOURCE:-/etc/cp_env_user.sh}"
 
 # Clean all previous saved envs, e.g. if container was committed
 rm -f $CP_ENV_FILE_TO_SOURCE $CP_USER_ENV_FILE_TO_SOURCE
@@ -1504,8 +1547,8 @@ echo "$_CP_ENV_SOURCE_COMMAND" >> /etc/profile
 sed -i "\|$_CP_ENV_SUDO_ALIAS|d" /etc/profile
 echo "$_CP_ENV_SUDO_ALIAS" >> /etc/profile
 
+# All ulimits are configured in update_user_limits procedure
 sed -i "\|ulimit|d" /etc/profile
-echo "$_CP_ENV_ULIMIT" >> /etc/profile
 
 # umask may be present in the existing file, so we are replacing it the updated value
 sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
@@ -1531,10 +1574,10 @@ for _GLOBAL_BASHRC_PATH in "${_GLOBAL_BASHRC_PATHS[@]}"
 do
     sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
-    
+
+    # All ulimits are configured in update_user_limits procedure
     sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
-    sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
-    
+
     sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
     
@@ -1543,6 +1586,23 @@ do
 done
 
 echo "Finished setting environment variables to /etc/profile"
+
+echo "------"
+echo
+######################################################
+
+
+######################################################
+echo "Checking if remote data storages shall be mounted"
+echo "------"
+######################################################
+MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
+DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
+
+echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
+rm -Rf $DATA_STORAGE_MOUNT_ROOT
+create_sys_dir $DATA_STORAGE_MOUNT_ROOT
+mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
 
 echo "------"
 echo
@@ -1720,7 +1780,60 @@ echo "-"
 if [ "$CP_CAP_SINGULARITY" == "true" ]; then
       singularity_setup
 else
-    echo "Singularity support is not requested"
+      echo "Singularity support is not requested"
+fi
+
+######################################################
+
+
+######################################################
+# Install additional packages
+######################################################
+
+echo "Install additional packages"
+echo "-"
+
+if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
+      EXTRA_PKG_INSTALL_COMMAND=
+      EXTRA_PKG_DISTRO_INSTALL_COMMAND=
+      if [ "$CP_CAP_EXTRA_PKG" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
+      fi
+      if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+      fi
+
+      if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
+            echo "Installing COMMON extra packages: $CP_CAP_EXTRA_PKG"
+            eval "$EXTRA_PKG_INSTALL_COMMAND"
+      fi
+
+      if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
+            echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
+            eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+else
+      echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"
+fi
+
+######################################################
+
+######################################################
+# Enable NFS observer
+######################################################
+
+echo "Setup NFS events observer"
+echo "-"
+
+if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
+    echo "NFS events observer is not requested"
+else
+    inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
+    sysctl -w fs.inotify.max_user_watches=$inotify_watchers
+    sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
 fi
 
 ######################################################
@@ -1765,6 +1878,9 @@ echo "CWD is now at $ANALYSIS_DIR"
 # Apply the "custom fixes" script, which contains very specific modifications to fix the docker images
 # This is used, when we don't want to fix some issue on a docker-per-docker basis
 custom_fixes
+
+# Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
+custom_cap_setup
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"

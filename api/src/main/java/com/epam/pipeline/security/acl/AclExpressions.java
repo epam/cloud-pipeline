@@ -87,12 +87,18 @@ public final class AclExpressions {
         "hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
             + " AND hasPermission(#registryId, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'WRITE'))";
 
-    public static final String METADATA_OWNER =
-            "hasRole('ADMIN') OR @grantPermissionManager.hasMetadataOwnerPermission(#metadataVO.entity.entityId, "
-                    + "#metadataVO.entity.entityClass)";
+    public static final String METADATA_OWNER = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.metadataOwnerPermission(#entityVO)";
 
-    public static final String METADATA_ENTRY_OWNER = "hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasMetadataOwnerPermission(#entityVO.entityId, #entityVO.entityClass)";
+    public static final String METADATA_UPDATE = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.editMetadataPermission(#metadataVO)";
+
+    public static final String METADATA_UPDATE_KEY = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.editMetadataPermission(#entityVO, #key)";
+
+    public static final String METADATA_FILTER = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.metadataPermission(" +
+            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')";
 
     public static final String ACL_ENTITY_OWNER =
             "hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#id, #aclClass)";
@@ -107,9 +113,9 @@ public final class AclExpressions {
             "(@grantPermissionManager.issuePermission(#issueId, 'READ'))";
 
     public static final String ENTITY_READ = ADMIN_ONLY + OR +
-            "(@grantPermissionManager.metadataPermission(#entityVO.entityId, #entityVO.entityClass, 'READ'))";
+            "(@metadataPermissionManager.metadataPermission(#entityVO.entityId, #entityVO.entityClass, 'READ'))";
 
-    public static final String ISSUE_CREATE = ADMIN_ONLY + " OR (@grantPermissionManager.metadataPermission(" +
+    public static final String ISSUE_CREATE = ADMIN_ONLY + " OR (@metadataPermissionManager.metadataPermission(" +
             "#issueVO.entity.entityId, #issueVO.entity.entityClass, 'READ'))";
 
     public static final String ADMIN_OR_GENERAL_USER = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
@@ -131,6 +137,14 @@ public final class AclExpressions {
 
     public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
             " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
+
+    public static final String DTS_REGISTRY_PERMISSIONS = ADMIN_ONLY + OR + "hasRole('ROLE_DTS_MANAGER')";
+
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST =
+        ADMIN_ONLY + OR + "hasPermission(filterObject, 'READ')";
+
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT =
+        ADMIN_ONLY + OR + "hasPermission(returnObject, 'READ')";
 
     private AclExpressions() {
         // no op

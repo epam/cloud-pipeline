@@ -24,12 +24,10 @@ import {
   Alert,
   Button,
   Checkbox,
-  Dropdown,
   Icon,
   Input,
   InputNumber,
   Modal,
-  Menu,
   message,
   Form,
   Row,
@@ -37,6 +35,8 @@ import {
   Table,
   Tooltip, Col, AutoComplete
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
@@ -471,13 +471,17 @@ export default class AWSRegionsForm extends React.Component {
   renderAddNewRegionButton = () => {
     if (this.cloudProviders.length > 1) {
       const menu = (
-        <Menu onClick={({key}) => this.onAddNewRegionClicked(key)}>
+        <Menu
+          onClick={({key}) => this.onAddNewRegionClicked(key)}
+          selectedKeys={[]}
+          style={{cursor: 'pointer'}}
+        >
           {
             this.cloudProviders.map(c => {
               return (
-                <Menu.Item key={c}>
+                <MenuItem key={c}>
                   {c}
-                </Menu.Item>
+                </MenuItem>
               );
             })
           }
@@ -725,6 +729,7 @@ class AWSRegionForm extends React.Component {
       'policy',
       'profile',
       'sshKeyName',
+      'iamRole',
       'tempCredentialsRole',
       {
         key: 'backupDuration',
@@ -900,6 +905,7 @@ class AWSRegionForm extends React.Component {
       check('profile', checkStringValue) ||
       check('sshKeyName', checkStringValue) ||
       check('azurePolicy', checkIPRangeValue) ||
+      check('iamRole', checkStringValue) ||
       check('tempCredentialsRole', checkStringValue) ||
       check('backupDuration', checkIntegerValue) ||
       check('versioningEnabled', checkBOOLValue) ||
@@ -1716,6 +1722,18 @@ class AWSRegionForm extends React.Component {
                   required: this.providerSupportsField('applicationName'),
                   message: 'Application name is required'
                 }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Main Service Role"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('iamRole', 'edit-region-iam-role-container')}>
+              {getFieldDecorator('iamRole', {
+                initialValue: this.props.region.iamRole
               })(
                 <Input
                   size="small"

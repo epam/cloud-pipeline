@@ -16,3 +16,4 @@
 
 export {buildGridStyle} from './gridStyle';
 export {default as buildLayout} from './layout';
+export {default as AsyncLayout} from './async-layout';

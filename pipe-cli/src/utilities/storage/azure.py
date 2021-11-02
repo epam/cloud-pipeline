@@ -66,6 +66,9 @@ class AzureManager:
     def __init__(self, blob_service):
         self.service = blob_service
 
+    def get_max_connections(self, io_threads):
+        return max(io_threads, 1) if io_threads is not None else 2
+
 
 class AzureListingManager(AzureManager, AbstractListingManager):
     DEFAULT_PAGE_SIZE = StorageOperations.DEFAULT_PAGE_SIZE
@@ -205,18 +208,20 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     _POLLS_LIMIT = 60 * 60 * 3  # 3 hours
     _POLLS_ATTEMPTS = _POLLS_LIMIT / _POLLS_TIMEOUT
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return StorageOperations.normalize_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
         full_path = path
-        destination_path = StorageOperations.normalize_path(destination_wrapper, relative_path)
-        if skip_existing:
-            from_size = source_wrapper.get_list_manager().get_file_size(full_path)
-            to_size = destination_wrapper.get_list_manager().get_file_size(destination_path)
-            if to_size is not None and to_size == from_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s'
-                               % (full_path, destination_path))
-                return
+        destination_path = self.get_destination_key(destination_wrapper, relative_path)
+
         source_service = AzureBucketOperations.get_blob_service(source_wrapper.bucket, read=True, write=clean)
         source_credentials = source_service.credentials
         source_blob_url = self.service.make_blob_url(source_wrapper.bucket.path, full_path,
@@ -257,23 +262,23 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
 
 class AzureDownloadManager(AzureManager, AbstractTransferManager):
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
+    def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
+            return os.path.join(destination_wrapper.path, relative_path)
         else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            remote_size = source_wrapper.get_list_manager().get_file_size(source_key)
-            local_size = StorageOperations.get_local_file_size(destination_key)
-            if local_size is not None and remote_size == local_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None,
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         self.create_local_folder(destination_key, lock)
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
         self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, destination_key,
@@ -284,25 +289,30 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
 
 class AzureUploadManager(AzureManager, AbstractTransferManager):
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
-        if path:
-            source_key = os.path.join(source_wrapper.path, path)
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return StorageOperations.normalize_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        if source_path:
+            return os.path.join(source_wrapper.path, source_path)
         else:
-            source_key = source_wrapper.path
-        destination_key = StorageOperations.normalize_path(destination_wrapper, relative_path)
-        if skip_existing:
-            local_size = StorageOperations.get_local_file_size(source_key)
-            remote_size = destination_wrapper.get_list_manager().get_file_size(destination_key)
-            if remote_size is not None and local_size == remote_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
+        max_connections = self.get_max_connections(io_threads)
         self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, source_key,
                                            metadata=destination_tags,
-                                           progress_callback=progress_callback)
+                                           progress_callback=progress_callback,
+                                           max_connections=max_connections)
         if clean:
             source_wrapper.delete_item(source_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
@@ -321,31 +331,34 @@ class _SourceUrlIO(io.BytesIO):
 
 class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager):
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        if destination_wrapper.path.endswith(os.path.sep):
+            return os.path.join(destination_wrapper.path, relative_path)
+        else:
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            source_size = size
-            destination_size = destination_wrapper.get_list_manager().get_file_size(destination_key)
-            if destination_size is not None and source_size == destination_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
+        max_connections = self.get_max_connections(io_threads)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
-                                             progress_callback=progress_callback)
+                                             progress_callback=progress_callback,
+                                             max_connections=max_connections)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
                             tags=destination_tags)
 

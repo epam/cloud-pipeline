@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,8 +266,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final Primitive element) {
         final SelenideElement selenideElement = get(element);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
@@ -523,6 +527,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {
+        sleep(2, SECONDS);
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs("You have unsaved changes. Continue?")
                 .ok();

@@ -26,11 +26,17 @@ public class ClusterCommandService {
 
     private final String kubeMasterIP;
     private final String kubeToken;
+    private final String kubeCertHash;
+    private final String kubeNodeToken;
 
     public ClusterCommandService(@Value("${kube.master.ip}") final String kubeMasterIP,
-                                 @Value("${kube.kubeadm.token}") final String kubeToken) {
+                                 @Value("${kube.kubeadm.token}") final String kubeToken,
+                                 @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
+                                 @Value("${kube.node.token}") final String kubeNodeToken) {
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
+        this.kubeCertHash = kubeCertHash;
+        this.kubeNodeToken = kubeNodeToken;
     }
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommand(final String nodeUpScript,
@@ -45,8 +51,11 @@ public class ClusterCommandService {
                 .instanceImage(instance.getNodeImage())
                 .instanceType(instance.getNodeType())
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
+                .instancePlatform(instance.getNodePlatform())
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .kubeCertHash(kubeCertHash)
+                .kubeNodeToken(kubeNodeToken)
                 .cloud(cloud)
                 .region(region.getRegionCode());
     }

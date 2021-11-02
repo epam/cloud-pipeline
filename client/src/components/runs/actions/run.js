@@ -68,7 +68,9 @@ export function run (parent, callback) {
     title,
     warning,
     allowedInstanceTypesRequest,
-    hostedApplicationConfiguration
+    hostedApplicationConfiguration,
+    platform,
+    skipCheck = false
   ) {
     return runFn(
       payload,
@@ -78,7 +80,9 @@ export function run (parent, callback) {
       parent.props,
       callback,
       allowedInstanceTypesRequest,
-      hostedApplicationConfiguration
+      hostedApplicationConfiguration,
+      platform,
+      skipCheck
     );
   };
 }
@@ -106,7 +110,7 @@ export function openReRunForm (run, props) {
   return new Promise((resolve) => {
     const {
       pipelineId,
-      version,
+      version: runVersion,
       id,
       configName,
       dockerImage
@@ -126,6 +130,7 @@ export function openReRunForm (run, props) {
       .then((pipelineInfo) => {
         if (pipelineInfo) {
           return Promise.resolve({
+            pipelineInfo,
             versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
           });
         }
@@ -133,8 +138,14 @@ export function openReRunForm (run, props) {
       })
       .catch(() => Promise.resolve())
       .then((options) => {
-        const {versionedStorage = false} = options || {};
+        const {
+          versionedStorage = false,
+          pipelineInfo
+        } = options || {};
         let link;
+        const version = versionedStorage && pipelineInfo?.currentVersion?.name
+          ? pipelineInfo.currentVersion.name
+          : runVersion;
         const query = versionedStorage ? `?vs=true` : '';
         if (pipelineId && version && id) {
           link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;
@@ -220,7 +231,9 @@ function runFn (
   stores,
   callbackFn,
   allowedInstanceTypesRequest,
-  hostedApplicationConfiguration
+  hostedApplicationConfiguration,
+  platform,
+  skipCheck
 ) {
   return new Promise(async (resolve) => {
     let launchName;
@@ -338,7 +351,8 @@ function runFn (
         dataStorages: dataStorageAvailable,
         inputs,
         outputs,
-        dockerImage: payload.dockerImage
+        dockerImage: payload.dockerImage,
+        skipCheck
       });
       let dataStorages;
       if (dataStorageAvailable) {
@@ -357,6 +371,7 @@ function runFn (
         content: (
           <RunSpotConfirmationWithPrice
             ref={ref}
+            platform={platform}
             warning={warning}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
@@ -379,6 +394,7 @@ function runFn (
                 : undefined
             }
             preferences={stores.preferences}
+            skipCheck={skipCheck}
           />
         ),
         style: {
@@ -455,6 +471,7 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -473,7 +490,8 @@ export class RunConfirmation extends React.Component {
     hddSize: PropTypes.number,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
-    preferences: PropTypes.object
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -898,6 +916,7 @@ export class RunConfirmation extends React.Component {
           dataStorages={this.props.dataStorages}
           preferences={this.props.preferences}
           instance={this.currentInstanceType}
+          platform={this.props.platform}
         />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
@@ -930,6 +949,7 @@ export class RunConfirmation extends React.Component {
           )
         }
         <EstimatedDiskSizeWarning
+          skipCheck={this.props.skipCheck}
           nodeCount={this.props.nodeCount}
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
@@ -960,6 +980,7 @@ export class RunConfirmation extends React.Component {
 export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
@@ -979,7 +1000,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     onChangeLimitMounts: PropTypes.func,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
-    preferences: PropTypes.object
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -1048,6 +1070,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
@@ -1067,6 +1090,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
             preferences={this.props.preferences}
+            skipCheck={this.props.skipCheck}
           />
         </Row>
         {

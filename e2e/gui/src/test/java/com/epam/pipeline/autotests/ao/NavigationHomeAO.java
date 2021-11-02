@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
-import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
@@ -106,14 +105,14 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     public ShellAO openSSHLink(String runId) {
-        serviceSshLink(runId).shouldBe(enabled).click();
+        serviceSshLink(runId).hover().closest("a").shouldBe(visible).click();
         switchTo().window(1);
         switchTo().frame(0);
         return new ShellAO();
     }
 
     private SelenideElement serviceSshLink(String runId) {
-        return serviceCardByRunId(runId).hover().find(byXpath("//div[.='SSH']"));
+        return serviceCardByRunId(runId).hover().parent().find(byText("SSH"));
     }
 
     @Override

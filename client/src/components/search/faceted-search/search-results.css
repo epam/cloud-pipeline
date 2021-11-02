@@ -21,6 +21,22 @@
   position: relative;
 }
 
+.container.loading {
+  opacity: 0.7;
+  filter: blur(0.5px);
+  -webkit-filter: blur(0.5px);
+}
+
+.container-spinner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 30px;
+  position: absolute;
+  z-index: 1000;
+}
+
 .container .content {
   flex: 1;
   overflow: auto;
@@ -37,34 +53,6 @@
   display: flex;
 }
 
-.container .preview-wrapper {
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  left: 0;
-  top: 0;
-  right: 100%;
-  z-index: 3;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-
-.container .preview {
-  max-width: 60%;
-  max-height: calc(100vh - 135px);
-  cursor: default;
-  flex: 1;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: white;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-}
 
 .container .pagination {
   height: 32px;
@@ -86,20 +74,37 @@
   text-decoration: none !important;
   display: flex;
   flex-wrap: nowrap;
+  min-height: 46px;
 }
 
 .result-item-container .preview-btn {
   background-color: #fafafa;
   border: 1px solid #ddd;
-  border-right: none;
+  border-right-width: 0;
+  border-left-width: 0;
   margin-right: 0;
-  padding: 10px;
+  padding: 0 10px;
   cursor: pointer;
-  border-radius: 5px 0 0 5px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
+}
+
+.result-item-container .preview-btn:first-child {
+  border-radius: 5px 0 0 5px;
+  border-left-width: 1px;
+}
+
+.result-item-container .action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-btn.action {
+  font-size: small;
 }
 
 .result-item {
@@ -107,7 +112,7 @@
   border: 1px solid #ddd;
   border-left: none;
   border-radius: 0 5px 5px 0;
-  padding: 10px;
+  padding: 2px 10px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -127,6 +132,11 @@
 .result-item-container .preview-btn:hover {
   background-color: #1890ff;
   color: white;
+}
+
+.result-item-container .actions-container {
+  display: flex;
+  flex-wrap: nowrap;
 }
 
 .result-item.disabled {
@@ -170,7 +180,6 @@
 }
 
 .table-row .preview-btn {
-  margin-right: 0;
   padding: 5px;
   margin-right: 3px;
   cursor: pointer;

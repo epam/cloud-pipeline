@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,16 @@ package com.epam.pipeline.dts.common.service;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
+import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.utils.QueryUtils;
+import com.epam.pipeline.exception.PipelineResponseApiException;
 import com.epam.pipeline.vo.EntityVO;
+import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -37,6 +40,11 @@ import java.util.Optional;
 public class CloudPipelineAPIClient {
     
     private final CloudPipelineAPI cloudPipelineAPI;
+    private final RetryingCloudPipelineApiExecutor pipelineApiExecutor = RetryingCloudPipelineApiExecutor.basic();
+
+    public static CloudPipelineAPIClient from(final CloudPipelineAPI api) {
+        return new CloudPipelineAPIClient(api);
+    }
 
     public static CloudPipelineAPIClient from(final String apiUrl, final String apiToken) {
         return new CloudPipelineAPIClient(
@@ -49,7 +57,7 @@ public class CloudPipelineAPIClient {
     }
 
     public List<MetadataEntry> loadMetadataEntry(final List<EntityVO> entities) {
-        return ListUtils.emptyIfNull(QueryUtils.execute(cloudPipelineAPI.loadFolderMetadata(entities)));
+        return ListUtils.emptyIfNull(pipelineApiExecutor.execute(cloudPipelineAPI.loadFolderMetadata(entities)));
     }
 
     public Optional<MetadataEntry> findMetadataEntry(final EntityVO entity) {
@@ -66,7 +74,7 @@ public class CloudPipelineAPIClient {
     }
 
     public Optional<PipelineUser> whoami() {
-        return Optional.ofNullable(QueryUtils.execute(cloudPipelineAPI.whoami()));
+        return Optional.ofNullable(pipelineApiExecutor.execute(cloudPipelineAPI.whoami()));
     }
 
     public Optional<String> getUserMetadataValueByKey(final String key) {
@@ -76,5 +84,22 @@ public class CloudPipelineAPIClient {
                 .map(MetadataEntry::getData)
                 .map(data -> data.get(key))
                 .map(PipeConfValue::getValue);
+    }
+
+    public Optional<DtsRegistry> findDtsRegistryByNameOrId(final String dtsId) {
+        try {
+            return Optional.of(pipelineApiExecutor.execute(cloudPipelineAPI.loadDts(dtsId)));
+        } catch (PipelineResponseApiException e) {
+            return Optional.empty();
+        }
+    }
+
+    public DtsRegistry deleteDtsRegistryPreferences(final String dtsId, final List<String> preferencesToRemove) {
+        return pipelineApiExecutor.execute(
+            cloudPipelineAPI.deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
+    }
+
+    public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
+        return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
     }
 }

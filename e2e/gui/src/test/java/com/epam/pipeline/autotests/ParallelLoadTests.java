@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         loginAs(admin);
         Arrays.stream(userList)
             .forEach(this::addUser);
-        final String userRoleGroup = "ROLE_USER";
+        final String userRoleGroup = C.ROLE_USER;
         library()
                 .createFolder(PARALLEL_TEST_FOLDER)
                 .clickOnFolder(PARALLEL_TEST_FOLDER)

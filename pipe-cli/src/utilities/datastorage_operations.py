@@ -34,172 +34,201 @@ from src.utilities.storage.common import TransferResult, UploadResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
-ALL_ERRORS = Exception
+FOLDER_MARKER = '.DS_Store'
 
 
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           clean=False, skip_existing=False):
-        try:
-            source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
-            destination_wrapper = DataStorageWrapper.get_wrapper(destination)
-            files_to_copy = []
+           io_threads, clean=False, skip_existing=False, verify_destination=False):
+        source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
+        destination_wrapper = DataStorageWrapper.get_wrapper(destination)
+        files_to_copy = []
 
-            if source_wrapper is None:
-                click.echo('Could not resolve path {}'.format(source), err=True)
-                sys.exit(1)
-            if not source_wrapper.exists():
-                click.echo("Source {} doesn't exist".format(source), err=True)
-                sys.exit(1)
-            if destination_wrapper is None:
-                click.echo('Could not resolve path {}'.format(destination), err=True)
-                sys.exit(1)
-            if not recursive and not source_wrapper.is_file():
-                click.echo('Flag --recursive (-r) is required to copy folders.', err=True)
-                sys.exit(1)
-            if file_list:
-                if source_wrapper.is_file():
-                    click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
-                    sys.exit(1)
-                if not os.path.exists(file_list):
-                    click.echo('Specified --file-list file does not exist.', err=True)
-                    sys.exit(1)
-                files_to_copy = cls.__get_file_to_copy(file_list, source_wrapper.path)
-            if threads and not recursive:
-                click.echo('-n (--threads) is allowed for folders only.', err=True)
-                sys.exit(1)
-            if threads and platform.system() == 'Windows':
-                click.echo('-n (--threads) is not supported for Windows OS', err=True)
-                sys.exit(1)
-            relative = os.path.basename(source) if source_wrapper.is_file() else None
-            if not force and not destination_wrapper.is_empty(relative=relative):
-                click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
-                sys.exit(1)
-
-            # append slashes to path to correctly determine file/folder type
-            if not source_wrapper.is_file():
-                if not source_wrapper.is_local() and not source_wrapper.path.endswith('/'):
-                    source_wrapper.path = source_wrapper.path + '/'
-                if destination_wrapper.is_local() and not destination_wrapper.path.endswith(os.path.sep):
-                    destination_wrapper.path = destination_wrapper.path + os.path.sep
-                if not destination_wrapper.is_local() and not destination_wrapper.path.endswith('/'):
-                    destination_wrapper.path = destination_wrapper.path + '/'
-
-            # copying a file to a remote destination, we need to set folder/file flag correctly
-            if source_wrapper.is_file() and not destination_wrapper.is_local() and not destination.endswith('/'):
-                destination_wrapper.is_file_flag = True
-
-            command = 'mv' if clean else 'cp'
-            permission_to_check = os.R_OK if command == 'cp' else os.W_OK
-            manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
-            items = files_to_copy if file_list else source_wrapper.get_items()
-            sorted_items = list()
-            transfer_results = []
-            for item in items:
-                full_path = item[1]
-                relative_path = item[2]
-                size = item[3]
-                # check that we have corresponding permission for the file before take action
-                if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
-                    continue
-                if not include and not exclude:
-                    if source_wrapper.is_file() and not source_wrapper.path == full_path:
-                        continue
-                    if not source_wrapper.is_file():
-                        possible_folder_name = source_wrapper.path_with_trailing_separator()
-                        if not full_path.startswith(possible_folder_name):
-                            continue
-                if not PatternMatcher.match_any(relative_path, include):
-                    if not quiet:
-                        click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
-                                   .format(full_path, ",".join(include)))
-                    continue
-                if PatternMatcher.match_any(relative_path, exclude, default=False):
-                    if not quiet:
-                        click.echo("Skipping file {} since it matches exclude patterns [{}]."
-                                   .format(full_path, ",".join(exclude)))
-                    continue
-                if threads:
-                    sorted_items.append(item)
-                else:
-                    transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                                       relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                                       tags=tags, skip_existing=skip_existing)
-                    if not destination_wrapper.is_local() and transfer_result:
-                        transfer_results.append(transfer_result)
-                        transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                                       transfer_results, clean=clean)
-            if threads:
-                cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                                 clean, quiet, tags, skip_existing)
-            else:
-                if not destination_wrapper.is_local():
-                    cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                transfer_results, clean=clean, flush_size=1)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        if source_wrapper is None:
+            click.echo('Could not resolve path {}'.format(source), err=True)
             sys.exit(1)
+        if not source_wrapper.exists():
+            click.echo("Source {} doesn't exist".format(source), err=True)
+            sys.exit(1)
+        if destination_wrapper is None:
+            click.echo('Could not resolve path {}'.format(destination), err=True)
+            sys.exit(1)
+        if not recursive and not source_wrapper.is_file():
+            click.echo('Flag --recursive (-r) is required to copy folders.', err=True)
+            sys.exit(1)
+        if file_list:
+            if source_wrapper.is_file():
+                click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
+                sys.exit(1)
+            if not os.path.exists(file_list):
+                click.echo('Specified --file-list file does not exist.', err=True)
+                sys.exit(1)
+            files_to_copy = cls.__get_file_to_copy(file_list, source_wrapper.path)
+        if threads and not recursive:
+            click.echo('-n (--threads) is allowed for folders only.', err=True)
+            sys.exit(1)
+        if threads and platform.system() == 'Windows':
+            click.echo('-n (--threads) is not supported for Windows OS', err=True)
+            sys.exit(1)
+        relative = os.path.basename(source) if source_wrapper.is_file() else None
+        if not force and not verify_destination and not destination_wrapper.is_empty(relative=relative):
+            click.echo('The destination already exists. Specify --force (-f) flag to overwrite data or '
+                       '--verify-destination (-vd) flag to enable existence check for each destination path.',
+                       err=True)
+            sys.exit(1)
+
+        # append slashes to path to correctly determine file/folder type
+        if not source_wrapper.is_file():
+            if not source_wrapper.is_local() and not source_wrapper.path.endswith('/'):
+                source_wrapper.path = source_wrapper.path + '/'
+            if destination_wrapper.is_local() and not destination_wrapper.path.endswith(os.path.sep):
+                destination_wrapper.path = destination_wrapper.path + os.path.sep
+            if not destination_wrapper.is_local() and not destination_wrapper.path.endswith('/'):
+                destination_wrapper.path = destination_wrapper.path + '/'
+
+        # copying a file to a remote destination, we need to set folder/file flag correctly
+        if source_wrapper.is_file() and not destination_wrapper.is_local() and not destination.endswith('/'):
+            destination_wrapper.is_file_flag = True
+
+        command = 'mv' if clean else 'cp'
+        permission_to_check = os.R_OK if command == 'cp' else os.W_OK
+        manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
+        items = files_to_copy if file_list else source_wrapper.get_items()
+        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                  include, exclude, force, quiet, skip_existing, verify_destination)
+        sorted_items = list()
+        transfer_results = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            if threads:
+                sorted_items.append(item)
+            else:
+                transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                   relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                   tags=tags, io_threads=io_threads)
+                if not destination_wrapper.is_local() and transfer_result:
+                    transfer_results.append(transfer_result)
+                    transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                                   transfer_results, clean=clean)
+        if threads:
+            cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                             clean, quiet, tags, io_threads)
+        else:
+            if not destination_wrapper.is_local():
+                cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                            transfer_results, clean=clean, flush_size=1)
+
+    @classmethod
+    def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                      include, exclude, force, quiet, skip_existing, verify_destination):
+        filtered_items = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            source_size = item[3]
+
+            if relative_path.endswith(FOLDER_MARKER):
+                filtered_items.append(item)
+                continue
+
+            # check that we have corresponding permission for the file before take action
+            if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
+                continue
+            if not include and not exclude:
+                if source_wrapper.is_file() and not source_wrapper.path == full_path:
+                    continue
+                if not source_wrapper.is_file():
+                    possible_folder_name = source_wrapper.path_with_trailing_separator()
+                    if not full_path.startswith(possible_folder_name):
+                        continue
+            if not PatternMatcher.match_any(relative_path, include):
+                if not quiet:
+                    click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
+                               .format(full_path, ",".join(include)))
+                continue
+            if PatternMatcher.match_any(relative_path, exclude, default=False):
+                if not quiet:
+                    click.echo("Skipping file {} since it matches exclude patterns [{}]."
+                               .format(full_path, ",".join(exclude)))
+                continue
+
+            if not skip_existing and (force or not verify_destination):
+                filtered_items.append(item)
+                continue
+
+            destination_key = manager.get_destination_key(destination_wrapper, relative_path)
+            destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+            destination_is_empty = destination_size is None
+            if destination_is_empty:
+                filtered_items.append(item)
+                continue
+            if skip_existing:
+                source_key = manager.get_source_key(source_wrapper, full_path)
+                need_to_overwrite = not manager.skip_existing(source_key, source_size, destination_key,
+                                                              destination_size, quiet)
+                if need_to_overwrite and not force:
+                    cls._force_required()
+                if need_to_overwrite:
+                    filtered_items.append(item)
+                continue
+            if not force:
+                cls._force_required()
+            filtered_items.append(item)
+        return filtered_items
 
     @classmethod
     def storage_remove_item(cls, path, yes, version, hard_delete, recursive, exclude, include):
         """ Removes file or folder
         """
-        try:
-            if version and hard_delete:
-                click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
-                sys.exit(1)
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version is not None or hard_delete)
-            if source_wrapper is None or not source_wrapper.exists():
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
-                sys.exit(1)
-            if len(source_wrapper.path) == 0:
-                click.echo('Cannot remove root folder \'{}\''.format(path), err=True)
-                sys.exit(1)
-            if not source_wrapper.is_file() and not recursive:
-                click.echo('Flag --recursive (-r) is required to remove folders.', err=True)
-                sys.exit(1)
-            if (version or hard_delete) and not source_wrapper.bucket.policy.versioning_enabled:
-                click.echo('Error: versioning is not enabled for storage.', err=True)
-                sys.exit(1)
-            if not yes:
-                click.confirm('Are you sure you want to remove everything at path \'{}\'?'.format(path),
-                              abort=True)
-            click.echo('Removing {} ...'.format(path), nl=False)
-
-            manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
-            manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
-                                 exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
-        except ALL_ERRORS as error:
-            if not type(error) is click.Abort:
-                click.echo('Error: %s' % str(error), err=True)
+        if version and hard_delete:
+            click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
             sys.exit(1)
+        source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version is not None or hard_delete)
+        if source_wrapper is None or not source_wrapper.exists():
+            click.echo('Storage path "{}" was not found'.format(path), err=True)
+            sys.exit(1)
+        if len(source_wrapper.path) == 0:
+            click.echo('Cannot remove root folder \'{}\''.format(path), err=True)
+            sys.exit(1)
+        if not source_wrapper.is_file() and not recursive:
+            click.echo('Flag --recursive (-r) is required to remove folders.', err=True)
+            sys.exit(1)
+        if (version or hard_delete) and not source_wrapper.bucket.policy.versioning_enabled:
+            click.echo('Error: versioning is not enabled for storage.', err=True)
+            sys.exit(1)
+        if not yes:
+            click.confirm('Are you sure you want to remove everything at path \'{}\'?'.format(path),
+                          abort=True)
+        click.echo('Removing {} ...'.format(path), nl=False)
+
+        manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
+        manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
+                             exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
         click.echo(' done.')
 
     @classmethod
     def save_data_storage(cls, name, description, sts_duration, lts_duration, versioning,
                           backup_duration, type, parent_folder, on_cloud, path, region_id):
-        try:
-            directory = None
-            if parent_folder:
-                directory = Folder.load(parent_folder)
-                if directory is None:
-                    click.echo("Error: Directory with name '{}' not found! "
-                               "Check if it exists and you have permission to read it".format(parent_folder), err=True)
-                    sys.exit(1)
-            if region_id == 'default':
-                region_id = None
-            else:
-                try:
-                    region_id = int(region_id)
-                except ValueError:
-                    click.echo("Error: Given region id '{}' is not a number.".format(region_id))
-                    sys.exit(1)
-            DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
-                             directory.id if directory else None, on_cloud, region_id)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        directory = None
+        if parent_folder:
+            directory = Folder.load(parent_folder)
+            if directory is None:
+                click.echo("Error: Directory with name '{}' not found! "
+                           "Check if it exists and you have permission to read it".format(parent_folder), err=True)
+                sys.exit(1)
+        if region_id == 'default':
+            region_id = None
+        else:
+            try:
+                region_id = int(region_id)
+            except ValueError:
+                click.echo("Error: Given region id '{}' is not a number.".format(region_id))
+                sys.exit(1)
+        DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
+                         directory.id if directory else None, on_cloud, region_id)
 
     @classmethod
     def delete(cls, name, on_cloud, yes):
@@ -213,62 +242,46 @@ class DataStorageOperations(object):
                     'Are you sure you want to delete datastorage {}?'.format(name),
                     abort=True)
 
-        try:
-            DataStorage.delete(name, on_cloud)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        DataStorage.delete(name, on_cloud)
 
     @classmethod
     def policy(cls, storage_name, sts_duration, lts_duration, backup_duration, versioning):
-        try:
-            DataStorage.policy(storage_name, sts_duration, lts_duration, backup_duration, versioning)
-        except ALL_ERRORS as error:
-            click.echo(str(error), err=True)
-            sys.exit(1)
+        DataStorage.policy(storage_name, sts_duration, lts_duration, backup_duration, versioning)
 
     @classmethod
     def mvtodir(cls, name, directory):
         folder_id = None
-        try:
-            if directory is not "/":
-                if os.path.split(directory)[0]:  # case with path
-                    folder = Folder.load(directory)
-                else:
-                    folder = Folder.load_by_name(directory)
-                if folder is None:
-                    click.echo("Directory with name {} does not exist!".format(directory), err=True)
-                    sys.exit(1)
-                folder_id = folder.id
-            DataStorage.mvtodir(name, folder_id)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        if directory is not "/":
+            if os.path.split(directory)[0]:  # case with path
+                folder = Folder.load(directory)
+            else:
+                folder = Folder.load_by_name(directory)
+            if folder is None:
+                click.echo("Directory with name {} does not exist!".format(directory), err=True)
+                sys.exit(1)
+            folder_id = folder.id
+        DataStorage.mvtodir(name, folder_id)
 
     @classmethod
     def restore(cls, path, version, recursive, exclude, include):
-        try:
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, True)
-            if source_wrapper is None:
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
-                sys.exit(1)
-            if (recursive or exclude or include) and not isinstance(source_wrapper, S3BucketWrapper):
-                click.echo('Folder restore allowed for S3 provider only', err=True)
-                sys.exit(1)
-            if not source_wrapper.bucket.policy.versioning_enabled:
-                click.echo('Versioning is not enabled for storage "{}"'.format(source_wrapper.bucket.name), err=True)
-                sys.exit(1)
-            if version and recursive:
-                click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
-                sys.exit(1)
-            if not recursive and not source_wrapper.is_file():
-                click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
-                sys.exit(1)
-            manager = source_wrapper.get_restore_manager()
-            manager.restore_version(version, exclude, include, recursive=recursive)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, True)
+        if source_wrapper is None:
+            click.echo('Storage path "{}" was not found'.format(path), err=True)
             sys.exit(1)
+        if (recursive or exclude or include) and not isinstance(source_wrapper, S3BucketWrapper):
+            click.echo('Folder restore allowed for S3 provider only', err=True)
+            sys.exit(1)
+        if not source_wrapper.bucket.policy.versioning_enabled:
+            click.echo('Versioning is not enabled for storage "{}"'.format(source_wrapper.bucket.name), err=True)
+            sys.exit(1)
+        if version and recursive:
+            click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
+            sys.exit(1)
+        if not recursive and not source_wrapper.is_file():
+            click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
+            sys.exit(1)
+        manager = source_wrapper.get_restore_manager()
+        manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all):
@@ -277,11 +290,7 @@ class DataStorageOperations(object):
         if path:
             root_bucket = None
             original_path = ''
-            try:
-                root_bucket, original_path, _ = DataStorage.load_from_uri(path)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             if show_versions and not root_bucket.policy.versioning_enabled:
                 click.echo('Error: versioning is not enabled for storage.', err=True)
                 sys.exit(1)
@@ -306,12 +315,7 @@ class DataStorageOperations(object):
                 click.echo('Cannot create folder \'{}\': already exists'.format(original_path), err=True)
                 continue
             click.echo('Creating folder {}...'.format(original_path), nl=False)
-            result = None
-            try:
-                result = DataStorage.create_folder(bucket.identifier, relative_path)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            result = DataStorage.create_folder(bucket.identifier, relative_path)
             if result is not None and result.error is None:
                 click.echo('done.')
             elif result is not None and result.error is not None:
@@ -320,40 +324,28 @@ class DataStorageOperations(object):
 
     @classmethod
     def set_object_tags(cls, path, tags, version):
-        try:
-            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
-            updated_tags = DataStorage.set_object_tags(root_bucket.identifier, relative_path,
-                                                       cls.convert_input_pairs_to_json(tags), version)
-            if not updated_tags:
-                raise RuntimeError("Failed to set tags for path '{}'.".format(path))
-        except BaseException as e:
-            click.echo(str(e), err=True)
-            sys.exit(1)
+        root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
+        updated_tags = DataStorage.set_object_tags(root_bucket.identifier, relative_path,
+                                                   cls.convert_input_pairs_to_json(tags), version)
+        if not updated_tags:
+            raise RuntimeError("Failed to set tags for path '{}'.".format(path))
 
     @classmethod
     def get_object_tags(cls, path, version):
-        try:
-            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
-            tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
-            if not tags:
-                click.echo("No tags available for path '{}'.".format(path))
-            else:
-                click.echo(cls.create_table(tags))
-        except BaseException as e:
-            click.echo(str(e), err=True)
-            sys.exit(1)
+        root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
+        tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
+        if not tags:
+            click.echo("No tags available for path '{}'.".format(path))
+        else:
+            click.echo(cls.create_table(tags))
 
     @classmethod
     def delete_object_tags(cls, path, tags, version):
         if not tags:
             click.echo("Error: Missing argument \"tags\"", err=True)
             sys.exit(1)
-        try:
-            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
-            DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
-        except BaseException as e:
-            click.echo(str(e), err=True)
-            sys.exit(1)
+        root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
+        DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
 
     @classmethod
     def du(cls, storage_name, relative_path=None, format='M', depth=None):
@@ -368,31 +360,27 @@ class DataStorageOperations(object):
         items_table.border = False
         items_table.padding_width = 2
         items_table.align['Size'] = 'r'
-        try:
-            if storage_name:
-                if not relative_path or relative_path == "/":
-                    relative_path = ''
-                storage = DataStorage.get(storage_name)
-                if storage is None:
-                    raise RuntimeError('Storage "{}" was not found'.format(storage_name))
-                if storage.type.lower() == 'nfs':
-                    if depth:
-                        raise RuntimeError('--depth option is not supported for NFS storages')
-                    items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
-                else:
-                    for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
-                        items_table.add_row(item)
+        if storage_name:
+            if not relative_path or relative_path == "/":
+                relative_path = ''
+            storage = DataStorage.get(storage_name)
+            if storage is None:
+                raise RuntimeError('Storage "{}" was not found'.format(storage_name))
+            if storage.type.lower() == 'nfs':
+                if depth:
+                    raise RuntimeError('--depth option is not supported for NFS storages')
+                items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
             else:
-                # If no argument is specified - list all buckets
-                items = du_helper.get_total_summary()
-                if items is None:
-                    click.echo("No datastorages available.")
-                    sys.exit(0)
-                for item in items:
+                for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
                     items_table.add_row(item)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
+        else:
+            # If no argument is specified - list all buckets
+            items = du_helper.get_total_summary()
+            if items is None:
+                click.echo("No datastorages available.")
+                sys.exit(0)
+            for item in items:
+                items_table.add_row(item)
         click.echo(items_table)
         click.echo()
 
@@ -422,23 +410,15 @@ class DataStorageOperations(object):
         items = []
         header = None
         if bucket_model is not None:
-            try:
-                wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
-                manager = wrapper.get_list_manager(show_versions=show_versions)
-                items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
+            manager = wrapper.get_list_manager(show_versions=show_versions)
+            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
         else:
             # If no argument is specified - list brief details of all buckets
-            try:
-                items = list(DataStorage.list())
-                if not items:
-                    click.echo("No datastorages available.")
-                    sys.exit(0)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
+            items = list(DataStorage.list())
+            if not items:
+                click.echo("No datastorages available.")
+                sys.exit(0)
 
         if recursive and header is not None:
             click.echo(header)
@@ -510,33 +490,24 @@ class DataStorageOperations(object):
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
                       custom_options=None, quiet=False, threading=False, mode=700, timeout=1000):
-        try:
-            if not file and not bucket:
-                click.echo('Either file system mode should be enabled (-f/--file) '
-                           'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
-                sys.exit(1)
-            cls.check_platform("mount")
-            Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
-                                   log_file=log_file, log_level=log_level,  threading=threading,
-                                   mode=mode, timeout=timeout)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        if not file and not bucket:
+            click.echo('Either file system mode should be enabled (-f/--file) '
+                       'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
+        Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
+                               log_file=log_file, log_level=log_level,  threading=threading,
+                               mode=mode, timeout=timeout)
 
     @classmethod
     def umount_storage(cls, mountpoint, quiet=False):
-        try:
-            cls.check_platform("umount")
-            if not os.path.isdir(mountpoint):
-                click.echo('Mountpoint "%s" is not a folder.' % mountpoint, err=True)
-                sys.exit(1)
-            if not os.path.ismount(mountpoint):
-                click.echo('Directory "%s" is not a mountpoint.' % mountpoint, err=True)
-                sys.exit(1)
-            Umount().umount_storages(mountpoint, quiet=quiet)
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
+        cls.check_platform("umount")
+        if not os.path.isdir(mountpoint):
+            click.echo('Mountpoint "%s" is not a folder.' % mountpoint, err=True)
             sys.exit(1)
+        if not os.path.ismount(mountpoint):
+            click.echo('Directory "%s" is not a mountpoint.' % mountpoint, err=True)
+            sys.exit(1)
+        Umount().umount_storages(mountpoint, quiet=quiet)
 
     @classmethod
     def check_platform(self, command):
@@ -556,7 +527,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, skip_existing):
+                                     quiet, tags, io_threads):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -572,23 +543,22 @@ class DataStorageOperations(object):
                                                     clean,
                                                     quiet,
                                                     tags,
-                                                    skip_existing,
+                                                    io_threads,
                                                     lock))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
-                        lock):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads, lock):
         transfer_results = []
         for item in items:
             full_path = item[1]
             relative_path = item[2]
             size = item[3]
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                                tags=tags, skip_existing=skip_existing, lock=lock)
+                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                               tags=tags, io_threads=io_threads, lock=lock)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
@@ -646,3 +616,8 @@ class DataStorageOperations(object):
             for worker in workers:
                 worker.terminate()
                 worker.join()
+
+    @staticmethod
+    def _force_required():
+        click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
+        sys.exit(1)

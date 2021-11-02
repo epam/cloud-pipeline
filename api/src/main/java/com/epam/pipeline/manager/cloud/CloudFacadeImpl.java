@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
@@ -86,7 +87,9 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        return getInstanceService(region).scaleUpNode(region, runId, instance);
+        final RunInstance scaledUpInstance = getInstanceService(region).scaleUpNode(region, runId, instance);
+        kubernetesManager.createNodeService(scaledUpInstance);
+        return scaledUpInstance;
     }
 
     @Override
@@ -98,6 +101,13 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
+        try {
+            final PipelineRun run = runCRUDService.loadRunById(runId);
+            final RunInstance instance = run.getInstance();
+            kubernetesManager.deleteNodeService(instance);
+        } catch (IllegalArgumentException e) {
+            log.debug(e.getMessage(), e);
+        }
         getInstanceService(region).scaleDownNode(region, runId);
     }
 
@@ -109,6 +119,10 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public void terminateNode(final AbstractCloudRegion region, final String internalIp, final String nodeName) {
+        runCRUDService.loadRunsForNodeName(nodeName).stream()
+                .map(PipelineRun::getInstance)
+                .findFirst()
+                .ifPresent(kubernetesManager::deleteNodeService);
         getInstanceService(region).terminateNode(region, internalIp, nodeName);
     }
 
@@ -260,15 +274,22 @@ public class CloudFacadeImpl implements CloudFacade {
         return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
     }
 
+    @Override
     public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
         final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(dnsRecord);
+        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(cloudRegion, dnsRecord);
     }
 
     @Override
     public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
         final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(dnsRecord);
+        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(cloudRegion, dnsRecord);
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final Long regionId, final String imageName) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).getInstanceImageDescription(region, imageName);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

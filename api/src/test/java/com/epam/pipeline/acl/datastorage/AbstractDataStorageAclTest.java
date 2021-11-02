@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,17 @@
 package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -41,6 +44,7 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
             DatastorageCreatorUtils.getS3bucketDataStorage(ID, SIMPLE_USER, false);
     protected final UserContext context = SecurityCreatorUtils.getUserContext();
     protected final UserContext externalContext = SecurityCreatorUtils.getUserContext(true);
+    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline();
 
     @Autowired
     protected DataStorageApiService dataStorageApiService;
@@ -52,6 +56,9 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
     protected DataStorageTagBatchManager mockDataStorageTagBatchManager;
 
     @Autowired
+    protected DataStorageConvertManager mockDataStorageConvertManager;
+
+    @Autowired
     protected AuthManager mockAuthManager;
 
     @Autowired
@@ -61,12 +68,12 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
                                           final AbstractDataStorage entity,
                                           final UserContext context) {
         mockAuthUser(user);
-        mockS3bucket(entity);
+        mockStorage(entity);
         mockUserContext(context);
     }
 
-    protected void mockS3bucket(final AbstractDataStorage entity) {
-        doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, ID);
+    protected void mockStorage(final AbstractDataStorage entity) {
+        doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, entity.getId());
     }
 
     @Override

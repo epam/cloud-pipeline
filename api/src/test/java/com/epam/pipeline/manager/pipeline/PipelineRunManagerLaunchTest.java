@@ -24,16 +24,19 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -49,6 +52,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
@@ -58,6 +62,7 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIME
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
@@ -67,6 +72,7 @@ import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDef
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -157,6 +163,9 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private RunStatusManager runStatusManager;
 
+    @Mock
+    private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -169,6 +178,10 @@ public class PipelineRunManagerLaunchTest {
     private final PipelineRun parentRun = getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, NON_DEFAULT_REGION_ID);
     private final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
             TOOL, tool.getId().toString());
+    public static final PipelineStartNotificationRequest NOTIFICATION_REQUEST = new PipelineStartNotificationRequest(
+            NotificationType.PIPELINE_RUN_STATUS, emptyList(), emptyList(), TEST_STRING, TEST_STRING);
+    public static final List<PipelineStartNotificationRequest> NOTIFICATION_REQUESTS =
+            singletonList(NOTIFICATION_REQUEST);
 
     @Before
     public void setUp() throws Exception {
@@ -354,6 +367,13 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
+    public void launchPipelineShouldRegisterNotificationsRequestsIfSpecified() {
+        final PipelineRun pipelineRun = launchPipelineWithNotificationRequests(configuration);
+
+        verify(contextualNotificationRegistrationManager).register(eq(NOTIFICATION_REQUESTS), eq(pipelineRun));
+    }
+
+    @Test
     public void shouldLoadRunsActivityStats() {
         doReturn(asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
                 .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18));
@@ -407,6 +427,7 @@ public class PipelineRunManagerLaunchTest {
     private void mock(final Tool tool) {
         doReturn(tool).when(toolManager).loadByNameOrId(eq(IMAGE));
         doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
+        doReturn(Optional.empty()).when(toolManager).findToolVersion(eq(tool));
     }
 
     private Map<Long, List<RunStatus>> getStatusMap() {
@@ -417,20 +438,26 @@ public class PipelineRunManagerLaunchTest {
     }
 
     private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
-        launchPipeline(configuration, null, instanceType, null);
+        launchPipeline(configuration, null, instanceType, null, null);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType) {
-        return launchPipeline(configuration, new Pipeline(), instanceType, null);
+        return launchPipeline(configuration, new Pipeline(), instanceType, null, null);
     }
 
     private PipelineRun launchPipelineWithParentId(final PipelineConfiguration configuration) {
-        return launchPipeline(configuration, new Pipeline(), INSTANCE_TYPE, PARENT_RUN_ID);
+        return launchPipeline(configuration, new Pipeline(), INSTANCE_TYPE, PARENT_RUN_ID, null);
+    }
+
+    private PipelineRun launchPipelineWithNotificationRequests(final PipelineConfiguration configuration) {
+        return launchPipeline(configuration, new Pipeline(), null, null, NOTIFICATION_REQUESTS);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
-                                       final String instanceType, final Long parentRunId) {
+                                       final String instanceType, final Long parentRunId,
+                                       final List<PipelineStartNotificationRequest> notificationRequests) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
-                null, null, parentRunId, null, null, null);
+                null, null, parentRunId, null, null, null,
+                notificationRequests);
     }
 }

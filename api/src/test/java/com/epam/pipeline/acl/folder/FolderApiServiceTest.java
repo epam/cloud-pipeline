@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ package com.epam.pipeline.acl.folder;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -28,6 +31,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -571,6 +575,31 @@ public class FolderApiServiceTest extends AbstractAclTest {
         doReturn(folder).when(mockEntityManager).load(AclClass.FOLDER, ID);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.unlockFolder(ID));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadWithHierarchyModifiedMaskReadOnlyStorage() {
+        final Folder folder = getFolderWithMetadata(ID, ID_3, ANOTHER_SIMPLE_USER);
+        initAclEntity(folder);
+        final NFSDataStorage readOnlyNFS =
+            DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.READ_ONLY, SIMPLE_USER);
+        initAclEntity(readOnlyNFS, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
+                                                 new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
+        folder.setStorages(Collections.singletonList(readOnlyNFS));
+        final List<Folder> folders = Collections.singletonList(folder);
+        final Folder initializedFolder = initParentFolder(folders);
+        doReturn(initializedFolder).when(mockFolderManager).load(ID);
+        mockSecurityContext();
+
+        final Folder parentFolder = folderApiService.load(ID);
+
+        assertThat(parentFolder).isEqualTo(initializedFolder);
+        final List<Folder> childFolders = parentFolder.getChildFolders();
+        assertThat(childFolders).hasSize(1);
+        final List<AbstractDataStorage> childFolderStorages = childFolders.get(0).getStorages();
+        assertThat(childFolderStorages).hasSize(1);
+        assertThat(childFolderStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     private void assertTreeForFolderWithReadPermission(final AbstractHierarchicalEntity folderWithPermission) {

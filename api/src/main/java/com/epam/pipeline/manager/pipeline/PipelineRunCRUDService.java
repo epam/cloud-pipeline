@@ -27,8 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 //TODO: Move all CRUD and DB persistence methods from PipelineRunManager to this class
 @Service
@@ -74,5 +78,17 @@ public class PipelineRunCRUDService {
 
     public List<PipelineRun> loadRunsForNodeName(final String nodeName) {
         return pipelineRunDao.loadRunsByNodeName(nodeName);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateClusterPrices(final Collection<PipelineRun> runs) {
+        pipelineRunDao.batchUpdateClusterPrices(CollectionUtils.emptyIfNull(runs).stream()
+                .filter(run -> Objects.nonNull(run.getWorkersPrice()))
+                .collect(Collectors.toList()));
+    }
+
+    public Map<Long, List<PipelineRun>> loadRunsByParentRuns(final Collection<Long> parents) {
+        return CollectionUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(parents)).stream()
+                .collect(Collectors.groupingBy(PipelineRun::getParentRunId));
     }
 }

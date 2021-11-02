@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -60,11 +61,14 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String params;
 
     private String dockerImage;
+    private String actualDockerImage;
+    private String platform;
     private String cmdTemplate;
     private String actualCmd;
-    private String serviceUrl;
+    private Map<String, String> serviceUrl;
 
     private Boolean terminating = false;
+    private Boolean sensitive;
     private String podId;
     private String pipelineName;
     private List<PipelineRunParameter> pipelineRunParameters;
@@ -79,6 +83,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private Long parentRunId;
     private List<PipelineRun> childRuns;
     private Boolean initialized;
+    private Boolean queued;
     private List<Long> entitiesIds;
     private Long configurationId;
     private String podStatus;
@@ -118,10 +123,12 @@ public class PipelineRun extends AbstractSecuredEntity {
     @JsonIgnore
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
-
+    private Map<String, String> tags;
+    private boolean kubeServiceEnabled;
 
     public PipelineRun() {
         this.terminating = false;
+        this.tags = new HashMap<>();
     }
 
     public PipelineRun(Long id, String name) {

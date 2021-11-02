@@ -79,7 +79,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForSshLink() {
-        get(SSH_LINK).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        get(SSH_LINK).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
     }
 
@@ -587,10 +587,10 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addUserToShare(final String userName, boolean sshConnection) {
             click(ADD_USER);
-            setValue($(byClassName("ant-select-search__field")), userName);
+            SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
+            setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName);
             $(byXpath(format("//div[.='%s']", userName))).click();
-            $(byText("Select user")).parent()
-                    .parent().find(byClassName("ant-btn-primary")).click();
+            selectUserPopup.find(button("OK")).shouldBe(visible).click();
             if (sshConnection) {
                 checkEnableSShConnection(userName);
             }

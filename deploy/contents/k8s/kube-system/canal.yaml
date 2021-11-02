@@ -66,7 +66,9 @@ data:
     {
       "Network": "${CP_KUBE_FLANNEL_CIDR}",
       "Backend": {
-        "Type": "vxlan"
+        "Type": "vxlan",
+        "VNI" : 4096,
+        "Port": 4789
       }
     }
 

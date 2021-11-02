@@ -64,6 +64,8 @@ RUN  wget -q https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && \
         make && make install && cd ..
 
 RUN ldconfig
+RUN pip install cffi==1.14.6
+RUN pip install atomiclong==0.1.1 six==1.10.0 raven==5.27.0 fusepy==2.0.2
 RUN pip install 'pygit2==0.24.1'
 
 RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.4.5.1 && \

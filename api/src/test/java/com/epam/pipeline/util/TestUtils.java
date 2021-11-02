@@ -19,6 +19,7 @@ package com.epam.pipeline.util;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -56,6 +57,7 @@ public final class TestUtils {
     public static final long DOCKER_SIZE = 123456L;
     public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
     public static final String TEMPLATE_REPLACE_MARK = "@@";
+    public static final String TEST_PLATFORM = "linux";
 
     private TestUtils() {
         // no op
@@ -148,16 +150,25 @@ public final class TestUtils {
         run.setOwner(owner);
         run.setParentRunId(parentRunId);
         run.setRunSids(runSids);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setCloudRegionId(regionId);
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setSpot(isSpot);
         instance.setNodeId("1");
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);
         return run;
+    }
+
+    public static Folder createFolder(final String name, final String owner) {
+        Folder folder = new Folder();
+        folder.setName(name);
+        folder.setOwner(owner);
+        return folder;
     }
 
     public static Date convertLocalDateTimeToDate(final LocalDateTime dt) {

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.ResponseBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import retrofit2.Call;
@@ -25,6 +26,8 @@ import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
+// Some strange PMD behaviour
+@SuppressWarnings("PMD.UnusedPrivateMethod")
 public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecutor {
 
     private static final int DEFAULT_RETRY_ATTEMPTS = 3;
@@ -47,6 +50,7 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
     }
 
     @SneakyThrows
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private <T, R> R execute(final Call<T> call,
                              final Caller<T, R> caller) {
         if (attempts < 1) {
@@ -109,6 +113,17 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
         return execute(call, this::internalGetByteResponse);
     }
 
+    @Override
+    public InputStream getResponseStream(final Call<ResponseBody> call) {
+        try {
+            final Response<ResponseBody> response = call.execute();
+            validateResponseStatus(response);
+            return response.body().byteStream();
+        } catch (IOException e) {
+            throw new PipelineResponseIOException(e);
+        }
+    }
+
     private byte[] internalGetByteResponse(final Call<byte[]> call) throws IOException {
         try {
             final Response<byte[]> response = call.execute();
@@ -120,14 +135,14 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
         }
     }
 
-    private static void validateResponseStatus(final Response<byte[]> response) throws IOException {
+    private void validateResponseStatus(final Response<?> response) throws IOException {
         if (!response.isSuccessful()) {
             throw new PipelineResponseException(String.format("Unexpected status code: %d, %s", response.code(),
                     response.errorBody() != null ? response.errorBody().string() : ""));
         }
     }
 
-    private static String getFileContent(final Response<byte[]> response) throws IOException {
+    private String getFileContent(final Response<byte[]> response) throws IOException {
         final InputStream in = new ByteArrayInputStream(Objects.requireNonNull(response.body()));
         try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             return IOUtils.toString(br);

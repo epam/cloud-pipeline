@@ -290,3 +290,134 @@
 .tool-version-scan-results {
   width: 100px;
 }
+
+.vsi-content-preview {
+  max-width: 100%;
+  width: 50vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  overflow: hidden;
+}
+
+.vsi-sa-view.read-only img[class~="saEditToggle"] {
+  display: none !important;
+}
+
+.wsi-page .vsi-content-preview {
+  width: 100vw;
+}
+
+.vsi-content-preview.tiles {
+  width: auto;
+  min-width: 50vw;
+  height: 50vh;
+  position: relative;
+}
+
+.wsi-page .vsi-content-preview.tiles {
+  height: 100vh;
+}
+
+.vsi-content-preview.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  z-index: 1001;
+  padding: 20px;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: large;
+  color: #666;
+  cursor: pointer;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button:hover {
+  color: #333;
+}
+
+.vsi-content-preview img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.container:not(.light) .tabs {
+  color: #aaa;
+  font-weight: normal;
+}
+
+.vsi-preview-button-container {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+}
+
+.vsi-preview-button {
+  z-index: 1002;
+  padding: 0 5px;
+  transition: none;
+  height: 24px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 5px;
+  border-color: rgba(187, 187, 187, 0.6);
+}
+
+.vsi-preview-button:not(:first-child) {
+  margin-left: 5px;
+}
+
+.vsi-preview-button,
+.vsi-preview-button:hover,
+.vsi-preview-button:focus {
+  outline: none;
+  border-color: rgba(187, 187, 187, 0.8);
+  color: #777;
+}
+
+.vsi-preview-button:hover {
+  background-color: #f4f4f4;
+}
+
+.vsi-sa-view-hidden {
+  display: none;
+}
+
+.share-url-popover {
+  min-width: 25vw;
+  max-width: 400px;
+}
+
+.share-url-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.share-url-action {
+  cursor: pointer;
+  width: 20px;
+}
+
+.share-url-action:hover {
+  color: #0e77ca;
+}
+
+.share-url-button {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  height: 45px;
+  width: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}

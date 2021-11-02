@@ -381,11 +381,6 @@ public class Utils {
         return format("ui-tests-%s-%d", testCase, Utils.randomSuffix());
     }
 
-    public static void restartBrowser(final String address) {
-        Selenide.close();
-        Selenide.open(address);
-    }
-
     public static void assertStringContainsList(final String str, final String... subStrings) {
          Arrays.stream(subStrings).forEach(substr -> assertTrue(str.contains(substr),
                  format("'%s' doesn't exist in string", substr)));
@@ -406,5 +401,17 @@ public class Utils {
 
     public static String getCurrentURL() {
         return WebDriverRunner.getWebDriver().getCurrentUrl();
+    }
+
+    public static void resetClick() {
+        Selenide.actions().moveByOffset(-50, -50).click().perform();
+    }
+
+    public static String readFile(final String filePath) {
+        try {
+            return String.join("\n", Files.readAllLines(Paths.get(filePath)));
+        } catch (IOException e) {
+            throw new RuntimeException(format("Unable to get file from path %s", filePath));
+        }
     }
 }

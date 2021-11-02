@@ -250,7 +250,6 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
         assertPipelineWithPermissions(expectedMap);
     }
 
-
     private void assertPipelineWithPermissions(Map<Long, Map<String, Integer>> expectedMap) {
         Set<PipelineWithPermissions> loaded = permissionManager.loadAllPipelinesWithPermissions(null, null)
                 .getPipelines();

@@ -24,13 +24,15 @@ export default function facetsSearch (
   filters,
   pageSize,
   options,
-  scrollingParameters
+  scrollingParameters,
+  abortSignal
 ) {
   const {
     facets = [],
     facetsToken: currentFacetsToken,
     facetsCount,
-    stores
+    stores,
+    metadataFields = []
   } = options;
   const facetsToken = getFacetFilterToken(
     query,
@@ -40,13 +42,21 @@ export default function facetsSearch (
   const doFetchFacets = currentFacetsToken !== facetsToken;
   return new Promise((resolve) => {
     const promises = [
-      doSearch(query, filters, pageSize, facets, scrollingParameters)
+      doSearch(
+        query,
+        filters,
+        metadataFields,
+        pageSize,
+        facets,
+        scrollingParameters,
+        abortSignal
+      )
     ];
     if (doFetchFacets && Object.keys(filters || {}).length > 0) {
       // if {filters} is empty (Object.keys.length === 0)
       // we can get results (facets count) from doSearch() call
       promises.push(
-        fetchFacets(facets, filters, query)
+        fetchFacets(facets, filters, query, abortSignal)
       );
     }
     Promise
@@ -61,6 +71,9 @@ export default function facetsSearch (
           documents = [],
           facets: facetsCountFromSearch
         } = searchResult;
+        if (result.some(r => r.aborted)) {
+          resolve({aborted: true});
+        }
         let facetsCountUpdated, facetsTokenUpdated;
         if (facetsCountResult) {
           facetsCountUpdated = facetsCountResult.facetsCount || facetsCount;
