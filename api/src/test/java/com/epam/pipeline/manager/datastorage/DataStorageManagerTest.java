@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -35,12 +36,14 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -102,6 +105,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final Long TEST_SIZE = 123L;
     private static final Date TEST_LAST_MODIFIED_DATE = new Date();
     public static final String PLATFORM = "linux";
+    public static final String DAV_MOUNT_TAG = "dav-mount";
+    public static final long SECS_IN_HOUR = 3600L;
+    public static final long SECS_IN_MIN = 60L;
 
 
     @Mock
@@ -140,6 +146,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Autowired
     private ToolGroupManager toolGroupManager;
+
+    @Autowired
+    private MetadataManager metadataManager;
 
     @Before
     public void setUp() {
@@ -353,6 +362,85 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                 loaded.stream().anyMatch(ds -> ds.getId().equals(saved.getId()) || ds.getId().equals(saved2.getId()))
         );
         Assert.assertEquals(2, loaded.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void requestDavMountByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertFalse(metadataEntries.isEmpty());
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void failToRequestForSmallerTimeDavMountIfAlreadyExistsTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+
+        storageManager.requestDataStorageDavMount(saved.getId(),
+                SECS_IN_MIN);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void successToRequestForBiggerTimeDavMountIfAlreadyExistsTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        long firstValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
+
+        storageManager.requestDataStorageDavMount(saved.getId(), 2 * SECS_IN_HOUR);
+        metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        long secondValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
+
+        Assert.assertTrue(secondValue > firstValue);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void callOffRequestDavMountByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertFalse(metadataEntries.isEmpty());
+
+        storageManager.callOffDataStorageDavMount(saved.getId());
+
+        metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertTrue(metadataEntries.isEmpty());
     }
 
     @Test

@@ -83,8 +83,12 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
-import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
-from '../../special/metadata/special/fs-notifications';
+import {
+  METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
+} from '../../special/metadata/special/fs-notifications';
+import {
+  METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
+} from '../../special/metadata/special/request-dav-access';
 import StorageSize from '../../special/storage-size';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
@@ -1058,10 +1062,10 @@ export default class DataStorage extends React.Component {
       return;
     }
     const {storageId} = this.props;
-    const {tilesFolder} = getTilesInfo(file.path);
-    if (tilesFolder) {
+    const info = getTilesInfo(file.path);
+    if (info) {
       this.setState({previewPending: true}, () => {
-        getTiles(storageId, tilesFolder)
+        getTiles(storageId, info.tilesFolders)
           .then((tiles) => {
             if (tiles) {
               this.setState({
@@ -2053,13 +2057,15 @@ export default class DataStorage extends React.Component {
               extraKeys={
                 this.props.info.value.type === 'NFS'
                   ? [FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE]
-                  : []
+                  : [REQUEST_DAV_ACCESS_ATTRIBUTE]
               }
               extraInfo={[
                 <StorageSize storage={this.props.info.value} />
               ]}
               specialTagsProperties={{
-                storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined
+                storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
+                storageMask: this.props.info.value.mask,
+                storageId: Number(this.props.storageId)
               }}
             />
           }

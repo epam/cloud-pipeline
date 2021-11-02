@@ -71,3 +71,7 @@
   border: 1px solid #ccc;
   box-shadow: 0 0 2px 0 #aaa;
 }
+
+.layout .header .ant-btn:not(:first-child) {
+  margin-left: 5px;
+}

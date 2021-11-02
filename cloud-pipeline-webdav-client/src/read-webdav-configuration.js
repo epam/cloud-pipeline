@@ -3,6 +3,7 @@ const path = require('path');
 const https = require('https');
 const URL = require('url');
 const {log, error} = require('./application/models/log');
+const readCustomConfiguration = require('./read-custom-configuration');
 
 function getAppVersion() {
   try {
@@ -160,8 +161,10 @@ module.exports = async function () {
   const predefinedConfiguration = readLocalConfiguration(__dirname);
   const globalConfig = await readGlobalConfiguration();
   const config =  localConfiguration || predefinedConfiguration || globalConfig || {};
+  const custom = readCustomConfiguration();
   config.version = getAppVersion();
-  config.api = globalConfig ? globalConfig.api : undefined;
+  config.api = globalConfig ? globalConfig.api : config.api;
+  config.api = config.api || custom.api;
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
   return config;
 }

@@ -32,7 +32,7 @@ public interface ImpersonateRequestHandler {
         } else if (request.getRequestURI().contains(impersonationStopUrl)) {
             return STOP;
         } else {
-           return UNSUPPORTED_ACTION;
+            return UNSUPPORTED_ACTION;
         }
     }
 }

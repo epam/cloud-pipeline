@@ -283,6 +283,15 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  @computed
+  get webdavStorageAccessDurationSeconds () {
+    const value = this.getPreferenceValue('storage.webdav.access.duration.seconds');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 0;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

@@ -6,7 +6,7 @@ import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
-import URL from "url";
+import requestStorageAccessApi from '../request-storage-access-api';
 
 axios.defaults.adapter = require('axios/lib/adapters/http');
 
@@ -116,6 +116,29 @@ class WebdavFileSystem extends FileSystem {
   }
 
   getDirectoryContents(directory) {
+    const checkStorageType = (contents, skip) => {
+      if (skip) {
+        return Promise.resolve(contents);
+      }
+      return new Promise((resolve) => {
+        const result = (contents || []).slice();
+        requestStorageAccessApi
+          .initialize()
+          .getStorages()
+          .then((allStorages) => {
+            const objectStorageNames = (allStorages || [])
+              .filter(storage => !/^nfs$/i.test(storage.type))
+              .map(storage => (storage.name || '').replace(/-/g, '_'));
+            result.forEach(content => {
+              if (content.isDirectory && objectStorageNames.includes(content.name)) {
+                content.isObjectStorage = true;
+              }
+            });
+          })
+          .catch(() => {})
+          .then(() => resolve(result));
+      });
+    };
     return new Promise((resolve, reject) => {
       const directoryCorrected = directory || '';
       if (!this.webdavClient) {
@@ -129,7 +152,9 @@ class WebdavFileSystem extends FileSystem {
           log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
           contents.map(c => log(c.filename));
           log('');
-          resolve(
+          if (!directoryCorrected || !directoryCorrected.length) {
+          }
+          return checkStorageType(
             (
               directoryCorrected === ''
                 ? []
@@ -156,9 +181,11 @@ class WebdavFileSystem extends FileSystem {
                       changed: moment(item.lastmod)
                     };
                   })
-              )
+              ),
+            directoryCorrected && directoryCorrected.length > 0
           );
         })
+        .then(resolve)
         .catch(
           utilities.rejectError(
             reject,
@@ -379,15 +406,29 @@ class WebdavFileSystem extends FileSystem {
       try {
         axios.defaults.adapter = require('axios/lib/adapters/xhr');
         const {
-          ignoreCertificateErrors
+          ignoreCertificateErrors,
+          testWebdav = false,
+          testApi = false
         } = options || {};
         if (ignoreCertificateErrors) {
           https.globalAgent.options.rejectUnauthorized = false;
         }
-        const path = electron.remote.getGlobal('networkLogFile').replace('[DATE]', moment().format('YYYY-MM-DD-HH-mm-ss'))
+        let parts = [
+          testWebdav ? 'webdav' : undefined,
+          testApi ? 'api' : undefined
+        ].filter(Boolean).join('-');
+        if (parts) {
+          parts = '-'.concat(parts);
+        }
+        const path = electron.remote.getGlobal('networkLogFile')
+          .replace('[DATE]', moment().format('YYYY-MM-DD-HH-mm-ss').concat(parts))
         await electron.remote.netLog.startLogging(path);
-        diagnoseResult.webdavError = await this.diagnoseWebdav(options, logCallback);
-        diagnoseResult.apiError = await this.diagnoseAPI(options, logCallback);
+        if (testWebdav) {
+          diagnoseResult.webdavError = await this.diagnoseWebdav(options, logCallback);
+        }
+        if (testApi) {
+          diagnoseResult.apiError = await this.diagnoseAPI(options, logCallback);
+        }
       } catch (e) {
         diagnoseResult.error = e.message;
         logCallback(`Error: ${e.message}`);
@@ -396,14 +437,15 @@ class WebdavFileSystem extends FileSystem {
         if (this.ignoreCertificateErrors) {
           https.globalAgent.options.rejectUnauthorized = false;
         }
+        diagnoseResult.error = diagnoseResult.error || diagnoseResult.webdavError || diagnoseResult.apiError;
         axios.defaults.adapter = require('axios/lib/adapters/http');
         resolve(diagnoseResult);
       }
     });
   }
 
-  async apiGetRequest (endpoint) {
-    let api = this.api || '';
+  async apiGetRequest (endpoint, api) {
+    api = api || this.api || '';
     if (api.endsWith('/')) {
       api = api.slice(0, -1);
     }
@@ -422,9 +464,10 @@ class WebdavFileSystem extends FileSystem {
     return new Promise(async (resolve) => {
       console.log(this.api);
       try {
-        if (this.api) {
+        const {api} = options;
+        if (api) {
           logCallback('Testing API...');
-          await this.apiGetRequest('whoami');
+          await this.apiGetRequest('whoami', api);
         } else {
           logCallback('No API endpoint');
         }
@@ -445,11 +488,15 @@ class WebdavFileSystem extends FileSystem {
           username,
           ignoreCertificateErrors
         } = options || {};
+        log(`Testing webdav connection: ${server}; user ${username}`);
         const client = createClient(server, {username, password});
         logCallback('Fetching webdav directory contents...');
+        log('Testing webdav connection: fetching directory contents...');
         await client.getDirectoryContents('');
+        log('Testing webdav connection: directory contents received');
         resolve();
       } catch (e) {
+        error(`Testing webdav connection: ${e.message}`);
         resolve(e.message);
       }
     });
