@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">2h36m11.11s</div>
+<div class="counter">2h32m57.62s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">85%</div>
+<div class="percent">92%</div>
 <p>successful</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1635564208602.53.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1635564208602.53.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1635826976853.49.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1635826976853.49.html
 Timeout: 1200 s.
 Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
 Expected: exact text 'SSH'
@@ -96,7 +96,7 @@ Timeout: 0 ms.
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
 	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
-	at com.epam.pipeline.autotests.LaunchClusterTest.hybridAutoScaledCluster(LaunchClusterTest.java:475)
+	at com.epam.pipeline.autotests.LaunchClusterTest.hybridAutoScaledCluster(LaunchClusterTest.java:500)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -120,78 +120,6 @@ Timeout: 0 ms.
 </pre>
 </span>
 </div>
-<div class="test">
-<a name="validationOfSlurmCluster - EPMCMBIBPC-3151"></a>
-<h3 class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</h3>
-<span class="code">
-<pre>Element should contains messages {By.className: ReactVirtualized__List}
-Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;042:[2021-10-30 04:46:03] Waiting for execution hosts to connect. 0 out of 1 are ready
-043:[2021-10-30 04:46:14] Waiting for execution hosts to connect. 0 out of 1 are ready
-044:[2021-10-30 04:46:24] Waiting for execution hosts to connect. 0 out of 1 are ready
-045:[2021-10-30 04:46:35] Waiting for execution hosts to connect. 0 out of 1 are ready
-046:[2021-10-30 04:46:46] Waiting for execution hosts to connect. 0 out of 1 are ready
-047:[2021-10-30 04:46:56] Waiting for execution hosts to connect. 0 out of 1 are ready
-048:[2021-10-30 04:47:07] Waiting for execution hosts to connect. 0 out of 1 are ready
-049:[2021-10-30 04:47:17] Waiting for execution hosts to connect. 0 out of 1 are ready
-050:[2021-10-30 04:47:28] Waiting for execution hosts to connect. 0 out of 1 are ready
-051:[2021-10-30 04:47:38] Waiting for execution hosts to connect. 0 out of 1 are ready
-052:[2021-10-30 04:47:49] Waiting for execution hosts to connect. 0 out of 1 are ready
-053:[2021-10-30 04:48:00] Waiting for execution hosts to connect. 0 out of 1 are ready
-054:[2021-10-30 04:48:10] Waiting for execution hosts to connect. 0 out of 1 are ready
-055:[2021-10-30 04:48:21] Waiting for execution hosts to connect. 0 out of 1 are ready
-056:[2021-10-30 04:48:31] Waiting for execution hosts to connect. 0 out of 1 are ready
-057:[2021-10-30 04:48:42] Waiting for execution hosts to connect. 0 out of 1 are ready
-058:[2021-10-30 04:48:52] Waiting for execution hosts to connect. 0 out of 1 are ready
-059:[2021-10-30 04:49:03] Waiting for execution hosts to connect. 0 out of 1 are ready
-060:[2021-10-30 04:49:13] Waiting for execution hosts to connect. 0 out of 1 are ready
-061:[2021-10-30 04:49:24] NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached&lt;/div&gt;'
-Actual value: Following messages wasn't found in log:
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-All SLURM hosts are connected
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1635569452683.78.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1635569452683.78.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.LaunchClusterTest.validationOfSlurmCluster(LaunchClusterTest.java:330)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -205,81 +133,81 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="success">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
-<td>22m23.28s</td>
+<td>21m48.27s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
-<td>10m50.27s</td>
+<td>10m37.70s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
-<td>10m29.50s</td>
+<td>9m43.11s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
-<td>6m49.16s</td>
+<td>6m58.84s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
-<td>21m0.70s</td>
+<td>27m2.68s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
-<td>10m35.11s</td>
+<td>10m36.24s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
-<td>9m12.08s</td>
+<td>10m3.88s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
-<td>9m59.54s</td>
+<td>10m35.16s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
-<td>23.417s</td>
+<td>23.301s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
-<td>10m39.36s</td>
+<td>10m52.28s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
-<td>8m53.26s</td>
+<td>8m48.30s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
-<td>9m32.72s</td>
+<td>9m47.83s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfGECluster - EPMCMBIBPC-3150</td>
-<td>7m42.49s</td>
+<td>8m21.86s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
-<td>17m40.24s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
+<td>7m18.18s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Run with id 10270 has been stopped.
-Run with id 10269 has been stopped.
+<pre>Run with id 10421 has been stopped.
+Run with id 10420 has been stopped.
 </pre>
 </span>
 </div>
@@ -291,7 +219,7 @@ Run with id 10269 has been stopped.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Oct 30, 2021 3:35:07 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 2, 2021 6:32:27 PM</p>
 </div>
 </div>
 </body>
