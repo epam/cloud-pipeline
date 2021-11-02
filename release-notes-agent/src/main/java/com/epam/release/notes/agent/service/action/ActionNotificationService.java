@@ -13,17 +13,15 @@
  * limitations under the License.
  */
 
-package com.epam.release.notes.agent.service.mail;
+package com.epam.release.notes.agent.service.action;
 
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
-import com.epam.release.notes.agent.entity.mail.EmailContent;
 
 import java.util.List;
 
-public interface TemplateNotificationService {
+public interface ActionNotificationService {
 
-    EmailContent populate(String oldVersion, String newVersion,
-                          List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues);
+    void process(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues);
 
 }
