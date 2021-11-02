@@ -44,7 +44,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.DO_NOT_MOUNT_STORAGES;
-import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -86,8 +85,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(SAVE, context().find(button("SAVE"))),
                 entry(SENSITIVE_STORAGE, context().$(byText("Allow sensitive storages"))
                         .parent().find(By.xpath("following-sibling::div//span"))),
-                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
-                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
         );
     }
 
@@ -234,10 +232,5 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .collect(toList());
             }
         };
-    }
-
-    public SelectLimitMountsPopupAO<ToolSettings> selectDataStoragesToLimitMounts() {
-        click(LIMIT_MOUNTS);
-        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 }
