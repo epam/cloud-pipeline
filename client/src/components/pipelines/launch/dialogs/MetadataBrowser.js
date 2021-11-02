@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {AppstoreOutlined, FolderOutlined} from '@ant-design/icons';
-import {Alert, Button, Col, Input, Modal, Row, Select, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Input, Modal, Row, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
@@ -385,19 +385,16 @@ export default class MetadataBrowser extends React.Component {
       }
     };
 
-    // todo replace Select with AutoComplete before antd 4
     return (
-      <Select
+      <AutoComplete
         style={{width: '100%'}}
         disabled={!this.isExpansionExpressionAvailable}
         value={this.state.expansionExpression}
-        mode="combobox"
         filterOption={false}
         onChange={handleSearch}
         onFocus={() => {
           handleSearch(this.state.expansionExpression);
-        }
-        }
+        }}
       >
         {
           this.state.filteredEntityFields.map(field => {
@@ -408,14 +405,14 @@ export default class MetadataBrowser extends React.Component {
               currentValue = parseValue.join('.') + '.' + field.name;
             }
             return (
-              <Select.Option
+              <AutoComplete.Option
                 key={field.name}
                 value={currentValue}>
                 {field.name}
-              </Select.Option>);
+              </AutoComplete.Option>);
           })
         }
-      </Select>
+      </AutoComplete>
     );
   };
 
@@ -486,9 +483,9 @@ export default class MetadataBrowser extends React.Component {
             zIndex: 1
           }}>
           <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-            <Row>
+            <div>
               <Input.Search onSearch={this.onSearchChanged} />
-            </Row>
+            </div>
             <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden'}}>
               {this.generateTree()}
             </div>

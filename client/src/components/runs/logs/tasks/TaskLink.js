@@ -122,7 +122,7 @@ export class TaskLink extends Component {
     }
 
     return (
-      <Link to={to}>
+      <Link to={to} style={{display: 'block'}}>
         <StatusIcon status={status} small />
         <span className={styles[taskNameClass]}>
           <b>{name}</b>

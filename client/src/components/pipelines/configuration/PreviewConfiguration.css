@@ -51,12 +51,14 @@
   margin: 2px 0;
 }
 
-.section {
-  border-radius: 0;
-  margin-bottom: 5px;
-  border: 1px solid #ccc;
+.configurationPreview {
+  font-size: smaller;
 }
 
-.section div[role=tabpanel] {
-  padding: 0;
+.section div[class*="ant-collapse-header"] {
+  padding: 12px 8px !important;
+}
+
+.section div[class*="ant-collapse-content-box"] {
+  padding: 8px;
 }

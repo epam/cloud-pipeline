@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Input, Row, AutoComplete, Select} from 'antd';
+import {Input, Row, AutoComplete} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import RegistrySelector from '../../../tools/selectors/RegistrySelector';
 import ToolGroupSelector from '../../../tools/selectors/ToolGroupSelector';
@@ -119,7 +119,8 @@ export default class CommitRunDockerImageInput extends React.Component {
       .map(t => t)
       .filter(t => roleModel.writeAllowed(t) && !t.link)
       .map(t => t.image.split('/')[1]);
-    if (allTools.length > 0 && !roleModel.writeAllowed(this.currentGroup) && allTools.filter(t => t === this.state.tool).length === 0) {
+    if (allTools.length > 0 && !roleModel.writeAllowed(this.currentGroup) &&
+      allTools.filter(t => t === this.state.tool).length === 0) {
       this.setState({
         tool: allTools[0]
       }, async () => {
@@ -282,7 +283,6 @@ export default class CommitRunDockerImageInput extends React.Component {
           size="large" />
       );
     }
-    // todo replace Select with AutoComplete before antd 4
     return (
       <Row type="flex">
         <div
@@ -290,7 +290,7 @@ export default class CommitRunDockerImageInput extends React.Component {
             backgroundColor: '#eee',
             border: '1px solid #ccc',
             borderRadius: '2px 0px 0px 2px',
-            height: 32
+            height: 40
           }}>
           <RegistrySelector
             disabled={this.props.disabled}
@@ -308,8 +308,7 @@ export default class CommitRunDockerImageInput extends React.Component {
             onChange={this.onSelectGroup}
             emptyValueMessage="Select group" />
         </div>
-        <Select
-          mode="combobox"
+        <AutoComplete
           className={styles.toolAutocomplete}
           disabled={this.props.disabled}
           ref={this.initializeNameInput}
@@ -328,17 +327,17 @@ export default class CommitRunDockerImageInput extends React.Component {
           {
             this.tools.map(tool => {
               return (
-                <Select.Option key={tool.name} value={tool.name}>
+                <AutoComplete.Option key={tool.name} value={tool.name}>
                   {
                     tool.isNew
                       ? `Add new tool '${tool.name}'`
                       : tool.name
                   }
-                </Select.Option>
+                </AutoComplete.Option>
               );
             })
           }
-        </Select>
+        </AutoComplete>
         <AutoComplete
           disabled={this.props.disabled}
           size="large"

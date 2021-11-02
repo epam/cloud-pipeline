@@ -17,9 +17,9 @@
 import Statuses from './run-statuses';
 import {
   CheckCircleOutlined,
-  ClockCircleOutlined,
+  ClockCircleFilled,
   DownloadOutlined,
-  ExclamationCircleOutlined,
+  ExclamationCircleFilled,
   HourglassOutlined,
   LoadingOutlined,
   PauseCircleOutlined,
@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 
 export const DefaultIconSet = {
-  [Statuses.failure]: ExclamationCircleOutlined,
+  [Statuses.failure]: ExclamationCircleFilled,
   [Statuses.paused]: PauseCircleOutlined,
   [Statuses.pausing]: PauseCircleOutlined,
   [Statuses.pulling]: DownloadOutlined,
@@ -35,7 +35,7 @@ export const DefaultIconSet = {
   [Statuses.resuming]: PlayCircleOutlined,
   [Statuses.running]: PlayCircleOutlined,
   [Statuses.scheduled]: LoadingOutlined,
-  [Statuses.stopped]: ClockCircleOutlined,
+  [Statuses.stopped]: ClockCircleFilled,
   [Statuses.success]: CheckCircleOutlined,
 
   [Statuses.unknown]: PlayCircleOutlined

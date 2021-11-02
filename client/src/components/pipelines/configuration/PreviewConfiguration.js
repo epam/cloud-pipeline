@@ -87,11 +87,9 @@ export default class PreviewConfiguration extends Component {
       case PARAMETERS: title = 'Parameters'; PanelIcon = BarsOutlined; break;
     }
     return (
-      <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
-        <span className={styles.itemHeader}>
-          <PanelIcon /> {title}
-        </span>
-      </Row>
+      <span className={styles.itemHeader}>
+        <PanelIcon /> {title}
+      </span>
     );
   };
 
@@ -360,7 +358,7 @@ export default class PreviewConfiguration extends Component {
     const systemParameters = this.renderParameters(true);
     return (
       <Collapse
-        bordered={false}
+        className={styles.configurationPreview}
         onChange={(tabs) => this.setState({openedPanels: tabs})}
         activeKey={this.state.openedPanels}>
         <Collapse.Panel
@@ -521,8 +519,8 @@ export default class PreviewConfiguration extends Component {
       (this.selectedPipeline && this.selectedPipeline.pending)) {
       return <LoadingView />;
     }
-    if (this.props.configuration.error || this.props.onDemandInstanceTypes.error || this.props.spotInstanceTypes.error ||
-      this.props.entitiesTypes.error ||
+    if (this.props.configuration.error || this.props.onDemandInstanceTypes.error ||
+      this.props.spotInstanceTypes.error || this.props.entitiesTypes.error ||
       (this.selectedPipeline && this.selectedPipeline.error)) {
       const errors = [
         this.props.configuration.error || false,

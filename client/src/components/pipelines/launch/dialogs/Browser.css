@@ -43,7 +43,7 @@
   padding: 0;
 }
 
-.tree-item-title i {
+.tree-item-title span[class*="anticon"] {
   margin-right: 5px;
   font-size: larger;
 }

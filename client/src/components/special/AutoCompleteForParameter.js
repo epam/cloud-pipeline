@@ -16,11 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Select, Input} from 'antd';
+import {Input, AutoComplete} from 'antd';
 import styles from './AutoCompleteForParameter.css';
 
 export default class AutoCompleteForParameter extends React.Component {
-
   static propTypes = {
     readOnly: PropTypes.bool,
     hideAutoComplete: PropTypes.bool,
@@ -120,7 +119,7 @@ export default class AutoCompleteForParameter extends React.Component {
 
   render () {
     const ButtonIcon = this.props.buttonIcon;
-    // todo replace Select with AutoComplete before antd 4
+
     return (
       <Input.Group compact style={{display: 'flex'}}>
         {
@@ -136,12 +135,11 @@ export default class AutoCompleteForParameter extends React.Component {
             </div>
           </span>
         }
-        <Select
+        <AutoComplete
           disabled={this.props.readOnly}
           style={{width: '100%'}}
           size="large"
           placeholder="Value"
-          mode="combobox"
           value={this.state.value}
           filterOption={false}
           onChange={this.handleSearch}
@@ -156,15 +154,15 @@ export default class AutoCompleteForParameter extends React.Component {
                 currentValue = parseValue.join('.') + '.' + field.name;
               }
               return (
-                <Select.Option
+                <AutoComplete.Option
                   key={field.name}
                   value={currentValue}>
                   {field.name}
-                </Select.Option>
+                </AutoComplete.Option>
               );
             })
           }
-        </Select>
+        </AutoComplete>
       </Input.Group>
     );
   }

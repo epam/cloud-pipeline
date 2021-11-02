@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {FolderOutlined, SettingOutlined} from '@ant-design/icons';
-import {Alert, Button, Col, Modal, Row, Select, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Modal, Row, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import LoadingView from '../../../special/LoadingView';
 import {
@@ -165,19 +165,16 @@ export default class ConfigurationBrowser extends React.Component {
       }
     };
 
-    // todo replace with AutoComplete before antd 4
     return (
-      <Select
-        style={{width: '100%'}}
+      <AutoComplete
+        style={{flex: 1}}
         disabled={!this.isExpansionExpressionAvailable}
         value={this.state.expansionExpression}
-        mode="combobox"
         filterOption={false}
         onChange={handleSearch}
         onFocus={() => {
           handleSearch(this.state.expansionExpression);
-        }
-        }
+        }}
       >
         {
           this.state.filteredEntityFields.map(field => {
@@ -188,14 +185,14 @@ export default class ConfigurationBrowser extends React.Component {
               currentValue = parseValue.join('.') + '.' + field.name;
             }
             return (
-              <Select.Option
+              <AutoComplete.Option
                 key={field.name}
                 value={currentValue}>
                 {field.name}
-              </Select.Option>);
+              </AutoComplete.Option>);
           })
         }
-      </Select>
+      </AutoComplete>
     );
   };
   updateState = () => {
@@ -404,7 +401,7 @@ export default class ConfigurationBrowser extends React.Component {
           </Row>
         }
         visible={this.props.visible}>
-        <Row style={{height: 450}}>
+        <Row style={{position: 'relative', height: 450}}>
           {content}
         </Row>
         <Row style={{display: 'flex', paddingTop: 10}}>

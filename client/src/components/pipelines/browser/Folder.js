@@ -80,8 +80,7 @@ import ConfigurationUpdate from '../../../models/configuration/ConfigurationUpda
 import ConfigurationDelete from '../../../models/configuration/ConfigurationDelete';
 import CreateDataStorage from '../../../models/dataStorage/DataStorageSave';
 import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import Metadata from '../../special/metadata/Metadata';
 import Issues from '../../special/issues/Issues';

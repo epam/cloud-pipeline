@@ -27,6 +27,7 @@ import {
 
 import {
   Alert,
+  AutoComplete,
   Button,
   Checkbox,
   Input,
@@ -548,11 +549,10 @@ class UserIntegrityCheck extends React.Component {
                 const dictionary = this.getSystemDictionary(column);
                 if (dictionary) {
                   const fieldParentLink = this.getFieldParentLink(user.id, column);
-                  // todo replace Select with AutoComplete before antd 4
                   return (
                     <td key={column}>
                       <div className={styles.cell}>
-                        <Select
+                        <AutoComplete
                           className={
                             classNames({
                               [styles.modifiedValue]:
@@ -561,7 +561,6 @@ class UserIntegrityCheck extends React.Component {
                                 this.isNewValue(dictionary, userMetadata[column])
                             })
                           }
-                          mode="combobox"
                           size="medium"
                           style={{flex: 1}}
                           allowClear
@@ -584,25 +583,25 @@ class UserIntegrityCheck extends React.Component {
                         >
                           {
                             this.isNewValue(dictionary, userMetadata[column]) && (
-                              <Select.Option
+                              <AutoComplete.Option
                                 key={userMetadata[column]}
                                 value={userMetadata[column]}
                               >
                                 {userMetadata[column]} <i>(new value)</i>
-                              </Select.Option>
+                              </AutoComplete.Option>
                             )
                           }
                           {
                             (dictionary.values || []).map((value) => (
-                              <Select.Option
+                              <AutoComplete.Option
                                 key={value.id}
                                 value={value.value || ''}
                               >
                                 {value.value || (<i>Empty value</i>)}
-                              </Select.Option>
+                              </AutoComplete.Option>
                             ))
                           }
-                        </Select>
+                        </AutoComplete>
                         {
                           fieldParentLink && (
                             <Tooltip
