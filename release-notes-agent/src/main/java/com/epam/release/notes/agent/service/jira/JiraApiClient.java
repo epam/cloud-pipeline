@@ -31,16 +31,24 @@ import static java.lang.String.format;
 @Component
 public class JiraApiClient implements RestApiClient {
 
+    private static final String TOKEN_HEADER = "Authorization";
     private static final String ACCEPT_HEADER = "application/json";
+    private static final String ACCEPT_HEADER_TITLE = "accept";
 
     private final JiraApi jiraApi;
 
     public JiraApiClient(@Value("${jira.base.url}") final String jiraBaseUrl,
                          @Value("${jira.auth.token}") final String jiraToken,
-                         @Value("${pipeline.client.connect.timeout}") final long connectTimeout,
-                         @Value("${pipeline.client.read.timeout}") final long readTimeout) {
-        this.jiraApi = createApi(jiraBaseUrl, format("Bearer %s", jiraToken), JiraApi.class, connectTimeout,
-                readTimeout, ACCEPT_HEADER);
+                         @Value("${pipeline.client.connect.timeout}") final Integer connectTimeout,
+                         @Value("${pipeline.client.read.timeout}") final Integer readTimeout) {
+        this.jiraApi = createApi(JiraApi.class,
+            jiraBaseUrl,
+            chain -> chain.proceed(chain.request().newBuilder()
+                    .header(TOKEN_HEADER, format("Bearer %s", jiraToken))
+                    .header(ACCEPT_HEADER_TITLE, ACCEPT_HEADER)
+                    .build()),
+            connectTimeout,
+            readTimeout);
     }
 
     /**
