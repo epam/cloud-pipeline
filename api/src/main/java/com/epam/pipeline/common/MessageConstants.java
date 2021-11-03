@@ -672,6 +672,12 @@ public final class MessageConstants {
     public static final String NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED =
         "nat.gateway.route.removal.port.forwarding.failed";
 
+    // Search
+    public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING =
+            "error.search.scrolling.parameter.doc.id.missing";
+    public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING =
+            "error.search.scrolling.parameter.doc.sort.fields.missing";
+
     private MessageConstants() {
         // no-op
     }

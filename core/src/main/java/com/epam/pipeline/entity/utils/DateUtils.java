@@ -46,12 +46,11 @@ public final class DateUtils {
     }
 
     public static LocalDateTime convertEpochMillisToLocalDateTime(final long epochMillis) {
-        return convertDateToLocalDateTime(new Date(epochMillis));
+        return Instant.ofEpochMilli(epochMillis).atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 
-    public static long convertLocalDateTimeToEpochNanos(final LocalDateTime dateTime) {
-        final Instant instant = dateTime.toInstant(ZoneOffset.UTC);
-        return TimeUnit.NANOSECONDS.convert(instant.getEpochSecond(), TimeUnit.SECONDS) + instant.getNano();
+    public static long convertLocalDateTimeToEpochMillis(final LocalDateTime dateTime) {
+        return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
     public static long convertSecsToHours(final long secs) {

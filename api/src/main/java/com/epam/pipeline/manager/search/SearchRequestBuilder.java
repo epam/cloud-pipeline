@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.search;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
@@ -55,6 +57,7 @@ import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -91,31 +94,34 @@ public class SearchRequestBuilder {
     private static final String ES_SORT_MISSING_LAST = "_last";
     private static final String SEARCH_HIDDEN = "is_hidden";
     private static final String INDEX_WILDCARD_PREFIX = "*";
+    private static final String ES_KEYWORD_TYPE = "keyword";
+    private static final String ES_DATE_TYPE = "date";
+    private static final String ES_LONG_TYPE = "long";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
     private final UserManager userManager;
+    private final MessageHelper messageHelper;
 
     public SearchRequest buildRequest(final ElasticSearchRequest searchRequest,
                                       final String typeFieldName,
                                       final String aggregation,
                                       final Set<String> metadataSourceFields) {
-        final QueryBuilder query = getQuery(searchRequest.getQuery());
-        log.debug("Search query: {} ", query.toString());
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(query)
+                .query(getQuery(searchRequest.getQuery()))
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
 
-        final ScrollingParameters scrollingParameters = searchRequest.getScrollingParameters();
-        final List<SearchRequestSort> sorts = resolveRequiredSorts(searchRequest.getSorts());
-        buildSorts(sorts, isScrollingBackwards(scrollingParameters))
+        final List<SearchRequestSort> sorts = resolveSorts(searchRequest.getSorts());
+        buildSorts(sorts, isScrollingBackwards(searchRequest.getScrollingParameters()))
                 .forEach(searchSource::sort);
 
-        if (Objects.isNull(scrollingParameters)) {
+        if (Objects.isNull(searchRequest.getScrollingParameters())) {
             searchSource.from(searchRequest.getOffset());
         } else {
-            searchSource.searchAfter(buildSearchAfterArguments(sorts, scrollingParameters));
+            Assert.notNull(searchRequest.getScrollingParameters().getDocId(), messageHelper.getMessage(
+                    MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING));
+            searchSource.searchAfter(buildSearchAfterArguments(sorts, searchRequest.getScrollingParameters()));
         }
 
         if (searchRequest.isHighlight()) {
@@ -129,7 +135,7 @@ public class SearchRequestBuilder {
                             .size(SearchDocumentType.values().length));
         }
 
-        log.debug("Search source: {} ", searchSource);
+        log.debug("Search request: {} ", searchSource);
 
         return new SearchRequest(buildIndexNames(searchRequest.getFilterTypes()))
                 .indicesOptions(IndicesOptions.lenientExpandOpen())
@@ -152,29 +158,22 @@ public class SearchRequestBuilder {
     }
 
     public SearchRequest buildFacetedRequest(final FacetedSearchRequest searchRequest,
-                                             final String typeFieldName, final Set<String> metadataSourceFields) {
-        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-
-        final QueryBuilder queryBuilder = prepareFacetedQuery(searchRequest.getQuery());
-        boolQueryBuilder.must(queryBuilder);
-        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
-        MapUtils.emptyIfNull(searchRequest.getFilters())
-                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
-
-        log.debug("Search query: {} ", boolQueryBuilder);
-
+                                             final String typeFieldName,
+                                             final Set<String> metadataSourceFields) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(boolQueryBuilder)
+                .query(getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters()))
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
 
-        final List<SearchRequestSort> sorts = resolveRequiredSorts(searchRequest.getSorts());
+        final List<SearchRequestSort> sorts = resolveSorts(searchRequest.getSorts());
         buildSorts(sorts, isScrollingBackwards(searchRequest.getScrollingParameters()))
                 .forEach(searchSource::sort);
 
         if (Objects.isNull(searchRequest.getScrollingParameters())) {
             searchSource.from(searchRequest.getOffset());
         } else {
+            Assert.notNull(searchRequest.getScrollingParameters().getDocId(), messageHelper.getMessage(
+                    MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING));
             searchSource.searchAfter(buildSearchAfterArguments(sorts, searchRequest.getScrollingParameters()));
         }
 
@@ -185,7 +184,7 @@ public class SearchRequestBuilder {
         ListUtils.emptyIfNull(searchRequest.getFacets())
                 .forEach(facet -> addTermAggregationToSource(searchSource, facet));
 
-        log.debug("Search source: {} ", searchSource);
+        log.debug("Search request: {} ", searchSource);
 
         return new SearchRequest()
                 .indices(buildAllIndexTypes())
@@ -199,33 +198,58 @@ public class SearchRequestBuilder {
                 .orElse(false);
     }
 
-    private List<SearchRequestSort> resolveRequiredSorts(final List<SearchRequestSort> requestedSorts) {
-        final List<SearchRequestSort> sorts = new ArrayList<>(requestedSorts);
+    private List<SearchRequestSort> resolveSorts(final List<SearchRequestSort> requestedSorts) {
+        final List<SearchRequestSort> sorts = new ArrayList<>(ListUtils.emptyIfNull(requestedSorts));
         sorts.add(new SearchRequestSort(ES_DOC_SCORE_FIELD, SearchRequestSortOrder.DESC));
         sorts.add(new SearchRequestSort(ES_DOC_ID_FIELD, SearchRequestSortOrder.DESC));
         return sorts;
     }
 
     private List<SortBuilder<?>> buildSorts(final List<SearchRequestSort> sorts, final boolean isScrollingBackwards) {
-        return ListUtils.emptyIfNull(sorts).stream()
+        return sorts.stream()
                 .map(sort -> buildSort(sort, isScrollingBackwards))
                 .collect(Collectors.toList());
     }
 
     private SortBuilder<?> buildSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return StringUtils.equalsIgnoreCase(sort.getField(), ES_DOC_ID_FIELD)
-                || StringUtils.equalsIgnoreCase(sort.getField(), ES_DOC_SCORE_FIELD)
-                ? SortBuilders.fieldSort(sort.getField())
+        return isDefaultField(sort.getField()) ? buildDefaultFieldSort(sort, isScrollingBackwards)
+                : isOwnerField(sort.getField()) ? buildOwnerFieldSort(sort, isScrollingBackwards)
+                : isDateField(sort.getField()) ? buildDateFieldSort(sort, isScrollingBackwards)
+                : isNumericField(sort.getField()) ? buildNumericFieldSort(sort, isScrollingBackwards)
+                : buildRegularFieldSort(sort, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildDefaultFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(sort.getField())
+                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards));
+    }
+
+    private SortBuilder<?> buildOwnerFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(SearchSourceFields.OWNER.getFieldName())
                 .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
-                : SortBuilders.fieldSort(buildSortField(sort.getField()))
-                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
+                .unmappedType(ES_KEYWORD_TYPE)
                 .missing(ES_SORT_MISSING_LAST);
     }
 
-    private String buildSortField(final String field) {
-        return StringUtils.equalsIgnoreCase(field, SearchSourceFields.OWNER.name().toLowerCase())
-                ? SearchSourceFields.OWNER.getFieldName()
-                : buildKeywordName(field);
+    private SortBuilder<?> buildDateFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(sort.getField())
+                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
+                .unmappedType(ES_DATE_TYPE)
+                .missing(ES_SORT_MISSING_LAST);
+    }
+
+    private SortBuilder<?> buildNumericFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(sort.getField())
+                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
+                .unmappedType(ES_LONG_TYPE)
+                .missing(ES_SORT_MISSING_LAST);
+    }
+
+    private SortBuilder<?> buildRegularFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(buildKeywordName(sort.getField()))
+                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
+                .unmappedType(ES_KEYWORD_TYPE)
+                .missing(ES_SORT_MISSING_LAST);
     }
 
     private SortOrder buildSortOrder(final SearchRequestSortOrder order, final boolean isScrollingBackwards) {
@@ -239,21 +263,21 @@ public class SearchRequestBuilder {
     private Object[] buildSearchAfterArguments(final List<SearchRequestSort> sorts,
                                                final ScrollingParameters scrollingParameters) {
         final Map<String, Object> searchAfterParameters = getSearchAfterParameters(scrollingParameters);
-        searchAfterParameters.replaceAll(this::buildSearchAfterParameterValue);
         final List<String> sortFields = sorts.stream().map(SearchRequestSort::getField).collect(Collectors.toList());
         final Collection<String> sortFieldsWithoutSearchAfterParameter = CollectionUtils.subtract(sortFields,
                 searchAfterParameters.keySet());
-        if (CollectionUtils.isNotEmpty(sortFieldsWithoutSearchAfterParameter)) {
-            throw new IllegalArgumentException(String.format(
-                    "Sort field %s values should be specified in scrolling parameters.",
-                    sortFieldsWithoutSearchAfterParameter));
-        }
+        Assert.isTrue(CollectionUtils.isEmpty(sortFieldsWithoutSearchAfterParameter), messageHelper.getMessage(
+                MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING,
+                sortFieldsWithoutSearchAfterParameter));
         return sortFields.stream().map(searchAfterParameters::get).toArray();
     }
 
     private Map<String, Object> getSearchAfterParameters(final ScrollingParameters scrollingParameters) {
-        return CommonUtils.mergeMaps(getDefaultSearchAfterParameters(scrollingParameters),
+        final Map<String, Object> searchAfterParameters = CommonUtils.mergeMaps(
+                getDefaultSearchAfterParameters(scrollingParameters),
                 scrollingParameters.getDocSortFields());
+        searchAfterParameters.replaceAll(this::buildSearchAfterParameterValue);
+        return searchAfterParameters;
     }
 
     private Map<String, Object> getDefaultSearchAfterParameters(final ScrollingParameters scrollingParameters) {
@@ -264,11 +288,29 @@ public class SearchRequestBuilder {
     }
 
     private Object buildSearchAfterParameterValue(final String field, final Object value) {
-        if (SearchSourceFields.DATE_FIELDS.contains(field)) {
-            final LocalDateTime localDateTime = LocalDateTime.parse(value.toString(), DATE_TIME_FORMATTER);
-            return DateUtils.convertLocalDateTimeToEpochNanos(localDateTime);
-        }
-        return value;
+        return isDateField(field) ? buildSearchAfterDateParameterValue(value) : value;
+    }
+
+    private long buildSearchAfterDateParameterValue(final Object value) {
+        final LocalDateTime localDateTime = LocalDateTime.parse(value.toString(), DATE_TIME_FORMATTER);
+        return DateUtils.convertLocalDateTimeToEpochMillis(localDateTime);
+    }
+
+    private boolean isDefaultField(final String field) {
+        return StringUtils.equalsIgnoreCase(field, ES_DOC_ID_FIELD)
+                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD);
+    }
+
+    private boolean isOwnerField(final String field) {
+        return StringUtils.equalsIgnoreCase(field, SearchSourceFields.OWNER.name().toLowerCase());
+    }
+
+    private boolean isDateField(final String field) {
+        return SearchSourceFields.DATE_FIELDS.contains(field);
+    }
+
+    private boolean isNumericField(final String field) {
+        return SearchSourceFields.NUMERIC_FIELDS.contains(field);
     }
 
     private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
@@ -290,6 +332,15 @@ public class SearchRequestBuilder {
     private QueryBuilder getQuery(final String query) {
         final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(query));
         return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder getFacetedQuery(final String query, final Map<String, List<String>> filters) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.must(prepareFacetedQuery(query));
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        MapUtils.emptyIfNull(filters)
+                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
+        return boolQueryBuilder;
     }
 
     private QueryBuilder prepareAclFiltersOrAdmin(final BoolQueryBuilder queryBuilder) {

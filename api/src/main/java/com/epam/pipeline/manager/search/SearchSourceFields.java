@@ -40,15 +40,16 @@ public enum SearchSourceFields {
     SIZE("size"),
     LAST_MODIFIED("lastModified");
 
-    public static final Set<String> ADDITIONAL_FIELDS = Collections.unmodifiableSet(Stream.of(
-            PATH, TEXT, START_DATE, END_DATE, IMAGE, SIZE, LAST_MODIFIED)
-            .map(SearchSourceFields::getFieldName)
-            .collect(Collectors.toSet()));
+    public static final Set<String> ADDITIONAL_FIELDS = setOf(PATH, TEXT, START_DATE, END_DATE, IMAGE, SIZE,
+            LAST_MODIFIED);
+    public static final Set<String> DATE_FIELDS = setOf(START_DATE, END_DATE, LAST_MODIFIED);
+    public static final Set<String> NUMERIC_FIELDS = setOf(SIZE);
 
-    public static final Set<String> DATE_FIELDS = Collections.unmodifiableSet(Stream.of(
-            START_DATE, END_DATE, LAST_MODIFIED)
-            .map(SearchSourceFields::getFieldName)
-            .collect(Collectors.toSet()));
+    private static Set<String> setOf(final SearchSourceFields... fields) {
+        return Collections.unmodifiableSet(Stream.of(fields)
+                .map(SearchSourceFields::getFieldName)
+                .collect(Collectors.toSet()));
+    }
 
     private final String fieldName;
 
