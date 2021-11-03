@@ -12,23 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.release.notes.agent.entity.jira;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+
+import java.util.List;
 
 @Value
 @Builder
-@Getter
-public class JiraIssue {
+@Jacksonized
+public class JiraIssueHolder {
 
-    String version;
-    String id;
-    String title;
-    String githubId;
-    String description;
-    String url;
-
+    @JsonProperty("issues")
+    List<JiraIssueVO> jiraIssues;
 }
