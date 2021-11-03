@@ -77,7 +77,8 @@ import java.util.stream.Collectors;
 @Component
 public class KubernetesManager {
 
-    private static final String SERVICE_ROLE_LABEL = "cloud-pipeline/role";
+    private static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    private static final String SERVICE_ROLE_LABEL = CP_LABEL_PREFIX + "role";
     private static final String DUMMY_EMAIL = "test@email.com";
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
@@ -121,6 +122,27 @@ public class KubernetesManager {
             return findServiceByLabel(client, SERVICE_ROLE_LABEL, label)
                     .map(this::getServiceDescription)
                     .orElse(null);
+        }
+    }
+
+    public List<Service> getServicesByLabel(final String label) {
+        return getServicesByLabel(SERVICE_ROLE_LABEL, label);
+    }
+
+    public List<Service> getCloudPipelineServiceInstances(final String serviceName) {
+        return getServicesByLabel(CP_LABEL_PREFIX + serviceName, KubernetesConstants.TRUE);
+    }
+
+    public List<Service> getServicesByLabel(final String labelName, final String labelValue) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return findServicesByLabel(client, labelName, labelValue);
+        }
+    }
+
+    public List<Service> getServicesByLabels(final Map<String, String> labels, final String serviceNameLabel) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            labels.put(SERVICE_ROLE_LABEL, serviceNameLabel);
+            return findServicesByLabels(client, labels);
         }
     }
 
@@ -794,5 +816,20 @@ public class KubernetesManager {
                 .withName(name)
                 .get();
         return Optional.ofNullable(item);
+    }
+
+    private List<Service> findServicesByLabel(final KubernetesClient client, final String labelName,
+                                              final String labelValue) {
+        return client.services()
+                .withLabel(labelName, labelValue)
+                .list()
+                .getItems();
+    }
+
+    private List<Service> findServicesByLabels(final KubernetesClient client, final Map<String, String> labels) {
+        return client.services()
+                .withLabels(labels)
+                .list()
+                .getItems();
     }
 }
