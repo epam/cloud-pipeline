@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.entity.cluster.nat.NatRoute;
@@ -78,6 +80,7 @@ public class NatGatewayManager {
 
     private final NatGatewayDao natGatewayDao;
     private final KubernetesManager kubernetesManager;
+    private final MessageHelper messageHelper;
     private final String tinyproxyServiceName;
     private final String dnsProxyConfigMapName;
     private final String globalConfigMapName;
@@ -86,6 +89,7 @@ public class NatGatewayManager {
 
     public NatGatewayManager(@Autowired final NatGatewayDao natGatewayDao,
                              @Autowired final KubernetesManager kubernetesManager,
+                             @Autowired final MessageHelper messageHelper,
                              @Value("${nat.gateway.cp.core.service.name:cp-tinyproxy}")
                              final String tinyproxyServiceName,
                              @Value("${nat.gateway.cm.dns.proxy.name:cp-dnsmasq-hosts}")
@@ -97,6 +101,7 @@ public class NatGatewayManager {
                              @Value("${nat.gateway.hosts.key:hosts}") final String hostsKey) {
         this.natGatewayDao = natGatewayDao;
         this.kubernetesManager = kubernetesManager;
+        this.messageHelper = messageHelper;
         this.tinyproxyServiceName = tinyproxyServiceName;
         this.dnsProxyConfigMapName = dnsProxyConfigMapName;
         this.globalConfigMapName = globalConfigMapName;
@@ -209,18 +214,22 @@ public class NatGatewayManager {
                                                                                      DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
                             return false;
                         } else {
-                            setStatusFailed(serviceName, port, "Errors during deployment refresh");
+                            setStatusFailed(serviceName, port, messageHelper.getMessage(
+                                MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
                         }
                     }
                     return removeStatusLabels(service, port);
                 } else {
-                    setStatusFailed(serviceName, port, "Unable to remove port from service");
+                    setStatusFailed(serviceName, port, messageHelper.getMessage(
+                        MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
                 }
             } else {
-                setStatusFailed(serviceName, port, "Unable to remove DNS mask");
+                setStatusFailed(serviceName, port, messageHelper.getMessage(
+                    MessageConstants.NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED));
             }
         } else {
-            setStatusFailed(serviceName, port, "Unable to remove routing rule");
+            setStatusFailed(serviceName, port, messageHelper.getMessage(
+                MessageConstants.NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED));
         }
         return false;
     }
@@ -243,18 +252,21 @@ public class NatGatewayManager {
                     }
                     removePortForwardingRule(service, activePorts, port);
                 } else {
-                    setStatusFailed(serviceName, port, "Unable to add port-forwarding rule");
+                    setStatusFailed(serviceName, port, messageHelper.getMessage(
+                        MessageConstants.NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED));
                 }
                 removeDnsMaks(service, activePorts, port);
             } else {
-                setStatusFailed(serviceName, port, "Errors during DNS mask creation");
+                setStatusFailed(serviceName, port, messageHelper.getMessage(
+                    MessageConstants.NAT_ROUTE_CONFIG_DNS_CREATION_FAILED));
             }
             removePortFromService(service, activePorts, port);
             kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
                                                                     DEPLOYMENT_REFRESH_RETRIES,
                                                                     DEPLOYMENT_REFRESH_TIMEOUT_SEC);
         } else {
-            setStatusFailed(serviceName, port, "Unable to assign port to the existing service");
+            setStatusFailed(serviceName, port, messageHelper.getMessage(
+                MessageConstants.NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED));
         }
         return false;
     }
@@ -266,7 +278,8 @@ public class NatGatewayManager {
             updateStatusForRoutingRule(serviceName, port, NatRouteStatus.ACTIVE);
             return true;
         } else {
-            setStatusFailed(serviceName, port, "Deployment refreshing after NAT route creation failed");
+            setStatusFailed(serviceName, port, messageHelper.getMessage(
+                MessageConstants.NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED));
         }
         return false;
     }
@@ -429,7 +442,8 @@ public class NatGatewayManager {
         return Optional.ofNullable(request)
             .map(NatRoutingRulesRequest::getRules)
             .filter(CollectionUtils::isNotEmpty)
-            .orElseThrow(() -> new IllegalArgumentException("Empty rules are passed!"));
+            .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                MessageConstants.NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE)));
     }
 
     private List<NatRoute> extractNatRoutesFromKubeService(final Service kubeService) {
@@ -494,7 +508,7 @@ public class NatGatewayManager {
             return true;
         }
         if (activePorts.size() > 1) {
-            log.info("DNS mask should be removed only when the last existing port is being released.");
+            log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_KEEP_DNS_MASK));
             return true;
         }
         final Optional<ConfigMap> dnsMap =
@@ -529,8 +543,8 @@ public class NatGatewayManager {
         }
         final Optional<ConfigMap> globalConfigMap = kubernetesManager.findConfigMap(globalConfigMapName, null);
         if (!globalConfigMap.isPresent()) {
-            log.warn("Unable to find configmap {} - can't remove port forwarding rule for {}:{}",
-                     globalConfigMapName, getServiceName(service), port);
+            log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_CANT_FIND_CONFIG_MAP,
+                                              globalConfigMapName, getServiceName(service), port));
             return false;
         }
         final Set<String> activeRules = getActivePortForwardingRules(globalConfigMap);
@@ -572,7 +586,8 @@ public class NatGatewayManager {
                                                      hostsKey, convertDnsRecordsListToString(newDnsRecords));
         }
         if (!checkNewDnsRecord(externalName, clusterIP)) {
-            log.error("Unable to resolve {} as it was expected", externalName);
+            log.error(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_UNABLE_TO_RESOLVE_ADDRESS,
+                                               externalName));
             kubernetesManager.updateValueInConfigMap(dnsProxyConfigMapName,
                                                      KubernetesConstants.SYSTEM_NAMESPACE,
                                                      hostsKey,
@@ -608,7 +623,8 @@ public class NatGatewayManager {
                                           final Integer port) {
 
         if (!activePorts.containsKey(port)) {
-            log.warn("Unable to find port, defined for {} in {}", port, getServiceName(service));
+            log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_CANT_FIND_PORT,
+                                              port, getServiceName(service)));
             return false;
         }
         final Optional<ConfigMap> globalConfigMap = kubernetesManager.findConfigMap(globalConfigMapName, null);
