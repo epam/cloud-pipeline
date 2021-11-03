@@ -18,8 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
-import {message} from 'antd';
+import {Icon, message, Popover} from 'antd';
 import {inject} from 'mobx-react';
+import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
 import roleModel from '../../../../../utils/roleModel';
 import DSWebDavAccessEnable from '../../../../../models/dataStorage/DataStorageWebDavAccessEnable';
@@ -27,6 +28,20 @@ import DSWebDavAccessRemove from '../../../../../models/dataStorage/DataStorageW
 import styles from './request-dav-access.css';
 
 const METADATA_KEY = 'dav-mount';
+
+function InfoTooltip ({tooltip}) {
+  if (!tooltip) {
+    return null;
+  }
+  return (
+    <Popover
+      content={(<Markdown md={tooltip} />)}
+      mouseEnterDelay={1}
+    >
+      <Icon type="info-circle" style={{color: '#666'}} />
+    </Popover>
+  );
+}
 
 function davAccessInfo (value) {
   if (!value) {
@@ -62,6 +77,10 @@ function RequestDavAccess (
   }
 ) {
   const {
+    start_request: startRequest,
+    done_request: doneRequest
+  } = preferences.requestFileSystemAccessTooltip || {};
+  const {
     storageId,
     storageMask = 0
   } = info || {};
@@ -82,6 +101,7 @@ function RequestDavAccess (
     }
   }
   const enabled = accessInfo && accessInfo.available;
+  const hint = enabled ? doneRequest : startRequest;
   const enableAccess = () => {
     const hide = message.loading('Enabling file system access...', 0);
     const request = new DSWebDavAccessEnable();
@@ -136,6 +156,7 @@ function RequestDavAccess (
       >
         {infoString}
       </span>
+      <InfoTooltip tooltip={hint} />
       {
         enabled && !readOnly && (
           <a

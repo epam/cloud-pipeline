@@ -292,6 +292,21 @@ class PreferencesLoad extends Remote {
     return 0;
   }
 
+  get requestFileSystemAccessTooltip () {
+    const value = this.getPreferenceValue('ui.pipe.file.browser.request');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "ui.pipe.file.browser.request" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
