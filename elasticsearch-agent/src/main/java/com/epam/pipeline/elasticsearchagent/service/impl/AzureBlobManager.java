@@ -41,6 +41,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -100,7 +101,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
 
     private DataStorageFile convertToStorageFile(final BlobItem blob) {
         final DataStorageFile file = new DataStorageFile();
-        file.setName(blob.name());
+        file.setName(FilenameUtils.getName(blob.name()));
         file.setPath(blob.name());
         file.setSize(blob.properties().contentLength());
         file.setChanged(ESConstants.FILE_DATE_FORMAT.format(Date.from(blob.properties().lastModified().toInstant())));

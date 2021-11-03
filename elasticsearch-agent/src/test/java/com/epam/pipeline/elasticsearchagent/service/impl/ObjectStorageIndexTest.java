@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -104,7 +105,7 @@ public class ObjectStorageIndexTest {
 
     private DataStorageFile createFile(final String name) {
         final DataStorageFile file = new DataStorageFile();
-        file.setName(name);
+        file.setName(FilenameUtils.getName(name));
         file.setPath(name);
         file.setSize(1L);
         return file;
