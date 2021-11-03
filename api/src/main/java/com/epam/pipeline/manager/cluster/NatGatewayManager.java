@@ -205,33 +205,31 @@ public class NatGatewayManager {
                                                 final Integer port) {
         final String serviceName = getServiceName(service);
         updateStatusForRoutingRule(serviceName, port, NatRouteStatus.TERMINATING);
-        if (removePortForwardingRule(service, activePorts, port)) {
-            if (removeDnsMaks(service, activePorts, port)) {
-                if (removePortFromService(service, activePorts, port)) {
-                    if (activePorts.containsKey(port)) {
-                        if (!kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
-                                                                                     DEPLOYMENT_REFRESH_RETRIES,
-                                                                                     DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
-                            return false;
-                        } else {
-                            setStatusFailed(serviceName, port, messageHelper.getMessage(
-                                MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
-                        }
-                    }
-                    return removeStatusLabels(service, port);
-                } else {
-                    setStatusFailed(serviceName, port, messageHelper.getMessage(
-                        MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
-                }
-            } else {
-                setStatusFailed(serviceName, port, messageHelper.getMessage(
-                    MessageConstants.NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED));
-            }
-        } else {
-            setStatusFailed(serviceName, port, messageHelper.getMessage(
-                MessageConstants.NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED));
+        if (!removePortForwardingRule(service, activePorts, port)) {
+            return setStatusFailed(
+                serviceName, port,
+                messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED));
         }
-        return false;
+        if (!removeDnsMaks(service, activePorts, port)) {
+            return setStatusFailed(
+                serviceName, port,
+                messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED));
+        }
+        if (!removePortFromService(service, activePorts, port)) {
+            return setStatusFailed(
+                serviceName, port,
+                messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
+        }
+        if (activePorts.containsKey(port)
+            && !kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
+                                                                        DEPLOYMENT_REFRESH_RETRIES,
+                                                                        DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+            return setStatusFailed(
+                serviceName, port,
+                messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
+
+        }
+        return removeStatusLabels(service, port);
     }
 
     private boolean removeStatusLabels(final Service service, final Integer port) {
@@ -675,8 +673,9 @@ public class NatGatewayManager {
         return true;
     }
 
-    private void setStatusFailed(final String serviceName, final Integer externalPort, final String errorCause) {
+    private boolean setStatusFailed(final String serviceName, final Integer externalPort, final String errorCause) {
         updateStatusForRoutingRule(serviceName, externalPort, NatRouteStatus.TERMINATING, errorCause);
+        return false;
     }
 
     private void updateStatusForRoutingRule(final String serviceName, final Integer externalPort,
