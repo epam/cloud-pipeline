@@ -24,8 +24,9 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
@@ -40,7 +41,6 @@ import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
-import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -55,14 +55,15 @@ import static java.lang.String.format;
 
 public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization, Tools {
 
-    private String storage1 = "limitMountsStorage" + Utils.randomSuffix();
-    private String storage2 = "limitMountsStorage" + Utils.randomSuffix();
-    private String storage3 = "limitMountsStorage" + Utils.randomSuffix();
-    private String storage4 = "limitMountsStorage" + Utils.randomSuffix();
+    private final String storage1 = "limitMountsStorage" + Utils.randomSuffix();
+    private final String storage2 = "limitMountsStorage" + Utils.randomSuffix();
+    private final String storage3 = "limitMountsStorage" + Utils.randomSuffix();
+    private final String storage4 = "limitMountsStorage" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String testTool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String mountDataStoragesTask = "MountDataStorages";
+    private final String cpCapLimitMounts = "CP_CAP_LIMIT_MOUNTS";
 
     @BeforeClass(alwaysRun = true)
     public void setPreferences() {
@@ -74,9 +75,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .setStoragePath(storage4)
                 .clickSensitiveStorageCheckbox()
                 .ok();
-        givePermissionsToStorage(user, storage2);
-        givePermissionsToStorage(user, storage3);
-        givePermissionsToStorage(user, storage4);
+        Stream.of(storage2, storage3, storage4).forEach(s -> givePermissionsToStorage(user, s));
         cleanToolLimitMounts();
         cleanUserLimitMounts();
         logout();
@@ -96,7 +95,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
         cleanUserLimitMounts();
     }
 
-    @Test(priority = 0)
+    @Test
     @TestCase(value = {"2210_1"})
     public void validateSelectDataStoragesToLimitMountsForm() {
         loginAs(user);
@@ -131,7 +130,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                     tool.run(this))
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
+                .ensure(configurationParameter(cpCapLimitMounts, "None"), exist)
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
                 .click(taskWithName(mountDataStoragesTask))
@@ -169,7 +168,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
+                .ensure(configurationParameter(cpCapLimitMounts, storage3), exist)
                 .openStorageFromLimitMountsParameter(storage3)
                 .validateHeader(storage3);
         runsMenu()
@@ -214,8 +213,8 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage2), exist)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), not(exist))
+                .ensure(configurationParameter(cpCapLimitMounts, storage2), exist)
+                .ensure(configurationParameter(cpCapLimitMounts, storage3), not(exist))
                 .openStorageFromLimitMountsParameter(storage2)
                 .validateHeader(storage2);
     }

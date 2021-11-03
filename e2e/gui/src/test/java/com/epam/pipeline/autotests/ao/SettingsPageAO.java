@@ -1694,17 +1694,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
         }
 
-        public MyProfileAO doNotMountStoragesSelect (boolean isSelected) {
+        public MyProfileAO doNotMountStoragesSelect(boolean isSelected) {
             if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                     (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
                 click(DO_NOT_MOUNT_STORAGES);
                 sleep(1, SECONDS);
             }
-            return this;
-        }
-
-        public MyProfileAO assertDoNotMountStoragesIsChecked() {
-            get(DO_NOT_MOUNT_STORAGES).shouldHave(cssClass("ant-checkbox-checked"));
             return this;
         }
 
