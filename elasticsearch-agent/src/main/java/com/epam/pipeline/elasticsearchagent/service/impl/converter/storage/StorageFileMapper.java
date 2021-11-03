@@ -41,7 +41,7 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 
 public class StorageFileMapper {
 
-    final Map<String, Set<String>> searchMasks = new HashMap<>();
+    private final Map<String, Set<String>> searchMasks = new HashMap<>();
 
     public XContentBuilder fileToDocument(final DataStorageFile dataStorageFile,
                                           final AbstractDataStorage dataStorage,
