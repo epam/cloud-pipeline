@@ -31,7 +31,9 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -82,7 +84,7 @@ public class ReleaseNotesNotifier {
                     "The old major version: %s, the new major version: %s. Report will be sent to admin: %s",
                     current.toString(), old.getMajor(), current.getMajor(), adminEmail));
             actionNotificationService.process(old.toString(), current.toString(), Collections.emptyList(),
-                    Collections.emptyList(), new String[] { adminEmail });
+                    Collections.emptyList(), Collections.singletonList(adminEmail));
             applicationVersionService.storeVersion(current);
             return;
         }
@@ -94,18 +96,15 @@ public class ReleaseNotesNotifier {
         gitHubIssues
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
         final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
-        jiraIssues.forEach(i -> System.out.printf(
-                "Id: %s Title: %s Description: %s URL: %s Github: %s Version: %s%n",
-                i.getId(), i.getTitle(), i.getDescription(), i.getUrl(), i.getGithubId(), i.getVersion()));
         actionNotificationService.process(old.toString(), current.toString(),
-                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues, subscribers.toArray(new String[0]));
+                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues, subscribers);
         applicationVersionService.storeVersion(current);
     }
 
     private List<JiraIssue> filterJiraIssues(final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {
-        final List<Long> githubIssueNumbers = gitHubIssues.stream()
+        final Set<Long> githubIssueNumbers = gitHubIssues.stream()
                 .map(GitHubIssue::getNumber)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(HashSet::new));
         return jiraIssues.stream()
                 .filter(j -> StringUtils.isBlank(j.getGithubId()) ||
                         !githubIssueNumbers.contains(Long.parseLong(j.getGithubId())))

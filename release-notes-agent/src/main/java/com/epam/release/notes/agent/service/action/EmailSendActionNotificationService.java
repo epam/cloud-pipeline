@@ -39,7 +39,7 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
 
     @Override
     public void process(final String oldVersion, final String newVersion, final List<JiraIssue> jiraIssues,
-                        final List<GitHubIssue> gitHubIssues, final String[] recipients) {
+                        final List<GitHubIssue> gitHubIssues, final List<String> recipients) {
         final EmailContent emailContent = templateNotificationService.populate(oldVersion, newVersion, jiraIssues,
                 gitHubIssues);
         final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -47,7 +47,7 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
         try {
             helper.setSubject(emailContent.getTitle());
             helper.setText(emailContent.getBody(), true);
-            helper.setTo(recipients);
+            helper.setTo(recipients.toArray(new String[0]));
         } catch (MessagingException e) {
             throw new EmailException("Exception was thrown while trying to populate a MimeMessage.", e);
         }
