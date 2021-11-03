@@ -57,11 +57,11 @@ class Configuration extends React.Component {
 
   updateSettings = () => {
     const cfg = electron.remote.getGlobal('webdavClient');
-    const {name} = electron.remote.getGlobal('settings') || {};
     const {config: webdavClientConfig = {}} = cfg || {};
     let {
       maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
-      pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
+      pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds,
+      name
     } = webdavClientConfig;
     if (
       Number.isNaN(Number(maxWaitSeconds)) ||

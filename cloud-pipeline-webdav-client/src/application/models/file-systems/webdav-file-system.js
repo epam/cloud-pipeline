@@ -13,17 +13,14 @@ axios.defaults.adapter = require('axios/lib/adapters/http');
 class WebdavFileSystem extends FileSystem {
   constructor() {
     let cfg;
-    let settings;
     if (electron.remote === undefined) {
       cfg = global.webdavClient;
-      settings = global.settings;
     } else {
       cfg = electron.remote.getGlobal('webdavClient');
-      settings = electron.remote.getGlobal('settings');
     }
     const {config: webdavClientConfig} = cfg || {};
-    const {name: appName} = settings || {};
     const {
+      name: appName,
       server,
       username,
       password,
@@ -52,18 +49,14 @@ class WebdavFileSystem extends FileSystem {
   reInitialize() {
     return new Promise((resolve, reject) => {
       let cfg;
-      let settings;
       if (electron.remote === undefined) {
         cfg = global.webdavClient;
-        settings = global.settings;
       } else {
         cfg = electron.remote.getGlobal('webdavClient');
-        settings = electron.remote.getGlobal('settings');
       }
       const {config: webdavClientConfig} = cfg || {};
-      const {name: appName} = settings || {};
-      this.appName = appName;
       const {
+        name: appName,
         server,
         username,
         password,
@@ -72,6 +65,7 @@ class WebdavFileSystem extends FileSystem {
         maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
         pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
       } = webdavClientConfig || {};
+      this.appName = appName;
       super.reInitialize(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds})
         .then(() => {
           this.username = username;
