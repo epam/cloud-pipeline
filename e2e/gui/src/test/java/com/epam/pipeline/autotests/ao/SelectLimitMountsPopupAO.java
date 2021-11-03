@@ -41,7 +41,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, PipelineRunFormAO> {
+public class SelectLimitMountsPopupAO<PARENT_TYPE>
+        extends PopupAO<SelectLimitMountsPopupAO<PARENT_TYPE>, PARENT_TYPE> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CANCEL, context().find(byText("Cancel")).parent()),
             entry(OK, context().find(byClassName("ant-btn-primary"))),
@@ -53,29 +54,29 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
             entry(SENSITIVE_STORAGE, context().find(byClassName("ant-alert-message")))
     );
 
-    public SelectLimitMountsPopupAO(PipelineRunFormAO parentAO) {
+    public SelectLimitMountsPopupAO(PARENT_TYPE parentAO) {
         super(parentAO);
     }
 
     @Override
-    public PipelineRunFormAO cancel() {
+    public PARENT_TYPE cancel() {
         return click(CANCEL).parent();
     }
 
     @Override
-    public PipelineRunFormAO ok() {
+    public PARENT_TYPE ok() {
         return click(OK).parent();
     }
 
-    public SelectLimitMountsPopupAO clearSelection() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> clearSelection() {
         return click(CLEAR_SELECTION).sleep(1, SECONDS);
     }
 
-    public SelectLimitMountsPopupAO selectAllNonSensitive() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> selectAllNonSensitive() {
         return click(SELECT_ALL_NON_SENSITIVE).sleep(1, SECONDS);
     }
 
-    public SelectLimitMountsPopupAO selectAll() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> selectAll() {
         return click(SELECT_ALL).sleep(1, SECONDS);
     }
 
@@ -89,39 +90,39 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
         return elements;
     }
 
-    public SelectLimitMountsPopupAO clickSearch() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> clickSearch() {
         click(SEARCH_INPUT);
         return this;
     }
 
-    public SelectLimitMountsPopupAO pressEnter() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> pressEnter() {
         actions().sendKeys(Keys.ENTER).perform();
         return this;
     }
 
-    public SelectLimitMountsPopupAO setSearchStorage(String storage) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> setSearchStorage(String storage) {
         clear(SEARCH_INPUT);
         setValue(SEARCH_INPUT, storage);
         return this;
     }
 
-    public SelectLimitMountsPopupAO searchStorage(String storage) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> searchStorage(String storage) {
         return clear(SEARCH_INPUT)
                 .setValue(SEARCH_INPUT, storage)
                 .pressEnter();
     }
 
-    public SelectLimitMountsPopupAO selectStorage(final String storage) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> selectStorage(final String storage) {
         elements().get(TABLE).find(byText(storage)).closest("tr").find(byClassName("ant-checkbox")).click();
         return this;
     }
 
-    public SelectLimitMountsPopupAO storagesCountShouldBeGreaterThan(int size) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> storagesCountShouldBeGreaterThan(int size) {
         $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(sizeGreaterThan(size));
         return this;
     }
 
-    public SelectLimitMountsPopupAO validateFields(final String... names) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> validateFields(final String... names) {
         By columnHeader = byXpath("//thead[@class='ant-table-thead']//th");
         SelenideElements.of(columnHeader)
                 .shouldHave(texts(names));
