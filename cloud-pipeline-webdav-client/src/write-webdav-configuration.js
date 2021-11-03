@@ -1,15 +1,9 @@
 const fs = require('fs');
-const path = require('path');
 const {log} = require('./application/models/log');
+const localSettingsPath = require('./local-settings-path');
 
 module.exports = function writeLocalConfiguration(configuration) {
-  if (!fs.existsSync(path.join(require('os').homedir(), '.pipe-webdav-client'))) {
-    fs.mkdirSync(path.join(require('os').homedir(), '.pipe-webdav-client'));
-  }
-  const localConfigPath = path.resolve(
-    path.join(require('os').homedir(), '.pipe-webdav-client'),
-    'webdav.config'
-  );
+  const localConfigPath = localSettingsPath();
   if (configuration) {
     if (configuration.server) {
       const parts = configuration.server.split('/');

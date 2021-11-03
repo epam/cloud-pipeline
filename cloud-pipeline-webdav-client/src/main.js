@@ -1,13 +1,11 @@
 const { app, BrowserWindow, netLog } = require('electron');
 const {log} = require('./application/models/log');
 const readWebdavConfiguration = require('./read-webdav-configuration');
-const readCustomConfiguration = require('./read-custom-configuration');
 const getNetworkLogFile = require('./network-logging-path');
 
 const LOGS_ENABLED = app.commandLine.hasSwitch('enable-logs');
 
 global.logsEnabled = LOGS_ENABLED;
-global.settings = readCustomConfiguration();
 global.networkLogFile = getNetworkLogFile();
 
 log('');

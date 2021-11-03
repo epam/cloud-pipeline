@@ -55,9 +55,8 @@ function Application() {
     onCancelCreateDirectory,
   } = createDirectory;
   const cfg = electron.remote.getGlobal('webdavClient');
-  const settings = electron.remote.getGlobal('settings');
   const {config: webdavClientConfig = {}} = cfg || {};
-  const {name: appName = 'Cloud Data'} = settings || {};
+  const {name: appName = 'Cloud Data'} = webdavClientConfig || {};
   useLayoutEffect(() => {
     document.title = appName;
   }, []);
