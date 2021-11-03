@@ -40,6 +40,7 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
@@ -525,6 +526,9 @@ public class AclTestBeans {
 
     @MockBean
     protected EdgeServiceManager mockEdgeServiceManager;
+
+    @MockBean
+    protected NatGatewayManager natGatewayManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
