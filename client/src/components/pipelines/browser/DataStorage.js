@@ -1878,7 +1878,7 @@ export default class DataStorage extends React.Component {
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: 'calc(100vh - 25px)'
+        height: 'calc(100vh - 25px)'
       }}>
         <Row type="flex" justify="space-between" align="middle">
           <Col className={styles.itemHeader}>
