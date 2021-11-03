@@ -241,32 +241,30 @@ public class NatGatewayManager {
     private boolean processScheduledStartup(final Service service, final Map<Integer, ServicePort> activePorts,
                                             final Integer port) {
         final String serviceName = getServiceName(service);
-        final boolean portIsAssigned = addPortToService(serviceName, activePorts, port);
-        if (portIsAssigned) {
-            if (addDnsMask(service, port)) {
-                if (addPortForwardingRule(service, activePorts, port)) {
-                    if (tryRefreshDeployment(serviceName, port)) {
-                        return true;
-                    }
-                    removePortForwardingRule(service, activePorts, port);
-                } else {
-                    setStatusFailed(serviceName, port, messageHelper.getMessage(
-                        MessageConstants.NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED));
-                }
-                removeDnsMaks(service, activePorts, port);
-            } else {
-                setStatusFailed(serviceName, port, messageHelper.getMessage(
-                    MessageConstants.NAT_ROUTE_CONFIG_DNS_CREATION_FAILED));
-            }
-            removePortFromService(service, activePorts, port);
-            kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
-                                                                    DEPLOYMENT_REFRESH_RETRIES,
-                                                                    DEPLOYMENT_REFRESH_TIMEOUT_SEC);
-        } else {
-            setStatusFailed(serviceName, port, messageHelper.getMessage(
-                MessageConstants.NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED));
+        if (!addPortToService(serviceName, activePorts, port)) {
+            return setStatusFailed(serviceName, port,
+                                   messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED));
         }
-        return false;
+        if (!addDnsMask(service, port)) {
+            removePortFromService(service, activePorts, port);
+            return setStatusFailed(serviceName, port,
+                                   messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_DNS_CREATION_FAILED));
+        }
+        if (!addPortForwardingRule(service, activePorts, port)) {
+            removeDnsMaks(service, activePorts, port);
+            removePortFromService(service, activePorts, port);
+            return setStatusFailed(serviceName, port,
+                                   messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED));
+        }
+        if (!tryRefreshDeployment(serviceName, port)) {
+            removePortForwardingRule(service, activePorts, port);
+            removeDnsMaks(service, activePorts, port);
+            removePortFromService(service, activePorts, port);
+            return kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
+                                                                           DEPLOYMENT_REFRESH_RETRIES,
+                                                                           DEPLOYMENT_REFRESH_TIMEOUT_SEC);
+        }
+        return true;
     }
 
     private boolean tryRefreshDeployment(final String serviceName, final Integer port) {
@@ -276,10 +274,9 @@ public class NatGatewayManager {
             updateStatusForRoutingRule(serviceName, port, NatRouteStatus.ACTIVE);
             return true;
         } else {
-            setStatusFailed(serviceName, port, messageHelper.getMessage(
+            return setStatusFailed(serviceName, port, messageHelper.getMessage(
                 MessageConstants.NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED));
         }
-        return false;
     }
 
     private List<NatRoute> updateRoutesInDatabase(final NatRoutingRulesRequest request, final NatRouteStatus status,
