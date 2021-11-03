@@ -38,7 +38,8 @@ dependencies {
 
     // Thymeleaf
     implementation "org.thymeleaf:thymeleaf:$thymeleafVersion"
-
+    implementation "org.thymeleaf:thymeleaf-spring5:$thymeleafSpring5Version"
+    implementation "nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:$thymeleafLayoutDialectVersion"
 
     // Javax mail
     implementation "com.sun.mail:javax.mail:$javaxMailVersion"

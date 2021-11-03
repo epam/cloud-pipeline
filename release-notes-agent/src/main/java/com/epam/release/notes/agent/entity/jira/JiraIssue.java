@@ -16,10 +16,12 @@
 package com.epam.release.notes.agent.entity.jira;
 
 import lombok.Builder;
+import lombok.Getter;
 import lombok.Value;
 
 @Value
 @Builder
+@Getter
 public class JiraIssue {
     String version;
     String title;

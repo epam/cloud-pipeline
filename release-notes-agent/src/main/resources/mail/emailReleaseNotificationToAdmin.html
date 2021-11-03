@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:remove="all">Template of email to admin, in case major version has been changed</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<p> Good day! </p>
+<p> Major version of Cloud-pipeline has been changed from <span th:text="${oldVersion}"></span> to <span th:text="${newVersion}"></span>. <br>
+</p>
+<p> Please, take an action. </p>
+<p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>
+</p>
+</body>
+</html>
