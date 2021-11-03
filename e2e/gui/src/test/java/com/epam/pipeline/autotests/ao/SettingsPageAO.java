@@ -1182,12 +1182,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return String.join("\n", strings);
         }
 
-        public PreferencesAO clearAndSetPreference(String preference, String value, boolean eyeIsChecked) {
+        public PreferencesAO clearAndSetJsonToPreference(String preference, String value, boolean eyeIsChecked) {
             SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
             searchPreference(preference);
             Utils.clearTextField(pref);
             Utils.clickAndSendKeysWithSlashes(pref, value);
-//            setValue(pref, value);
+            for (int i = 0; i < 100; i++) {
+                actions().sendKeys(Keys.DELETE).perform();
+            }
             final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
                     .find(byClassName("anticon"));
             if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
