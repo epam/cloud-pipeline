@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">39m6.62s</div>
+<div class="counter">38m0.12s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">96%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,82 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="checkBucketEditingByNonAdminUser - EPMCMBIBPC-566"></a>
-<h3 class="failures">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</h3>
-<span class="code">
-<pre>Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK'])}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1635814529917.13.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1635814529917.13.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;button type=&quot;button&quot; class=&quot;ant-btn ant-btn-primary&quot;&gt;...&lt;/button&gt; is not clickable at point (859, 233). Other element would receive the click: &lt;div class=&quot;ant-row&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PopupAO.ok(PopupAO.java:41)
-	at com.epam.pipeline.autotests.ao.PermissionTabAO.addNewUser(PermissionTabAO.java:70)
-	at com.epam.pipeline.autotests.RoleModelTest.addNewUserToBucketPermissions(RoleModelTest.java:874)
-	at com.epam.pipeline.autotests.RoleModelTest.checkBucketEditingByNonAdminUser(RoleModelTest.java:525)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;button type=&quot;button&quot; class=&quot;ant-btn ant-btn-primary&quot;&gt;...&lt;/button&gt; is not clickable at point (859, 233). Other element would receive the click: &lt;div class=&quot;ant-row&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '70c274b2b532', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: ba993ec54c6bdcb31b46b7f8b29698ad
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 19 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -148,154 +79,154 @@ Session ID: ba993ec54c6bdcb31b46b7f8b29698ad
 </thead>
 <tr>
 <td class="success">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
-<td>22.936s</td>
+<td>23.186s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
-<td>2m50.29s</td>
-<td class="failures">failed</td>
+<td class="success">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
+<td>3m45.06s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
-<td>6m47.29s</td>
+<td>6m3.46s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
-<td>55.259s</td>
+<td>51.783s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
-<td>1m19.98s</td>
+<td>1m16.07s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
-<td>4m49.53s</td>
+<td>4m57.26s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
-<td>21.223s</td>
+<td>20.048s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
-<td>39.190s</td>
+<td>36.120s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
-<td>1m22.25s</td>
+<td>1m21.27s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
-<td>1m33.95s</td>
+<td>1m31.52s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
-<td>1m40.95s</td>
+<td>1m41.89s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
-<td>43.893s</td>
+<td>41.834s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">editAndExecutePipeline - EPMCMBIBPC-561</td>
-<td>5m33.93s</td>
+<td>4m49.19s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">givePermissionsToUser - EPMCMBIBPC-537</td>
-<td>21.900s</td>
+<td>21.785s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
-<td>35.999s</td>
+<td>32.345s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
-<td>52.399s</td>
+<td>53.706s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
-<td>4.888s</td>
+<td>5.235s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
-<td>23.026s</td>
+<td>21.812s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
-<td>58.117s</td>
+<td>55.262s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
-<td>2m20.08s</td>
+<td>2m14.06s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
-<td>1m16.02s</td>
+<td>1m11.98s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
-<td>13.604s</td>
+<td>13.218s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
-<td>1m9.90s</td>
+<td>1m5.31s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
-<td>47.273s</td>
+<td>48.628s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSearchForNoUser - EPMCMBIBPC-1581</td>
-<td>11.628s</td>
+<td>11.511s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
-<td>22.915s</td>
+<td>21.503s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">viewUserPermissions - EPMCMBIBPC-539</td>
-<td>28.211s</td>
+<td>25.087s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 10385 from [10385]
-Returns latest run with runId 10385 from [10385]
-Returns latest run with runId 10385 from [10385]
-Returns latest run with runId 10386 from [10385, 10386]
-Returns latest run with runId 10386 from [10385, 10386]
-Returns latest run with runId 10386 from [10385, 10386]
-Returns latest run with runId 10387 from [10385, 10386, 10387]
-Returns latest run with runId 10387 from [10385, 10386, 10387]
-Returns latest run with runId 10388 from [10385, 10386, 10387, 10388]
-Returns latest run with runId 10388 from [10385, 10386, 10387, 10388]
+<pre>Returns latest run with runId 10537 from [10537]
+Returns latest run with runId 10537 from [10537]
+Returns latest run with runId 10537 from [10537]
+Returns latest run with runId 10540 from [10537, 10540]
+Returns latest run with runId 10540 from [10537, 10540]
+Returns latest run with runId 10540 from [10537, 10540]
+Returns latest run with runId 10543 from [10537, 10540, 10543]
+Returns latest run with runId 10543 from [10537, 10540, 10543]
+Returns latest run with runId 10546 from [10537, 10540, 10543, 10546]
+Returns latest run with runId 10546 from [10537, 10540, 10543, 10546]
 </pre>
 </span>
 </div>
@@ -307,7 +238,7 @@ Returns latest run with runId 10388 from [10385, 10386, 10387, 10388]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 2, 2021 6:32:27 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 3, 2021 1:36:22 PM</p>
 </div>
 </div>
 </body>
