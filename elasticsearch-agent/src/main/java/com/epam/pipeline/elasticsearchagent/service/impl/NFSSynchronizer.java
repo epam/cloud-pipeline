@@ -99,6 +99,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started NFS synchronization");
+        fileMapper.updateSearchMasks(cloudPipelineAPIClient, log);
 
         List<AbstractDataStorage> allDataStorages = cloudPipelineAPIClient.loadAllDataStorages();
         allDataStorages.stream()
