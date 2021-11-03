@@ -20,9 +20,11 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 public final class DateUtils {
 
@@ -40,11 +42,16 @@ public final class DateUtils {
     }
 
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return date.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 
-    public static LocalDateTime convertEpochMilliToLocalDateTime(final long epochMilli) {
-        return convertDateToLocalDateTime(new Date(epochMilli));
+    public static LocalDateTime convertEpochMillisToLocalDateTime(final long epochMillis) {
+        return convertDateToLocalDateTime(new Date(epochMillis));
+    }
+
+    public static long convertLocalDateTimeToEpochNanos(final LocalDateTime dateTime) {
+        final Instant instant = dateTime.toInstant(ZoneOffset.UTC);
+        return TimeUnit.NANOSECONDS.convert(instant.getEpochSecond(), TimeUnit.SECONDS) + instant.getNano();
     }
 
     public static long convertSecsToHours(final long secs) {
