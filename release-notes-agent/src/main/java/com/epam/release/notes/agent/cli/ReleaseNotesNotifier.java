@@ -14,19 +14,25 @@
  */
 package com.epam.release.notes.agent.cli;
 
+import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
+import com.epam.release.notes.agent.service.action.EmailSendActionNotificationService;
 import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -48,6 +54,9 @@ public class ReleaseNotesNotifier {
 
     @Value("${release.notes.agent.admin.email:}")
     private String adminEmail;
+
+    @Autowired
+    private EmailSendActionNotificationService actionNotificationService;
 
     @ShellMethod(key = "send-release-notes", value = "Grab and send release notes information to specified users")
     public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {
@@ -72,6 +81,8 @@ public class ReleaseNotesNotifier {
             log.info(format("The current major API version %s has changed. " +
                     "The old major version: %s, the new major version: %s. Report will be sent to admin: %s",
                     current.toString(), old.getMajor(), current.getMajor(), adminEmail));
+            actionNotificationService.process(old.toString(), current.toString(), Collections.emptyList(),
+                    Collections.emptyList(), new String[] { adminEmail });
             applicationVersionService.storeVersion(current);
             return;
         }
@@ -79,11 +90,25 @@ public class ReleaseNotesNotifier {
         log.info(format(
                 "Creating release notes report. Old current: %s, new current: %s. Report will be sent to: %s",
                 old.getSha(), current.getSha(), emails));
-        gitHubService.fetchIssues(current.getSha(), old.getSha())
+        final List<GitHubIssue> gitHubIssues = gitHubService.fetchIssues(current.getSha(), old.getSha());
+        gitHubIssues
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
-        jiraIssueService.fetchIssue(current.toString()).forEach(i -> System.out.printf(
+        final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
+        jiraIssues.forEach(i -> System.out.printf(
                 "Id: %s Title: %s Description: %s URL: %s Github: %s Version: %s%n",
                 i.getId(), i.getTitle(), i.getDescription(), i.getUrl(), i.getGithubId(), i.getVersion()));
+        actionNotificationService.process(old.toString(), current.toString(),
+                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues, subscribers.toArray(new String[0]));
         applicationVersionService.storeVersion(current);
+    }
+
+    private List<JiraIssue> filterJiraIssues(final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {
+        final List<Long> githubIssueNumbers = gitHubIssues.stream()
+                .map(GitHubIssue::getNumber)
+                .collect(Collectors.toList());
+        return jiraIssues.stream()
+                .filter(j -> StringUtils.isBlank(j.getGithubId()) ||
+                        !githubIssueNumbers.contains(Long.parseLong(j.getGithubId())))
+                .collect(Collectors.toList());
     }
 }

@@ -12,17 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.epam.release.notes.agent.service.action;
+package com.epam.release.notes.agent.service.action.mail;
 
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
+import com.epam.release.notes.agent.entity.mail.EmailContent;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-public interface ActionNotificationService {
+@Service
+public class TemplateNotificationServiceImpl implements TemplateNotificationService {
 
-    void process(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues,
-                 String[] recipients);
-
+    @Override
+    public EmailContent populate(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues) {
+        return null;
+    }
 }

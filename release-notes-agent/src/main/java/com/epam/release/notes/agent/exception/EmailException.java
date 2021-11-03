@@ -12,17 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.release.notes.agent.exception;
 
-package com.epam.release.notes.agent.service.action;
+public class EmailException extends RuntimeException {
 
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
-import com.epam.release.notes.agent.entity.jira.JiraIssue;
-
-import java.util.List;
-
-public interface ActionNotificationService {
-
-    void process(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues,
-                 String[] recipients);
-
+    public EmailException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
