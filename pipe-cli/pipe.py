@@ -34,10 +34,11 @@ from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
-from src.utilities import date_utilities, time_zone_param_type, state_utilities, cp_preference_utilities
+from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
 from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
@@ -274,6 +275,13 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
 def cli():
     """pipe is a command line interface to the Cloud Pipeline engine.
     It allows run pipelines as well as viewing runs and cluster state
+
+    \b
+    Environment Variables:
+      CP_SHOW_HIDDEN_OBJECTS=[True|False]    Show hidden objects when using view commands (view-pipes, view-tools, storage ls)
+      CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
+      CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
+      CP_TRACE=[True|False]                  Enables verbose errors.
     """
     pass
 
@@ -350,9 +358,8 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
-@click.option('-h', '--show-hidden', help='List all pipelines, even if it is hidden', is_flag=True)
 @common_options
-def view_pipes(pipeline, versions, parameters, storage_rules, permissions, show_hidden):
+def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
     """
 
@@ -361,18 +368,16 @@ def view_pipes(pipeline, versions, parameters, storage_rules, permissions, show_
         view_pipe(pipeline, versions, parameters, storage_rules, permissions)
     # If no argument is specified - list brief details of all pipelines
     else:
-        view_all_pipes(show_hidden)
+        view_all_pipes()
 
 
-def view_all_pipes(show_hidden):
+def view_all_pipes():
+    hidden_object_manager = HiddenObjectManager()
     pipes_table = prettytable.PrettyTable()
     pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
     pipes_table.align = "r"
-    pipelines = []
-    if show_hidden:
-        pipelines = Pipeline.list()
-    else:
-        pipelines = [p for p in Pipeline.list() if not cp_preference_utilities.is_object_hidden('pipeline', p.identifier)]
+
+    pipelines = [p for p in Pipeline.list() if not hidden_object_manager.is_object_hidden('pipeline', p.identifier)]
 
     if len(pipelines) > 0:
         for pipeline_model in pipelines:
@@ -1057,12 +1062,11 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
-@click.option('-h', '--show-hidden', is_flag=True, help='Show all results at once ignoring page settings')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, show_hidden):
+def storage_list(path, show_details, show_versions, recursive, page, all):
     """Lists storage contents
     """
-    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_hidden)
+    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all)
 
 
 @storage.command(name='mkdir')
@@ -1744,14 +1748,12 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
-@click.option('-h', '--show-hidden', is_flag=True, help='Include in result hidden tools.')
 @common_options
 def view_tools(tool_path,
                registry,
                group,
                tool,
-               version,
-               show_hidden):
+               version):
     """
     Either shows details of a tool / tool version or lists tools / tool groups.
 
@@ -1803,15 +1805,15 @@ def view_tools(tool_path,
             sys.exit(1)
 
     if not registry and not group and not tool and not version:
-        ToolOperations.view_default_group(show_hidden)
+        ToolOperations.view_default_group()
     elif group and tool and version:
         ToolOperations.view_version(group, tool, version, registry)
     elif group and tool:
         ToolOperations.view_tool(group, tool, registry)
     elif group:
-        ToolOperations.view_group(group, registry, show_hidden)
+        ToolOperations.view_group(group, registry)
     elif registry:
-        ToolOperations.view_registry(registry, show_hidden)
+        ToolOperations.view_registry(registry)
     else:
         click.echo('Specify either registry, group, tool or version parameters', err=True)
         sys.exit(1)

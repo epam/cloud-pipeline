@@ -21,7 +21,7 @@ from prettytable import prettytable
 from src.api.docker_registry import DockerRegistry
 from src.api.tool import Tool
 from src.model.pipeline_run_model import PriceType
-from src.utilities import cp_preference_utilities
+from src.utilities.hidden_object_manager import HiddenObjectManager
 
 KB = 1024
 MB = KB * KB
@@ -38,7 +38,8 @@ def echo_title(title, line=True):
 class ToolOperations(object):
 
     @classmethod
-    def view_registry(cls, registry, show_hidden=False):
+    def view_registry(cls, registry):
+        hidden_object_manager = HiddenObjectManager()
         registry_models = list(DockerRegistry.load_tree())
         registry_model = cls.find_registry(registry_models, registry)
         registry_info_table = prettytable.PrettyTable()
@@ -46,7 +47,7 @@ class ToolOperations(object):
         registry_info_table.sortby = 'ID'
         registry_info_table.align = 'l'
         for group_model in registry_model.groups:
-            if not show_hidden and cp_preference_utilities.is_object_hidden('tool_group', group_model.id):
+            if hidden_object_manager.is_object_hidden('tool_group', group_model.id):
                 continue
             registry_info_table.add_row([group_model.id,
                                          group_model.name,
@@ -55,7 +56,7 @@ class ToolOperations(object):
         click.echo(registry_info_table)
 
     @classmethod
-    def view_default_group(cls, show_hidden=False):
+    def view_default_group(cls):
         registry_models = list(DockerRegistry.load_tree())
         registry_model = cls.find_registry(registry_models)
         private_group = None
@@ -73,14 +74,15 @@ class ToolOperations(object):
             library_group.name if library_group else \
             default_group.name if default_group else None
         if group:
-            cls.view_group(group, None, show_hidden)
+            cls.view_group(group, None)
         else:
             click.echo('Neither personal, library or default tool group was found. '
                        'Please specify it explicitly.', err=True)
             sys.exit(1)
 
     @classmethod
-    def view_group(cls, group, registry=None, show_hidden=False):
+    def view_group(cls, group, registry=None):
+        hidden_object_manager = HiddenObjectManager()
         groups_table = prettytable.PrettyTable()
         groups_table.field_names = ['ID', 'Tool', 'Group', 'Owner', 'Description']
         groups_table.sortby = 'ID'
@@ -89,7 +91,7 @@ class ToolOperations(object):
         registry_model = cls.find_registry(registry_models, registry)
         group_model = cls.find_tool_group(registry_model, group)
         for tool_model in group_model.tools:
-            if not show_hidden and cp_preference_utilities.is_object_hidden('tool', tool_model.id):
+            if hidden_object_manager.is_object_hidden('tool', tool_model.id):
                 continue
             groups_table.add_row([tool_model.id,
                                   cls.tool_without_group(group, tool_model.image),
