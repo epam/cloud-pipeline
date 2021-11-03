@@ -2054,11 +2054,14 @@ export default class DataStorage extends React.Component {
                   : undefined
               }
               fileIsEmpty={this.isFileSelectedEmpty}
-              extraKeys={
+              extraKeys={[
                 this.props.info.value.type === 'NFS'
-                  ? [FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE]
-                  : [REQUEST_DAV_ACCESS_ATTRIBUTE]
-              }
+                  ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
+                  : false,
+                this.props.info.value.type !== 'NFS' && !this.state.selectedFile
+                  ? REQUEST_DAV_ACCESS_ATTRIBUTE
+                  : false
+              ].filter(Boolean)}
               extraInfo={[
                 <StorageSize storage={this.props.info.value} />
               ]}
