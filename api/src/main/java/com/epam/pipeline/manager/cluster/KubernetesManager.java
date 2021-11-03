@@ -80,7 +80,8 @@ import java.util.stream.Collectors;
 @Component
 public class KubernetesManager {
 
-    private static final String SERVICE_ROLE_LABEL = "cloud-pipeline/role";
+    private static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    private static final String SERVICE_ROLE_LABEL = CP_LABEL_PREFIX + "role";
     private static final String DUMMY_EMAIL = "test@email.com";
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
@@ -110,8 +111,16 @@ public class KubernetesManager {
     private String kubePodName;
 
     public List<Service> getServicesByLabel(final String label) {
+        return getServicesByLabel(SERVICE_ROLE_LABEL, label);
+    }
+
+    public List<Service> getCloudPipelineServiceInstances(final String serviceName) {
+        return getServicesByLabel(CP_LABEL_PREFIX + serviceName, KubernetesConstants.TRUE);
+    }
+
+    public List<Service> getServicesByLabel(final String labelName, final String labelValue) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return findServicesByLabel(client, SERVICE_ROLE_LABEL, label);
+            return findServicesByLabel(client, labelName, labelValue);
         }
     }
 
