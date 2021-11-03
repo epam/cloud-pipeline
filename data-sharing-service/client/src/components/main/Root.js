@@ -23,10 +23,12 @@ import dataStorages from '../../models/dataStorage/DataStorages';
 import S3Storage from '../../models/s3Storage/s3Storage';
 import dataStorageCache from '../../models/dataStorage/DataStorageCache';
 import MetadataCache from '../../models/metadata/MetadataCache';
+import preferences from '../../models/preferences';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(browserHistory, routing);
 const metadataCache = new MetadataCache();
+(preferences.fetch)();
 
 const Root = () =>
   <Provider
@@ -36,7 +38,8 @@ const Root = () =>
       dataStorageCache,
       metadataCache,
       history,
-      S3Storage
+      S3Storage,
+      preferences
     }}>
     <AppRouter />
   </Provider>;

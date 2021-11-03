@@ -14,11 +14,9 @@
 
 import click
 import prettytable
-import requests
 from future.utils import iteritems
 
 from src.api.metadata import Metadata
-from src.config import ConfigNotFoundError
 
 
 class MetadataOperations(object):
@@ -39,17 +37,11 @@ class MetadataOperations(object):
                 click.echo("No metadata available for {} {}.".format(entity_class, entity_id))
             else:
                 click.echo("Metadata for {} {} updated.".format(entity_class, entity_id))
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
         except RuntimeError as runtime_error:
             if "No enum constant" and "AclClass" in str(runtime_error):
                 click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
             else:
-                click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+                raise
 
     @classmethod
     def get_metadata(cls, entity_class, entity_id):
@@ -60,17 +52,11 @@ class MetadataOperations(object):
                 click.echo("No metadata available for {} {}.".format(entity_class, entity_id))
             else:
                 click.echo(cls.create_table(metadata.data))
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
         except RuntimeError as runtime_error:
             if "No enum constant" and "AclClass" in str(runtime_error):
                 click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
             else:
-                click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+                raise
 
     @classmethod
     def delete_metadata(cls, entity_class, entity_id, keys):
@@ -96,17 +82,11 @@ class MetadataOperations(object):
                 else:
                     click.echo("Deleted keys from metadata for {} {}: {}"
                                .format(entity_class, entity_id, ', '.join(keys)))
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
         except RuntimeError as runtime_error:
             if "No enum constant" and "AclClass" in str(runtime_error):
                 click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
             else:
-                click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+                raise
 
     @classmethod
     def convert_input_pairs_to_json(cls, data):

@@ -396,9 +396,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return cpu.substring(0, cpu.indexOf(" "));
     }
 
-    public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
+    public SelectLimitMountsPopupAO<PipelineRunFormAO> selectDataStoragesToLimitMounts() {
         click(LIMIT_MOUNTS);
-        return new SelectLimitMountsPopupAO(this).sleep(2, SECONDS);
+        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 
     public int minNodeTypeRAM() {

@@ -717,7 +717,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(PRICE_TYPE, context().find(byXpath(
                                     format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                             entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
-                            entry(IMPERSONATE, context().$(button("IMPERSONATE")))
+                            entry(IMPERSONATE, context().$(button("IMPERSONATE"))),
+                            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -839,6 +840,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public NavigationHomeAO impersonate() {
                         click(IMPERSONATE);
                         return new NavigationHomeAO();
+                    }
+
+                    public EditUserPopup doNotMountStoragesSelect (boolean isSelected) {
+                        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+                            click(DO_NOT_MOUNT_STORAGES);
+                        }
+                        return this;
                     }
                 }
             }
@@ -1671,11 +1680,32 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public class MyProfileAO implements AccessObject<MyProfileAO> {
         private final Map<Primitive,SelenideElement> elements = initialiseElements(
-                entry(USER_NAME, $(byClassName("ser-profile__header")))
+                entry(USER_NAME, $(byClassName("ser-profile__header"))),
+                entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
         );
 
         public MyProfileAO validateUserName(String user) {
             return ensure(USER_NAME, text(user));
+        }
+
+        public SelectLimitMountsPopupAO<MyProfileAO> limitMountsPerUser() {
+            click(LIMIT_MOUNTS);
+            return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
+        }
+
+        public MyProfileAO doNotMountStoragesSelect(boolean isSelected) {
+            if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                    (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+                click(DO_NOT_MOUNT_STORAGES);
+                sleep(1, SECONDS);
+            }
+            return this;
+        }
+
+        public MyProfileAO assertDoNotMountStoragesIsNotChecked() {
+            get(DO_NOT_MOUNT_STORAGES).shouldNotHave(cssClass("ant-checkbox-checked"));
+            return this;
         }
 
         @Override

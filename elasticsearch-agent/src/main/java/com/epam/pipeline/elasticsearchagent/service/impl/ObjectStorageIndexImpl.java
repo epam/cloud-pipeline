@@ -21,7 +21,6 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
-import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -35,19 +34,15 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.SetUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
-import org.springframework.util.AntPathMatcher;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,15 +67,16 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     @Getter
     private final SearchDocumentType documentType;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
-    private final Map<String, Set<String>> searchMasks = new HashMap<>();
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started {} files synchronization", getStorageType());
-        updateSearchMasks();
-        cloudPipelineAPIClient.loadAllDataStorages()
+        fileMapper.updateSearchMasks(cloudPipelineAPIClient, log);
+        final List<AbstractDataStorage> allStorages = cloudPipelineAPIClient.loadAllDataStorages();
+        allStorages
                 .stream()
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
+                .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
                 .forEach(this::indexStorage);
     }
 
@@ -104,8 +100,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 final Stream<DataStorageFile> files = fileManager
                         .files(dataStorage.getRoot(),
                                 Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                credentialsSupplier)
-                        .map(file -> setHiddenFlag(dataStorage, file));
+                                credentialsSupplier);
                 StreamUtils.chunked(files, bulkLoadTagsSize)
                         .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
                         .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
@@ -124,29 +119,6 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 elasticsearchServiceClient.deleteIndex(indexName);
             }
         }
-    }
-
-    private void updateSearchMasks() {
-        final Map<String, Set<String>> newMasks = cloudPipelineAPIClient.getStorageSearchMasks()
-            .stream()
-            .collect(Collectors.toMap(StorageFileSearchMask::getStorageName,
-                                      StorageFileSearchMask::getHiddenFilePathGlobs,
-                                      SetUtils::union));
-        searchMasks.clear();
-        log.info("Updating search masks: {}", newMasks);
-        searchMasks.putAll(newMasks);
-    }
-
-    private DataStorageFile setHiddenFlag(final AbstractDataStorage dataStorage,
-                                          final DataStorageFile file) {
-        final String storageName = dataStorage.getName();
-        if (searchMasks.containsKey(storageName)) {
-            final AntPathMatcher pathMatcher = new AntPathMatcher();
-            file.setIsHidden(CollectionUtils.emptyIfNull(searchMasks.get(storageName))
-                                 .stream()
-                                 .anyMatch(mask -> pathMatcher.match(mask, file.getPath())));
-        }
-        return file;
     }
 
     private IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
@@ -185,5 +157,23 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer,
                         getDocumentType()));
+    }
+
+    private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
+                                    final List<AbstractDataStorage> allStorages) {
+        if (!dataStorage.isShared()) {
+            return true;
+        }
+        final boolean isPrefixStorage = ListUtils.emptyIfNull(allStorages)
+                .stream()
+                .anyMatch(parentStorage -> !parentStorage.getId().equals(dataStorage.getId()) &&
+                        dataStorage.getPath()
+                        .startsWith(
+                                withTrailingDelimiter(parentStorage.getPath(), parentStorage.getDelimiter())));
+        return !isPrefixStorage;
+    }
+
+    private String withTrailingDelimiter(final String path, final String delimiter) {
+        return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
     }
 }

@@ -19,12 +19,18 @@ package com.epam.pipeline.controller.vo;
 import java.util.Map;
 
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode
 public class MetadataVO {
 

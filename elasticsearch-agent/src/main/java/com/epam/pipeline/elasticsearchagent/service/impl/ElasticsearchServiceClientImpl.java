@@ -35,7 +35,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.Scroll;
@@ -198,7 +197,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return client.scroll(searchScrollRequest, RequestOptions.DEFAULT);
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to retrieve next scroll page for [{}]: {}",
-                                             scrollId,e.getMessage(), e);
+                                             scrollId, e.getMessage(), e);
         }
     }
 

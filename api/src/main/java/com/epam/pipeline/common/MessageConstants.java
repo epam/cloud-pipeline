@@ -256,6 +256,16 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
             "error.datastorage.convert.source.type.invalid";
     public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME = "error.datastorage.dav.mount.illegal.time";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED =
+            "error.datastorage.dav.mount.quota.exceeded";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED =
+            "error.datastorage.dav.mount.already.mounted";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST = "info.datastorage.dav.mount.request";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED =
+            "info.datastorage.dav.mount.request.allowed";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF =
+            "info.datastorage.dav.mount.request.called.off";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -388,7 +398,7 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
-    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = 
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION =
             "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
@@ -501,6 +511,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_JSON_WRITING_FAILED = "error.region.json.writing.failed";
     public static final String ERROR_REGION_CORS_RULES_INVALID = "error.region.cors.rules.invalid";
     public static final String ERROR_REGION_POLICY_INVALID = "error.region.policy.invalid";
+    public static final String ERROR_MISSING_IAM_ROLE = "error.missing.iam.role";
 
     //Contextual preferences
     public static final String ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND = "error.contextual.preference.not.found";
