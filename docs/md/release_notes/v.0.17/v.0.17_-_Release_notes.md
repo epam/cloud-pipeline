@@ -22,6 +22,7 @@
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [Disable Hyper-Threading](#disable-hyper-threading)
+- [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -787,6 +788,20 @@ To disable Hyper-Threading technology for a job:
     Here you can check that only 1 thread per core is set, virtual CPUs 4-7 are offline. Only one thread is enabled (set of CPUs 0-3).
 
 For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#disable-hyper-threading).
+
+## Saving of interim data for jobs stopped by a timeout
+
+Previously, if for a job a timeout was set and it has elapsed - the job was stopped and all the data was erased.  
+In the current version, the solution to extract the current data from the timed-out jobs was implemented.
+
+Now, if a job has timed out - it will not be stopped immediately.  
+Instead, the new `OutputData` task will be triggered.  
+During this task performing, all the contents of the `$ANALYSIS_DIR` directory will be copied to all `output` storages - in the same manner, as if the job has succeeded.
+
+This feature doesn't require additional actions from the user side. Only `$ANALYSIS_DIR` and `output` paths should be defined.
+
+Additionally, a new system parameter was added - **`CP_EXEC_TIMEOUT`**. This parameter allows to define a timeout period after which the job shall be stopped. The essence of the parameter is the same as the configured value in the "**Timeout**" field. If both values are specified - for a job, `CP_EXEC_TIMEOUT` value will be used:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Timeout_01.png)
 
 ## AWS: seamless authentication
 
