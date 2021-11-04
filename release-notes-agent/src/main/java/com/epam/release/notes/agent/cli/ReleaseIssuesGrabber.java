@@ -19,8 +19,8 @@ import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
 import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -28,13 +28,11 @@ import org.springframework.shell.standard.ShellOption;
 
 @Slf4j
 @ShellComponent
+@AllArgsConstructor
 public class ReleaseIssuesGrabber {
 
-    @Autowired
-    private ApplicationVersionService applicationVersionService;
-
-    @Autowired
-    private GitHubService gitHubService;
+    private final ApplicationVersionService applicationVersionService;
+    private final GitHubService gitHubService;
 
     @ShellMethod(key = "grab-release-issues", value = "Grab issue that was mentioned in commits")
     public void grabIssuesForRelease(@ShellOption final String from, @ShellOption final String to) {

@@ -20,7 +20,6 @@ import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -34,20 +33,23 @@ import static java.lang.String.format;
 @ShellComponent
 public class ReleaseNotesNotifier {
 
-    @Autowired
-    private ApplicationVersionService applicationVersionService;
+    private final ApplicationVersionService applicationVersionService;
+    private final GitHubService gitHubService;
+    private final JiraIssueService jiraIssueService;
+    private final List<String> subscribers;
+    private final String adminEmail;
 
-    @Autowired
-    private GitHubService gitHubService;
-
-    @Autowired
-    private JiraIssueService jiraIssueService;
-
-    @Value("${release.notes.agent.subscribers:}")
-    private List<String> subscribers;
-
-    @Value("${release.notes.agent.admin.email:}")
-    private String adminEmail;
+    public ReleaseNotesNotifier(final ApplicationVersionService applicationVersionService,
+                                final GitHubService gitHubService,
+                                final JiraIssueService jiraIssueService,
+                                @Value("${release.notes.agent.subscribers:}") final List<String> subscribers,
+                                @Value("${release.notes.agent.admin.email:}") final String adminEmail) {
+        this.applicationVersionService = applicationVersionService;
+        this.gitHubService = gitHubService;
+        this.jiraIssueService = jiraIssueService;
+        this.subscribers = subscribers;
+        this.adminEmail = adminEmail;
+    }
 
     @ShellMethod(key = "send-release-notes", value = "Grab and send release notes information to specified users")
     public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {

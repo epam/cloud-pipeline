@@ -28,8 +28,7 @@ import static java.lang.String.format;
 @Service
 public class JiraIssueServiceImpl implements JiraIssueService {
 
-    @Autowired
-    private JiraApiClient jiraApiClient;
+    private final JiraApiClient jiraApiClient;
 
     @Value("${jira.base.url}")
     private String jiraBaseUrl;
@@ -39,6 +38,10 @@ public class JiraIssueServiceImpl implements JiraIssueService {
 
     @Value("${jira.github.custom.field.id}")
     private String jiraGithubCustomFieldId;
+
+    public JiraIssueServiceImpl(JiraApiClient jiraApiClient) {
+        this.jiraApiClient = jiraApiClient;
+    }
 
     @Override
     public List<JiraIssue> fetchIssue(final String version) {
