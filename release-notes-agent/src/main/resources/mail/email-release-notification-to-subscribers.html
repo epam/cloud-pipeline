@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title th:remove="all">Template of email to subscribers, in case minor version has been changed</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-</head>
-<body>
-<p> Good day! </p>
-<p> A new Cloud-pipeline version has been released. <br>
+    <head>
+        <title th:remove="all">Template of email to subscribers, in case minor version has been changed</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+    <p> Good day! </p>
+    <p> A new Cloud-pipeline version has been released. <br>
     Version changed from <span th:text="${oldVersion}"></span> to <span th:text="${newVersion}"></span>
-</p>
-<p> The release includes the following changes: <br>
-</p>
-<p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>
-<ul>
-    <li th:each="issue : ${jiraIssues}" >
-        <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
-    </li>
-</ul>
-<p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
-<ul>
-    <li th:each="issue : ${gitHubIssues}">
-        <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
-    </li>
-</ul>
-<p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>
-</p>
-</body>
+    </p>
+    <p> The release includes the following changes: <br>
+    </p>
+    <p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>
+    <ul>
+        <li th:each="issue : ${jiraIssues}" >
+            <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
+        </li>
+    </ul>
+    <p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
+    <ul>
+        <li th:each="issue : ${gitHubIssues}">
+            <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
+        </li>
+    </ul>
+    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>
+    </p>
+    </body>
 </html>
