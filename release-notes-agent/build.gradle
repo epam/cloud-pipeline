@@ -37,7 +37,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
 
     // Thymeleaf
-    implementation "org.thymeleaf:thymeleaf:$thymeleafVersion"
+//    implementation "org.thymeleaf:thymeleaf:$thymeleafVersion"
     implementation "org.thymeleaf:thymeleaf-spring5:$thymeleafSpring5Version"
     implementation "nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:$thymeleafLayoutDialectVersion"
 

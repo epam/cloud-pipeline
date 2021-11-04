@@ -14,7 +14,7 @@
 <p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>
 <ul>
     <li th:each="issue : ${jiraIssues}" >
-        <a th:href="${issue.getUrl()}" th:text="|${issue.getGithubId()} - ${issue.getTitle()}|"/>
+        <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
     </li>
 </ul>
 <p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
