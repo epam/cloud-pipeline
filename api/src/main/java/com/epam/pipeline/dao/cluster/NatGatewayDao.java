@@ -53,6 +53,11 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
         final List<NatRoute> newRoutes = newRouteRules.stream()
             .map(description -> mapRuleToRoute(description, status))
             .collect(Collectors.toList());
+        return registerRoutes(newRoutes);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<NatRoute> registerRoutes(final List<NatRoute> newRoutes) {
         final MapSqlParameterSource[] params = newRoutes.stream()
             .map(NatRoutingRuleParameters::getRouteParameters)
             .toArray(MapSqlParameterSource[]::new);

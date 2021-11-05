@@ -648,6 +648,30 @@ public final class MessageConstants {
     public static final String STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE =
         "storage.quota.unknown.share.type.for.percentage";
 
+    // NAT configuration
+    public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
+    public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
+    public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
+        "nat.gateway.route.creation.deploy.refresh.error";
+    public static final String NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED =
+        "nat.gateway.route.creation.port.forwarding.error";
+    public static final String NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED =
+        "nat.gateway.route.creation.port.assigning.error";
+    public static final String NAT_ROUTE_CONFIG_CANT_FIND_CONFIG_MAP =
+        "nat.gateway.route.creation.empty.config.map.port.forwarding";
+    public static final String NAT_ROUTE_CONFIG_UNABLE_TO_RESOLVE_ADDRESS =
+        "nat.gateway.route.creation.dns.resolving.failed";
+    public static final String NAT_ROUTE_CONFIG_CANT_FIND_PORT =
+        "nat.gateway.route.creation.port.forwarding.missing.port.error";
+
+    public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
+    public static final String NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED = "nat.gateway.route.removal.service.port.failed";
+    public static final String NAT_ROUTE_REMOVAL_KEEP_DNS_MASK = "nat.gateway.route.removal.keep.dns.entry";
+    public static final String NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED =
+        "nat.gateway.route.removal.deploy.refresh.failed";
+    public static final String NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED =
+        "nat.gateway.route.removal.port.forwarding.failed";
+
     private MessageConstants() {
         // no-op
     }
