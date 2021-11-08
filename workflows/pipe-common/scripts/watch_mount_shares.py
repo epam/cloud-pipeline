@@ -694,10 +694,10 @@ if __name__ == '__main__':
             watcher.start()
         except BaseException as e:
             error_message = str(e)
-            logging.error(format_message('An exception occurred in watcher: {}'.format(error_message)))
+            logging.error(format_message('An exception occurred in the observer: {}'.format(error_message)))
             if 'inotify' in error_message:
-                logging.error(format_message('Error is considered related to inotify, trying to increase limits'))
+                logging.error(format_message('Error is considered related to inotify, trying to increase limits...'))
                 watcher.try_increase_watchers_limit()
-            logging.error(format_message('Restarting a watcher...'))
+            logging.error(format_message('Restarting the observer...'))
         finally:
             watcher.shutdown()
