@@ -663,7 +663,10 @@ public final class MessageConstants {
         "nat.gateway.route.creation.dns.resolving.failed";
     public static final String NAT_ROUTE_CONFIG_CANT_FIND_PORT =
         "nat.gateway.route.creation.port.forwarding.missing.port.error";
+    public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
+        "nat.gateway.route.creation.kube.dns.restart.error";
 
+    public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
     public static final String NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED = "nat.gateway.route.removal.service.port.failed";
     public static final String NAT_ROUTE_REMOVAL_KEEP_DNS_MASK = "nat.gateway.route.removal.keep.dns.entry";

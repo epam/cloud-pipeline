@@ -313,14 +313,31 @@ public class KubernetesManager {
 
     public boolean refreshCloudPipelineServiceDeployment(final String coreServiceName, final int retries,
                                                          final long retryTimeoutSeconds) {
+        // TODO this should be refactored to use Deployment API
+        return refreshPods(kubeNamespace,
+                    Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + coreServiceName,
+                                             KubernetesConstants.TRUE_LABEL_VALUE),
+                    retries,
+                    retryTimeoutSeconds);
+    }
+
+    public boolean refreshKubeDns(final int retries, final long retryTimeoutSeconds) {
+        // TODO this should be refactored to use Deployment API
+        return refreshPods(KubernetesConstants.SYSTEM_NAMESPACE,
+                           Collections.singletonMap(KubernetesConstants.KUBERNETES_APP_LABEL,
+                                                    KubernetesConstants.KUBE_DNS_APP),
+                           retries, retryTimeoutSeconds);
+    }
+
+    private boolean refreshPods(final String namespace, final Map<String, String> labelSelector, final int retries,
+                                final long retryTimeoutSeconds) {
         try (KubernetesClient client = getKubernetesClient()) {
-            // TODO this should be refactored to use Deployment API
             final Boolean deploymentRefreshTriggered = client.pods()
-                .inNamespace(kubeNamespace)
-                .withLabel(KubernetesConstants.CP_LABEL_PREFIX + coreServiceName, KubernetesConstants.TRUE_LABEL_VALUE)
+                .inNamespace(namespace)
+                .withLabels(labelSelector)
                 .delete();
             if (deploymentRefreshTriggered) {
-                return waitForServicePodsStartup(client, coreServiceName, retries, retryTimeoutSeconds);
+                return waitForServicePodsStartup(client, namespace, labelSelector, retries, retryTimeoutSeconds);
             }
             return false;
         } catch (RuntimeException e) {
@@ -328,31 +345,33 @@ public class KubernetesManager {
         }
     }
 
-    private boolean waitForServicePodsStartup(final KubernetesClient client, final String coreServiceName,
-                                              final int retries, final long retryTimeoutSeconds) {
+    private boolean waitForServicePodsStartup(final KubernetesClient client, final String namespace,
+                                              final Map<String, String> labelSelector, final int retries,
+                                              final long retryTimeoutSeconds) {
         long attempts = retries;
-        while (!deploymentPodsAreReady(client, coreServiceName)) {
-            LOGGER.debug("Waiting for pods of {} to be ready.", coreServiceName);
+        while (!deploymentPodsAreReady(client, namespace, labelSelector)) {
+            LOGGER.debug("Waiting for pods in [{},{}] to be ready.", namespace, labelSelector);
             attempts -= 1;
             try {
                 Thread.sleep(retryTimeoutSeconds * MILLIS_TO_SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.error("Interruption occurred during {} refreshing, exiting...", coreServiceName);
+                log.error("Interruption occurred during [{},{}] refreshing, exiting...", namespace, labelSelector);
                 return false;
             }
             if (attempts <= 0) {
-                log.error("Unable to boot up {} in {} reties", coreServiceName, retries);
+                log.error("Unable to boot up pods in [{},{}] in {} reties", namespace, labelSelector, retries);
                 return false;
             }
         }
         return true;
     }
 
-    private boolean deploymentPodsAreReady(final KubernetesClient client, final String coreServiceName) {
+    private boolean deploymentPodsAreReady(final KubernetesClient client, final String namespace,
+                                           final Map<String, String> labelSelector) {
         final PodList allServicePods = client.pods()
-            .inNamespace(kubeNamespace)
-            .withLabel(KubernetesConstants.CP_LABEL_PREFIX + coreServiceName, KubernetesConstants.TRUE_LABEL_VALUE)
+            .inNamespace(namespace)
+            .withLabels(labelSelector)
             .list();
         return allPodsAreReady(allServicePods);
     }

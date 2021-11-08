@@ -541,7 +541,8 @@ public class NatGatewayManager {
     private boolean removePortForwardingRule(final Service service, final Map<Integer, ServicePort> activePorts,
                                              final Integer port) {
         if (!activePorts.containsKey(port)) {
-            log.warn("No active port {} is  defined for {}", port, getServiceName(service));
+            log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED,
+                                              port, getServiceName(service)));
             return true;
         }
         final Optional<ConfigMap> globalConfigMap = kubernetesManager.findConfigMap(globalConfigMapName, null);
@@ -614,6 +615,10 @@ public class NatGatewayManager {
     }
 
     private boolean checkNewDnsRecord(final String externalName, final String clusterIP) {
+        if (!kubernetesManager.refreshKubeDns(DEPLOYMENT_REFRESH_RETRIES, DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+            log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
+            return false;
+        }
         final Set<String> resolvedAddresses = tryResolveAddress(externalName);
         return resolvedAddresses.size() == 1 && resolvedAddresses.contains(clusterIP);
     }
