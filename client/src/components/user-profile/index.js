@@ -21,11 +21,13 @@ import roleModel from '../../utils/roleModel';
 import LoadingView from '../special/LoadingView';
 import Metadata from '../special/metadata/Metadata';
 import UserName from '../special/UserName';
-import {METADATA_KEY as LIMIT_MOUNTS_USER_PREFERENCE}
-  from '../special/metadata/special/limit-mounts';
+import {
+  METADATA_KEY as LIMIT_MOUNTS_USER_PREFERENCE
+} from '../special/metadata/special/limit-mounts';
 import displayDate from '../../utils/displayDate';
 import styles from './user-profile.css';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
+import ThemesSelector from './themes-selector';
 
 function renderRoleName (role) {
   if (!role.predefined) {
@@ -165,6 +167,8 @@ class UserProfile extends React.Component {
         >
           {'\u00A0'}
         </div>
+        <ThemesSelector />
+        <div className={styles.divider}>{'\u00A0'}</div>
         <Metadata
           readOnly={!userInfo.admin && !preferences.loaded}
           title="Attributes:"

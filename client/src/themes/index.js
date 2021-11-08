@@ -19,6 +19,11 @@ import getThemes, {DefaultDarkThemeIdentifier, DefaultLightThemeIdentifier} from
 import injectTheme from './utilities/inject-theme';
 import './default.theme.less';
 
+const _TEMPORARY_SYNC_WITH_SYSTEM_KEY = 'CP-THEMES-SYNC-WITH-SYSTEM';
+const _TEMPORARY_LIGHT_THEME_KEY = 'CP-THEMES-SYSTEM-LIGHT';
+const _TEMPORARY_DARK_THEME_KEY = 'CP-THEMES-SYSTEM-DARK';
+const _TEMPORARY_SINGLE_THEME_KEY = 'CP-THEMES-SINGLE';
+
 class CloudPipelineThemes {
   @observable themes = [];
   @observable loaded = false;
@@ -58,10 +63,62 @@ class CloudPipelineThemes {
   async readUserPreference () {
     try {
       await this.userInfo.fetchIfNeededOrWait();
+      // todo: read from user attributes
+      const safeReadPreference = (key, defaultValue) => {
+        try {
+          return JSON.parse(localStorage.getItem(key)) || defaultValue;
+        } catch (_) {
+          return defaultValue;
+        }
+      };
+      this.synchronizeWithSystem = safeReadPreference(_TEMPORARY_SYNC_WITH_SYSTEM_KEY, true);
+      this.singleTheme = safeReadPreference(
+        _TEMPORARY_SINGLE_THEME_KEY,
+        DefaultLightThemeIdentifier
+      );
+      this.systemLightTheme = safeReadPreference(
+        _TEMPORARY_LIGHT_THEME_KEY,
+        DefaultLightThemeIdentifier
+      );
+      this.systemDarkTheme = safeReadPreference(
+        _TEMPORARY_DARK_THEME_KEY,
+        DefaultDarkThemeIdentifier
+      );
       this.synchronizeWithSystem = true;
       this.applyTheme();
     } catch (e) {
       console.warn(`Error reading user theme preference: ${e.message}`);
+    }
+  }
+
+  async save () {
+    try {
+      await this.userInfo.fetchIfNeededOrWait();
+      // todo: write to user attributes
+      const safeWriteToPreference = (key, value) => {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (_) {
+        }
+      };
+      safeWriteToPreference(
+        _TEMPORARY_SYNC_WITH_SYSTEM_KEY,
+        this.synchronizeWithSystem
+      );
+      safeWriteToPreference(
+        _TEMPORARY_SINGLE_THEME_KEY,
+        this.singleTheme
+      );
+      safeWriteToPreference(
+        _TEMPORARY_LIGHT_THEME_KEY,
+        this.systemLightTheme
+      );
+      safeWriteToPreference(
+        _TEMPORARY_DARK_THEME_KEY,
+        this.systemDarkTheme
+      );
+    } catch (e) {
+      console.warn(`Error saving user theme preference: ${e.message}`);
     }
   }
 
@@ -79,7 +136,6 @@ class CloudPipelineThemes {
 
   setTheme (themeIdentifier) {
     this.currentTheme = themeIdentifier;
-    return;
     if (!document.body.classList.contains(themeIdentifier)) {
       for (const anotherTheme of this.themes) {
         if (document.body.classList.contains(anotherTheme.identifier)) {
