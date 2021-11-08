@@ -111,16 +111,15 @@ public class ToolsParametersTest
                 .checkTooltipText(custCapability1, "Custom test capability 1")
                 .checkTooltipText(custCapability2, "Custom test capability 2")
                 .launch(this);
-        final Set<String> logMess =
-                runsMenu()
-                    .showLog(getLastRunId())
-                    .expandTab(PARAMETERS)
-                    .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
-                    .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
-                    .waitForSshLink()
-                    .click(taskWithName("Console"))
-                    .logMessages()
-                    .collect(toSet());
+        final Set<String> logMess = runsMenu()
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
+                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
+                .waitForSshLink()
+                .click(taskWithName("Console"))
+                .logMessages()
+                .collect(toSet());
         runsMenu()
                 .showLog(getLastRunId())
                 .logContainsMessage(logMess, format("Running '%s' commands:", custCapability1))
@@ -134,5 +133,5 @@ public class ToolsParametersTest
                         .execute("cat testFile1.txt")
                         .assertOutputContains("testLine1", "testLine2")
                         .close());
-     }
+    }
 }
