@@ -199,3 +199,92 @@ h5 {
 .ant-checkbox-disabled + span {
   color: @application-color-disabled;
 }
+
+.ant-btn {
+  color: @application-color;
+  background-color: @panel-background-color;
+  border-color: @btn-border-color;
+}
+
+.ant-btn-clicked::after {
+  border: 0 solid @primary-color;
+}
+
+.ant-btn:hover,
+.ant-btn:focus,
+.ant-btn:active,
+.ant-btn.active {
+  color: @primary-color;
+  background-color: @panel-background-color;
+  border-color: @primary-color;
+}
+
+.ant-btn-primary {
+  color: @btn-color;
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  color: @btn-color;
+  background-color: @btn-primary-hover;
+  border-color: @btn-primary-hover;
+}
+
+.ant-btn-primary.active,
+.ant-btn-primary:active,
+.ant-btn-primary.ant-btn-clicked {
+  color: @btn-color;
+  background-color: @btn-primary-active;
+  border-color: @btn-primary-active;
+}
+
+.ant-btn-danger {
+  color: @btn-danger-color;
+  background-color: @btn-danger-background-color;
+  border-color: @btn-border-color;
+}
+
+.ant-btn-danger:focus,
+.ant-btn-danger:hover {
+  color: @btn-color;
+  background-color: @btn-danger-color;
+  border-color: @btn-danger-color;
+}
+
+.ant-btn-danger.active,
+.ant-btn-danger:active {
+  color: @btn-color;
+  background-color: @btn-danger-active-color;
+  border-color: @btn-danger-active-color;
+}
+
+.ant-btn-group .ant-btn-primary:first-child:not(:last-child) {
+  border-right-color: @btn-primary-active;
+}
+
+.ant-btn-group .ant-btn-primary:last-child:not(:first-child),
+.ant-btn-group .ant-btn-primary + .ant-btn-primary {
+  border-left-color: @btn-primary-active;
+}
+
+.ant-btn-group .ant-btn-primary:not(:first-child):not(:last-child) {
+  border-right-color: @btn-primary-active;
+  border-left-color: @btn-primary-active;
+}
+
+.ant-btn.disabled,
+.ant-btn.disabled.active,
+.ant-btn.disabled:active,
+.ant-btn.disabled:focus,
+.ant-btn.disabled:hover,
+.ant-btn[disabled],
+.ant-btn[disabled].active,
+.ant-btn[disabled]:active,
+.ant-btn[disabled]:focus,
+.ant-btn[disabled]:hover {
+  color: @btn-disabled-color;
+  background-color: @btn-disabled-background-color;
+  border-color: @btn-border-color;
+}

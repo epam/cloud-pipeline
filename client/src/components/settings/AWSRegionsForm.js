@@ -1317,6 +1317,7 @@ class AWSRegionForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
+              type="danger"
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
               size="small">
