@@ -16,15 +16,15 @@
 
 package com.epam.pipeline.controller.vo.search;
 
-import lombok.Data;
+public enum SearchRequestSortOrder {
+    ASC,
+    DESC;
 
-import java.util.Map;
-
-@Data
-public class ScrollingParameters {
-
-    private String docId;
-    private float docScore;
-    private Map<String, Object> docSortFields;
-    private boolean isScrollingBackward;
+    public SearchRequestSortOrder invert() {
+        switch (this) {
+            case ASC: return DESC;
+            case DESC: return ASC;
+            default: throw new IllegalArgumentException(String.format("Non supported sort order %s", this));
+        }
+    }
 }

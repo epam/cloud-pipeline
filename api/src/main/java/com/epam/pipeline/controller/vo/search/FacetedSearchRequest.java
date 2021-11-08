@@ -28,11 +28,12 @@ import java.util.Map;
 @AllArgsConstructor
 public class FacetedSearchRequest {
     private String query;
-    private Map<String, List<String>> filters;
-    private List<String> facets;
-    private List<String> metadataFields;
     private Integer pageSize;
     private Integer offset;
     private boolean highlight = false;
+    private Map<String, List<String>> filters;
+    private List<String> facets;
+    private List<String> metadataFields;
     private ScrollingParameters scrollingParameters;
+    private List<SearchRequestSort> sorts;
 }

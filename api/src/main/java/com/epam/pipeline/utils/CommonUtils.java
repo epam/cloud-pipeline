@@ -23,6 +23,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,7 +64,8 @@ public final class CommonUtils {
                 .collect(Collectors.toMap(
                     Map.Entry::getKey,
                     Map.Entry::getValue,
-                    (value1, value2) -> value1));
+                    (value1, value2) -> value1,
+                    HashMap::new));
     }
 
     public static <T> Optional<T> first(Supplier<Optional<T>>... suppliers) {

@@ -56,7 +56,7 @@ public class StorageFileMapper {
                     .field("size", dataStorageFile.getSize())
                     .field("path", dataStorageFile.getPath())
                     .field("id", dataStorageFile.getPath())
-                    .field("name", dataStorageFile.getPath())
+                    .field("name", dataStorageFile.getName())
                     .field("ownerUserName", tags.get("CP_OWNER"))
                     .field("parentId", dataStorage.getId())
                     .field("storage_id", dataStorage.getId())

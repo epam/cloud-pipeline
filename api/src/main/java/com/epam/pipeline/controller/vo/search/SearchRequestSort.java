@@ -16,15 +16,11 @@
 
 package com.epam.pipeline.controller.vo.search;
 
-import lombok.Data;
+import lombok.Value;
 
-import java.util.Map;
-
-@Data
-public class ScrollingParameters {
-
-    private String docId;
-    private float docScore;
-    private Map<String, Object> docSortFields;
-    private boolean isScrollingBackward;
+@Value
+public class SearchRequestSort {
+    String field;
+    SearchRequestSortOrder order;
 }
+

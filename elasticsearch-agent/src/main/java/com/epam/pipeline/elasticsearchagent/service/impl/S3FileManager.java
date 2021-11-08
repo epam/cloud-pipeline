@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -206,7 +207,7 @@ public class S3FileManager implements ObjectStorageFileManager {
 
         private DataStorageFile convertToStorageFile(final S3ObjectSummary s3ObjectSummary) {
             final DataStorageFile file = new DataStorageFile();
-            file.setName(s3ObjectSummary.getKey());
+            file.setName(FilenameUtils.getName(s3ObjectSummary.getKey()));
             file.setPath(s3ObjectSummary.getKey());
             file.setSize(s3ObjectSummary.getSize());
             file.setVersion(null);
@@ -263,7 +264,7 @@ public class S3FileManager implements ObjectStorageFileManager {
 
         private DataStorageFile convertToStorageFile(final S3VersionSummary summary) {
             final DataStorageFile file = new DataStorageFile();
-            file.setName(summary.getKey());
+            file.setName(FilenameUtils.getName(summary.getKey()));
             file.setPath(summary.getKey());
             file.setSize(summary.getSize());
             if (summary.getVersionId() != null && !summary.getVersionId().equals("null")) {

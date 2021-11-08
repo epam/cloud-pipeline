@@ -182,7 +182,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                         .filter(StringUtils::isNotEmpty).orElse(null);
                 final String key = rs.getString(TAG_KEY.name());
                 final String value = rs.getString(TAG_VALUE.name());
-                final LocalDateTime createdDate = DateUtils.convertEpochMilliToLocalDateTime(
+                final LocalDateTime createdDate = DateUtils.convertEpochMillisToLocalDateTime(
                         rs.getTimestamp(CREATED_DATE.name()).getTime());
                 final DataStorageObject object = new DataStorageObject(path, version);
                 return new DataStorageTag(object, key, value, createdDate);

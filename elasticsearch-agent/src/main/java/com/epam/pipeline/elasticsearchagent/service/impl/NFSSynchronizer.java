@@ -32,6 +32,7 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -187,7 +188,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     protected DataStorageFile convertToStorageFile(final Path path, final Path mountFolder) {
         final DataStorageFile file = new DataStorageFile();
         file.setPath(getRelativePath(mountFolder, path));
-        file.setName(file.getPath());
+        file.setName(FilenameUtils.getName(file.getPath()));
         file.setChanged(getLastModified(path));
         file.setSize(getSize(path));
         return file;
