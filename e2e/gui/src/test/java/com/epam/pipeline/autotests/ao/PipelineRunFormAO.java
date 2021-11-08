@@ -172,6 +172,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .shouldBe(visible);
     }
 
+    public PipelineRunFormAO checkTooltipText(String capability, String tooltip) {
+        $(byXpath(format("(//div[contains(text(), '%s')])", capability))).parent()
+                .shouldHave(attribute("title", tooltip));
+        return this;
+    }
+
     public ConfigureClusterPopupAO enableClusterLaunch() {
         click(LAUNCH_CLUSTER);
         return new ConfigureClusterPopupAO(this);
