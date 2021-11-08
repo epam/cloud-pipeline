@@ -12,18 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.release.notes.agent.service.action.mail;
 
-package com.epam.release.notes.agent.entity.mail;
-
-import lombok.Builder;
-import lombok.Value;
+import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import com.epam.release.notes.agent.entity.jira.JiraIssue;
+import com.epam.release.notes.agent.entity.mail.EmailContent;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Value
-@Builder
-public class EmailContent {
-    String title;
-    String body;
-    List<String> recipients;
+@Service
+public class TemplateNotificationServiceImpl implements TemplateNotificationService {
+
+    @Override
+    public EmailContent populate(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues) {
+        return null;
+    }
 }
