@@ -35,11 +35,13 @@ public class TemplateNotificationServiceImpl implements TemplateNotificationServ
     private final String emailToAdminTitle;
     private final String emailToSubscribersTitle;
 
-    public TemplateNotificationServiceImpl(final SpringTemplateEngine templateEngine,
-                                           @Value("${release.notes.agent.path.to.admin.email}") final String emailToAdminTemplateName,
-                                           @Value("${release.notes.agent.path.to.subscribers.email}") final String emailToSubscribersTemplateName,
-                                           @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
-                                           @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle) {
+    public TemplateNotificationServiceImpl(
+            final SpringTemplateEngine templateEngine,
+            @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
+            @Value("${release.notes.agent.name.of.subscribers.email.template}")
+            final String emailToSubscribersTemplateName,
+            @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
+            @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle) {
         this.templateEngine = templateEngine;
         this.emailToAdminTemplateName = emailToAdminTemplateName;
         this.emailToSubscribersTemplateName = emailToSubscribersTemplateName;

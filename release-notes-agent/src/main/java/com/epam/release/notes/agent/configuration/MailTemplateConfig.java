@@ -14,32 +14,46 @@
  */
 package com.epam.release.notes.agent.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring5.SpringTemplateEngine;
-import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
+import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 @Configuration
 public class MailTemplateConfig {
 
-    public static final String EMAIL_TEMPLATE_ENCODING = "UTF-8";
+    private static final String EMAIL_TEMPLATE_ENCODING = "UTF-8";
+    private static final String PERIOD = ".";
+
+    private final String resolverPrefix;
+    private final String resolverSuffix;
+
+    public MailTemplateConfig(
+            @Value("${release.notes.agent.path.to.folder.with.templates}") final String resolverPrefix,
+            @Value("${release.notes.agent.type.of.template.files}") final String resolverSuffix) {
+        this.resolverPrefix = resolverPrefix;
+        this.resolverSuffix = resolverSuffix;
+    }
 
     @Bean
-    public SpringTemplateEngine emailTemplateEngine() {
-        final SpringTemplateEngine templateEngine = new SpringTemplateEngine();
-        templateEngine.addTemplateResolver(htmlTemplateResolver());
+    public TemplateEngine emailTemplateEngine() {
+        final TemplateEngine templateEngine = new SpringTemplateEngine();
+        templateEngine.addTemplateResolver(fileTemplateResolver());
         return templateEngine;
     }
 
     @Bean
-    public SpringResourceTemplateResolver htmlTemplateResolver(){
-        SpringResourceTemplateResolver emailTemplateResolver = new SpringResourceTemplateResolver();
-        emailTemplateResolver.setPrefix("/mail/");
-        emailTemplateResolver.setSuffix(".html");
-        emailTemplateResolver.setTemplateMode(TemplateMode.HTML);
-        emailTemplateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);
-        return emailTemplateResolver;
+    public AbstractConfigurableTemplateResolver fileTemplateResolver() {
+        final AbstractConfigurableTemplateResolver templateResolver = new FileTemplateResolver();
+        templateResolver.setPrefix(resolverPrefix);
+        templateResolver.setSuffix(PERIOD + resolverSuffix);
+        templateResolver.setTemplateMode(TemplateMode.parse(resolverSuffix));
+        templateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);
+        return templateResolver;
     }
 
 }
