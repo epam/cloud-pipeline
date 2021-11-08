@@ -1,34 +1,64 @@
 import React from 'react';
+import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import {Button, Icon, Spin, Table, message} from 'antd';
 
+import {DeleteRules, SetRules} from '../../../../models/nat';
 import AddRouteForm from './add-route-modal/add-route-modal';
-import {contentIsEqual, mockedRequest, mockedData, mockedColumns} from './helpers';
+import {contentIsEqual, compareTableRecords, columns} from './helpers';
 import styles from './nat-getaway-configuration.css';
 
 const {Column, ColumnGroup} = Table;
 
+@inject('natRules')
+@observer
 export default class NATGetaway extends React.Component {
     state = {
-      initialContent: this.tableContent || [],
-      tableContent: this.tableContent || [],
+      tableContent: this.NatContent || [],
       addRouteModalIsOpen: false,
       pending: false,
       savingError: null
     }
-    get tableContent () {
-      return mockedData;
+
+    async componentDidMount () {
+      await this.loadRules();
     }
+
+    loadRules = async () => {
+      const {natRules} = this.props;
+      if (!natRules.loaded) {
+        await natRules.fetch();
+        if (natRules.error) {
+          message.error(natRules.error);
+        } else if (natRules.loaded && natRules.value) {
+          this.setState({
+            tableContent: natRules.value.map(v => ({...v}))
+          });
+        } else {
+          return [];
+        };
+      }
+    }
+
+    @computed
+    get NatContent () {
+      if (this.props.natRules.loaded) {
+        return this.props.natRules.value.map(v => ({...v})) || [];
+      }
+      return [];
+    }
+
     get tableExternalColumns () {
-      return mockedColumns.external;
+      return columns.external;
     }
 
     get tableInternalColumns () {
-      return mockedColumns.internal;
+      return columns.internal;
     }
 
     get tableContentChanged () {
       return !contentIsEqual(
-        this.state.initialContent,
+        this.NatContent,
         this.state.tableContent.filter(item => !item.isRemoved)
       );
     }
@@ -38,21 +68,21 @@ export default class NATGetaway extends React.Component {
     }
 
     removeRow = (record) => {
-      const index = this.state.tableContent.findIndex(item => record.key === item.key);
-      const newContent = [...this.state.tableContent];
+      const index = this.state.tableContent.findIndex(item => compareTableRecords(record, item));
+      const newContent = this.state.tableContent.map(v => ({...v}));
       if (index > -1) {
         newContent[index].isRemoved = true;
       }
       this.setState({
         tableContent: newContent
-      }, () => console.log(this.tableContent));
+      });
     }
 
     revertRow = (record) => {
-      const index = this.state.tableContent.findIndex(item => record.key === item.key);
-      const newContent = [...this.state.tableContent];
+      const index = this.state.tableContent.findIndex(item => compareTableRecords(record, item));
+      const newContent = this.state.tableContent.map(v => ({...v}));
       if (index > -1) {
-        newContent[index].isRemoved = false;
+        delete newContent[index].isRemoved;
       }
       this.setState({
         tableContent: newContent
@@ -62,27 +92,16 @@ export default class NATGetaway extends React.Component {
     addNewDataToTable = async (formData) => {
       const {serverName, ip, ports} = formData;
       const formattedData = Object.entries(ports).map(([name, port]) => ({
-        serverName,
-        ip,
-        port
+        externalName: serverName,
+        externalIp: ip,
+        externalPort: port
       }));
-      // mocking request result
       this.setState({
-        pending: true
+        tableContent: [
+          ...this.state.tableContent.map(v => ({...v})),
+          ...formattedData
+        ]
       });
-      try {
-        const newRows = await mockedRequest(formattedData);
-        this.setState({
-          tableContent: [...this.state.tableContent, ...newRows]
-        });
-        this.closeAddRouteModal();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.setState({
-          pending: false
-        });
-      }
     }
 
     openAddRouteModal = () => {
@@ -97,17 +116,42 @@ export default class NATGetaway extends React.Component {
       });
     }
 
-    onSave = () => {
-      this.setState({pending: true});
+    onSave = async () => {
       try {
-        setTimeout(() => {
-          this.setState({
-            pending: false,
-            savingError: null
-          }, () => {
-            message.success('Saved');
-          });
-        }, 1000);
+        const content = this.state.tableContent.reduce((
+          res,
+          {externalName, externalIp, externalPort, isRemoved}
+        ) => {
+          const row = {
+            externalName,
+            externalIp,
+            port: externalPort
+          };
+          isRemoved ? res.toRemove.push(row) : res.toSave.push(row);
+          return res;
+        }, {toRemove: [], toSave: []});
+
+        if (content.toRemove.length) {
+          this.setState({pending: true});
+          const deleteRequest = new DeleteRules();
+          await deleteRequest.send({rules: content.toRemove});
+          this.setState({pending: false});
+          if (deleteRequest.error) {
+            message.error(deleteRequest.error);
+          }
+        }
+        if (content.toSave.length) {
+          this.setState({pending: true});
+          const saveRequest = new SetRules();
+          await saveRequest.send({rules: content.toSave});
+          this.setState({pending: false});
+          if (saveRequest.error) {
+            message.error(saveRequest.error);
+          } else if (saveRequest.loaded && saveRequest.value) {
+            message.success('Saved!');
+            await this.onRefreshTable();
+          }
+        }
       } catch (e) {
         console.error(e);
         this.setState({
@@ -117,27 +161,62 @@ export default class NATGetaway extends React.Component {
       }
     }
 
+    onRevert = () => {
+      this.setState({
+        tableContent: this.NatContent.map(v => ({...v}))
+      });
+    }
+
+    onRefreshTable = async () => {
+      if (!this.props.natRules.pending) {
+        this.setState({pending: true});
+        await this.props.natRules.fetch();
+        if (this.props.natRules.loaded) {
+          this.setState({
+            pending: false,
+            tableContent: this.NatContent.map(v => ({...v}))});
+        }
+      }
+    }
+
     render () {
       return (
         <div className={styles.natTableContainer}>
           <div className={styles.tableContentActions}>
-            <div className={styles.addRouteAction}>
+            <div className={styles.tableActions}>
               <Button icon="plus" onClick={() => this.openAddRouteModal()}>Add route</Button>
+              <Button
+                type="primary"
+                disabled={!this.tableContentChanged}
+                icon="rollback"
+                onClick={this.onRevert}
+              >
+                REVERT
+              </Button>
+            </div >
+            <div className={styles.tableActions}>
+              <Button
+                type="primary"
+                disabled={!this.tableContentChanged}
+                onClick={this.onSave}
+              >
+                SAVE
+              </Button>
+              <Button
+                onClick={this.onRefreshTable}
+                icon="retweet"
+                disabled={this.tableContentChanged}
+              >
+                REFRESH
+              </Button>
             </div>
-            <Button
-              type="primary"
-              disabled={!this.tableContentChanged}
-              onClick={this.onSave}
-            >
-              SAVE
-            </Button>
           </div>
           <Spin spinning={this.state.pending}>
             <Table
               className={styles.table}
               dataSource={this.state.tableContent}
               pagination={false}
-              rowKey="key"
+              rowKey={({externalIp, externalName, externalPort}) => `${externalIp}-${externalName}-${externalPort}`}
               rowClassName={this.getRowClassName}
             >
               <ColumnGroup title="External resources">

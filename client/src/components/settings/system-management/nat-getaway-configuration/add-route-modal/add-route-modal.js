@@ -1,6 +1,7 @@
 import React from 'react';
-import {Modal, Input, Button, Form} from 'antd';
+import {Modal, Input, Button, Form, message, Spin} from 'antd';
 
+import {ResolveIp} from '../../../../../models/nat';
 import {validate} from '../helpers';
 import styles from './add-route-modal.css';
 
@@ -12,7 +13,8 @@ export default class AddRouteForm extends React.Component {
         ip: undefined,
         serverName: undefined
       },
-      errors: {}
+      errors: {},
+      pending: false
     }
 
     get ports () {
@@ -130,12 +132,37 @@ export default class AddRouteForm extends React.Component {
 
     onSubmit = async () => {
       if (!this.formIsInvalid) {
+        console.log(this.state.form);
         this.props.onAdd(this.state.form);
         this.resetForm();
       }
+      this.cancelForm();
     }
 
-    onResolveIP = () => {}
+    onResolveIP = async () => {
+      const {serverName} = this.state.form;
+      const request = new ResolveIp(serverName);
+      this.setState({
+        pending: true
+      });
+      await request.fetch();
+      if (request.error) {
+        message.error(request.error);
+        this.setState({
+          pending: false
+        });
+      }
+      if (request.loaded && request.value && request.value.length) {
+        this.setState({
+          ...this.state,
+          form: {
+            ...this.state.form,
+            ip: request.value[0]
+          },
+          pending: false
+        });
+      }
+    }
 
     renderFooter = () => (
       <div className={styles.footerButtonsContainer}>
@@ -185,53 +212,55 @@ export default class AddRouteForm extends React.Component {
           footer={this.renderFooter()}
         >
           <div className={styles.modalContent}>
-            <Form>
-              <div className={styles.inputContainer}>
-                <span className={styles.inputLabel}>Server name:</span>
-                <FormItem
-                  validateStatus={this.getValidationStatus('serverName')}
-                  help={this.getValidationMessage('serverName')}
-                >
-                  <Input
-                    placeholder="Server name"
-                    value={form.serverName}
-                    onChange={this.handleChange('serverName')} />
-                </FormItem>
-              </div>
-              <div className={styles.inputContainer}>
-                <span className={styles.inputLabel}>IP:</span>
-                <div className={styles.ipContainer}>
+            <Spin spinning={this.state.pending}>
+              <Form>
+                <div className={styles.inputContainer}>
+                  <span className={styles.inputLabel}>Server name:</span>
                   <FormItem
-                    validateStatus={this.getValidationStatus('ip')}
-                    help={this.getValidationMessage('ip')}
+                    validateStatus={this.getValidationStatus('serverName')}
+                    help={this.getValidationMessage('serverName')}
                   >
                     <Input
-                      placeholder="127.0.0.1"
-                      value={form.ip}
-                      onChange={this.handleChange('ip')} />
+                      placeholder="Server name"
+                      value={form.serverName}
+                      onChange={this.handleChange('serverName')} />
                   </FormItem>
+                </div>
+                <div className={styles.inputContainer}>
+                  <span className={styles.inputLabel}>IP:</span>
+                  <div className={styles.ipContainer}>
+                    <FormItem
+                      validateStatus={this.getValidationStatus('ip')}
+                      help={this.getValidationMessage('ip')}
+                    >
+                      <Input
+                        placeholder="127.0.0.1"
+                        value={form.ip}
+                        onChange={this.handleChange('ip')} />
+                    </FormItem>
+                    <Button
+                      disabled={!form.serverName || (this.getValidationStatus('serverName') === 'error')}
+                      size="large"
+                      onClick={this.onResolveIP}
+                    >
+                      Resolve
+                    </Button>
+                  </div>
+                </div>
+                <div className={styles.inputContainer}>
+                  <span className={styles.inputLabel}>PORT:</span>
+                  {this.renderPorts()}
+                </div>
+                <div className={styles.addButtonContainer}>
                   <Button
-                    disabled={!form.ip || (this.getValidationStatus('ip') === 'error')}
-                    size="large"
-                    onClick={this.onResolveIP}
+                    icon="plus"
+                    onClick={this.addPortInput}
                   >
-                    Resolve
+                    Add
                   </Button>
                 </div>
-              </div>
-              <div className={styles.inputContainer}>
-                <span className={styles.inputLabel}>PORT:</span>
-                {this.renderPorts()}
-              </div>
-              <div className={styles.addButtonContainer}>
-                <Button
-                  icon="plus"
-                  onClick={this.addPortInput}
-                >
-                  Add
-                </Button>
-              </div>
-            </Form>
+              </Form>
+            </Spin>
           </div>
         </Modal>
       );

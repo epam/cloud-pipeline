@@ -23,15 +23,18 @@
     align-items: center;
 }
 
-.add-route-action {
+.table-actions {
     display:flex;
     justify-content: flex-start;
     align-items: center;
-    padding: 15px;
+    padding: 15px 0px;
 }
 
-.add-route-action > button {
+.table-actions > button {
     margin-right: 10px;
+}
+.table-actions > button:last-of-type {
+    margin-right: 0px;
 }
 .removed {
     background-color: rgba(240, 65, 52, 0.1);
