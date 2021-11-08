@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, Row} from 'antd';
+import classNames from 'classnames';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
 import AWSRegionTag from '../../../special/AWSRegionTag';
@@ -85,10 +86,9 @@ export default class MyDataPanel extends React.Component {
         {
           storage.type.toUpperCase() === 'NFS' &&
           <span
-            className={styles.storageType}
-            type={storage.type.toUpperCase()}
+            className={classNames(styles.nfsStorageType, 'cp-nfs-storage-type')}
           >
-            {storage.type.toUpperCase()}
+            NFS
           </span>
         }
         <span type="main">

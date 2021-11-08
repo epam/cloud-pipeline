@@ -17,6 +17,7 @@
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
 import {Card, Icon, Input, message, Row, Tree} from 'antd';
+import classNames from 'classnames';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
 import {observable} from 'mobx';
@@ -479,7 +480,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       <Card
         id="pipelines-library-tree-container"
         style={{overflowY: 'auto'}}
-        className={styles.libraryCard}
+        className={classNames(styles.libraryCard, 'cp-panel')}
         bodyStyle={{padding: 0}}>
         <Row
           type="flex"

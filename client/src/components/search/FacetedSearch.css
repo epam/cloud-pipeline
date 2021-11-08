@@ -34,12 +34,7 @@
 
 .clear-query {
   cursor: pointer;
-  color: #aaa;
   font-size: smaller;
-}
-
-.clear-query:hover {
-  color: #999;
 }
 
 .container .content {
@@ -86,7 +81,6 @@
 }
 
 .container .actions > * {
-  border-right: 1px solid #ccc;
   padding-right: 5px;
 }
 
@@ -110,16 +104,15 @@
   position: sticky;
   top: 0;
   left: calc(100% - 74px);
-  padding: 2px 5px;
+  padding: 0 5px;
   border-radius: 3px;
   height: 20px;
-  background: #1890ff;
-  color: white;
   z-index: 2;
   margin-bottom: -20px;
   width: 74px;
   cursor: pointer;
   transition: transform 0.2s ease;
+  line-height: 20px;
 }
 
 .container .clear-filters-btn.disabled {

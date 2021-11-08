@@ -18,6 +18,7 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
+import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
 import LoadingView from '../special/LoadingView';
 import DockerRegistriesActionsButton from './DockerRegistriesActionsButton';
@@ -474,7 +475,7 @@ export default class ToolsNew extends React.Component {
     }
     return (
       <Card
-        className={styles.toolsCard}
+        className={classNames(styles.toolsCard, 'cp-panel', 'cp-panel-transparent')}
         bodyStyle={{padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}>
         {this.renderHeader()}
         {this.renderContent(content, isError)}
