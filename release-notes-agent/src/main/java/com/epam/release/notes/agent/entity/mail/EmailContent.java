@@ -18,9 +18,12 @@ package com.epam.release.notes.agent.entity.mail;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.List;
+
 @Value
 @Builder
 public class EmailContent {
     String title;
     String body;
+    List<String> recipients;
 }

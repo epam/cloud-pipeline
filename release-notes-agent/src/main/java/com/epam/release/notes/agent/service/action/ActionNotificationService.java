@@ -22,7 +22,6 @@ import java.util.List;
 
 public interface ActionNotificationService {
 
-    void process(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues,
-                 List<String> recipients);
+    void process(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues);
 
 }

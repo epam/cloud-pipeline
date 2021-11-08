@@ -19,7 +19,6 @@ import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
 import com.epam.release.notes.agent.exception.EmailException;
 import com.epam.release.notes.agent.service.action.mail.TemplateNotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -31,15 +30,18 @@ import java.util.List;
 @Service
 public class EmailSendActionNotificationService implements ActionNotificationService {
 
-    @Autowired
     private JavaMailSender javaMailSender;
-
-    @Autowired
     private TemplateNotificationService templateNotificationService;
+
+    public EmailSendActionNotificationService(final JavaMailSender javaMailSender,
+                                              final TemplateNotificationService templateNotificationService) {
+        this.javaMailSender = javaMailSender;
+        this.templateNotificationService = templateNotificationService;
+    }
 
     @Override
     public void process(final String oldVersion, final String newVersion, final List<JiraIssue> jiraIssues,
-                        final List<GitHubIssue> gitHubIssues, final List<String> recipients) {
+                        final List<GitHubIssue> gitHubIssues) {
         final EmailContent emailContent = templateNotificationService.populate(oldVersion, newVersion, jiraIssues,
                 gitHubIssues);
         final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -47,7 +49,7 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
         try {
             helper.setSubject(emailContent.getTitle());
             helper.setText(emailContent.getBody(), true);
-            helper.setTo(recipients.toArray(new String[0]));
+            helper.setTo(emailContent.getRecipients().toArray(new String[0]));
         } catch (MessagingException e) {
             throw new EmailException("Exception was thrown while trying to populate a MimeMessage.", e);
         }

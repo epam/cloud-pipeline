@@ -24,7 +24,6 @@ import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -42,23 +41,26 @@ import static java.lang.String.format;
 @ShellComponent
 public class ReleaseNotesNotifier {
 
-    @Autowired
     private ApplicationVersionService applicationVersionService;
-
-    @Autowired
     private GitHubService gitHubService;
-
-    @Autowired
     private JiraIssueService jiraIssueService;
-
-    @Value("${release.notes.agent.subscribers:}")
     private List<String> subscribers;
-
-    @Value("${release.notes.agent.admin.email:}")
     private String adminEmail;
-
-    @Autowired
     private EmailSendActionNotificationService actionNotificationService;
+
+    public ReleaseNotesNotifier(final ApplicationVersionService applicationVersionService,
+                                final GitHubService gitHubService,
+                                final JiraIssueService jiraIssueService,
+                                @Value("${release.notes.agent.subscribers:}") final List<String> subscribers,
+                                @Value("${release.notes.agent.admin.email:}") final String adminEmail,
+                                final EmailSendActionNotificationService actionNotificationService) {
+        this.applicationVersionService = applicationVersionService;
+        this.gitHubService = gitHubService;
+        this.jiraIssueService = jiraIssueService;
+        this.subscribers = subscribers;
+        this.adminEmail = adminEmail;
+        this.actionNotificationService = actionNotificationService;
+    }
 
     @ShellMethod(key = "send-release-notes", value = "Grab and send release notes information to specified users")
     public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {
@@ -84,7 +86,7 @@ public class ReleaseNotesNotifier {
                     "The old major version: %s, the new major version: %s. Report will be sent to admin: %s",
                     current.toString(), old.getMajor(), current.getMajor(), adminEmail));
             actionNotificationService.process(old.toString(), current.toString(), Collections.emptyList(),
-                    Collections.emptyList(), Collections.singletonList(adminEmail));
+                    Collections.emptyList());
             applicationVersionService.storeVersion(current);
             return;
         }
@@ -97,7 +99,7 @@ public class ReleaseNotesNotifier {
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
         final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
         actionNotificationService.process(old.toString(), current.toString(),
-                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues, subscribers);
+                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues);
         applicationVersionService.storeVersion(current);
     }
 
