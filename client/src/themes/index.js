@@ -79,6 +79,7 @@ class CloudPipelineThemes {
 
   setTheme (themeIdentifier) {
     this.currentTheme = themeIdentifier;
+    return;
     if (!document.body.classList.contains(themeIdentifier)) {
       for (const anotherTheme of this.themes) {
         if (document.body.classList.contains(anotherTheme.identifier)) {
