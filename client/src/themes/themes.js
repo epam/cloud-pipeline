@@ -20,7 +20,7 @@ import LightTheme from './light-theme';
 import parseConfiguration from './utilities/parse-configuration';
 
 const PredefinedThemes = [LightTheme, DarkTheme, DarkDimmedTheme];
-const DefaultTheme = PredefinedThemes.find(o => o.default);
+const DefaultTheme = PredefinedThemes.find(o => o.default) || LightTheme;
 
 function getThemeConfiguration (theme, themes = PredefinedThemes) {
   if (!theme) {

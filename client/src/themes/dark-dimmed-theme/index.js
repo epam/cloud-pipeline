@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+/* eslint-disable max-len */
+
 export default {
   identifier: 'dark-dimmed-theme',
   name: 'Dark dimmed',

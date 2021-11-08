@@ -45,8 +45,10 @@ function removeImports (cssContent) {
   return cssContent.replace(/^@import .*$/gm, '');
 }
 
+const themesDirectory = path.resolve(__dirname, '../../src/themes');
+
 const themeContents = removeComments(
-  fs.readFileSync(path.resolve(__dirname, '../default.theme.less'))
+  fs.readFileSync(path.resolve(themesDirectory, 'default.theme.less'))
     .toString()
 );
 const importRegExp = /@import ["'](.+)["'];/g;
@@ -68,7 +70,7 @@ let resultedCss = '';
 const selectorsRegExp = /^[\s]*([^,{}]+)({\s|,\s)+/m;
 
 for (const filename of imports) {
-  const filePath = path.resolve(__dirname, '..', filename);
+  const filePath = path.resolve(themesDirectory, filename);
   if (ignores.some(o => o.test(filePath))) {
     console.log('skipping file', filename, ' - ignored');
     continue;
@@ -95,7 +97,7 @@ for (const filename of imports) {
   }
 }
 
-const resultFilePath = path.resolve(__dirname, 'theme.less.template.js');
+const resultFilePath = path.resolve(themesDirectory, 'utilities/theme.less.template.js');
 
 const template = `${copyright}\n\nexport default \`\n${resultedCss}\`;\n`;
 
