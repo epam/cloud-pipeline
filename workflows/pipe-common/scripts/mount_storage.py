@@ -136,9 +136,16 @@ class MountStorageTask:
                                               or x.file_share_mount.region_id == cloud_region_id]
 
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
+            force_storages = os.getenv('CP_CAP_FORCE_MOUNTS')
             if limited_storages:
+                # If the storages are limited by the user - we make sure that the "forced" storages are still available
+                # This is useful for the tools, which require "databases" or other data from the File/Object storages
+                if force_storages:
+                    limited_storages = ','.join([limited_storages, force_storages])
                 try:
                     limited_storages_list = [] if limited_storages.lower() == MOUNT_LIMITS_NONE else [int(x.strip()) for x in limited_storages.split(',')]
+                    # Remove duplicates from the `limited_storages_list`, as they can be introduced by `force_storages` or a user's typo
+                    limited_storages_list = list(set(limited_storages_list))
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
                     # append sensitive storages since they are not returned in common mounts
                     for storage_id in limited_storages_list:
