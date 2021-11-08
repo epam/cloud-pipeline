@@ -14,19 +14,26 @@
  */
 package com.epam.release.notes.agent.cli;
 
+import com.epam.release.notes.agent.entity.github.GitHubIssue;
+import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
+import com.epam.release.notes.agent.service.action.EmailSendActionNotificationService;
 import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -34,20 +41,26 @@ import static java.lang.String.format;
 @ShellComponent
 public class ReleaseNotesNotifier {
 
-    @Autowired
     private ApplicationVersionService applicationVersionService;
-
-    @Autowired
     private GitHubService gitHubService;
-
-    @Autowired
     private JiraIssueService jiraIssueService;
-
-    @Value("${release.notes.agent.subscribers:}")
     private List<String> subscribers;
-
-    @Value("${release.notes.agent.admin.email:}")
     private String adminEmail;
+    private EmailSendActionNotificationService actionNotificationService;
+
+    public ReleaseNotesNotifier(final ApplicationVersionService applicationVersionService,
+                                final GitHubService gitHubService,
+                                final JiraIssueService jiraIssueService,
+                                @Value("${release.notes.agent.subscribers:}") final List<String> subscribers,
+                                @Value("${release.notes.agent.admin.email:}") final String adminEmail,
+                                final EmailSendActionNotificationService actionNotificationService) {
+        this.applicationVersionService = applicationVersionService;
+        this.gitHubService = gitHubService;
+        this.jiraIssueService = jiraIssueService;
+        this.subscribers = subscribers;
+        this.adminEmail = adminEmail;
+        this.actionNotificationService = actionNotificationService;
+    }
 
     @ShellMethod(key = "send-release-notes", value = "Grab and send release notes information to specified users")
     public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {
@@ -72,6 +85,8 @@ public class ReleaseNotesNotifier {
             log.info(format("The current major API version %s has changed. " +
                     "The old major version: %s, the new major version: %s. Report will be sent to admin: %s",
                     current.toString(), old.getMajor(), current.getMajor(), adminEmail));
+            actionNotificationService.process(old.toString(), current.toString(), Collections.emptyList(),
+                    Collections.emptyList());
             applicationVersionService.storeVersion(current);
             return;
         }
@@ -79,11 +94,22 @@ public class ReleaseNotesNotifier {
         log.info(format(
                 "Creating release notes report. Old current: %s, new current: %s. Report will be sent to: %s",
                 old.getSha(), current.getSha(), emails));
-        gitHubService.fetchIssues(current.getSha(), old.getSha())
+        final List<GitHubIssue> gitHubIssues = gitHubService.fetchIssues(current.getSha(), old.getSha());
+        gitHubIssues
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
-        jiraIssueService.fetchIssue(current.toString()).forEach(i -> System.out.printf(
-                "Id: %s Title: %s Description: %s URL: %s Github: %s Version: %s%n",
-                i.getId(), i.getTitle(), i.getDescription(), i.getUrl(), i.getGithubId(), i.getVersion()));
+        final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
+        actionNotificationService.process(old.toString(), current.toString(),
+                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues);
         applicationVersionService.storeVersion(current);
+    }
+
+    private List<JiraIssue> filterJiraIssues(final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {
+        final Set<Long> githubIssueNumbers = gitHubIssues.stream()
+                .map(GitHubIssue::getNumber)
+                .collect(Collectors.toCollection(HashSet::new));
+        return jiraIssues.stream()
+                .filter(j -> StringUtils.isBlank(j.getGithubId()) ||
+                        !githubIssueNumbers.contains(Long.parseLong(j.getGithubId())))
+                .collect(Collectors.toList());
     }
 }
