@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.release.notes.agent.service.action.mail;
 
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
