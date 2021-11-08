@@ -34,6 +34,7 @@ from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
@@ -273,6 +274,13 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
 def cli():
     """pipe is a command line interface to the Cloud Pipeline engine.
     It allows run pipelines as well as viewing runs and cluster state
+
+    \b
+    Environment Variables:
+      CP_SHOW_HIDDEN_OBJECTS=[True|False]    Show hidden objects when using view commands (view-pipes, view-tools, storage ls)
+      CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
+      CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
+      CP_TRACE=[True|False]                  Enables verbose errors.
     """
     pass
 
@@ -363,10 +371,13 @@ def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
 
 
 def view_all_pipes():
+    hidden_object_manager = HiddenObjectManager()
     pipes_table = prettytable.PrettyTable()
     pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
     pipes_table.align = "r"
-    pipelines = Pipeline.list()
+
+    pipelines = [p for p in Pipeline.list() if not hidden_object_manager.is_object_hidden('pipeline', p.identifier)]
+
     if len(pipelines) > 0:
         for pipeline_model in pipelines:
             pipes_table.add_row([pipeline_model.identifier,
