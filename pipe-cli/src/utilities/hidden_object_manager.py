@@ -33,11 +33,6 @@ class HiddenObjectManager:
             return identifier in self.hidden_objects[category]
         return False
 
-    def filter_hidden(self, category, elements, id_mapper):
-        for element in elements:
-            if not self.is_object_hidden(category, id_mapper(element)):
-                yield element
-
     def __fetch_hidden_objects(self):
         pref_value = PreferenceAPI.get_preference(self.UI_HIDDEN_OBJECTS_PREFERENCE)
         if pref_value:
