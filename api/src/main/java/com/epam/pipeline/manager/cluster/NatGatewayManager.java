@@ -118,13 +118,11 @@ public class NatGatewayManager {
     }
 
     public Set<String> resolveAddress(final String hostname) {
-        try {
-            return Stream.of(InetAddress.getAllByName(hostname))
-                .map(InetAddress::getHostAddress)
-                .collect(Collectors.toSet());
-        } catch (UnknownHostException e) {
+        final Set<String> resolvedAddresses = tryResolveAddress(hostname);
+        if (CollectionUtils.isEmpty(resolvedAddresses)) {
             throw new IllegalArgumentException("Unable to resolve the given hostname: " + hostname);
         }
+        return resolvedAddresses;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -150,6 +148,16 @@ public class NatGatewayManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutingRulesRemoval(final NatRoutingRulesRequest request) {
         return updateRoutesInDatabase(request, NatRouteStatus.TERMINATION_SCHEDULED, this::hasTerminatingState);
+    }
+
+    private Set<String> tryResolveAddress(final String hostname) {
+        try {
+            return Stream.of(InetAddress.getAllByName(hostname))
+                .map(InetAddress::getHostAddress)
+                .collect(Collectors.toSet());
+        } catch (UnknownHostException e) {
+            return Collections.emptySet();
+        }
     }
 
     private void moveQueuedRoutesToKube() {
@@ -606,7 +614,7 @@ public class NatGatewayManager {
     }
 
     private boolean checkNewDnsRecord(final String externalName, final String clusterIP) {
-        final Set<String> resolvedAddresses = resolveAddress(externalName);
+        final Set<String> resolvedAddresses = tryResolveAddress(externalName);
         return resolvedAddresses.size() == 1 && resolvedAddresses.contains(clusterIP);
     }
 
