@@ -24,19 +24,22 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Set;
+
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
-import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
-import static com.epam.pipeline.autotests.ao.LogAO.log;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
+import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toSet;
 
 public class ToolsParametersTest
-        extends AbstractSinglePipelineRunningTest
+        extends AbstractSeveralPipelineRunningTest
         implements Tools {
 
     private final String tool = C.TESTING_TOOL_NAME;
@@ -44,10 +47,7 @@ public class ToolsParametersTest
     private final String group = C.DEFAULT_GROUP;
     private final String invalidEndpoint = "8700";
     private final String launchCapabilities = "launch.capabilities";
-    private final String customCapabilities = "{\n\"testCapability1\": {\n \"description\": \"Custom test capability 1\",\n" +
-            "  \"commands\": [\n \"echo testLine1\",\n \"echo 'testLine1' > ~/testFile1.txt\"\n ]\n },\n \"testCapability2\": {\n" +
-            "  \"description\": \"Custom test capability 2\",\n \"commands\": [\n \"echo testLine2\",\n" +
-            "   \"echo 'testLine2' >> ~/testFile1.txt\"\n ]\n }\n}";
+    private static final String CUSTOM_CAPABILITIES_JSON = "/customCapabilities.json";
     private String prefInitialValue = "";
     private final String custCapability1 = "testCapability1";
     private final String custCapability2 = "testCapability2";
@@ -85,9 +85,9 @@ public class ToolsParametersTest
                                 .save()
                                 .run(this)
                 )
-                .showLog(getRunId());
+                .showLog(getLastRunId());
         new RunsMenuAO()
-                .waitForInitializeNode(getRunId())
+                .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .screenshot("test501screenshot")
                 .assertPageTitleIs("502 Bad Gateway");
@@ -99,7 +99,8 @@ public class ToolsParametersTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities, customCapabilities, true)
+                .clearAndSetJsonToPreference(launchCapabilities,
+                        readResourceFully(CUSTOM_CAPABILITIES_JSON), true)
                 .saveIfNeeded();
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
@@ -109,22 +110,29 @@ public class ToolsParametersTest
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .checkTooltipText(custCapability1, "Custom test capability 1")
                 .checkTooltipText(custCapability2, "Custom test capability 2")
-                .launch(this)
-                .showLog(getRunId())
-                .expandTab(PARAMETERS)
-                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
-                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
-                .waitForSshLink()
-                .ensure(log(), containsMessages(format("Running '%s' commands:", custCapability1),
-                                        "--> Command: 'echo testLine1'",
-                                        format("Running '%s' commands:", custCapability2),
-                                        "--> Command: 'echo testLine2'"))
+                .launch(this);
+        final Set<String> logMess =
+                runsMenu()
+                    .showLog(getLastRunId())
+                    .expandTab(PARAMETERS)
+                    .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
+                    .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
+                    .waitForSshLink()
+                    .click(taskWithName("Console"))
+                    .logMessages()
+                    .collect(toSet());
+        runsMenu()
+                .showLog(getLastRunId())
+                .logContainsMessage(logMess, format("Running '%s' commands:", custCapability1))
+                .logContainsMessage(logMess, "Command: 'echo testLine1'")
+                .logContainsMessage(logMess, format("Running '%s' commands:", custCapability2))
+                .logContainsMessage(logMess, "Command: 'echo testLine2'")
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getRunId())
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls")
                         .assertOutputContains("testFile1.txt")
                         .execute("cat testFile1.txt")
-                        .assertOutputContains("cap1", "cap2")
+                        .assertOutputContains("testLine1", "testLine2")
                         .close());
      }
 }
