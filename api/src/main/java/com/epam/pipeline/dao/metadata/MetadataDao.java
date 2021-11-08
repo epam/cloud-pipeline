@@ -62,6 +62,8 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String deleteMetadataItemKeyQuery;
     private String loadMetadataItemsWithIssuesQuery;
     private String searchMetadataByClassAndKeyValueQuery;
+    private String searchMetadataEntriesByClassAndKeyValueQuery;
+    private String searchMetadataEntriesByClassAndKeyQuery;
     private String loadUniqueValuesFromEntitiesAttributes;
     private String createMetadataDictionary;
     private String loadMetadataKeysQuery;
@@ -145,6 +147,20 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                                                            final Map<String, PipeConfValue> indicator) {
         return getJdbcTemplate().query(searchMetadataByClassAndKeyValueQuery, MetadataParameters.getEntityVORowMapper(),
                         entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
+    }
+
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKey(final AclClass entityClass, final String key) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue(MetadataParameters.ENTITY_CLASS.name(), entityClass.name());
+        parameters.addValue(KEY, key);
+        return getNamedParameterJdbcTemplate().query(searchMetadataEntriesByClassAndKeyQuery,
+                parameters, MetadataParameters.getRowMapper());
+    }
+
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKeyValue(final AclClass entityClass,
+                                                           final Map<String, PipeConfValue> indicator) {
+        return getJdbcTemplate().query(searchMetadataEntriesByClassAndKeyValueQuery, MetadataParameters.getRowMapper(),
+                entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
     }
 
     public List<CategoricalAttribute> buildFullMetadataDict(final List<String> sensitiveMetadataKeys) {
@@ -232,6 +248,16 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
         this.loadMetadataKeysQuery = loadMetadataKeysQuery;
+    }
+
+    @Required
+    public void setSearchMetadataEntriesByClassAndKeyValueQuery(String searchMetadataEntriesByClassAndKeyValueQuery) {
+        this.searchMetadataEntriesByClassAndKeyValueQuery = searchMetadataEntriesByClassAndKeyValueQuery;
+    }
+
+    @Required
+    public void setSearchMetadataEntriesByClassAndKeyQuery(String searchMetadataEntriesByClassAndKeyQuery) {
+        this.searchMetadataEntriesByClassAndKeyQuery = searchMetadataEntriesByClassAndKeyQuery;
     }
 
     public enum MetadataParameters {

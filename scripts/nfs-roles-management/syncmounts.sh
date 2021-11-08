@@ -95,7 +95,6 @@ _API_TOKEN="$2"
 _MOUNT_ROOT="$3"
 
 _DAV_MOUNT_TAG_NAME=${CP_DAV_MOUNT_TAG_NAME:-"dav-mount"}
-_DAV_MOUNT_TAG_VALUE=${CP_DAV_MOUNT_TAG_VALUE:-"true"}
 _DAV_MOUNT_ALL_S3=${CP_DAV_MOUNT_ALL_S3:-"false"}
 
 if [ -z "$_API_URL" ] || [ -z "$_API_TOKEN" ] || [ -z "$_MOUNT_ROOT" ]; then
@@ -195,13 +194,22 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-storages_allowed_for_mount="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/metadata/search?entityClass=DATA_STORAGE&key=${_DAV_MOUNT_TAG_NAME}&value=${_DAV_MOUNT_TAG_VALUE}" | \
-            jq -r '.payload[]? | .entityId')"
-if [ $? -ne 0 ]; then
-    echo "[ERROR] Cannot get list of the allowed storages, exiting"
-    exit 1
-fi
-storages_allowed_for_mount=($storages_allowed_for_mount)
+storages_allowed_for_mount=()
+storages_with_metadata_requested_to_mount="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/metadata/search/entry?entityClass=DATA_STORAGE&key=${_DAV_MOUNT_TAG_NAME}" | \
+                                             jq -r '.payload[]? | (.entity.entityId|tostring) + "|" + (.data."dav-mount".value|tostring)')"
+now=$(date -u +%s)
+while IFS='|' read -r id timestamp; do
+    if [[ "$timestamp" =~ ^[0-9]+$ ]] && [[ "$now" -ge "$timestamp" ]] ; then
+        echo "[INFO] Requested mount time is expired for storage with id $id, dav-mount tag will be deleted."
+        curl -sfk -X DELETE -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/datastorage/$id/davmount/" >> /dev/null
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Cannot remove dav-mount metadata from datastorage with id: $id"
+        fi
+    else
+        echo "[INFO] For Storage with id: $id mount is requested."
+        storages_allowed_for_mount+=($id)
+    fi
+done <<< "$storages_with_metadata_requested_to_mount"
 
 while IFS='|' read -r id name path type region_id; do
      echo
@@ -225,7 +233,7 @@ while IFS='|' read -r id name path type region_id; do
 
      # Check if the object storage is allowed to be mounted (via tag/value)
      if [[ ! " ${storages_allowed_for_mount[@]} " =~ " ${id} " ]] && [ "$_DAV_MOUNT_ALL_S3" != "true" ]; then
-         echo "[INFO] Storage with id: ${id} and path: ${path} is not tagged with ${_DAV_MOUNT_TAG_NAME}=${_DAV_MOUNT_TAG_VALUE}, skipping."
+         echo "[INFO] Storage with id: ${id} and path: ${path} is not tagged with ${_DAV_MOUNT_TAG_NAME}, skipping."
          continue
      fi
 

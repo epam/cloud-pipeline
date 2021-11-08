@@ -222,4 +222,19 @@ public class MetadataController extends AbstractRestController {
         return Result.success(metadataApiService.searchMetadataByClassAndKeyValue(entityClass, key, value));
     }
 
+    @GetMapping(value = "/metadata/search/entry")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
+            notes = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<MetadataEntry>> searchMetadataEntriesByClassAndKeyValue(
+            @RequestParam final AclClass entityClass, @RequestParam final String key,
+            @RequestParam(required = false) final String value) {
+        return Result.success(metadataApiService.searchMetadataEntriesByClassAndKeyValue(entityClass, key, value));
+    }
+
 }

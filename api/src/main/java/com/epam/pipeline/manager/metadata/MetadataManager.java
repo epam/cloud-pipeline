@@ -293,6 +293,16 @@ public class MetadataManager {
         return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
     }
 
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKeyValue(final AclClass entityClass, final String key,
+                                                           final String value) {
+        if (value == null) {
+            return metadataDao.searchMetadataEntriesByClassAndKey(entityClass, key);
+        } else {
+            final Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
+            return metadataDao.searchMetadataEntriesByClassAndKeyValue(entityClass, indicator);
+        }
+    }
+
     public List<CategoricalAttribute> buildFullMetadataDict() {
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);

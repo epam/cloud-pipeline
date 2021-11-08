@@ -14,27 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.controller.vo.data.storage;
 
-import java.util.Map;
-
-import com.epam.pipeline.entity.metadata.PipeConfValue;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Value;
 
-@Getter
-@Setter
+@Value
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class MetadataVO {
-
-    private EntityVO entity;
-    private Map<String, PipeConfValue> data;
-
+public class DataStorageMountVO {
+    Long id;
+    Long time;
 }
