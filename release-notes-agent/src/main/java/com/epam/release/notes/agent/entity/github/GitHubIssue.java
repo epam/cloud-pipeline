@@ -29,5 +29,5 @@ public class GitHubIssue {
     Long number;
     String title;
     String body;
-    String url;
+    String html_url;
 }
