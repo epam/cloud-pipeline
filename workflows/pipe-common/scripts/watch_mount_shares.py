@@ -18,6 +18,7 @@ from distutils.spawn import find_executable
 import errno
 import logging
 import os
+import psutil
 import re
 import subprocess
 import shutil
@@ -58,6 +59,11 @@ MOVED_FROM_EVENT = 'mf'
 MOVED_TO_EVENT = 'mt'
 DELETE_EVENT = 'd'
 
+WATCHERS_USAGE_MEMORY_RATE = os.getenv('CP_CAP_NFS_MNT_OBSERVER_WATCHERS_MEM_CONSUMPTION_MAX_RATE', 100)
+INOTIFY_MAX_WATCHERS = 'fs.inotify.max_user_instances'
+INOTIFY_MAX_WATCHED_DIRS = 'fs.inotify.max_user_watches'
+INOTIFY_MAX_QUEUED_EVENTS = 'fs.inotify.max_queued_events'
+
 EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 1000))
 MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_SEC', 10))
 EVENT_DUMPING_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_DUMPING_TIMEOUT_SEC', 30))
@@ -80,6 +86,10 @@ def mkdir(path):
             pass
         else:
             raise
+
+
+def configure_kernel_param(key, value):
+    execute_cmd_command_and_get_stdout_stderr('sysctl -w {}={} && sysctl -p'.format(key, value), silent=True)
 
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
@@ -257,17 +267,46 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
 class NFSMountWatcher:
 
+    WATCHER_LIMIT_FILE = '/tmp/.inotify_limit'
+
     def __init__(self, target_paths=None):
         self._target_path_mapping = dict()
         self._event_handler = CloudBucketDumpingEventHandler()
         self._event_observer = InotifyObserver()
         self._set_signal_handlers()
+        self._watchers_limit = self._configure_watchers_limit()
         if target_paths:
             self._target_paths = target_paths.split(COMMA)
             self._update_static_paths_mapping()
         else:
             self._target_paths = None
             self._update_target_mount_points()
+
+    @staticmethod
+    def _calculate_max_allowed_watchers():
+        return psutil.virtual_memory().total / 1024 / 100 * WATCHERS_USAGE_MEMORY_RATE
+
+    @staticmethod
+    def _get_watchers_limit():
+        if os.path.exists(NFSMountWatcher.WATCHER_LIMIT_FILE):
+            logging.info('Reading watchers configuration from the file...')
+            try:
+                with open(NFSMountWatcher.WATCHER_LIMIT_FILE, "r") as persistent_conf_file:
+                    content = persistent_conf_file.readlines()
+                    if len(content) > 0:
+                        return int(content[0])
+            except BaseException as e:
+                logging.error('Error during limit retrieval from the file: {}'.format(e.message))
+        logging.info('Reading watchers configuration from the env var...')
+        return int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS', 65535))
+
+    def _configure_watchers_limit(self):
+        watchers_limit = self._get_watchers_limit()
+        logging.info(format_message('Watchers configuration: [{}]'.format(watchers_limit)))
+        configure_kernel_param(INOTIFY_MAX_WATCHERS, watchers_limit)
+        configure_kernel_param(INOTIFY_MAX_WATCHED_DIRS, watchers_limit)
+        configure_kernel_param(INOTIFY_MAX_QUEUED_EVENTS, 2 * watchers_limit)
+        return watchers_limit
 
     def _set_signal_handlers(self):
         for signal_code in [signal.SIGTERM, signal.SIGINT]:
@@ -618,24 +657,47 @@ class NFSMountWatcher:
             resync_timeout = MNT_RESYNC_TIMEOUT_SEC
         return resync_timeout
 
+    def try_increase_watchers_limit(self):
+        new_limit = 2 * self._watchers_limit
+        max_allowed_watchers = self._calculate_max_allowed_watchers()
+        if new_limit > max_allowed_watchers:
+            logging.warning(format_message('Unable to increase limit up to [{}], maximum allowed is [{}]'
+                                           .format(new_limit, max_allowed_watchers)))
+            return
+        logging.warning(format_message('Updating watchers limit in `{}` with [{}]'
+                                       .format(NFSMountWatcher.WATCHER_LIMIT_FILE, new_limit)))
+        with open(NFSMountWatcher.WATCHER_LIMIT_FILE, "w") as out:
+            out.write(str(new_limit))
+
+    def shutdown(self):
+        self._event_observer.stop()
+        self._event_observer.unschedule_all()
+        self._event_handler.dump_to_storage()
+
     def start(self):
         logging.info(format_message('Start monitoring shares state...'))
         self._event_observer.start()
-        try:
-            resync_timeout = self._get_mnt_resync_timeout()
-            while True:
-                time.sleep(resync_timeout)
-                if self._target_paths:
-                    self._update_static_paths_mapping()
-                else:
-                    self._update_target_mount_points()
-                self._event_handler.check_timeout_and_dump()
-
-        finally:
-            self._event_observer.stop()
-            self._event_observer.join()
-            self._event_handler.dump_to_storage()
+        resync_timeout = self._get_mnt_resync_timeout()
+        while True:
+            time.sleep(resync_timeout)
+            if self._target_paths:
+                self._update_static_paths_mapping()
+            else:
+                self._update_target_mount_points()
+            self._event_handler.check_timeout_and_dump()
 
 
 if __name__ == '__main__':
-    NFSMountWatcher(target_paths=os.getenv('CP_CAP_NFS_OBSERVER_TARGET_PATHS')).start()
+    while True:
+        watcher = NFSMountWatcher(target_paths=os.getenv('CP_CAP_NFS_OBSERVER_TARGET_PATHS'))
+        try:
+            watcher.start()
+        except BaseException as e:
+            error_message = str(e)
+            logging.error(format_message('An exception occurred in watcher: {}'.format(error_message)))
+            if 'inotify' in error_message:
+                logging.error(format_message('Error is considered related to inotify, trying to increase limits'))
+                watcher.try_increase_watchers_limit()
+            logging.error(format_message('Restarting a watcher...'))
+        finally:
+            watcher.shutdown()
