@@ -308,6 +308,12 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_FORCE_MOUNTS",
+        "type": "string",
+        "description": "If defined - will force specified mounts for the run, even if the limits are set",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_PIPE_FUSE_TIMEOUT",
         "type": "int",
         "description": "Allows to specify the pipe fuse timeout",
