@@ -30,8 +30,8 @@ import java.util.List;
 @Service
 public class EmailSendActionNotificationService implements ActionNotificationService {
 
-    private JavaMailSender javaMailSender;
-    private TemplateNotificationService templateNotificationService;
+    private final JavaMailSender javaMailSender;
+    private final TemplateNotificationService templateNotificationService;
 
     public EmailSendActionNotificationService(final JavaMailSender javaMailSender,
                                               final TemplateNotificationService templateNotificationService) {

@@ -37,14 +37,14 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
 
     private final CloudPipelineAPI cloudPipelineAPI;
     private final CloudPipelineApiExecutor executor;
-
-    @Value("${pipeline.api.version.file.path}")
-    private String versionFilePath;
+    private final String versionFilePath;
 
     public ApplicationVersionServiceImpl(final CloudPipelineApiBuilder builder,
-                                         final CloudPipelineApiExecutor cloudPipelineApiExecutor) {
+                                         final CloudPipelineApiExecutor cloudPipelineApiExecutor,
+                                         @Value("${pipeline.api.version.file.path}") final String versionFilePath) {
         this.cloudPipelineAPI = builder.buildClient();
         this.executor = cloudPipelineApiExecutor;
+        this.versionFilePath = versionFilePath;
     }
 
     @Override
