@@ -12,18 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.release.notes.agent.exception;
 
-package com.epam.release.notes.agent.entity.mail;
+public class EmailException extends RuntimeException {
 
-import lombok.Builder;
-import lombok.Value;
-
-import java.util.List;
-
-@Value
-@Builder
-public class EmailContent {
-    String title;
-    String body;
-    List<String> recipients;
+    public EmailException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

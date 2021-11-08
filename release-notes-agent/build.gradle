@@ -27,9 +27,8 @@ dependencies {
     // Spring
     implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
     implementation "org.springframework.shell:spring-shell-starter:$springShellVersion"
-
-    // OAuth
-    implementation "com.google.oauth-client:google-oauth-client:$googleOauthClientVersion"
+    implementation "org.springframework.boot:spring-boot-starter-mail:$springBootVersion"
+    implementation "org.springframework.boot:spring-boot-starter-thymeleaf:$springBootVersion"
 
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
@@ -39,9 +38,6 @@ dependencies {
     // Thymeleaf
     implementation "org.thymeleaf:thymeleaf-spring5:$thymeleafSpring5Version"
     implementation "nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:$thymeleafLayoutDialectVersion"
-
-    // Javax mail
-    implementation "com.sun.mail:javax.mail:$javaxMailVersion"
 
     // Lombok
     compileOnly "org.projectlombok:lombok:$lombokVersion"
