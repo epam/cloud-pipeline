@@ -26,9 +26,13 @@
 .table table thead[class*="table-thead"] tr th,
 .table tbody tr td.external-column.column,
 .table tbody tr td.internal-column.column,
-.table tbody tr td.column {
+.table tbody tr td.actions-column {
     padding: 4px;
     height: 35px;
+}
+.table tbody tr td.actions-column {
+    display:flex;
+    justify-content: flex-end;
 }
 
 .table-content-actions {
@@ -54,21 +58,6 @@
     background-color: rgba(240, 65, 52, 0.1);
     opacity: 0.9;
 }
-.record-is-active {
-    color: rgba(16, 142,233);
-    border: 1px solid rgba(16, 142,233);
-}
-.record-is-creating {
-    color:rgba(16, 142,233, 0.5);
-    border: 1px solid rgba(16, 142,233, 0.5);
-}
-.record-will-be-removed {
-    color: rgba(240, 65, 52);
-    border: 1px solid rgba(240, 65, 52);
-}
-.rest-status {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-}
 .revert-action-block {
     display: flex;
     flex-direction: row;
@@ -85,7 +74,25 @@
     color: #108ee9;
 }
 .route-status {
-    margin-left: 10px;
     padding: 5px 10px;
-    border-radius: 7px;
+    font-size: larger;
+}
+.active-status {
+    color: rgb(34, 130, 191);
+}
+.scheduled-status {
+    color: rgb(255, 136, 24);
+}
+.failed-status {
+    color: rgb(240, 65, 52);
+}
+.unknown-status {
+    color: rgb(0,0,0);
+}
+.blink {
+    animation: blinker 1.5s cubic-bezier(.5, 0, 1, 1) infinite alternate;  
+  }
+@keyframes blinker {  
+from { opacity: 1; }
+to { opacity: 0; }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, Spin, Table, message} from 'antd';
+import {Button, Icon, Spin, Table, message, Row, Tooltip} from 'antd';
 import classNames from 'classnames';
 
 import {DeleteRules, SetRules} from '../../../../models/nat';
@@ -12,6 +12,7 @@ import styles from './nat-getaway-configuration.css';
 const {Column, ColumnGroup} = Table;
 const NATRouteStatuses = {
   CREATION_SCHEDULED: 'CREATION_SCHEDULED',
+  SERVICE_CONFIGURED: 'SERVICE_CONFIGURED',
   DNS_CONFIGURED: 'DNS_CONFIGURED',
   PORT_FORWARDING_CONFIGURED: 'PORT_FORWARDING_CONFIGURED',
   ACTIVE: 'ACTIVE',
@@ -31,6 +32,38 @@ export default class NATGetaway extends React.Component {
       addRouteModalIsOpen: false,
       pending: false,
       savingError: null
+    }
+
+    @computed
+    get NatContent () {
+      if (this.props.natRules && this.props.natRules.loaded) {
+        return this.props.natRules.value.map(v => ({...v})) || [];
+      }
+      return [];
+    }
+
+    @computed
+    get sortedContent () {
+      return this.state.tableContent
+        .sort((
+          {externalName: nameA, externalPort: portA},
+          {externalName: nameB, externalPort: portB}) => nameA.toString().localeCompare(nameB.toString()) || (portA - portB)
+        );
+    }
+
+    get tableExternalColumns () {
+      return columns.external;
+    }
+
+    get tableInternalColumns () {
+      return columns.internal;
+    }
+
+    get tableContentChanged () {
+      return !contentIsEqual(
+        this.NatContent,
+        this.state.tableContent.filter(item => !item.isRemoved)
+      );
     }
 
     async componentDidMount () {
@@ -53,48 +86,60 @@ export default class NATGetaway extends React.Component {
       }
     }
 
-    @computed
-    get NatContent () {
-      if (this.props.natRules && this.props.natRules.loaded) {
-        return this.props.natRules.value.map(v => ({...v})) || [];
-      }
-      return [];
-    }
-
-    get tableExternalColumns () {
-      return columns.external;
-    }
-
-    get tableInternalColumns () {
-      return columns.internal;
-    }
-
-    get tableContentChanged () {
-      return !contentIsEqual(
-        this.NatContent,
-        this.state.tableContent.filter(item => !item.isRemoved)
-      );
-    }
-
     getRowClassName (record) {
       return record.isRemoved ? styles.removed : '';
     }
 
-    getRecordStatusClassName (status) {
-      if (status === NATRouteStatuses.ACTIVE) {
-        return styles.recordIsActive;
-      } else if (
-        status === NATRouteStatuses.TERMINATION_SCHEDULED ||
-        status === NATRouteStatuses.TERMINATING) {
-        return styles.recordWillBeRemoved;
-      } else if (status === NATRouteStatuses.CREATION_SCHEDULED) {
-        return styles.recordIsCreating;
-      } else if (status) {
-        return styles.restStatus;
-      } else {
-        return '';
+    renderStatusIcon = (status) => {
+      switch (status) {
+        case NATRouteStatuses.ACTIVE:
+          return (
+            <Tooltip title={status}>
+              <Icon
+                className={classNames(styles.routeStatus, styles.activeStatus)}
+                type="play-circle-o" />
+            </Tooltip>
+          );
+        case NATRouteStatuses.CREATION_SCHEDULED:
+        case NATRouteStatuses.SERVICE_CONFIGURED:
+        case NATRouteStatuses.DNS_CONFIGURED:
+        case NATRouteStatuses.PORT_FORWARDING_CONFIGURED:
+          return (
+            <Tooltip title={status}>
+              <Icon
+                className={classNames(styles.routeStatus, styles.scheduledStatus, styles.blink)}
+                type="clock-circle-o" />
+
+            </Tooltip>
+          );
+        case NATRouteStatuses.TERMINATION_SCHEDULED:
+        case NATRouteStatuses.TERMINATING:
+        case NATRouteStatuses.RESOURCE_RELEASED:
+        case NATRouteStatuses.TERMINATED:
+          return (
+            <Tooltip title={status}>
+              <Spin className={styles.routeStatus} />
+            </Tooltip>
+          );
+        case NATRouteStatuses.FAILED:
+          return (
+            <Tooltip title={status}>
+              <Icon
+                className={classNames(styles.routeStatus, styles.failedStatus)}
+                type="exclamation-circle-o" />
+            </Tooltip>
+          );
+        case NATRouteStatuses.UNKNOWN:
+          return (
+            <Tooltip title={status}>
+              <Icon
+                className={classNames(styles.routeStatus, styles.unknownStatus)}
+                type="question-circle-o" />
+            </Tooltip>
+          );
+        default: return null;
       }
-    }
+    };
 
     removeRow = (record) => {
       const index = this.state.tableContent.findIndex(item => compareTableRecords(record, item));
@@ -251,19 +296,27 @@ export default class NATGetaway extends React.Component {
           <Spin spinning={this.state.pending}>
             <Table
               className={styles.table}
-              dataSource={this.state.tableContent}
+              dataSource={this.sortedContent}
               pagination={false}
               rowKey={({externalIp, externalName, externalPort}) => `${externalIp}-${externalName}-${externalPort}`}
               rowClassName={this.getRowClassName}
             >
               <ColumnGroup title="External resources" className={styles.columnGroup}>
-                {this.tableExternalColumns.map((col) => (
-                  <Column
-                    title={col.prettyName || col.name}
-                    dataIndex={col.name}
-                    key={col.name}
-                    className={classNames(styles.externalColumn, styles.column)}
-                  />))
+                {this.tableExternalColumns.map((col) => {
+                  return (
+                    <Column
+                      title={col.prettyName || col.name}
+                      dataIndex={col.name}
+                      key={col.name}
+                      className={classNames(styles.externalColumn, styles.column)}
+                      render={(text, record) => (
+                        <Row className={styles.externalNameCell}>
+                          {col.name === 'externalName' && this.renderStatusIcon(record.status)}
+                          {text}
+                        </Row>)
+                      }
+                    />);
+                })
                 }
               </ColumnGroup>
               <ColumnGroup title="Internal config">
@@ -277,20 +330,13 @@ export default class NATGetaway extends React.Component {
                 }
                 <Column
                   key="remover"
-                  className={styles.column}
+                  className={styles.actionsColumn}
                   render={(record) => {
                     return !record.isRemoved ? (
                       <div>
                         <Button type="danger" onClick={() => this.removeRow(record)}>
                           <Icon type="delete" />
                         </Button>
-                        <span className={classNames(
-                          this.getRecordStatusClassName(record.status),
-                          styles.routeStatus
-                        )}
-                        >
-                          {record.status}
-                        </span>
                       </div>
                     ) : (
                       <div className={styles.revertActionBlock}>
