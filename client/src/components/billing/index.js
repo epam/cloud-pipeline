@@ -48,7 +48,16 @@ function billing ({children, location, router, preferences, authenticatedUserInf
   //   }
   // };
   return (
-    <div className={classNames(styles.container, 'cp-panel', 'cp-panel-transparent')}>
+    <div
+      className={
+        classNames(
+          styles.container,
+          'cp-panel',
+          'cp-panel-no-hover',
+          'cp-panel-borderless'
+        )
+      }
+    >
       {/*
       <div className={styles.menuContainer}>
         <Menu

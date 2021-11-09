@@ -16,6 +16,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const {CLIEngine} = require('eslint');
+
+const eslintCLI = new CLIEngine({
+  useEslintrc: true,
+  fix: true
+});
 
 const eslintLine = `/* eslint-disable max-len */`;
 
@@ -80,13 +86,14 @@ function generate (...args) {
       }
       e = varRegExp.exec(content);
     }
-    const themeFileContents = `${copyright}\n\n${eslintLine}\n\nexport default {
+    let themeFileContents = `${copyright}\n\n${eslintLine}\n\nexport default {
   identifier: '${identifier}',
   name: '${name}',
   extends: ${baseTheme ? `'${baseTheme}'` : 'undefined'},
   predefined: true,
   configuration: ${JSON.stringify(configuration, undefined, ' ')}
 };`;
+    themeFileContents = eslintCLI.executeOnText(themeFileContents).results.pop().output;
     const destinationFolder = path.resolve(destination, identifier);
     fs.mkdirSync(destinationFolder, {recursive: true});
     fs.writeFileSync(path.resolve(destinationFolder, 'index.js'), Buffer.from(themeFileContents));
@@ -97,17 +104,4 @@ function generate (...args) {
   }
 }
 
-generate('../../src/themes/styles/variables.less', 'light-theme', '../../src/themes', 'Light');
-generate(
-  '../../src/themes/_dev_/dark-theme-variables.less', 'dark-theme',
-  '../../src/themes',
-  'Dark',
-  'light-theme'
-);
-generate(
-  '../../src/themes/_dev_/dark-dimmed-theme-variables.less',
-  'dark-dimmed-theme',
-  '../../src/themes',
-  'Dark dimmed',
-  'dark-theme'
-);
+module.exports = generate;

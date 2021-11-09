@@ -77,7 +77,7 @@ const renderIcon = (resultItem) => {
   if (PreviewIcons[resultItem.type]) {
     return (
       <Icon
-        className={styles.icon}
+        className={classNames('cp-icon-larger', styles.icon, 'cp-search-result-item-main')}
         type={PreviewIcons[resultItem.type]} />
     );
   }
@@ -89,34 +89,57 @@ const DocumentColumns = [
     key: 'name',
     name: 'Name',
     renderFn: (value, document, onClick) => (
-      <span className={styles.cellValue}>
-        <Icon
-          type="info-circle-o"
-          className={classNames(
-            styles.previewBtn,
-            styles.previewBtnTable
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            onClick && onClick(document);
-          }}
-        />
-        <OpenInToolAction
-          file={document.path}
-          storageId={document.parentId}
-          className={classNames(
-            styles.previewBtn,
-            styles.previewBtnTable,
-            styles.action
-          )}
-          titleStyle={{height: '1em'}}
-        />
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          flexWrap: 'nowrap'
+        }}
+      >
+        <div className="cp-search-result-item-actions">
+          <Icon
+            type="info-circle-o"
+            className={
+              classNames(
+                'cp-search-result-item-action',
+                'cp-icon-larger',
+                'cp-search-result-item-main'
+              )
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClick && onClick(document);
+            }}
+          />
+          <OpenInToolAction
+            file={document.path}
+            storageId={document.parentId}
+            className={
+              classNames(
+                'cp-search-result-item-action',
+                'cp-icon-larger'
+              )
+            }
+            titleStyle={{height: '1em'}}
+          />
+        </div>
         {renderIcon(document)}
-        <b style={{marginLeft: '5px'}}>
-          {getDocumentName(document)}
-        </b>
-      </span>
+        <span
+          className={
+            classNames(
+              'cp-ellipsis-text',
+              'cp-search-result-item-main'
+            )
+          }
+        >
+          <b>
+            {getDocumentName(document)}
+          </b>
+        </span>
+      </div>
     ),
     width: '25%'
   },
@@ -156,7 +179,7 @@ const DocumentColumns = [
     name: 'Changed',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
@@ -188,7 +211,7 @@ const DocumentColumns = [
     name: 'Size',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displaySize(value, false)}
       </span>
     ),
@@ -204,7 +227,7 @@ const DocumentColumns = [
     name: 'Started',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
@@ -215,7 +238,7 @@ const DocumentColumns = [
     name: 'Finished',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),

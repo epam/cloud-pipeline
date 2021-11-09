@@ -66,7 +66,12 @@ class CloudPipelineThemes {
       // todo: read from user attributes
       const safeReadPreference = (key, defaultValue) => {
         try {
-          return JSON.parse(localStorage.getItem(key)) || defaultValue;
+          const storageValue = JSON.parse(localStorage.getItem(key));
+          console.log(key, defaultValue);
+          if (storageValue === undefined || storageValue === null) {
+            return defaultValue;
+          }
+          return storageValue;
         } catch (_) {
           return defaultValue;
         }
@@ -84,7 +89,6 @@ class CloudPipelineThemes {
         _TEMPORARY_DARK_THEME_KEY,
         DefaultDarkThemeIdentifier
       );
-      this.synchronizeWithSystem = true;
       this.applyTheme();
     } catch (e) {
       console.warn(`Error reading user theme preference: ${e.message}`);

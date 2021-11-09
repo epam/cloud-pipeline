@@ -288,3 +288,55 @@ h5 {
   background-color: @btn-disabled-background-color;
   border-color: @btn-border-color;
 }
+
+.cp-ellipsis-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cp-icon-larger {
+  font-size: larger;
+}
+
+.cp-icon-large {
+  font-size: large;
+}
+
+.cp-split-panel-header {
+  background-color: @card-header-background;
+  border-bottom: 1px solid @card-border-color;
+  border-top: 1px solid @card-border-color;
+  color: @application-color;
+}
+
+.cp-split-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  background-color: @application-background-color;
+}
+
+.cp-split-panel-panel {
+  color: @application-color;
+  background-color: @panel-background-color;
+}
+
+.cp-split-panel.vertical {
+  flex-direction: column;
+}
+
+.cp-split-panel.vertical > .cp-split-panel-panel {
+  padding: 2px 0;
+}
+
+.cp-split-panel.horizontal > .cp-split-panel-panel {
+  padding: 0 2px;
+}
+
+.cp-split-panel-resizer {
+  background-color: @application-background-color;
+  height: 100%;
+  width: 100%;
+}

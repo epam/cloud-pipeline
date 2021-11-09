@@ -47,60 +47,63 @@ function removeImports (cssContent) {
 
 const themesDirectory = path.resolve(__dirname, '../../src/themes');
 
-const themeContents = removeComments(
-  fs.readFileSync(path.resolve(themesDirectory, 'default.theme.less'))
-    .toString()
-);
-const importRegExp = /@import ["'](.+)["'];/g;
-let importExec = importRegExp.exec(themeContents);
-const imports = [];
-while (importExec) {
-  if (importExec) {
-    if (!/\.less$/i.test(importExec[1])) {
-      imports.push(importExec[1] + '.less');
+module.exports = function generateThemeTemplate () {
+  const themeContents = removeComments(
+    fs.readFileSync(path.resolve(themesDirectory, 'default.theme.less'))
+      .toString()
+  );
+  const importRegExp = /@import ["'](.+)["'];/g;
+  let importExec = importRegExp.exec(themeContents);
+  const imports = [];
+  while (importExec) {
+    if (importExec) {
+      if (!/\.less$/i.test(importExec[1])) {
+        imports.push(importExec[1] + '.less');
+      } else {
+        imports.push(importExec[1]);
+      }
+    }
+    importExec = importRegExp.exec(themeContents);
+  }
+
+  let resultedCss = '';
+
+  const selectorsRegExp = /^[\s]*([^{]+)\s*({[^}]+})/m;
+
+  for (const filename of imports) {
+    const filePath = path.resolve(themesDirectory, filename);
+    if (ignores.some(o => o.test(filePath))) {
+      console.log('skipping file', filename, ' - ignored');
+      continue;
+    }
+    if (fs.existsSync(filePath)) {
+      console.log('merging file', filename);
+      let content = removeImports(removeComments(fs.readFileSync(filePath).toString()));
+      let modified = '';
+      let e = selectorsRegExp.exec(content);
+      while (e) {
+        const selectors = (e[1] || '').split(',').map(o => `@THEME ${o.trim()}`).join(',\n');
+        modified = modified.concat(
+          selectors,
+          ' ',
+          e[2],
+          '\n'
+        );
+        content = content.slice(e.index + e[0].length);
+        e = selectorsRegExp.exec(content);
+      }
+      modified = modified.concat(content);
+      resultedCss = resultedCss.concat(modified);
     } else {
-      imports.push(importExec[1]);
+      console.log('unknown import:', filename);
     }
   }
-  importExec = importRegExp.exec(themeContents);
-}
 
-let resultedCss = '';
+  const resultFilePath = path.resolve(themesDirectory, 'utilities/theme.less.template.js');
 
-const selectorsRegExp = /^[\s]*([^,{}]+)({\s|,\s)+/m;
+  const template = `${copyright}\n\nexport default \`\n${resultedCss}\`;\n`;
 
-for (const filename of imports) {
-  const filePath = path.resolve(themesDirectory, filename);
-  if (ignores.some(o => o.test(filePath))) {
-    console.log('skipping file', filename, ' - ignored');
-    continue;
-  }
-  if (fs.existsSync(filePath)) {
-    console.log('merging file', filename);
-    let content = removeImports(removeComments(fs.readFileSync(filePath).toString()));
-    let modified = '';
-    let e = selectorsRegExp.exec(content);
-    while (e) {
-      modified = modified.concat(
-        content.slice(0, e.index),
-        '@THEME ',
-        e[1],
-        e[2]
-      );
-      content = content.slice(e.index + e[0].length);
-      e = selectorsRegExp.exec(content);
-    }
-    modified = modified.concat(content);
-    resultedCss = resultedCss.concat(modified);
-  } else {
-    console.log('unknown import:', filename);
-  }
-}
+  console.log('writing resulted content to', resultFilePath);
 
-const resultFilePath = path.resolve(themesDirectory, 'utilities/theme.less.template.js');
-
-const template = `${copyright}\n\nexport default \`\n${resultedCss}\`;\n`;
-
-console.log('writing resulted content to', resultFilePath);
-
-fs.writeFileSync(resultFilePath, Buffer.from(template));
+  fs.writeFileSync(resultFilePath, Buffer.from(template));
+};
