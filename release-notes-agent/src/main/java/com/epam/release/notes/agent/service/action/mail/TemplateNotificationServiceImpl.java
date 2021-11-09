@@ -25,7 +25,8 @@ import java.util.List;
 public class TemplateNotificationServiceImpl implements TemplateNotificationService {
 
     @Override
-    public EmailContent populate(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues) {
+    public EmailContent populate(String oldVersion, String newVersion, List<JiraIssue> jiraIssues,
+                                 List<GitHubIssue> gitHubIssues) {
         return null;
     }
 }

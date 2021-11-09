@@ -14,11 +14,13 @@
  */
 package com.epam.release.notes.agent.service.action;
 
+import com.epam.release.notes.agent.entity.action.Action;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
 import com.epam.release.notes.agent.exception.EmailException;
 import com.epam.release.notes.agent.service.action.mail.TemplateNotificationService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -27,11 +29,12 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.util.List;
 
+@Slf4j
 @Service
 public class EmailSendActionNotificationService implements ActionNotificationService {
 
-    private JavaMailSender javaMailSender;
-    private TemplateNotificationService templateNotificationService;
+    private final JavaMailSender javaMailSender;
+    private final TemplateNotificationService templateNotificationService;
 
     public EmailSendActionNotificationService(final JavaMailSender javaMailSender,
                                               final TemplateNotificationService templateNotificationService) {
@@ -44,6 +47,10 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
                         final List<GitHubIssue> gitHubIssues) {
         final EmailContent emailContent = templateNotificationService.populate(oldVersion, newVersion, jiraIssues,
                 gitHubIssues);
+        if (emailContent == null) {
+            log.error("Email content must be populated. Email could not be sent.");
+            return;
+        }
         final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         final MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
         try {
@@ -54,5 +61,10 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
             throw new EmailException("Exception was thrown while trying to populate a MimeMessage.", e);
         }
         javaMailSender.send(mimeMessage);
+    }
+
+    @Override
+    public Action getServiceAction() {
+        return Action.POST;
     }
 }
