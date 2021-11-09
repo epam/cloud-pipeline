@@ -59,6 +59,7 @@ MOVED_FROM_EVENT = 'mf'
 MOVED_TO_EVENT = 'mt'
 DELETE_EVENT = 'd'
 
+WATCHER_MEM_CONSUMPTION_BYTES = 1024
 WATCHERS_USAGE_MEMORY_RATE = int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_WATCHERS_MEM_CONSUMPTION_MAX_RATE', 100))
 INOTIFY_MAX_WATCHERS = 'fs.inotify.max_user_instances'
 INOTIFY_MAX_WATCHED_DIRS = 'fs.inotify.max_user_watches'
@@ -285,7 +286,7 @@ class NFSMountWatcher:
 
     @staticmethod
     def _calculate_max_allowed_watchers():
-        return psutil.virtual_memory().total / 1024 / 100 * WATCHERS_USAGE_MEMORY_RATE
+        return psutil.virtual_memory().total / WATCHER_MEM_CONSUMPTION_BYTES / 100 * WATCHERS_USAGE_MEMORY_RATE
 
     @staticmethod
     def _get_watchers_limit():
