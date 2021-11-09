@@ -35,6 +35,7 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private static final String NEW_VERSION = "newVersion";
     private static final String JIRA_ISSUES = "jiraIssues";
     private static final String GITHUB_ISSUES = "gitHubIssues";
+    private static final String EXCEPTION_MESSAGE = "This kind of version status is not handled in current method";
 
     private final SpringTemplateEngine templateEngine;
     private final ApplicationVersionService applicationVersionService;
@@ -83,7 +84,7 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
                 addIssuesToContext(jiraIssues, gitHubIssues, context);
                 return createEmailContent(context, emailToSubscribersTitle, emailToSubscribersTemplateName);
             default:
-                throw new IllegalStateException();
+                throw new IllegalStateException(EXCEPTION_MESSAGE);
         }
     }
 
