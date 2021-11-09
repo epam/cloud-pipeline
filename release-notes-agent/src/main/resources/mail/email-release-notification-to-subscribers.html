@@ -20,7 +20,7 @@
     <p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
     <ul>
         <li th:each="issue : ${gitHubIssues}">
-            <a th:href="${issue.getHtml_url()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
+            <a th:href="${issue.getHtmlUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
         </li>
     </ul>
     <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>

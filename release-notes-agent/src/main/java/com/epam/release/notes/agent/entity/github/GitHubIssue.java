@@ -15,6 +15,7 @@
 
 package com.epam.release.notes.agent.entity.github;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -29,5 +30,6 @@ public class GitHubIssue {
     Long number;
     String title;
     String body;
-    String html_url;
+    @JsonProperty("html_url")
+    String htmlUrl;
 }

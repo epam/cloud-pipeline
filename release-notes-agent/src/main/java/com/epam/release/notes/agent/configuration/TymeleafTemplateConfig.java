@@ -24,15 +24,15 @@ import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 @Configuration
-public class MailTemplateConfig {
+public class TymeleafTemplateConfig {
 
     private static final String EMAIL_TEMPLATE_ENCODING = "UTF-8";
-    private static final String PERIOD = ".";
+    private static final String DOT = ".";
 
     private final String resolverPrefix;
     private final String resolverSuffix;
 
-    public MailTemplateConfig(
+    public TymeleafTemplateConfig(
             @Value("${release.notes.agent.path.to.folder.with.templates}") final String resolverPrefix,
             @Value("${release.notes.agent.type.of.template.files}") final String resolverSuffix) {
         this.resolverPrefix = resolverPrefix;
@@ -50,7 +50,7 @@ public class MailTemplateConfig {
     public AbstractConfigurableTemplateResolver fileTemplateResolver() {
         final AbstractConfigurableTemplateResolver templateResolver = new FileTemplateResolver();
         templateResolver.setPrefix(resolverPrefix);
-        templateResolver.setSuffix(PERIOD + resolverSuffix);
+        templateResolver.setSuffix(DOT + resolverSuffix);
         templateResolver.setTemplateMode(TemplateMode.parse(resolverSuffix));
         templateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);
         return templateResolver;
