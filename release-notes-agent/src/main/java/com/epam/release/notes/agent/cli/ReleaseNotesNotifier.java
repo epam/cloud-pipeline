@@ -14,17 +14,17 @@
  */
 package com.epam.release.notes.agent.cli;
 
+import com.epam.release.notes.agent.entity.action.Action;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
-import com.epam.release.notes.agent.service.action.EmailSendActionNotificationService;
+import com.epam.release.notes.agent.service.action.ActionServiceProvider;
 import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -41,36 +41,28 @@ import static java.lang.String.format;
 @ShellComponent
 public class ReleaseNotesNotifier {
 
-    private ApplicationVersionService applicationVersionService;
-    private GitHubService gitHubService;
-    private JiraIssueService jiraIssueService;
-    private List<String> subscribers;
-    private String adminEmail;
-    private EmailSendActionNotificationService actionNotificationService;
+    private final ApplicationVersionService applicationVersionService;
+    private final GitHubService gitHubService;
+    private final JiraIssueService jiraIssueService;
+    private final ActionServiceProvider actionServiceProvider;
 
     public ReleaseNotesNotifier(final ApplicationVersionService applicationVersionService,
                                 final GitHubService gitHubService,
                                 final JiraIssueService jiraIssueService,
-                                @Value("${release.notes.agent.subscribers:}") final List<String> subscribers,
-                                @Value("${release.notes.agent.admin.email:}") final String adminEmail,
-                                final EmailSendActionNotificationService actionNotificationService) {
+                                final ActionServiceProvider actionServiceProvider) {
         this.applicationVersionService = applicationVersionService;
         this.gitHubService = gitHubService;
         this.jiraIssueService = jiraIssueService;
-        this.subscribers = subscribers;
-        this.adminEmail = adminEmail;
-        this.actionNotificationService = actionNotificationService;
+        this.actionServiceProvider = actionServiceProvider;
     }
 
-    @ShellMethod(key = "send-release-notes", value = "Grab and send release notes information to specified users")
+    @ShellMethod(
+            key = "send-release-notes",
+            value = "Grab and post/publish release notes information to specified users.")
     public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {
 
         final Version old = applicationVersionService.loadPreviousVersion();
         final Version current = applicationVersionService.fetchCurrentVersion();
-
-        if (emails == null) {
-            emails = subscribers;
-        }
 
         final VersionStatus versionStatus = applicationVersionService.getVersionStatus(old, current);
         if (versionStatus == VersionStatus.NOT_FOUND) {
@@ -83,9 +75,9 @@ public class ReleaseNotesNotifier {
         } else if (versionStatus == VersionStatus.MAJOR_CHANGED) {
             // send notification to admin
             log.info(format("The current major API version %s has changed. " +
-                    "The old major version: %s, the new major version: %s. Report will be sent to admin: %s",
-                    current.toString(), old.getMajor(), current.getMajor(), adminEmail));
-            actionNotificationService.process(old.toString(), current.toString(), Collections.emptyList(),
+                    "The old major version: %s, the new major version: %s. Report will be sent to admin.",
+                    current.toString(), old.getMajor(), current.getMajor()));
+            performAction(Collections.singletonList(Action.POST), old, current, Collections.emptyList(),
                     Collections.emptyList());
             applicationVersionService.storeVersion(current);
             return;
@@ -98,9 +90,16 @@ public class ReleaseNotesNotifier {
         gitHubIssues
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
         final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
-        actionNotificationService.process(old.toString(), current.toString(),
-                filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues);
+        performAction(Collections.singletonList(Action.POST), old, current, gitHubIssues, jiraIssues);
         applicationVersionService.storeVersion(current);
+    }
+
+    private void performAction(final List<Action> actions, final Version old, final Version current,
+                               final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {
+        actions.stream()
+                .map(action -> actionServiceProvider.getActionService(action.getName()))
+                .forEach(service -> service.process(old.toString(), current.toString(),
+                        filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues));
     }
 
     private List<JiraIssue> filterJiraIssues(final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {

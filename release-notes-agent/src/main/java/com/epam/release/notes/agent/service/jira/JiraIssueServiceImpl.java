@@ -16,7 +16,6 @@ package com.epam.release.notes.agent.service.jira;
 
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.jira.JiraRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,17 +27,20 @@ import static java.lang.String.format;
 @Service
 public class JiraIssueServiceImpl implements JiraIssueService {
 
-    @Autowired
-    private JiraApiClient jiraApiClient;
+    private final JiraApiClient jiraApiClient;
+    private final String jiraBaseUrl;
+    private final String jiraVersionCustomFieldId;
+    private final String jiraGithubCustomFieldId;
 
-    @Value("${jira.base.url}")
-    private String jiraBaseUrl;
-
-    @Value("${jira.version.custom.field.id}")
-    private String jiraVersionCustomFieldId;
-
-    @Value("${jira.github.custom.field.id}")
-    private String jiraGithubCustomFieldId;
+    public JiraIssueServiceImpl(final JiraApiClient jiraApiClient,
+                                @Value("${jira.base.url}") final String jiraBaseUrl,
+                                @Value("${jira.version.custom.field.id}") final String jiraVersionCustomFieldId,
+                                @Value("${jira.github.custom.field.id}") final String jiraGithubCustomFieldId) {
+        this.jiraApiClient = jiraApiClient;
+        this.jiraBaseUrl = jiraBaseUrl;
+        this.jiraVersionCustomFieldId = jiraVersionCustomFieldId;
+        this.jiraGithubCustomFieldId = jiraGithubCustomFieldId;
+    }
 
     @Override
     public List<JiraIssue> fetchIssue(final String version) {
