@@ -578,7 +578,7 @@ class FacetedSearch extends React.Component {
     const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;
     return (
       <div
-        className={styles.container}
+        className={classNames(styles.container, 'cp-panel', 'cp-panel-no-hover', 'cp-panel-borderless')}
       >
         <div
           className={styles.search}
@@ -652,7 +652,6 @@ class FacetedSearch extends React.Component {
                 }
               }]}
               resizerSize={14}
-              resizerStyle={{backgroundColor: '#ececec'}}
             >
               <div
                 key="faceted-filter"

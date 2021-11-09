@@ -472,7 +472,14 @@ class RunsFilter extends React.Component {
     }
     return (
       <Card
-        className={classNames(styles.runsCard, 'cp-panel', 'cp-panel-transparent')}
+        className={
+          classNames(
+            styles.runsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 15}}
       >
         <Row type="flex" align="middle">

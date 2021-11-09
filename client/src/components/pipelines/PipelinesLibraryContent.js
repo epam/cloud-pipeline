@@ -37,7 +37,14 @@ export default class PipelinesLibraryContent extends React.Component {
     return (
       <Card
         id="pipelines-library-content"
-        className={classNames(styles.libraryCard, 'cp-panel')}
+        className={
+          classNames(
+            styles.libraryCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={
           Object.assign(
             {

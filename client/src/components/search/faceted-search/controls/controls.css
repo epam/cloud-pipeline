@@ -95,56 +95,16 @@
   background-color: #f9f2f4;
 }
 
-.view-toggler-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  padding: 0 5px;
-  justify-content: center;
-  align-items: center;
-  font-size: small;
-}
-
 .view-toggler {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
+  padding: 0 5px;
   align-items: center;
 }
 
 .view-toggler > div[class~="ant-btn-group"] {
   display: flex;
   flex-wrap: nowrap;
-}
-
-.view-toggler i[class~="anticon"] {
-  font-size: large;
-}
-
-.view-toggler .toggle-btn {
-  cursor: pointer;
-  color: rgba(0, 0, 0, 0.65);
-  font-size: 12px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-}
-
-.view-toggler .toggle-btn.toggle-btn-active {
-  background: #317fd0;
-  color: #fff;
-}
-
-.view-toggler .toggle-btn:hover {
-  background-color: #eef8ff;
-  border-color: #a2d8ff;
-}
-
-.view-toggler .toggle-btn.toggle-btn-active:hover {
-  background-color: #458bd4;
 }
 
 .infinite-scroll {

@@ -74,7 +74,7 @@ export default `
   color: @application-color;
 }
 @THEME .ant-modal-close {
-@THEME color: fadeout(@application-color, 20%);
+  color: fadeout(@application-color, 20%);
 }
 @THEME .ant-modal-close:focus,
 @THEME .ant-modal-close:hover {
@@ -164,6 +164,125 @@ export default `
 @THEME .ant-checkbox-disabled + span {
   color: @application-color-disabled;
 }
+@THEME .cp-ellipsis-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@THEME .cp-icon-larger {
+  font-size: larger;
+}
+@THEME .cp-icon-large {
+  font-size: large;
+}
+@THEME .cp-split-panel-header {
+  background-color: @card-header-background;
+  border-bottom: 1px solid @card-border-color;
+  border-top: 1px solid @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-split-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  background-color: @application-background-color;
+}
+@THEME .cp-split-panel-panel {
+  color: @application-color;
+  background-color: @panel-background-color;
+}
+@THEME .cp-split-panel.vertical {
+  flex-direction: column;
+}
+@THEME .cp-split-panel.vertical > .cp-split-panel-panel {
+  padding: 2px 0;
+}
+@THEME .cp-split-panel.horizontal > .cp-split-panel-panel {
+  padding: 0 2px;
+}
+@THEME .cp-split-panel-resizer {
+  background-color: @application-background-color;
+  height: 100%;
+  width: 100%;
+}
+@THEME .ant-btn {
+  color: @application-color;
+  background-color: @panel-background-color;
+  border-color: @btn-border-color;
+}
+@THEME .ant-btn-clicked::after {
+  border: 0 solid @primary-color;
+}
+@THEME .ant-btn:hover,
+@THEME .ant-btn:focus,
+@THEME .ant-btn:active,
+@THEME .ant-btn.active {
+  color: @primary-color;
+  background-color: @panel-background-color;
+  border-color: @primary-color;
+}
+@THEME .ant-btn-primary {
+  color: @btn-color;
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME .ant-btn-primary:hover,
+@THEME .ant-btn-primary:focus {
+  color: @btn-color;
+  background-color: @btn-primary-hover;
+  border-color: @btn-primary-hover;
+}
+@THEME .ant-btn-primary.active,
+@THEME .ant-btn-primary:active,
+@THEME .ant-btn-primary.ant-btn-clicked {
+  color: @btn-color;
+  background-color: @btn-primary-active;
+  border-color: @btn-primary-active;
+}
+@THEME .ant-btn-danger {
+  color: @btn-danger-color;
+  background-color: @btn-danger-background-color;
+  border-color: @btn-border-color;
+}
+@THEME .ant-btn-danger:focus,
+@THEME .ant-btn-danger:hover {
+  color: @btn-color;
+  background-color: @btn-danger-color;
+  border-color: @btn-danger-color;
+}
+@THEME .ant-btn-danger.active,
+@THEME .ant-btn-danger:active {
+  color: @btn-color;
+  background-color: @btn-danger-active-color;
+  border-color: @btn-danger-active-color;
+}
+@THEME .ant-btn-group .ant-btn-primary:first-child:not(:last-child) {
+  border-right-color: @btn-primary-active;
+}
+@THEME .ant-btn-group .ant-btn-primary:last-child:not(:first-child),
+@THEME .ant-btn-group .ant-btn-primary + .ant-btn-primary {
+  border-left-color: @btn-primary-active;
+}
+@THEME .ant-btn-group .ant-btn-primary:not(:first-child):not(:last-child) {
+  border-right-color: @btn-primary-active;
+  border-left-color: @btn-primary-active;
+}
+@THEME .ant-btn.disabled,
+@THEME .ant-btn.disabled.active,
+@THEME .ant-btn.disabled:active,
+@THEME .ant-btn.disabled:focus,
+@THEME .ant-btn.disabled:hover,
+@THEME .ant-btn[disabled],
+@THEME .ant-btn[disabled].active,
+@THEME .ant-btn[disabled]:active,
+@THEME .ant-btn[disabled]:focus,
+@THEME .ant-btn[disabled]:hover {
+  color: @btn-disabled-color;
+  background-color: @btn-disabled-background-color;
+  border-color: @btn-border-color;
+}
+
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
   background-color: @panel-background-color;
@@ -175,6 +294,13 @@ export default `
 }
 @THEME .cp-panel.cp-panel-transparent:hover {
   box-shadow: none;
+  border-color: transparent;
+}
+@THEME .cp-panel.cp-panel-no-hover:hover {
+  box-shadow: none;
+}
+@THEME .cp-panel.cp-panel-borderless,
+@THEME .cp-panel.cp-panel-borderless:hover {
   border-color: transparent;
 }
 @THEME .cp-panel .cp-panel-card {
@@ -225,6 +351,7 @@ export default `
 @THEME .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
   background-color: @card-service-actions-active-background;
 }
+
 @THEME .cp-navigation-panel {
   background-color: @navigation-panel-color;
 }
@@ -257,6 +384,7 @@ export default `
 @THEME .cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active {
   color: @navigation-item-runs-color;
 }
+
 @THEME .cp-dashboard-sticky-panel {
   background-color: @application-background-color;
 }
@@ -286,6 +414,7 @@ export default `
   border-color: @color-blue;
   box-shadow: 0 0 1em @color-blue;
 }
+
 @THEME .provider.aws {
   background-image: @aws-icon;
 }
@@ -333,6 +462,7 @@ export default `
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
 }
+
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -376,6 +506,7 @@ export default `
   color: @application-color;
   box-shadow: 0 2px 8px @card-hovered-shadow-color;
 }
+
 @THEME .cp-tool-header {
   border-color: @menu-border-color;
 }
@@ -398,6 +529,11 @@ export default `
 @THEME .cp-tool-no-description {
   color: @application-color-faded;
 }
+@THEME .cp-tool-icon-container {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+
 
 
 
@@ -430,7 +566,7 @@ export default `
   color: @menu-active-color;
 }
 @THEME .cp-billing-menu .cp-billing-sub-menu .ant-menu-submenu-title::after {
-@THEME content: "";
+  content: "";
   position: absolute;
   right: 0;
   top: 0;
@@ -438,10 +574,10 @@ export default `
   border-right: 3px solid @menu-active-color;
   transform: scaleY(0.0001);
   opacity: 0;
-  transition: transform 0.15s cubic-bezier(0.215, @THEME 0.61, @THEME 0.355, @THEME 1), @THEME opacity 0.15s cubic-bezier(0.215, @THEME 0.61, @THEME 0.355, 1);
+  transition: transform 0.15s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.15s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 @THEME .cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title::after {
-@THEME transition: transform 0.15s cubic-bezier(0.645, @THEME 0.045, @THEME 0.355, @THEME 1), @THEME opacity 0.15s cubic-bezier(0.645, @THEME 0.045, @THEME 0.355, 1);
+  transition: transform 0.15s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.15s cubic-bezier(0.645, 0.045, 0.355, 1);
   opacity: 1;
   transform: scaleY(1);
 }
@@ -451,6 +587,7 @@ export default `
 @THEME .cp-billing-table td.cp-billing-table-pending {
   background-color: @card-background-color;
 }
+
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
   color: @primary-text-color;
@@ -463,9 +600,6 @@ export default `
 }
 @THEME .cp-search-clear-button:hover {
   color: @application-color;
-}
-@THEME .cp-search-clear-filters-button.cp-search-clear-filters-button-disabled {
-
 }
 @THEME .cp-search-filter .cp-search-filter-header {
   border-bottom: 1px dashed transparent;
@@ -482,4 +616,107 @@ export default `
 @THEME .cp-search-filter .cp-search-filter-header.cp-search-filter-header-expanded .cp-search-filter-header-caret {
   transform: rotate(90deg);
 }
+@THEME .cp-search-results-table-header {
+  background-color: @card-background-color;
+  color: @application-color;
+  position: sticky;
+  top: 0;
+  font-weight: bold;
+}
+@THEME .cp-search-results-table-header-cell {
+  margin: 0;
+  padding: 5px;
+  user-select: none;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  border-bottom: 1px solid transparent;
+}
+@THEME .cp-search-results-table-cell,
+@THEME .cp-search-results-table-divider,
+@THEME .cp-search-results-table-header .cp-search-results-table-header-cell {
+  background-color: @card-background-color;
+}
+@THEME .cp-search-results-table-header .cp-search-results-table-header-cell {
+  border-color: @card-border-color;
+}
+@THEME .cp-search-result-list-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+@THEME .cp-search-results-table-cell {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+@THEME .cp-search-results-table-divider {
+  height: 100%;
+  user-select: none;
+  width: 4px;
+}
+@THEME .cp-search-results-table-header .cp-search-results-table-divider {
+  cursor: col-resize;
+  border-left: 1px solid @card-border-color;
+}
+@THEME .cp-search-results-table-header .cp-search-results-table-divider:not(:last-child) {
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-search-results-table-header .cp-search-results-table-divider:hover,
+@THEME .cp-search-results-table-divider.active {
+  border-left: 1px solid @primary-color;
+}
+@THEME .cp-search-result-item-main {
+  color: currentColor;
+}
+@THEME .cp-search-result-table-item {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none !important;
+  display: grid;
+  transition: background 0.2s ease;
+}
+@THEME .cp-search-result-item:not(.disabled):hover .cp-search-result-item-main {
+  color: @primary-color;
+}
+@THEME .cp-search-result-item-sub {
+  color: @application-color-faded;
+}
+@THEME .cp-search-result-item.disabled,
+@THEME .cp-search-result-item.disabled .cp-search-result-item-main,
+@THEME .cp-search-result-item.disabled .cp-search-result-item-sub {
+  color: @application-color-disabled;
+}
+@THEME .cp-search-result-item-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  align-self: stretch;
+}
+@THEME .cp-search-result-item-action {
+  margin-right: 0;
+  padding: 0 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+@THEME .cp-search-result-item:not(.disabled) .cp-search-result-item-action:hover {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+@THEME .cp-search-result-item-tag .cp-search-result-item-tag-key,
+@THEME .cp-search-result-item-tag .cp-search-result-item-tag-value {
+  border: 1px solid @card-border-color;
+}
+@THEME .cp-search-result-item-tag .cp-search-result-item-tag-key {
+  background-color: @card-header-background;
+}
+@THEME .cp-search-result-item-tag .cp-search-result-item-tag-value {
+  background-color: @card-background-color;
+}
+
 `;

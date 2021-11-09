@@ -475,7 +475,14 @@ export default class ToolsNew extends React.Component {
     }
     return (
       <Card
-        className={classNames(styles.toolsCard, 'cp-panel', 'cp-panel-transparent')}
+        className={
+          classNames(
+            styles.toolsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}>
         {this.renderHeader()}
         {this.renderContent(content, isError)}

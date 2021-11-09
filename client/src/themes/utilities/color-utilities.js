@@ -212,3 +212,33 @@ export function fade (color, amount) {
   );
   return fadeColor || 'inherit';
 }
+
+export function fadeout (color, amount) {
+  const parsedColor = parseColor(color);
+  if (!parsedColor) {
+    return 'inherit';
+  }
+  const parsedAmount = parseAmount(amount);
+  const fadeColor = buildColor(
+    {
+      ...parsedColor,
+      a: Math.max(0, parsedColor.a - parsedAmount)
+    }
+  );
+  return fadeColor || 'inherit';
+}
+
+export function fadein (color, amount) {
+  const parsedColor = parseColor(color);
+  if (!parsedColor) {
+    return 'inherit';
+  }
+  const parsedAmount = parseAmount(amount);
+  const fadeColor = buildColor(
+    {
+      ...parsedColor,
+      a: Math.min(1, parsedColor.a + parsedAmount)
+    }
+  );
+  return fadeColor || 'inherit';
+}

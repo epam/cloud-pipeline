@@ -633,7 +633,9 @@ export default class Cluster extends localization.LocalizedReactComponent {
     let description = this.getDescription();
     const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
     return (
-      <div className="cp-panel cp-panel-transparent">
+      <div
+        className="cp-panel cp-panel-no-hover cp-panel-borderless"
+      >
         <Row type="flex" align="middle">
           <Col span={19}>
             <span className={styles.nodeMainInfo}>

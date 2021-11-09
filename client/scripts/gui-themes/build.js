@@ -14,16 +14,6 @@
  *  limitations under the License.
  */
 
-.dropdown-item {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-}
+const generateThemes = require('./generate-themes');
 
-.tool-icon {
-  height: 1rem;
-}
-
-.tool-name {
-  margin-left: 8px;
-}
+generateThemes();

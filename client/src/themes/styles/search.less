@@ -33,10 +33,6 @@
   color: @application-color;
 }
 
-.cp-search-clear-filters-button.cp-search-clear-filters-button-disabled {
-
-}
-
 .cp-search-filter .cp-search-filter-header {
   border-bottom: 1px dashed transparent;
 }
@@ -55,4 +51,127 @@
 
 .cp-search-filter .cp-search-filter-header.cp-search-filter-header-expanded .cp-search-filter-header-caret {
   transform: rotate(90deg);
+}
+
+.cp-search-results-table-header {
+  background-color: @card-background-color;
+  color: @application-color;
+  position: sticky;
+  top: 0;
+  font-weight: bold;
+}
+
+.cp-search-results-table-header-cell {
+  margin: 0;
+  padding: 5px;
+  user-select: none;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  border-bottom: 1px solid transparent;
+}
+
+.cp-search-results-table-cell,
+.cp-search-results-table-divider,
+.cp-search-results-table-header .cp-search-results-table-header-cell {
+  background-color: @card-background-color;
+}
+
+.cp-search-results-table-header .cp-search-results-table-header-cell {
+  border-color: @card-border-color;
+}
+
+.cp-search-result-list-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.cp-search-results-table-cell {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.cp-search-results-table-divider {
+  height: 100%;
+  user-select: none;
+  width: 4px;
+}
+
+.cp-search-results-table-header .cp-search-results-table-divider {
+  cursor: col-resize;
+  border-left: 1px solid @card-border-color;
+}
+
+.cp-search-results-table-header .cp-search-results-table-divider:not(:last-child) {
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-search-results-table-header .cp-search-results-table-divider:hover,
+.cp-search-results-table-divider.active {
+  border-left: 1px solid @primary-color;
+}
+
+.cp-search-result-item-main {
+  color: currentColor;
+}
+
+.cp-search-result-table-item {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none !important;
+  display: grid;
+  transition: background 0.2s ease;
+}
+
+.cp-search-result-item:not(.disabled):hover .cp-search-result-item-main {
+  color: @primary-color;
+}
+
+.cp-search-result-item-sub {
+  color: @application-color-faded;
+}
+
+.cp-search-result-item.disabled,
+.cp-search-result-item.disabled .cp-search-result-item-main,
+.cp-search-result-item.disabled .cp-search-result-item-sub {
+  color: @application-color-disabled;
+}
+
+.cp-search-result-item-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  align-self: stretch;
+}
+
+.cp-search-result-item-action {
+  margin-right: 0;
+  padding: 0 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.cp-search-result-item:not(.disabled) .cp-search-result-item-action:hover {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+
+.cp-search-result-item-tag .cp-search-result-item-tag-key,
+.cp-search-result-item-tag .cp-search-result-item-tag-value {
+  border: 1px solid @card-border-color;
+}
+
+.cp-search-result-item-tag .cp-search-result-item-tag-key {
+  background-color: @card-header-background;
+}
+
+.cp-search-result-item-tag .cp-search-result-item-tag-value {
+  background-color: @card-background-color;
 }
