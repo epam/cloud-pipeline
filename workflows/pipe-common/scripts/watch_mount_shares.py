@@ -275,6 +275,7 @@ class NFSMountWatcher:
         self._event_observer = InotifyObserver()
         self._set_signal_handlers()
         self._watchers_limit = self._configure_watchers_limit()
+        self._terminated = False
         if target_paths:
             self._target_paths = target_paths.split(COMMA)
             self._update_static_paths_mapping()
@@ -310,7 +311,15 @@ class NFSMountWatcher:
 
     def _set_signal_handlers(self):
         for signal_code in [signal.SIGTERM, signal.SIGINT]:
-            signal.signal(signal_code, self._event_handler.dump_to_storage)
+            signal.signal(signal_code, self._shutdown_and_exit)
+
+    def is_terminated(self):
+        return self._terminated
+
+    def _shutdown_and_exit(self, signal_code, frame):
+        self.release_resources()
+        self._terminated = True
+        exit(0)
 
     def _process_active_target_path(self, mnt_dest, mnt_src):
         if mnt_dest not in self._target_path_mapping:
@@ -669,7 +678,7 @@ class NFSMountWatcher:
         with open(NFSMountWatcher.WATCHER_LIMIT_FILE, "w") as out:
             out.write(str(new_limit))
 
-    def shutdown(self):
+    def release_resources(self):
         self._event_observer.stop()
         self._event_observer.unschedule_all()
         self._event_handler.dump_to_storage()
@@ -693,6 +702,9 @@ if __name__ == '__main__':
         try:
             watcher.start()
         except BaseException as e:
+            if watcher.is_terminated():
+                logging.warning(format_message('Termination signal received, exiting.'))
+                exit(0)
             error_message = str(e)
             logging.error(format_message('An exception occurred in the observer: {}'.format(error_message)))
             if 'inotify' in error_message:
@@ -700,4 +712,4 @@ if __name__ == '__main__':
                 watcher.try_increase_watchers_limit()
             logging.error(format_message('Restarting the observer...'))
         finally:
-            watcher.shutdown()
+            watcher.release_resources()
