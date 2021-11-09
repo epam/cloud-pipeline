@@ -15,6 +15,7 @@
 
 package com.epam.release.notes.agent.service.action;
 
+import com.epam.release.notes.agent.entity.action.Action;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 
@@ -24,4 +25,5 @@ public interface ActionNotificationService {
 
     void process(String oldVersion, String newVersion, List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues);
 
+    Action getServiceAction();
 }

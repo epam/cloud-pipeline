@@ -25,8 +25,7 @@ import java.util.stream.Collectors;
 @Getter
 @RequiredArgsConstructor
 public enum Action {
-    POST("post"),
-    PUBLICATION("publish");
+    POST("post");
 
     private final String name;
     private static final Map<String, Action> ID_MAP;

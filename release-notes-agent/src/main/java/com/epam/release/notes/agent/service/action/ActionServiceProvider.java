@@ -15,27 +15,32 @@
 package com.epam.release.notes.agent.service.action;
 
 import com.epam.release.notes.agent.entity.action.Action;
-import com.epam.release.notes.agent.service.action.mail.TemplateNotificationService;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
 
 @Component
 public class ActionServiceProvider {
 
-    private final JavaMailSender javaMailSender;
-    private final TemplateNotificationService templateNotificationService;
+    private final Map<Action, ActionNotificationService> notificationServiceProviders;
 
-    public ActionServiceProvider(final JavaMailSender javaMailSender,
-                                 final TemplateNotificationService templateNotificationService) {
-        this.javaMailSender = javaMailSender;
-        this.templateNotificationService = templateNotificationService;
+    public ActionServiceProvider(final List<ActionNotificationService> actionNotificationServices) {
+        this.notificationServiceProviders = ListUtils.emptyIfNull(actionNotificationServices).stream()
+                .collect(Collectors.toMap(ActionNotificationService::getServiceAction, Function.identity()));
     }
 
     public ActionNotificationService getActionService(final String actionName) {
         final Action action = Action.getByName(actionName);
-        if (Action.PUBLICATION == action) {
-            return new PublishActionNotificationService();
+        final ActionNotificationService service = notificationServiceProviders.get(action);
+        if (service == null) {
+            throw new IllegalArgumentException(format("The %s action is not supported!", actionName));
         }
-        return new EmailSendActionNotificationService(javaMailSender, templateNotificationService);
+        return service;
     }
 }
