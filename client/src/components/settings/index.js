@@ -131,7 +131,14 @@ export default class extends React.Component {
 
     return (
       <div
-        className={classNames(styles.container, 'cp-panel', 'cp-panel-transparent')}
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
       >
         {this.renderSettingsNavigation()}
         {children}

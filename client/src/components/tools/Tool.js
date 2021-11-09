@@ -434,7 +434,15 @@ export default class Tool extends localization.LocalizedReactComponent {
       return false;
     };
     return (
-      <div className={styles.toolImageContainer} style={{marginRight: 10}}>
+      <div
+        className={
+          classNames(
+            styles.toolImageContainer,
+            'cp-tool-icon-container'
+          )
+        }
+        style={{marginRight: 10}}
+      >
         {image}
         {
           roleModel.writeAllowed(this.props.tool.value) &&
@@ -1889,7 +1897,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
         <Card
-          className={classNames(styles.toolsCard, 'cp-panel', 'cp-panel-transparent')}
+          className={
+            classNames(
+              styles.toolsCard,
+              'cp-panel',
+              'cp-panel-no-hover',
+              'cp-panel-borderless'
+            )
+          }
           bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
           <Alert type="error" message="You have no permissions to view tool details" />
         </Card>
@@ -1897,7 +1912,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     }
     return (
       <Card
-        className={classNames(styles.toolsCard, 'cp-panel', 'cp-panel-transparent')}
+        className={
+          classNames(
+            styles.toolsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
         <div className={classNames(styles.toolsHeader, 'cp-tool-header')}>
           <div className={styles.title} style={{flex: 1}}>

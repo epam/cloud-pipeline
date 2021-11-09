@@ -217,7 +217,14 @@ class ClusterNode extends Component {
     return (
       <div
         key={this.props.name}
-        className={classNames(styles.nodeCard, 'cp-panel')}
+        className={
+          classNames(
+            styles.nodeCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
       >
         <Row align="middle">
           <Col span={1}>

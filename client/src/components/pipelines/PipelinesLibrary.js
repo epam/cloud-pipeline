@@ -480,7 +480,14 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       <Card
         id="pipelines-library-tree-container"
         style={{overflowY: 'auto'}}
-        className={classNames(styles.libraryCard, 'cp-panel')}
+        className={
+          classNames(
+            styles.libraryCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 0}}>
         <Row
           type="flex"
@@ -538,11 +545,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           defaultSize="15%"
           pane1Style={{overflowY: 'auto', display: 'flex', flexDirection: 'column'}}
           pane2Style={{overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column'}}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
-            width: 10,
-            margin: '0 -4px',
+            width: 8,
+            margin: 0,
             cursor: 'col-resize',
-            backgroundColor: 'transparent',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1

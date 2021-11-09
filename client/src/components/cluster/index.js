@@ -88,7 +88,16 @@ export default class extends React.Component {
   render () {
     const {children} = this.props;
     return (
-      <div className={classNames(styles.container, 'cp-panel')}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+      >
         {this.renderClusterNavigation()}
         {children}
       </div>

@@ -74,7 +74,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
               onClick={this.handleFilterClick(f)}
             >
               <Icon
-                className={styles.icon}
+                className={classNames('cp-icon-larger', styles.icon)}
                 type={f.icon}
               />
               {f.title(this.localizedString)()}

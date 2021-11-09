@@ -15,7 +15,7 @@
  */
 
 import {PUBLIC_URL} from '../../config';
-import {darken, lighten, fade} from './color-utilities';
+import {darken, lighten, fade, fadeout, fadein} from './color-utilities';
 
 function getStaticResourcePath (url) {
   if (!url) {
@@ -41,6 +41,48 @@ function staticResource (url) {
   return `url(${uri})`;
 }
 
+export function parseFunctions (content) {
+  const variables = [
+    {
+      regExp: /darken\((.*),(.*)\)/i,
+      value: darken,
+      length: exec => exec && exec.length ? exec[0].length : 0
+    },
+    {
+      regExp: /lighten\((.*),(.*)\)/i,
+      value: lighten,
+      length: exec => exec && exec.length ? exec[0].length : 0
+    },
+    {
+      regExp: /fadein\((.*),(.*)\)/i,
+      value: fadein,
+      length: exec => exec && exec.length ? exec[0].length : 0
+    },
+    {
+      regExp: /fadeout\((.*),(.*)\)/i,
+      value: fadeout,
+      length: exec => exec && exec.length ? exec[0].length : 0
+    },
+    {
+      regExp: /fade\((.*),(.*)\)/i,
+      value: fade,
+      length: exec => exec && exec.length ? exec[0].length : 0
+    }
+  ];
+  let parsed = content;
+  for (const variable of variables) {
+    let e = variable.regExp.exec(parsed);
+    while (e) {
+      parsed = parsed
+        .slice(0, e.index)
+        .concat(variable.value(...e.slice(1).map(o => o.trim())))
+        .concat(parsed.slice(e.index + variable.length(e)));
+      e = variable.regExp.exec(parsed);
+    }
+  }
+  return parsed;
+}
+
 function parseValue (value, configuration) {
   const variables = Object.keys(configuration || {})
     .map(key => ({
@@ -52,21 +94,6 @@ function parseValue (value, configuration) {
       {
         regExp: /@static_resource\((.*)\)$/i,
         value: o => staticResource(parseValue(o, configuration)),
-        length: exec => exec && exec.length ? exec[0].length : 0
-      },
-      {
-        regExp: /darken\((.*),(.*)\)$/i,
-        value: darken,
-        length: exec => exec && exec.length ? exec[0].length : 0
-      },
-      {
-        regExp: /lighten\((.*),(.*)\)$/i,
-        value: lighten,
-        length: exec => exec && exec.length ? exec[0].length : 0
-      },
-      {
-        regExp: /fade\((.*),(.*)\)$/i,
-        value: fade,
         length: exec => exec && exec.length ? exec[0].length : 0
       }
     ]);
@@ -81,7 +108,7 @@ function parseValue (value, configuration) {
       e = variable.regExp.exec(parsed);
     }
   }
-  return parsed;
+  return parseFunctions(parsed);
 }
 
 export default function parseConfiguration (configuration) {

@@ -15,6 +15,7 @@
  */
 
 import template from './theme.less.template';
+import {parseFunctions} from "./parse-configuration";
 
 function generateTheme (theme = {}) {
   const {
@@ -35,6 +36,7 @@ function generateTheme (theme = {}) {
       themeContent = themeContent.replace(new RegExp(variable, 'g'), value);
     }
   }
+  themeContent = parseFunctions(themeContent);
   return themeContent.replace(
     /@THEME/gm,
     '.'.concat(identifier)
