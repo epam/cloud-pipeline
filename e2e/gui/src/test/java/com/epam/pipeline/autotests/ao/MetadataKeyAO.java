@@ -22,6 +22,9 @@ import org.openqa.selenium.WebElement;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
@@ -59,7 +62,8 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
     }
 
     public MetadataKeyAO(int numberOfKey, MetadataSectionAO parentAO) {
-        this($$(By.className("metadata__key-row")).get(numberOfKey),
+        this($$(By.className("metadata__key-row"))
+                        .filter(not(have(cssClass("metadata__special")))).get(numberOfKey),
                 $$(By.className("metadata__value-row")).get(numberOfKey),
                 parentAO);
     }
