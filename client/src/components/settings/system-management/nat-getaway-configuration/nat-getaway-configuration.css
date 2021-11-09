@@ -6,6 +6,10 @@
     text-transform: capitalize;
     font-size: large;
     border-right: 4px solid #b9b9b9;
+    height: 40px;
+}
+.table table thead[class*="table-thead"] tr {
+    height: 40px
 }
 
 .table thead tr:first-child th:first-child,
@@ -15,6 +19,16 @@
 }
 .table thead tr:first-child th {
     background: #e9e9e9;
+}
+.table tbody tr {
+    height: 35px;
+}
+.table table thead[class*="table-thead"] tr th,
+.table tbody tr td.external-column.column,
+.table tbody tr td.internal-column.column,
+.table tbody tr td.column {
+    padding: 4px;
+    height: 35px;
 }
 
 .table-content-actions {
@@ -40,6 +54,21 @@
     background-color: rgba(240, 65, 52, 0.1);
     opacity: 0.9;
 }
+.record-is-active {
+    color: rgba(16, 142,233);
+    border: 1px solid rgba(16, 142,233);
+}
+.record-is-creating {
+    color:rgba(16, 142,233, 0.5);
+    border: 1px solid rgba(16, 142,233, 0.5);
+}
+.record-will-be-removed {
+    color: rgba(240, 65, 52);
+    border: 1px solid rgba(240, 65, 52);
+}
+.rest-status {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+}
 .revert-action-block {
     display: flex;
     flex-direction: row;
@@ -54,4 +83,9 @@
 }
 .revert-icon:hover {
     color: #108ee9;
+}
+.route-status {
+    margin-left: 10px;
+    padding: 5px 10px;
+    border-radius: 7px;
 }

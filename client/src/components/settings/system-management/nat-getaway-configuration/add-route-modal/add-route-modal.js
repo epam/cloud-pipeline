@@ -159,7 +159,8 @@ export default class AddRouteForm extends React.Component {
             ...this.state.form,
             ip: request.value[0]
           },
-          pending: false
+          pending: false,
+          errors: {...this.state.errors, ip: false}
         });
       }
     }

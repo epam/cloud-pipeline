@@ -2,6 +2,7 @@ import React from 'react';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Button, Icon, Spin, Table, message} from 'antd';
+import classNames from 'classnames';
 
 import {DeleteRules, SetRules} from '../../../../models/nat';
 import AddRouteForm from './add-route-modal/add-route-modal';
@@ -9,6 +10,18 @@ import {contentIsEqual, compareTableRecords, columns} from './helpers';
 import styles from './nat-getaway-configuration.css';
 
 const {Column, ColumnGroup} = Table;
+const NATRouteStatuses = {
+  CREATION_SCHEDULED: 'CREATION_SCHEDULED',
+  DNS_CONFIGURED: 'DNS_CONFIGURED',
+  PORT_FORWARDING_CONFIGURED: 'PORT_FORWARDING_CONFIGURED',
+  ACTIVE: 'ACTIVE',
+  TERMINATION_SCHEDULED: 'TERMINATION_SCHEDULED',
+  TERMINATING: 'TERMINATING',
+  RESOURCE_RELEASED: 'RESOURCE_RELEASED',
+  TERMINATED: 'TERMINATED',
+  FAILED: 'FAILED',
+  UNKNOWN: 'UNKNOWN'
+};
 
 @inject('natRules')
 @observer
@@ -32,7 +45,7 @@ export default class NATGetaway extends React.Component {
           message.error(natRules.error);
         } else if (natRules.loaded && natRules.value) {
           this.setState({
-            tableContent: natRules.value.map(v => ({...v}))
+            tableContent: this.NatContent
           });
         } else {
           return [];
@@ -42,7 +55,7 @@ export default class NATGetaway extends React.Component {
 
     @computed
     get NatContent () {
-      if (this.props.natRules.loaded) {
+      if (this.props.natRules && this.props.natRules.loaded) {
         return this.props.natRules.value.map(v => ({...v})) || [];
       }
       return [];
@@ -65,6 +78,22 @@ export default class NATGetaway extends React.Component {
 
     getRowClassName (record) {
       return record.isRemoved ? styles.removed : '';
+    }
+
+    getRecordStatusClassName (status) {
+      if (status === NATRouteStatuses.ACTIVE) {
+        return styles.recordIsActive;
+      } else if (
+        status === NATRouteStatuses.TERMINATION_SCHEDULED ||
+        status === NATRouteStatuses.TERMINATING) {
+        return styles.recordWillBeRemoved;
+      } else if (status === NATRouteStatuses.CREATION_SCHEDULED) {
+        return styles.recordIsCreating;
+      } else if (status) {
+        return styles.restStatus;
+      } else {
+        return '';
+      }
     }
 
     removeRow = (record) => {
@@ -94,7 +123,8 @@ export default class NATGetaway extends React.Component {
       const formattedData = Object.entries(ports).map(([name, port]) => ({
         externalName: serverName,
         externalIp: ip,
-        externalPort: port
+        externalPort: port,
+        isNew: true
       }));
       this.setState({
         tableContent: [
@@ -120,14 +150,18 @@ export default class NATGetaway extends React.Component {
       try {
         const content = this.state.tableContent.reduce((
           res,
-          {externalName, externalIp, externalPort, isRemoved}
+          {externalName, externalIp, externalPort, isRemoved, isNew}
         ) => {
           const row = {
             externalName,
             externalIp,
             port: externalPort
           };
-          isRemoved ? res.toRemove.push(row) : res.toSave.push(row);
+          if (!isNew && isRemoved) {
+            res.toRemove.push(row);
+          } else if (isNew && !isRemoved) {
+            res.toSave.push(row);
+          }
           return res;
         }, {toRemove: [], toSave: []});
 
@@ -138,6 +172,8 @@ export default class NATGetaway extends React.Component {
           this.setState({pending: false});
           if (deleteRequest.error) {
             message.error(deleteRequest.error);
+          } else if (deleteRequest.loaded) {
+            await this.onRefreshTable();
           }
         }
         if (content.toSave.length) {
@@ -174,7 +210,8 @@ export default class NATGetaway extends React.Component {
         if (this.props.natRules.loaded) {
           this.setState({
             pending: false,
-            tableContent: this.NatContent.map(v => ({...v}))});
+            tableContent: this.NatContent
+          });
         }
       }
     }
@@ -185,6 +222,8 @@ export default class NATGetaway extends React.Component {
           <div className={styles.tableContentActions}>
             <div className={styles.tableActions}>
               <Button icon="plus" onClick={() => this.openAddRouteModal()}>Add route</Button>
+            </div >
+            <div className={styles.tableActions}>
               <Button
                 type="primary"
                 disabled={!this.tableContentChanged}
@@ -193,8 +232,6 @@ export default class NATGetaway extends React.Component {
               >
                 REVERT
               </Button>
-            </div >
-            <div className={styles.tableActions}>
               <Button
                 type="primary"
                 disabled={!this.tableContentChanged}
@@ -219,13 +256,13 @@ export default class NATGetaway extends React.Component {
               rowKey={({externalIp, externalName, externalPort}) => `${externalIp}-${externalName}-${externalPort}`}
               rowClassName={this.getRowClassName}
             >
-              <ColumnGroup title="External resources">
+              <ColumnGroup title="External resources" className={styles.columnGroup}>
                 {this.tableExternalColumns.map((col) => (
                   <Column
                     title={col.prettyName || col.name}
                     dataIndex={col.name}
                     key={col.name}
-                    className={styles.externalColumn}
+                    className={classNames(styles.externalColumn, styles.column)}
                   />))
                 }
               </ColumnGroup>
@@ -235,15 +272,26 @@ export default class NATGetaway extends React.Component {
                     title={col.prettyName || col.name}
                     dataIndex={col.name}
                     key={col.name}
+                    className={classNames(styles.internalColumn, styles.column)}
                   />))
                 }
                 <Column
                   key="remover"
+                  className={styles.column}
                   render={(record) => {
                     return !record.isRemoved ? (
-                      <Button type="danger" onClick={() => this.removeRow(record)}>
-                        <Icon type="delete" />
-                      </Button>
+                      <div>
+                        <Button type="danger" onClick={() => this.removeRow(record)}>
+                          <Icon type="delete" />
+                        </Button>
+                        <span className={classNames(
+                          this.getRecordStatusClassName(record.status),
+                          styles.routeStatus
+                        )}
+                        >
+                          {record.status}
+                        </span>
+                      </div>
                     ) : (
                       <div className={styles.revertActionBlock}>
                         <Icon
