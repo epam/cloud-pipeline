@@ -52,7 +52,8 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
     testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.8.1'
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitParamsVersion"
+    testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
 }
 
 test {

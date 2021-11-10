@@ -22,8 +22,8 @@ import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.spring5.SpringTemplateEngine;
 
 import java.util.List;
 import java.util.Locale;
@@ -37,7 +37,7 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private static final String GITHUB_ISSUES = "gitHubIssues";
     private static final String EXCEPTION_MESSAGE = "This kind of version status is not handled in current method";
 
-    private final SpringTemplateEngine templateEngine;
+    private final TemplateEngine templateEngine;
     private final ApplicationVersionService applicationVersionService;
     private final String emailToAdminTemplateName;
     private final String emailToSubscribersTemplateName;
@@ -46,7 +46,7 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private final String emailToSubscribersTitle;
 
     public EmailTemplateNotificationService(
-            final SpringTemplateEngine templateEngine,
+            final TemplateEngine templateEngine,
             final ApplicationVersionService applicationVersionService,
             @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
             @Value("${release.notes.agent.name.of.subscribers.email.template}") final String emailToSubscribersTemplateName,
