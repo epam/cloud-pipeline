@@ -129,8 +129,12 @@ export default {
     '@btn-disabled-background-color': '#f7f7f7',
     '@btn-danger-background-color': '@btn-disabled-background-color',
     '@run-icon-green': '@color-green',
-    '@run-icon-blue': '@color-blue',
-    '@run-icon-red': '@color-red',
-    '@run-icon-yellow': '@color-yellow'
+    '@run-icon-blue': '#2282bf',
+    '@run-icon-red': '#ae1726',
+    '@run-icon-yellow': '#f79e2c',
+    '@pagination-jump-color': 'rgba(0, 0, 0, 0.25)',
+    '@metadata-item-key-background-color': '@tag-key-background-color',
+    '@metadata-item-key-border-color': '@tag-key-value-divider-color',
+    '@metadata-item-value-background-color': '@tag-value-background-color'
   }
 };

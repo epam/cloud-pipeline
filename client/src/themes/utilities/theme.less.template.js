@@ -446,11 +446,11 @@ export default `
 }
 @THEME .ant-table-row-expand-icon {
   border-color: @table-border-color;
-  background: @card-background-color;
+  background: inherit;
 }
 @THEME .ant-checkbox-inner {
   border-color: @border-color;
-  background-color: @card-background-color;
+  background-color: inherit;
 }
 @THEME .ant-checkbox-wrapper:hover .ant-checkbox-inner,
 @THEME .ant-checkbox:hover .ant-checkbox-inner,
@@ -591,6 +591,48 @@ export default `
 }
 @THEME .ant-spin-blur::after {
   background-color: @application-background-color;
+}
+@THEME .ant-pagination-item,
+@THEME .ant-pagination-item-link,
+@THEME .ant-pagination-prev .ant-pagination-item-link,
+@THEME .ant-pagination-next .ant-pagination-item-link {
+  background-color: inherit;
+  color: @application-color;
+}
+@THEME .ant-pagination-item > a {
+  color: @application-color;
+}
+@THEME .ant-pagination-item:focus a,
+@THEME .ant-pagination-item:hover a,
+@THEME .ant-pagination-prev:focus .ant-pagination-item-link,
+@THEME .ant-pagination-next:focus .ant-pagination-item-link,
+@THEME .ant-pagination-prev:hover .ant-pagination-item-link,
+@THEME .ant-pagination-next:hover .ant-pagination-item-link {
+  color: @primary-color;
+}
+@THEME .ant-pagination-disabled.ant-pagination-prev .ant-pagination-item-link,
+@THEME .ant-pagination-disabled.ant-pagination-next .ant-pagination-item-link {
+  color: @application-color-disabled;
+}
+@THEME .ant-pagination-item-active {
+  background-color: @primary-color;
+}
+@THEME .ant-pagination-item-active:hover,
+@THEME .ant-pagination-item-active:focus {
+  background-color: @primary-hover-color;
+}
+@THEME .ant-pagination-item.ant-pagination-item-active > a {
+  color: @primary-text-color;
+}
+@THEME .ant-pagination-jump-prev::after,
+@THEME .ant-pagination-jump-next::after {
+  color: @pagination-jump-color;
+}
+@THEME .ant-pagination-jump-prev:focus::after,
+@THEME .ant-pagination-jump-next:focus::after,
+@THEME .ant-pagination-jump-prev:hover::after,
+@THEME .ant-pagination-jump-next:hover::after {
+  color: @primary-color;
 }
 
 @THEME .cp-panel {
@@ -774,6 +816,29 @@ export default `
 }
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
+}
+
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
 }
 
 @THEME .ant-alert {
@@ -1063,6 +1128,19 @@ export default `
   border-color: @card-border-color;
   background-color: @card-header-background;
   color: @application-color;
+}
+
+@THEME @import "variables";
+
+.cp-library-metadata-item-key {
+  background-color: @metadata-item-key-background-color;
+  border-bottom: 1px solid @metadata-item-key-border-color;
+}
+@THEME .cp-library-metadata-item-value {
+  background-color: @metadata-item-value-background-color;
+}
+@THEME .cp-library-metadata-additional-actions {
+  background-color: inherit;
 }
 
 `;

@@ -537,12 +537,12 @@ tr.ant-table-expanded-row:hover {
 
 .ant-table-row-expand-icon {
   border-color: @table-border-color;
-  background: @card-background-color;
+  background: inherit;
 }
 
 .ant-checkbox-inner {
   border-color: @border-color;
-  background-color: @card-background-color;
+  background-color: inherit;
 }
 
 .ant-checkbox-wrapper:hover .ant-checkbox-inner,
@@ -713,4 +713,55 @@ tr.ant-table-expanded-row:hover {
 
 .ant-spin-blur::after {
   background-color: @application-background-color;
+}
+
+.ant-pagination-item,
+.ant-pagination-item-link,
+.ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination-next .ant-pagination-item-link {
+  background-color: inherit;
+  color: @application-color;
+}
+
+.ant-pagination-item > a {
+  color: @application-color;
+}
+
+.ant-pagination-item:focus a,
+.ant-pagination-item:hover a,
+.ant-pagination-prev:focus .ant-pagination-item-link,
+.ant-pagination-next:focus .ant-pagination-item-link,
+.ant-pagination-prev:hover .ant-pagination-item-link,
+.ant-pagination-next:hover .ant-pagination-item-link {
+  color: @primary-color;
+}
+
+.ant-pagination-disabled.ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination-disabled.ant-pagination-next .ant-pagination-item-link {
+  color: @application-color-disabled;
+}
+
+.ant-pagination-item-active {
+  background-color: @primary-color;
+}
+
+.ant-pagination-item-active:hover,
+.ant-pagination-item-active:focus {
+  background-color: @primary-hover-color;
+}
+
+.ant-pagination-item.ant-pagination-item-active > a {
+  color: @primary-text-color;
+}
+
+.ant-pagination-jump-prev::after,
+.ant-pagination-jump-next::after {
+  color: @pagination-jump-color;
+}
+
+.ant-pagination-jump-prev:focus::after,
+.ant-pagination-jump-next:focus::after,
+.ant-pagination-jump-prev:hover::after,
+.ant-pagination-jump-next:hover::after {
+  color: @primary-color;
 }
