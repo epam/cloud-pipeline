@@ -34,7 +34,10 @@ class HiddenObjectManager:
         return False
 
     def __fetch_hidden_objects(self):
-        pref_value = PreferenceAPI.get_preference(self.UI_HIDDEN_OBJECTS_PREFERENCE)
-        if pref_value:
-            return json.loads(pref_value.value)
+        try:
+            pref_value = PreferenceAPI.get_preference(self.UI_HIDDEN_OBJECTS_PREFERENCE)
+            if pref_value:
+                return json.loads(pref_value.value or "{}")
+        except RuntimeError or ValueError:
+            pass
         return {}
