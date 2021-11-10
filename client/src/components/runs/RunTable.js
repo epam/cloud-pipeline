@@ -1262,6 +1262,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
   render () {
     const source = this.props.dataSource && this.props.dataSource.map(this.prepareSourceItem);
     const style = this.props.className ? {className: this.props.className} : {};
+    const serviceClass = 'cp-runs-table-service-url-run';
     return (
       <Table
         className={`${styles.table} runs-table`}
@@ -1278,7 +1279,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
             record.status === 'RESUMING'
           ) &&
           record.initialized
-            ? styles.serviceUrlRun : styles.run
+            ? serviceClass : styles.run
         } run-${record.id}`}
         dataSource={source}
         onChange={this.props.handleTableChange}

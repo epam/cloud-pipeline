@@ -340,3 +340,72 @@ h5 {
   background-color: @btn-disabled-background-color;
   border-color: @btn-border-color;
 }
+
+.ant-table {
+  color: @application-color;
+  border-color: @table-border-color;
+  background: @card-background-color;
+}
+
+.ant-table-small .ant-table-thead > tr > th {
+  color: @table-head-color;
+  background-color: @card-background-color;
+  border-bottom-color: @table-border-color;
+}
+
+.ant-table-small .ant-table-title {
+  border-bottom-color: @table-border-color;
+}
+
+.ant-table-thead > tr > th .anticon-filter:hover,
+.ant-table-thead > tr > th .ant-table-filter-icon:hover,
+.ant-table-column-sorter-up:hover .anticon,
+.ant-table-column-sorter-down:hover .anticon {
+  color: @table-icons-hover-color;
+}
+
+.ant-table-column-sorter-up.on .anticon-caret-up,
+.ant-table-column-sorter-down.on .anticon-caret-up,
+.ant-table-column-sorter-up.on .anticon-caret-down,
+.ant-table-column-sorter-down.on .anticon-caret-down {
+  color: @primary-color;
+}
+
+.ant-table-tbody > tr > td {
+  border-color: @table-border-color;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: @table-tr-hover-color;
+}
+
+.ant-table-row-expand-icon {
+  border-color: @table-border-color;
+  background: @card-background-color;
+}
+
+.ant-checkbox-inner {
+  border-color: @border-color;
+  background-color: @card-background-color;
+}
+
+.ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-checkbox:hover .ant-checkbox-inner,
+.ant-checkbox-input:focus + .ant-checkbox-inner {
+  border-color: @primary-color;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner,
+.ant-checkbox-indeterminate .ant-checkbox-inner {
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner::after,
+.ant-checkbox-inner::after {
+  border-color: @card-background-color;
+}
+
+.ant-checkbox-checked::after {
+  border-color: @primary-color;
+}
