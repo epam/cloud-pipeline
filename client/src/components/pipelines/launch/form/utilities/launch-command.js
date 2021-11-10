@@ -22,6 +22,7 @@ import PipelineRunCmd from '../../../../../models/pipelines/PipelineRunCmd';
 import {Alert, Modal, Row, Select, Tabs} from 'antd';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import {applyCustomCapabilitiesParameters} from './run-capabilities';
 import styles from './launch-command.css';
 import {API_PATH, SERVER} from '../../../../../config';
 import {getOS, OperationSystems} from '../../../../../utils/OSDetection';
@@ -105,13 +106,23 @@ class LaunchCommand extends React.Component {
   }
 
   rebuild = (payload) => {
+    const {preferences} = this.props;
     LaunchCommand.requestIdentifier += 1;
     const identifier = LaunchCommand.requestIdentifier;
     this.setState({pending: true}, async () => {
+      await preferences.fetchIfNeededOrWait();
       const {osType} = this.state;
       const request = new PipelineRunCmd();
+      const {
+        params = {},
+        ...payloadRest
+      } = payload || {};
+      const pipelineStart = {
+        ...payloadRest,
+        params: applyCustomCapabilitiesParameters(params, preferences)
+      };
       await request.send({
-        pipelineStart: payload,
+        pipelineStart,
         quite: false,
         yes: true,
         showParams: false,
@@ -120,9 +131,19 @@ class LaunchCommand extends React.Component {
       });
       if (identifier === LaunchCommand.requestIdentifier) {
         if (request.error) {
-          this.setState({pending: false, code: null, error: request.error, payload});
+          this.setState({
+            pending: false,
+            code: null,
+            error: request.error,
+            payload: pipelineStart
+          });
         } else {
-          this.setState({pending: false, code: request.value, error: false, payload});
+          this.setState({
+            pending: false,
+            code: request.value,
+            error: false,
+            payload: pipelineStart
+          });
         }
       }
     });

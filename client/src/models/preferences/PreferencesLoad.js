@@ -189,7 +189,8 @@ class PreferencesLoad extends Remote {
             name: key,
             description: entry?.description,
             platforms: parsePlatforms(entry?.platforms),
-            custom: true
+            custom: true,
+            params: entry?.params || {}
           }));
       } catch (e) {
         console.warn(
