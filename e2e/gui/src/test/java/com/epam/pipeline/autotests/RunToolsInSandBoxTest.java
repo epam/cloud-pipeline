@@ -113,10 +113,6 @@ public class RunToolsInSandBoxTest
                     .sleep(10, SECONDS)
                     .validateEndpointPage(C.LOGIN);
         } finally {
-//            if (endpointPage != null) {
-//                endpointPage
-//                        .closeTab();
-//            }
             open(C.ROOT_ADDRESS);
         }
     }
@@ -127,7 +123,7 @@ public class RunToolsInSandBoxTest
         open(C.ROOT_ADDRESS);
         runsMenu()
                 .show(getLastRunId())
-                .ensureHasOwner(getUserNameByAccountLogin(admin.login));
+                .ensureHasOwner(admin.login);
     }
 
     @Test(dependsOnMethods = "validateUsernameOnPipelinePage")
