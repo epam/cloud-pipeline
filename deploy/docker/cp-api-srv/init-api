@@ -126,6 +126,35 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
+function configure_and_publish_cloud_data_win_distribution() {
+    local jar_path="$1"
+    local output_dir="$6"
+    output_dir="static"
+    jar_path="/opt/api/pipeline.jar"
+    unzip -p "$jar_path" BOOT-INF/classes/static/cloud-data-win64.zip >cloud-data-win64.zip
+    unzip -qq cloud-data-win64.zip
+    rm -f cloud-data-win64.zip
+
+    local _cloud_data_folder_name="cloud-data"
+    if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
+        local _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
+        _cloud_data_folder_name="$CP_CLOUD_DATA_APP_NAME"
+    fi
+cat > cloud-data-win32-x64/settings.json <<EOF
+{
+ "certificates": [],
+ "ignoreCertificateErrors": true,
+ "api": "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/",
+ "server": "https://${CP_EDGE_EXTERNAL_HOST}:${CP_EDGE_EXTERNAL_PORT}/webdav/<USER_ID>",
+ "username": "<USER_ID>" $_cloud_data_name_json
+}
+EOF
+    mv cloud-data-win32-x64/cloud-data.exe cloud-data-win32-x64/${CP_CLOUD_DATA_APP_NAME}.exe
+    mv cloud-data-win32-x64 ${_cloud_data_folder_name}-win32-x64
+    zip -q -r "$output_dir/${_cloud_data_folder_name}-win64.zip" ${_cloud_data_folder_name}-win32-x64
+    rm -rf ${_cloud_data_folder_name}-win32-x64
+}
+
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -225,6 +254,13 @@ if [ -f "$win_code_sign_cert_path" ]; then
     sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
         "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
+
+# Add a deployment specific configuration to the "cloud data" application:
+# - API URL
+# - DAV URL
+# - Application name
+echo "Configuring Cloud Data with the deployment specific settings"
+configure_and_publish_cloud_data_win_distribution "$CP_API_HOME/pipeline.jar" "$CP_API_SRV_STATIC_DIR"
 
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
