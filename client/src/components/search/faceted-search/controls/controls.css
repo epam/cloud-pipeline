@@ -40,6 +40,11 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  max-width: 60vw;
+  align-content: flex-start;
+  height: 100%;
+  padding-top: 2px;
 }
 
 .document-type-filter .filter {
@@ -55,6 +60,7 @@
   margin-right: 5px;
   text-align: center;
   cursor: pointer;
+  height: 32px;
 }
 
 .document-type-filter .filter:hover {
@@ -101,7 +107,7 @@
   flex-wrap: nowrap;
   padding: 0 5px;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   font-size: small;
 }
 

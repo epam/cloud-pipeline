@@ -19,14 +19,15 @@ import fetchFacets from './fetch-facets';
 import getItemUrl from './get-item-url';
 import getFacetFilterToken from './facet-filter-token';
 
-export default function facetsSearch (
+export default function facetsSearch ({
   query,
   filters,
+  sortingOrder,
   pageSize,
   options,
   scrollingParameters,
   abortSignal
-) {
+}) {
   const {
     facets = [],
     facetsToken: currentFacetsToken,
@@ -34,29 +35,31 @@ export default function facetsSearch (
     stores,
     metadataFields = []
   } = options;
-  const facetsToken = getFacetFilterToken(
+  const facetsToken = getFacetFilterToken({
     query,
     filters,
-    1
-  );
+    sortingOrder,
+    pageSize: 1
+  });
   const doFetchFacets = currentFacetsToken !== facetsToken;
   return new Promise((resolve) => {
     const promises = [
-      doSearch(
+      doSearch({
         query,
         filters,
+        sortingOrder,
         metadataFields,
         pageSize,
         facets,
         scrollingParameters,
         abortSignal
-      )
+      })
     ];
     if (doFetchFacets && Object.keys(filters || {}).length > 0) {
       // if {filters} is empty (Object.keys.length === 0)
       // we can get results (facets count) from doSearch() call
       promises.push(
-        fetchFacets(facets, filters, query, abortSignal)
+        fetchFacets(facets, filters, query, sortingOrder, abortSignal)
       );
     }
     Promise
