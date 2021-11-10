@@ -1,13 +1,28 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import React from 'react';
 import {Table} from 'antd';
-
-import {SplitPanel} from '../../special/splitPanel/SplitPanel';
+import {SplitPanel} from '../../special/splitPanel';
 import SystemLogs from './system-logs';
 import NATGetaway from './nat-getaway-configuration/nat-getaway-configuration';
 import styles from './system-management.css';
 
 const SYSTEM_LOGS_TITLE = 'LOGS';
-const NAT_GATEAWAY_TITLE = 'NAT GETAWAY';
+const NAT_GATEWAY_TITLE = 'NAT GETAWAY';
 
 export default class SystemManagement extends React.Component {
   state = {
@@ -16,7 +31,7 @@ export default class SystemManagement extends React.Component {
   get systemManagementItems () {
     return [
       {title: SYSTEM_LOGS_TITLE},
-      {title: NAT_GATEAWAY_TITLE}
+      {title: NAT_GATEWAY_TITLE}
     ];
   }
 
@@ -51,14 +66,14 @@ export default class SystemManagement extends React.Component {
           {
             key: 'list',
             size: {
-              percentDefault: 25
+              pxDefault: 200
             }
           }
         ]}>
-        <div key="list" className={styles.leftSidebar}>{this.renderSidebarList()}</div>
-        <div className={styles.contentPanel}>
+        <div key="list">{this.renderSidebarList()}</div>
+        <div>
           {contentToShow === SYSTEM_LOGS_TITLE && <SystemLogs />}
-          {contentToShow === NAT_GATEAWAY_TITLE && <NATGetaway />}
+          {contentToShow === NAT_GATEWAY_TITLE && <NATGetaway />}
         </div>
       </SplitPanel>
     );

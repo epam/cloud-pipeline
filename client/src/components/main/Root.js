@@ -63,7 +63,6 @@ import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
-import {NATRules} from '../../models/nat';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -95,7 +94,6 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
-const natRules = new NATRules();
 
 const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
 
@@ -167,8 +165,7 @@ const Root = () =>
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
       uiNavigation,
-      vsActions,
-      natRules
+      vsActions
     }}>
     <AppRouter />
   </Provider>;

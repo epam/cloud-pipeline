@@ -114,7 +114,7 @@ export default class AppRouter extends React.Component {
             <Route path="email" component={EmailNotificationSettings} />
             <Route path="preferences" component={Preferences} />
             <Route path="regions" component={AWSRegionsForm} />
-            <Route path="logs" component={SystemManagement} />
+            <Route path="system" component={SystemManagement} />
             <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
             <Route path="profile" component={UserProfile} />
           </Route>
