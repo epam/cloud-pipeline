@@ -49,6 +49,7 @@ AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
+MOUNT_LIMITS_USER_DEFAULT = 'user_default'
 SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
 
 
@@ -110,6 +111,20 @@ class MountStorageTask:
             available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
 
+    def parse_storage(self, placeholder):
+        storage_id = None
+        try:
+            if placeholder == MOUNT_LIMITS_USER_DEFAULT:
+                user_info = self.api.load_current_user()
+                if 'defaultStorageId' in user_info:
+                    storage_id = int(user_info['defaultStorageId'])
+                    Logger.info('User default storage is parsed as {}'.format(str(storage_id)), task_name=self.task_name)
+            else:
+                storage_id = int(placeholder.strip())
+        except Exception as parse_storage_ex:
+            Logger.warn('Unable to parse {} placeholder to a storage ID: {}.'.format(placeholder, str(parse_storage_ex)), task_name=self.task_name)
+        return storage_id
+
     def run(self, mount_root, tmp_dir):
         try:
             Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
@@ -135,15 +150,22 @@ class MountStorageTask:
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
                                               or x.file_share_mount.region_id == cloud_region_id]
 
+
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             force_storages = os.getenv('CP_CAP_FORCE_MOUNTS')
             if limited_storages:
                 # If the storages are limited by the user - we make sure that the "forced" storages are still available
                 # This is useful for the tools, which require "databases" or other data from the File/Object storages
                 if force_storages:
+                    Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages))
                     limited_storages = ','.join([limited_storages, force_storages])
                 try:
-                    limited_storages_list = [] if limited_storages.lower() == MOUNT_LIMITS_NONE else [int(x.strip()) for x in limited_storages.split(',')]
+                    limited_storages_list = []
+                    if limited_storages.lower() != MOUNT_LIMITS_NONE:
+                        for limited_storage_id in limited_storages.split(','):
+                            storage_id = self.parse_storage(limited_storage_id)
+                            if storage_id:
+                                limited_storages_list.append(storage_id)
                     # Remove duplicates from the `limited_storages_list`, as they can be introduced by `force_storages` or a user's typo
                     limited_storages_list = list(set(limited_storages_list))
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
