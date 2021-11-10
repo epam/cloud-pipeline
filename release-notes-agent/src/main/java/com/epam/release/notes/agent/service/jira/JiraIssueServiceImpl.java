@@ -28,18 +28,18 @@ import static java.lang.String.format;
 public class JiraIssueServiceImpl implements JiraIssueService {
 
     private final JiraApiClient jiraApiClient;
+    private final String jiraBaseUrl;
+    private final String jiraVersionCustomFieldId;
+    private final String jiraGithubCustomFieldId;
 
-    @Value("${jira.base.url}")
-    private String jiraBaseUrl;
-
-    @Value("${jira.version.custom.field.id}")
-    private String jiraVersionCustomFieldId;
-
-    @Value("${jira.github.custom.field.id}")
-    private String jiraGithubCustomFieldId;
-
-    public JiraIssueServiceImpl(JiraApiClient jiraApiClient) {
+    public JiraIssueServiceImpl(final JiraApiClient jiraApiClient,
+                                @Value("${jira.base.url}") final String jiraBaseUrl,
+                                @Value("${jira.version.custom.field.id}") final String jiraVersionCustomFieldId,
+                                @Value("${jira.github.custom.field.id}") final String jiraGithubCustomFieldId) {
         this.jiraApiClient = jiraApiClient;
+        this.jiraBaseUrl = jiraBaseUrl;
+        this.jiraVersionCustomFieldId = jiraVersionCustomFieldId;
+        this.jiraGithubCustomFieldId = jiraGithubCustomFieldId;
     }
 
     @Override
