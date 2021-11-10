@@ -1,0 +1,98 @@
+.table  thead tr {
+    text-transform: uppercase;
+}
+
+.table thead tr:first-child {
+    text-transform: capitalize;
+    font-size: large;
+    border-right: 4px solid #b9b9b9;
+    height: 40px;
+}
+.table table thead[class*="table-thead"] tr {
+    height: 40px
+}
+
+.table thead tr:first-child th:first-child,
+.table thead tr th.external-column:nth-child(3),
+.table tbody tr td.external-column:nth-child(3) {
+    border-right: 4px solid #e9e9e9;
+}
+.table thead tr:first-child th {
+    background: #e9e9e9;
+}
+.table tbody tr {
+    height: 35px;
+}
+.table table thead[class*="table-thead"] tr th,
+.table tbody tr td.external-column.column,
+.table tbody tr td.internal-column.column,
+.table tbody tr td.actions-column {
+    padding: 4px;
+    height: 35px;
+}
+.table tbody tr td.actions-column {
+    display:flex;
+    justify-content: flex-end;
+}
+
+.table-content-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-actions {
+    display:flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 15px 0px;
+}
+
+.table-actions > button {
+    margin-right: 10px;
+}
+.table-actions > button:last-of-type {
+    margin-right: 0px;
+}
+.removed {
+    background-color: rgba(240, 65, 52, 0.1);
+    opacity: 0.9;
+}
+.revert-action-block {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.revert-icon {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.revert-icon:hover {
+    color: #108ee9;
+}
+.route-status {
+    padding: 5px 10px;
+    font-size: larger;
+}
+.active-status {
+    color: rgb(34, 130, 191);
+}
+.scheduled-status {
+    color: rgb(255, 136, 24);
+}
+.failed-status {
+    color: rgb(240, 65, 52);
+}
+.unknown-status {
+    color: rgb(0,0,0);
+}
+.blink {
+    animation: blinker 1.5s cubic-bezier(.5, 0, 1, 1) infinite alternate;  
+  }
+@keyframes blinker {  
+from { opacity: 1; }
+to { opacity: 0; }
+}

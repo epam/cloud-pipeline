@@ -53,7 +53,7 @@ import UserManagementForm from '../settings/UserManagementForm';
 import EmailNotificationSettings from '../settings/EmailNotificationSettings';
 import Preferences from '../settings/Preferences';
 import AWSRegionsForm from '../settings/AWSRegionsForm';
-import SystemLogs from '../settings/system-logs';
+import SystemManagement from '../settings/system-management/system-management';
 import SystemEvents from '../settings/SystemEvents';
 import SystemDictionaries from '../settings/SystemDictionaries';
 import UserProfile from '../user-profile';
@@ -114,7 +114,7 @@ export default class AppRouter extends React.Component {
             <Route path="email" component={EmailNotificationSettings} />
             <Route path="preferences" component={Preferences} />
             <Route path="regions" component={AWSRegionsForm} />
-            <Route path="logs" component={SystemLogs} />
+            <Route path="logs" component={SystemManagement} />
             <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
             <Route path="profile" component={UserProfile} />
           </Route>
