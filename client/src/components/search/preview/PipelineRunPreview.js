@@ -307,7 +307,7 @@ export default class PipelineRunPreview extends React.Component {
                 <span>
                   <AWSRegionTag
                     darkMode
-                    style={{verticalAlign: 'baseline', marginRight: -3, marginLeft: -3}}
+                    style={{verticalAlign: 'baseline', marginRight: 0, marginLeft: -3}}
                     regionId={instance.cloudRegionId} />
                   {instance.nodeType}
                 </span>
@@ -543,7 +543,7 @@ export default class PipelineRunPreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} style={{whiteSpace: 'initial'}} type="flex" align="middle">
+          <div className={styles.title} style={{whiteSpace: 'initial'}}>
             {
               this.props.runInfo && this.props.runInfo.loaded
                 ? (
@@ -558,7 +558,7 @@ export default class PipelineRunPreview extends React.Component {
                 )
             }
             <span>{this.runName}</span>
-          </Row>
+          </div>
           {description}
         </div>
         <div className={styles.content}>

@@ -18,9 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {DownOutlined, ExportOutlined} from '@ant-design/icons';
-import {Alert, Button, Checkbox, DatePicker, message, Row} from 'antd';
-import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Alert, Button, Checkbox, DatePicker, Dropdown, Menu, message, Row} from 'antd';
 import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
 import LoadingView from '../special/LoadingView';
@@ -32,8 +30,7 @@ import {
   NetworkUsageChart
 } from './charts';
 import {ResponsiveContainer} from './charts/utilities';
-import ClusterNodeUsageReport, * as usageUtilities
-  from '../../models/cluster/ClusterNodeUsageReport';
+import ClusterNodeUsageReport, * as usageUtilities from '../../models/cluster/ClusterNodeUsageReport';
 import ClusterUsageExportSettingsDialog from './ClusterUsageExportSettingsDialog';
 import {withRouter} from 'react-router-dom';
 
@@ -136,13 +133,13 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get wholeRangeEnabled() {
+  get wholeRangeEnabled () {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
   }
 
   @computed
-  get lastWeekEnabled() {
+  get lastWeekEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -152,7 +149,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get lastDayEnabled() {
+  get lastDayEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -162,7 +159,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get lastHourEnabled() {
+  get lastHourEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -172,7 +169,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get retentionPeriodExceeded() {
+  get retentionPeriodExceeded () {
     const {preferences, chartsData} = this.props;
     const {end} = this.state;
     if (end && preferences.loaded) {
@@ -217,7 +214,7 @@ class ClusterNodeMonitor extends React.Component {
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     if (this.liveUpdateTimer) {
       clearInterval(this.liveUpdateTimer);
       delete this.liveUpdateTimer;
@@ -560,30 +557,30 @@ class ClusterNodeMonitor extends React.Component {
                 style={{cursor: 'pointer'}}
                 selectedKeys={[]}
               >
-                <MenuItem
+                <Menu.Item
                   key={Range.full}
                   disabled={!this.wholeRangeEnabled}
                 >
                   Whole range
-                </MenuItem>
-                <MenuItem
+                </Menu.Item>
+                <Menu.Item
                   key={Range.week}
                   disabled={!this.lastWeekEnabled}
                 >
                   Last week
-                </MenuItem>
-                <MenuItem
+                </Menu.Item>
+                <Menu.Item
                   key={Range.day}
                   disabled={!this.lastDayEnabled}
                 >
                   Last day
-                </MenuItem>
-                <MenuItem
+                </Menu.Item>
+                <Menu.Item
                   key={Range.hour}
                   disabled={!this.lastHourEnabled}
                 >
                   Last hour
-                </MenuItem>
+                </Menu.Item>
               </Menu>
             )}>
             <Button>
@@ -619,20 +616,20 @@ class ClusterNodeMonitor extends React.Component {
                     style={{cursor: 'pointer'}}
                     selectedKeys={[]}
                   >
-                    <MenuItem key="XLS" value="XLS">
+                    <Menu.Item key="XLS" value="XLS">
                       Excel
-                    </MenuItem>
-                    <MenuItem key="CSV" value="CSV">
+                    </Menu.Item>
+                    <Menu.Item key="CSV" value="CSV">
                       CSV
-                    </MenuItem>
+                    </Menu.Item>
                     {
-                      availableExportIntervals.length > 1 && (<MenuDivider />)
+                      availableExportIntervals.length > 1 && (<Menu.Divider />)
                     }
                     {
                       availableExportIntervals.length > 1 && (
-                        <MenuItem key="custom" value="custom">
+                        <Menu.Item key="custom" value="custom">
                           Configure export
-                        </MenuItem>
+                        </Menu.Item>
                       )
                     }
                   </Menu>

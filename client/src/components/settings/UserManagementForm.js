@@ -30,11 +30,11 @@ import {
   Dropdown,
   Card,
   Button,
+  Menu,
   Modal,
   message,
   Select
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../models/user/Roles';
 import UserFind from '../../models/user/UserFind';
 import RoleCreate from '../../models/user/RoleCreate';
@@ -333,14 +333,14 @@ export default class UserManagementForm extends React.Component {
         selectedKeys={[]}
         style={{cursor: 'pointer'}}
       >
-        <MenuItem key="default">
+        <Menu.Item key="default">
           <DownloadOutlined style={{marginRight: 10}} />
           Default configuration
-        </MenuItem>
-        <MenuItem key="custom">
+        </Menu.Item>
+        <Menu.Item key="custom">
           <BarsOutlined style={{marginRight: 10}} />
           Custom configuration
-        </MenuItem>
+        </Menu.Item>
       </Menu>
     );
     return (

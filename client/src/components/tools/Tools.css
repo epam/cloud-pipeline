@@ -401,34 +401,6 @@
   min-width: 200px;
 }
 
-.menu-container > .actions-menu > .actions-sub-menu > div,
-.menu-container > .actions-menu > .menu-item,
-.menu-container > .actions-menu .actions-sub-menu .menu-item {
-  padding: 7px 8px;
-}
-
-.menu-container > .actions-menu .actions-sub-menu,
-.menu-container > .actions-menu {
-  margin: 0;
-  background-color: #ffff;
-}
-
-.menu-container > .actions-menu {
-  padding-top: 0;
-  padding-bottom: 0;
-  cursor: pointer;
-}
-
-.actions-sub-menu {
-  min-width: 200px;
-}
-
-.actions-sub-menu ul {
-  right: 100% !important;
-  left: auto !important;
-  margin-right: 5px;
-}
-
 .select-root-access {
   margin-left: 5px;
 }

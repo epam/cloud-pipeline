@@ -26,9 +26,7 @@ import {
   SelectOutlined,
   UploadOutlined
 } from '@ant-design/icons';
-import {Button, Checkbox, Col, Input, Row, Select} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Button, Checkbox, Col, Dropdown, Input, Menu, Row, Select} from 'antd';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
@@ -112,12 +110,12 @@ export default class EditToolFormParameters extends React.Component {
 
     const parameterTypeMenu = (
       <Menu selectedKeys={[]} onClick={onSelect} style={{cursor: 'pointer'}}>
-        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
-        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
-        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
-        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
-        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
-        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
+        <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
+        <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
+        <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
+        <Menu.Item id="add-input-parameter" key="input">Input path parameter</Menu.Item>
+        <Menu.Item id="add-output-parameter" key="output">Output path parameter</Menu.Item>
+        <Menu.Item id="add-common-parameter" key="common">Common path parameter</Menu.Item>
       </Menu>
     );
 

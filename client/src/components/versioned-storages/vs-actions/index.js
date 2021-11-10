@@ -26,15 +26,12 @@ import {
   ExclamationCircleOutlined,
   ForkOutlined,
   LoadingOutlined,
-  RightOutlined,
   SaveOutlined,
   SyncOutlined
 } from '@ant-design/icons';
 
-import {message} from 'antd';
+import {Dropdown, Menu, message} from 'antd';
 import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
-import Menu, {MenuItem, Divider, ItemGroup, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
@@ -48,8 +45,7 @@ import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 import VSConflictError from '../../../models/versioned-storage/conflict-error';
 import resolveFileConflict from '../../../models/versioned-storage/resolve-file-conflict';
-import VSResolveRepoAfterRefresh from
-  '../../../models/versioned-storage/resolve-repo-after-refresh';
+import VSResolveRepoAfterRefresh from '../../../models/versioned-storage/resolve-repo-after-refresh';
 import {
   CheckoutDialog,
   GitCommitDialog,
@@ -642,47 +638,44 @@ class VSActions extends React.Component {
     let onChange;
     if (!this.vsList || (!this.vsList.loaded && this.vsList.pending)) {
       menuItems.push((
-        <MenuItem
-          disabled key="loading"
-          className={styles.menuItem}
+        <Menu.Item
+          disabled
+          key="loading"
         >
           <LoadingOutlined />
           <span>Fetching versioned storage info...</span>
-        </MenuItem>
+        </Menu.Item>
       ));
     } else if (this.vsList.error) {
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           disabled
           key="error"
-          className={styles.menuItem}
         >
           <i>VCS not configured</i>
-        </MenuItem>
+        </Menu.Item>
       ));
     } else if (!this.vsList.loaded) {
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           disabled
           key="error"
-          className={styles.menuItem}
         >
           <i>Error fetching versioned storages</i>
-        </MenuItem>
+        </Menu.Item>
       ));
     } else {
       const storages = this.repositories;
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           key="clone"
-          className={styles.menuItem}
         >
           <CloudDownloadOutlined />
           <span>Clone</span>
-        </MenuItem>
+        </Menu.Item>
       ));
       if (storages.length > 0) {
-        menuItems.push((<Divider key="clone-divider" />));
+        menuItems.push((<Menu.Divider key="clone-divider" />));
       }
       storages.forEach((storage, index, array) => {
         const status = storagesStatuses.hasOwnProperty(storage.id)
@@ -705,11 +698,10 @@ class VSActions extends React.Component {
             unsaved
           );
         const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
-        const Container = array.length === 1 ? ItemGroup : SubMenu;
+        const Container = array.length === 1 ? Menu.ItemGroup : Menu.SubMenu;
         menuItems.push((
           <Container
             key={`-${storage.id}`}
-            className={styles.actionsSubMenu}
             title={(
               <span>
                 {storage.name}
@@ -724,18 +716,16 @@ class VSActions extends React.Component {
               this.menuContainerRef = el;
             }}
           >
-            <MenuItem
+            <Menu.Item
               key={`diff-${storage.id}`}
               disabled={!diffEnabled}
-              className={styles.menuItem}
             >
               <ExceptionOutlined />
               <span> Diff</span>
-            </MenuItem>
-            <MenuItem
+            </Menu.Item>
+            <Menu.Item
               key={`save-${storage.id}`}
               disabled={!saveEnabled}
-              className={styles.menuItem}
             >
               <SaveOutlined /> Save
               {
@@ -745,31 +735,26 @@ class VSActions extends React.Component {
                   </span>
                 )
               }
-            </MenuItem>
-            <MenuItem
+            </Menu.Item>
+            <Menu.Item
               key={`refresh-${storage.id}`}
               disabled={!refreshEnabled}
-              className={styles.menuItem}
             >
               <SyncOutlined /> Refresh
-            </MenuItem>
-            <Divider />
-            <MenuItem
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
               key={`checkout-${storage.id}`}
               disabled={mergeInProgress || unsaved}
-              className={styles.menuItem}
             >
               <ForkOutlined /> Checkout revision
-            </MenuItem>
-            <Divider />
+            </Menu.Item>
+            <Menu.Divider />
             {
               hasConflicts && (
-                <MenuItem
-                  key={`resolve-${storage.id}`}
-                  className={styles.menuItem}
-                >
+                <Menu.Item key={`resolve-${storage.id}`}>
                   <ExclamationCircleOutlined /> Resolve conflicts
-                </MenuItem>
+                </Menu.Item>
               )
             }
           </Container>
@@ -812,27 +797,17 @@ class VSActions extends React.Component {
       };
     }
     return (
-      <div
-        style={{
-          minWidth: 200,
-          cursor: 'pointer'
-        }}
-        className={styles.menuContainer}
+      <Menu
+        className={styles.menu}
+        onClick={onChange}
+        subMenuOpenDelay={0.2}
+        subMenuCloseDelay={0.2}
+        motion="zoom"
+        getPopupContainer={node => node.parentNode}
+        selectedKeys={[]}
       >
-        <Menu
-          className={styles.menu}
-          onClick={onChange}
-          openTransition="none"
-          subMenuOpenDelay={0.2}
-          subMenuCloseDelay={0.2}
-          openAnimation="zoom"
-          expandIcon={<RightOutlined />}
-          getPopupContainer={node => node.parentNode}
-          selectedKeys={[]}
-        >
-          {menuItems}
-        </Menu>
-      </div>
+        {menuItems}
+      </Menu>
     );
   };
 

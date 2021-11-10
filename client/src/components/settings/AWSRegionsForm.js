@@ -40,8 +40,10 @@ import {
   Alert,
   Button,
   Checkbox,
+  Dropdown,
   Input,
   InputNumber,
+  Menu,
   Modal,
   message,
   Row,
@@ -51,8 +53,6 @@ import {
   Col,
   AutoComplete
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
@@ -493,9 +493,9 @@ class AWSRegionsForm extends React.Component {
           {
             this.cloudProviders.map(c => {
               return (
-                <MenuItem key={c}>
+                <Menu.Item key={c}>
                   {c}
-                </MenuItem>
+                </Menu.Item>
               );
             })
           }

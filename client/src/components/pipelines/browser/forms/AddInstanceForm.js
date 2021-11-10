@@ -20,9 +20,7 @@ import {observer} from 'mobx-react';
 import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import {Form} from '@ant-design/compatible';
 import '@ant-design/compatible/assets/index.css';
-import {Checkbox, Modal, Button, Row, Input, Select} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Checkbox, Dropdown, Menu, Modal, Button, Row, Input, Select} from 'antd';
 import SelectMetadataItems from './SelectMetadataItems';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './AddInstanceForm.css';
@@ -449,11 +447,11 @@ export default class AddInstanceForm extends React.Component {
         style={{cursor: 'pointer'}}
         selectedKeys={[]}
       >
-        <MenuItem key="string">String parameter</MenuItem>
+        <Menu.Item key="string">String parameter</Menu.Item>
         {
           this.ownEntityTypes().map(e => {
             return (
-              <MenuItem key={e.name}>Link to '{e.name}' instance</MenuItem>
+              <Menu.Item key={e.name}>Link to '{e.name}' instance</Menu.Item>
             );
           })
         }

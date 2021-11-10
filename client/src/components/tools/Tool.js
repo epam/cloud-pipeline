@@ -38,8 +38,9 @@ import {
   Button,
   Card,
   Col,
+  Dropdown,
   Input,
-  Menu as MenuHorizontal,
+  Menu,
   message,
   Modal,
   Popover,
@@ -48,8 +49,6 @@ import {
   Tooltip,
   Upload
 } from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -89,8 +88,7 @@ import ToolScan from '../../models/tools/ToolScan';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import VersionScanResult from './elements/VersionScanResult';
 import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
-import InstanceTypesManagementForm
-  from '../settings/forms/InstanceTypesManagementForm';
+import InstanceTypesManagementForm from '../settings/forms/InstanceTypesManagementForm';
 import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
@@ -1288,22 +1286,22 @@ class Tool extends localization.LocalizedReactComponent {
     };
     return (
       <Row type="flex" justify="center">
-        <MenuHorizontal
+        <Menu
           className={styles.toolMenu}
           disabledOverflow
           onClick={onChangeSection}
           mode="horizontal"
           selectedKeys={[this.props.section]}>
-          <MenuHorizontal.Item key="description">
+          <Menu.Item key="description">
             DESCRIPTION
-          </MenuHorizontal.Item>
-          <MenuHorizontal.Item key="versions">
+          </Menu.Item>
+          <Menu.Item key="versions">
             VERSIONS
-          </MenuHorizontal.Item>
-          <MenuHorizontal.Item key="settings">
+          </Menu.Item>
+          <Menu.Item key="settings">
             SETTINGS
-          </MenuHorizontal.Item>
-        </MenuHorizontal>
+          </Menu.Item>
+        </Menu>
       </Row>
     );
   };
@@ -1619,7 +1617,7 @@ class Tool extends localization.LocalizedReactComponent {
           onClick={onSelect}
           style={{cursor: 'pointer'}}
         >
-          <MenuItem id="run-default-button" key={runDefaultKey}>
+          <Menu.Item id="run-default-button" key={runDefaultKey}>
             {
               tooltip && !notLoaded
                 ? (
@@ -1632,8 +1630,8 @@ class Tool extends localization.LocalizedReactComponent {
                 )
                 : 'Default settings'
             }
-          </MenuItem>
-          <MenuItem id="run-custom-button" key={runCustomKey}>
+          </Menu.Item>
+          <Menu.Item id="run-custom-button" key={runCustomKey}>
             {
               tooltip && !notLoaded
                 ? (
@@ -1646,7 +1644,7 @@ class Tool extends localization.LocalizedReactComponent {
                 )
                 : 'Custom settings'
             }
-          </MenuItem>
+          </Menu.Item>
         </Menu>
       );
       return (
@@ -1705,28 +1703,28 @@ class Tool extends localization.LocalizedReactComponent {
     };
     const displayOptionsMenuItems = [];
     displayOptionsMenuItems.push(
-      <MenuItem
+      <Menu.Item
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
         key="metadata">
         <Row type="flex" justify="space-between" align="middle">
           <span>Attributes</span>
           <CheckCircleOutlined style={{display: this.state.metadata ? 'inherit' : 'none'}} />
         </Row>
-      </MenuItem>
+      </Menu.Item>
     );
     displayOptionsMenuItems.push(
-      <MenuItem
+      <Menu.Item
         id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
         key="issues">
         <Row type="flex" justify="space-between" align="middle">
           <span>{this.localizedString('Issue')}s</span>
           <CheckCircleOutlined style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
         </Row>
-      </MenuItem>
+      </Menu.Item>
     );
     if (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) {
       displayOptionsMenuItems.push(
-        <MenuItem
+        <Menu.Item
           id={
             this.state.instanceTypesManagementPanel
               ? 'hide-instance-types-management-panel-button'
@@ -1738,13 +1736,13 @@ class Tool extends localization.LocalizedReactComponent {
             <CheckCircleOutlined
               style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
+        </Menu.Item>
       );
     }
     const displayOptionsMenu = (
       <Menu
         onClick={onSelectDisplayOption}
-        style={{width: 150, cursor: 'pointer'}}
+        style={{minWidth: 200, cursor: 'pointer'}}
         selectedKeys={[]}
       >
         {displayOptionsMenuItems}
@@ -1848,13 +1846,13 @@ class Tool extends localization.LocalizedReactComponent {
         style={{cursor: 'pointer'}}
         selectedKeys={[]}
       >
-        <MenuItem key={permissionsKey}>
+        <Menu.Item key={permissionsKey}>
           <SettingOutlined /> Permissions
-        </MenuItem>
-        <Divider />
-        <MenuItem key={deleteKey} style={{color: 'red'}}>
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item key={deleteKey} danger>
           <DeleteOutlined /> Delete tool {this.link ? 'link' : false}
-        </MenuItem>
+        </Menu.Item>
       </Menu>
     );
     return (

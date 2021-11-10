@@ -231,10 +231,10 @@ export default class FolderPreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <div className={styles.title}>
             <PreviewIcon />
             <span>{this.props.item.name}</span>
-          </Row>
+          </div>
         </div>
         <div className={styles.content}>
           {highlights && renderSeparator()}

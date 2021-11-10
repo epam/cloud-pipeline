@@ -24,13 +24,10 @@ import {
   EditOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
-  RightOutlined,
   SettingOutlined
 } from '@ant-design/icons';
 
-import {message, Button} from 'antd';
-import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Dropdown, Menu, message, Button} from 'antd';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
 import UpdateRegistry from '../../models/tools/RegistryUpdate';
@@ -362,22 +359,16 @@ export default class DockerRegistriesActionsButton extends React.Component {
     const canEditGroup = roleModel.writeAllowed(this.props.group);
     if (roleModel.writeAllowed(this.props.docker)) {
       registryActions.push(
-        <MenuItem
-          key="add-registry"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="add-registry">
           <PlusOutlined /> Create
-        </MenuItem>
+        </Menu.Item>
       );
     }
     if (this.props.registry && roleModel.writeAllowed(this.props.registry)) {
       registryActions.push(
-        <MenuItem
-          key="edit-registry"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="edit-registry">
           <EditOutlined /> Edit
-        </MenuItem>
+        </Menu.Item>
       );
     }
     const groupActions = [];
@@ -386,87 +377,70 @@ export default class DockerRegistriesActionsButton extends React.Component {
       this.props.registry.privateGroupAllowed &&
       !this.props.hasPersonalGroup) {
       groupActions.push(
-        <MenuItem
-          key="add-private-group"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="add-private-group">
           <PlusOutlined /> Create personal
-        </MenuItem>
+        </Menu.Item>
       );
     }
     if (this.props.registry &&
       roleModel.isManager.toolGroup(this) &&
       roleModel.writeAllowed(this.props.registry)) {
       groupActions.push(
-        <MenuItem
-          key="add-group"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="add-group">
           <PlusOutlined /> Create
-        </MenuItem>
+        </Menu.Item>
       );
     }
 
     if (canEditGroup) {
       if (groupActions.length > 0) {
         groupActions.push(
-          <Divider key="group-divider" />
+          <Menu.Divider key="group-divider" />
         );
       }
       groupActions.push(
-        <MenuItem
-          key="edit-group"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="edit-group">
           <EditOutlined /> Edit
-        </MenuItem>
+        </Menu.Item>
       );
       if (roleModel.isManager.toolGroup(this)) {
         groupActions.push(
-          <MenuItem
+          <Menu.Item
+            danger
             key="delete-group"
-            className={styles.menuItem}
-            style={{color: 'red'}}
           >
             <DeleteOutlined /> Delete
-          </MenuItem>
+          </Menu.Item>
         );
       }
     }
     const toolActions = [];
     if (canEditGroup) {
       toolActions.push(
-        <MenuItem
-          key="enable-tool"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="enable-tool">
           <PlusOutlined /> Enable tool
-        </MenuItem>
+        </Menu.Item>
       );
     }
     const subMenus = [];
     if (registryActions.length > 0) {
       subMenus.push(
-        <SubMenu
+        <Menu.SubMenu
           key="registry"
           title="Registry"
-          expandIcon={<RightOutlined />}
-          className={styles.actionsSubMenu}
         >
           {registryActions}
-        </SubMenu>
+        </Menu.SubMenu>
       );
     }
     if (groupActions.length > 0) {
       subMenus.push(
-        <SubMenu
+        <Menu.SubMenu
           key="group"
           title="Group"
-          expandIcon={<RightOutlined />}
-          className={styles.actionsSubMenu}
         >
           {groupActions}
-        </SubMenu>
+        </Menu.SubMenu>
       );
     }
     if (toolActions.length > 0) {
@@ -474,15 +448,12 @@ export default class DockerRegistriesActionsButton extends React.Component {
     }
     if (this.props.registry && this.props.registry.pipelineAuth) {
       if (subMenus.length > 0) {
-        subMenus.push(<Divider key="divider" />);
+        subMenus.push(<Menu.Divider key="divider" />);
       }
       subMenus.push(
-        <MenuItem
-          key="configure-registry"
-          className={styles.menuItem}
-        >
+        <Menu.Item key="configure-registry">
           <QuestionCircleOutlined /> How to configure
-        </MenuItem>
+        </Menu.Item>
       );
     }
     if (subMenus.length > 0) {
@@ -519,12 +490,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
             overlayStyle={{zIndex: 2}}
             visible={overlayVisible}
             onVisibleChange={this.handleOverlayVisibility}
-            overlay={(
-              <div
-                className={styles.menuContainer}>
-                {menu}
-              </div>
-            )}
+            overlay={menu}
           >
             <Button size="small" style={{zIndex: 2}}>
               <SettingOutlined />

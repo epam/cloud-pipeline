@@ -412,28 +412,6 @@ tr.table-row-selected {
   min-height: 37px;
 }
 
-.menu-container > .menu > .actions-sub-menu > div,
-.menu-container > .menu > .menu-item,
-.menu-container > .menu .actions-sub-menu .menu-item {
-  padding: 7px 8px;
-}
-
-.menu-container > .menu {
-  padding-top: 0;
-  padding-bottom: 0;
-  cursor: pointer;
-}
-
-.menu-item {
-  cursor: pointer;
-}
-
-.actions-sub-menu ul {
-  right: 100% !important;
-  left: auto !important;
-  margin-right: 5px;
-}
-
 .action-link:hover {
   text-decoration: underline;
 }

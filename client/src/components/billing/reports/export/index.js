@@ -18,9 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider as MobxProvider} from 'mobx-react';
 import {ExportOutlined} from '@ant-design/icons';
-import {Button} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Button, Dropdown, Menu} from 'antd';
 import ExportConsumer from './export-consumer';
 import ExportImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
@@ -73,7 +71,7 @@ class ExportReports extends React.Component {
       >
         {
           formats.map((format) => (
-            <MenuItem key={format}>{ExportFormatName[format]}</MenuItem>
+            <Menu.Item key={format}>{ExportFormatName[format]}</Menu.Item>
           ))
         }
       </Menu>

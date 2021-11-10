@@ -17,9 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {DownOutlined, FileOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
-import {Table, Spin, Button, Input, Modal, Row} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Dropdown, Menu, Table, Spin, Button, Input, Modal, Row} from 'antd';
 import classNames from 'classnames';
 import UploadButton from '../../../../special/UploadButton';
 import VSTableNavigation from './vs-table-navigation';
@@ -274,18 +272,18 @@ class VersionedStorageTable extends React.Component {
                   selectedKeys={[]}
                   onClick={this.onCreateActionSelect}
                   style={{width: 200}}>
-                  <MenuItem
+                  <Menu.Item
                     key={TABLE_MENU_KEYS.folder}
                     disabled={!controlsEnabled}
                   >
                     <FolderOutlined /> Folder
-                  </MenuItem>
-                  <MenuItem
+                  </Menu.Item>
+                  <Menu.Item
                     key={TABLE_MENU_KEYS.file}
                     disabled={!controlsEnabled}
                   >
                     <FileOutlined /> File
-                  </MenuItem>
+                  </Menu.Item>
                 </Menu>
               }
               key="create actions">

@@ -17,8 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {DownOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Dropdown, Menu} from 'antd';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
 import styles from './multizone-url.css';
@@ -65,7 +64,7 @@ export default class MultizoneUrl extends React.Component {
         {
           regions
             .map(({region, url}) => (
-              <MenuItem key={region} style={{display: 'flex'}}>
+              <Menu.Item key={region} style={{display: 'flex'}}>
                 <AWSRegionTag
                   style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
                   regionUID={region}
@@ -83,7 +82,7 @@ export default class MultizoneUrl extends React.Component {
                       : false
                   }
                 </a>
-              </MenuItem>
+              </Menu.Item>
             ))
         }
       </Menu>

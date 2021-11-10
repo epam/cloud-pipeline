@@ -43,9 +43,7 @@ import {
   TagOutlined
 } from '@ant-design/icons';
 
-import {Alert, Button, Col, message, Row, Select, Table} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Alert, Button, Col, Dropdown, Menu, message, Row, Select, Table} from 'antd';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';
@@ -613,22 +611,20 @@ class Pipeline extends localization.LocalizedReactComponent {
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <MenuItem
+        <Menu.Item
           id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
           key="metadata"
-          className={styles.menuItem}
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <CheckCircleOutlined style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
+        </Menu.Item>
       );
       displayOptionsMenuItems.push(
-        <MenuItem
+        <Menu.Item
           id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
           key="issues"
-          className={styles.menuItem}
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
@@ -639,7 +635,7 @@ class Pipeline extends localization.LocalizedReactComponent {
                   : 'none'
               }} />
           </Row>
-        </MenuItem>
+        </Menu.Item>
       );
     }
     if (displayOptionsMenuItems.length > 0) {
@@ -677,24 +673,22 @@ class Pipeline extends localization.LocalizedReactComponent {
     };
     if (!this.props.readOnly) {
       actions.push(
-        <MenuItem
+        <Menu.Item
           id="edit-pipeline-button"
           key="edit"
-          className={styles.menuItem}
         >
           <EditOutlined /> Edit
-        </MenuItem>
+        </Menu.Item>
       );
     }
     if (!this.props.readOnly && roleModel.isOwner(this.props.pipeline.value)) {
       actions.push(
-        <MenuItem
+        <Menu.Item
           key="clone"
           id="clone-pipeline-button"
-          className={styles.menuItem}
         >
           <CopyOutlined /> Clone
-        </MenuItem>
+        </Menu.Item>
       );
     }
     return (

@@ -29,8 +29,7 @@ import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
-import MetadataEntityDeleteFromProject
-  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import MetadataEntityDeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';

@@ -41,7 +41,9 @@ import {
   Button,
   Checkbox,
   Col,
+  Dropdown,
   Input,
+  Menu,
   message,
   Modal,
   Popover,
@@ -49,8 +51,6 @@ import {
   Spin,
   Table
 } from 'antd';
-import Dropdown from 'rc-dropdown';
-import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
@@ -58,8 +58,7 @@ import dataStorages from '../../../models/dataStorage/DataStorages';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
@@ -90,15 +89,13 @@ import roleModel from '../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
-import DataStorageGenerateSharedLink
-  from '../../../models/dataStorage/DataStorageGenerateSharedLink';
+import DataStorageGenerateSharedLink from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
-import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE}
-  from '../../special/metadata/special/fs-notifications';
+import {METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE} from '../../special/metadata/special/fs-notifications';
 import {getDataStorageItemIcon} from '../utils';
 
 const PAGE_SIZE = 40;
@@ -1423,21 +1420,21 @@ class DataStorage extends React.Component {
             <Menu
               selectedKeys={[]}
               onClick={editActionSelect}
-              style={{width: 200, cursor: 'pointer'}}>
-              <MenuItem
+              style={{cursor: 'pointer'}}>
+              <Menu.Item
                 id="edit-storage-action-button"
                 className="edit-storage-button"
                 key="edit"
               >
                 <EditOutlined /> Edit
-              </MenuItem>
-              <MenuItem
+              </Menu.Item>
+              <Menu.Item
                 id="convert-storage-button"
                 className="convert-storage-action-button"
                 key="convert"
               >
                 <InboxOutlined style={{color: '#2696dd'}} /> Convert to Versioned Storage
-              </MenuItem>
+              </Menu.Item>
             </Menu>
           }
           key="edit actions"
@@ -1568,18 +1565,18 @@ class DataStorage extends React.Component {
                       selectedKeys={[]}
                       onClick={onCreateActionSelect}
                       style={{width: 200, cursor: 'pointer'}}>
-                      <MenuItem
+                      <Menu.Item
                         id="create-folder-button"
                         className="create-folder-button"
                         key={folderKey}>
                         <FolderOutlined /> Folder
-                      </MenuItem>
-                      <MenuItem
+                      </Menu.Item>
+                      <Menu.Item
                         id="create-file-button"
                         className="create-file-button"
                         key={fileKey}>
                         <FileOutlined /> File
-                      </MenuItem>
+                      </Menu.Item>
                     </Menu>
                   }
                   key="create actions">

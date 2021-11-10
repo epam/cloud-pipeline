@@ -18,7 +18,6 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {withRouter} from 'react-router-dom';
-import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -41,9 +40,7 @@ import {
   UploadOutlined
 } from '@ant-design/icons';
 
-import {Button, Checkbox, Input, message, Modal, Pagination, Row} from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Button, Checkbox, Dropdown, Input, Menu, message, Modal, Pagination, Row} from 'antd';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -65,8 +62,7 @@ import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
-import MetadataEntityDeleteFromProject
-  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import MetadataEntityDeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
 import FolderProject from '../../../models/folders/FolderProject';
@@ -1765,22 +1761,22 @@ class Metadata extends React.Component {
       };
       const menuItems = [];
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           key={Actions.addMetadata}
-          className={classNames(styles.menuItem, Actions.addMetadata)}
+          className={Actions.addMetadata}
         >
           <PlusOutlined style={{marginRight: 5}} />
           Add instance
-        </MenuItem>
+        </Menu.Item>
       ));
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           key={Actions.upload}
-          className={classNames(styles.menuItem, Actions.upload)}
+          className={Actions.upload}
         >
           <UploadOutlined style={{marginRight: 5}} />
           Upload metadata
-        </MenuItem>
+        </Menu.Item>
       ));
       if (
         this.transferJobId &&
@@ -1788,40 +1784,40 @@ class Metadata extends React.Component {
         this.currentClassEntityPathFields.length > 0
       ) {
         menuItems.push((
-          <MenuItem
+          <Menu.Item
             key={Actions.transfer}
-            className={classNames(styles.menuItem, Actions.transfer)}
+            className={Actions.transfer}
           >
             <CloudUploadOutlined style={{marginRight: 5}} />
             Transfer to the cloud
-          </MenuItem>
+          </Menu.Item>
         ));
         menuItems.push((
-          <Divider key="divider-1" />
+          <Menu.Divider key="divider-1" />
         ));
       }
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           key={Actions.deleteClass}
-          className={classNames(styles.menuItem, Actions.deleteClass)}
-          style={{color: 'red'}}
+          className={Actions.deleteClass}
+          danger
         >
           <DeleteOutlined style={{marginRight: 5}} />
           Delete class
-        </MenuItem>
+        </Menu.Item>
       ));
       menuItems.push((
-        <Divider key="divider-2" />
+        <Menu.Divider key="divider-2" />
       ));
       menuItems.push((
-        <MenuItem
+        <Menu.Item
           key={Actions.showAttributes}
-          className={classNames(styles.menuItem, Actions.showAttributes)}
+          className={Actions.showAttributes}
         >
           {
             this.state.metadata ? 'Hide attributes' : 'Show attributes'
           }
-        </MenuItem>
+        </Menu.Item>
       ));
       const menu = (
         <Menu
@@ -2110,12 +2106,12 @@ class Metadata extends React.Component {
         }
       };
       const menuItems = [(
-        <MenuItem
+        <Menu.Item
           key={Actions.clearSelection}
-          className={classNames(styles.menuItem, Actions.clearSelection)}
+          className={Actions.clearSelection}
         >
           Clear selection
-        </MenuItem>
+        </Menu.Item>
       )];
       if (
         roleModel.writeAllowed(this.props.folder.value) &&
@@ -2123,22 +2119,22 @@ class Metadata extends React.Component {
         roleModel.isManager.entities(this)
       ) {
         menuItems.push((
-          <MenuItem
+          <Menu.Item
             key={Actions.copySelection}
-            className={classNames(styles.menuItem, Actions.copySelection)}
+            className={Actions.copySelection}
           >
             Copy
-          </MenuItem>
+          </Menu.Item>
         ));
-        menuItems.push((<Divider key="divider" />));
+        menuItems.push((<Menu.Divider key="divider" />));
         menuItems.push((
-          <MenuItem
+          <Menu.Item
             key={Actions.delete}
-            style={{color: 'red'}}
-            className={classNames(styles.menuItem, Actions.delete)}
+            className={Actions.delete}
+            danger
           >
             Delete
-          </MenuItem>
+          </Menu.Item>
         ));
       }
       const menu = (
