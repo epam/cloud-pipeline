@@ -117,7 +117,7 @@ public class RunToolsInSandBoxTest
 //                endpointPage
 //                        .closeTab();
 //            }
-            restartBrowser(C.ROOT_ADDRESS);
+            open(C.ROOT_ADDRESS);
         }
     }
 
