@@ -113,9 +113,11 @@ public class RunToolsInSandBoxTest
                     .sleep(10, SECONDS)
                     .validateEndpointPage(C.LOGIN);
         } finally {
-            if (endpointPage != null) {
-                endpointPage.closeTab();
-            }
+//            if (endpointPage != null) {
+//                endpointPage
+//                        .closeTab();
+//            }
+            restartBrowser(C.ROOT_ADDRESS);
         }
     }
 
