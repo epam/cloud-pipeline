@@ -315,13 +315,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     let sensitive = false;
     let subTitle;
     let iconStyle = {};
+    let iconClassName;
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
       case ItemTypes.versionedStorage:
         icon = 'inbox';
-        iconStyle = {
-          color: '#2696dd'
-        };
+        iconClassName = 'cp-versioned-storage';
         break;
       case ItemTypes.folder:
         if (item.id === 'pipelines') {
@@ -384,15 +383,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           icon && (
             <Icon
               type={icon}
-              style={
-                Object.assign(
-                  {},
-                  iconStyle || {},
-                  sensitive
-                    ? {color: '#ff5c33'}
-                    : {}
-                )
-              }
+              className={classNames({'cp-sensitive': sensitive}, iconClassName)}
+              style={iconStyle}
             />
           )
         }
@@ -400,15 +392,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           subIcon && (
             <Icon
               type={subIcon}
-              style={
-                Object.assign(
-                  {},
-                  iconStyle || {},
-                  sensitive
-                    ? {color: '#ff5c33'}
-                    : {}
-                )
-              }
+              className={classNames({'cp-sensitive': sensitive}, iconClassName)}
+              style={iconStyle}
             />
           )
         }

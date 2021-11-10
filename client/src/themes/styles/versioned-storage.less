@@ -14,25 +14,26 @@
  *  limitations under the License.
  */
 
-.menu {
-  min-width: 200px;
-}
+@import "variables";
 
-.menu-container > .menu > .actions-sub-menu > div,
-.menu-container > .menu > .menu-item,
-.menu-container > .menu .actions-sub-menu .menu-item {
-  padding: 7px 8px;
-}
-
-.menu-container > .menu {
-  padding-top: 0;
-  padding-bottom: 0;
+.cp-versioned-storage-breadcrumb {
   cursor: pointer;
-  background-color: #ffff;
-  text-align: left;
+  transition: all 0.2s ease;
+  line-height: 20px;
+  padding: 5px;
+  margin: 0 -5px;
 }
 
-.actions-sub-menu {
-  min-width: 200px;
-  text-align: left;
+.cp-versioned-storage-breadcrumb:not(.last):hover {
+  color: @primary-color;
+}
+
+.cp-versioned-storage-breadcrumb.last {
+  cursor: default;
+}
+
+.cp-versioned-storage-table-header {
+  border-color: @card-border-color;
+  background-color: @card-header-background;
+  color: @application-color;
 }

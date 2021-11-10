@@ -97,7 +97,7 @@ export default class IssueComment extends React.Component {
       const renderIcon = (type) => {
         switch (type) {
           case ItemTypes.pipeline: return <Icon type="fork" />;
-          case ItemTypes.versionedStorage: return <Icon type="inbox" style={{color: '#2696dd'}} />;
+          case ItemTypes.versionedStorage: return <Icon type="inbox" className="cp-versioned-storage" />;
           case ItemTypes.configuration: return <Icon type="setting" />;
           case ItemTypes.storage: return <Icon type="hdd" />;
           case 'tool': return <Icon type="tool" />;

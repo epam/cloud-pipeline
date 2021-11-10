@@ -651,7 +651,7 @@ class FacetedSearch extends React.Component {
                   percentDefault: 25
                 }
               }]}
-              resizerSize={14}
+              resizerSize={8}
             >
               <div
                 key="faceted-filter"

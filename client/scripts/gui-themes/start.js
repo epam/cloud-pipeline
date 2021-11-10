@@ -30,7 +30,7 @@ function updateCallback (options) {
     if (/^rename$/i.test(event)) {
       return;
     }
-    if (/(theme\.less\.template\.js|-theme\/index\.js)$/i.test(filename)) {
+    if (/(theme\.less\.template\.js|-theme[/\\]index\.js)$/i.test(filename)) {
       return;
     }
     if (test && !test.test(filename)) {

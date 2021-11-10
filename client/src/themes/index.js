@@ -24,6 +24,8 @@ const _TEMPORARY_LIGHT_THEME_KEY = 'CP-THEMES-SYSTEM-LIGHT';
 const _TEMPORARY_DARK_THEME_KEY = 'CP-THEMES-SYSTEM-DARK';
 const _TEMPORARY_SINGLE_THEME_KEY = 'CP-THEMES-SINGLE';
 
+const DEBUG = true;
+
 class CloudPipelineThemes {
   @observable themes = [];
   @observable loaded = false;
@@ -39,6 +41,33 @@ class CloudPipelineThemes {
     if (window.matchMedia) {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
         this.applyTheme();
+      });
+    }
+    if (DEBUG) {
+      window.addEventListener('keydown', e => {
+        const moveIndex = delta => (
+          this.themes.map(o => o.identifier).indexOf(this.singleTheme) + delta + this.themes.length
+        ) % (this.themes.length);
+        const shiftTheme = delta => {
+          if (this.synchronizeWithSystem) {
+            this.synchronizeWithSystem = false;
+          }
+          const newIndex = moveIndex(delta);
+          this.singleTheme = this.themes[newIndex].identifier;
+          this.applyTheme();
+          this.save();
+        };
+        const next = () => {
+          shiftTheme(1);
+        };
+        const prev = () => {
+          shiftTheme(-1);
+        };
+        if (e.key === ']') {
+          next();
+        } else if (e.key === '[') {
+          prev();
+        }
       });
     }
   }

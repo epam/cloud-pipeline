@@ -190,6 +190,7 @@ export default class CardsPanel extends React.Component {
                 title,
                 icon,
                 style,
+                className,
                 overlay,
                 target,
                 multiZoneUrl,
@@ -213,7 +214,8 @@ export default class CardsPanel extends React.Component {
                     className={
                       classNames(
                         styles.actionButton,
-                        'cp-card-action-button'
+                        'cp-card-action-button',
+                        className
                       )
                     }
                     style={containerStyle}
@@ -228,7 +230,8 @@ export default class CardsPanel extends React.Component {
                     className={
                       classNames(
                         styles.actionButton,
-                        'cp-card-action-button'
+                        'cp-card-action-button',
+                        className
                       )
                     }
                     visibilityChanged={onVisibleChange}
@@ -247,6 +250,7 @@ export default class CardsPanel extends React.Component {
                           ? (
                             <Icon
                               style={style}
+                              className={className}
                               type={getIconType(action)}
                             />
                           )
@@ -266,7 +270,8 @@ export default class CardsPanel extends React.Component {
                   className={
                     classNames(
                       styles.actionButton,
-                      'cp-card-action-button'
+                      'cp-card-action-button',
+                      className
                     )
                   }
                   onClick={e => this.onActionClicked(e, action, child)}

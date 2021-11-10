@@ -18,20 +18,22 @@
 @application-color: rgb(202, 202, 216);
 @application-color-faded: fadeout(@application-color, 20%);
 @application-color-disabled: fadeout(@application-color, 60%);
+@application-color-accent: lighten(@application-color, 10%);
 
-@primary-color: #24567a;
-@primary-hover-color: darken(@primary-color, 10%);
-@primary-active-color: lighten(@primary-color, 10%);
+@primary-color: #108ee9;
+@primary-hover-color: lighten(@primary-color, 10%);
+@primary-active-color: @primary-color;
 @primary-text-color: @application-background-color;
 
-@error-color: #d26e51;
-
-@color-green: #297230;
-@color-red: #772c2c;
-@color-yellow: #88562e;
-@color-blue: #31457e;
+@color-green: #118a4e;
+@color-red: rgb(235, 99, 94);
+@color-yellow: #c28b15;
+@color-blue: #108ee9;
+@color-sensitive: #ff5c33;
 
 @border-color: lighten(@application-background-color, 15%);
+
+@spinner: @application-color;
 
 @status-good-color: @color-green;
 @status-warning-color: @color-yellow;
@@ -42,10 +44,17 @@
 @panel-border-color: rgb(28, 30, 33);
 @panel-transparent-color: transparent;
 
+@element-hover-color: @application-color;
+@element-hover-background-color: lighten(@panel-background-color, 3%);
+@element-selected-color: @application-color;
+@element-selected-background-color: lighten(@panel-background-color, 5%);
+
 @input-background: @panel-background-color;
-@input-border: @panel-border-color;
+@input-background-disabled: darken(@input-background, 10%);
+@input-addon: lighten(@input-background, 5%);
+@input-border: @border-color;
 @input-color: @application-color;
-@input-placeholder-color: fade(@application-color, 20%);
+@input-placeholder-color: fadeout(@application-color, 40%);
 @input-border-hover-color: @primary-hover-color;
 @input-shadow-color: rgba(202, 202, 216, 0.05);
 @input-search-icon-color: rgba(202, 202, 216, 0.3);
@@ -80,7 +89,7 @@
 
 @modal-mask-background: rgba(0, 0, 0, 0.6);
 
-@even-element-background: rgba(255, 255, 255, 0.1);
+@even-element-background: rgba(255, 255, 255, 0.05);
 
 @alert-success-background: darken(@status-good-color, 15%);
 @alert-success-border: @status-good-color;
@@ -95,15 +104,12 @@
 @alert-info-border: @status-info-color;
 @alert-info-icon: @status-info-color;
 
-@table-element-selected-background-color: @navigation-panel-highlighted-color;
-@table-element-selected-color: @application-color;
-@table-element-hover-background-color: @navigation-panel-highlighted-color;
-@table-element-hover-color: @application-color;
+@table-element-selected-background-color: @element-selected-background-color;
+@table-element-selected-color: @element-selected-color;
+@table-element-hover-background-color: @element-hover-background-color;
+@table-element-hover-color: @element-hover-color;
 @table-border-color: @card-border-color;
-@table-head-color: #fff;
-@table-icons-color: #999;
-@table-icons-hover-color: @table-head-color;
-@table-tr-hover-color: fade(@primary-hover-color, 40%);
+@table-head-color: @application-color-accent;
 
 @menu-color: @application-color;
 @menu-active-color: @application-color;
@@ -113,7 +119,7 @@
 @btn-border-color: @border-color;
 @btn-primary-hover: @primary-hover-color;
 @btn-primary-active: @primary-active-color;
-@btn-danger-color: @error-color;
+@btn-danger-color: @color-red;
 @btn-danger-background-color: @btn-disabled-background-color;
 @btn-danger-active-color: darken(@btn-danger-color, 20%);
 @btn-disabled-color: lighten(@panel-background-color, 40%);

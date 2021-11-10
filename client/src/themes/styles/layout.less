@@ -16,6 +16,74 @@
 
 @import "variables";
 
+a,
+a:visited,
+.cp-link {
+  color: @primary-color;
+  cursor: pointer;
+}
+
+.cp-link[disabled] {
+  color: @btn-disabled-color;
+}
+
+a:hover,
+a:focus,
+.cp-link:hover,
+.cp-link:focus {
+  color: @primary-hover-color;
+}
+
+.cp-divider.top,
+.cp-divider.horizontal {
+  border-top: 1px solid @panel-border-color;
+}
+
+.cp-divider.bottom {
+  border-bottom: 1px solid @panel-border-color;
+}
+
+.cp-divider.left,
+.cp-divider.vertical {
+  border-left: 1px solid @panel-border-color;
+}
+
+.cp-divider.right {
+  border-right: 1px solid @panel-border-color;
+}
+
+.cp-divider.horizontal {
+  width: 100%;
+  height: 1px;
+}
+
+.cp-divider.vertical {
+  width: 1px;
+  height: 100%;
+}
+
+.cp-primary {
+  color: @primary-color;
+}
+
+.cp-error,
+.cp-danger {
+  color: @color-red;
+}
+
+.cp-sensitive {
+  color: @color-sensitive;
+}
+
+.cp-sensitive-tag {
+  background-color: @color-sensitive;
+  color: @btn-color;
+}
+
+.cp-versioned-storage {
+  color: @primary-color;
+}
+
 .ant-layout-sider {
   background-color: @navigation-panel-color;
 }
@@ -35,6 +103,18 @@ h5 {
 
 .ant-input {
   background-color: @input-background;
+  border-color: @input-border;
+  color: @input-color;
+}
+
+.ant-input-disabled {
+  background-color: @input-background-disabled;
+  color: @application-color-disabled;
+}
+
+.ant-input-group-addon,
+.cp-input-group-addon {
+  background-color: @input-addon;
   border-color: @input-border;
   color: @input-color;
 }
@@ -64,6 +144,22 @@ h5 {
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
 
+.ant-input.cp-error {
+  border-color: @color-red;
+  color: @color-red;
+}
+
+.ant-input.cp-error:hover:not(.ant-input-disabled) {
+  border-color: @color-red;
+  box-shadow: 0 0 0 2px fade(@color-red, 20%);
+}
+
+.ant-input.cp-error:focus:not(.ant-input-disabled),
+.ant-input.cp-error:active:not(.ant-input-disabled) {
+  border-color: @color-red;
+  box-shadow: 0 0 0 2px fade(@color-red, 20%);
+}
+
 .cp-text-not-important {
   color: @application-color-faded;
 }
@@ -74,6 +170,11 @@ h5 {
 
 .ant-modal-content {
   background-color: @card-background-color;
+  color: @application-color;
+}
+
+.ant-confirm-body,
+.ant-confirm-body .ant-confirm-title {
   color: @application-color;
 }
 
@@ -252,7 +353,37 @@ h5 {
   width: 100%;
 }
 
-.ant-btn {
+.cp-button {
+  padding: 0 7px;
+  border-radius: 4px;
+  height: 22px;
+  margin-bottom: 0;
+  text-align: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  line-height: 22px;
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  position: relative;
+  color: currentColor;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+.cp-button i,
+.cp-button span {
+  line-height: 1;
+  text-decoration: none;
+}
+
+.cp-button:hover {
+  text-decoration: none;
+}
+
+.ant-btn,
+.cp-button {
   color: @application-color;
   background-color: @panel-background-color;
   border-color: @btn-border-color;
@@ -265,7 +396,10 @@ h5 {
 .ant-btn:hover,
 .ant-btn:focus,
 .ant-btn:active,
-.ant-btn.active {
+.ant-btn.active,
+.cp-button:hover,
+.cp-button:focus,
+.cp-button:active {
   color: @primary-color;
   background-color: @panel-background-color;
   border-color: @primary-color;
@@ -335,13 +469,21 @@ h5 {
 .ant-btn[disabled].active,
 .ant-btn[disabled]:active,
 .ant-btn[disabled]:focus,
-.ant-btn[disabled]:hover {
+.ant-btn[disabled]:hover,
+.cp-button[disabled],
+.cp-button[disabled].active,
+.cp-button[disabled]:active,
+.cp-button[disabled]:focus,
+.cp-button[disabled]:hover {
   color: @btn-disabled-color;
   background-color: @btn-disabled-background-color;
   border-color: @btn-border-color;
 }
 
-.ant-table {
+.ant-table,
+.ant-table-placeholder,
+tr.ant-table-expanded-row,
+tr.ant-table-expanded-row:hover {
   color: @application-color;
   border-color: @table-border-color;
   background: @card-background-color;
@@ -350,7 +492,7 @@ h5 {
 .ant-table-small .ant-table-thead > tr > th {
   color: @table-head-color;
   background-color: @card-background-color;
-  border-bottom-color: @table-border-color;
+  border-color: @table-border-color;
 }
 
 .ant-table-small .ant-table-title {
@@ -361,7 +503,7 @@ h5 {
 .ant-table-thead > tr > th .ant-table-filter-icon:hover,
 .ant-table-column-sorter-up:hover .anticon,
 .ant-table-column-sorter-down:hover .anticon {
-  color: @table-icons-hover-color;
+  color: @application-color;
 }
 
 .ant-table-column-sorter-up.on .anticon-caret-up,
@@ -375,8 +517,22 @@ h5 {
   border-color: @table-border-color;
 }
 
-.ant-table-tbody > tr:hover > td {
-  background-color: @table-tr-hover-color;
+.ant-table-tbody > tr:hover > td,
+.cp-table-element-hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
+
+.cp-table-element-selected {
+  font-weight: bold;
+  background-color: @table-element-selected-background-color;
+  color: @table-element-selected-color;
+}
+
+.cp-table-element-disabled {
+  cursor: default;
+  background-color: @card-background-color;
+  color: @application-color-disabled;
 }
 
 .ant-table-row-expand-icon {
@@ -408,4 +564,153 @@ h5 {
 
 .ant-checkbox-checked::after {
   border-color: @primary-color;
+}
+
+.ant-breadcrumb a,
+.ant-breadcrumb > span:last-child {
+  color: @application-color;
+}
+
+.ant-breadcrumb a:hover {
+  color: @primary-color;
+}
+
+.ant-breadcrumb-separator,
+.ant-breadcrumb {
+  color: @application-color;
+}
+
+.ant-calendar-picker-clear,
+.ant-calendar-picker-icon,
+.ant-calendar-picker-icon::after {
+  color: @input-color;
+  background-color: @input-background;
+}
+
+.ant-select {
+  color: @input-color;
+}
+
+.ant-select-selection {
+  color: @input-color;
+  background-color: @input-background;
+  border-color: @input-border;
+}
+
+.ant-select-selection:hover {
+  border-color: @primary-color;
+}
+
+.ant-select-focused .ant-select-selection,
+.ant-select-selection:focus,
+.ant-select-selection:active {
+  border-color: @primary-color;
+  box-shadow: 0 0 0 2px @input-shadow-color;
+}
+
+.ant-select-dropdown,
+.rc-menu,
+.rc-dropdown-menu {
+  background-color: @panel-background-color;
+  color: @application-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
+}
+
+.rc-menu,
+.rc-dropdown-menu {
+  border-color: @card-border-color;
+}
+
+.rc-menu > .rc-menu-item-divider,
+.rc-dropdown-menu > .rc-dropdown-menu-item-divider {
+  background-color: @card-border-color;
+}
+
+.ant-select-selection__placeholder,
+.ant-select-selection__clear,
+.ant-select-arrow,
+.ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected::after,
+.ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected:hover::after {
+  color: @input-placeholder-color;
+  background-color: transparent;
+}
+
+.ant-select-dropdown-menu-item {
+  color: @application-color;
+  background-color: @panel-background-color;
+}
+
+.rc-dropdown-menu > .rc-dropdown-menu-item {
+  color: @application-color;
+}
+
+.ant-select-dropdown-menu-item.cp-danger,
+.rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger {
+  color: @color-red;
+}
+
+.ant-select-dropdown-menu-item-active,
+.ant-select-dropdown-menu-item:hover,
+.rc-menu-item-active,
+.rc-menu-submenu-active > .rc-menu-submenu-title,
+.rc-dropdown-menu > .rc-dropdown-menu-item:hover,
+.rc-dropdown-menu > .rc-dropdown-menu-item-active,
+.rc-dropdown-menu > .rc-dropdown-menu-item-selected {
+  color: @element-hover-color;
+  background-color: @element-hover-background-color;
+}
+
+.ant-select-dropdown-menu-item-active.cp-danger:hover,
+.ant-select-dropdown-menu-item.cp-danger:hover,
+.rc-menu-item-active.cp-danger,
+.rc-menu-submenu-active.cp-danger > .rc-menu-submenu-title,
+.rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger:hover,
+.rc-dropdown-menu > .rc-dropdown-menu-item-active.cp-danger,
+.rc-dropdown-menu > .rc-dropdown-menu-item-selected.cp-danger {
+  color: @btn-color;
+  background-color: @btn-danger-active-color;
+}
+
+.rc-menu-item.rc-menu-item-disabled,
+.rc-menu-submenu-title.rc-menu-item-disabled,
+.rc-menu-item.rc-menu-submenu-disabled,
+.rc-menu-submenu-title.rc-menu-submenu-disabled,
+.rc-dropdown-menu-item-disabled {
+  color: @application-color-disabled;
+}
+
+.ant-select-dropdown-menu-item-selected,
+.ant-select-dropdown-menu-item-selected:hover {
+  color: @element-selected-color;
+  background-color: @element-selected-background-color;
+}
+
+.ant-select-selection--multiple .ant-select-selection__choice {
+  color: @element-selected-color;
+  background-color: @element-selected-background-color;
+  border-color: @element-hover-background-color;
+}
+
+.ant-select-selection--multiple .ant-select-selection__choice__remove {
+  color: @application-color-faded;
+}
+
+.ant-select-selection--multiple .ant-select-selection__choice__remove:hover {
+  color: @application-color;
+}
+
+.ant-select-dropdown-menu-item-group-title {
+  color: @application-color-faded;
+}
+
+.ant-spin {
+  color: @spinner;
+}
+
+.ant-spin-dot i {
+  background-color: currentColor;
+}
+
+.ant-spin-blur::after {
+  background-color: @application-background-color;
 }

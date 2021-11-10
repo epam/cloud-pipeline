@@ -100,7 +100,7 @@ export default class MyDataPanel extends React.Component {
         {highlightText(storage.pathMask, search)}
         {
           storage.sensitive
-            ? (<span style={{marginLeft: 5, color: '#ff5c33'}}>sensitive</span>)
+            ? (<span className="cp-sensitive" style={{marginLeft: 5}}>sensitive</span>)
             : null
         }
       </Row>

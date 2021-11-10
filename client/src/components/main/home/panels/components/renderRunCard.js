@@ -160,7 +160,7 @@ export default function renderRunCard (run) {
     <Row key="title" style={{fontSize: 'smaller'}}>
       {renderTitle(run)}
       {run.sensitive ? ',' : null}
-      {run.sensitive ? (<span style={{whiteSpace: 'pre', color: '#ff5c33'}}> sensitive</span>) : null}
+      {run.sensitive ? (<span className="cp-sensitive" style={{whiteSpace: 'pre'}}> sensitive</span>) : null}
     </Row>,
     <Row key="time" style={{fontSize: 'smaller'}}>
       {renderTime(run)}{renderEstimatedPrice(run)}

@@ -1865,7 +1865,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Icon type="setting" /> Permissions
         </MenuItem>
         <Divider />
-        <MenuItem key={deleteKey} style={{color: 'red'}}>
+        <MenuItem key={deleteKey} className="cp-danger">
           <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
         </MenuItem>
       </Menu>

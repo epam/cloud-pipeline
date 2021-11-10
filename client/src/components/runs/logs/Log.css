@@ -28,10 +28,6 @@
   height: 100vh;
 }
 
-.action-buttons-container {
-  text-align: right;
-}
-
 .action-buttons-container > div,
 .action-buttons-container > a {
   padding-left: 12px;

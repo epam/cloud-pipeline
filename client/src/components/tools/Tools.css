@@ -356,42 +356,8 @@
 
 .navigation-dropdown-container {
   width: 300px;
-  background-color: white;
-  border: 1px solid #ccc;
-  box-shadow: 2px 2px 1em #666;
+  border: 1px solid transparent;
   max-height: 80vh;
-}
-
-.actions-menu {
-  min-width: 200px;
-}
-
-.menu-container > .actions-menu > .actions-sub-menu > div,
-.menu-container > .actions-menu > .menu-item,
-.menu-container > .actions-menu .actions-sub-menu .menu-item {
-  padding: 7px 8px;
-}
-
-.menu-container > .actions-menu .actions-sub-menu,
-.menu-container > .actions-menu {
-  margin: 0;
-  background-color: #ffff;
-}
-
-.menu-container > .actions-menu {
-  padding-top: 0;
-  padding-bottom: 0;
-  cursor: pointer;
-}
-
-.actions-sub-menu {
-  min-width: 200px;
-}
-
-.actions-sub-menu ul {
-  right: 100% !important;
-  left: auto !important;
-  margin-right: 5px;
 }
 
 .select-root-access {

@@ -48,13 +48,3 @@
 .dictionaryRow td {
   padding: 6px !important;
 }
-
-.dictionaryRow.selected {
-  background-color: #ebf6fd;
-  font-weight: bold;
-}
-
-.dictionaryRow.disabled {
-  color: #999;
-  cursor: default;
-}

@@ -17,11 +17,12 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import {Alert, Input, message, Modal, Row, Table} from 'antd';
 import PreferencesUpdate from '../../models/preferences/PreferencesUpdate';
 import PreferenceGroup from './forms/PreferenceGroup';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel/SplitPanel';
+import {SplitPanel} from '../special/splitPanel';
 import styles from './Preferences.css';
 
 @inject('preferences', 'router', 'authenticatedUserInfo')
@@ -163,9 +164,12 @@ export default class Preferences extends React.Component {
         pagination={false}
         rowKey="name"
         rowClassName={
-          (group) => group.name === this.state.selectedPreferenceGroup
-            ? `${styles.preferenceGroupRow} ${styles.selected}`
-            : styles.preferenceGroupRow
+          (group) => classNames(
+            styles.preferenceGroupRow,
+            {
+              'cp-table-element-selected': group.name === this.state.selectedPreferenceGroup
+            }
+          )
         }
         onRowClick={group => this.selectPreferenceGroup(group.name)}
         size="medium" />

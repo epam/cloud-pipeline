@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import styles from './filters.css';
 import {
   Button,
@@ -40,7 +41,7 @@ function Filter ({addonBefore, label, children, display = true}) {
     return null;
   }
   return (
-    <div className={styles.filter}>
+    <div className={classNames(styles.filter, 'cp-divider', 'right')}>
       {addonBefore}
       {label && (<span className={styles.label}>{label}:</span>)}
       {children}
@@ -226,7 +227,9 @@ class Filters extends React.Component {
       return disabled;
     };
     return (
-      <div className={styles.filters}>
+      <div
+        className={styles.filters}
+      >
         <Filter
           label="From"
           addonBefore={

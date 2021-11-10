@@ -960,12 +960,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 run.sensitive
                   ? (
                     <span
-                      style={
-                        Object.assign(
-                          {color: '#ff5c33'},
-                          run.instance ? {marginLeft: 5} : {}
-                        )
-                      }
+                      className="cp-sensitive"
+                      style={run.instance ? {marginLeft: 5} : {}}
                     >
                       sensitive
                     </span>

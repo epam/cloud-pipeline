@@ -1594,7 +1594,12 @@ class Logs extends localization.LocalizedReactComponent {
               {
                 sensitive ? (
                   <tr>
-                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                    <th
+                      className="cp-sensitive"
+                      colSpan={2}
+                    >
+                      SENSITIVE
+                    </th>
                   </tr>
                 ) : undefined
               }
