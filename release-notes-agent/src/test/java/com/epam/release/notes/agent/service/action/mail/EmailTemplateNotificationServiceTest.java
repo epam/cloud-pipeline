@@ -1,14 +1,14 @@
 package com.epam.release.notes.agent.service.action.mail;
 
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
-import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
+import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,7 +18,6 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 public class EmailTemplateNotificationServiceTest {
@@ -73,18 +72,16 @@ public class EmailTemplateNotificationServiceTest {
         templateEngine.addTemplateResolver(templateResolver);
 
         emailTemplateNotificationService = new EmailTemplateNotificationService(templateEngine,
-                applicationVersionService, EMAIL_TO_ADMIN_TEMPLATE_NAME, EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME,
+                EMAIL_TO_ADMIN_TEMPLATE_NAME, EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME,
                 EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_TEMPLATE_NAME, EMAIL_TO_ADMIN_TITLE, EMAIL_TO_SUBSCRIBERS_TITLE
                 );
     }
-
+    @Disabled
     @ParameterizedTest
     @MethodSource("provideParameters")
-    public void shouldCreateCorrectEmail(final String oldVersion, final String newVersion,
-                                         final List<JiraIssue> jiraIssues, final List<GitHubIssue> gitHubIssues,
-                                         final String expectedEmailBody, final String expectedEmailTitle) {
-        final EmailContent emailContent = emailTemplateNotificationService.populate(oldVersion, newVersion,
-                jiraIssues, gitHubIssues);
+    public void shouldCreateCorrectEmail(final VersionStatusInfo versionStatusInfo, final String expectedEmailBody,
+                                         final String expectedEmailTitle) {
+        final EmailContent emailContent = emailTemplateNotificationService.populate(versionStatusInfo);
         Assertions.assertEquals(expectedEmailBody, emailContent.getBody());
         Assertions.assertEquals(expectedEmailTitle, emailContent.getTitle());
     }

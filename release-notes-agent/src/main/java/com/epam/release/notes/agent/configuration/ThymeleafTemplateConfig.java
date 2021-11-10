@@ -17,10 +17,12 @@ package com.epam.release.notes.agent.configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring5.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 @Configuration
@@ -29,13 +31,18 @@ public class ThymeleafTemplateConfig {
     private static final String EMAIL_TEMPLATE_ENCODING = "UTF-8";
     private static final String DOT = ".";
 
-    private final String resolverPrefix;
+    private final String fileResolverPrefix;
+    private final String classPathResolverPrefix;
     private final String resolverSuffix;
 
+
+
     public ThymeleafTemplateConfig(
-            @Value("${release.notes.agent.path.to.folder.with.templates}") final String resolverPrefix,
+            @Value("${release.notes.agent.path.to.system.folder.with.templates}") final String fileResolverPrefix,
+            @Value("${release.notes.agent.classpath.to.templates}") final String classPathResolverPrefix,
             @Value("${release.notes.agent.type.of.template.files}") final String resolverSuffix) {
-        this.resolverPrefix = resolverPrefix;
+        this.fileResolverPrefix = fileResolverPrefix;
+        this.classPathResolverPrefix = classPathResolverPrefix;
         this.resolverSuffix = resolverSuffix;
     }
 
@@ -48,8 +55,15 @@ public class ThymeleafTemplateConfig {
 
     @Bean
     public AbstractConfigurableTemplateResolver fileTemplateResolver() {
-        final AbstractConfigurableTemplateResolver templateResolver = new FileTemplateResolver();
-        templateResolver.setPrefix(resolverPrefix);
+        final AbstractConfigurableTemplateResolver templateResolver;
+        if(StringUtils.isEmpty(fileResolverPrefix)) {
+            templateResolver = new ClassLoaderTemplateResolver();
+            templateResolver.setPrefix(classPathResolverPrefix);
+        } else {
+            templateResolver = new FileTemplateResolver();
+            templateResolver.setPrefix(fileResolverPrefix);
+        }
+        templateResolver.setPrefix(fileResolverPrefix);
         templateResolver.setSuffix(DOT + resolverSuffix);
         templateResolver.setTemplateMode(TemplateMode.parse(resolverSuffix));
         templateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);

@@ -19,6 +19,7 @@ import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
+import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import com.epam.release.notes.agent.service.action.ActionServiceProvider;
 import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.jira.JiraIssueService;
@@ -27,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
-import org.springframework.shell.standard.ShellOption;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -59,7 +59,7 @@ public class ReleaseNotesNotifier {
     @ShellMethod(
             key = "send-release-notes",
             value = "Grab and post/publish release notes information to specified users.")
-    public void sendReleaseNotes(@ShellOption(defaultValue = ShellOption.NULL) List<String> emails) {
+    public void sendReleaseNotes() {
 
         final Version old = applicationVersionService.loadPreviousVersion();
         final Version current = applicationVersionService.fetchCurrentVersion();
@@ -72,34 +72,29 @@ public class ReleaseNotesNotifier {
             log.info(format(
                     "The current API version %s has not changed.", current.toString()));
             return;
-        } else if (versionStatus == VersionStatus.MAJOR_CHANGED) {
-            // send notification to admin
-            log.info(format("The current major API version %s has changed. " +
-                    "The old major version: %s, the new major version: %s. Report will be sent to admin.",
-                    current.toString(), old.getMajor(), current.getMajor()));
-            performAction(Collections.singletonList(Action.POST), old, current, Collections.emptyList(),
-                    Collections.emptyList());
-            applicationVersionService.storeVersion(current);
-            return;
         }
-        // send notifications with changes
         log.info(format(
-                "Creating release notes report. Old current: %s, new current: %s. Report will be sent to: %s",
-                old.getSha(), current.getSha(), emails));
+                "Creating release notes report. Old current: %s, new current: %s.",
+                old.getSha(), current.getSha()));
         final List<GitHubIssue> gitHubIssues = gitHubService.fetchIssues(current.getSha(), old.getSha());
         gitHubIssues
                 .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
         final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
-        performAction(Collections.singletonList(Action.POST), old, current, gitHubIssues, jiraIssues);
+        final VersionStatusInfo versionStatusInfo = VersionStatusInfo.builder()
+                        .oldVersion(old.toString())
+                        .newVersion(current.toString())
+                        .jiraIssues(filterJiraIssues(gitHubIssues, jiraIssues))
+                        .gitHubIssues(gitHubIssues)
+                        .versionStatus(versionStatus)
+                        .build();
+        performAction(Collections.singletonList(Action.POST), versionStatusInfo);
         applicationVersionService.storeVersion(current);
     }
 
-    private void performAction(final List<Action> actions, final Version old, final Version current,
-                               final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {
+    private void performAction(final List<Action> actions, final VersionStatusInfo versionStatusInfo) {
         actions.stream()
                 .map(action -> actionServiceProvider.getActionService(action.getName()))
-                .forEach(service -> service.process(old.toString(), current.toString(),
-                        filterJiraIssues(gitHubIssues, jiraIssues), gitHubIssues));
+                .forEach(service -> service.process(versionStatusInfo));
     }
 
     private List<JiraIssue> filterJiraIssues(final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {

@@ -17,8 +17,7 @@ package com.epam.release.notes.agent.service.action.mail;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
-import com.epam.release.notes.agent.entity.version.Version;
-import com.epam.release.notes.agent.service.version.ApplicationVersionService;
+import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private static final String EXCEPTION_MESSAGE = "This kind of version status is not handled in current method";
 
     private final TemplateEngine templateEngine;
-    private final ApplicationVersionService applicationVersionService;
     private final String emailToAdminTemplateName;
     private final String emailToSubscribersTemplateName;
     private final String emailToSubscribersWithoutIssuesTemplateName;
@@ -47,7 +45,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
 
     public EmailTemplateNotificationService(
             final TemplateEngine templateEngine,
-            final ApplicationVersionService applicationVersionService,
             @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
             @Value("${release.notes.agent.name.of.subscribers.email.template}") final String emailToSubscribersTemplateName,
             @Value("${release.notes.agent.name.of.subscribers.email.without.issues.template}")
@@ -56,7 +53,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
             @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle
     ) {
         this.templateEngine = templateEngine;
-        this.applicationVersionService = applicationVersionService;
         this.emailToAdminTemplateName = emailToAdminTemplateName;
         this.emailToSubscribersTemplateName = emailToSubscribersTemplateName;
         this.emailToAdminTitle = emailToAdminTitle;
@@ -65,30 +61,26 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     }
 
     @Override
-    public EmailContent populate(final String oldVersion,
-                                 final String newVersion,
-                                 final List<JiraIssue> jiraIssues,
-                                 final List<GitHubIssue> gitHubIssues) {
+    public EmailContent populate(final VersionStatusInfo versionStatusInfo) {
         final Context context = new Context(Locale.US);
-        switch (applicationVersionService.getVersionStatus(Version.buildVersion(oldVersion),
-                Version.buildVersion(newVersion))) {
+        switch (versionStatusInfo.getVersionStatus()) {
             case MAJOR_CHANGED:
-                addVersionsToContext(oldVersion, newVersion, context);
+                addVersionsToContext(versionStatusInfo.getOldVersion(), versionStatusInfo.getNewVersion(), context);
                 return createEmailContent(context, emailToAdminTitle, emailToAdminTemplateName);
             case MINOR_CHANGED:
-                addVersionsToContext(oldVersion, newVersion, context);
-                if(validateIssuesParameters(jiraIssues, gitHubIssues)){
+                addVersionsToContext(versionStatusInfo.getOldVersion(), versionStatusInfo.getNewVersion(), context);
+                if(validateIssuesParameters(versionStatusInfo.getJiraIssues(), versionStatusInfo.getGitHubIssues())){
                     return createEmailContent(context, emailToSubscribersTitle,
                             emailToSubscribersWithoutIssuesTemplateName);
                 }
-                addIssuesToContext(jiraIssues, gitHubIssues, context);
+                addIssuesToContext(versionStatusInfo.getJiraIssues(), versionStatusInfo.getGitHubIssues(), context);
                 return createEmailContent(context, emailToSubscribersTitle, emailToSubscribersTemplateName);
             default:
                 throw new IllegalStateException(EXCEPTION_MESSAGE);
         }
     }
 
-    private EmailContent createEmailContent(Context context, String emailTitle, String templateName) {
+    private EmailContent createEmailContent(final Context context, final String emailTitle, final String templateName) {
         return EmailContent.builder()
                 .title(emailTitle)
                 .body(templateEngine.process(templateName, context))

@@ -15,9 +15,8 @@
 package com.epam.release.notes.agent.service.action;
 
 import com.epam.release.notes.agent.entity.action.Action;
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
-import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
+import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import com.epam.release.notes.agent.exception.EmailException;
 import com.epam.release.notes.agent.service.action.mail.TemplateNotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -43,10 +41,8 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
     }
 
     @Override
-    public void process(final String oldVersion, final String newVersion, final List<JiraIssue> jiraIssues,
-                        final List<GitHubIssue> gitHubIssues) {
-        final EmailContent emailContent = templateNotificationService.populate(oldVersion, newVersion, jiraIssues,
-                gitHubIssues);
+    public void process(final VersionStatusInfo versionStatusInfo) {
+        final EmailContent emailContent = templateNotificationService.populate(versionStatusInfo);
         if (emailContent == null) {
             log.error("Email content must be populated. Email could not be sent.");
             return;
