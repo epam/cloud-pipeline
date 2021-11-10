@@ -282,6 +282,62 @@ export default `
   background-color: @btn-disabled-background-color;
   border-color: @btn-border-color;
 }
+@THEME .ant-table {
+  color: @application-color;
+  border-color: @table-border-color;
+  background: @card-background-color;
+}
+@THEME .ant-table-small .ant-table-thead > tr > th {
+  color: @table-head-color;
+  background-color: @card-background-color;
+  border-bottom-color: @table-border-color;
+}
+@THEME .ant-table-small .ant-table-title {
+  border-bottom-color: @table-border-color;
+}
+@THEME .ant-table-thead > tr > th .anticon-filter:hover,
+@THEME .ant-table-thead > tr > th .ant-table-filter-icon:hover,
+@THEME .ant-table-column-sorter-up:hover .anticon,
+@THEME .ant-table-column-sorter-down:hover .anticon {
+  color: @table-icons-hover-color;
+}
+@THEME .ant-table-column-sorter-up.on .anticon-caret-up,
+@THEME .ant-table-column-sorter-down.on .anticon-caret-up,
+@THEME .ant-table-column-sorter-up.on .anticon-caret-down,
+@THEME .ant-table-column-sorter-down.on .anticon-caret-down {
+  color: @primary-color;
+}
+@THEME .ant-table-tbody > tr > td {
+  border-color: @table-border-color;
+}
+@THEME .ant-table-tbody > tr:hover > td {
+  background-color: @table-tr-hover-color;
+}
+@THEME .ant-table-row-expand-icon {
+  border-color: @table-border-color;
+  background: @card-background-color;
+}
+@THEME .ant-checkbox-inner {
+  border-color: @border-color;
+  background-color: @card-background-color;
+}
+@THEME .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+@THEME .ant-checkbox:hover .ant-checkbox-inner,
+@THEME .ant-checkbox-input:focus + .ant-checkbox-inner {
+  border-color: @primary-color;
+}
+@THEME .ant-checkbox-checked .ant-checkbox-inner,
+@THEME .ant-checkbox-indeterminate .ant-checkbox-inner {
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME .ant-checkbox-checked .ant-checkbox-inner::after,
+@THEME .ant-checkbox-inner::after {
+  border-color: @card-background-color;
+}
+@THEME .ant-checkbox-checked::after {
+  border-color: @primary-color;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
@@ -463,6 +519,29 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
+}
+
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -534,10 +613,21 @@ export default `
   color: @application-color;
 }
 
-
-
-
-
+@THEME .cp-runs-table-service-url-run {
+    background-color: @card-service-background-color;
+}
+@THEME .cp-runs-table-icon-green {
+    color: @run-icon-green;
+}
+@THEME .cp-runs-table-icon-blue {
+    color: @run-icon-blue;
+}
+@THEME .cp-runs-table-icon-red {
+    color: @run-icon-red;
+}
+@THEME .cp-runs-table-icon-yellow {
+    color: @run-icon-yellow;
+}
 @THEME .cp-billing-menu {
   width: fit-content;
   margin-left: 0;

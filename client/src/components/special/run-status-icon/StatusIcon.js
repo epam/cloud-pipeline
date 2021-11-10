@@ -27,8 +27,7 @@ const StatusIcon = (props) => {
   const status = getStatus(props);
   const icon = getRunStatusIcon(status, props.iconSet);
   const className = [props.className, DefaultStyles[status]].filter(Boolean).join(' ');
-
-  let iconStyle = {verticalAlign: 'middle', fontWeight: 'normal'};
+  let iconStyle = {verticalAlign: 'middle', fontWeight: 'normal', fontSize: 'large'};
   if (props.small) {
     iconStyle.fontSize = 'small';
   }

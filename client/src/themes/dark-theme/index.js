@@ -31,10 +31,10 @@ export default {
     '@primary-active-color': 'darken(@primary-color, 20%)',
     '@primary-text-color': '@application-background-color',
     '@error-color': '#e84417',
-    '@color-green': '#118a4e',
-    '@color-red': '#c01911',
-    '@color-yellow': '#a47305',
-    '@color-blue': '#2171a8',
+    '@color-green': '#2fdb3d',
+    '@color-red': '#ff2020',
+    '@color-yellow': '#f08732',
+    '@color-blue': '#3064f5',
     '@border-color': 'lighten(@application-background-color, 15%)',
     '@status-good-color': '@color-green',
     '@status-warning-color': '@color-yellow',
@@ -90,6 +90,11 @@ export default {
     '@table-element-selected-color': '@application-color',
     '@table-element-hover-background-color': '@navigation-panel-highlighted-color',
     '@table-element-hover-color': '@application-color',
+    '@table-border-color': '@card-border-color',
+    '@table-head-color': '#fff',
+    '@table-icons-color': '#999',
+    '@table-icons-hover-color': '@table-head-color',
+    '@table-tr-hover-color': 'fade(@primary-hover-color, 40%)',
     '@menu-color': '@application-color',
     '@menu-active-color': '@application-color',
     '@menu-border-color': '@panel-border-color',
@@ -101,6 +106,10 @@ export default {
     '@btn-danger-background-color': '@btn-disabled-background-color',
     '@btn-danger-active-color': 'darken(@btn-danger-color, 20%)',
     '@btn-disabled-color': 'lighten(@panel-background-color, 40%)',
-    '@btn-disabled-background-color': 'lighten(@panel-background-color, 4%)'
+    '@btn-disabled-background-color': 'lighten(@panel-background-color, 4%)',
+    '@run-icon-green': '@color-green',
+    '@run-icon-blue': '@color-blue',
+    '@run-icon-red': '@color-red',
+    '@run-icon-yellow': '@color-yellow'
   }
 };
