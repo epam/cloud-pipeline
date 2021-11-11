@@ -114,7 +114,7 @@ class MountStorageTask:
                 if 'defaultStorageId' in user_info:
                     storage_id = int(user_info['defaultStorageId'])
                     Logger.info('User default storage is parsed as {}'.format(str(storage_id)), task_name=self.task_name)
-            if placeholder.lower() == MOUNT_LIMITS_NONE:
+            elif placeholder.lower() == MOUNT_LIMITS_NONE:
                 Logger.info('{} placeholder found while parsing storage id, skipping it'.format(MOUNT_LIMITS_NONE), task_name=self.task_name)
             else:
                 storage_id = int(placeholder.strip())
