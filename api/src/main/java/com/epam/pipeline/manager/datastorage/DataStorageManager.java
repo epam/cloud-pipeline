@@ -249,6 +249,12 @@ public class DataStorageManager implements SecuredEntityManager {
         return pathLoader.loadDataStorageByPathOrId(identifier);
     }
 
+    public List<AbstractDataStorage> loadAllByPath(final String identifier) {
+        Assert.isTrue(StringUtils.isNotBlank(identifier),
+                      messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
+        return dataStorageDao.loadDataStorageByNameOrPath(identifier, identifier, true);
+    }
+
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         AbstractDataStorage dataStorage = null;
         if (NumberUtils.isDigits(identifier)) {

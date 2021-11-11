@@ -214,17 +214,22 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     }
 
     public AbstractDataStorage loadDataStorageByNameOrPath(String name, String path) {
+        List<AbstractDataStorage> items = loadDataStorageByNameOrPath(name, path, false);
+        return !items.isEmpty() ? items.get(0) : null;
+    }
+
+    public List<AbstractDataStorage> loadDataStorageByNameOrPath(final String name, final String path,
+                                                                 final boolean withMirrors) {
         String usePath = path == null ? name : path;
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(DataStorageParameters.DATASTORAGE_NAME.name(), name);
         params.addValue(DataStorageParameters.PATH.name(), usePath);
-        List<AbstractDataStorage> items = getNamedParameterJdbcTemplate()
-                .query(loadDataStorageByNameQuery, params, DataStorageParameters.getRowMapper());
-        AbstractDataStorage storage = !items.isEmpty() ? items.get(0) : null;
-        if (storage != null) {
-            storage.setToolsToMount(loadToolsToMountForStorage(storage.getId()));
-        }
-        return storage;
+        return getNamedParameterJdbcTemplate()
+            .query(loadDataStorageByNameQuery, params, DataStorageParameters.getExtendedRowMapper())
+            .stream()
+            .filter(storage -> withMirrors || storage.getSourceStorage() == null)
+            .peek(storage -> storage.setToolsToMount(loadToolsToMountForStorage(storage.getId())))
+            .collect(Collectors.toList());
     }
 
     public AbstractDataStorage loadDataStorageByNameAndParentId(String name, Long folderId) {
