@@ -175,7 +175,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return getNamedParameterJdbcTemplate().query(loadAllDataStoragesQuery,
-                DataStorageParameters.getRowMapper());
+                DataStorageParameters.getExtendedRowMapper());
     }
 
     public List<AbstractDataStorage> loadAllDataStoragesWithToolsToMount() {

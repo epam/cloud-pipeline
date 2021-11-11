@@ -26,6 +26,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Set;
+
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
  */
@@ -72,6 +74,10 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * Defines if 'data-leak' rules applied
      */
     private boolean sensitive;
+
+    private Set<String> linkingMasks;
+
+    private AbstractDataStorage sourceStorage;
 
     public AbstractDataStorage(final Long id, final String name,
                                final String path, final DataStorageType type) {

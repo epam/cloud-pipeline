@@ -116,35 +116,63 @@
             <value>
                 <![CDATA[
                     SELECT
-                        datastorage_id,
-                        datastorage_name,
-                        description,
-                        datastorage_type,
-                        path,
-                        datastorage_root_id,
-                        sts_duration,
-                        lts_duration,
-                        incomplete_upload_cleanup_days,
-                        folder_id,
-                        created_date,
-                        owner,
-                        enable_versioning,
-                        backup_duration,
-                        locked as datastorage_locked,
-                        mount_point,
-                        mount_options,
-                        shared,
-                        allowed_cidrs,
-                        region_id as region_id,
-                        file_share_mount_id,
-                        sensitive,
-                        s3_kms_key_arn,
-                        s3_use_assumed_creds,
-                        s3_temp_creds_role,
-                        mount_status
-                    FROM
-                        pipeline.datastorage
-                    ORDER BY datastorage_id
+                        storage.datastorage_id,
+                        storage.datastorage_name,
+                        storage.description,
+                        storage.datastorage_type,
+                        storage.path,
+                        storage.datastorage_root_id,
+                        storage.sts_duration,
+                        storage.lts_duration,
+                        storage.incomplete_upload_cleanup_days,
+                        storage.folder_id,
+                        storage.created_date,
+                        storage.owner,
+                        storage.enable_versioning,
+                        storage.backup_duration,
+                        storage.locked as datastorage_locked,
+                        storage.mount_point,
+                        storage.mount_options,
+                        storage.shared,
+                        storage.allowed_cidrs,
+                        storage.region_id as region_id,
+                        storage.file_share_mount_id,
+                        storage.sensitive,
+                        storage.s3_kms_key_arn,
+                        storage.s3_use_assumed_creds,
+                        storage.s3_temp_creds_role,
+                        storage.mount_status,
+                        storage.masking_rules,
+                        source_storage.datastorage_id as source_datastorage_id,
+                        source_storage.datastorage_name as source_datastorage_name,
+                        source_storage.description as source_description,
+                        source_storage.datastorage_type as source_datastorage_type,
+                        source_storage.path as source_path,
+                        source_storage.datastorage_root_id as source_datastorage_root_id,
+                        source_storage.sts_duration as source_sts_duration,
+                        source_storage.lts_duration as source_lts_duration,
+                        source_storage.incomplete_upload_cleanup_days as source_incomplete_upload_cleanup_days,
+                        source_storage.folder_id as source_folder_id,
+                        source_storage.created_date as source_created_date,
+                        source_storage.owner as source_owner,
+                        source_storage.enable_versioning as source_enable_versioning,
+                        source_storage.backup_duration as source_backup_duration,
+                        source_storage.locked as source_datastorage_locked,
+                        source_storage.mount_point as source_mount_point,
+                        source_storage.mount_options as source_mount_options,
+                        source_storage.shared as source_shared,
+                        source_storage.allowed_cidrs as source_allowed_cidrs,
+                        source_storage.region_id as source_region_id,
+                        source_storage.file_share_mount_id as source_file_share_mount_id,
+                        source_storage.sensitive as source_sensitive,
+                        source_storage.s3_kms_key_arn as source_s3_kms_key_arn,
+                        source_storage.s3_use_assumed_creds as source_s3_use_assumed_creds,
+                        source_storage.s3_temp_creds_role as source_s3_temp_creds_role,
+                        source_storage.mount_status as source_mount_status
+                    FROM pipeline.datastorage storage
+                    LEFT JOIN pipeline.datastorage source_storage
+                            ON source_storage.datastorage_id = storage.source_datastorage_id
+                    ORDER BY storage.datastorage_id
                 ]]>
             </value>
         </property>
@@ -281,7 +309,7 @@
                         source_storage.s3_temp_creds_role as source_s3_temp_creds_role,
                         source_storage.mount_status as source_mount_status
                     FROM pipeline.datastorage storage
-                    FULL JOIN pipeline.datastorage source_storage
+                    LEFT JOIN pipeline.datastorage source_storage
                             ON source_storage.datastorage_id = storage.source_datastorage_id
                     WHERE
                         storage.datastorage_id = ?
@@ -346,7 +374,7 @@
                         source_storage.s3_temp_creds_role as source_s3_temp_creds_role,
                         source_storage.mount_status as source_mount_status
                     FROM pipeline.datastorage storage
-                    FULL JOIN pipeline.datastorage source_storage
+                    LEFT JOIN pipeline.datastorage source_storage
                             ON source_storage.datastorage_id = storage.source_datastorage_id
                     WHERE
                         lower(storage.datastorage_name) = lower(:DATASTORAGE_NAME) or lower(storage.path) = lower(:PATH)
