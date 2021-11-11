@@ -578,25 +578,25 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             }
 
             AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(
-                rs.getLong(prefix + DATASTORAGE_ID.name()),
-                rs.getString(prefix + DATASTORAGE_NAME.name()),
-                rs.getString(prefix + PATH.name()),
-                DataStorageType.getByName(rs.getString(prefix + DATASTORAGE_TYPE.name())),
-                null,
-                rs.getString(prefix + MOUNT_OPTIONS.name()),
-                rs.getString(prefix + MOUNT_POINT.name()),
-                allowedCidrs,
-                regionId,
-                fileShareMountId,
-                rs.getString(prefix + S3_KMS_KEY_ARN.name()),
-                rs.getString(prefix + S3_TEMP_CREDS_ROLE.name()),
-                rs.getBoolean(prefix + S3_USE_ASSUMED_CREDS.name()),
-                rs.getString(prefix + MOUNT_STATUS.name()),
-                storage == null
-                ? Collections.emptySet()
-                : JsonMapper.parseData(rs.getString(prefix + MASKING_RULES.name()),
-                                       new TypeReference<Set<String>>() {}),
-                storage);
+                    rs.getLong(prefix + DATASTORAGE_ID.name()),
+                    rs.getString(prefix + DATASTORAGE_NAME.name()),
+                    rs.getString(prefix + PATH.name()),
+                    DataStorageType.getByName(rs.getString(prefix + DATASTORAGE_TYPE.name())),
+                    null,
+                    rs.getString(prefix + MOUNT_OPTIONS.name()),
+                    rs.getString(prefix + MOUNT_POINT.name()),
+                    allowedCidrs,
+                    regionId,
+                    fileShareMountId,
+                    rs.getString(prefix + S3_KMS_KEY_ARN.name()),
+                    rs.getString(prefix + S3_TEMP_CREDS_ROLE.name()),
+                    rs.getBoolean(prefix + S3_USE_ASSUMED_CREDS.name()),
+                    rs.getString(prefix + MOUNT_STATUS.name()),
+                    storage == null
+                    ? Collections.emptySet()
+                    : JsonMapper.parseData(rs.getString(prefix + MASKING_RULES.name()),
+                                           new TypeReference<Set<String>>() {}),
+                    storage);
 
             dataStorage.setShared(rs.getBoolean(prefix + SHARED.name()));
             dataStorage.setDescription(rs.getString(prefix + DESCRIPTION.name()));
