@@ -392,7 +392,6 @@ tr.table-row-selected {
 }
 
 .metadata-additional-actions {
-  background-color: white;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 5px 5px 0 0;
   border-bottom: none;
@@ -438,13 +437,10 @@ tr.table-row-selected {
 
 .metadata-item-key {
   padding: 0 3px;
-  background-color: #efefef;
-  border-bottom: 1px solid #ddd;
 }
 
 .metadata-item-value {
   padding: 0 3px;
-  background-color: #fefefe;
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;

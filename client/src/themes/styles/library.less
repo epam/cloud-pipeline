@@ -14,16 +14,17 @@
  *  limitations under the License.
  */
 
-@import "styles/layout";
-@import "styles/panels";
-@import "styles/navigation";
-@import "styles/dashboard";
-@import "styles/providers";
-@import "styles/animation";
-@import "styles/alerts";
-@import "styles/tools";
-@import "styles/runs";
-@import "styles/billing";
-@import "styles/search";
-@import "styles/versioned-storage";
-@import "styles/library";
+ @import "variables";
+
+.cp-library-metadata-item-key {
+  background-color: @metadata-item-key-background-color;
+  border-bottom: 1px solid @metadata-item-key-border-color;
+}
+
+.cp-library-metadata-item-value {
+  background-color: @metadata-item-value-background-color;
+}
+
+.cp-library-metadata-additional-actions {
+  background-color: inherit;
+}

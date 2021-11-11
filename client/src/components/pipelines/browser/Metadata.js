@@ -2203,7 +2203,10 @@ export default class Metadata extends React.Component {
     };
     return (
       <Row
-        className={styles.metadataAdditionalActions}
+        className={classNames(
+          styles.metadataAdditionalActions,
+          'cp-library-metadata-additional-actions'
+        )}
         type="flex"
         justify="space-between"
         align="middle"
