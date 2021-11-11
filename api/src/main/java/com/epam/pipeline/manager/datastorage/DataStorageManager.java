@@ -1050,10 +1050,11 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private void checkDatastorageDoesntExist(final String name, final String path, final boolean isMirror) {
-        String usePath = StringUtils.isEmpty(path) || isMirror ? name : path;
-        Assert.isNull(dataStorageDao.loadDataStorageByNameOrPath(name, usePath),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST,
-                        name, usePath));
+        final String usePath = StringUtils.isEmpty(path) ? name : path;
+        final List<AbstractDataStorage> matchingStorage =
+            dataStorageDao.loadDataStorageByNameOrPath(name, isMirror ? null : usePath, true);
+        Assert.isTrue(CollectionUtils.isEmpty(matchingStorage),
+                      messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST, name, path));
     }
 
     private void verifyStoragePolicy(StoragePolicy policy) {
