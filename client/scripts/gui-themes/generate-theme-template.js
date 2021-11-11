@@ -47,6 +47,16 @@ function removeImports (cssContent) {
 
 const themesDirectory = path.resolve(__dirname, '../../src/themes');
 
+function attachThemePlaceholder (selector) {
+  const trimmed = selector.trim();
+  const e = /^\.theme-identifier(\..+|\s.+|$)/.exec(trimmed);
+  if (e) {
+    console.log('HERE', e[1]);
+    return `@THEME${e[1]}`;
+  }
+  return `@THEME ${trimmed}`;
+}
+
 module.exports = function generateThemeTemplate () {
   const themeContents = removeComments(
     fs.readFileSync(path.resolve(themesDirectory, 'default.theme.less'))
@@ -82,7 +92,7 @@ module.exports = function generateThemeTemplate () {
       let modified = '';
       let e = selectorsRegExp.exec(content);
       while (e) {
-        const selectors = (e[1] || '').split(',').map(o => `@THEME ${o.trim()}`).join(',\n');
+        const selectors = (e[1] || '').split(',').map(attachThemePlaceholder).join(',\n');
         modified = modified.concat(
           selectors,
           ' ',
