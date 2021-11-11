@@ -73,3 +73,52 @@
 .cp-billing-table td.cp-billing-table-pending {
   background-color: @card-background-color;
 }
+
+.cp-billing-calendar-container {
+  background-color: @panel-background-color;
+  box-shadow: 0 0 2px 2px @cp-calendar-shadow-color;
+  color: @application-color;
+}
+
+.cp-billing-calendar-years-container {
+  border-bottom: 1px solid @panel-border-color;
+}
+
+.cp-billing-calendar-navigation:hover {
+  color: @primary-color;
+}
+
+.cp-billing-calendar-navigation.disabled {
+  color: @application-color-disabled;
+}
+
+.cp-billing-calendar-row-item {
+  border: 1px solid @cp-calendar-border-color;
+}
+
+.cp-billing-calendar-row-item.selected {
+  color: @primary-color;
+  background-color: @panel-background-color;
+}
+
+.cp-billing-calendar-row-item:hover {
+  color: @primary-text-color;
+  background-color: @primary-color;
+}
+
+.cp-billing-calendar-row-item.disabled {
+  color: @application-color-disabled;
+  background-color: @panel-background-color;
+}
+
+.cp-billing-calendar-set-value {
+  color: @application-color;
+}
+
+.cp-billing-calendar-set-value-close {
+  color: @calendar-icon-clear-color;
+}
+
+.cp-billing-calendar-icon {
+  color: @calendar-icon-clear-hover-color;
+}
