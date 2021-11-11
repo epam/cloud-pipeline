@@ -89,7 +89,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .selectStorage(bucket)
                 .fileMetadata(fileLessThan10kb)
                 .ensureVisible(ADD_KEY, ENLARGE, FILE_PREVIEW)
-                .assertKeyWithValueIsPresent(key6, value6);
+                .assertKeyWithValueIsPresent(key6, getUserNameByAccountLogin(value6));
     }
 
     @Test(dependsOnMethods = "validateMetadataForFileInBucket")
