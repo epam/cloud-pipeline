@@ -15,6 +15,10 @@
  */
 
 export default `
+@THEME.theme-preview .cp-theme-preview-navigation-panel {
+  background-color: @navigation-panel-color;
+}
+
 @THEME a,
 @THEME a:visited,
 @THEME .cp-link {
@@ -1130,9 +1134,7 @@ export default `
   color: @application-color;
 }
 
-@THEME @import "variables";
-
-.cp-library-metadata-item-key {
+@THEME .cp-library-metadata-item-key {
   background-color: @metadata-item-key-background-color;
   border-bottom: 1px solid @metadata-item-key-border-color;
 }
