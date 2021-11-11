@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -356,16 +356,23 @@ public class DataStorageManager implements SecuredEntityManager {
 
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
-        checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath());
+        checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
+                                    dataStorageVO.getSourceStorageId() != null);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
 
-        AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
-                storageRegion.getProvider());
+        final AbstractDataStorage dataStorage =
+            Optional.ofNullable(dataStorageVO.getSourceStorageId())
+                .map(linkedStorageId ->
+                         dataStorageFactory.convertToDataStorage(dataStorageVO, storageRegion.getProvider(),
+                                                                 load(linkedStorageId)))
+                .orElseGet(() -> dataStorageFactory.convertToDataStorage(dataStorageVO, storageRegion.getProvider()));
+
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
-                storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
+                storageProviderManager.getStorageProvider(dataStorage)
+                    .getDefaultMountOptions(getLinkOrStorage(dataStorage)));
         }
 
         if (proceedOnCloud) {
@@ -398,6 +405,12 @@ public class DataStorageManager implements SecuredEntityManager {
         dataStorageDao.createDataStorage(dataStorage);
 
         return createdStorage;
+    }
+
+    public AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
+        return Optional.of(storage)
+            .map(AbstractDataStorage::getSourceStorage)
+            .orElse(storage);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -633,7 +646,8 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public boolean checkExistence(AbstractDataStorage dataStorage) {
-        checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath());
+        checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath(),
+                                    dataStorage.getSourceStorage() != null);
         return storageProviderManager.checkStorage(dataStorage);
     }
 
@@ -1029,8 +1043,8 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorage;
     }
 
-    private void checkDatastorageDoesntExist(String name, String path) {
-        String usePath = StringUtils.isEmpty(path) ? name : path;
+    private void checkDatastorageDoesntExist(final String name, final String path, final boolean isMirror) {
+        String usePath = StringUtils.isEmpty(path) || isMirror ? name : path;
         Assert.isNull(dataStorageDao.loadDataStorageByNameOrPath(name, usePath),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST,
                         name, usePath));
