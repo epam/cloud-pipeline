@@ -115,6 +115,10 @@ export default {
     '@run-icon-green': '@color-green',
     '@run-icon-blue': '@color-blue',
     '@run-icon-red': '@color-red',
-    '@run-icon-yellow': '@color-yellow'
+    '@run-icon-yellow': '@color-yellow',
+    '@metadata-item-key-background-color': '@tag-key-background-color',
+    '@metadata-item-key-border-color': '@tag-key-value-divider-color',
+    '@metadata-item-value-background-color': 'fade(@tag-value-background-color, 30%)',
+    '@pagination-jump-color': 'fade(@application-color, 25%)'
   }
 };

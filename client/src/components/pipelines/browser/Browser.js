@@ -182,10 +182,16 @@ export default class Folder extends localization.LocalizedReactComponent {
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
-          <Row className={styles.metadataItemKey}>
+          <Row className={classNames(
+            styles.metadataItemKey,
+            'cp-library-metadata-item-key'
+          )}>
             {key}
           </Row>
-          <Row className={styles.metadataItemValue}>
+          <Row className={classNames(
+            styles.metadataItemValue,
+            'cp-library-metadata-item-value'
+          )}>
             {value}
           </Row>
         </div>
