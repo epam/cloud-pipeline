@@ -114,11 +114,13 @@ class MountStorageTask:
     def parse_storage(self, placeholder):
         storage_id = None
         try:
-            if placeholder == MOUNT_LIMITS_USER_DEFAULT:
+            if placeholder.lower() == MOUNT_LIMITS_USER_DEFAULT:
                 user_info = self.api.load_current_user()
                 if 'defaultStorageId' in user_info:
                     storage_id = int(user_info['defaultStorageId'])
                     Logger.info('User default storage is parsed as {}'.format(str(storage_id)), task_name=self.task_name)
+            if placeholder.lower() == MOUNT_LIMITS_NONE:
+                Logger.info('{} placeholder found while parsing storage id, skipping it'.format(MOUNT_LIMITS_NONE), task_name=self.task_name)
             else:
                 storage_id = int(placeholder.strip())
         except Exception as parse_storage_ex:
@@ -157,7 +159,7 @@ class MountStorageTask:
                 # If the storages are limited by the user - we make sure that the "forced" storages are still available
                 # This is useful for the tools, which require "databases" or other data from the File/Object storages
                 if force_storages:
-                    Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages))
+                    Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages), task_name=self.task_name)
                     limited_storages = ','.join([limited_storages, force_storages])
                 try:
                     limited_storages_list = []
