@@ -82,6 +82,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -107,6 +108,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +134,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
+    private static final String SHARED_STORAGE_SUFFIX = "share";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -346,6 +349,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                                final boolean replaceStoragePath,
                                                                final boolean skipPolicy)
             throws DataStorageException {
+        dataStorageVO.setName(createStorageNameIfRequired(dataStorageVO));
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
@@ -358,7 +362,6 @@ public class DataStorageManager implements SecuredEntityManager {
         assertDataStorageMountPoint(dataStorageVO);
         assertToolsToMount(dataStorageVO);
 
-        dataStorageVO.setName(dataStorageVO.getName().trim());
 
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
@@ -411,12 +414,6 @@ public class DataStorageManager implements SecuredEntityManager {
         dataStorageDao.createDataStorage(dataStorage);
 
         return createdStorage;
-    }
-
-    public AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
-        return Optional.of(storage)
-            .map(AbstractDataStorage::getSourceStorage)
-            .orElse(storage);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -1222,5 +1219,33 @@ public class DataStorageManager implements SecuredEntityManager {
                 metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
         Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
+    }
+
+    private AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
+        return Optional.of(storage)
+            .map(AbstractDataStorage::getSourceStorage)
+            .orElse(storage);
+    }
+
+    private String createStorageNameIfRequired(final DataStorageVO dataStorageVO) {
+        final String nameSpecified = dataStorageVO.getName();
+        final String path = dataStorageVO.getPath();
+        if (dataStorageVO.getSourceStorageId() == null || dataStorageVO.getName() != null || path == null) {
+            return Optional.ofNullable(nameSpecified).map(String::trim).orElse(null);
+        } else {
+            final String sharedPathNamePrefix = PipelineStringUtils.convertToAlphanumericWithDashes(path.trim());
+            final Long latestMirrorNumber = dataStorageDao.loadDataStorageByNameOrPath(path, path, true).stream()
+                .map(AbstractDataStorage::getName)
+                .filter(existingName -> existingName.startsWith(sharedPathNamePrefix))
+                .map(existingName -> existingName.split(PipelineStringUtils.DASH))
+                .map(parts -> parts[parts.length - 1])
+                .map(StringUtils::trim)
+                .filter(NumberUtils::isDigits)
+                .map(Long::valueOf)
+                .max(Comparator.naturalOrder())
+                .orElse(0L);
+            return String.join(PipelineStringUtils.DASH,
+                               sharedPathNamePrefix, SHARED_STORAGE_SUFFIX, Long.toString(latestMirrorNumber + 1));
+        }
     }
 }
