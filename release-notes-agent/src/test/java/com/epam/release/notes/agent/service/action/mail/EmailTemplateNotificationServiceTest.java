@@ -31,8 +31,6 @@ public class EmailTemplateNotificationServiceTest {
     private static final String RESOLVER_SUFFIX = ".html";
     private static final String EMAIL_TO_ADMIN_TEMPLATE_NAME = "email-release-notification-to-admin";
     private static final String EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME = "email-release-notification-to-subscribers";
-    private static final String EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_TEMPLATE_NAME = "email-release-notification-to"
-            + "-subscribers-without-issues";
     private static final String EMAIL_TO_ADMIN_TITLE = "email to admin";
     private static final String EMAIL_TO_SUBSCRIBERS_TITLE = "email to subscribers";
     private static final String ONE = "1";
@@ -41,19 +39,21 @@ public class EmailTemplateNotificationServiceTest {
     private static final String SMTH_ELSE = "smth2";
     private static final String URL = "https://github.com";
     private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY = "<!DOCTYPE html>\r\n" +
-            "<html>\r\n<head>\r\n  \r\n" +
-            "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n" +
-            "</head>\r\n<body>\r\n<p> Good day! </p>\r\n<p> A new Cloud-pipeline version has been released. <br>\r\n" +
-            "  Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>\r\n" +
-            "</p>\r\n<p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>\r\n" +
-            "</p>\r\n</body>\r\n</html>\r\n";
+            "<html>\r\n    <head>\r\n        \r\n" +
+            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n" +
+            "    </head>\r\n    <body>\r\n    <p> Good day! </p>\r\n" +
+            "    <p> A new Cloud-pipeline version has been released. <br>\r\n" +
+            "    Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>\r\n" +
+            "    </p>\r\n    \r\n    \r\n    \r\n    \r\n    \r\n" +
+            "    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>\r\n" +
+            "    </p>\r\n    </body>\r\n</html>\r\n";
     private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_BODY = "<!DOCTYPE html>\r\n" +
             "<html>\r\n    <head>\r\n        \r\n" +
             "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n" +
             "    </head>\r\n    <body>\r\n    <p> Good day! </p>\r\n" +
             "    <p> A new Cloud-pipeline version has been released. <br>\r\n" +
             "    Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>\r\n" +
-            "    </p>\r\n    <p> The release includes the following changes: <br>\r\n" +
+            "    </p>\r\n    <p>\r\n    The release includes the following changes: <br>\r\n" +
             "    </p>\r\n    <p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>\r\n" +
             "    <ul>\r\n        <li >\r\n            <a href=\"https://github.com\">1 - smth</a>\r\n" +
             "        </li>\r\n        <li >\r\n            <a href=\"https://github.com\">2 - smth2</a>\r\n" +
@@ -85,7 +85,7 @@ public class EmailTemplateNotificationServiceTest {
 
         emailTemplateNotificationService = new EmailTemplateNotificationService(templateEngine,
                 EMAIL_TO_ADMIN_TEMPLATE_NAME, EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME,
-                EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_TEMPLATE_NAME, EMAIL_TO_ADMIN_TITLE, EMAIL_TO_SUBSCRIBERS_TITLE
+                EMAIL_TO_ADMIN_TITLE, EMAIL_TO_SUBSCRIBERS_TITLE
         );
     }
 
@@ -124,13 +124,14 @@ public class EmailTemplateNotificationServiceTest {
 
     static Stream<Arguments> provideParameters() {
         return Stream.of(
-                Arguments.of(OLD_VERSION, NEW_MINOR_VERSION, null, null, VersionStatus.MINOR_CHANGED,
-                        EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY, EMAIL_TO_SUBSCRIBERS_TITLE),
                 Arguments.of(OLD_VERSION, NEW_MINOR_VERSION, Collections.emptyList(), Collections.emptyList(),
-                        VersionStatus.MINOR_CHANGED, EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY,
-                        EMAIL_TO_SUBSCRIBERS_TITLE),
-                Arguments.of(OLD_VERSION, NEW_MAJOR_VERSION, null, null, VersionStatus.MAJOR_CHANGED,
-                        EXPECTED_EMAIL_TO_ADMIN_BODY, EMAIL_TO_ADMIN_TITLE),
+                        VersionStatus.MINOR_CHANGED,
+                        EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY, EMAIL_TO_SUBSCRIBERS_TITLE),
+                Arguments.of(OLD_VERSION, NEW_MINOR_VERSION, null, null,
+                        VersionStatus.MINOR_CHANGED,
+                        EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY, EMAIL_TO_SUBSCRIBERS_TITLE),
+                Arguments.of(OLD_VERSION, NEW_MAJOR_VERSION, Collections.emptyList(), Collections.emptyList(),
+                        VersionStatus.MAJOR_CHANGED, EXPECTED_EMAIL_TO_ADMIN_BODY, EMAIL_TO_ADMIN_TITLE),
                 Arguments.of(OLD_VERSION, NEW_MINOR_VERSION,
                         Arrays.asList(JiraIssue.builder().id(ONE).title(SMTH).url(URL).build(),
                                 JiraIssue.builder().id(TWO).title(SMTH_ELSE).url(URL).build()),

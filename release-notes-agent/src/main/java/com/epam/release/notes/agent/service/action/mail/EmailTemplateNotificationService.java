@@ -18,7 +18,6 @@ import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
 import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -39,16 +38,14 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private final TemplateEngine templateEngine;
     private final String emailToAdminTemplateName;
     private final String emailToSubscribersTemplateName;
-    private final String emailToSubscribersWithoutIssuesTemplateName;
     private final String emailToAdminTitle;
     private final String emailToSubscribersTitle;
 
     public EmailTemplateNotificationService(
             final TemplateEngine templateEngine,
             @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
-            @Value("${release.notes.agent.name.of.subscribers.email.template}") final String emailToSubscribersTemplateName,
-            @Value("${release.notes.agent.name.of.subscribers.email.without.issues.template}")
-            final String emailToSubscribersWithoutIssuesTitle,
+            @Value("${release.notes.agent.name.of.subscribers.email.template}")
+            final String emailToSubscribersTemplateName,
             @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
             @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle
     ) {
@@ -57,7 +54,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
         this.emailToSubscribersTemplateName = emailToSubscribersTemplateName;
         this.emailToAdminTitle = emailToAdminTitle;
         this.emailToSubscribersTitle = emailToSubscribersTitle;
-        this.emailToSubscribersWithoutIssuesTemplateName = emailToSubscribersWithoutIssuesTitle;
     }
 
     @Override
@@ -69,10 +65,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
                 return createEmailContent(context, emailToAdminTitle, emailToAdminTemplateName);
             case MINOR_CHANGED:
                 addVersionsToContext(versionStatusInfo.getOldVersion(), versionStatusInfo.getNewVersion(), context);
-                if(validateIssuesParameters(versionStatusInfo.getJiraIssues(), versionStatusInfo.getGitHubIssues())){
-                    return createEmailContent(context, emailToSubscribersTitle,
-                            emailToSubscribersWithoutIssuesTemplateName);
-                }
                 addIssuesToContext(versionStatusInfo.getJiraIssues(), versionStatusInfo.getGitHubIssues(), context);
                 return createEmailContent(context, emailToSubscribersTitle, emailToSubscribersTemplateName);
             default:
@@ -87,7 +79,7 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
                 .build();
     }
 
-    private void addVersionsToContext(final String oldVersion, final String newVersion, final Context context) {
+    private void addVersionsToContext(final String oldVersion, final String newVersion,  final Context context) {
         context.setVariable(OLD_VERSION, oldVersion);
         context.setVariable(NEW_VERSION, newVersion);
     }
@@ -96,10 +88,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
                                final Context context) {
         context.setVariable(JIRA_ISSUES, jiraIssues);
         context.setVariable(GITHUB_ISSUES, gitHubIssues);
-    }
-
-    private boolean validateIssuesParameters(final List<JiraIssue> jiraIssues, final List<GitHubIssue> gitHubIssues) {
-        return CollectionUtils.isEmpty(jiraIssues) && CollectionUtils.isEmpty(gitHubIssues);
     }
 
 }

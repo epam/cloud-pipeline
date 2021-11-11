@@ -30,19 +30,15 @@ public class ThymeleafTemplateConfig {
 
     private static final String EMAIL_TEMPLATE_ENCODING = "UTF-8";
     private static final String DOT = ".";
+    private static final String CLASS_LOADER_RESOLVER_PREFIX = "mail/";
 
     private final String fileResolverPrefix;
-    private final String classPathResolverPrefix;
     private final String resolverSuffix;
-
-
 
     public ThymeleafTemplateConfig(
             @Value("${release.notes.agent.path.to.system.folder.with.templates}") final String fileResolverPrefix,
-            @Value("${release.notes.agent.classpath.to.templates}") final String classPathResolverPrefix,
             @Value("${release.notes.agent.type.of.template.files}") final String resolverSuffix) {
         this.fileResolverPrefix = fileResolverPrefix;
-        this.classPathResolverPrefix = classPathResolverPrefix;
         this.resolverSuffix = resolverSuffix;
     }
 
@@ -58,7 +54,7 @@ public class ThymeleafTemplateConfig {
         final AbstractConfigurableTemplateResolver templateResolver;
         if(StringUtils.isEmpty(fileResolverPrefix)) {
             templateResolver = new ClassLoaderTemplateResolver();
-            templateResolver.setPrefix(classPathResolverPrefix);
+            templateResolver.setPrefix(CLASS_LOADER_RESOLVER_PREFIX);
         } else {
             templateResolver = new FileTemplateResolver();
             templateResolver.setPrefix(fileResolverPrefix);

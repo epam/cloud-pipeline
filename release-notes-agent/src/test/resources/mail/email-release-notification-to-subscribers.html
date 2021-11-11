@@ -9,16 +9,17 @@
     <p> A new Cloud-pipeline version has been released. <br>
     Version changed from <span th:text="${oldVersion}"></span> to <span th:text="${newVersion}"></span>
     </p>
-    <p> The release includes the following changes: <br>
+    <p th:if="${jiraIssues!=null&&!jiraIssues.isEmpty()&&gitHubIssues!=null&&!gitHubIssues.isEmpty()}">
+    The release includes the following changes: <br>
     </p>
-    <p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>
-    <ul>
+    <p th:if="${jiraIssues!=null&&!jiraIssues.isEmpty()}"> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>
+    <ul th:if="${jiraIssues!=null&&!jiraIssues.isEmpty()}">
         <li th:each="issue : ${jiraIssues}" >
             <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
         </li>
     </ul>
-    <p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
-    <ul>
+    <p th:if="${gitHubIssues!=null&&!gitHubIssues.isEmpty()}"> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
+    <ul th:if="${gitHubIssues!=null&&!gitHubIssues.isEmpty()}">
         <li th:each="issue : ${gitHubIssues}">
             <a th:href="${issue.getHtmlUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
         </li>
