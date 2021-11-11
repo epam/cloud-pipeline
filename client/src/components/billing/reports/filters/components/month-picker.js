@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import {Dropdown, Icon} from 'antd';
@@ -157,19 +158,23 @@ export default class MonthPicker extends React.Component {
     const canNavigateRight = selectedYear < +maximumValue.get('Y');
     const leftClassNames = [
       styles.navigation,
-      !canNavigateLeft && styles.disabled
+      'cp-billing-calendar-navigation',
+      !canNavigateLeft && 'disabled'
     ].filter(Boolean);
     const rightClassNames = [
       styles.navigation,
-      !canNavigateRight && styles.disabled
+      'cp-billing-calendar-navigation',
+      !canNavigateRight && 'disabled'
     ].filter(Boolean);
     const renderMonth = (m) => {
       const date = moment.utc({y: selectedYear, month: m});
       const disabled = date < minimumValue || date > maximumValue;
       const classNames = [
         styles.item,
-        year === selectedYear && month === m ? styles.selected : undefined,
-        disabled ? styles.disabled : undefined
+        'cp-billing-calendar-row-item',
+        year === selectedYear && month === m
+          ? 'selected' : undefined,
+        disabled ? 'disabled' : undefined
       ].filter(Boolean);
       return (
         <div
@@ -183,8 +188,14 @@ export default class MonthPicker extends React.Component {
       );
     };
     return (
-      <div className={styles.overlay}>
-        <div className={styles.yearsContainer}>
+      <div className={classNames(
+        styles.overlay,
+        'cp-billing-calendar-container'
+      )}>
+        <div className={classNames(
+          styles.yearsContainer,
+          'cp-billing-calendar-years-container'
+        )}>
           <Icon
             role="button"
             className={leftClassNames.join(' ')}
