@@ -127,6 +127,14 @@ class MountStorageTask:
             Logger.warn('Unable to parse {} placeholder to a storage ID: {}.'.format(placeholder, str(parse_storage_ex)), task_name=self.task_name)
         return storage_id
 
+    def parse_storage_list(self, csv_storages):
+        result = []
+        for item in csv_storages.split(','):
+            storage_id = self.parse_storage(item)
+            if storage_id:
+                result.append(storage_id)
+        return result
+
     def run(self, mount_root, tmp_dir):
         try:
             Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
@@ -153,21 +161,24 @@ class MountStorageTask:
                                               or x.file_share_mount.region_id == cloud_region_id]
 
 
-            limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
+            # If the storages are limited by the user - we make sure that the "forced" storages are still available
+            # This is useful for the tools, which require "databases" or other data from the File/Object storages
             force_storages = os.getenv('CP_CAP_FORCE_MOUNTS')
+            force_storages_list = []
+            if force_storages:
+                Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages), task_name=self.task_name)
+                force_storages_list = self.parse_storage_list(force_storages)
+            
+            limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
-                # If the storages are limited by the user - we make sure that the "forced" storages are still available
-                # This is useful for the tools, which require "databases" or other data from the File/Object storages
+                # Append "forced" storage to the "limited" list, if it's set
                 if force_storages:
-                    Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages), task_name=self.task_name)
+                    force_storages = ','.join([str(x) for x in force_storages_list])
                     limited_storages = ','.join([limited_storages, force_storages])
                 try:
                     limited_storages_list = []
                     if limited_storages.lower() != MOUNT_LIMITS_NONE:
-                        for limited_storage_id in limited_storages.split(','):
-                            storage_id = self.parse_storage(limited_storage_id)
-                            if storage_id:
-                                limited_storages_list.append(storage_id)
+                        limited_storages_list = self.parse_storage_list(limited_storages)
                     # Remove duplicates from the `limited_storages_list`, as they can be introduced by `force_storages` or a user's typo
                     limited_storages_list = list(set(limited_storages_list))
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
@@ -205,11 +216,12 @@ class MountStorageTask:
                     Logger.info('Storage is not readable', task_name=self.task_name)
                     continue
                 if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
-                    Logger.info(
-                        'Storage {} is not allowed to be mount to {} image'.format(storage_and_mount.storage.name,
-                            run.get("actualDockerImage", "")),
-                        task_name=self.task_name)
-                    continue
+                    storage_not_allowed_msg = 'Storage {} is not allowed for {} image'.format(storage_and_mount.storage.name, run.get("actualDockerImage", ""))
+                    if storage_and_mount.storage.id in force_storages_list:
+                        Logger.info(storage_not_allowed_msg + ', but it is forced to be mounted', task_name=self.task_name)
+                    else:
+                        Logger.info(storage_not_allowed_msg + ', skipping it', task_name=self.task_name)
+                        continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,
                                                                                 sensitive_policy) \
