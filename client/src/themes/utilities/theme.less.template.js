@@ -15,6 +15,10 @@
  */
 
 export default `
+@THEME.theme-preview .cp-theme-preview-navigation-panel {
+  background-color: @navigation-panel-color;
+}
+
 @THEME a,
 @THEME a:visited,
 @THEME .cp-link {
@@ -818,29 +822,6 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
-@THEME @fn: @theme-transition-function;
-@ms: @theme-transition-duration;
-
-.cp-theme-transition-background {
-  transition: background-color @fn @ms;
-}
-@THEME .cp-theme-transition-color {
-  transition: color @fn @ms;
-}
-@THEME .cp-theme-transition {
-  transition: color @fn @ms, background-color @fn @ms;
-}
-@THEME .ant-layout-sider,
-@THEME .ant-layout,
-@THEME .ant-input,
-@THEME .cp-panel,
-@THEME .cp-panel-card,
-@THEME .cp-panel-card-actions-background,
-@THEME .cp-navigation-panel,
-@THEME .cp-navigation-panel .cp-navigation-menu-item {
-  .cp-theme-transition();
-}
-
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -1130,9 +1111,7 @@ export default `
   color: @application-color;
 }
 
-@THEME @import "variables";
-
-.cp-library-metadata-item-key {
+@THEME .cp-library-metadata-item-key {
   background-color: @metadata-item-key-background-color;
   border-bottom: 1px solid @metadata-item-key-border-color;
 }
