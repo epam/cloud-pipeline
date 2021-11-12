@@ -114,7 +114,6 @@ public class ToolsParametersTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .selectValue(RUN_CAPABILITIES, custCapability1)
-                .click(RUN_CAPABILITIES)
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .checkTooltipText(custCapability1, "Custom test capability 1")
                 .checkTooltipText(custCapability2, "Custom test capability 2")
