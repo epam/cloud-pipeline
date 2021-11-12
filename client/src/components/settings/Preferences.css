@@ -21,11 +21,3 @@
 .table > div > div {
   filter: none !important;
 }
-
-.preference-group-row {
-  cursor: pointer;
-}
-
-.preference-group-row td {
-  padding: 6px !important;
-}

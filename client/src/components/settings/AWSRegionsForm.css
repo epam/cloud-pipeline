@@ -22,14 +22,6 @@
   filter: none !important;
 }
 
-.region-row {
-  cursor: pointer;
-}
-
-.region-row td {
-  padding: 6px !important;
-}
-
 .region-row .region {
   margin-left: 20px;
 }

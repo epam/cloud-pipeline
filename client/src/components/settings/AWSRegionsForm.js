@@ -290,6 +290,7 @@ export default class AWSRegionsForm extends React.Component {
             (region.isNew && this.state.newRegion);
             return classNames(
               styles.regionRow,
+              'cp-settings-sidebar-element',
               {
                 'cp-table-element-selected': selected
               }

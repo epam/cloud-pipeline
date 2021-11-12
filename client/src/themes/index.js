@@ -34,6 +34,8 @@ class CloudPipelineThemes {
   @observable singleTheme = DefaultDarkThemeIdentifier;
   @observable systemLightTheme = DefaultLightThemeIdentifier;
   @observable systemDarkTheme = DefaultDarkThemeIdentifier;
+  @observable isSystemDarkMode = false;
+
   constructor (preferences, userInfo) {
     this.preferences = preferences;
     this.userInfo = userInfo;
@@ -156,11 +158,13 @@ class CloudPipelineThemes {
   }
 
   applyTheme () {
-    const systemThemeIsDark = window.matchMedia &&
+    this.isSystemDarkMode = window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: dark)').matches;
     let theme;
     if (this.synchronizeWithSystem) {
-      theme = systemThemeIsDark ? this.systemDarkTheme : this.systemLightTheme;
+      theme = this.isSystemDarkMode
+        ? this.systemDarkTheme
+        : this.systemLightTheme;
     } else {
       theme = this.singleTheme;
     }

@@ -15,44 +15,44 @@
  */
 
 import React from 'react';
-import {Select, Radio} from 'antd';
+import {Select} from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 
-import ThemeCard from './themeCard';
+import ThemeCard from './theme-card';
 import styles from './appearance.css';
 
-const RadioGroup = Radio.Group;
-
-function AppearanceSettings ({themes}) {
+function AppearanceSettings ({themes, preferences}) {
+  const cloudPipelineAppName = preferences.deploymentName || 'Cloud Pipeline';
   const {
     synchronizeWithSystem,
     singleTheme,
     systemDarkTheme,
-    systemLightTheme} = themes;
+    systemLightTheme,
+    isSystemDarkMode
+  } = themes;
 
   const systemModes = {day: 'light', night: 'dark'};
 
-  const isSystemDarkMode = () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isCurrentSystemModeSelected = (mode) => (isSystemDarkMode() && mode === 'dark') || (!isSystemDarkMode() && mode === 'light');
+  const isCurrentSystemModeSelected = (mode) => isSystemDarkMode === (mode === 'dark');
 
   const onChangeSyncWithSystem = (value) => {
     themes.synchronizeWithSystem = value === 'auto';
     themes.applyTheme();
     themes.save();
   };
-  const onChangeSingleTheme = (e) => {
-    themes.singleTheme = e.target.value;
+  const onChangeSingleTheme = (identifier) => {
+    themes.singleTheme = identifier;
     themes.applyTheme();
     themes.save();
   };
-  const onChangeLightTheme = (e) => {
-    themes.systemLightTheme = e.target.value;
+  const onChangeLightTheme = (identifier) => {
+    themes.systemLightTheme = identifier;
     themes.applyTheme();
     themes.save();
   };
-  const onChangeDarkTheme = (e) => {
-    themes.systemDarkTheme = e.target.value;
+  const onChangeDarkTheme = (identifier) => {
+    themes.systemDarkTheme = identifier;
     themes.applyTheme();
     themes.save();
   };
@@ -60,49 +60,64 @@ function AppearanceSettings ({themes}) {
   const renderSingleThemeCards = () => {
     return (
       <div className={styles.modesPanel}>
-        <RadioGroup
-          onChange={onChangeSingleTheme}
-          className={classNames(styles.cardsGroup)}
-          value={singleTheme}>
-          {themes.themes.map(theme => (
+        {
+          themes.themes.map(theme => (
             <ThemeCard
               key={theme.name}
               name={theme.name}
               identifier={theme.identifier}
               selected={theme.identifier === singleTheme}
+              onSelect={onChangeSingleTheme}
             />
-          ))}
-        </RadioGroup>
+          ))
+        }
       </div>
     );
   };
 
   const renderActiveLabel = (mode) => {
-    if (isCurrentSystemModeSelected(mode)) {
-      return (<span className={styles.status}>Active</span>);
-    } else {
-      return null;
-    }
+    return (
+      <span
+        className={
+          classNames(
+            styles.status,
+            'cp-themes-group-active-tag',
+            {
+              [styles.active]: isCurrentSystemModeSelected(mode)
+            }
+          )
+        }
+      >
+        Active
+      </span>
+    );
   };
 
   const renderThemesCards = (systemMode) => {
     const themeIsLight = systemMode === 'light';
-    const isSelected = (themeId) => themeIsLight ? themeId === systemLightTheme : themeId === systemDarkTheme;
+    const isSelected = (themeId) => themeIsLight
+      ? themeId === systemLightTheme
+      : themeId === systemDarkTheme;
     return (
-      <div className={styles.modesPanel}>
-        <RadioGroup
-          onChange={themeIsLight ? onChangeLightTheme : onChangeDarkTheme}
-          className={classNames(styles.cardsGroup, styles.systemCardPanel)}
-          value={themeIsLight ? systemLightTheme : systemDarkTheme}>
-          {themes.themes.map(theme => (
+      <div
+        className={
+          classNames(
+            styles.modesPanel,
+            styles.centered
+          )
+        }
+      >
+        {
+          themes.themes.map(theme => (
             <ThemeCard
               key={theme.name}
               name={theme.name}
               identifier={theme.identifier}
               selected={isSelected(theme.identifier)}
+              onSelect={themeIsLight ? onChangeLightTheme : onChangeDarkTheme}
             />
-          ))}
-        </RadioGroup>
+          ))
+        }
       </div>
     );
   };
@@ -110,14 +125,21 @@ function AppearanceSettings ({themes}) {
   const renderSyncModesPanels = () => (
     <div className={styles.systemModesPanels}>
       {Object.entries(systemModes).map(([name, value]) => (
-        <div key={name} className={styles.systemModes}>
+        <div
+          key={name}
+          className={
+            classNames(
+              styles.systemModes,
+              'cp-themes-group',
+              {'selected': isCurrentSystemModeSelected(value)}
+            )
+          }
+        >
           <div className={classNames(
             styles.systemModesHeader,
-            {[styles.selected]: isCurrentSystemModeSelected(value)}
+            'cp-themes-group-header'
           )}>
-            <div>
-              <h2>{name} theme</h2>
-            </div>
+            <span className="cp-title">{name} theme</span>
             {renderActiveLabel(value)}
           </div>
           <h3 className={styles.description}>
@@ -130,22 +152,46 @@ function AppearanceSettings ({themes}) {
   );
   return (
     <div className={styles.appearanceSettings}>
-      <h2>Appearance</h2>
-      <div className={styles.selectThemeModeContainer}>
+      <div className={classNames(styles.header, 'cp-divider', 'bottom')}>
+        <h2 className="cp-title">
+          {cloudPipelineAppName} UI Theme Preferences
+        </h2>
+      </div>
+      <div
+        className={
+          classNames(
+            styles.block,
+            'cp-divider',
+            'bottom'
+          )
+        }
+      >
+        Choose how {cloudPipelineAppName} interface looks to you. <br />
+        You can select a single theme from the list, or configure {cloudPipelineAppName} to
+        synchronize with your system appearance preferences and
+        automatically switch between day and night themes.
+      </div>
+      <div
+        className={
+          classNames(
+            styles.block,
+            styles.row
+          )
+        }
+      >
+        <span className={styles.title}>Mode:</span>
         <Select
-          size="large"
           value={synchronizeWithSystem ? 'auto' : 'single'}
           onChange={onChangeSyncWithSystem}
-
+          className={styles.modeSelector}
         >
           <Select.Option value="single">Single theme</Select.Option>
-          <Select.Option value="auto">Sync with System</Select.Option>
+          <Select.Option value="auto">Synchronize with System</Select.Option>
         </Select>
-        <span>CloudPipeline will use your selected theme</span>
       </div>
       {synchronizeWithSystem ? renderSyncModesPanels() : renderSingleThemeCards()}
     </div>
   );
 }
 
-export default inject('themes')(observer(AppearanceSettings));
+export default inject('themes', 'preferences')(observer(AppearanceSettings));

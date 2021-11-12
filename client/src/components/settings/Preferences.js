@@ -165,7 +165,7 @@ export default class Preferences extends React.Component {
         rowKey="name"
         rowClassName={
           (group) => classNames(
-            styles.preferenceGroupRow,
+            'cp-settings-sidebar-element',
             {
               'cp-table-element-selected': group.name === this.state.selectedPreferenceGroup
             }

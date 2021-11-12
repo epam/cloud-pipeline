@@ -15,6 +15,25 @@
  */
 
 export default `
+@THEME .theme-preview {
+  border-color: @card-border-color;
+}
+@THEME .theme-preview.selected {
+  border-color: @primary-color;
+}
+@THEME .cp-themes-group {
+  color: @application-color;
+  background-color: @card-background-color;
+  border: 1px solid @card-border-color;
+}
+@THEME .cp-themes-group .cp-themes-group-header {
+  background-color: @card-header-background;
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-themes-group-active-tag {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
 @THEME.theme-preview .cp-theme-preview-navigation-panel {
   background-color: @navigation-panel-color;
 }
@@ -68,7 +87,7 @@ export default `
 @THEME.theme-preview .cp-runs-menu-item {
   color: @navigation-item-color;
   background-color: transparent;
-  display:flex;
+  display: flex;
   justify-content: center;
   align-items: center;
 }
@@ -76,6 +95,9 @@ export default `
   background-color: @application-color;
 }
 
+@THEME .cp-title {
+  font-weight: bold;
+}
 @THEME a,
 @THEME a:visited,
 @THEME .cp-link {
@@ -1549,6 +1571,13 @@ export default `
 @THEME .cp-node-tag.cp-node-tag-master,
 @THEME .cp-node-tag.cp-node-tag-cp-role {
   color: @primary-color;
+}
+
+@THEME .cp-settings-sidebar-element {
+  cursor: pointer;
+}
+@THEME .cp-settings-sidebar-element td {
+  padding: 6px;
 }
 
 `;

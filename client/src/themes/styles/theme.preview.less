@@ -16,63 +16,101 @@
 
 @import "variables";
 
+.theme-preview {
+  border-color: @card-border-color;
+}
+
+.theme-preview.selected {
+  border-color: @primary-color;
+}
+
+.cp-themes-group {
+  color: @application-color;
+  background-color: @card-background-color;
+  border: 1px solid @card-border-color;
+}
+
+.cp-themes-group .cp-themes-group-header {
+  background-color: @card-header-background;
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-themes-group-active-tag {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+
 .theme-identifier.theme-preview .cp-theme-preview-navigation-panel {
   background-color: @navigation-panel-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-layout {
   background-color: @application-background-color;
   color: @application-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-panel {
   border: 1px solid @panel-border-color;
   background-color: @panel-background-color;
   color: @application-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-priview-panel-card {
   border: 1px solid @card-border-color;
   background-color: @card-background-color;
   margin: 2px;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-button-primary {
   color: @btn-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-button-danger {
   background-color: @btn-danger-color;;
   border-color: @btn-danger-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-button {
   color: @primary-color;
   background-color: @panel-background-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-blue {
   color: @run-icon-blue;
 }
+
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-yellow {
   color: @run-icon-yellow;
 }
+
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-green {
   color: @run-icon-green;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item.selected {
   background-color: @navigation-panel-highlighted-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item i {
   text-align: center;
   padding: 5px;
 }
+
 .theme-identifier.theme-preview .cp-runs-menu-item.active {
   color: @navigation-item-runs-color;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item,
 .theme-identifier.theme-preview .cp-runs-menu-item {
   color: @navigation-item-color;
   background-color: transparent;
-  display:flex;
+  display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .theme-identifier.theme-preview .cp-theme-preview-text {
   background-color: @application-color;
 }
