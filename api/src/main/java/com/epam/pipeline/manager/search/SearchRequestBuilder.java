@@ -42,6 +42,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.common.Strings;
@@ -92,6 +93,7 @@ public class SearchRequestBuilder {
     private static final String ES_DOC_ID_FIELD = "_id";
     private static final String ES_DOC_SCORE_FIELD = "_score";
     private static final String ES_SORT_MISSING_LAST = "_last";
+    private static final String ES_SORT_MISSING_FIRST = "_first";
     private static final String SEARCH_HIDDEN = "is_hidden";
     private static final String INDEX_WILDCARD_PREFIX = "*";
     private static final String ES_KEYWORD_TYPE = "keyword";
@@ -225,31 +227,33 @@ public class SearchRequestBuilder {
     }
 
     private SortBuilder<?> buildOwnerFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return SortBuilders.fieldSort(SearchSourceFields.OWNER.getFieldName())
-                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
-                .unmappedType(ES_KEYWORD_TYPE)
-                .missing(ES_SORT_MISSING_LAST);
+        return buildFieldSort(SearchSourceFields.OWNER.getFieldName(), sort.getOrder(), ES_KEYWORD_TYPE,
+                isScrollingBackwards);
     }
 
     private SortBuilder<?> buildDateFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return SortBuilders.fieldSort(sort.getField())
-                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
-                .unmappedType(ES_DATE_TYPE)
-                .missing(ES_SORT_MISSING_LAST);
+        return buildFieldSort(sort.getField(), sort.getOrder(), ES_DATE_TYPE, isScrollingBackwards);
     }
 
     private SortBuilder<?> buildNumericFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return SortBuilders.fieldSort(sort.getField())
-                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
-                .unmappedType(ES_LONG_TYPE)
-                .missing(ES_SORT_MISSING_LAST);
+        return buildFieldSort(sort.getField(), sort.getOrder(), ES_LONG_TYPE, isScrollingBackwards);
     }
 
     private SortBuilder<?> buildRegularFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return SortBuilders.fieldSort(buildKeywordName(sort.getField()))
-                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards))
-                .unmappedType(ES_KEYWORD_TYPE)
-                .missing(ES_SORT_MISSING_LAST);
+        return buildFieldSort(buildKeywordName(sort.getField()), sort.getOrder(), ES_KEYWORD_TYPE,
+                isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildFieldSort(final String field,
+                                          final SearchRequestSortOrder order,
+                                          final String unmappedType,
+                                          final boolean isScrollingBackwards) {
+        final SortOrder actualOrder = buildSortOrder(order, isScrollingBackwards);
+        final String missing = actualOrder == SortOrder.ASC ? ES_SORT_MISSING_LAST : ES_SORT_MISSING_FIRST;
+        return SortBuilders.fieldSort(field)
+                .order(actualOrder)
+                .unmappedType(unmappedType)
+                .missing(missing);
     }
 
     private SortOrder buildSortOrder(final SearchRequestSortOrder order, final boolean isScrollingBackwards) {
@@ -288,12 +292,32 @@ public class SearchRequestBuilder {
     }
 
     private Object buildSearchAfterParameterValue(final String field, final Object value) {
-        return isDateField(field) ? buildSearchAfterDateParameterValue(value) : value;
+        return isDateField(field) ? buildSearchAfterDateParameterValue(value)
+                : isNumericField(field) ? buildSearchAfterNumericParameterValue(value)
+                : buildSearchAfterRegularParameterValue(value);
     }
 
     private long buildSearchAfterDateParameterValue(final Object value) {
-        final LocalDateTime localDateTime = LocalDateTime.parse(value.toString(), DATE_TIME_FORMATTER);
-        return DateUtils.convertLocalDateTimeToEpochMillis(localDateTime);
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .map(stringValue -> LocalDateTime.parse(stringValue, DATE_TIME_FORMATTER))
+                .map(DateUtils::convertLocalDateTimeToEpochMillis)
+                .orElse(Long.MAX_VALUE);
+    }
+
+    private long buildSearchAfterNumericParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .map(NumberUtils::toLong)
+                .orElse(NumberUtils.LONG_ZERO);
+    }
+
+    private String buildSearchAfterRegularParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .orElse(null);
     }
 
     private boolean isDefaultField(final String field) {
