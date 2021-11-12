@@ -15,15 +15,11 @@
 
 package com.epam.release.notes.agent.service.action.mail;
 
-import com.epam.release.notes.agent.entity.github.GitHubIssue;
-import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
-
-import java.util.List;
+import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 
 public interface TemplateNotificationService {
 
-    EmailContent populate(String oldVersion, String newVersion,
-                          List<JiraIssue> jiraIssues, List<GitHubIssue> gitHubIssues);
+    EmailContent populate(VersionStatusInfo versionStatusInfo);
 
 }

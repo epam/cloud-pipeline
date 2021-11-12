@@ -52,6 +52,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
     testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitParamsVersion"
 }
 
 test {

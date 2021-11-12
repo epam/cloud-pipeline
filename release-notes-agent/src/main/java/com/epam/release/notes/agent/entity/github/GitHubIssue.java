@@ -15,16 +15,21 @@
 
 package com.epam.release.notes.agent.entity.github;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
 @Jacksonized
+@Getter
 public class GitHubIssue {
     Long id;
     Long number;
     String title;
     String body;
+    @JsonProperty("html_url")
+    String htmlUrl;
 }
