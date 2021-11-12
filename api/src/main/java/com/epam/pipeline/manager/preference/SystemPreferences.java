@@ -514,6 +514,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_REQUEST = new ObjectPreference<>(
+            "ui.pipe.file.browser.request", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
