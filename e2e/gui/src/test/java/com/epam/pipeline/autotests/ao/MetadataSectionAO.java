@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Arrays;
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -106,7 +109,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO assertNumberOfKeysIs(int expectedNumberOfKeys) {
-        $$(byClassName(keyFieldId)).shouldHaveSize(expectedNumberOfKeys);
+        $$(byClassName(keyFieldId)).filter(not(have(cssClass("metadata__special"))))
+                .shouldHaveSize(expectedNumberOfKeys);
         return this;
     }
 
