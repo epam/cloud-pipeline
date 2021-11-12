@@ -18,6 +18,63 @@ export default `
 @THEME.theme-preview .cp-theme-preview-navigation-panel {
   background-color: @navigation-panel-color;
 }
+@THEME.theme-preview .cp-theme-preview-layout {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+@THEME.theme-preview .cp-theme-preview-panel {
+  border: 1px solid @panel-border-color;
+  background-color: @panel-background-color;
+  color: @application-color;
+}
+@THEME.theme-preview .cp-theme-priview-panel-card {
+  border: 1px solid @card-border-color;
+  background-color: @card-background-color;
+  margin: 2px;
+}
+@THEME.theme-preview .cp-theme-preview-button-primary {
+  color: @btn-color;
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME.theme-preview .cp-theme-preview-button-danger {
+  background-color: @btn-danger-color;;
+  border-color: @btn-danger-color;
+}
+@THEME.theme-preview .cp-theme-preview-button {
+  color: @primary-color;
+  background-color: @panel-background-color;
+}
+@THEME.theme-preview .cp-theme-priview-runs-table-icon-blue {
+  color: @run-icon-blue;
+}
+@THEME.theme-preview .cp-theme-priview-runs-table-icon-yellow {
+  color: @run-icon-yellow;
+}
+@THEME.theme-preview .cp-theme-priview-runs-table-icon-green {
+  color: @run-icon-green;
+}
+@THEME.theme-preview .cp-theme-preview-navigation-menu-item.selected {
+  background-color: @navigation-panel-highlighted-color;
+}
+@THEME.theme-preview .cp-theme-preview-navigation-menu-item i {
+  text-align: center;
+  padding: 5px;
+}
+@THEME.theme-preview .cp-runs-menu-item.active {
+  color: @navigation-item-runs-color;
+}
+@THEME.theme-preview .cp-theme-preview-navigation-menu-item,
+@THEME.theme-preview .cp-runs-menu-item {
+  color: @navigation-item-color;
+  background-color: transparent;
+  display:flex;
+  justify-content: center;
+  align-items: center;
+}
+@THEME.theme-preview .cp-theme-preview-text {
+  background-color: @application-color;
+}
 
 @THEME a,
 @THEME a:visited,

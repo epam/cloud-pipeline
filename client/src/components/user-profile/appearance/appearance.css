@@ -1,0 +1,231 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.appearance-settings > h2 {
+  margin: 15px auto;
+  padding-top: 10px;
+  font-weight: bolder;
+}
+
+.system-modes-panels {
+  display: flex;
+}
+
+.system-modes {
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+  margin: 10px;
+  margin-left: 0px;
+  max-width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-content: stretch;
+  justify-content: stretch;
+}
+
+.system-modes form {
+  display: flex;
+  justify-content: stretch;
+  margin-left: 10px;
+}
+.system-modes-header {
+  border-radius: 6px 6px 0px 0px;
+  border-bottom: 1px solid #d0d7de;
+  margin-bottom: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-transform: uppercase;
+  width: 100%;
+}
+.system-modes-header.selected {
+  background-color: rgba(16, 142,233, 0.2);
+}
+.system-modes-header > div {
+  display: flex;
+  align-items: center;
+}
+
+.system-modes-header > div h4 {
+  margin-left: 8px;
+}
+
+.status {
+  border: 1px solid #108ee9;
+  border-radius: 2em;
+  padding: 2px 10px;
+  justify-self: flex-end;
+}
+
+.modes-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-top: 15px;
+  width: 100%;
+  flex: 1 1 auto;
+}
+.system-modes-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 15px;
+  width: 100%;
+  flex: 1 1 auto;
+  padding-left: 15px;
+}
+
+.cards-group {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding: 10px;
+  padding-left: 0px;
+}
+.cards-groupf {
+  justify-content: flex-start;
+}
+
+.theme-card {
+  min-width: 250px;
+  width: 25%;
+  display: flex;
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+  margin: 15px;
+  margin-left: 0px;
+}
+.aspect-ratio {
+  position: relative;
+}
+.aspect-ratio::before {
+  content: "";
+  display: block;
+  padding-bottom: calc(100% / 1.4);
+}
+.aspect-ratio-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.system-card-panel {
+  justify-content: space-evenly;
+  padding: 10px;
+}
+
+.action-container {
+  padding: 10px;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  height: 20%;
+}
+.select-theme-mode-container {
+  display: flex;
+  align-items: center;
+}
+.select-theme-mode-container span {
+  margin-left: 10px;
+}
+
+.select-theme-mode-container div {
+  width: 200px;
+}
+
+.selected {
+  border-color: #108ee9;
+}
+.description {
+  text-align: center;
+}
+.preview-article {
+  display: flex;
+  justify-content: stretch;
+  width: 100%;
+  min-height: 100px;
+  border-radius: 6px 6px 0px 0px;
+  flex: 1 1 auto;
+}
+.preview-aside {
+  width: 10%;
+  border-radius: 6px 0px 0px 0px;
+  display: flex;
+  flex-direction: column;
+  align-content: flex-start;
+  justify-content: space-evenly;
+}
+.preview-logo {
+  width: 15px;
+  height: 15px;
+}
+.preview-panels-box {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+}
+.preview-main {
+  flex: 1 1 auto;
+  margin-right: 5px;
+  height: 80%;
+  width: 50%;
+}
+.preview-panel {
+  flex: 1 1 auto;
+  margin-right: 5px;
+  height: 80%;
+  width: 45%;
+}
+.preview-top-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.preview-btn-container {
+  display: flex;
+  margin: 6px;
+  justify-content: flex-end;
+}
+.preview-btn {
+  height: 10px;
+  width: 20px;
+  margin: 4px;
+  border-radius: 6px;
+}
+.preview-section {
+  margin: 6px;
+  height: 20%;
+  display: flex;
+  align-items: center;
+}
+.preview-text {
+  height: 6px;
+  width: 20%;
+  margin: 6px;
+  border-radius: 6px;
+}
+.preview-text-short {
+  height: 6px;
+  width: 10%;
+  margin: 6px;
+  border-radius: 6px;
+}
