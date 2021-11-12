@@ -77,9 +77,9 @@ public class ReleaseNotesNotifier {
                 "Creating release notes report. Old current: %s, new current: %s.",
                 old.getSha(), current.getSha()));
         final List<GitHubIssue> gitHubIssues = gitHubService.fetchIssues(current.getSha(), old.getSha());
-        gitHubIssues
-                .forEach(gitHubIssue -> System.out.println(gitHubIssue.getNumber() + " " + gitHubIssue.getTitle()));
         final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
+        log.debug(format("There is: %s github  and %s jira issues to process.",
+                gitHubIssues.size(), jiraIssues.size()));
         final VersionStatusInfo versionStatusInfo = VersionStatusInfo.builder()
                         .oldVersion(old.toString())
                         .newVersion(current.toString())
