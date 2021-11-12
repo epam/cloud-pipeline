@@ -30,7 +30,12 @@ function wrapRequest (request, payload) {
   });
 }
 
-export default function createSharedStorage (preferences, sharedStorage, sharedFolder) {
+export default function createSharedStorage (
+  preferences,
+  sharedStorage,
+  sharedFolder,
+  sharedItems = []
+) {
   if (!preferences) {
     return Promise.reject(
       new Error('Shared storages system directory not specified (no preferences)')
@@ -50,8 +55,9 @@ export default function createSharedStorage (preferences, sharedStorage, sharedF
             ? ServiceTypes.fileShare
             : ServiceTypes.objectStorage;
           const payload = {
+            sourceStorageId: sharedStorage.id,
+            linkingMasks: sharedItems,
             parentFolderId: preferences.sharedStoragesSystemDirectory,
-            name: `${sharedStorage.name}-${(sharedFolder || '').replace(/\//g, '-')}`,
             path,
             shared: true,
             serviceType,
