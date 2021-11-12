@@ -102,11 +102,11 @@ public class ReleaseNotesNotifier {
                 .map(GitHubIssue::getNumber)
                 .collect(Collectors.toCollection(HashSet::new));
         return jiraIssues.stream()
-                .filter(j -> isUniqueIssue(githubIssueNumbers, j))
+                .filter(j -> isIssueGithubDuplicate(githubIssueNumbers, j))
                 .collect(Collectors.toList());
     }
 
-    private boolean isUniqueIssue(final Set<Long> githubIssueNumbers, final JiraIssue jiraIssue) {
+    private boolean isIssueGithubDuplicate(final Set<Long> githubIssueNumbers, final JiraIssue jiraIssue) {
         return StringUtils.isBlank(jiraIssue.getGithubId())
                 || !StringUtils.isNumeric(jiraIssue.getGithubId())
                 || !githubIssueNumbers.contains(Long.parseLong(jiraIssue.getGithubId()));
