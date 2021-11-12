@@ -67,7 +67,7 @@ function LayoutPanel ({children, containerClassName, containerStyle, className, 
         style={style}
       >
         {children}
-        <div className={styles.panelMove}>
+        <div className={classNames(styles.panelMove, 'cp-billing-layout-panel-move')}>
           <Icon type="arrows-alt" />
         </div>
       </div>
@@ -118,10 +118,11 @@ class LayoutComponent extends React.Component {
           height: '100%',
           overflow: 'auto'
         }}
+        className="cp-billing-layout"
       >
         <GridLayout
           className="billing-layout"
-          draggableHandle={`.${styles.panelMove}`}
+          draggableHandle={`.${styles.panelMove} .cp-billing-layout-panel-move`}
           layout={panelsLayout}
           cols={gridStyles.gridCols}
           width={layoutDimensions.width - gridStyles.scrollBarSize}
