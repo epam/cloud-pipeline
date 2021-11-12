@@ -21,6 +21,7 @@ import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -51,9 +52,8 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
             final String emailToSubscribersTemplateName,
             @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
             @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle,
-            @Value("#{'${release.notes.agent.admin.emails}'.split(',')}")
-            final List<String> adminsEmailAddresses,
-            @Value("#{'${release.notes.agent.subscribers.emails}'.split(',')}")
+            @Value("#{'${release.notes.agent.admin.emails}'.split(','):}") final List<String> adminsEmailAddresses,
+            @Value("#{'${release.notes.agent.subscribers.emails}'.split(','):}")
             final List<String> subscribersEmailAddresses
     ) {
         this.templateEngine = templateEngine;
@@ -61,8 +61,14 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
         this.emailToSubscribersTemplateName = emailToSubscribersTemplateName;
         this.emailToAdminTitle = emailToAdminTitle;
         this.emailToSubscribersTitle = emailToSubscribersTitle;
-        this.adminsEmailAddresses = adminsEmailAddresses;
-        this.subscribersEmailAddresses = subscribersEmailAddresses;
+        this.adminsEmailAddresses = ListUtils.emptyIfNull(adminsEmailAddresses);
+        this.subscribersEmailAddresses = ListUtils.emptyIfNull(subscribersEmailAddresses);
+        validateProperties();
+    }
+
+    private void validateProperties() {
+        adminsEmailAddresses.forEach(e -> Assert.hasText(e, "Admin emails is not configured!"));
+        subscribersEmailAddresses.forEach(e -> Assert.hasText(e, "Subscriber emails is not configured!"));
     }
 
     @Override
