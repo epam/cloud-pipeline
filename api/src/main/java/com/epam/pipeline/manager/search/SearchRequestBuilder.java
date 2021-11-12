@@ -309,8 +309,9 @@ public class SearchRequestBuilder {
     private long buildSearchAfterNumericParameterValue(final Object value) {
         return Optional.ofNullable(value)
                 .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
                 .map(NumberUtils::toLong)
-                .orElse(NumberUtils.LONG_ZERO);
+                .orElse(Long.MAX_VALUE);
     }
 
     private String buildSearchAfterRegularParameterValue(final Object value) {
