@@ -153,8 +153,10 @@ class RangeDatePicker extends React.Component {
   }
 
   render () {
+    const stopClickPropagation = (event) => { event.stopPropagation(); };
+
     const content = (
-      <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
+      <div style={{display: 'flex', flexDirection: 'column', width: 280}} onClick={stopClickPropagation}>
         <div style={{
           display: 'flex',
           justifyContent: 'flex-start',
@@ -212,14 +214,20 @@ class RangeDatePicker extends React.Component {
           }}>
           <Button
             danger
-            onClick={() => this.resetRange()}
+            onClick={(e) => {
+              e.stopPropagation();
+              this.resetRange();
+            }}
             disabled={!this.props.from && !this.props.to}
           >
             Reset
           </Button>
           <Button
             type="primary"
-            onClick={() => this.handleRangeChange()}
+            onClick={(e) => {
+              e.stopPropagation();
+              this.handleRangeChange();
+            }}
             disabled={!this.modified}
           >
             Apply
@@ -229,9 +237,11 @@ class RangeDatePicker extends React.Component {
     );
     return (
       <Popover
+        onClick={stopClickPropagation}
         content={content}
         title={(
           <div
+            onClick={stopClickPropagation}
             style={{
               marginTop: 5,
               display: 'flex',

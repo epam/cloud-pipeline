@@ -54,7 +54,8 @@ class FilterControl extends React.Component {
     this.setState({selectedTags: value});
   };
 
-  resetFilter = () => {
+  resetFilter = (e) => {
+    e.stopPropagation();
     this.setState({
       selectedTags: []
     });
@@ -66,7 +67,8 @@ class FilterControl extends React.Component {
       selectedTags: value
     });
   }
-  handleApplyFilter = () => {
+  handleApplyFilter = (e) => {
+    e.stopPropagation();
     const {
       selectedTags = []
     } = this.state;
@@ -91,8 +93,9 @@ class FilterControl extends React.Component {
   render () {
     const {value = []} = this.props;
     const {selectedTags, popoverVisible} = this.state;
+    const stopClickPropagation = (event) => { event.stopPropagation(); };
     const content = (
-      <div style={{width: 280, padding: '8px 0px'}}>
+      <div style={{width: 280, padding: '8px 0px'}} onClick={stopClickPropagation}>
         <div style={{width: 280, display: 'flex', alignItems: 'center'}}>
           <Select
             value={selectedTags}
@@ -130,8 +133,10 @@ class FilterControl extends React.Component {
     return (
       <Popover
         placement="bottom"
+        onClick={stopClickPropagation}
         title={(
           <div
+            onClick={stopClickPropagation}
             style={{
               width: 280,
               marginTop: 5,

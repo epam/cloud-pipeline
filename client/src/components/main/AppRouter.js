@@ -136,7 +136,7 @@ export default class AppRouter extends React.Component {
             <Route path="/billing">
               <Billing>
                 <Switch>
-                  {/* <Route path="quotas"><BillingQuotas /></Route> */}
+                  {/* <Route path="/billing/quotas"><BillingQuotas /></Route> */}
                   <Route path="/billing/reports">
                     <BillingReports.default>
                       <Switch>
