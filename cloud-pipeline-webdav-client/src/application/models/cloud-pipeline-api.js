@@ -58,7 +58,7 @@ function wrapRequest (url, method, body, authToken, ignoreCertificateErrors = fa
   });
 }
 
-class RequestStorageAccessApi {
+class CloudPipelineApi {
   initialize() {
     let cfg;
     if (electron.remote === undefined) {
@@ -107,7 +107,19 @@ class RequestStorageAccessApi {
   }
 
   getStorages() {
-    return this.apiGetRequest('datastorage/available')
+    return new Promise((resolve, reject) => {
+      Promise.all([
+        this.apiGetRequest('datastorage/available'),
+        this.getHiddenStorages()
+      ])
+        .then(([storages, hiddenIds]) => {
+          storages.forEach(storage => {
+            storage.hidden = hiddenIds.includes(storage.id);
+          })
+          resolve(storages);
+        })
+        .catch(reject);
+    });
   }
 
   getMetadata(entities) {
@@ -135,7 +147,7 @@ class RequestStorageAccessApi {
                   .map(([key, value]) => ({[key]: value.value}))
                   .reduce((r, c) => ({...r, ...c}), {});
               });
-              resolve(storages);
+              resolve(storages.filter(o => !o.hidden));
             })
             .catch(reject);
         })
@@ -157,9 +169,31 @@ class RequestStorageAccessApi {
     });
   }
 
+  getHiddenStorages() {
+    return new Promise((resolve) => {
+      this.getPreference('ui.hidden.objects')
+        .then((preference) => {
+          if (preference) {
+            try {
+              const {data_storage: hiddenStorages = []} = JSON.parse(preference) || {};
+              resolve(hiddenStorages.map(o => Number(o)).filter(n => !Number.isNaN(n)))
+            } catch (e) {
+              resolve([]);
+            }
+          } else {
+            resolve([]);
+          }
+        })
+        .catch((e) => {
+          console.log(e.message);
+          resolve([]);
+        });
+    });
+  }
+
   requestDavAccess(identifier, duration) {
     return this.apiPostRequest('datastorage/davmount', {id: identifier, time: duration});
   }
 }
 
-export default new RequestStorageAccessApi();
+export default new CloudPipelineApi();
