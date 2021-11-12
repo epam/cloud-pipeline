@@ -49,6 +49,7 @@ public class ToolsParametersTest
     private final String invalidEndpoint = "8700";
     private final String launchCapabilities = "launch.capabilities";
     private static final String CUSTOM_CAPABILITIES_1_JSON = "/customCapabilities1.json";
+    private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private String prefInitialValue = "";
     private final String custCapability1 = "testCapability1";
     private final String custCapability2 = "testCapability2";
@@ -151,7 +152,7 @@ public class ToolsParametersTest
                 .settings()
                 .switchToPreferences()
                 .clearAndSetJsonToPreference(launchCapabilities,
-                        readResourceFully(CUSTOM_CAPABILITIES_1_JSON), true)
+                        readResourceFully(CUSTOM_CAPABILITIES_2_JSON), true)
                 .saveIfNeeded();
         logout();
         loginAs(user);
