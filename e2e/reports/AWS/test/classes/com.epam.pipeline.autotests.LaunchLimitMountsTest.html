@@ -23,7 +23,7 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">8</div>
+<div class="counter">9</div>
 <p>tests</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">20m20.65s</div>
+<div class="counter">22m8.27s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">87%</div>
+<div class="percent">88%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,28 +73,65 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683"></a>
-<h3 class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</h3>
+<a name="removeEntities"></a>
+<h3 class="failures">removeEntities</h3>
 <span class="code">
-<pre>java.lang.AssertionError: Message ' available storage(s). Checking mount options.' isn't contained in log expected [true] but found [false]
-	at org.testng.Assert.fail(Assert.java:93)
-	at org.testng.Assert.failNotEquals(Assert.java:512)
-	at org.testng.Assert.assertTrue(Assert.java:41)
-	at com.epam.pipeline.autotests.ao.LogAO.logContainsMessage(LogAO.java:413)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.rerunPipelineWithoutLimitMounts(LaunchLimitMountsTest.java:204)
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4603783922891284892')]]}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1636725466541.129.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1636725466541.129.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_7275-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 879). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.removeStorage(PipelinesLibraryAO.java:229)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.removeEntities(LaunchLimitMountsTest.java:115)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_7275-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 879). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '8e9fdc3f7415', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: bbbc0681ddaa8248b478e2428f714062
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 19 more
 </pre>
 </span>
 </div>
@@ -111,42 +148,47 @@
 </thead>
 <tr>
 <td class="success">allowToLaunchRunsWithoutMounts - 1590</td>
-<td>4m33.93s</td>
+<td>2m0.72s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>2m12.24s</td>
+<td>2m14.06s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>37.872s</td>
+<td>42.305s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>22.210s</td>
+<td>23.461s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>31.405s</td>
+<td>33.202s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>1m17.11s</td>
+<td class="failures">removeEntities</td>
+<td>1m28.75s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
+<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
+<td>3m46.09s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
 <td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>4m36.68s</td>
+<td>5m24.03s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>6m9.19s</td>
+<td>5m35.64s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -154,12 +196,12 @@
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 11558 from [11558]
-Returns latest run with runId 11559 from [11558, 11559]
-Returns latest run with runId 11559 from [11558, 11559]
-Returns latest run with runId 11560 from [11558, 11559, 11560]
-Returns latest run with runId 11561 from [11558, 11559, 11560, 11561]
-Returns latest run with runId 11562 from [11558, 11559, 11560, 11561, 11562]
+<pre>Returns latest run with runId 11744 from [11744]
+Returns latest run with runId 11745 from [11744, 11745]
+Returns latest run with runId 11745 from [11744, 11745]
+Returns latest run with runId 11749 from [11744, 11745, 11749]
+Returns latest run with runId 11750 from [11744, 11745, 11749, 11750]
+Returns latest run with runId 11751 from [11744, 11745, 11749, 11750, 11751]
 </pre>
 </span>
 </div>
@@ -171,7 +213,7 @@ Returns latest run with runId 11562 from [11558, 11559, 11560, 11561, 11562]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 11, 2021 1:47:50 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 12, 2021 3:58:46 PM</p>
 </div>
 </div>
 </body>
