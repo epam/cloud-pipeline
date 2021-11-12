@@ -668,7 +668,7 @@ export default `
 }
 @THEME .ant-pagination-jump-prev::after,
 @THEME .ant-pagination-jump-next::after {
-  color: @pagination-jump-color;
+  color: @application-color-faded;
 }
 @THEME .ant-pagination-jump-prev:focus::after,
 @THEME .ant-pagination-jump-next:focus::after,
@@ -691,7 +691,7 @@ export default `
 @THEME .ant-calendar-month-panel-header,
 @THEME .ant-calendar-year-panel-header,
 @THEME .ant-calendar-decade-panel-header {
-  border-bottom-color: @calendar-border-color;
+  border-color: @input-border;
 }
 @THEME .ant-calendar-month-panel,
 @THEME .ant-calendar-year-panel,
@@ -731,31 +731,27 @@ export default `
 }
 @THEME .ant-calendar-disabled-cell .ant-calendar-date {
   background-color: @btn-disabled-background-color;
-  color: @calendar-disabled-date-color;
+  color: @application-color-disabled;
 }
 @THEME .ant-calendar-disabled-cell .ant-calendar-date:hover {
   background-color: @btn-disabled-background-color;
-  color: @calendar-disabled-date-color;
+  color: @application-color-disabled;
 }
 @THEME .ant-calendar-footer {
-  border-top-color: @calendar-border-color;
+  border-color: @input-border;
 }
 @THEME .ant-calendar-picker:hover .ant-calendar-picker-input:not(.ant-input-disabled) {
   border-color: @primary-color;
 }
 @THEME .ant-calendar-picker-clear {
   background-color: @panel-background-color;
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 @THEME .ant-calendar-picker-icon::after,
-@THEME .ant-calendar-picker-clear:hover {
-  color: @calendar-icon-clear-hover-color;
-}
+@THEME .ant-calendar-picker-clear:hover,
 @THEME .ant-calendar-header a[role="button"],
 @THEME .ant-calendar-header .ant-calendar-next-month-btn,
-@THEME .ant-calendar-header .ant-calendar-next-year-btn {
-  color: @calendar-icon-clear-hover-color;
-}
+@THEME .ant-calendar-header .ant-calendar-next-year-btn,
 @THEME a[role="button"].ant-calendar-century-select,
 @THEME a[role="button"].ant-calendar-decade-select,
 @THEME a[role="button"].ant-calendar-month-select,
@@ -774,12 +770,12 @@ export default `
 @THEME .ant-calendar-year-panel-next-decade-cell .ant-calendar-year-panel-year,
 @THEME .ant-calendar-decade-panel-last-century-cell .ant-calendar-decade-panel-decade,
 @THEME .ant-calendar-decade-panel-next-century-cell .ant-calendar-decade-panel-decade {
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 @THEME .ant-calendar-month-panel-month:hover,
 @THEME .ant-calendar-year-panel-year:hover,
 @THEME .ant-calendar-decade-panel-decade:hover {
-  background: @calendar-bg-hover-color;
+  background-color: @calendar-bg-hover-color;
 }
 @THEME .ant-calendar-header a:hover {
   color: @primary-hover-color;
@@ -793,19 +789,45 @@ export default `
   background: @primary-color;
   color: @primary-text-color;
 }
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow {
+  border-right-color: @card-border-color;
+}
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after {
+  border-right-color: @card-background-color;
+}
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow {
+  border-left-color: @card-border-color;
+}
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after {
+  border-left-color: @card-background-color;
+}
+@THEME .ant-popover-placement-top > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-topLeft > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-topRight > .ant-popover-content > .ant-popover-arrow {
+  border-top-color: @card-border-color;
+}
+@THEME .ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-topLeft > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-topRight > .ant-popover-content > .ant-popover-arrow::after {
+  border-top-color: @card-background-color;
+}
 @THEME .ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow,
 @THEME .ant-popover-placement-bottomLeft > .ant-popover-content > .ant-popover-arrow,
 @THEME .ant-popover-placement-bottomRight > .ant-popover-content > .ant-popover-arrow {
-  border-bottom-color: @popover-arrow-color;
+  border-bottom-color: @card-border-color;
 }
 @THEME .ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow::after,
 @THEME .ant-popover-placement-bottomLeft > .ant-popover-content > .ant-popover-arrow::after,
 @THEME .ant-popover-placement-bottomRight > .ant-popover-content > .ant-popover-arrow::after {
-  border-bottom-color: @panel-background-color;
+  border-bottom-color: @card-background-color;
 }
 @THEME .ant-popover-inner {
-  background-color: @panel-background-color;
+  background-color: @card-background-color;
+  border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
+}
+@THEME .ant-popover-inner-content {
+  color: @application-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn {
   color: @btn-color;
@@ -830,7 +852,7 @@ export default `
   border-color: @border-color;
 }
 @THEME .ant-time-picker-icon::after {
-  color: @calendar-icon-clear-hover-color;
+  color: @application-color;
 }
 @THEME .ant-time-picker-panel-inner {
   background-color: @panel-background-color;
@@ -851,10 +873,10 @@ export default `
   color: @application-color;
 }
 @THEME .ant-time-picker-panel-clear-btn::after {
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 @THEME .ant-time-picker-panel-clear-btn:hover::after {
-  color: @calendar-icon-clear-hover-color;
+  color: @application-color;
 }
 @THEME .ant-time-picker-panel-combobox {
   color: @application-color;
@@ -1056,29 +1078,6 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
-@THEME @fn: @theme-transition-function;
-@ms: @theme-transition-duration;
-
-.cp-theme-transition-background {
-  transition: background-color @fn @ms;
-}
-@THEME .cp-theme-transition-color {
-  transition: color @fn @ms;
-}
-@THEME .cp-theme-transition {
-  transition: color @fn @ms, background-color @fn @ms;
-}
-@THEME .ant-layout-sider,
-@THEME .ant-layout,
-@THEME .ant-input,
-@THEME .cp-panel,
-@THEME .cp-panel-card,
-@THEME .cp-panel-card-actions-background,
-@THEME .cp-navigation-panel,
-@THEME .cp-navigation-panel .cp-navigation-menu-item {
-  .cp-theme-transition();
-}
-
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -1151,43 +1150,52 @@ export default `
 }
 
 @THEME .cp-runs-table-service-url-run {
-    background-color: @card-service-background-color;
+  background-color: @card-service-background-color;
 }
 @THEME .cp-runs-table-icon-green {
-    color: @run-icon-green;
+  color: @run-icon-green;
 }
 @THEME .cp-runs-table-icon-blue {
-    color: @run-icon-blue;
+  color: @run-icon-blue;
 }
 @THEME .cp-runs-table-icon-red {
-    color: @run-icon-red;
+  color: @run-icon-red;
 }
 @THEME .cp-runs-table-icon-yellow {
-    color: @run-icon-yellow;
+  color: @run-icon-yellow;
 }
-@THEME .cp-runs-filter-popover-container {
-    background-color: @card-background-color;
-    box-shadow: 0 1px 6px @card-hovered-shadow-color;
+@THEME .cp-filter-popover-container {
+  background-color: @card-background-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 @THEME .cp-runs-day-picker .DayPicker-Weekday {
-    color: @date-picker-weekday-color;
+  color: @application-color-faded;
 }
 @THEME .cp-runs-day-picker .DayPicker-Weekday abbr[title] {
-    text-decoration: none;
+  text-decoration: none;
 }
 @THEME .cp-runs-day-picker .DayPicker-Day--outside {
-    color: @date-picker-day-outside-color;
+  color: @application-color-faded;
 }
 @THEME .cp-runs-day-picker .DayPicker-Day {
-    border-color: @date-picker-day-border-color;
+  border-color: @date-picker-day-border-color;
 }
 @THEME .cp-runs-day-picker .DayPicker-Day:hover {
-    color: @primary-color;
+  color: @primary-color;
 }
 @THEME .cp-runs-day-picker .DayPicker-Day--today {
-    background-color: @date-picker-today-color;
-    color: @primary-text-color;
+  color: @primary-active-color;
 }
+@THEME .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+@THEME .DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
+  background-color: @primary-active-color;
+  color: @primary-text-color;
+  outline: none;
+}
+
 @THEME .cp-billing-menu {
   width: fit-content;
   margin-left: 0;
@@ -1270,10 +1278,10 @@ export default `
   color: @application-color;
 }
 @THEME .cp-billing-calendar-set-value-close {
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 @THEME .cp-billing-calendar-icon {
-  color: @calendar-icon-clear-hover-color;
+  color: @application-color;
 }
 @THEME .cp-billing-divider {
   border-left: 1px solid @border-color;
@@ -1445,14 +1453,45 @@ export default `
 }
 
 @THEME .cp-library-metadata-item-key {
-  background-color: @metadata-item-key-background-color;
-  border-bottom: 1px solid @metadata-item-key-border-color;
+  background-color: @tag-key-background-color;
+  border-bottom: 1px solid @tag-key-value-divider-color;
 }
 @THEME .cp-library-metadata-item-value {
-  background-color: @metadata-item-value-background-color;
+  background-color: @tag-value-background-color;
 }
 @THEME .cp-library-metadata-additional-actions {
   background-color: inherit;
+}
+
+@THEME .cp-node-tag {
+  border-color: @application-color-disabled;
+  color: @application-color;
+}
+@THEME .cp-node-tag.cp-node-tag-run,
+@THEME .cp-node-tag.cp-node-tag-pool,
+@THEME .cp-node-tag.cp-node-tag-master,
+@THEME .cp-node-tag.cp-node-tag-cp-role,
+@THEME .cp-node-tag.cp-node-tag-pipeline-info {
+  border-color: currentColor;
+}
+@THEME .cp-node-tag.cp-node-tag-run {
+  color: @color-green;
+  font-weight: bold;
+}
+@THEME .cp-node-tag.cp-node-tag-run:hover {
+  background-color: @color-green;
+  border-color: @color-green;
+  color: @primary-text-color;
+}
+@THEME .cp-node-tag.cp-node-tag-pipeline-info {
+  color: @application-color-faded;
+}
+@THEME .cp-node-tag.cp-node-tag-pool {
+  color: @color-violet;
+}
+@THEME .cp-node-tag.cp-node-tag-master,
+@THEME .cp-node-tag.cp-node-tag-cp-role {
+  color: @primary-color;
 }
 
 `;

@@ -803,7 +803,7 @@ tr.ant-table-expanded-row:hover {
 
 .ant-pagination-jump-prev::after,
 .ant-pagination-jump-next::after {
-  color: @pagination-jump-color;
+  color: @application-color-faded;
 }
 
 .ant-pagination-jump-prev:focus::after,
@@ -830,7 +830,7 @@ tr.ant-table-expanded-row:hover {
 .ant-calendar-month-panel-header,
 .ant-calendar-year-panel-header,
 .ant-calendar-decade-panel-header {
-  border-bottom-color: @calendar-border-color;
+  border-color: @input-border;
 }
 
 .ant-calendar-month-panel,
@@ -880,16 +880,16 @@ tr.ant-table-expanded-row:hover {
 
 .ant-calendar-disabled-cell .ant-calendar-date {
   background-color: @btn-disabled-background-color;
-  color: @calendar-disabled-date-color;
+  color: @application-color-disabled;
 }
 
 .ant-calendar-disabled-cell .ant-calendar-date:hover {
   background-color: @btn-disabled-background-color;
-  color: @calendar-disabled-date-color;
+  color: @application-color-disabled;
 }
 
 .ant-calendar-footer {
-  border-top-color: @calendar-border-color;
+  border-color: @input-border;
 }
 
 .ant-calendar-picker:hover .ant-calendar-picker-input:not(.ant-input-disabled) {
@@ -898,20 +898,14 @@ tr.ant-table-expanded-row:hover {
 
 .ant-calendar-picker-clear {
   background-color: @panel-background-color;
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 
 .ant-calendar-picker-icon::after,
-.ant-calendar-picker-clear:hover {
-  color: @calendar-icon-clear-hover-color;
-}
-
+.ant-calendar-picker-clear:hover,
 .ant-calendar-header a[role="button"],
 .ant-calendar-header .ant-calendar-next-month-btn,
-.ant-calendar-header .ant-calendar-next-year-btn {
-  color: @calendar-icon-clear-hover-color;
-}
-
+.ant-calendar-header .ant-calendar-next-year-btn,
 a[role="button"].ant-calendar-century-select,
 a[role="button"].ant-calendar-decade-select,
 a[role="button"].ant-calendar-month-select,
@@ -931,13 +925,13 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-calendar-year-panel-next-decade-cell .ant-calendar-year-panel-year,
 .ant-calendar-decade-panel-last-century-cell .ant-calendar-decade-panel-decade,
 .ant-calendar-decade-panel-next-century-cell .ant-calendar-decade-panel-decade {
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 
 .ant-calendar-month-panel-month:hover,
 .ant-calendar-year-panel-year:hover,
 .ant-calendar-decade-panel-decade:hover {
-  background: @calendar-bg-hover-color;
+  background-color: @calendar-bg-hover-color;
 }
 
 .ant-calendar-header a:hover {
@@ -954,21 +948,54 @@ a[role="button"].ant-calendar-year-panel-month-select {
   color: @primary-text-color;
 }
 
+.ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow {
+  border-right-color: @card-border-color;
+}
+
+.ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after {
+  border-right-color: @card-background-color;
+}
+
+.ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow {
+  border-left-color: @card-border-color;
+}
+
+.ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after {
+  border-left-color: @card-background-color;
+}
+
+.ant-popover-placement-top > .ant-popover-content > .ant-popover-arrow,
+.ant-popover-placement-topLeft > .ant-popover-content > .ant-popover-arrow,
+.ant-popover-placement-topRight > .ant-popover-content > .ant-popover-arrow {
+  border-top-color: @card-border-color;
+}
+
+.ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow::after,
+.ant-popover-placement-topLeft > .ant-popover-content > .ant-popover-arrow::after,
+.ant-popover-placement-topRight > .ant-popover-content > .ant-popover-arrow::after {
+  border-top-color: @card-background-color;
+}
+
 .ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow,
 .ant-popover-placement-bottomLeft > .ant-popover-content > .ant-popover-arrow,
 .ant-popover-placement-bottomRight > .ant-popover-content > .ant-popover-arrow {
-  border-bottom-color: @popover-arrow-color;
+  border-bottom-color: @card-border-color;
 }
 
 .ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow::after,
 .ant-popover-placement-bottomLeft > .ant-popover-content > .ant-popover-arrow::after,
 .ant-popover-placement-bottomRight > .ant-popover-content > .ant-popover-arrow::after {
-  border-bottom-color: @panel-background-color;
+  border-bottom-color: @card-background-color;
 }
 
 .ant-popover-inner {
-  background-color: @panel-background-color;
+  background-color: @card-background-color;
+  border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
+}
+
+.ant-popover-inner-content {
+  color: @application-color;
 }
 
 .ant-calendar .ant-calendar-ok-btn {
@@ -998,7 +1025,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-time-picker-icon::after {
-  color: @calendar-icon-clear-hover-color;
+  color: @application-color;
 }
 
 .ant-time-picker-panel-inner {
@@ -1025,11 +1052,11 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-time-picker-panel-clear-btn::after {
-  color: @calendar-icon-clear-color;
+  color: @application-color-faded;
 }
 
 .ant-time-picker-panel-clear-btn:hover::after {
-  color: @calendar-icon-clear-hover-color;
+  color: @application-color;
 }
 
 .ant-time-picker-panel-combobox {

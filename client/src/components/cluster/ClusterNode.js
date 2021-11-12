@@ -150,10 +150,9 @@ class ClusterNode extends Component {
     return generateNodeLabels(
       labels,
       {
-        className: parentStyles.nodeLabel,
+        className: classNames(parentStyles.nodeLabel, parentStyles.larger),
         onlyKnown: true,
         additionalStyle: {
-          fontSize: 'smaller',
           marginBottom: 2
         },
         location: this.props.router.location,
