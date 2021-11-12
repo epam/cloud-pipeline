@@ -22,14 +22,6 @@
   filter: none !important;
 }
 
-.template-row {
-  cursor: pointer;
-}
-
-.template-row td {
-  padding: 6px !important;
-}
-
 .settings-property {
   font-weight: bold;
   min-width: 100px;

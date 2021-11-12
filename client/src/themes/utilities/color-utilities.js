@@ -24,9 +24,9 @@ export function parseColor (color) {
   let b = 255;
   let a = 1.0;
   if (minifiedHexExec) {
-    const rr = hexExec[1][0];
-    const gg = hexExec[1][1];
-    const bb = hexExec[1][2];
+    const rr = minifiedHexExec[1][0];
+    const gg = minifiedHexExec[1][1];
+    const bb = minifiedHexExec[1][2];
     r = parseInt(`${rr}${rr}`, 16);
     g = parseInt(`${gg}${gg}`, 16);
     b = parseInt(`${bb}${bb}`, 16);

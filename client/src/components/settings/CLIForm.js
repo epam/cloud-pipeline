@@ -561,7 +561,7 @@ export default class CLIForm extends React.Component {
             bordered={false}
             size="medium"
             rowClassName={row => classNames(
-              styles.tab,
+              'cp-settings-sidebar-element',
               {'cp-table-element-selected': row.key === this.state.activeTab})
             }
             onRowClick={this.selectTab}

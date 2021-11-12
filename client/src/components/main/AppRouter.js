@@ -56,7 +56,7 @@ import AWSRegionsForm from '../settings/AWSRegionsForm';
 import SystemManagement from '../settings/system-management/system-management';
 import SystemEvents from '../settings/SystemEvents';
 import SystemDictionaries from '../settings/SystemDictionaries';
-import UserProfile from '../user-profile';
+import UserProfile from '../settings/user-profile';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';

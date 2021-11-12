@@ -209,7 +209,7 @@ export default class EmailNotificationSettings extends React.Component {
         rowKey="id"
         rowClassName={
           (template) => classNames(
-            styles.templateRow,
+            'cp-settings-sidebar-element',
             {
               'cp-table-element-disabled': !template.enabled,
               'cp-table-element-selected': template.id === this.state.selectedTemplateId

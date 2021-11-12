@@ -14,19 +14,26 @@
  *  limitations under the License.
  */
 
-@import "styles/theme.preview";
-@import "styles/layout";
-@import "styles/panels";
-@import "styles/navigation";
-@import "styles/dashboard";
-@import "styles/providers";
-@import "styles/animation";
-@import "styles/alerts";
-@import "styles/tools";
-@import "styles/runs";
-@import "styles/billing";
-@import "styles/search";
-@import "styles/versioned-storage";
-@import "styles/library";
-@import "styles/cluster";
-@import "styles/settings";
+import React from 'react';
+import SubSettings from '../sub-settings';
+import ProfileSettings from './profile';
+import AppearanceSettings from './appearance';
+
+const sections = [
+  {
+    key: 'profile',
+    title: 'PROFILE',
+    render: () => (<ProfileSettings />)
+  },
+  {
+    key: 'appearance',
+    title: 'APPEARANCE',
+    render: () => (<AppearanceSettings />)
+  }
+];
+
+export default function UserProfile () {
+  return (
+    <SubSettings sections={sections} />
+  );
+}

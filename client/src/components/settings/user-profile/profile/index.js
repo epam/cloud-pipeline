@@ -17,16 +17,15 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
-import roleModel from '../../utils/roleModel';
-import LoadingView from '../special/LoadingView';
-import Metadata from '../special/metadata/Metadata';
-import UserName from '../special/UserName';
+import roleModel from '../../../../utils/roleModel';
+import LoadingView from '../../../special/LoadingView';
+import Metadata from '../../../special/metadata/Metadata';
+import UserName from '../../../special/UserName';
 import {METADATA_KEY as LIMIT_MOUNTS_USER_PREFERENCE}
-from '../special/metadata/special/limit-mounts';
-import displayDate from '../../utils/displayDate';
-import styles from './user-profile.css';
-import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
-import AppearanceSettings from './appearance/appearance';
+from '../../../special/metadata/special/limit-mounts';
+import displayDate from '../../../../utils/displayDate';
+import styles from './profile.css';
+import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 
 function renderRoleName (role) {
   if (!role.predefined) {
@@ -41,7 +40,7 @@ function renderRoleName (role) {
 @roleModel.authenticationInfo
 @withCurrentUserAttributes()
 @observer
-class UserProfile extends React.Component {
+class ProfileSettings extends React.Component {
   componentDidMount () {
     this.props.currentUserAttributes.refresh(true);
   }
@@ -172,11 +171,9 @@ class UserProfile extends React.Component {
           restrictedKeys={userInfo.admin ? [] : metadataKeys}
           extraKeys={[LIMIT_MOUNTS_USER_PREFERENCE]}
         />
-        <div className={styles.divider}>{'\u00A0'}</div>
-        <AppearanceSettings />
       </div>
     );
   }
 }
 
-export default UserProfile;
+export default ProfileSettings;

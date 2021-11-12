@@ -254,7 +254,7 @@ class SystemDictionaries extends React.Component {
     );
     const getRowClassName = (group) => {
       return classNames(
-        styles.dictionaryRow,
+        'cp-settings-sidebar-element',
         {
           'cp-table-element-selected': (newDictionary && group.isNew) ||
             group.name === currentDictionary,
