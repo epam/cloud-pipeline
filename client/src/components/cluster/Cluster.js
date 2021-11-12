@@ -16,6 +16,7 @@
 
 import React from 'react';
 import moment from 'moment-timezone';
+import classNames from 'classnames';
 import {
   Alert,
   Button,
@@ -399,7 +400,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
     };
 
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-runs-filter-popover-container'
+      )}>
         <Input
           style={validationStyle()}
           placeholder={placeholder}

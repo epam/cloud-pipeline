@@ -15,11 +15,12 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import styles from './divider.css';
 
 export default function Divider () {
   return (
-    <div className={styles.divider}>
+    <div className={classNames(styles.divider, 'cp-billing-divider')}>
       {'\u00A0'}
     </div>
   );

@@ -937,7 +937,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-calendar-month-panel-month:hover,
 .ant-calendar-year-panel-year:hover,
 .ant-calendar-decade-panel-decade:hover {
-  background: @calendar-month-bg-hover-color;
+  background: @calendar-bg-hover-color;
 }
 
 .ant-calendar-header a:hover {
@@ -989,4 +989,66 @@ a[role="button"].ant-calendar-year-panel-month-select {
   color: @btn-color;
   background-color: @btn-primary-active;
   border-color: @btn-primary-active;
+}
+
+.ant-time-picker-input {
+  color: @application-color;
+  background-color: @panel-background-color;
+  border-color: @border-color;
+}
+
+.ant-time-picker-icon::after {
+  color: @calendar-icon-clear-hover-color;
+}
+
+.ant-time-picker-panel-inner {
+  background-color: @panel-background-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
+}
+
+.ant-time-picker-input:hover {
+  border-color: @primary-hover-color;
+}
+
+.ant-time-picker-input:focus {
+  border-color: @primary-hover-color;
+  box-shadow: 0 0 0 2px @input-shadow-color;
+}
+
+.ant-time-picker-panel-input-wrap {
+  border-bottom-color: @calendar-border-color;
+}
+
+.ant-time-picker-panel-input {
+  background-color: @panel-background-color;
+  color: @application-color;
+}
+
+.ant-time-picker-panel-clear-btn::after {
+  color: @calendar-icon-clear-color;
+}
+
+.ant-time-picker-panel-clear-btn:hover::after {
+  color: @calendar-icon-clear-hover-color;
+}
+
+.ant-time-picker-panel-combobox {
+  color: @application-color;
+}
+
+li.ant-time-picker-panel-select-option-selected {
+  background-color: @element-selected-background-color;
+}
+
+.ant-time-picker-panel-select li:hover {
+  background-color: @calendar-bg-hover-color;
+}
+
+.ant-time-picker-panel-select {
+  border-left-color: @calendar-border-color;
+}
+
+.ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected::after,
+.ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected:hover::after {
+  color: @primary-color;
 }
