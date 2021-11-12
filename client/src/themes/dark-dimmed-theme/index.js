@@ -119,6 +119,18 @@ export default {
     '@metadata-item-key-background-color': '@tag-key-background-color',
     '@metadata-item-key-border-color': '@tag-key-value-divider-color',
     '@metadata-item-value-background-color': 'fade(@tag-value-background-color, 30%)',
-    '@pagination-jump-color': 'fade(@application-color, 25%)'
+    '@pagination-jump-color': 'fade(@application-color, 25%)',
+    '@calendar-border-color': '@border-color',
+    '@calendar-disabled-date-color': '@application-color-disabled',
+    '@calendar-icon-clear-color': '@pagination-jump-color',
+    '@calendar-icon-clear-hover-color': 'fade(@calendar-icon-clear-color, 40%)',
+    '@calendar-bg-hover-color': '@element-hover-background-color',
+    '@cp-calendar-shadow-color': '@card-hovered-shadow-color',
+    '@cp-calendar-border-color': 'fade(@border-color, 10%)',
+    '@date-picker-weekday-color': '#8b9898',
+    '@date-picker-day-outside-color': '#dce0e0',
+    '@date-picker-day-border-color': '@calendar-border-color',
+    '@date-picker-today-color': '@primary-color',
+    '@popover-arrow-color': 'fade(@border-color, 20%)'
   }
 };

@@ -135,6 +135,18 @@ export default {
     '@pagination-jump-color': 'rgba(0, 0, 0, 0.25)',
     '@metadata-item-key-background-color': '@tag-key-background-color',
     '@metadata-item-key-border-color': '@tag-key-value-divider-color',
-    '@metadata-item-value-background-color': '@tag-value-background-color'
+    '@metadata-item-value-background-color': '@tag-value-background-color',
+    '@calendar-border-color': '#e9e9e9',
+    '@calendar-disabled-date-color': '#bcbcbc',
+    '@calendar-icon-clear-color': 'rgba(0, 0, 0, 0.25)',
+    '@calendar-icon-clear-hover-color': 'rgba(0, 0, 0, 0.43)',
+    '@calendar-bg-hover-color': '@element-hover-background-color',
+    '@cp-calendar-shadow-color': 'rgba(0, 0, 0, 0.1)',
+    '@cp-calendar-border-color': '#fafafa',
+    '@date-picker-weekday-color': '#8b9898',
+    '@date-picker-day-outside-color': '#dce0e0',
+    '@date-picker-day-border-color': '#eaecec',
+    '@date-picker-today-color': '@primary-color',
+    '@popover-arrow-color': 'rgba(217, 217, 217, 0.7)'
   }
 };
