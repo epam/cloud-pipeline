@@ -6,7 +6,8 @@ import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
-import requestStorageAccessApi from '../request-storage-access-api';
+import cloudPipelineAPI from '../cloud-pipeline-api';
+import {isDigit} from "@marshallofsound/webpack-asset-relocator-loader";
 
 axios.defaults.adapter = require('axios/lib/adapters/http');
 
@@ -105,89 +106,113 @@ class WebdavFileSystem extends FileSystem {
         error(e);
         utilities.rejectError(reject)(e);
       }
-      resolve();
+      this.updateStorages()
+        .then(resolve);
+    });
+  }
+
+  updateStorages(skip = false) {
+    if (skip) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      cloudPipelineAPI
+        .initialize()
+        .getStorages()
+        .then((storages) => {
+          this.storages = storages;
+          resolve();
+        });
     });
   }
 
   getDirectoryContents(directory) {
-    const checkStorageType = (contents, skip) => {
-      if (skip) {
-        return Promise.resolve(contents);
-      }
-      return new Promise((resolve) => {
-        const result = (contents || []).slice();
-        requestStorageAccessApi
-          .initialize()
-          .getStorages()
-          .then((allStorages) => {
+    return new Promise((resolve, reject) => {
+      this.updateStorages(directory && directory.length)
+        .then(() => {
+          const directoryCorrected = directory || '';
+          if (!this.webdavClient) {
+            error(`${this.appName || 'Cloud Data'} client was not initialized`);
+            reject(`${this.appName || 'Cloud Data'} client was not initialized`);
+          }
+          const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
+          log(`webdav: fetching directory "${directoryCorrected}" contents...`);
+          const formatStorageName = storage => (storage.name || '').replace(/-/g, '_');
+          const goBackItem = {
+            name: '..',
+            path: parentDirectory,
+            isDirectory: true,
+            isFile: false,
+            isSymbolicLink: false,
+            isBackLink: true,
+          };
+          const checkStorageType = (contents) => {
+            const result = (contents || []).slice();
+            const allStorages = (this.storages || []);
+            const isHiddenStorage = name => {
+              const currentStorage = allStorages.find(o => name && formatStorageName(o).toLowerCase() === name.toLowerCase());
+              return currentStorage && currentStorage.hidden;
+            }
+            let [p1, p2] = (directory || '').split('/');
+            const rootDir = p1 || p2;
+            if (isHiddenStorage(rootDir)) {
+              throw new Error('Access denied');
+            }
             const objectStorageNames = (allStorages || [])
               .filter(storage => !/^nfs$/i.test(storage.type))
-              .map(storage => (storage.name || '').replace(/-/g, '_'));
+              .map(formatStorageName);
             result.forEach(content => {
-              if (content.isDirectory && objectStorageNames.includes(content.name)) {
+              if (
+                (!directory || !directory.length) &&
+                content.isDirectory &&
+                objectStorageNames.includes(content.name)
+              ) {
                 content.isObjectStorage = true;
               }
             });
-          })
-          .catch(() => {})
-          .then(() => resolve(result));
-      });
-    };
-    return new Promise((resolve, reject) => {
-      const directoryCorrected = directory || '';
-      if (!this.webdavClient) {
-        error(`${this.appName || 'Cloud Data'} client was not initialized`);
-        reject(`${this.appName || 'Cloud Data'} client was not initialized`);
-      }
-      const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
-      log(`webdav: fetching directory "${directoryCorrected}" contents...`);
-      this.webdavClient.getDirectoryContents(directoryCorrected)
-        .then(contents => {
-          log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
-          contents.map(c => log(c.filename));
-          log('');
-          if (!directoryCorrected || !directoryCorrected.length) {
-          }
-          return checkStorageType(
-            (
-              directoryCorrected === ''
-                ? []
-                : [{
-                  name: '..',
-                  path: parentDirectory,
-                  isDirectory: true,
-                  isFile: false,
-                  isSymbolicLink: false,
-                  isBackLink: true,
-                }]
-            )
-              .concat(
-                contents
-                  .map(item => {
-                    const isDirectory = /^directory$/i.test(item.type);
-                    return {
-                      name: item.basename,
-                      path: item.filename,
-                      isDirectory,
-                      isFile: /^file/i.test(item.type),
-                      isSymbolicLink: false,
-                      size: isDirectory ? undefined : +(item.size),
-                      changed: moment(item.lastmod)
-                    };
-                  })
-              ),
-            directoryCorrected && directoryCorrected.length > 0
-          );
-        })
-        .then(resolve)
-        .catch(
-          utilities.rejectError(
-            reject,
-            directoryCorrected
-              ? undefined
-              : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you'
-          )
-        );
+            return result.filter(o => !o.isObjectStorage || !isHiddenStorage(o.name));
+          };
+          this.webdavClient.getDirectoryContents(directoryCorrected)
+            .then(contents => {
+              log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
+              contents.map(c => log(c.filename));
+              log('');
+              if (!directoryCorrected || !directoryCorrected.length) {
+              }
+              resolve(
+                checkStorageType(
+                  (
+                    directoryCorrected === ''
+                      ? []
+                      : [goBackItem]
+                  )
+                    .concat(
+                      contents
+                        .map(item => {
+                          const isDirectory = /^directory$/i.test(item.type);
+                          return {
+                            name: item.basename,
+                            path: item.filename,
+                            isDirectory,
+                            isFile: /^file/i.test(item.type),
+                            isSymbolicLink: false,
+                            size: isDirectory ? undefined : +(item.size),
+                            changed: moment(item.lastmod)
+                          };
+                        })
+                    )
+                )
+              );
+            })
+            .catch(
+              utilities.rejectError(
+                reject,
+                directoryCorrected
+                  ? undefined
+                  : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you'
+              )
+            );
+        });
     });
   }
   parsePath (directory, relativeToRoot = false) {
