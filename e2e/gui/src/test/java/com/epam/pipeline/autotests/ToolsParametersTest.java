@@ -25,21 +25,19 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.Set;
-
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toSet;
 
 public class ToolsParametersTest
         extends AbstractSeveralPipelineRunningTest
@@ -118,7 +116,7 @@ public class ToolsParametersTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .selectValue(RUN_CAPABILITIES, custCapability1)
-                .click(RUN_CAPABILITIES)
+                .click(DISK)
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .checkTooltipText(custCapability1, "Custom test capability 1")
                 .checkTooltipText(custCapability2, "Custom test capability 2")
@@ -129,7 +127,7 @@ public class ToolsParametersTest
                 .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
                 .waitForSshLink()
                 .click(taskWithName("Console"))
-                .waitForLog("/start.sh")
+                .waitForLog("start.sh")
                 .ensure(log(), matchText(format("Running '%s' commands:", custCapability1)))
                 .ensure(log(), matchText(format("Running '%s' commands:", custCapability2)))
                 .ensure(log(), matchText( "Command: 'echo testLine1'"))
@@ -160,7 +158,7 @@ public class ToolsParametersTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .selectValue(RUN_CAPABILITIES, custCapability1)
-                .click(RUN_CAPABILITIES)
+                .click(DISK)
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .launch(this)
                 .showLog(getLastRunId())
