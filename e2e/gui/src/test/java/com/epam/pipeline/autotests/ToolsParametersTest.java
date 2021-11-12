@@ -66,6 +66,8 @@ public class ToolsParametersTest
 
     @AfterClass(alwaysRun = true)
     public void fallBackToDefaultToolSettings() {
+        logoutIfNeeded();
+        loginAs(admin);
         open(C.ROOT_ADDRESS);
         fallbackToToolDefaultState(registry, group, tool);
         navigationMenu()
