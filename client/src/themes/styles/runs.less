@@ -17,51 +17,61 @@
 @import "variables";
 
 .cp-runs-table-service-url-run {
-    background-color: @card-service-background-color;
+  background-color: @card-service-background-color;
 }
 
 .cp-runs-table-icon-green {
-    color: @run-icon-green;
+  color: @run-icon-green;
 }
 
 .cp-runs-table-icon-blue {
-    color: @run-icon-blue;
+  color: @run-icon-blue;
 }
 
 .cp-runs-table-icon-red {
-    color: @run-icon-red;
+  color: @run-icon-red;
 }
 
 .cp-runs-table-icon-yellow {
-    color: @run-icon-yellow;
+  color: @run-icon-yellow;
 }
 
-.cp-runs-filter-popover-container {
-    background-color: @card-background-color;
-    box-shadow: 0 1px 6px @card-hovered-shadow-color;
+.cp-filter-popover-container {
+  background-color: @card-background-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 
 .cp-runs-day-picker .DayPicker-Weekday {
-    color: @date-picker-weekday-color;
+  color: @application-color-faded;
 }
 
 .cp-runs-day-picker .DayPicker-Weekday abbr[title] {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 .cp-runs-day-picker .DayPicker-Day--outside {
-    color: @date-picker-day-outside-color;
+  color: @application-color-faded;
 }
 
 .cp-runs-day-picker .DayPicker-Day {
-    border-color: @date-picker-day-border-color;
+  border-color: @date-picker-day-border-color;
 }
 
 .cp-runs-day-picker .DayPicker-Day:hover {
-    color: @primary-color;
+  color: @primary-color;
 }
 
 .cp-runs-day-picker .DayPicker-Day--today {
-    background-color: @date-picker-today-color;
-    color: @primary-text-color;
+  color: @primary-active-color;
+}
+
+.DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+
+.DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
+  background-color: @primary-active-color;
+  color: @primary-text-color;
+  outline: none;
 }

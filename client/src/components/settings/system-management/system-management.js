@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Table} from 'antd';
+import classNames from 'classnames';
 import {SplitPanel} from '../../special/splitPanel';
 import SystemLogs from './system-logs';
 import NATGetaway from './nat-getaway-configuration/nat-getaway-configuration';
@@ -51,9 +52,10 @@ export default class SystemManagement extends React.Component {
         dataSource={this.systemManagementItems}
         columns={columns}
         rowClassName={
-          (item) => item.title === this.state.contentToShow
-            ? `${styles.itemRow} ${styles.selected}`
-            : styles.itemRow
+          (item) => classNames(
+            styles.itemRow,
+            {'cp-table-element-selected': item.title === this.state.contentToShow}
+          )
         }
         onRowClick={(item) => this.showSelectedItem(item.title)} />
     );

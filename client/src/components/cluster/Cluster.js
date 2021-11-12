@@ -402,7 +402,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const filterDropdown = (
       <div className={classNames(
         styles.filterPopoverContainer,
-        'cp-runs-filter-popover-container'
+        'cp-filter-popover-container'
       )}>
         <Input
           style={validationStyle()}

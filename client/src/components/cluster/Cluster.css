@@ -110,40 +110,16 @@ thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
 }
 
 .node-label {
-  border: 1px solid #ccc;
-  color: #888;
+  border: 1px solid transparent;
   border-radius: 4px;
   margin-left: 1px;
   padding: 1px 3px;
-  font-size: xx-small;
+  font-size: 0.75em;
   white-space: nowrap;
 }
 
-.node-label[data-run="true"] {
-  color: #09ab5a;
-  border-color: #09ab5a;
-  font-size: x-small;
-  font-weight: bold;
-}
-
-.node-label[data-run="true"]:hover {
-  background-color: #09ab5a;
-  color: #fff;
-  font-weight: normal;
-}
-
-.node-label[data-master="true"],
-.node-label[data-cloud-pipeline-role="true"] {
-  color: #0f83d8;
-  border-color: #0f83d8;
-  font-size: x-small;
-}
-
-.node-label[data-pool="true"] {
-  color: #8d09ab;
-  border-color: #8d09ab;
-  font-size: x-small;
-  font-weight: bold;
+.node-label.larger {
+  font-size: 0.8em;
 }
 
 .filter-popover-container {

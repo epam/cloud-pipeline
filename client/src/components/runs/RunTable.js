@@ -297,7 +297,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const filterDropdown = (
       <div className={classNames(
         styles.filterPopoverContainer,
-        'cp-runs-filter-popover-container'
+        'cp-filter-popover-container'
       )} style={{width: 120}}>
         <Row>
           <div style={{maxHeight: 400, overflowY: 'auto'}}>
@@ -357,7 +357,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const filterDropdown = (
       <div className={classNames(
         styles.filterPopoverContainer,
-        'cp-runs-filter-popover-container'
+        'cp-filter-popover-container'
       )}>
         <DayPicker
           className={classNames(styles.datePicker, 'cp-runs-day-picker')}
@@ -419,7 +419,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       const filterDropdown = (
         <div className={classNames(
           styles.filterPopoverContainer,
-          'cp-runs-filter-popover-container'
+          'cp-filter-popover-container'
         )}>
           <Row>
             <Input.Search
@@ -516,7 +516,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       const filterDropdown = (
         <div className={classNames(
           styles.filterPopoverContainer,
-          'cp-runs-filter-popover-container'
+          'cp-filter-popover-container'
         )}>
           <Row>
             <Input.Search
@@ -577,7 +577,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       const filterDropdown = (
         <div className={classNames(
           styles.filterPopoverContainer,
-          'cp-runs-filter-popover-container'
+          'cp-filter-popover-container'
         )} style={{width: 300}}>
           <UserAutoComplete
             placeholder="Owners"
@@ -610,7 +610,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const filterDropdown = (
       <div className={classNames(
         styles.filterPopoverContainer,
-        'cp-runs-filter-popover-container'
+        'cp-filter-popover-container'
       )}>
         <Input
           placeholder={placeholder}

@@ -21,8 +21,3 @@
 .item-row > td {
   padding: 8px 4px !important;
 }
-
-.item-row.selected {
-  background-color: #ebf6fd;
-  font-weight: bold;
-}
