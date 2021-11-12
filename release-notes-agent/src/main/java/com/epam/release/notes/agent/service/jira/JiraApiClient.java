@@ -44,7 +44,7 @@ public class JiraApiClient implements RestApiClient {
         this.jiraApi = createApi(JiraApi.class,
             jiraBaseUrl,
             chain -> chain.proceed(chain.request().newBuilder()
-                    .header(TOKEN_HEADER, format("Bearer %s", jiraToken))
+                    .header(TOKEN_HEADER, jiraToken)
                     .header(ACCEPT_HEADER_TITLE, ACCEPT_HEADER)
                     .build()),
             connectTimeout,
