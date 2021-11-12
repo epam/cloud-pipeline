@@ -16,7 +16,7 @@
 package com.epam.release.notes.agent.configuration;
 
 import com.epam.release.notes.agent.cli.CLIApplicationRunner;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.context.annotation.Bean;
@@ -26,9 +26,9 @@ import org.springframework.shell.ExitRequest;
 import org.springframework.shell.Shell;
 
 @Configuration
+@AllArgsConstructor
 public class CommandLineRunnerConfiguration {
 
-    @Autowired
     private Shell shell;
 
     @Bean
