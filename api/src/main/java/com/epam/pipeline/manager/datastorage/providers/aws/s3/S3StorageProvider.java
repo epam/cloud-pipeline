@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -51,8 +52,10 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
@@ -108,7 +111,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         final Map<String, String> tags = new HashMap<>();
         final CloudRegionsConfiguration configuration = preferenceManager.getObjectPreferenceAs(
                 SystemPreferences.CLUSTER_NETWORKS_CONFIG, new TypeReference<CloudRegionsConfiguration>() {});
-        if (configuration != null && !CollectionUtils.isEmpty(configuration.getTags())) {
+        if (configuration != null && !MapUtils.isEmpty(configuration.getTags())) {
             tags.putAll(configuration.getTags());
         }
 
@@ -156,6 +159,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public void restoreFileVersion(S3bucketDataStorage dataStorage, String path, String version) {
+        validateFilePathMatchingMasks(dataStorage, path);
         getS3Helper(dataStorage).restoreFileVersion(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version);
     }
@@ -163,12 +167,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public DataStorageItemContent getFile(S3bucketDataStorage dataStorage, String path,
                                           String version, Long maxDownloadSize) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).getFileContent(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version, maxDownloadSize);
     }
 
     @Override
     public DataStorageStreamingContent getStream(S3bucketDataStorage dataStorage, String path, String version) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).getFileStream(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version);
     }
@@ -177,15 +183,26 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
-        return getS3Helper(dataStorage).getItems(datastoragePath.getRoot(),
-                ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()));
+        if (StringUtils.hasText(path)) {
+            validateFolderPathMatchingMasks(dataStorage, path);
+        } else if (CollectionUtils.isNotEmpty(dataStorage.getLinkingMasks())){
+            return getS3Helper(dataStorage)
+                .getItems(datastoragePath.getRoot(),
+                          ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
+                          ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
+                          dataStorage.getLinkingMasks());
+        }
+        return getS3Helper(dataStorage)
+            .getItems(datastoragePath.getRoot(),
+                      ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
+                      ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()), null);
     }
 
     @Override
     public Optional<DataStorageFile> findFile(final S3bucketDataStorage dataStorage,
                                               final String path,
                                               final String version) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage)
                 .findFile(dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), version);
     }
@@ -194,6 +211,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public DataStorageDownloadFileUrl generateDownloadURL(S3bucketDataStorage dataStorage,
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
+        validateFilePathMatchingMasks(dataStorage, path);
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
         return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
@@ -201,6 +219,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
+        validateFilePathMatchingMasks(dataStorage, path);
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
         return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
@@ -216,6 +235,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path,
             byte[] contents) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFile(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), contents,
                 authManager.getAuthorizedUser());
@@ -224,12 +244,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path, InputStream dataStream)
         throws DataStorageException {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFile(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
                 dataStream, authManager.getAuthorizedUser());
     }
 
     @Override public DataStorageFolder createFolder(S3bucketDataStorage dataStorage, String path) {
+        validateFolderPathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFolder(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path));
     }
@@ -237,12 +259,22 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public Stream<DataStorageFile> listDataStorageFiles(final S3bucketDataStorage dataStorage,
                                                         final String path) {
-        return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
-                ProviderUtils.buildPath(dataStorage, path));
+        if (StringUtils.hasText(path)) {
+            validateFolderPathMatchingMasks(dataStorage, path);
+            return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
+                                                                 ProviderUtils.buildPath(dataStorage, path));
+        } else {
+            final Set<String> fileMasks = S3Helper.extractFileMasks(dataStorage.getLinkingMasks());
+            final Set<String> folderMasks = S3Helper.extractFolderMasks(dataStorage.getLinkingMasks());
+            return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
+                                                                 ProviderUtils.buildPath(dataStorage, path))
+                .filter(item -> dataStorageItemMatching(item, fileMasks, folderMasks));
+        }
     }
 
     @Override
     public void deleteFile(S3bucketDataStorage dataStorage, String path, String version, Boolean totally) {
+        validateFilePathMatchingMasks(dataStorage, path);
         getS3Helper(dataStorage).deleteFile(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version,
                 totally && dataStorage.isVersioningEnabled());
@@ -250,6 +282,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public void deleteFolder(S3bucketDataStorage dataStorage, String path, Boolean totally) {
+        validateFolderPathMatchingMasks(dataStorage, path);
         getS3Helper(dataStorage)
                 .deleteFolder(dataStorage.getRoot(),
                         ProviderUtils.buildPath(dataStorage, path), totally && dataStorage.isVersioningEnabled());
@@ -258,6 +291,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override public DataStorageFile moveFile(S3bucketDataStorage dataStorage, String oldPath,
             String newPath) throws DataStorageException {
+        validateFilePathMatchingMasks(dataStorage, oldPath);
+        validateFilePathMatchingMasks(dataStorage, newPath);
         return getS3Helper(dataStorage).moveFile(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
@@ -265,6 +300,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override public DataStorageFolder moveFolder(S3bucketDataStorage dataStorage, String oldPath,
             String newPath) throws DataStorageException {
+        validateFolderPathMatchingMasks(dataStorage, oldPath);
+        validateFolderPathMatchingMasks(dataStorage, newPath);
         return getS3Helper(dataStorage).moveFolder(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
@@ -308,12 +345,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public Map<String, String> updateObjectTags(S3bucketDataStorage dataStorage, String path, Map<String, String> tags,
                                  String version) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).updateObjectTags(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), tags, version);
     }
 
     @Override
     public Map<String, String> listObjectTags(S3bucketDataStorage dataStorage, String path, String version) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).listObjectTags(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version);
     }
@@ -321,6 +360,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public Map<String, String> deleteObjectTags(S3bucketDataStorage dataStorage, String path, Set<String> tagsToDelete,
                                                 String version) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).deleteObjectTags(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), tagsToDelete, version);
     }
@@ -338,6 +378,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
+        validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).getDataSize(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
     }
@@ -374,5 +415,29 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         action.setWriteVersion(useVersion);
         return stsCredentialsGenerator
                 .generate(Collections.singletonList(action), Collections.singletonList(dataStorage));
+    }
+
+    private void validateFilePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        validatePathMatchingMasks(dataStorage, path);
+    }
+
+    private void validateFolderPathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        Assert.state(StringUtils.hasText(path), "Path for normalization shall be specified");
+        final String folderPath = path.endsWith("/") ? path : path + "/";
+        validatePathMatchingMasks(dataStorage, folderPath);
+    }
+
+    private void validatePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        final Set<String> linkingMasks = dataStorage.getLinkingMasks();
+        if (CollectionUtils.isNotEmpty(linkingMasks)) {
+            Assert.isTrue(S3Helper.matchingMasks(path, linkingMasks), "Requested operation violates masking rules!");
+        }
+    }
+
+    private boolean dataStorageItemMatching(final DataStorageFile item, final Set<String> fileMasks,
+                                            final Set<String> folderMasks) {
+        return S3Helper.matchingMasks(item.getPath(), item.getType().equals(DataStorageItemType.Folder)
+                                                      ? folderMasks
+                                                      : fileMasks);
     }
 }
