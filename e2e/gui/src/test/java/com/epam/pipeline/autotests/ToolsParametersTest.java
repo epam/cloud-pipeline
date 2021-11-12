@@ -128,7 +128,7 @@ public class ToolsParametersTest
                 .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
                 .waitForSshLink()
                 .click(taskWithName("Console"))
-                .sleep(5, SECONDS)
+                .sleep(20, SECONDS)
                 .logMessages()
                 .collect(toSet());
         runsMenu()
