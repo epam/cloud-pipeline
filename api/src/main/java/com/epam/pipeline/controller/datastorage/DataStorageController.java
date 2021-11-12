@@ -189,7 +189,8 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID) final String identifier) {
+    public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID)
+                                                                          final String identifier) {
         return Result.success(dataStorageApiService.loadAllByPath(identifier));
     }
 

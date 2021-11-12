@@ -376,6 +376,8 @@ public class DataStorageManager implements SecuredEntityManager {
                                                                  load(linkedStorageId)))
                 .orElseGet(() -> dataStorageFactory.convertToDataStorage(dataStorageVO, storageRegion.getProvider()));
 
+        validateLinkingMasksStructure(dataStorage);
+
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
@@ -1219,6 +1221,29 @@ public class DataStorageManager implements SecuredEntityManager {
                 metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
         Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
+    }
+
+    /**
+     * This method compares linking masks of new storage and its source one.
+     * If any masks are assigned to the source entity - new masks must be the subset of them,
+     * otherwise, they might be used to bypass the source storage restrictions.
+     *
+     * @param newStorage storage converted from VO
+     */
+    private void validateLinkingMasksStructure(final AbstractDataStorage newStorage) {
+        final AbstractDataStorage sourceStorage = newStorage.getSourceStorage();
+        if (sourceStorage != null) {
+            final Set<String> sourceStorageMasks = sourceStorage.getLinkingMasks();
+            if (CollectionUtils.isNotEmpty(sourceStorageMasks)) {
+                final Set<String> newStorageMasks = newStorage.getLinkingMasks();
+                if (CollectionUtils.isEmpty(newStorageMasks)) {
+                    newStorage.setLinkingMasks(sourceStorageMasks);
+                } else if (!sourceStorageMasks.containsAll(newStorageMasks)) {
+                    throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE));
+                }
+            }
+        }
     }
 
     private AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
