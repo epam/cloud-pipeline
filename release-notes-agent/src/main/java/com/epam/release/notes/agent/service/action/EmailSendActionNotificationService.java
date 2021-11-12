@@ -26,6 +26,10 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.util.List;
+import java.util.Optional;
+
+import static java.lang.String.format;
 
 @Slf4j
 @Service
@@ -50,9 +54,12 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
         final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         final MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
         try {
-            helper.setSubject(emailContent.getTitle());
-            helper.setText(emailContent.getBody(), true);
-            helper.setTo(emailContent.getRecipients().toArray(new String[0]));
+            helper.setSubject(getEmailContent(emailContent.getTitle(), "title"));
+            helper.setText(getEmailContent(emailContent.getBody(), "body"), true);
+            helper.setTo(Optional.ofNullable(emailContent.getRecipients())
+                    .map(recipients -> recipients.toArray(new String[0]))
+                    .orElseThrow(() -> new IllegalArgumentException("Recipients are not specified. " +
+                            "Email could not be sent.")));
         } catch (MessagingException e) {
             throw new EmailException("Exception was thrown while trying to populate a MimeMessage.", e);
         }
@@ -62,5 +69,11 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
     @Override
     public Action getServiceAction() {
         return Action.POST;
+    }
+
+    private String getEmailContent(final String content, final String contentName) {
+        return Optional.ofNullable(content)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        format("Email content %s is not specified. Email could not be sent.", contentName)));
     }
 }
