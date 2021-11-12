@@ -28,8 +28,10 @@ import org.testng.annotations.Test;
 import java.util.Set;
 
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -120,23 +122,18 @@ public class ToolsParametersTest
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .checkTooltipText(custCapability1, "Custom test capability 1")
                 .checkTooltipText(custCapability2, "Custom test capability 2")
-                .launch(this);
-        final Set<String> logMess = runsMenu()
+                .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
                 .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
                 .waitForSshLink()
                 .click(taskWithName("Console"))
-                .sleep(20, SECONDS)
-                .logMessages()
-                .collect(toSet());
-        runsMenu()
-                .showLog(getLastRunId())
-                .logContainsMessage(logMess, format("Running '%s' commands:", custCapability1))
-                .logContainsMessage(logMess, "Command: 'echo testLine1'")
-                .logContainsMessage(logMess, format("Running '%s' commands:", custCapability2))
-                .logContainsMessage(logMess, "Command: 'echo testLine2'")
+                .waitForLog("/start.sh")
+                .ensure(log(), matchText(format("Running '%s' commands:", custCapability1)))
+                .ensure(log(), matchText(format("Running '%s' commands:", custCapability2)))
+                .ensure(log(), matchText( "Command: 'echo testLine1'"))
+                .ensure(log(), matchText( "Command: 'echo testLine2'"))
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute("ls")
