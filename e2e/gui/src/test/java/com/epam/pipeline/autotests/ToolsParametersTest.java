@@ -77,6 +77,8 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = {"EPMCMBIBPC-502"})
     public void runToolThatHaveNoNginxEndpoint() {
+        logoutIfNeeded();
+        loginAs(admin);
         tools()
                 .perform(registry, group, tool, tool ->
                         tool.settings()
@@ -97,6 +99,8 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = {"2234"})
     public void customCapabilitiesImplementation() {
+        logoutIfNeeded();
+        loginAs(admin);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -141,6 +145,8 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = {"2295"})
     public void customCapabilitiesWithConfiguredJobParameters() {
+        logoutIfNeeded();
+        loginAs(admin);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
