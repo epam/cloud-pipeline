@@ -12,7 +12,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
@@ -28,9 +27,8 @@ public class EmailTemplateNotificationServiceTest {
     private static final String NEW_MINOR_VERSION = "55.55.55.56.a";
     private static final String NEW_MAJOR_VERSION = "56.55.55.55.a";
     private static final String RESOLVER_PREFIX = "mail/";
-    private static final String RESOLVER_SUFFIX = ".html";
-    private static final String EMAIL_TO_ADMIN_TEMPLATE_NAME = "email-release-notification-to-admin";
-    private static final String EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME = "email-release-notification-to-subscribers";
+    private static final String EMAIL_TO_ADMIN_TEMPLATE_NAME = "email-release-notification-to-admin.html";
+    private static final String EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME = "email-release-notification-to-subscribers.html";
     private static final String EMAIL_TO_ADMIN_TITLE = "email to admin";
     private static final String EMAIL_TO_SUBSCRIBERS_TITLE = "email to subscribers";
     private static final String ONE = "1";
@@ -38,6 +36,8 @@ public class EmailTemplateNotificationServiceTest {
     private static final String SMTH = "smth";
     private static final String SMTH_ELSE = "smth2";
     private static final String URL = "https://github.com";
+    private static final List<String> ADMIN_MAILS = Arrays.asList("admin1@mail.com", "admin2@mail.com");
+    private static final List<String> SUBSCRIBERS_MAILS = Arrays.asList("subscriber1@mail.com", "subscriber2@mail.com");
     private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY = "<!DOCTYPE html>\r\n" +
             "<html>\r\n    <head>\r\n        \r\n" +
             "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n" +
@@ -77,15 +77,13 @@ public class EmailTemplateNotificationServiceTest {
     public static void populateApplicationVersionService() {
         final AbstractConfigurableTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
         templateResolver.setPrefix(RESOLVER_PREFIX);
-        templateResolver.setSuffix(RESOLVER_SUFFIX);
-        templateResolver.setTemplateMode(TemplateMode.HTML);
         templateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);
         TemplateEngine templateEngine = new TemplateEngine();
         templateEngine.addTemplateResolver(templateResolver);
 
         emailTemplateNotificationService = new EmailTemplateNotificationService(templateEngine,
                 EMAIL_TO_ADMIN_TEMPLATE_NAME, EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME,
-                EMAIL_TO_ADMIN_TITLE, EMAIL_TO_SUBSCRIBERS_TITLE
+                EMAIL_TO_ADMIN_TITLE, EMAIL_TO_SUBSCRIBERS_TITLE, ADMIN_MAILS, SUBSCRIBERS_MAILS
         );
     }
 
@@ -106,6 +104,8 @@ public class EmailTemplateNotificationServiceTest {
         final EmailContent emailContent = emailTemplateNotificationService.populate(versionStatusInfo);
         Assertions.assertEquals(expectedEmailBody, emailContent.getBody());
         Assertions.assertEquals(expectedEmailTitle, emailContent.getTitle());
+        Assertions.assertNotNull(emailContent.getRecipients());
+        Assertions.assertNotEquals(Collections.emptyList(), emailContent.getRecipients());
     }
 
     @Test

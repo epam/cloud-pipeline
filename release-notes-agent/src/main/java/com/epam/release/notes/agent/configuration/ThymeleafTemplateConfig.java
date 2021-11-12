@@ -20,7 +20,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring5.SpringTemplateEngine;
-import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
@@ -29,17 +28,13 @@ import org.thymeleaf.templateresolver.FileTemplateResolver;
 public class ThymeleafTemplateConfig {
 
     private static final String EMAIL_TEMPLATE_ENCODING = "UTF-8";
-    private static final String DOT = ".";
     private static final String CLASS_LOADER_RESOLVER_PREFIX = "mail/";
 
     private final String fileResolverPrefix;
-    private final String resolverSuffix;
 
-    public ThymeleafTemplateConfig(
-            @Value("${release.notes.agent.path.to.system.folder.with.templates}") final String fileResolverPrefix,
-            @Value("${release.notes.agent.type.of.template.files}") final String resolverSuffix) {
+    public ThymeleafTemplateConfig(@Value("${release.notes.agent.path.to.system.folder.with.templates}")
+                                   final String fileResolverPrefix) {
         this.fileResolverPrefix = fileResolverPrefix;
-        this.resolverSuffix = resolverSuffix;
     }
 
     @Bean
@@ -59,9 +54,6 @@ public class ThymeleafTemplateConfig {
             templateResolver = new FileTemplateResolver();
             templateResolver.setPrefix(fileResolverPrefix);
         }
-        templateResolver.setPrefix(fileResolverPrefix);
-        templateResolver.setSuffix(DOT + resolverSuffix);
-        templateResolver.setTemplateMode(TemplateMode.parse(resolverSuffix));
         templateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);
         return templateResolver;
     }

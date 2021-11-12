@@ -18,6 +18,7 @@ import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
 import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -40,6 +41,8 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private final String emailToSubscribersTemplateName;
     private final String emailToAdminTitle;
     private final String emailToSubscribersTitle;
+    private final List<String> adminsEmailAddresses;
+    private final List<String> subscribersEmailAddresses;
 
     public EmailTemplateNotificationService(
             final TemplateEngine templateEngine,
@@ -47,13 +50,19 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
             @Value("${release.notes.agent.name.of.subscribers.email.template}")
             final String emailToSubscribersTemplateName,
             @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
-            @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle
+            @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle,
+            @Value("#{'${release.notes.agent.admin.emails}'.split(',')}")
+            final List<String> adminsEmailAddresses,
+            @Value("#{'${release.notes.agent.subscribers.emails}'.split(',')}")
+            final List<String> subscribersEmailAddresses
     ) {
         this.templateEngine = templateEngine;
         this.emailToAdminTemplateName = emailToAdminTemplateName;
         this.emailToSubscribersTemplateName = emailToSubscribersTemplateName;
         this.emailToAdminTitle = emailToAdminTitle;
         this.emailToSubscribersTitle = emailToSubscribersTitle;
+        this.adminsEmailAddresses = adminsEmailAddresses;
+        this.subscribersEmailAddresses = subscribersEmailAddresses;
     }
 
     @Override
@@ -62,20 +71,24 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
         switch (versionStatusInfo.getVersionStatus()) {
             case MAJOR_CHANGED:
                 addVersionsToContext(versionStatusInfo.getOldVersion(), versionStatusInfo.getNewVersion(), context);
-                return createEmailContent(context, emailToAdminTitle, emailToAdminTemplateName);
+                return createEmailContent(context, emailToAdminTitle, emailToAdminTemplateName,
+                        ListUtils.emptyIfNull(adminsEmailAddresses));
             case MINOR_CHANGED:
                 addVersionsToContext(versionStatusInfo.getOldVersion(), versionStatusInfo.getNewVersion(), context);
                 addIssuesToContext(versionStatusInfo.getJiraIssues(), versionStatusInfo.getGitHubIssues(), context);
-                return createEmailContent(context, emailToSubscribersTitle, emailToSubscribersTemplateName);
+                return createEmailContent(context, emailToSubscribersTitle, emailToSubscribersTemplateName,
+                        ListUtils.emptyIfNull(subscribersEmailAddresses));
             default:
                 throw new IllegalStateException(EXCEPTION_MESSAGE);
         }
     }
 
-    private EmailContent createEmailContent(final Context context, final String emailTitle, final String templateName) {
+    private EmailContent createEmailContent(final Context context, final String emailTitle,
+                                            final String templateName, final List<String> recipients) {
         return EmailContent.builder()
                 .title(emailTitle)
                 .body(templateEngine.process(templateName, context))
+                .recipients(recipients)
                 .build();
     }
 
