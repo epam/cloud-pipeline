@@ -121,7 +121,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
-        log.debug("Started NFS events synchronization");
+        log.info("Started NFS events synchronization");
         final Map<String, AbstractDataStorage> storagePathMapping = getCloudPipelineAPIClient().loadAllDataStorages()
             .stream()
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
@@ -130,6 +130,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         loadEventsFilesGroupedByProducer(getListingCredentials(eventsStorage))
             .forEach((producer, fileList) ->
                          processEventsFromFilesInChunks(storagePathMapping, eventsStorage, producer, fileList));
+        log.info("Finished NFS events synchronization");
     }
 
     private void processEventsFromFilesInChunks(final Map<String, AbstractDataStorage> storagePathMapping,
@@ -191,8 +192,10 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private void processStorageEvents(final IndexRequestContainer requestContainer,
                                       final AbstractDataStorage dataStorage,
                                       final Collection<NFSObserverEvent> events) {
+        log.debug("Processing {} events for datastorage [id={}]", events.size(), dataStorage.getId());
         final List<NFSObserverEvent> allEvents = flattenEvents(dataStorage, events);
         final Map<String, SearchHit> searchHitMap = findIndexedFilesEvent(dataStorage, allEvents);
+        log.debug("Found {} search hits for events", searchHitMap.size());
         final String indexForNewFiles = createIndexForStorageIfNotExists(dataStorage);
         final Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
         if (mountFolder == null) {
@@ -205,6 +208,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .filter(Objects::nonNull)
             .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file))
             .forEach(requestContainer::add);
+        log.debug("Finished processing events for datastorage [id={}]", dataStorage.getId());
     }
 
     private List<NFSObserverEvent> flattenEvents(final AbstractDataStorage dataStorage,
@@ -292,8 +296,14 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                              final PermissionsContainer permissionsContainer,
                                              final DataStorageFile storageFile) {
         return Optional.ofNullable(searchHitMap.get(storageFile.getPath()))
-            .map(document -> updateIndexRequest(dataStorage, storageFile, permissionsContainer, document))
-            .orElseGet(() -> createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer));
+            .map(document -> {
+                log.debug("Mapping `{}` file to update request [{}]", storageFile.getPath(), document.getId());
+                return updateIndexRequest(dataStorage, storageFile, permissionsContainer, document);
+            })
+            .orElseGet(() -> {
+                log.debug("Mapping `{}` file to create request", storageFile.getPath());
+                return createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer);
+            });
     }
 
     private DataStorageFile mapUpdateEventToFile(final IndexRequestContainer requestContainer,
@@ -302,14 +312,20 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                                  final NFSObserverEvent event) {
         Assert.isTrue(mountFolder.toFile().exists(),
                       String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...", mountFolder));
+        log.debug("Processing event: [{}, {}, {}]",
+                  event.getEventType().name(), event.getStorage(), event.getFilePath());
         final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
         final boolean fileExists = absoluteFilePath.toFile().exists();
-
+        log.debug("Checking file existence at {}: {}", absoluteFilePath, fileExists);
         if (fileExists) {
+            log.debug("Creating storage file update request");
             return convertToStorageFile(absoluteFilePath, mountFolder);
         } else {
             Optional.ofNullable(searchHitMap.get(event.getFilePath()))
-                .map(hit -> new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId()))
+                .map(hit -> {
+                    log.debug("Creating storage file removal request");
+                    return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId());
+                })
                 .ifPresent(requestContainer::add);
             return null;
         }
