@@ -253,7 +253,7 @@ public class UserManager {
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
-        user.setBlockDate(DateUtils.nowUTC());
+        user.setBlockDate(blockStatus ? DateUtils.nowUTC() : null);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
