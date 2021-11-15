@@ -23,8 +23,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static java.lang.String.format;
-
 /**
  * A class responsible for getting entities from the Jira.
  */
