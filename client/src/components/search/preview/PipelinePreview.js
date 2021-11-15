@@ -96,10 +96,10 @@ export default class PipelinePreview extends React.Component {
         return (
           <div className={styles.contentPreview}>
             <span
-              style={
+              className={
                 this.props.lightMode
-                  ? {color: '#ff0000'}
-                  : {color: '#ff556b'}
+                  ? 'cp-search-preview-error-light-mode'
+                  : 'cp-search-preview-error'
               }
             >
               {this.props.versions.error}
@@ -143,10 +143,10 @@ export default class PipelinePreview extends React.Component {
         return (
           <div className={styles.contentPreview}>
             <span
-              style={
+              className={
                 this.props.lightMode
-                  ? {color: '#ff0000'}
-                  : {color: '#ff556b'}
+                  ? 'cp-search-preview-error-light-mode'
+                  : 'cp-search-preview-error'
               }
             >
               {this.props.history.error}
@@ -219,20 +219,21 @@ export default class PipelinePreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }

@@ -60,24 +60,11 @@ export default class S3BucketPreview extends React.Component {
     if (this.props.items.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.items.error}</span>
+          <span className={'cp-search-preview-error'}>{this.props.items.error}</span>
         </div>
       );
     }
     const items = (this.props.items.value.results || []).map(i => i);
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      borderRight: '1px solid #555'
-    };
-    const cellStyle = {
-      paddingRight: padding,
-      paddingLeft: padding,
-      borderRight: '1px solid #555'
-    };
-    const lastCellStyle = {
-      paddingLeft: padding
-    };
     return (
       <div className={styles.contentPreview}>
         <table>
@@ -86,7 +73,7 @@ export default class S3BucketPreview extends React.Component {
               items.map((item, index) => {
                 return (
                   <tr key={index}>
-                    <td style={firstCellStyle}>
+                    <td className={styles.firstCell}>
                       {
                         item.type.toLowerCase() === 'folder'
                           ? <Icon type="folder" />
@@ -94,8 +81,8 @@ export default class S3BucketPreview extends React.Component {
                       }
                       <span style={{paddingLeft: 5}}>{item.name}</span>
                     </td>
-                    <td style={cellStyle}>{displaySize(item.size)}</td>
-                    <td style={lastCellStyle}>{displayDate(item.changed)}</td>
+                    <td className={styles.intermediaCell}>{displaySize(item.size)}</td>
+                    <td className={styles.lastCell}>{displayDate(item.changed)}</td>
                   </tr>
                 );
               })
@@ -122,14 +109,15 @@ export default class S3BucketPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
             {
@@ -161,7 +149,7 @@ export default class S3BucketPreview extends React.Component {
           </Row>
           {
             description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {description}
             </Row>
           }

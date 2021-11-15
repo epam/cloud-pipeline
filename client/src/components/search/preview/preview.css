@@ -18,12 +18,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  color: #ddd;
   overflow: auto;
-}
-
-.container.light {
-  color: #555;
 }
 
 .header {
@@ -51,36 +46,40 @@
 .header span,
 .header i {
   margin-right: 7px;
-  color: #ddd;
 }
 
 .header .description {
   font-size: large;
-  color: #ccc;
 }
 
 .header .tool-description {
   font-size: medium;
-  color: #ccc;
 }
 
-.container.light .header span,
-.container.light .header i,
-.container.light .header .description,
-.container.light .header .tool-description {
-  color: #555;
+
+.header-image {
+  /* background-color: rgba(255, 255, 255, 0.05); cp-search-header-image */
+  width: 80px;
+  border-radius: 5px;
 }
+
+/* for deletion */
+/* .cp-search-container-light .cp-search-header-title,
+.cp-search-container-light .cp-search-header-description {
+  color: #555;
+} */
 
 .description.tags > span {
   font-size: small;
   padding: 2px 5px;
   border-radius: 2px;
-  background-color: rgba(255, 255, 255, 0.1);
+  /* background-color: rgba(255, 255, 255, 0.1); cp-search-description-tag */
 }
 
-.container.light .description.tags > span {
+/* for deletion */
+/* .container.light .description.tags > span {
   background-color: rgba(0, 0, 0, 0.1);
-}
+} */
 
 .highlights,
 .info,
@@ -105,11 +104,11 @@
 }
 
 .attribute-name {
-  background-color: rgba(255, 255, 255, 0.1);
+  /* background-color: rgba(255, 255, 255, 0.1); cp-search-attribute-name */
 }
 
 .attribute-value {
-  background-color: rgba(255, 255, 255, 0.05);
+  /* background-color: rgba(255, 255, 255, 0.05); cp-search-attribute-value */
   overflow-x: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -117,24 +116,23 @@
 }
 
 .attribute-value:hover {
-  background-color: rgba(255, 255, 255, 0.75);
-  color: black;
+  /* background-color: rgba(255, 255, 255, 0.75);
+  color: black; */
   overflow-x: visible;
   white-space: normal;
   word-break: break-all;
 }
 
-.container.light .attribute-name {
+/* for deletion */
+/* .container.light .attribute-name {
   background-color: rgba(0, 0, 0, 0.1);
 }
-
 .container.light .attribute-value {
   background-color: rgba(0, 0, 0, 0.05);
 }
-
 .container.light .attribute-value:hover {
   background-color: rgba(0, 0, 0, 0.15);
-}
+} */
 
 .highlights > table,
 .info > table,
@@ -142,7 +140,9 @@
 .content-preview > table {
   border-collapse: collapse;
 }
-
+.even-table-row {
+  /* background-color: rgba(255, 255, 255, 0.05); cp-search-even-table-row */
+}
 .content {
   flex: 1;
   overflow: auto;
@@ -150,25 +150,32 @@
 }
 
 .highlight {
-  background-color: rgba(255, 255, 255, 0.1);
+  /* background-color: rgba(255, 255, 255, 0.1); cp-search-highlight */
   padding: 2px;
-  color: #ccc;
+  /* color: #ccc; cp-search-highlight */
+}
+.highlight-text {
+  /* background-color: rgb(249, 255, 0); cp-search-highlight-text */
+  /* color: black; cp-search-highlight-text */
+  padding: 0px 2px;
 }
 
-.container.light .highlight {
+/* delete */
+/* .container.light .highlight {
   background-color: transparent;
   color: #555;
-}
+} */
 
 .csv-table {
-  border: 1px solid #666;
-  background-color: rgba(255, 255, 255, 0.05);
+  /* border: 1px solid #666; cp-search-csv-table
+  background-color: rgba(255, 255, 255, 0.05); */
   min-width: 100%;
 }
 
-.container.light .csv-table {
-  background-color: rgba(0, 0, 0, 0.05);
-}
+/* delete */
+/* .container.light .csv-table {
+  background-color: rgba(0, 0, 0, 0.05); cp-search-csv-table.light
+} */
 
 .run-table {
   min-width: 100%;
@@ -184,6 +191,20 @@
 
 .container.light .run-table .run i {
   color: #555;
+}
+
+.first-cell {
+  padding-right: 20px;
+  border-right: 1px solid #555;
+}
+.intermedia-cell {
+  padding-right: 20px;
+  padding-left: 20px;
+  border-right: 1px solid #555;
+}
+
+.last-cell {
+  padding-left: 20px;
 }
 
 .csv-cell {
@@ -420,4 +441,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+.render-separator {
+  height: 1px;
+  width: 100%;
+  background-color: #555;
 }

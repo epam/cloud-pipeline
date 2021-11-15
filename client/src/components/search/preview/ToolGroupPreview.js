@@ -168,7 +168,7 @@ export default class ToolGroupPreview extends React.Component {
     if (this.props.dockerRegistries.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.dockerRegistries.error}</span>
+          <span className={'cp-search-preview-error'}>{this.props.dockerRegistries.error}</span>
         </div>
       );
     }
@@ -190,7 +190,8 @@ export default class ToolGroupPreview extends React.Component {
                 return (
                   <tr
                     key={item.id}
-                    style={index % 2 === 0 ? {backgroundColor: 'rgba(255, 255, 255, 0.05)'} : {}}>
+                    className={classNames({[styles.evenTableRow]: index % 2 === 0})}
+                  >
                     <td style={firstCellStyle}>
                       {this.renderImageName(item)}
                     </td>
@@ -243,20 +244,21 @@ export default class ToolGroupPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row key="name" className={styles.title} type="flex" align="middle">
+          <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle" >
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.path}</span>
           </Row>
           {
             this.props.item.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.props.item.description}
             </Row>
           }

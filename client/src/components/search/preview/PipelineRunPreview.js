@@ -352,7 +352,7 @@ export default class PipelineRunPreview extends React.Component {
       }
       if (details.length > 0) {
         return (
-          <Row className={`${styles.description} ${styles.tags}`}>
+          <Row className={classNames(styles.description, 'cp-search-header-description', styles.tags)}>
             {
               details.map(d => {
                 return (
@@ -388,7 +388,9 @@ export default class PipelineRunPreview extends React.Component {
       if (this.props.runInfo.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.runInfo.error}</span>
+            <span className={'cp-search-preview-error'}>
+              {this.props.runInfo.error}
+            </span>
           </div>
         );
       }
@@ -492,7 +494,9 @@ export default class PipelineRunPreview extends React.Component {
       if (this.props.runTasks.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.runTasks.error}</span>
+            <span className={'cp-search-preview-error'}>
+              {this.props.runTasks.error}
+            </span>
           </div>
         );
       }
@@ -534,14 +538,15 @@ export default class PipelineRunPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} style={{whiteSpace: 'initial'}}>
+          <Row className={classNames(styles.title, 'cp-search-header-title')} style={{whiteSpace: 'initial'}}>
             {
               this.props.runInfo && this.props.runInfo.loaded
                 ? (

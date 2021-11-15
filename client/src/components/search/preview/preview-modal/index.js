@@ -71,11 +71,11 @@ class PreviewModal extends React.Component {
     };
     return (
       <div
-        className={styles.previewWrapper}
+        className={classNames(styles.previewWrapper, 'cp-search-preview-wrapper')}
         onClick={handleClosePreview}
       >
         <div
-          className={styles.preview}
+          className={classNames(styles.preview, 'cp-search-preview-light')}
         >
           <Preview
             item={preview}
@@ -89,14 +89,22 @@ class PreviewModal extends React.Component {
             maximizedAvailable && (
               <Icon
                 type="arrows-alt"
-                className={classNames(styles.previewButton, styles.maximize)}
+                className={classNames(
+                  styles.previewButton,
+                  styles.maximize,
+                  'cp-search-preview-button'
+                )}
                 onClick={() => this.handleMaximizePreview(true)}
               />
             )
           }
           <Icon
             type="close"
-            className={classNames(styles.previewButton, styles.close)}
+            className={classNames(
+              styles.previewButton,
+              styles.close,
+              'cp-search-preview-button'
+            )}
             onClick={handleClosePreview}
           />
         </div>

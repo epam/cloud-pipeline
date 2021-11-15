@@ -212,7 +212,7 @@ export default class ToolPreview extends React.Component {
       if (this.props.versions.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.versions.error}</span>
+            <span className={'cp-search-preview-error'}>{this.props.versions.error}</span>
           </div>
         );
       }
@@ -255,7 +255,7 @@ export default class ToolPreview extends React.Component {
   renderHeader = () => {
     const renderMainInfo = () => {
       const name = (
-        <Row key="name" className={styles.title} type="flex" align="middle">
+        <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
           <Icon type={PreviewIcons[this.props.item.type]} />
           <span>{this.name}</span>
         </Row>
@@ -271,7 +271,7 @@ export default class ToolPreview extends React.Component {
         );
       const description = this.description &&
         (
-          <Row key="description" className={styles.toolDescription}>
+          <Row key="description" className={classNames(styles.toolDescription, 'cp-search-header-description')}>
             {this.description}
           </Row>
         );
@@ -281,11 +281,7 @@ export default class ToolPreview extends React.Component {
       return (
         <Row type="flex" className={styles.header} align="middle">
           <img
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              width: 80,
-              borderRadius: 5
-            }}
+            className={styles.headerImage}
             alt={this.props.tool.value.image}
             src={ToolImage.url(this.props.item.id, this.props.tool.value.iconId)} />
           <div style={{paddingLeft: 10, flex: 1}}>
@@ -314,8 +310,9 @@ export default class ToolPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }

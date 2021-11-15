@@ -522,20 +522,21 @@ export default class ConfigurationPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            'cp-search-container-color',
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-light-color': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
