@@ -21,7 +21,7 @@ import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -53,14 +54,21 @@ public class ElasticsearchAgentService {
     private final ExecutorService elasticsearchAgentThreadPool;
     private final Set<ElasticsearchSynchronizer> synchronizers;
     private final String lastSynchronizationTimeFilePath;
+    private final LocalDateTime billingStartDate;
 
     public ElasticsearchAgentService(final ExecutorService elasticsearchAgentThreadPool,
                                      final Optional<Set<ElasticsearchSynchronizer>> synchronizers,
                                      final @Value("${sync.last.synchronization.file}")
-                                         String lastSynchronizationTimeFilePath) {
+                                         String lastSynchronizationTimeFilePath,
+                                     final @Value("${sync.billing.initial.date:}") String startDateStringValue) {
         this.elasticsearchAgentThreadPool = elasticsearchAgentThreadPool;
         this.synchronizers = synchronizers.orElse(Collections.emptySet());
         this.lastSynchronizationTimeFilePath = lastSynchronizationTimeFilePath;
+        this.billingStartDate = Optional.of(startDateStringValue)
+            .filter(StringUtils::isNotEmpty)
+            .map(LocalDate::parse)
+            .map(LocalDate::atStartOfDay)
+            .orElse(null);
     }
 
     /**
@@ -110,13 +118,13 @@ public class ElasticsearchAgentService {
     private LocalDateTime getLastSyncTime() {
         final String lastTime = getLastLineFromFile();
         if (StringUtils.isEmpty(lastTime)) {
-            return null;
+            return billingStartDate;
         }
         try {
             return LocalDateTime.parse(lastTime, DATE_TIME_FORMATTER);
         } catch (DateTimeParseException e) {
             log.error(e.getMessage(), e);
-            return null;
+            return billingStartDate;
         }
     }
 
