@@ -287,6 +287,18 @@
   margin-right: 5px;
 }
 
+.code {
+  flex: 1;
+  overflow-y: auto;
+  margin: 5px 0;
+}
+
+.markdown {
+  flex: 1;
+  overflow-y: auto;
+  margin: 5px 0;
+}
+
 .md-preview {
   flex: 1;
   overflow-y: auto;

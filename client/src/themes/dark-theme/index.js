@@ -37,6 +37,9 @@ export default {
     '@color-blue': '#00b1f1',
     '@color-violet': '#c730ea',
     '@color-sensitive': '#ff5c33',
+    '@color-aqua': '#008080',
+    '@color-pink': '#d14',
+    '@color-blue-dimmed': '#458',
     '@border-color': 'lighten(@application-background-color, 15%)',
     '@spinner': '@application-color',
     '@status-good-color': '@color-green',
@@ -121,6 +124,7 @@ export default {
     '@calendar-bg-hover-color': '@element-hover-background-color',
     '@cp-calendar-shadow-color': '@card-hovered-shadow-color',
     '@cp-calendar-border-color': '@calendar-border-color',
-    '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)'
+    '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
+    '@code-background-color': 'lighten(@card-background-color, 5%)'
   }
 };
