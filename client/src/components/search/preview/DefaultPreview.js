@@ -64,7 +64,7 @@ export default class DefaultPreview extends React.Component {
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
         </div>

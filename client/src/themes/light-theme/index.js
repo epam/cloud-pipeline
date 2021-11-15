@@ -141,6 +141,13 @@ export default {
     '@cp-calendar-shadow-color': '@card-hovered-shadow-color',
     '@cp-calendar-border-color': '@calendar-border-color',
     '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
-    '@code-background-color': 'darken(@card-background-color, 5%)'
+    '@code-background-color': 'darken(@card-background-color, 5%)',
+    '@search-preview-background-color': '@input-color',
+    '@search-first-row-color': 'darken(@border-color, 30%)',
+    '@search-preview-attributes-name': '@tag-key-background-color',
+    '@search-preview-attributes-value': '@tag-value-background-color',
+    '@search-preview-attributes-value-hovered': 'darken(@tag-key-background-color, 15%)',
+    '@search-header-light-color': '#555',
+    '@search-preview-text-color': '@primary-text-color'
   }
 };

@@ -154,7 +154,7 @@ export default class S3BucketPreview extends React.Component {
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {items && renderSeparator()}

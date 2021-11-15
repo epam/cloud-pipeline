@@ -125,6 +125,10 @@ export default {
     '@cp-calendar-shadow-color': '@card-hovered-shadow-color',
     '@cp-calendar-border-color': '@calendar-border-color',
     '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
-    '@code-background-color': 'lighten(@card-background-color, 5%)'
+    '@code-background-color': 'lighten(@card-background-color, 5%)',
+    '@search-preview-background-color': '@panel-background-color',
+    '@search-first-row-color': 'darken(@border-color, 30%)',
+    '@search-header-light-color': '#555',
+    '@search-preview-text-color': '@application-color'
   }
 };

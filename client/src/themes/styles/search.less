@@ -222,7 +222,8 @@
 }
 
 .cp-search-header-title {
-  color: @card-border-color; //ddd
+  color: @application-color;
+  
 }
 
 .cp-search-header-description {
@@ -233,43 +234,71 @@
   background-color: @application-color-faded; // rgba(255, 255, 255, 0.05);
 }
 
+.cp-search-container .cp-search-header-title,
+.cp-search-container .cp-search-header-description,
+.cp-search-container .cp-search-content {
+  color: @search-preview-text-color;
+}
 .cp-search-container-light .cp-search-header-title,
-.cp-search-container-light .cp-search-header-description {
-  color: @search-header-light-color; //555
+.cp-search-container-light .cp-search-header-description,
+.cp-search-container-light .cp-search-content {
+  color:  @application-color;
+ 
+}
+
+.cp-search-container .cp-search-content-preview .cp-search-content-preview-run,
+.cp-search-container .cp-search-content-preview .cp-search-content-preview-run-task,
+.cp-search-content-preview .cp-search-content-preview-run,
+.cp-search-content-preview .cp-search-content-preview-run-task {
+  color: @search-preview-text-color;
+}
+.cp-search-container-light .cp-search-content-preview .cp-search-content-preview-run,
+.cp-search-container-light .cp-search-content-preview .cp-search-content-preview-run-task,
+.cp-search-content-preview .cp-search-content-preview-run,
+.cp-search-content-preview .cp-search-content-preview-run-task {
+  color:  @application-color;
+}
+
+.cp-search-preview-iframe {
+  background-color:  @search-preview-text-color;
 }
 
 .cp-search-description-tag {
-  background-color: @modal-mask-background; // rgba(255, 255, 255, 0.1);
+  background-color: @application-color-faded; // rgba(255, 255, 255, 0.1);
+  color: @application-background-color;
+}
+
+
+.cp-search-container .cp-search-attribute-name {
+  background-color: @card-service-header-background; // rgba(0, 0, 0, 0.1);
+}
+
+.cp-search-container .cp-search-attribute-value {
+  background-color: @card-border-color; // rgba(0, 0, 0, 0.05);
+}
+
+.cp-search-container .cp-search-attribute-value:hover {
+  background-color: @application-color-disabled; // rgba(0, 0, 0, 0.15);
 }
 
 .cp-search-container-light .cp-search-description-tag {
-  background-color: @application-color-faded; //rgba(0, 0, 0, 0.1);
-}
-
-.cp-search-attribute-name {
-  background-color: @application-background-color; //rgba(255, 255, 255, 0.1);
-}
-
-.cp-search-attribute-value {
-  background-color: @application-background-color; //rgba(255, 255, 255, 0.05);
-}
-
-.cp-search-attribute-value:hover {
-  background-color: @application-background-color; //rgba(255, 255, 255, 0.75);
-  color: @application-color; //black
+  background-color: @code-background-color; //rgba(0, 0, 0, 0.1);
+  color: @application-color;
 }
 
 .cp-search-container-light .cp-search-attribute-name {
-  background-color: @application-color; // rgba(0, 0, 0, 0.1);
+  background-color: @search-preview-attributes-name; //rgba(255, 255, 255, 0.1);
 }
 
 .cp-search-container-light .cp-search-attribute-value {
-  background-color: @application-color; // rgba(0, 0, 0, 0.05);
+  background-color: @search-preview-attributes-value; //rgba(255, 255, 255, 0.05);
 }
 
 .cp-search-container-light .cp-search-attribute-value:hover {
-  background-color: @application-color;// rgba(0, 0, 0, 0.15);
+  background-color: @search-preview-attributes-value-hovered; //rgba(255, 255, 255, 0.75);
+  color: @application-color;
 }
+
 
 .cp-search-even-table-row {
   background-color: @application-background-color; // rgba(255, 255, 255, 0.05);

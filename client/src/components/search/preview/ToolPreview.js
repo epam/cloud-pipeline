@@ -281,7 +281,7 @@ export default class ToolPreview extends React.Component {
       return (
         <Row type="flex" className={styles.header} align="middle">
           <img
-            className={styles.headerImage}
+            className={classNames(styles.headerImage, 'cp-search-header-image')}
             alt={this.props.tool.value.image}
             src={ToolImage.url(this.props.item.id, this.props.tool.value.iconId)} />
           <div style={{paddingLeft: 10, flex: 1}}>
@@ -318,7 +318,7 @@ export default class ToolPreview extends React.Component {
         }
       >
         {this.renderHeader()}
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {versions && renderSeparator()}

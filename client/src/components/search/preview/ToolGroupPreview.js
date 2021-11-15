@@ -190,7 +190,7 @@ export default class ToolGroupPreview extends React.Component {
                 return (
                   <tr
                     key={item.id}
-                    className={classNames({[styles.evenTableRow]: index % 2 === 0})}
+                    className={classNames({'cp-search-even-table-row': index % 2 === 0})}
                   >
                     <td style={firstCellStyle}>
                       {this.renderImageName(item)}
@@ -263,7 +263,7 @@ export default class ToolGroupPreview extends React.Component {
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {attributes && renderSeparator()}

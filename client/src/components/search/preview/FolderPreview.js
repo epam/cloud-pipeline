@@ -242,7 +242,7 @@ export default class FolderPreview extends React.Component {
             <span>{this.props.item.name}</span>
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {attributes && renderSeparator()}

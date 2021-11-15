@@ -263,7 +263,7 @@ export default class IssuePreview extends React.Component {
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {labels && renderSeparator()}

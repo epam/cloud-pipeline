@@ -394,7 +394,7 @@ export default class PipelineDocumentPreview extends React.Component {
             {this.renderDescription()}
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {preview && renderSeparator()}

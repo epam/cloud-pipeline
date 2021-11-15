@@ -151,7 +151,7 @@ export default class DockerRegistryPreview extends React.Component {
             <span>{this.name}</span>
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {groups && renderSeparator()}
