@@ -885,7 +885,7 @@ export default `
 @THEME .ant-popover-placement-topRight > .ant-popover-content > .ant-popover-arrow {
   border-top-color: @card-border-color;
 }
-@THEME .ant-popover-placement-bottom > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-top > .ant-popover-content > .ant-popover-arrow::after,
 @THEME .ant-popover-placement-topLeft > .ant-popover-content > .ant-popover-arrow::after,
 @THEME .ant-popover-placement-topRight > .ant-popover-content > .ant-popover-arrow::after {
   border-top-color: @card-background-color;
@@ -1578,6 +1578,79 @@ export default `
 }
 @THEME .cp-settings-sidebar-element td {
   padding: 6px;
+}
+
+@THEME .text-highlight {
+  color: @application-color;
+  background-color: @code-background-color;
+  border: 1px solid @card-border-color;
+  border-radius: 4px;
+}
+@THEME .text-highlight code {
+  color: @color-pink;
+  background-color: @alert-error-background;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+@THEME .hljs {
+  color: @application-color;
+  background: @card-background-color;
+}
+@THEME .hljs-comment,
+@THEME .hljs-quote {
+  color: @application-color-faded;
+}
+@THEME .hljs-keyword,
+@THEME .hljs-selector-tag,
+@THEME .hljs-subst {
+  color: @application-color;
+}
+@THEME .hljs-number,
+@THEME .hljs-literal,
+@THEME .hljs-variable,
+@THEME .hljs-template-variable,
+@THEME .hljs-tag .hljs-attr {
+  color: @color-aqua;
+}
+@THEME .hljs-string,
+@THEME .hljs-doctag {
+  color: @color-pink;
+}
+@THEME .hljs-title,
+@THEME .hljs-section,
+@THEME .hljs-selector-id {
+  color: @color-red;
+}
+@THEME .hljs-type,
+@THEME .hljs-class .hljs-title {
+  color: @color-blue-dimmed;
+}
+@THEME .hljs-tag,
+@THEME .hljs-name,
+@THEME .hljs-attribute {
+  color: @primary-color;
+  font-weight: normal;
+}
+@THEME .hljs-regexp,
+@THEME .hljs-link {
+  color: @color-green;
+}
+@THEME .hljs-symbol,
+@THEME .hljs-bullet {
+  color: @color-violet;
+}
+@THEME .hljs-built_in,
+@THEME .hljs-builtin-name {
+  color: @primary-color;
+}
+@THEME .hljs-meta {
+  color: @application-color-faded;
+  font-weight: bold;
+}
+@THEME .hljs-deletion {
+  background: @alert-error-background;
+}
+@THEME .hljs-addition {
+  background: @alert-success-background;
 }
 
 `;

@@ -34,12 +34,11 @@ import UserToken from '../../models/user/UserToken';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../models/notifications/Notifications';
 import moment from 'moment-timezone';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import LoadingView from '../special/LoadingView';
 import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
 import roleModel from '../../utils/roleModel';
+import BashCode from '../special/bash-code';
 
 const CLI_KEY = 'cli';
 const GIT_CLI_KEY = 'git cli';
@@ -48,19 +47,6 @@ const DRIVE_KEY = 'drive';
 const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
 const FILE_BROWSER_KEY = 'ui.pipe.file.browser.app';
-
-function processBashScript (script) {
-  let command = hljs.highlight('bash', script).value;
-  const r = /\[URL\](.+)\[\/URL\]/ig;
-  let e = r.exec(command);
-  while (e) {
-    command = command.substring(0, e.index) +
-      `<a href="${e[1]}" target="_blank">${e[1]}</a>` +
-      command.substring(e.index + e[0].length);
-    e = r.exec(command);
-  }
-  return command;
-}
 
 @inject('authenticatedUserInfo', 'dataStorages', 'preferences')
 @inject(({authenticatedUserInfo, dataStorages, preferences}) => ({
@@ -183,8 +169,8 @@ export default class CLIForm extends React.Component {
       operationSystem;
 
     if (this.props.preferences.pending && !this.props.preferences.loaded) {
-      cliConfigureCommand = <Icon type="loading" />;
-      pipInstallCommand = <Icon type="loading" />;
+      cliConfigureCommand = (<BashCode className={styles.mdPreview} loading />);
+      pipInstallCommand = (<BashCode className={styles.mdPreview} loading />);
     } else {
       let pipInstallCommandTemplate = this.props.preferences.replacePlaceholders(
         getSettingsValue('ui.pipe.cli.install.template') ||
@@ -219,11 +205,11 @@ export default class CLIForm extends React.Component {
         }
       } catch (__) {}
       pipInstallCommand = (
-        <code
+        <BashCode
           id="pip-install-url-input"
-          dangerouslySetInnerHTML={{
-            __html: processBashScript(pipInstallCommandTemplate)
-          }} />
+          className={styles.mdPreview}
+          code={pipInstallCommandTemplate}
+        />
       );
 
       let cliConfigureCommandTemplate = getSettingsValue('ui.pipe.cli.configure.template') ||
@@ -244,11 +230,11 @@ export default class CLIForm extends React.Component {
           .replace(new RegExp('{user.jwt.token}', 'g'), this.state.cli.accessKey || '')
       );
       cliConfigureCommand = (
-        <code
+        <BashCode
           id="cli-configure-command-text-area"
-          dangerouslySetInnerHTML={{
-            __html: processBashScript(cliConfigureCommandTemplate)
-          }} />
+          className={styles.mdPreview}
+          code={cliConfigureCommandTemplate}
+        />
       );
     }
 
@@ -274,11 +260,7 @@ export default class CLIForm extends React.Component {
             </Select>
           </Row>
         }
-        <Row type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            {pipInstallCommand}
-          </pre>
-        </Row>
+        {pipInstallCommand}
         <div className={classNames('cp-divider', 'horizontal')} />
         <Row style={{fontSize: 'large', marginBottom: 10}}>Access keys:</Row>
         <Row>
@@ -298,28 +280,18 @@ export default class CLIForm extends React.Component {
           this.state.cli.accessKey &&
           <Row style={{marginTop: 10}}>
             <b>Access key: </b>
-            <Row
-              type="flex"
-              className={styles.mdPreview}>
-              <pre style={{width: '100%', fontSize: 'smaller'}}>
-                <code
-                  id="access-key-text-area"
-                  dangerouslySetInnerHTML={{__html: processBashScript(this.state.cli.accessKey)}} />
-              </pre>
-            </Row>
+            <BashCode
+              id="access-key"
+              className={styles.mdPreview}
+              code={this.state.cli.accessKey}
+            />
           </Row>
         }
         {
           this.state.cli.accessKey &&
           <Row style={{marginTop: 10}}>
             <b>CLI configure command: </b>
-            <Row
-              type="flex"
-              className={styles.mdPreview}>
-              <pre style={{width: '100%', fontSize: 'smaller'}}>
-                {cliConfigureCommand}
-              </pre>
-            </Row>
+            {cliConfigureCommand}
           </Row>
         }
       </div>
@@ -362,13 +334,11 @@ export default class CLIForm extends React.Component {
     code = code.replace(/\{url\}/g, url);
     code = code.replace(/\{token\}/g, token);
     return (
-      <Row type="flex" className={styles.mdPreview}>
-        <pre style={{width: '100%', fontSize: 'smaller'}}>
-          <code
-            id="git-cli-configure-command"
-            dangerouslySetInnerHTML={{__html: processBashScript(code)}} />
-        </pre>
-      </Row>
+      <BashCode
+        id="git-cli-configure-command"
+        className={styles.mdPreview}
+        code={code}
+      />
     );
   };
 
@@ -432,31 +402,20 @@ export default class CLIForm extends React.Component {
 
     const loadCode = (config, id) => {
       let code = this.props.preferences.replacePlaceholders(config);
-      if (code.indexOf('{user.jwt.token}') >= 0) {
+      if (code && code.indexOf('{user.jwt.token}') >= 0) {
         code = code.replace(
           new RegExp('{user.jwt.token}', 'g'),
           this.state.driveMapping.accessKey || ''
         );
       }
-      if (code) {
-        return (
-          <Row type="flex" className={styles.mdPreview}>
-            <pre style={{width: '100%', fontSize: 'smaller'}}>
-              <code
-                id={id}
-                dangerouslySetInnerHTML={{
-                  __html: processBashScript(this.props.preferences.replacePlaceholders(code))
-                }} />
-            </pre>
-          </Row>
-        );
-      } else {
-        return (
-          <Row type="flex" className={styles.mdPreview}>
-            <Icon type="loading" />
-          </Row>
-        );
-      }
+      return (
+        <BashCode
+          id="drive-mapping-command"
+          loading={!code}
+          className={styles.mdPreview}
+          code={this.props.preferences.replacePlaceholders(code)}
+        />
+      );
     };
 
     if (driveMappingConfig) {

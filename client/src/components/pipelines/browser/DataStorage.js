@@ -79,8 +79,6 @@ import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
 from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import {
@@ -90,6 +88,7 @@ import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../special/metadata/special/request-dav-access';
 import StorageSize from '../../special/storage-size';
+import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 
@@ -2174,16 +2173,13 @@ export default class DataStorage extends React.Component {
                 : <Alert message={this._shareStorageLink.error} type="error" />)
             }
             {
-              this.dataStorageShareLinkDisclaimer &&
-              <Row type="flex" className={styles.mdPreview}>
-                <pre style={{width: '100%', fontSize: 'smaller'}}>
-                  <code
-                    id="data-sharing-disclaimer"
-                    dangerouslySetInnerHTML={{
-                      __html: hljs.highlight('bash', this.dataStorageShareLinkDisclaimer).value
-                    }} />
-                </pre>
-              </Row>
+              this.dataStorageShareLinkDisclaimer && (
+                <BashCode
+                  id="data-sharing-disclaimer"
+                  className={styles.dataSharingDisclaimer}
+                  code={this.dataStorageShareLinkDisclaimer}
+                />
+              )
             }
           </div>
         </Modal>

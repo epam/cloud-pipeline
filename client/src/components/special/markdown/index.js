@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
 
@@ -41,30 +42,24 @@ const MarkdownRenderer = new Remarkable('full', {
   }
 });
 
-class Markdown extends React.PureComponent {
-  render () {
-    const {
-      className,
-      md,
-      style
-    } = this.props;
-    if (!md) {
-      return null;
-    }
-    const html = MarkdownRenderer.render(md);
-    console.log(html);
-    return (
-      <div
-        className={className}
-        dangerouslySetInnerHTML={{__html: html}}
-        style={style}
-      />
-    );
+function Markdown ({className, id, md, style}) {
+  if (!md) {
+    return null;
   }
+  const html = MarkdownRenderer.render(md);
+  return (
+    <div
+      id={id}
+      className={classNames(className, 'text-highlight')}
+      dangerouslySetInnerHTML={{__html: html}}
+      style={style}
+    />
+  );
 }
 
 Markdown.propTypes = {
   className: PropTypes.string,
+  id: PropTypes.string,
   md: PropTypes.string,
   style: PropTypes.object
 };
