@@ -218,20 +218,6 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        private FileEditingPopupAO deleteExtraBrackets() {
-            return deleteExtraBrackets(100);
-        }
-
-        public FileEditingPopupAO deleteExtraBrackets(int number) {
-            Actions action = actions().moveToElement($(byClassName("CodeMirror-line")));
-            sleep(500, MILLISECONDS);
-            for (int i = 0; i < number; i++) {
-                action.sendKeys(Keys.DELETE);
-            }
-            action.perform();
-            return this;
-        }
-
         private FileEditingPopupAO fillWith(String newText) {
             Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
             return this;
@@ -273,8 +259,13 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             if (!code.equals(edited)) {
                 clear();
                 fillWith(edited);
-                deleteExtraBrackets();
+                deleteExtraBrackets($(byClassName("CodeMirror-line")), 100);
             }
+            return this;
+        }
+
+        public FileEditingPopupAO deleteExtraBrackets(int num) {
+            deleteExtraBrackets($(byClassName("CodeMirror-line")), num);
             return this;
         }
 

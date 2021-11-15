@@ -44,16 +44,18 @@ public class ToolsParametersTest
         extends AbstractSeveralPipelineRunningTest
         implements Authorization, Tools {
 
+    private static final String CUSTOM_CAPABILITIES_1_JSON = "/customCapabilities1.json";
+    private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String invalidEndpoint = "8700";
     private final String launchCapabilities = "launch.capabilities";
-    private static final String CUSTOM_CAPABILITIES_1_JSON = "/customCapabilities1.json";
-    private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private String prefInitialValue = "";
     private final String custCapability1 = "testCapability1";
     private final String custCapability2 = "testCapability2";
+    private final String capabilityParam = "CP_CAP_CUSTOM_%s";
+    private final String logMessage = "Running '%s' commands:";
 
     @BeforeClass
     public void getPreferencesValue() {
@@ -67,7 +69,6 @@ public class ToolsParametersTest
 
     @BeforeMethod
     void openApplication() {
-        open(C.ROOT_ADDRESS);
         logoutIfNeeded();
         loginAs(admin);
     }
@@ -85,7 +86,7 @@ public class ToolsParametersTest
                 .saveIfNeeded();
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase(value = {"EPMCMBIBPC-502"})
     public void runToolThatHaveNoNginxEndpoint() {
         tools()
@@ -105,7 +106,7 @@ public class ToolsParametersTest
                 .assertPageTitleIs("502 Bad Gateway");
     }
 
-    @Test
+    @Test(priority = 2)
     @TestCase(value = {"2234"})
     public void customCapabilitiesImplementation() {
         navigationMenu()
@@ -127,13 +128,13 @@ public class ToolsParametersTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
-                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, custCapability1), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, custCapability2), "true"), exist)
                 .waitForSshLink()
                 .click(taskWithName("Console"))
                 .waitForLog("start.sh")
-                .ensure(log(), matchText(format("Running '%s' commands:", custCapability1)))
-                .ensure(log(), matchText(format("Running '%s' commands:", custCapability2)))
+                .ensure(log(), matchText(format(logMessage, custCapability1)))
+                .ensure(log(), matchText(format(logMessage, custCapability2)))
                 .ensure(log(), matchText( "Command: 'echo testLine1'"))
                 .ensure(log(), matchText( "Command: 'echo testLine2'"))
                 .ssh(shell -> shell
@@ -145,7 +146,7 @@ public class ToolsParametersTest
                         .close());
     }
 
-    @Test
+    @Test(priority = 2)
     @TestCase(value = {"2295"})
     public void customCapabilitiesWithConfiguredJobParameters() {
         navigationMenu()
@@ -165,8 +166,8 @@ public class ToolsParametersTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability1), "true"), exist)
-                .ensure(configurationParameter(format("CP_CAP_CUSTOM_%s", custCapability2), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, custCapability1), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, custCapability2), "true"), exist)
                 .ensure(configurationParameter("MY_PARAM1", "MY_VALUE1"), exist)
                 .ensure(configurationParameter("MY_PARAM2", "MY_VALUE2"), exist)
                 .ensure(configurationParameter("MY_BOOLEAN_PARAM", "false"), exist)
