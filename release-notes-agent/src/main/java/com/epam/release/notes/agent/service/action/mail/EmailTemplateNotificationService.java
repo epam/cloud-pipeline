@@ -27,6 +27,8 @@ import org.thymeleaf.context.Context;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class EmailTemplateNotificationService implements TemplateNotificationService {
@@ -36,6 +38,10 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private static final String JIRA_ISSUES = "jiraIssues";
     private static final String GITHUB_ISSUES = "gitHubIssues";
     private static final String EXCEPTION_MESSAGE = "This kind of version status is not handled in current method";
+    private static final String DEFAULT_ADMIN_MAIL_SUBJECT = "Cloud-pipeline major version change notification";
+    private static final String DEFAULT_SUBSCRIBERS_MAIL_SUBJECT = "Cloud-pipeline minor version change notification";
+    private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@"
+            + "[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
     private final TemplateEngine templateEngine;
     private final String emailToAdminTemplateName;
@@ -50,8 +56,12 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
             @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
             @Value("${release.notes.agent.name.of.subscribers.email.template}")
             final String emailToSubscribersTemplateName,
-            @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
-            @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle,
+            @Value("${release.notes.agent.email.to.admin.subject}:" +
+                    "#{emailTemplateNotificationService.DEFAULT_ADMIN_MAIL_SUBJECT}")
+            final String emailToAdminTitle,
+            @Value("${release.notes.agent.email.to.subscribers.subject:" +
+                    "#{emailTemplateNotificationService.DEFAULT_SUBSCRIBERS_MAIL_SUBJECT}")
+            final String emailToSubscribersTitle,
             @Value("#{'${release.notes.agent.admin.emails}'.split(','):}") final List<String> adminsEmailAddresses,
             @Value("#{'${release.notes.agent.subscribers.emails}'.split(','):}")
             final List<String> subscribersEmailAddresses
@@ -66,10 +76,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
         validateProperties();
     }
 
-    private void validateProperties() {
-        adminsEmailAddresses.forEach(e -> Assert.hasText(e, "Admin emails is not configured!"));
-        subscribersEmailAddresses.forEach(e -> Assert.hasText(e, "Subscriber emails is not configured!"));
-    }
 
     @Override
     public EmailContent populate(final VersionStatusInfo versionStatusInfo) {
@@ -107,6 +113,23 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
                                final Context context) {
         context.setVariable(JIRA_ISSUES, jiraIssues);
         context.setVariable(GITHUB_ISSUES, gitHubIssues);
+    }
+
+    private void validateProperties() {
+        adminsEmailAddresses.forEach(e -> {
+            Assert.hasText(e, "Admin emails is not configured!");
+            Assert.isTrue(validateEmails(e), "Admin emails is configured incorrectly!");
+        });
+        subscribersEmailAddresses.forEach(e -> {
+            Assert.hasText(e, "Subscriber emails is not configured!");
+            Assert.isTrue(validateEmails(e), "Subscribers emails is configured incorrectly!");
+        });
+    }
+
+    private boolean validateEmails(final String emailAdress) {
+        final Pattern pattern = Pattern.compile(EMAIL_PATTERN);
+        final Matcher matcher = pattern.matcher(emailAdress);
+        return matcher.matches();
     }
 
 }
