@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -769,18 +770,10 @@ public class S3Helper {
         final Set<String> resolvedMasks = addPrefixToMasks(masks, requestPath);
         if (CollectionUtils.isNotEmpty(resolvedMasks)) {
             maskingEnabled = true;
-            final String currentStartAfterMarker = req.getStartAfter();
-            if (currentStartAfterMarker != null) {
-                resolvedMasks.removeIf(mask -> StringUtils.compare(getMaskWithoutGlob(mask),
-                                                                   currentStartAfterMarker) <= 0);
-            }
-            if (CollectionUtils.isEmpty(resolvedMasks)) {
+            latestMarker = resolveStartAndLastTokens(req.getStartAfter(), resolvedMasks, req::setStartAfter);
+            if (latestMarker == null) {
                 return new DataStorageListing(null, Collections.emptyList());
             }
-            final List<String> resolvedMaskList = new ArrayList<>(resolvedMasks);
-            Collections.sort(resolvedMaskList);
-            req.setStartAfter(getNextTokenFromMasks(resolvedMaskList));
-            latestMarker = getLatestMarkerFromMasks(resolvedMaskList);
         } else {
             maskingEnabled = false;
             latestMarker = EMPTY_STRING;
@@ -866,18 +859,10 @@ public class S3Helper {
         final Set<String> resolvedMasks = addPrefixToMasks(masks, requestPath);
         if (CollectionUtils.isNotEmpty(resolvedMasks)) {
             maskingEnabled = true;
-            final String currentStartAfterMarker = request.getKeyMarker();
-            if (currentStartAfterMarker != null) {
-                resolvedMasks.removeIf(mask -> StringUtils.compare(getMaskWithoutGlob(mask),
-                                                                   currentStartAfterMarker) <= 0);
-            }
-            if (CollectionUtils.isEmpty(resolvedMasks)) {
+            latestMarker = resolveStartAndLastTokens(request.getKeyMarker(), resolvedMasks, request::setKeyMarker);
+            if (latestMarker == null) {
                 return new DataStorageListing(null, Collections.emptyList());
             }
-            final List<String> resolvedMaskList = new ArrayList<>(resolvedMasks);
-            Collections.sort(resolvedMaskList);
-            request.setKeyMarker(getNextTokenFromMasks(resolvedMaskList));
-            latestMarker = getLatestMarkerFromMasks(resolvedMaskList);
         } else {
             maskingEnabled = false;
             latestMarker = EMPTY_STRING;
@@ -1200,6 +1185,21 @@ public class S3Helper {
             .anyMatch(mask -> pathMatcher.match(mask, path));
     }
 
+    private String resolveStartAndLastTokens(final String currentFirstToken, final Set<String> resolvedMasks,
+                                             final Consumer<String> firstTokenConsumer) {
+        if (currentFirstToken != null) {
+            resolvedMasks.removeIf(mask -> StringUtils.compare(getMaskWithoutGlob(mask),
+                                                               currentFirstToken) <= 0);
+            if (CollectionUtils.isEmpty(resolvedMasks)) {
+                return null;
+            }
+        }
+        final List<String> resolvedMaskList = new ArrayList<>(resolvedMasks);
+        Collections.sort(resolvedMaskList);
+        firstTokenConsumer.accept(getFirstTokenFromMasks(resolvedMaskList));
+        return getLastTokenFromMasks(resolvedMaskList);
+    }
+
     private String getMaskWithoutGlob(final String mask) {
         return mask.endsWith(FOLDER_GLOB_SUFFIX)
                ? mask.substring(0, mask.length() - 2)
@@ -1212,11 +1212,11 @@ public class S3Helper {
             .collect(Collectors.toSet());
     }
 
-    private String getLatestMarkerFromMasks(final List<String> resolvedMaskList) {
+    private String getLastTokenFromMasks(final List<String> resolvedMaskList) {
         return getMaskWithoutGlob(resolvedMaskList.get(resolvedMaskList.size() - 1));
     }
 
-    private String getNextTokenFromMasks(final List<String> resolvedMaskList) {
+    private String getFirstTokenFromMasks(final List<String> resolvedMaskList) {
         final String firstMask = getMaskWithoutGlob(resolvedMaskList.get(0));
         final boolean isFolder = firstMask.endsWith(ProviderUtils.DELIMITER);
         final int maskContentSubstringLength = firstMask.length() - (isFolder ? 2 : 1);
