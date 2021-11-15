@@ -165,6 +165,8 @@ public class SystemPreferences {
             ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
     public static final IntPreference DATA_STORAGE_DAV_MOUNT_MAX_STORAGES = new IntPreference(
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
+            "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -586,6 +588,9 @@ public class SystemPreferences {
             "", UI_GROUP, pass);
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_REQUEST = new ObjectPreference<>(
+            "ui.pipe.file.browser.request", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,

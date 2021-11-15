@@ -14,9 +14,17 @@
  *  limitations under the License.
  */
 
-function getFacetFilterToken (query, filters, pageSize, scrollingParameters) {
+function getFacetFilterToken ({
+  query,
+  filters,
+  sortingOrder,
+  pageSize,
+  scrollingParameters
+}) {
   const filtersKeys = Object.keys(filters || {}).sort();
   const filtersParts = filtersKeys.map(key => `${key}:${(filters[key] || []).sort().join(',')}`);
+  const sortingParts = (sortingOrder || [])
+    .map(({field, asc}) => `${field}:${asc ? 'ASC' : 'DESC'}`).join(',');
   const {
     docId,
     docScore,
@@ -27,6 +35,7 @@ function getFacetFilterToken (query, filters, pageSize, scrollingParameters) {
   return [
     query || '*',
     ...filtersParts,
+    sortingParts,
     scrollingParametersPresentation,
     `${pageSize}`
   ].join('|');

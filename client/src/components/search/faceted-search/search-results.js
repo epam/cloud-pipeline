@@ -22,7 +22,7 @@ import {Alert, Icon, Spin} from 'antd';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
-import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
+import {ExcludedSortingKeys} from './utilities';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
@@ -34,20 +34,6 @@ const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
 
-function compareDocumentTypes (prev, next) {
-  const a = (prev || []).sort();
-  const b = (next || []).sort();
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 function cellStringWithDivider (column) {
   if (!column || !column.key) {
     return '.';
@@ -55,14 +41,16 @@ function cellStringWithDivider (column) {
   return `${column.key.replaceAll(' ', '___')} .`;
 }
 
+function getColumnNames (columns = []) {
+  return columns.map(column => column.key);
+}
+
 class SearchResults extends React.Component {
   state = {
     resultsAreaHeight: undefined,
     preview: undefined,
     resizingColumn: undefined,
-    columnWidths: {},
-    columns: DocumentColumns.map(column => column.key),
-    extraColumnsConfiguration: []
+    columnWidths: {}
   };
 
   dividerRefs = [];
@@ -71,22 +59,17 @@ class SearchResults extends React.Component {
   tableWidth = undefined;
   animationFrame;
   infiniteScroll;
+  currentDocumentId;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (!compareDocumentTypes(prevProps.documentTypes, this.props.documentTypes)) {
-      this.updateDocumentTypes();
-    }
     if (
       prevState.columnWidths !== this.state.columnWidths ||
       prevState.resizingColumn !== this.state.resizingColumn ||
-      prevState.columns !== this.state.columns
+      !compareArrays(getColumnNames(this.props.columns), getColumnNames(prevProps.columns))
     ) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
       }
-    }
-    if (!compareArrays(prevProps.extraColumns, this.props.extraColumns)) {
-      this.updateExtraColumns();
     }
   }
 
@@ -94,25 +77,7 @@ class SearchResults extends React.Component {
     window.addEventListener('mousemove', this.onResize);
     window.addEventListener('mouseup', this.stopResizing);
     window.addEventListener('keydown', this.onKeyDown);
-    this.updateDocumentTypes();
-    this.updateExtraColumns();
   }
-
-  updateExtraColumns = () => {
-    const {extraColumns = []} = this.props;
-    parseExtraColumns(this.props.preferences)
-      .then(extra => {
-        const extraColumnsConfiguration = extraColumns.map(key => ({key, name: key}));
-        if (extra && extra.length) {
-          extra.forEach(column => {
-            if (!extraColumnsConfiguration.find(c => c.key === column.key)) {
-              extraColumnsConfiguration.push(column);
-            }
-          });
-        }
-        this.setState({extraColumnsConfiguration}, this.updateDocumentTypes);
-      });
-  };
 
   componentWillUnmount () {
     if (this.animationFrame) {
@@ -123,30 +88,9 @@ class SearchResults extends React.Component {
     window.removeEventListener('keydown', this.onKeyDown);
   }
 
-  get columnsConfiguration () {
-    const {extraColumnsConfiguration = []} = this.state;
-    return [...DocumentColumns, ...extraColumnsConfiguration];
+  setCurrentDocument = (currentDocumentId) => {
+    this.currentDocumentId = currentDocumentId;
   }
-
-  get columns () {
-    const {columns} = this.state;
-    if (!columns || !columns.size) {
-      return this.columnsConfiguration;
-    }
-    return this.columnsConfiguration.filter(k => columns.has(k.key));
-  }
-
-  updateDocumentTypes = () => {
-    const {documentTypes} = this.props;
-    if (!documentTypes || !documentTypes.length) {
-      this.setState({columns: new Set(this.columnsConfiguration.map(column => column.key))});
-    } else {
-      const columns = this.columnsConfiguration
-        .filter(column => !column.types || documentTypes.find(type => column.types.has(type)))
-        .map(column => column.key);
-      this.setState({columns: new Set(columns)});
-    }
-  };
 
   onInitializeInfiniteScroll = (infiniteScroll) => {
     this.infiniteScroll = infiniteScroll;
@@ -170,8 +114,7 @@ class SearchResults extends React.Component {
   };
 
   renderSearchResultItem = (resultItem) => {
-    const {disabled} = this.props;
-    const {extraColumnsConfiguration} = this.state;
+    const {disabled, extraColumns} = this.props;
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
@@ -201,7 +144,7 @@ class SearchResults extends React.Component {
           <DocumentListPresentation
             className={styles.title}
             document={resultItem}
-            extraColumns={extraColumnsConfiguration}
+            extraColumns={extraColumns}
           />
         </div>
       </a>
@@ -277,7 +220,8 @@ class SearchResults extends React.Component {
       showResults,
       onLoadData,
       onPageSizeChanged,
-      pageSize
+      pageSize,
+      resetPositionToken
     } = this.props;
     if (error) {
       return (
@@ -317,6 +261,10 @@ class SearchResults extends React.Component {
             rowMargin={RESULT_ITEM_MARGIN}
             rowHeight={RESULT_ITEM_HEIGHT}
             onInitialized={this.onInitializeInfiniteScroll}
+            reportCurrentDocument={this.setCurrentDocument}
+            initialTopDocument={this.currentDocumentId}
+            resetPositionToken={resetPositionToken}
+            headerHeight={0}
           />
         </div>
       </div>
@@ -324,15 +272,16 @@ class SearchResults extends React.Component {
   };
 
   getGridTemplate = (headerTemplate) => {
+    const {columns = []} = this.props;
     const {columnWidths} = this.state;
     const rowHeight = headerTemplate
       ? TABLE_HEADER_HEIGHT
       : TABLE_ROW_HEIGHT;
     const cellDefault = '100px';
     const divider = '4px';
-    const columnString = `'${this.columns
+    const columnString = `'${columns
       .map(cellStringWithDivider).join(' ')}' ${rowHeight}px /`;
-    const widthString = `${this.columns
+    const widthString = `${columns
       .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`)
       .join(' ')}`;
     return columnString.concat(widthString);
@@ -379,7 +328,7 @@ class SearchResults extends React.Component {
   };
 
   renderTableRow = (resultItem, rowIndex) => {
-    const {disabled} = this.props;
+    const {disabled, columns = []} = this.props;
     const {columnWidths, resizingColumn} = this.state;
     if (!resultItem) {
       return null;
@@ -392,7 +341,7 @@ class SearchResults extends React.Component {
         key={rowIndex}
         onClick={this.navigate(resultItem)}
       >
-        {this.columns.map(({key, renderFn}, index) => (
+        {columns.map(({key, renderFn}, index) => (
           [
             <div
               className={styles.tableCell}
@@ -417,8 +366,45 @@ class SearchResults extends React.Component {
     );
   };
 
+  onHeaderCellClick = (key, event) => {
+    const {onChangeSortingOrder, pending} = this.props;
+    event && event.stopPropagation();
+    if (ExcludedSortingKeys.includes(key) || pending) {
+      return;
+    }
+    return onChangeSortingOrder && onChangeSortingOrder(key, true);
+  };
+
   renderTableHeader = () => {
     const {columnWidths, resizingColumn} = this.state;
+    const {sortingOrder, columns = []} = this.props;
+    const renderSortingIcon = (key) => {
+      const currentIndex = sortingOrder
+        .findIndex(sorting => sorting.field === key);
+      const currentSorting = sortingOrder[currentIndex];
+      if (!currentSorting) {
+        return null;
+      }
+      return (
+        <span
+          className={styles.sortingContainer}
+        >
+          <Icon
+            className={styles.sortingIcon}
+            type={
+              currentSorting.asc
+                ? 'caret-up'
+                : 'caret-down'
+            }
+          />
+          {sortingOrder.length > 1 ? (
+            <sup className={styles.sortingNumber}>
+              {currentIndex + 1}
+            </sup>
+          ) : null}
+        </span>
+      );
+    };
     return (
       <div
         className={classNames(
@@ -428,13 +414,21 @@ class SearchResults extends React.Component {
         style={{gridTemplate: this.getGridTemplate(true)}}
         ref={header => (this.headerRef = header)}
       >
-        {this.columns.map(({key, name}, index) => ([
+        {columns.map(({key, name}, index) => ([
           <div
             key={index}
             className={styles.headerCell}
             ref={ref => (this.dividerRefs[key] = ref)}
-            style={{width: columnWidths[key], minWidth: '0px'}}
+            style={{
+              width: columnWidths[key],
+              minWidth: '0px',
+              cursor: ExcludedSortingKeys.includes(key)
+                ? 'default'
+                : 'pointer'
+            }}
+            onClick={(event) => this.onHeaderCellClick(key, event)}
           >
+            {renderSortingIcon(key)}
             {name}
           </div>,
           <div
@@ -459,7 +453,8 @@ class SearchResults extends React.Component {
       onPageSizeChanged,
       onLoadData,
       pageSize,
-      showResults
+      showResults,
+      resetPositionToken
     } = this.props;
     if (error) {
       return (
@@ -490,7 +485,11 @@ class SearchResults extends React.Component {
           rowRenderer={this.renderTableRow}
           rowMargin={0}
           rowHeight={TABLE_ROW_HEIGHT}
+          headerHeight={TABLE_HEADER_HEIGHT}
           onInitialized={this.onInitializeInfiniteScroll}
+          reportCurrentDocument={this.setCurrentDocument}
+          initialTopDocument={this.currentDocumentId}
+          resetPositionToken={resetPositionToken}
         />
       </div>
     );
@@ -540,6 +539,7 @@ SearchResults.propTypes = {
   error: PropTypes.string,
   hasElementsAfter: PropTypes.bool,
   hasElementsBefore: PropTypes.bool,
+  resetPositionToken: PropTypes.string,
   onLoadData: PropTypes.func,
   loading: PropTypes.bool,
   disabled: PropTypes.bool,
@@ -551,14 +551,18 @@ SearchResults.propTypes = {
   onChangeDocumentType: PropTypes.func,
   onChangeBottomOffset: PropTypes.func,
   mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table]),
-  documentTypes: PropTypes.array,
-  extraColumns: PropTypes.array
+  columns: PropTypes.array,
+  extraColumns: PropTypes.array,
+  onChangeSortingOrder: PropTypes.func,
+  sortingOrder: PropTypes.arrayOf(PropTypes.shape({
+    field: PropTypes.string,
+    order: PropTypes.string
+  }))
 };
 
 SearchResults.defaultProps = {
   documents: [],
-  pageSize: 20,
-  documentTypes: []
+  pageSize: 20
 };
 
 export default inject('preferences')(observer(SearchResults));
