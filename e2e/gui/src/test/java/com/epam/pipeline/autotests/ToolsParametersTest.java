@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.exist;
@@ -64,11 +65,18 @@ public class ToolsParametersTest
                 .getPreference(launchCapabilities);
     }
 
-    @AfterClass(alwaysRun = true)
-    public void fallBackToDefaultToolSettings() {
+    @BeforeMethod
+    void openApplication() {
+        open(C.ROOT_ADDRESS);
         logoutIfNeeded();
         loginAs(admin);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void fallBackToDefaultToolSettings() {
         open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
         fallbackToToolDefaultState(registry, group, tool);
         navigationMenu()
                 .settings()
@@ -80,8 +88,6 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = {"EPMCMBIBPC-502"})
     public void runToolThatHaveNoNginxEndpoint() {
-        logoutIfNeeded();
-        loginAs(admin);
         tools()
                 .perform(registry, group, tool, tool ->
                         tool.settings()
@@ -102,8 +108,6 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = {"2234"})
     public void customCapabilitiesImplementation() {
-        logoutIfNeeded();
-        loginAs(admin);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -144,8 +148,6 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = {"2295"})
     public void customCapabilitiesWithConfiguredJobParameters() {
-        logoutIfNeeded();
-        loginAs(admin);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
