@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        table,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <p>Dear user,</p>
+    <p>*** This is a system generated email, do not reply to this email ***</p>
+    <p>Looks like the following users...</p>
+    <table>
+        <tr>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Storage Name</th>
+            <th>Creation Date</th>
+            <th>Last Login Date</th>
+            <th>Blocked Date</th>
+        </tr>
+        #foreach( $user in $templateParameters["users"] )
+        <tr>
+            <td>$user.name</td>
+            #if( $user.email )<td>$user.email</td>#else<td></td>#end
+            #if( $user.storage_name )<td>$user.storage_name</td>#else<td></td>#end
+            $calendar.setTime($dateFormat.parse($user.registration_date))<td>$calendar.getTime().toString()</td>
+            #if( $user.last_login_date ) $calendar.setTime($dateFormat.parse($user.last_login_date))<td>$calendar.getTime().toString()</td>#else<td></td>#end
+            #if( $user.block_date ) $calendar.setTime($dateFormat.parse($user.block_date))<td>$calendar.getTime().toString()</td>#else<td></td>#end
+        </tr>
+        #end
+    </table>
+
+    <p>Best regards,</p>
+    <p>$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</p>
+</body>
+
+</html>

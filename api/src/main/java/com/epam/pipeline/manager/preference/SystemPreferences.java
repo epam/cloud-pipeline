@@ -699,6 +699,13 @@ public class SystemPreferences {
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
+            "system.user.monitor.delay.hours", 24, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
+            "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_IDEL_DAYS = new IntPreference(
+            "system.user.monitor.idel.days", 365, SYSTEM_GROUP, pass);
+
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
