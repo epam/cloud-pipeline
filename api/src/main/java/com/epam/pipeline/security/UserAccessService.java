@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -74,10 +74,11 @@ public class UserAccessService {
 
     public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
         final UserContext jwtUser = new UserContext(jwtRawToken, claims);
+        final PipelineUser pipelineUser = userManager.loadUserByName(jwtUser.getUsername());
+        userManager.updateLastLoginDate(pipelineUser);
         if (!validateUser) {
             return jwtUser;
         }
-        final PipelineUser pipelineUser = userManager.loadUserByName(jwtUser.getUsername());
         if (pipelineUser == null) {
             log.info("Failed to find user by name {}. Access is still allowed.", jwtUser.getUsername());
             return jwtUser;
@@ -131,6 +132,7 @@ public class UserAccessService {
         if (loadedUser.getFirstLoginDate() == null) {
             userManager.updateUserFirstLoginDate(loadedUser.getId(), DateUtils.nowUTC());
         }
+        userManager.updateLastLoginDate(loadedUser);
         if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
             final PipelineUser updatedUser =
                     userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);

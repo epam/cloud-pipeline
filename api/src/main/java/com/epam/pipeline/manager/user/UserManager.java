@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -69,6 +70,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -251,13 +253,14 @@ public class UserManager {
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
+        user.setBlockDate(DateUtils.nowUTC());
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
-        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus);
+        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus, DateUtils.nowUTC());
         return groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus);
     }
 
@@ -422,6 +425,17 @@ public class UserManager {
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    @Transactional
+    public void updateLastLoginDate(final PipelineUser user) {
+        if (Objects.isNull(user)) {
+            return;
+        }
+
+        final PipelineUser loadedUser = loadUserById(user.getId());
+        loadedUser.setLastLoginDate(DateUtils.nowUTC());
+        userDao.updateUser(loadedUser);
     }
 
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
