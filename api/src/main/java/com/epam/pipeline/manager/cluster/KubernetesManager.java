@@ -108,6 +108,9 @@ public class KubernetesManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
+    @Autowired
+    private KubernetesDeploymentAPIClient deploymentAPIClient;
+
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
@@ -311,45 +314,25 @@ public class KubernetesManager {
         return new DefaultKubernetesClient(config);
     }
 
-    public boolean refreshCloudPipelineServiceDeployment(final String coreServiceName, final int retries,
-                                                         final long retryTimeoutSeconds) {
-        // TODO this should be refactored to use Deployment API
-        return refreshPods(kubeNamespace,
-                    Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + coreServiceName,
-                                             KubernetesConstants.TRUE_LABEL_VALUE),
-                    retries,
-                    retryTimeoutSeconds);
-    }
-
-    public boolean refreshKubeDns(final int retries, final long retryTimeoutSeconds) {
-        // TODO this should be refactored to use Deployment API
-        return refreshPods(KubernetesConstants.SYSTEM_NAMESPACE,
-                           Collections.singletonMap(KubernetesConstants.KUBERNETES_APP_LABEL,
-                                                    KubernetesConstants.KUBE_DNS_APP),
-                           retries, retryTimeoutSeconds);
-    }
-
-    private boolean refreshPods(final String namespace, final Map<String, String> labelSelector, final int retries,
-                                final long retryTimeoutSeconds) {
-        try (KubernetesClient client = getKubernetesClient()) {
-            final Boolean deploymentRefreshTriggered = client.pods()
-                .inNamespace(namespace)
-                .withLabels(labelSelector)
-                .delete();
-            if (deploymentRefreshTriggered) {
-                return waitForServicePodsStartup(client, namespace, labelSelector, retries, retryTimeoutSeconds);
+    public boolean refreshDeployment(final String namespace, final String deploymentName,
+                                     final Map<String, String> labelSelector, final int retries,
+                                     final long retryTimeoutSeconds) {
+        try {
+            final String resolvedNamespace = defaultNamespaceIfEmpty(namespace);
+            deploymentAPIClient.updateDeployment(resolvedNamespace, deploymentName);
+            try (KubernetesClient client = getKubernetesClient()) {
+                return waitForPodsStartup(client, resolvedNamespace, labelSelector, retries, retryTimeoutSeconds);
             }
-            return false;
         } catch (RuntimeException e) {
             return false;
         }
     }
 
-    private boolean waitForServicePodsStartup(final KubernetesClient client, final String namespace,
-                                              final Map<String, String> labelSelector, final int retries,
-                                              final long retryTimeoutSeconds) {
+    private boolean waitForPodsStartup(final KubernetesClient client, final String namespace,
+                                       final Map<String, String> labelSelector, final int retries,
+                                       final long retryTimeoutSeconds) {
         long attempts = retries;
-        while (!deploymentPodsAreReady(client, namespace, labelSelector)) {
+        while (!podsAreReady(client, namespace, labelSelector)) {
             LOGGER.debug("Waiting for pods in [{},{}] to be ready.", namespace, labelSelector);
             attempts -= 1;
             try {
@@ -367,8 +350,8 @@ public class KubernetesManager {
         return true;
     }
 
-    private boolean deploymentPodsAreReady(final KubernetesClient client, final String namespace,
-                                           final Map<String, String> labelSelector) {
+    private boolean podsAreReady(final KubernetesClient client, final String namespace,
+                                 final Map<String, String> labelSelector) {
         final PodList allServicePods = client.pods()
             .inNamespace(namespace)
             .withLabels(labelSelector)

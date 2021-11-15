@@ -229,9 +229,13 @@ public class NatGatewayManager {
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
         }
         if (activePorts.containsKey(port)
-            && !kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
-                                                                        DEPLOYMENT_REFRESH_RETRIES,
-                                                                        DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+            && !kubernetesManager.refreshDeployment(
+            null,
+            tinyproxyServiceName,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+                                     KubernetesConstants.TRUE_LABEL_VALUE),
+            DEPLOYMENT_REFRESH_RETRIES,
+            DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
             return setStatusFailed(
                 serviceName, port,
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
@@ -268,17 +272,25 @@ public class NatGatewayManager {
             removePortForwardingRule(service, activePorts, port);
             removeDnsMaks(service, activePorts, port);
             removePortFromService(service, activePorts, port);
-            return kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
-                                                                           DEPLOYMENT_REFRESH_RETRIES,
-                                                                           DEPLOYMENT_REFRESH_TIMEOUT_SEC);
+            return kubernetesManager.refreshDeployment(
+                null,
+                tinyproxyServiceName,
+                Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+                                         KubernetesConstants.TRUE_LABEL_VALUE),
+                DEPLOYMENT_REFRESH_RETRIES,
+                DEPLOYMENT_REFRESH_TIMEOUT_SEC);
         }
         return true;
     }
 
     private boolean tryRefreshDeployment(final String serviceName, final Integer port) {
-        if (kubernetesManager.refreshCloudPipelineServiceDeployment(tinyproxyServiceName,
-                                                                    DEPLOYMENT_REFRESH_RETRIES,
-                                                                    DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+        if (kubernetesManager.refreshDeployment(
+            null,
+            tinyproxyServiceName,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+                                     KubernetesConstants.TRUE_LABEL_VALUE),
+            DEPLOYMENT_REFRESH_RETRIES,
+            DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
             updateStatusForRoutingRule(serviceName, port, NatRouteStatus.ACTIVE);
             return true;
         } else {
@@ -615,7 +627,11 @@ public class NatGatewayManager {
     }
 
     private boolean checkNewDnsRecord(final String externalName, final String clusterIP) {
-        if (!kubernetesManager.refreshKubeDns(DEPLOYMENT_REFRESH_RETRIES, DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+        if (!kubernetesManager.refreshDeployment(KubernetesConstants.SYSTEM_NAMESPACE, KubernetesConstants.KUBE_DNS_APP,
+                                                 Collections.singletonMap(KubernetesConstants.KUBERNETES_APP_LABEL,
+                                                                          KubernetesConstants.KUBE_DNS_APP),
+                                                 DEPLOYMENT_REFRESH_RETRIES,
+                                                 DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
             log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
             return false;
         }
