@@ -31,6 +31,22 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 FILE_DATE_FORMAT = "%Y%m%d"
 
 
+class LaunchError(RuntimeError):
+    pass
+
+
+class ServerError(RuntimeError):
+    pass
+
+
+class HTTPError(ServerError):
+    pass
+
+
+class APIError(ServerError):
+    pass
+
+
 class Tool:
     def __init__(self, image, cpu, ram, registry, registryId, toolGroupId):
         self.image = image
@@ -201,6 +217,8 @@ class PipelineAPI:
     LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
     LOAD_PROFILES = 'cloud/credentials'
     LOAD_CURRENT_USER = 'whoami'
+    LOAD_ROLES = 'role/loadAll?loadUsers={}'
+    LOAD_ROLE = 'role/{}'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -256,6 +274,43 @@ class PipelineAPI:
                 sys.stderr.write('An error has occurred during request to API: {}'.format(str(e.message)))
             time.sleep(self.timeout)
         raise RuntimeError('Exceeded maximum retry count {} for API request'.format(self.attempts))
+
+    def load_run_efficiently(self, run_id):
+        return self._request('GET', 'run/' + str(run_id)) or {}
+
+    def log_efficiently(self, run_id, message, task, status, date):
+        self._request('POST', 'run/' + str(run_id) + '/log', data={
+            'runId': run_id,
+            'logText': message,
+            'taskName': task,
+            'status': status,
+            'date': date
+        })
+
+    def _request(self, http_method, endpoint, data=None):
+        url = '{}/{}'.format(self.api_url, endpoint)
+        count = 0
+        exceptions = []
+        while count < self.attempts:
+            count += 1
+            try:
+                response = requests.request(method=http_method, url=url, data=json.dumps(data),
+                                            headers=self.header, verify=False,
+                                            timeout=self.connection_timeout)
+                if response.status_code != 200:
+                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                response_data = response.json()
+                status = response_data.get('status') or 'ERROR'
+                message = response_data.get('message') or 'No message'
+                if status != 'OK':
+                    raise APIError('%s: %s' % (status, message))
+                return response_data.get('payload')
+            except APIError as e:
+                raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.timeout)
+        raise exceptions[-1]
 
     def load_tool(self, image, registry):
         result = requests.get(str(self.api_url) + self.TOOL_URL.format(image=image, registry=registry),
@@ -880,3 +935,16 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+
+    def load_roles(self, load_users=False):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
+        except Exception as e:
+            raise RuntimeError("Failed to load roles.", "Error message: {}".format(str(e.message)))
+
+    def load_role(self, role_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE.format(role_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
+                                                                                             str(e.message)))

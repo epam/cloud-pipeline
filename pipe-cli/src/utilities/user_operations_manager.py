@@ -22,7 +22,7 @@ from src.api.user import User
 class UserOperationsManager:
 
     def __init__(self):
-        pass
+        self.user = User.whoami()
 
     @classmethod
     def import_users(cls, file_path, create_user, create_group, metadata_list):
@@ -36,3 +36,11 @@ class UserOperationsManager:
         events = User().import_users(full_path, create_user, create_group, metadata_list)
         for event in events:
             click.echo("[%s] %s" % (event.get('status', ''), event.get('message', '')))
+
+    def is_admin(self):
+        user_groups = self.user.get('groups', [])
+        user_roles = [role.get('name') for role in self.user.get('roles', [])]
+        return 'ROLE_ADMIN' in (user_groups + user_roles)
+
+    def whoami(self):
+        return self.user

@@ -97,6 +97,14 @@ public class MetadataApiService {
         return metadataManager.searchMetadataByClassAndKeyValue(entityClass, key, value);
     }
 
+    @PostFilter("hasRole('ADMIN') or " +
+            "@metadataPermissionManager.metadataPermission(filterObject.entity.entityId, " +
+            "filterObject.entity.entityClass, 'READ')")
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKeyValue(final AclClass entityClass, final String key,
+                                                           final String value) {
+        return metadataManager.searchMetadataEntriesByClassAndKeyValue(entityClass, key, value);
+    }
+
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public Set<String> getMetadataKeys(final AclClass entityClass) {
         return metadataManager.getMetadataKeys(entityClass);

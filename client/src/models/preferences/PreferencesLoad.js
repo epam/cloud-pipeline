@@ -189,7 +189,8 @@ class PreferencesLoad extends Remote {
             name: key,
             description: entry?.description,
             platforms: parsePlatforms(entry?.platforms),
-            custom: true
+            custom: true,
+            params: entry?.params || {}
           }));
       } catch (e) {
         console.warn(
@@ -199,6 +200,30 @@ class PreferencesLoad extends Remote {
       }
     }
     return [];
+  }
+
+  @computed
+  get webdavStorageAccessDurationSeconds () {
+    const value = this.getPreferenceValue('storage.webdav.access.duration.seconds');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 0;
+  }
+
+  get requestFileSystemAccessTooltip () {
+    const value = this.getPreferenceValue('ui.pipe.file.browser.request');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "ui.pipe.file.browser.request" preference:',
+          e
+        );
+      }
+    }
+    return {};
   }
 
   toolScanningEnabledForRegistry (registry) {

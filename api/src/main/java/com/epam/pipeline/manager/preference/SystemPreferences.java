@@ -146,6 +146,10 @@ public class SystemPreferences {
                                new TypeReference<DataStorageTemplate>() {},
                                DATA_STORAGE_GROUP,
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
+    public static final IntPreference DATA_STORAGE_DAV_MOUNT_MAX_STORAGES = new IntPreference(
+            "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
+            "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -512,6 +516,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_REQUEST = new ObjectPreference<>(
+            "ui.pipe.file.browser.request", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
@@ -602,6 +609,11 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD = new IntPreference(
         "system.resource.monitoring.stats.retention.period", 3, SYSTEM_GROUP, isGreaterThanOrEquals(0));
+    /**
+     * Specifies if interactive run ssh sessions should use root as a default user.
+     */
+    public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
+            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
     /**
      * Controls which instance types will be excluded from notification list.
      */

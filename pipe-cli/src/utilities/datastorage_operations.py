@@ -29,6 +29,7 @@ from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
@@ -404,8 +405,9 @@ class DataStorageOperations(object):
         return table
 
     @classmethod
-    def __print_data_storage_contents(cls, bucket_model, relative_path,
-                                      show_details, recursive, page_size=None, show_versions=False, show_all=False):
+    def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
+                                      show_versions=False, show_all=False):
+
         items = []
         header = None
         if bucket_model is not None:
@@ -413,8 +415,10 @@ class DataStorageOperations(object):
             manager = wrapper.get_list_manager(show_versions=show_versions)
             items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
         else:
+            hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
-            items = list(DataStorage.list())
+            items = [s for s in list(DataStorage.list()) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
+
             if not items:
                 click.echo("No datastorages available.")
                 sys.exit(0)

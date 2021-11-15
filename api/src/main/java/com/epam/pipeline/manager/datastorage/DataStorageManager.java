@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -50,6 +51,7 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -61,9 +63,11 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
+import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -79,8 +83,9 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -95,6 +100,7 @@ import org.springframework.util.Assert;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -124,6 +130,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorageManager.class);
     private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
+    public static final String DAV_MOUNT_TAG = "dav-mount";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -748,6 +755,48 @@ public class DataStorageManager implements SecuredEntityManager {
         return searchManager.getStorageUsage(dataStorage, path);
     }
 
+    public void requestDataStorageDavMount(final Long id, final Long time) {
+        log.debug(messageHelper.getMessage(MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST, id, time));
+        // check that storage exists
+        final AbstractDataStorage storage = load(id);
+        Assert.isTrue(0 < time,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME));
+        final Map<String, PipeConfValue> metadata = Optional.ofNullable(
+                metadataManager.loadMetadataItem(storage.getId(), AclClass.DATA_STORAGE)
+        ).map(MetadataEntry::getData).orElse(Collections.emptyMap());
+        final PipeConfValue davMountTimestamp = metadata.get(DAV_MOUNT_TAG);
+        final long now = DateUtils.nowUTC().toEpochSecond(ZoneOffset.UTC);
+        if (davMountTimestamp != null) {
+            final long timestamp = NumberUtils.isDigits(davMountTimestamp.getValue())
+                    ? Long.parseLong(davMountTimestamp.getValue()) : 0;
+            final long remain = timestamp - now;
+            if (remain > time) {
+                throw new IllegalStateException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED,
+                        DateUtils.convertSecsToHours(remain), DateUtils.convertSecsToMinOfHour(remain),
+                        DateUtils.convertSecsToSecsOfMin(remain)));
+            }
+        }
+        checkDavMountQuotas();
+        log.info(messageHelper.getMessage(
+                MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED, storage.getId(), time));
+        metadataManager.updateMetadataItemKey(
+                MetadataVO.builder()
+                        .entity(new EntityVO(storage.getId(), AclClass.DATA_STORAGE))
+                        .data(Collections.singletonMap(DAV_MOUNT_TAG,
+                                new PipeConfValue(EntityTypeField.DEFAULT_TYPE, String.valueOf(now + time))))
+                        .build()
+        );
+    }
+
+    public void callOffDataStorageDavMount(final Long id) {
+        // check that storage exists
+        final AbstractDataStorage storage = load(id);
+        log.info(messageHelper.getMessage(
+                MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF, storage.getId()));
+        metadataManager.deleteMetadataItemKey(new EntityVO(storage.getId(), AclClass.DATA_STORAGE), DAV_MOUNT_TAG);
+    }
+
     private boolean filterDataStorage(DataStorageWithShareMount storage, AbstractCloudRegion region) {
         if (Objects.isNull(region)) {
             return true;
@@ -1087,5 +1136,14 @@ public class DataStorageManager implements SecuredEntityManager {
 
     private String replaceInTemplate(final String template, final String replacement) {
         return template.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, replacement);
+    }
+
+    private void checkDavMountQuotas() {
+        final int davMountedStoragesMaxValue = preferenceManager.getIntPreference(
+                SystemPreferences.DATA_STORAGE_DAV_MOUNT_MAX_STORAGES.getKey());
+        final List<EntityVO> davMountedStorages = ListUtils.emptyIfNull(
+                metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
+        Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
     }
 }

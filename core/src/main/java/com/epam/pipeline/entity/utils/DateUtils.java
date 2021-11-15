@@ -42,4 +42,20 @@ public final class DateUtils {
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
+
+    public static LocalDateTime convertEpochMilliToLocalDateTime(final long epochMilli) {
+        return convertDateToLocalDateTime(new Date(epochMilli));
+    }
+
+    public static long convertSecsToHours(final long secs) {
+        return secs / 3600;
+    }
+
+    public static long convertSecsToMinOfHour(final long secs) {
+        return secs % 3600 / 60;
+    }
+
+    public static long convertSecsToSecsOfMin(final long secs) {
+        return secs % 60;
+    }
 }

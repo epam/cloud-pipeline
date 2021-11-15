@@ -119,6 +119,13 @@ export function isCustomCapability (parameterName, preferences) {
   return !!preferences.launchCapabilities.find(o => o.value === parameterName);
 }
 
+export function getCustomCapability (parameterName, preferences) {
+  if (!preferences) {
+    return undefined;
+  }
+  return preferences.launchCapabilities.find(o => o.value === parameterName);
+}
+
 export function getRunCapabilitiesSkippedParameters () {
   return Object.values(RUN_CAPABILITIES_PARAMETERS);
 }
@@ -175,6 +182,32 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
       };
     });
   return parameters;
+}
+
+export function applyCustomCapabilitiesParameters (parameters, preferences) {
+  const customCapabilities = getEnabledCapabilities(parameters)
+    .map(capability => getCustomCapability(capability, preferences))
+    .filter(Boolean);
+  const result = {...(parameters || {})};
+  const getParameterType = value => {
+    if (typeof value === 'boolean') {
+      return 'boolean';
+    }
+    return 'string';
+  };
+  for (const customCapability of customCapabilities) {
+    const customCapabilityParameters = Object.entries(customCapability.params || {});
+    for (const [parameter, value] of customCapabilityParameters) {
+      if (value !== undefined) {
+        const type = getParameterType(value);
+        result[parameter] = {
+          type,
+          value: type === 'boolean' ? value : `${value}`
+        };
+      }
+    }
+  }
+  return result;
 }
 
 export function hasPlatformSpecificCapabilities (platform, preferences) {

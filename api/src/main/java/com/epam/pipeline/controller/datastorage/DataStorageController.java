@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -727,5 +728,33 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<StorageMountPath> getSharedFSSPathForRun(@RequestParam final Long runId) {
         return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, false));
+    }
+
+    @PostMapping(value = "/datastorage/davmount")
+    @ResponseBody
+    @ApiOperation(
+            value = "Request storage to be mounted to dav service by setting metadata.",
+            notes = "Request storage to be mounted to dav service by setting metadata.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result requestDataStorageDavMount(@RequestBody final DataStorageMountVO request) {
+        dataStorageApiService.requestDataStorageDavMount(request.getId(), request.getTime());
+        return Result.success();
+    }
+
+    @DeleteMapping(value = "/datastorage/{id}/davmount")
+    @ResponseBody
+    @ApiOperation(
+            value = "Call off storage to be mounted to dav service by setting metadata.",
+            notes = "Request storage to be mounted to dav service by setting metadata.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result callOffDataStorageDavMount(@PathVariable(value = ID) final Long id) {
+        dataStorageApiService.callOffDataStorageDavMount(id);
+        return Result.success();
     }
 }

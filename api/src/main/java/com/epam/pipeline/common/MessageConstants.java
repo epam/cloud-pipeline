@@ -246,6 +246,16 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
     public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
     public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME = "error.datastorage.dav.mount.illegal.time";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED =
+            "error.datastorage.dav.mount.quota.exceeded";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED =
+            "error.datastorage.dav.mount.already.mounted";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST = "info.datastorage.dav.mount.request";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED =
+            "info.datastorage.dav.mount.request.allowed";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF =
+            "info.datastorage.dav.mount.request.called.off";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -377,7 +387,7 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
-    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = 
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION =
             "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
