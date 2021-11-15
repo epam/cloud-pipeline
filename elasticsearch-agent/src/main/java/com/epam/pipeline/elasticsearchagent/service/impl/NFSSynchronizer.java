@@ -245,7 +245,10 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                     .field("path", path)
                     .field(DOC_TYPE_FIELD, SearchDocumentType.NFS_FILE.name())
                     .field("storage_id", storageId)
-                    .field("storage_name", storageName);
+                    .field("storage_name", storageName)
+                    .field("id", path)
+                    .field("name", path)
+                    .field("parentId", storageId);
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
             jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
