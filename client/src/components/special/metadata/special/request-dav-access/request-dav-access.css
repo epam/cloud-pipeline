@@ -32,6 +32,7 @@
 }
 
 .container.enabled .disable-button {
+  margin-left: 5px;
   color: red;
   cursor: pointer;
 }
