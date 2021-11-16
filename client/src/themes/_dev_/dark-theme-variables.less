@@ -35,6 +35,9 @@
 @color-pink: #d14;
 @color-blue-dimmed: #458;
 
+@color-white-dimmed-5: rgba(255, 255, 255, 0.05);
+@color-white-dimmed-10: rgba(255, 255, 255, 0.1);
+
 @border-color: lighten(@application-background-color, 15%);
 
 @spinner: @application-color;
@@ -93,7 +96,7 @@
 
 @modal-mask-background: rgba(0, 0, 0, 0.6);
 
-@even-element-background: rgba(255, 255, 255, 0.05);
+@even-element-background: @color-white-dimmed-5;
 
 @alert-success-background: darken(@status-good-color, 15%);
 @alert-success-border: @status-good-color;
@@ -153,3 +156,9 @@
 @search-highlight-background-color: @code-background-color;
 @search-highlight-text-color: @panel-border-color;
 @search-highlight-text-background-color: @color-yellow;
+//table
+@search-table-background-color: @card-background-color;
+@search-table-border-color: @application-color;
+@search-table-text-color:@application-color;
+@search-md-preview-code-shadow: @color-white-dimmed-10;
+@search-md-preview-text-color: @application-color;

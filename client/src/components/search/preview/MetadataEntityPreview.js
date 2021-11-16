@@ -94,17 +94,12 @@ export default class MetadataEntityPreview extends React.Component {
       return null;
     }
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
-
     const items = [];
     for (let key in this.rowData) {
       if (this.rowData.hasOwnProperty(key)) {
         items.push(
           <tr key={key}>
-            <td style={firstCellStyle}>{key}</td>
+            <td className={styles.firstCell}>{key}</td>
             <td>{this.rowData[key].value}</td>
           </tr>
         );

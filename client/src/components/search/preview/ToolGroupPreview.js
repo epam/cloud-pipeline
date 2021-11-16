@@ -176,11 +176,6 @@ export default class ToolGroupPreview extends React.Component {
       return null;
     }
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
-
     return (
       <div className={styles.contentPreview}>
         <table style={{width: '100%'}}>
@@ -192,7 +187,7 @@ export default class ToolGroupPreview extends React.Component {
                     key={item.id}
                     className={classNames({'cp-search-even-table-row': index % 2 === 0})}
                   >
-                    <td style={firstCellStyle}>
+                    <td className={styles.firstCell}>
                       {this.renderImageName(item)}
                     </td>
                   </tr>

@@ -260,7 +260,11 @@ export default class PipelineDocumentPreview extends React.Component {
                     {
                       row.map((cell, columnIndex) => {
                         return (
-                          <td className={styles.csvCell} key={`col-${columnIndex}`}>{cell}</td>
+                          <td className={classNames(
+                            styles.csvCell, 'cp-search-csv-table-cell'
+                          )} key={`col-${columnIndex}`}>
+                            {cell}
+                          </td>
                         );
                       })
                     }
@@ -278,7 +282,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
+          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
             <div
               dangerouslySetInnerHTML={{
                 __html: MarkdownRenderer.render(this.filePreview.preview)

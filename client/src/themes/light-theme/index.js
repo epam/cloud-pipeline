@@ -39,7 +39,10 @@ export default {
     '@color-sensitive': '#ff5c33',
     '@color-aqua': '#008080',
     '@color-pink': '#d14',
+    '@color-pink-pale': '#f9f2f4',
     '@color-blue-dimmed': '#458',
+    '@color-black-dimmed-25': 'rgba(0, 0, 0, 0.25)',
+    '@color-black-dimmed-10': 'rgba(0, 0, 0, 0.1)',
     '@border-color': '#d9d9d9',
     '@spinner': '@primary-color',
     '@status-good-color': '@color-green',
@@ -144,10 +147,20 @@ export default {
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-preview-background-color': '@input-color',
     '@search-first-row-color': 'darken(@border-color, 30%)',
+    '@search-header-light-color': '#555',
+    '@search-preview-text-color': '@card-border-color',
     '@search-preview-attributes-name': '@tag-key-background-color',
     '@search-preview-attributes-value': '@tag-value-background-color',
     '@search-preview-attributes-value-hovered': 'darken(@tag-key-background-color, 15%)',
-    '@search-header-light-color': '#555',
-    '@search-preview-text-color': '@primary-text-color'
+    '@search-highlight-color': '@panel-border-color',
+    '@search-highlight-background-color': '@color-black-dimmed-10',
+    '@search-highlight-text-color': '@application-color',
+    '@search-highlight-text-background-color': '@color-yellow',
+    '@search-table-background-color': '@card-background-color',
+    '@search-table-border-color': '@card-border-color',
+    '@search-table-text-color': 'darken(@card-border-color, 20%)',
+    '@search-table-dark-background': '@color-black-dimmed-25',
+    '@search-md-preview-code-shadow': '@color-black-dimmed-10',
+    '@search-md-preview-text-color': '@application-background-color'
   }
 };

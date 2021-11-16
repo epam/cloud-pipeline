@@ -40,6 +40,8 @@ export default {
     '@color-aqua': '#008080',
     '@color-pink': '#d14',
     '@color-blue-dimmed': '#458',
+    '@color-white-dimmed-5': 'rgba(255, 255, 255, 0.05)',
+    '@color-white-dimmed-10': 'rgba(255, 255, 255, 0.1)',
     '@border-color': 'lighten(@application-background-color, 15%)',
     '@spinner': '@application-color',
     '@status-good-color': '@color-green',
@@ -85,7 +87,7 @@ export default {
     '@nfs-icon-color': '@color-green',
     '@aws-icon': "@static_resource('icons/providers/aws-light.svg')",
     '@modal-mask-background': 'rgba(0, 0, 0, 0.6)',
-    '@even-element-background': 'rgba(255, 255, 255, 0.05)',
+    '@even-element-background': '@color-white-dimmed-5',
     '@alert-success-background': 'darken(@status-good-color, 15%)',
     '@alert-success-border': '@status-good-color',
     '@alert-success-icon': '@status-good-color',
@@ -128,6 +130,19 @@ export default {
     '@code-background-color': 'lighten(@card-background-color, 5%)',
     '@search-preview-background-color': '@panel-background-color',
     '@search-first-row-color': 'darken(@border-color, 30%)',
-    '@search-preview-text-color': '@application-color'
+    '@search-header-light-color': '#555',
+    '@search-preview-text-color': '@application-color',
+    '@search-preview-attributes-name': '@tag-key-background-color',
+    '@search-preview-attributes-value': '@tag-value-background-color',
+    '@search-preview-attributes-value-hovered': 'darken(@tag-key-background-color, 15%)',
+    '@search-highlight-color': '@application-color',
+    '@search-highlight-background-color': '@code-background-color',
+    '@search-highlight-text-color': '@panel-border-color',
+    '@search-highlight-text-background-color': '@color-yellow',
+    '@search-table-background-color': '@card-background-color',
+    '@search-table-border-color': '@application-color',
+    '@search-table-text-color': '@application-color',
+    '@search-md-preview-code-shadow': '@color-white-dimmed-10',
+    '@search-md-preview-text-color': '@application-color'
   }
 };

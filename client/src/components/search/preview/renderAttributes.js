@@ -41,7 +41,7 @@ export function renderAttributes (metadataRequest, isTags = false) {
     if (metadataRequest.error) {
       return (
         <div className={styles.attributes}>
-          <span className={cp-search-preview-error}>{metadataRequest.error}</span>
+          <span className={'cp-search-preview-error'}>{metadataRequest.error}</span>
         </div>
       );
     }

@@ -149,7 +149,7 @@ export default class IssuePreview extends React.Component {
 
   commentTextPreview = (text, style = {}) => {
     return <div
-      className={styles.mdPreview}
+      className={classNames(styles.mdPreview, 'cp-search-md-preview')}
       style={style}
       dangerouslySetInnerHTML={{__html: this.props.issuesRenderer.render(text)}} />;
   };

@@ -66,7 +66,7 @@ export default class S3BucketPreview extends React.Component {
     }
     const items = (this.props.items.value.results || []).map(i => i);
     return (
-      <div className={styles.contentPreview}>
+      <div className={classNames(styles.contentPreview, 's3')}>
         <table>
           <tbody>
             {
@@ -81,7 +81,9 @@ export default class S3BucketPreview extends React.Component {
                       }
                       <span style={{paddingLeft: 5}}>{item.name}</span>
                     </td>
-                    <td className={styles.intermediaCell}>{displaySize(item.size)}</td>
+                    <td className={styles.intermediaCell}>
+                      {displaySize(item.size)}
+                    </td>
                     <td className={styles.lastCell}>{displayDate(item.changed)}</td>
                   </tr>
                 );

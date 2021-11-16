@@ -174,10 +174,6 @@ export default class FolderPreview extends React.Component {
       ...(this.props.folder.value.configurations || []).map(mapChild),
       ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: 'appstore-o'}] : [])
     ];
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
     const rowStyle = {
       // borderBottom: '1px solid #555'
     };
@@ -191,7 +187,7 @@ export default class FolderPreview extends React.Component {
                 : items || []).map((item, index) => {
                   return (
                     <tr key={index} style={rowStyle}>
-                      <td style={firstCellStyle}>
+                      <td className={styles.firstCell}>
                         {
                           PreviewIcons[item.type]
                             ? <Icon

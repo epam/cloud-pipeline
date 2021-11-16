@@ -132,7 +132,7 @@ export default class ToolPreview extends React.Component {
     if (this.props.tool && this.props.tool.loaded && this.props.tool.value.description) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
+          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
             <div
               dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.props.tool.value.description)}} />
           </div>
