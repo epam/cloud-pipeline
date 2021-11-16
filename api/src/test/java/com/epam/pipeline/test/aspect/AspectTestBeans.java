@@ -22,6 +22,7 @@ import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
+import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
@@ -385,4 +386,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected CacheManager cacheManager;
+
+    @MockBean
+    protected NatGatewayDao natGatewayDao;
 }

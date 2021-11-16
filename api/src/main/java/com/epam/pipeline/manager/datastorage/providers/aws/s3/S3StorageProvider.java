@@ -51,9 +51,9 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -86,10 +86,10 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         final S3Helper s3Helper = getS3Helper(storage);
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(storage.getPath());
         final String prefix = datastoragePath.getPath();
-        if (!StringUtils.hasText(prefix) || !checkStorage(storage)) {
+        if (!StringUtils.isNotBlank(prefix) || !checkStorage(storage)) {
             s3Helper.createS3Bucket(datastoragePath.getRoot());
         }
-        if (StringUtils.hasText(prefix)) {
+        if (StringUtils.isNotBlank(prefix)) {
             try {
                 s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
                         new byte[]{}, authManager.getAuthorizedUser());
@@ -130,7 +130,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void deleteStorage(final S3bucketDataStorage dataStorage) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
-        if (StringUtils.hasText(datastoragePath.getPath())) {
+        if (StringUtils.isNotBlank(datastoragePath.getPath())) {
             getS3Helper(dataStorage).deleteFolder(datastoragePath.getRoot(), datastoragePath.getPath(), true);
         } else {
             getS3Helper(dataStorage).deleteS3Bucket(dataStorage.getPath());
@@ -292,7 +292,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (!exists) {
             return false;
         }
-        if (!dataStorage.isSensitive() && StringUtils.hasText(datastoragePath.getPath())) {
+        if (!dataStorage.isSensitive() && StringUtils.isNotBlank(datastoragePath.getPath())) {
             try {
                 s3Helper.createFile(datastoragePath.getRoot(),
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
@@ -349,6 +349,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                     .orElse(region.getTempCredentialsRole());
             return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
         }
+        if (StringUtils.isNotBlank(region.getIamRole())) {
+            return new AssumedCredentialsS3Helper(region.getIamRole(), region, messageHelper);
+        }
         return new RegionAwareS3Helper(region, messageHelper);
     }
 
@@ -363,7 +366,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     private TemporaryCredentials getStsCredentials(final S3bucketDataStorage dataStorage,
                                                    final String version,
                                                    final boolean write) {
-        final boolean useVersion = StringUtils.hasText(version);
+        final boolean useVersion = StringUtils.isNotBlank(version);
         final DataStorageAction action = new DataStorageAction();
         action.setId(dataStorage.getId());
         action.setBucketName(dataStorage.getRoot());

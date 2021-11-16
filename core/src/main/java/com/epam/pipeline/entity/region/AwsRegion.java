@@ -46,4 +46,5 @@ public class AwsRegion extends AbstractCloudRegion implements VersioningAwareReg
     private String tempCredentialsRole;
     private Integer backupDuration;
     private boolean versioningEnabled;
+    private String iamRole;
 }

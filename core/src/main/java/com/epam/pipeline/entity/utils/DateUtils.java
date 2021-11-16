@@ -20,8 +20,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 
 public final class DateUtils {
@@ -40,10 +41,26 @@ public final class DateUtils {
     }
 
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return date.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 
-    public static LocalDateTime convertEpochMilliToLocalDateTime(final long epochMilli) {
-        return convertDateToLocalDateTime(new Date(epochMilli));
+    public static LocalDateTime convertEpochMillisToLocalDateTime(final long epochMillis) {
+        return Instant.ofEpochMilli(epochMillis).atZone(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    public static long convertLocalDateTimeToEpochMillis(final LocalDateTime dateTime) {
+        return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
+
+    public static long convertSecsToHours(final long secs) {
+        return secs / 3600;
+    }
+
+    public static long convertSecsToMinOfHour(final long secs) {
+        return secs % 3600 / 60;
+    }
+
+    public static long convertSecsToSecsOfMin(final long secs) {
+        return secs % 60;
     }
 }

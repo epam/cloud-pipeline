@@ -285,6 +285,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             DockerRegistry registry;
             registry = new DockerRegistry();
             registry.setId(registryId);
+            registry.setName(rs.getString(REGISTRY_PATH.name()));
             registry.setPath(rs.getString(REGISTRY_PATH.name()));
             registry.setDescription(rs.getString(REGISTRY_DESCRIPTION.name()));
             registry.setOwner(rs.getString(OWNER.name()));

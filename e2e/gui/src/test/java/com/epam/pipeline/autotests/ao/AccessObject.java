@@ -536,6 +536,9 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default void closeTab() {
         List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
+        if (tabs.size() <= 1 ) {
+            return;
+        }
         getWebDriver().close();
         switchTo().window(tabs.get(0));
     }

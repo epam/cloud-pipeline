@@ -350,4 +350,14 @@ public class DataStorageApiService {
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
     }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public void requestDataStorageDavMount(final Long id, final Long time) {
+        dataStorageManager.requestDataStorageDavMount(id, time);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public void callOffDataStorageDavMount(final Long id) {
+        dataStorageManager.callOffDataStorageDavMount(id);
+    }
 }

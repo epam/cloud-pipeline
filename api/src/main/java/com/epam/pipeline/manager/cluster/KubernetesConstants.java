@@ -56,6 +56,9 @@ public final class KubernetesConstants {
 
     public static final String WINDOWS = "windows";
 
+    public static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    public static final String TRUE_LABEL_VALUE = "true";
+
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
 

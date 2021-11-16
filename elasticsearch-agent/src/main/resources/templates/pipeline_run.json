@@ -3,7 +3,7 @@
     "_doc": {
       "properties": {
         "id": { "type": "keyword", "store": true },
-        "name": { "type": "text", "store": true, "index": false },
+        "name": { "type": "text", "store": true, "index": false, "fields": { "keyword": { "type": "keyword" } } },
         "description": { "type": "text", "store": true },
         "doc_type": {
           "type": "keyword",

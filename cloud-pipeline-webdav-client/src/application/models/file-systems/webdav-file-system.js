@@ -6,24 +6,22 @@ import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
-import URL from "url";
+import cloudPipelineAPI from '../cloud-pipeline-api';
+import {isDigit} from "@marshallofsound/webpack-asset-relocator-loader";
 
 axios.defaults.adapter = require('axios/lib/adapters/http');
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
     let cfg;
-    let settings;
     if (electron.remote === undefined) {
       cfg = global.webdavClient;
-      settings = global.settings;
     } else {
       cfg = electron.remote.getGlobal('webdavClient');
-      settings = electron.remote.getGlobal('settings');
     }
     const {config: webdavClientConfig} = cfg || {};
-    const {name: appName} = settings || {};
     const {
+      name: appName,
       server,
       username,
       password,
@@ -52,18 +50,14 @@ class WebdavFileSystem extends FileSystem {
   reInitialize() {
     return new Promise((resolve, reject) => {
       let cfg;
-      let settings;
       if (electron.remote === undefined) {
         cfg = global.webdavClient;
-        settings = global.settings;
       } else {
         cfg = electron.remote.getGlobal('webdavClient');
-        settings = electron.remote.getGlobal('settings');
       }
       const {config: webdavClientConfig} = cfg || {};
-      const {name: appName} = settings || {};
-      this.appName = appName;
       const {
+        name: appName,
         server,
         username,
         password,
@@ -72,6 +66,7 @@ class WebdavFileSystem extends FileSystem {
         maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
         pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
       } = webdavClientConfig || {};
+      this.appName = appName;
       super.reInitialize(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds})
         .then(() => {
           this.username = username;
@@ -111,62 +106,113 @@ class WebdavFileSystem extends FileSystem {
         error(e);
         utilities.rejectError(reject)(e);
       }
-      resolve();
+      this.updateStorages()
+        .then(resolve);
+    });
+  }
+
+  updateStorages(skip = false) {
+    if (skip) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      cloudPipelineAPI
+        .initialize()
+        .getStorages()
+        .then((storages) => {
+          this.storages = storages;
+          resolve();
+        });
     });
   }
 
   getDirectoryContents(directory) {
     return new Promise((resolve, reject) => {
-      const directoryCorrected = directory || '';
-      if (!this.webdavClient) {
-        error(`${this.appName || 'Cloud Data'} client was not initialized`);
-        reject(`${this.appName || 'Cloud Data'} client was not initialized`);
-      }
-      const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
-      log(`webdav: fetching directory "${directoryCorrected}" contents...`);
-      this.webdavClient.getDirectoryContents(directoryCorrected)
-        .then(contents => {
-          log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
-          contents.map(c => log(c.filename));
-          log('');
-          resolve(
-            (
-              directoryCorrected === ''
-                ? []
-                : [{
-                  name: '..',
-                  path: parentDirectory,
-                  isDirectory: true,
-                  isFile: false,
-                  isSymbolicLink: false,
-                  isBackLink: true,
-                }]
-            )
-              .concat(
-                contents
-                  .map(item => {
-                    const isDirectory = /^directory$/i.test(item.type);
-                    return {
-                      name: item.basename,
-                      path: item.filename,
-                      isDirectory,
-                      isFile: /^file/i.test(item.type),
-                      isSymbolicLink: false,
-                      size: isDirectory ? undefined : +(item.size),
-                      changed: moment(item.lastmod)
-                    };
-                  })
+      this.updateStorages(directory && directory.length)
+        .then(() => {
+          const directoryCorrected = directory || '';
+          if (!this.webdavClient) {
+            error(`${this.appName || 'Cloud Data'} client was not initialized`);
+            reject(`${this.appName || 'Cloud Data'} client was not initialized`);
+          }
+          const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
+          log(`webdav: fetching directory "${directoryCorrected}" contents...`);
+          const formatStorageName = storage => (storage.name || '').replace(/-/g, '_');
+          const goBackItem = {
+            name: '..',
+            path: parentDirectory,
+            isDirectory: true,
+            isFile: false,
+            isSymbolicLink: false,
+            isBackLink: true,
+          };
+          const checkStorageType = (contents) => {
+            const result = (contents || []).slice();
+            const allStorages = (this.storages || []);
+            const isHiddenStorage = name => {
+              const currentStorage = allStorages.find(o => name && formatStorageName(o).toLowerCase() === name.toLowerCase());
+              return currentStorage && currentStorage.hidden;
+            }
+            let [p1, p2] = (directory || '').split('/');
+            const rootDir = p1 || p2;
+            if (isHiddenStorage(rootDir)) {
+              throw new Error('Access denied');
+            }
+            const objectStorageNames = (allStorages || [])
+              .filter(storage => !/^nfs$/i.test(storage.type))
+              .map(formatStorageName);
+            result.forEach(content => {
+              if (
+                (!directory || !directory.length) &&
+                content.isDirectory &&
+                objectStorageNames.includes(content.name)
+              ) {
+                content.isObjectStorage = true;
+              }
+            });
+            return result.filter(o => !o.isObjectStorage || !isHiddenStorage(o.name));
+          };
+          this.webdavClient.getDirectoryContents(directoryCorrected)
+            .then(contents => {
+              log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
+              contents.map(c => log(c.filename));
+              log('');
+              if (!directoryCorrected || !directoryCorrected.length) {
+              }
+              resolve(
+                checkStorageType(
+                  (
+                    directoryCorrected === ''
+                      ? []
+                      : [goBackItem]
+                  )
+                    .concat(
+                      contents
+                        .map(item => {
+                          const isDirectory = /^directory$/i.test(item.type);
+                          return {
+                            name: item.basename,
+                            path: item.filename,
+                            isDirectory,
+                            isFile: /^file/i.test(item.type),
+                            isSymbolicLink: false,
+                            size: isDirectory ? undefined : +(item.size),
+                            changed: moment(item.lastmod)
+                          };
+                        })
+                    )
+                )
+              );
+            })
+            .catch(
+              utilities.rejectError(
+                reject,
+                directoryCorrected
+                  ? undefined
+                  : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you'
               )
-          );
-        })
-        .catch(
-          utilities.rejectError(
-            reject,
-            directoryCorrected
-              ? undefined
-              : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you'
-          )
-        );
+            );
+        });
     });
   }
   parsePath (directory, relativeToRoot = false) {
@@ -379,15 +425,29 @@ class WebdavFileSystem extends FileSystem {
       try {
         axios.defaults.adapter = require('axios/lib/adapters/xhr');
         const {
-          ignoreCertificateErrors
+          ignoreCertificateErrors,
+          testWebdav = false,
+          testApi = false
         } = options || {};
         if (ignoreCertificateErrors) {
           https.globalAgent.options.rejectUnauthorized = false;
         }
-        const path = electron.remote.getGlobal('networkLogFile').replace('[DATE]', moment().format('YYYY-MM-DD-HH-mm-ss'))
+        let parts = [
+          testWebdav ? 'webdav' : undefined,
+          testApi ? 'api' : undefined
+        ].filter(Boolean).join('-');
+        if (parts) {
+          parts = '-'.concat(parts);
+        }
+        const path = electron.remote.getGlobal('networkLogFile')
+          .replace('[DATE]', moment().format('YYYY-MM-DD-HH-mm-ss').concat(parts))
         await electron.remote.netLog.startLogging(path);
-        diagnoseResult.webdavError = await this.diagnoseWebdav(options, logCallback);
-        diagnoseResult.apiError = await this.diagnoseAPI(options, logCallback);
+        if (testWebdav) {
+          diagnoseResult.webdavError = await this.diagnoseWebdav(options, logCallback);
+        }
+        if (testApi) {
+          diagnoseResult.apiError = await this.diagnoseAPI(options, logCallback);
+        }
       } catch (e) {
         diagnoseResult.error = e.message;
         logCallback(`Error: ${e.message}`);
@@ -396,14 +456,15 @@ class WebdavFileSystem extends FileSystem {
         if (this.ignoreCertificateErrors) {
           https.globalAgent.options.rejectUnauthorized = false;
         }
+        diagnoseResult.error = diagnoseResult.error || diagnoseResult.webdavError || diagnoseResult.apiError;
         axios.defaults.adapter = require('axios/lib/adapters/http');
         resolve(diagnoseResult);
       }
     });
   }
 
-  async apiGetRequest (endpoint) {
-    let api = this.api || '';
+  async apiGetRequest (endpoint, api) {
+    api = api || this.api || '';
     if (api.endsWith('/')) {
       api = api.slice(0, -1);
     }
@@ -422,9 +483,10 @@ class WebdavFileSystem extends FileSystem {
     return new Promise(async (resolve) => {
       console.log(this.api);
       try {
-        if (this.api) {
+        const {api} = options;
+        if (api) {
           logCallback('Testing API...');
-          await this.apiGetRequest('whoami');
+          await this.apiGetRequest('whoami', api);
         } else {
           logCallback('No API endpoint');
         }
@@ -445,11 +507,15 @@ class WebdavFileSystem extends FileSystem {
           username,
           ignoreCertificateErrors
         } = options || {};
+        log(`Testing webdav connection: ${server}; user ${username}`);
         const client = createClient(server, {username, password});
         logCallback('Fetching webdav directory contents...');
+        log('Testing webdav connection: fetching directory contents...');
         await client.getDirectoryContents('');
+        log('Testing webdav connection: directory contents received');
         resolve();
       } catch (e) {
+        error(`Testing webdav connection: ${e.message}`);
         resolve(e.message);
       }
     });

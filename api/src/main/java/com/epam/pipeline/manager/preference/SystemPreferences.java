@@ -117,6 +117,10 @@ public class SystemPreferences {
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
     private static final String FACETED_FILTER_GROUP = "Faceted Filter";
+    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
+            new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
+            new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
+            isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -159,7 +163,10 @@ public class SystemPreferences {
     public static final StringPreference VERSION_STORAGE_IGNORED_FILES = new StringPreference(
             "storage.version.storage.ignored.files",
             ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
-
+    public static final IntPreference DATA_STORAGE_DAV_MOUNT_MAX_STORAGES = new IntPreference(
+            "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
+            "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -582,6 +589,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_REQUEST = new ObjectPreference<>(
+            "ui.pipe.file.browser.request", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
@@ -612,10 +622,7 @@ public class SystemPreferences {
             DATA_SHARING_GROUP, pass);
     public static final StringPreference DATA_SHARING_FOLDERS_DIR =
             new StringPreference("data.sharing.storage.folders.directory", null, DATA_SHARING_GROUP, pass);
-    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS = new ObjectPreference<>(
-            "data.sharing.storage.folders.default.permissions", null,
-            new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
-            isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
+    private static final String CLOUD_REGION_GROUP = "Cloud region";
 
     // SYSTEM_GROUP
     /**
@@ -831,6 +838,11 @@ public class SystemPreferences {
             isValidEnum(LustreDeploymentType.class));
     public static final BooleanPreference LUSTRE_FS_MOUNT_IP = new BooleanPreference(
             "lustre.fs.mount.ip", false, LUSTRE_GROUP, pass);
+    // Cloud Region
+    public static final IntPreference CLOUD_REGION_TEMP_CREDENTIALS_DURATION = new IntPreference(
+            "cloud.temp.credentials.duration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
+    public static final IntPreference CLOUD_REGION_TEMP_CREDENTIALS_EXPIRATION = new IntPreference(
+            "cloud.temp.credentials.expiration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

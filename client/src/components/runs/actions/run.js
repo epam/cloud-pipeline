@@ -51,6 +51,9 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import SensitiveBucketsWarning from './sensitive-buckets-warning';
 import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
+import {
+  applyCustomCapabilitiesParameters
+} from '../../pipelines/launch/form/utilities/run-capabilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -324,6 +327,7 @@ function runFn (
       scheduleRules = payload.scheduleRules;
       delete payload.scheduleRules;
     }
+    payload.params = applyCustomCapabilitiesParameters(payload.params, stores.preferences);
     const launchFn = async () => {
       const hide = message.loading(`Launching ${launchName}...`, -1);
       await PipelineRunner.send({...payload, force: true});

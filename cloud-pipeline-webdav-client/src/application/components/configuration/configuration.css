@@ -29,3 +29,19 @@
   color: #999;
   font-size: smaller;
 }
+
+.configuration .network-logs {
+  border-top: 1px solid #ccc;
+  justify-content: flex-end;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+
+.network-logs + .network-logs {
+  border: none;
+}
+
+.configuration .network-logs .label {
+  min-width: 175px;
+  font-weight: normal
+}

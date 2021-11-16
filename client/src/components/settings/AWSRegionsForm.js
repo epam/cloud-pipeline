@@ -729,6 +729,7 @@ class AWSRegionForm extends React.Component {
       'policy',
       'profile',
       'sshKeyName',
+      'iamRole',
       'tempCredentialsRole',
       {
         key: 'backupDuration',
@@ -904,6 +905,7 @@ class AWSRegionForm extends React.Component {
       check('profile', checkStringValue) ||
       check('sshKeyName', checkStringValue) ||
       check('azurePolicy', checkIPRangeValue) ||
+      check('iamRole', checkStringValue) ||
       check('tempCredentialsRole', checkStringValue) ||
       check('backupDuration', checkIntegerValue) ||
       check('versioningEnabled', checkBOOLValue) ||
@@ -1720,6 +1722,18 @@ class AWSRegionForm extends React.Component {
                   required: this.providerSupportsField('applicationName'),
                   message: 'Application name is required'
                 }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Main Service Role"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('iamRole', 'edit-region-iam-role-container')}>
+              {getFieldDecorator('iamRole', {
+                initialValue: this.props.region.iamRole
               })(
                 <Input
                   size="small"

@@ -116,6 +116,7 @@ public class RunToolsInSandBoxTest
             if (endpointPage != null) {
                 endpointPage.closeTab();
             }
+            open(C.ROOT_ADDRESS);
         }
     }
 

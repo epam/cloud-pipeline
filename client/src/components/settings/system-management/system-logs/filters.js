@@ -30,7 +30,7 @@ import {
   Tooltip
 } from 'antd';
 import moment from 'moment-timezone';
-import SystemLogsFilterDictionaries from '../../../models/system-logs/filter-dictionaries';
+import SystemLogsFilterDictionaries from '../../../../models/system-logs/filter-dictionaries';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 export {DATE_FORMAT};

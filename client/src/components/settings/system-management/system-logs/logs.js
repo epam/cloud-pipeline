@@ -17,8 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon, message, Table} from 'antd';
-import displayDate from '../../../utils/displayDate';
-import SystemLogsFilter from '../../../models/system-logs/filter';
+import displayDate from '../../../../utils/displayDate';
+import SystemLogsFilter from '../../../../models/system-logs/filter';
 import styles from './logs.css';
 
 const PAGE_SIZE = 20;

@@ -7,10 +7,10 @@
           "store": true,
           "fields": { "keyword": { "type": "keyword" } }
         },
-        "id": {"type": "keyword", "store": true},
+        "id": {"type": "keyword", "store": true },
         "parentId": {"type": "keyword", "store": true, "index": false },
-        "name": {"type": "text", "store": true},
-        "path": { "type": "text", "analyzer": "file_path_analyzer"},
+        "name": {"type": "text", "store": true, "fields": { "keyword": { "type": "keyword" } } },
+        "path": { "type": "text", "analyzer": "file_path_analyzer", "fields": { "keyword": { "type": "keyword" } } },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "description": { "type": "text", "store": true },
         "storageType": { "type": "keyword" },

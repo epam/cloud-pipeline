@@ -8,7 +8,7 @@
           "fields": { "keyword": { "type": "keyword" } }
         },
         "id": {"type": "keyword", "store": true },
-        "name": {"type": "text", "store": true, "index": false},
+        "name": {"type": "text", "store": true, "index": false, "fields": { "keyword": { "type": "keyword" } } },
         "parentId": {"type": "keyword", "store": true, "index": false },
         "registry": {"type": "text" },
         "registryId": { "type": "long", "index": false },

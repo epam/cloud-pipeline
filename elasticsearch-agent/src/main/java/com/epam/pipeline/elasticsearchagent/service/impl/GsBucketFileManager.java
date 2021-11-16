@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -127,7 +128,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
 
     private DataStorageFile convertToStorageFile(final Blob blob) {
         final DataStorageFile file = new DataStorageFile();
-        file.setName(blob.getName());
+        file.setName(FilenameUtils.getName(blob.getName()));
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         file.setChanged(ESConstants.FILE_DATE_FORMAT.format(Date.from(Instant.ofEpochMilli(blob.getUpdateTime()))));
@@ -144,7 +145,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
 
     private DataStorageFile convertToStorageFileVersion(final Blob blob) {
         final DataStorageFile file = new DataStorageFile();
-        file.setName(blob.getName());
+        file.setName(FilenameUtils.getName(blob.getName()));
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         file.setChanged(ESConstants.FILE_DATE_FORMAT.format(Date.from(Instant.ofEpochMilli(blob.getUpdateTime()))));
