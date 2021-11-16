@@ -91,8 +91,10 @@ public class KubernetesManager {
     private static final String EMPTY = "";
     private static final int NODE_READY_TIMEOUT = 5000;
     private static final int DEFAULT_TARGET_PORT = 1000;
-    private static final int CONNECTION_TIMEOUT_MS = 2 * DEFAULT_TARGET_PORT;
+    private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
     private static final int ATTEMPTS_STATUS_NODE = 60;
+    private static final long DEPLOYMENT_REFRESH_TIMEOUT_SEC = 3;
+    private static final int DEPLOYMENT_REFRESH_RETRIES = 10;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
     private static final int NODE_PULL_TIMEOUT = 200;
@@ -315,13 +317,13 @@ public class KubernetesManager {
     }
 
     public boolean refreshDeployment(final String namespace, final String deploymentName,
-                                     final Map<String, String> labelSelector, final int retries,
-                                     final long retryTimeoutSeconds) {
+                                     final Map<String, String> labelSelector) {
         try {
             final String resolvedNamespace = defaultNamespaceIfEmpty(namespace);
             deploymentAPIClient.updateDeployment(resolvedNamespace, deploymentName);
             try (KubernetesClient client = getKubernetesClient()) {
-                return waitForPodsStartup(client, resolvedNamespace, labelSelector, retries, retryTimeoutSeconds);
+                return waitForPodsStartup(client, resolvedNamespace, labelSelector,
+                                          DEPLOYMENT_REFRESH_RETRIES, DEPLOYMENT_REFRESH_TIMEOUT_SEC);
             }
         } catch (RuntimeException e) {
             return false;

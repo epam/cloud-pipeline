@@ -32,14 +32,12 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
 
 @Service
 public class KubernetesDeploymentAPIClient {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSSSSS");
     private final KubernetesDeploymentAPI kubernetesDeploymentAPI;
 
     public KubernetesDeploymentAPIClient(final @Value("${kube.deployment.api.url.prefix:apis/extensions/v1beta1}")
@@ -51,11 +49,6 @@ public class KubernetesDeploymentAPIClient {
         return executeRequest(kubernetesDeploymentAPI.updateDeployment(namespace, name, getUpdateTriggeringPatch()));
     }
 
-    public Deployment getDeployment(final String namespace, final String name) {
-        return executeRequest(kubernetesDeploymentAPI.getDeployment(namespace, name));
-    }
-
-
     private Map<String, Object> getUpdateTriggeringPatch() {
         return Collections.singletonMap(
             "spec",
@@ -66,7 +59,8 @@ public class KubernetesDeploymentAPIClient {
                     Collections.singletonMap(
                         "labels",
                         Collections.singletonMap(
-                            "cp-updated", LocalDateTime.now().format(DATE_FORMATTER))))));
+                            "cp-updated",
+                            LocalDateTime.now().format(KubernetesConstants.KUBE_LABEL_DATE_FORMATTER))))));
     }
 
     private <T> T executeRequest(final Call<T> request) {

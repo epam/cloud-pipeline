@@ -45,7 +45,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,10 +70,7 @@ public class NatGatewayManager {
     private static final String EXTERNAL_NAME_LABEL = NAT_ROUTE_LABELS_PREFIX + "name";
     private static final String EXTERNAL_IP_LABEL = NAT_ROUTE_LABELS_PREFIX + "ip";
     private static final String UNKNOWN = "UNKNOWN";
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSSSSS");
     private static final String NEW_LINE = "\n";
-    private static final long DEPLOYMENT_REFRESH_TIMEOUT_SEC = 3;
-    private static final int DEPLOYMENT_REFRESH_RETRIES = 10;
     private static final String PORT_FORWARDING_RULE_ATTRIBUTE_DESCRIPTOR = ":";
     private static final String HYPHEN = "-";
 
@@ -86,6 +82,7 @@ public class NatGatewayManager {
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
     private final String hostsKey;
+    private final Map<String, String> tinyproxyLabelSelector;
 
     public NatGatewayManager(@Autowired final NatGatewayDao natGatewayDao,
                              @Autowired final KubernetesManager kubernetesManager,
@@ -107,6 +104,8 @@ public class NatGatewayManager {
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
         this.hostsKey = hostsKey;
+        this.tinyproxyLabelSelector = Collections.singletonMap(
+            KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName, KubernetesConstants.TRUE_LABEL_VALUE);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -229,13 +228,7 @@ public class NatGatewayManager {
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
         }
         if (activePorts.containsKey(port)
-            && !kubernetesManager.refreshDeployment(
-            null,
-            tinyproxyServiceName,
-            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
-                                     KubernetesConstants.TRUE_LABEL_VALUE),
-            DEPLOYMENT_REFRESH_RETRIES,
-            DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+            && !kubernetesManager.refreshDeployment(null, tinyproxyServiceName, tinyproxyLabelSelector)) {
             return setStatusFailed(
                 serviceName, port,
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
@@ -272,25 +265,13 @@ public class NatGatewayManager {
             removePortForwardingRule(service, activePorts, port);
             removeDnsMaks(service, activePorts, port);
             removePortFromService(service, activePorts, port);
-            return kubernetesManager.refreshDeployment(
-                null,
-                tinyproxyServiceName,
-                Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
-                                         KubernetesConstants.TRUE_LABEL_VALUE),
-                DEPLOYMENT_REFRESH_RETRIES,
-                DEPLOYMENT_REFRESH_TIMEOUT_SEC);
+            return kubernetesManager.refreshDeployment(null, tinyproxyServiceName, tinyproxyLabelSelector);
         }
         return true;
     }
 
     private boolean tryRefreshDeployment(final String serviceName, final Integer port) {
-        if (kubernetesManager.refreshDeployment(
-            null,
-            tinyproxyServiceName,
-            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
-                                     KubernetesConstants.TRUE_LABEL_VALUE),
-            DEPLOYMENT_REFRESH_RETRIES,
-            DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+        if (kubernetesManager.refreshDeployment(null, tinyproxyServiceName, tinyproxyLabelSelector)) {
             updateStatusForRoutingRule(serviceName, port, NatRouteStatus.ACTIVE);
             return true;
         } else {
@@ -419,7 +400,7 @@ public class NatGatewayManager {
     }
 
     private String getCurrentTimeString() {
-        return LocalDateTime.now().format(DATE_FORMATTER);
+        return LocalDateTime.now().format(KubernetesConstants.KUBE_LABEL_DATE_FORMATTER);
     }
 
     private ServicePort buildNewServicePort(final String correspondingServiceName, final Integer externalPort,
@@ -498,7 +479,7 @@ public class NatGatewayManager {
         return Optional.ofNullable(serviceLabels.get(labelName))
             .map(value -> {
                 try {
-                    return LocalDateTime.parse(value, DATE_FORMATTER);
+                    return LocalDateTime.parse(value, KubernetesConstants.KUBE_LABEL_DATE_FORMATTER);
                 } catch (DateTimeParseException e) {
                     return null;
                 }
@@ -629,9 +610,7 @@ public class NatGatewayManager {
     private boolean checkNewDnsRecord(final String externalName, final String clusterIP) {
         if (!kubernetesManager.refreshDeployment(KubernetesConstants.SYSTEM_NAMESPACE, KubernetesConstants.KUBE_DNS_APP,
                                                  Collections.singletonMap(KubernetesConstants.KUBERNETES_APP_LABEL,
-                                                                          KubernetesConstants.KUBE_DNS_APP),
-                                                 DEPLOYMENT_REFRESH_RETRIES,
-                                                 DEPLOYMENT_REFRESH_TIMEOUT_SEC)) {
+                                                                          KubernetesConstants.KUBE_DNS_APP))) {
             log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
             return false;
         }

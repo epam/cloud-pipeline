@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.cluster;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import retrofit2.Call;
 import retrofit2.http.Body;
-import retrofit2.http.GET;
 import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.Path;
@@ -35,7 +34,4 @@ public interface KubernetesDeploymentAPI {
     @Headers("Content-Type: application/strategic-merge-patch+json")
     Call<Deployment> updateDeployment(@Path(NAMESPACE) String namespace, @Path(NAME) String deploymentName,
                                       @Body Map<String, Object> patch);
-
-    @GET("namespaces/{namespace}/deployments/{name}")
-    Call<Deployment> getDeployment(@Path(NAMESPACE) String namespace, @Path(NAME) String deploymentName);
 }

@@ -106,6 +106,8 @@ public final class KubernetesConstants {
     }
 
     public static final DateTimeFormatter KUBE_DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
+    public static final DateTimeFormatter KUBE_LABEL_DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSSSSS");
 
     private KubernetesConstants() {
         //no op
