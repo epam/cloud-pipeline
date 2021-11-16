@@ -90,8 +90,8 @@ public class KubernetesManager {
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
     private static final int NODE_READY_TIMEOUT = 5000;
-    private static final int DEFAULT_TARGET_PORT = 1000;
-    private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
+    private static final int MILLIS_TO_SECONDS = 1000;
+    private static final int CONNECTION_TIMEOUT_MS = 2 * MILLIS_TO_SECONDS;
     private static final int ATTEMPTS_STATUS_NODE = 60;
     private static final long DEPLOYMENT_REFRESH_TIMEOUT_SEC = 3;
     private static final int DEPLOYMENT_REFRESH_RETRIES = 10;
@@ -100,7 +100,6 @@ public class KubernetesManager {
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String NEW_LINE = "\n";
     private static final String TCP = "TCP";
-    private static final int MILLIS_TO_SECONDS = 1000;
 
     private ObjectMapper mapper = new JsonMapper();
 
@@ -121,6 +120,9 @@ public class KubernetesManager {
 
     @Value("${kube.current.pod.name}")
     private String kubePodName;
+
+    @Value("${kube.default.service.target.port:1000}")
+    private Integer defaultKubeServiceTargetPort;
 
     public List<Service> getServicesByLabel(final String label) {
         return getServicesByLabel(SERVICE_ROLE_LABEL, label);
@@ -977,14 +979,16 @@ public class KubernetesManager {
 
     public Optional<Integer> generateFreeTargetPort() {
         try (KubernetesClient client = getKubernetesClient()) {
-            return client.services().list().getItems().stream()
+            final Optional<Integer> maxCurrentPort = client.services().list().getItems().stream()
                 .map(Service::getSpec)
                 .map(ServiceSpec::getPorts)
                 .flatMap(Collection::stream)
                 .map(ServicePort::getTargetPort)
                 .map(IntOrString::getIntVal)
-                .max(Comparator.naturalOrder())
-                .map(value -> value + 1);
+                .max(Comparator.naturalOrder());
+            return maxCurrentPort.isPresent()
+                   ? maxCurrentPort.map(value -> value + 1)
+                   : Optional.of(defaultKubeServiceTargetPort);
         } catch (RuntimeException e) {
             return Optional.empty();
         }
