@@ -5,9 +5,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-<p> Good day! </p>
-<p> A new Cloud-pipeline version has been released. <br>
-    Version changed from <span th:text="${oldVersion}"></span> to <span th:text="${newVersion}"></span>
+<p> Dear users, </p>
+<p> A new Cloud Pipeline version has been released. <br>
+    The version changed from <span th:text="${oldVersion}"></span> to <span th:text="${newVersion}"></span>
 </p>
 <p th:if="${jiraIssues!=null&&!jiraIssues.isEmpty()&&gitHubIssues!=null&&!gitHubIssues.isEmpty()}">
     The release includes the following changes: <br>
@@ -24,7 +24,7 @@
         <a th:href="${issue.getHtmlUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
     </li>
 </ul>
-<p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>
+<p> Regards, <br /> &emsp; <em>The Cloud Pipeline Team</em>
 </p>
 </body>
 </html>
