@@ -26,14 +26,14 @@
             <th>Last Login Date</th>
             <th>Blocked Date</th>
         </tr>
-        #foreach( $user in $templateParameters["users"] )
+        #foreach( ${CP_DOLLAR}user in ${CP_DOLLAR}templateParameters["users"] )
         <tr>
-            <td>$user.name</td>
-            #if( $user.email )<td>$user.email</td>#else<td></td>#end
-            #if( $user.storage_name )<td>$user.storage_name</td>#else<td></td>#end
-            $calendar.setTime($dateFormat.parse($user.registration_date))<td>$calendar.getTime().toString()</td>
-            #if( $user.last_login_date ) $calendar.setTime($dateFormat.parse($user.last_login_date))<td>$calendar.getTime().toString()</td>#else<td></td>#end
-            #if( $user.block_date ) $calendar.setTime($dateFormat.parse($user.block_date))<td>$calendar.getTime().toString()</td>#else<td></td>#end
+            <td>${CP_DOLLAR}user.name</td>
+            #if( ${CP_DOLLAR}user.email )<td>${CP_DOLLAR}user.email</td>#else<td></td>#end
+            #if( ${CP_DOLLAR}user.storage_name )<td>${CP_DOLLAR}user.storage_name</td>#else<td></td>#end
+            ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.registration_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>
+            #if( ${CP_DOLLAR}user.last_login_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.last_login_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
+            #if( ${CP_DOLLAR}user.block_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.block_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
         </tr>
         #end
     </table>
