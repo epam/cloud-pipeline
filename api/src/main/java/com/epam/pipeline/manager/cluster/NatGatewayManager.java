@@ -161,6 +161,8 @@ public class NatGatewayManager {
 
     private void moveQueuedRoutesToKube() {
         final List<NatRoute> allQueuedRoutes = natGatewayDao.loadQueuedRouteUpdates();
+        log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE,
+                                          allQueuedRoutes.size()));
         final Map<String, Service> proxyServicesMapping = loadProxyServicesFromKube().stream()
             .collect(Collectors.toMap(this::getServiceName, Function.identity()));
         allQueuedRoutes.forEach(route -> addQueuedRouteToKubeServices(proxyServicesMapping, route));
@@ -171,7 +173,10 @@ public class NatGatewayManager {
             final Map<String, String> labels = getServiceLabels(service);
             final List<Integer> allExternalPorts = getExternalPortsSpecifiedInLabels(labels);
             if (CollectionUtils.isEmpty(allExternalPorts)) {
-                kubernetesManager.deleteServiceIfExists(getServiceName(service));
+                final String serviceName = getServiceName(service);
+                log.warn(messageHelper.getMessage(
+                    MessageConstants.NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS, serviceName));
+                kubernetesManager.deleteServiceIfExists(serviceName);
             } else {
                 allExternalPorts.forEach(port -> processExternalPort(service, labels, port));
             }
@@ -211,6 +216,7 @@ public class NatGatewayManager {
     private boolean processScheduledTermination(final Service service, final Map<Integer, ServicePort> activePorts,
                                                 final Integer port) {
         final String serviceName = getServiceName(service);
+        log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_SERVICE_PORT, port, serviceName));
         updateStatusForRoutingRule(serviceName, port, NatRouteStatus.TERMINATING);
         if (!removePortForwardingRule(service, activePorts, port)) {
             return setStatusFailed(
@@ -246,6 +252,7 @@ public class NatGatewayManager {
     private boolean processScheduledStartup(final Service service, final Map<Integer, ServicePort> activePorts,
                                             final Integer port) {
         final String serviceName = getServiceName(service);
+        log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT, port, serviceName));
         if (!addPortToService(serviceName, activePorts, port)) {
             return setStatusFailed(serviceName, port,
                                    messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED));
@@ -324,12 +331,16 @@ public class NatGatewayManager {
         return new NatRoutingRuleDescription(route.getExternalName(), route.getExternalIp(), route.getExternalPort());
     }
 
-
     private void addQueuedRouteToKubeServices(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
+        log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY,
+                                          getQueuedRouteSummary(route)));
         final String correspondingServiceName = getProxyServiceName(route.getExternalName());
         final NatRouteStatus statusInQueue = route.getStatus();
         if (proxyServicesMapping.containsKey(correspondingServiceName)) {
             if (!addQueuedRouteToExistingService(proxyServicesMapping.get(correspondingServiceName), route)) {
+                log.warn(messageHelper.getMessage(
+                    MessageConstants.NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED,
+                    route.getRouteId(), correspondingServiceName));
                 return;
             }
         } else if (!statusInQueue.isTerminationState()
@@ -341,10 +352,19 @@ public class NatGatewayManager {
         }
     }
 
+    private String getQueuedRouteSummary(final NatRoute route) {
+        return String.format(
+            "%d,%s,%s,%d",
+            route.getRouteId(), route.getExternalName(), route.getExternalIp(), route.getExternalPort());
+    }
+
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private boolean createServiceForQueuedRoute(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
+        log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION, route.getRouteId()));
         final Optional<Integer> freeTargetPort = kubernetesManager.generateFreeTargetPort();
         if (!freeTargetPort.isPresent()) {
+            log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_GENERATION_FAILED,
+                                              route.getRouteId()));
             return false;
         }
         final String correspondingServiceName = getProxyServiceName(route.getExternalName());
@@ -364,12 +384,16 @@ public class NatGatewayManager {
                                                                      servicePorts, selector));
             return true;
         } catch (RuntimeException e) {
+            log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION_FAILED,
+                                              route.getRouteId(), e.getMessage()));
             return false;
         }
     }
 
     private boolean addQueuedRouteToExistingService(final Service service, final NatRoute route) {
         final String correspondingServiceName = getProxyServiceName(route.getExternalName());
+        log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE,
+                                          route.getRouteId(), correspondingServiceName));
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);

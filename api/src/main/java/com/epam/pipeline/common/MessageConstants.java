@@ -649,6 +649,18 @@ public final class MessageConstants {
         "storage.quota.unknown.share.type.for.percentage";
 
     // NAT configuration
+    public static final String NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE = "nat.gateway.routes.transfer.to.kube";
+    public static final String NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT = "nat.gateway.route.creation.route.service.port";
+    public static final String NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY = "nat.gateway.route.transfer.summary";
+    public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED =
+        "nat.gateway.route.creation.existing.service.add.port.failed";
+    public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION = "nat.gateway.route.creation.new.service";
+    public static final String NAT_ROUTE_CONFIG_PORT_GENERATION_FAILED =
+        "nat.gateway.route.creation.port.generation.failed";
+    public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION_FAILED =
+        "nat.gateway.route.creation.new.service.failed";
+    public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE =
+        "nat.gateway.route.creation.existing.service.add.port";
     public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
     public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
@@ -674,6 +686,8 @@ public final class MessageConstants {
         "nat.gateway.route.removal.deploy.refresh.failed";
     public static final String NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED =
         "nat.gateway.route.removal.port.forwarding.failed";
+    public static final String NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS = "nat.gateway.route.removal.no.service.ports";
+    public static final String NAT_ROUTE_REMOVAL_SERVICE_PORT = "nat.gateway.route.removal.service.port";
 
     // Search
     public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING =
