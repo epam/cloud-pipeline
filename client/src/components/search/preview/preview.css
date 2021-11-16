@@ -116,32 +116,15 @@
 }
 
 .highlight {
-  /* background-color: rgba(255, 255, 255, 0.1); cp-search-highlight */
   padding: 2px;
-  /* color: #ccc; cp-search-highlight */
 }
 .highlight-text {
-  /* background-color: rgb(249, 255, 0); cp-search-highlight-text */
-  /* color: black; cp-search-highlight-text */
   padding: 0px 2px;
 }
 
-/* delete */
-/* .container.light .highlight {
-  background-color: transparent;
-  color: #555;
-} */
-
 .csv-table {
-  /* border: 1px solid #666; cp-search-csv-table
-  background-color: rgba(255, 255, 255, 0.05); */
   min-width: 100%;
 }
-
-/* delete */
-/* .container.light .csv-table {
-  background-color: rgba(0, 0, 0, 0.05); cp-search-csv-table.light
-} */
 
 .run-table {
   min-width: 100%;

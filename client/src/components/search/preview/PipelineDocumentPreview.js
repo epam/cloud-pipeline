@@ -252,7 +252,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.structuredTableData && !this.structuredTableData.error) {
       return (
         <div className={styles.contentPreview}>
-          <table className={styles.csvTable}>
+          <table className={classNames(styles.csvTable, 'cp-search-csv-table')}>
             {
               this.structuredTableData.data.map((row, rowIndex) => {
                 return (

@@ -63,12 +63,15 @@ export default function renderHighlights (item) {
                         const parts = processHighlight(`...${hh}...`);
                         return (
                           <div key={`highlight-${index}-${hIndex}`} style={{margin: 2}}>
-                            <span className={styles.highlight}>
+                            <span className={classNames(styles.highlight, 'cp-search-highlight')}>
                               {
                                 parts.map((p, pIndex) => (
                                   <span
                                     key={`highlight-${index}-${hIndex}-${pIndex}`}
-                                    className={classNames({[styles.highlightText]: p.highlight})}
+                                    className={classNames({
+                                      [styles.highlightText]: p.highlight,
+                                      'cp-search-highlight-text': p.highlight
+                                    })}
                                   >
                                     {p.text}
                                   </span>

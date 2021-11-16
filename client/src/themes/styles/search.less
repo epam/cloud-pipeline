@@ -223,7 +223,6 @@
 
 .cp-search-header-title {
   color: @application-color;
-  
 }
 
 .cp-search-header-description {
@@ -234,28 +233,25 @@
   background-color: @application-color-faded; // rgba(255, 255, 255, 0.05);
 }
 
-.cp-search-container .cp-search-header-title,
-.cp-search-container .cp-search-header-description,
+.cp-search-header-title,
+.cp-search-header-description,
 .cp-search-container .cp-search-content {
   color: @search-preview-text-color;
 }
+
 .cp-search-container-light .cp-search-header-title,
 .cp-search-container-light .cp-search-header-description,
 .cp-search-container-light .cp-search-content {
   color:  @application-color;
- 
 }
 
 .cp-search-container .cp-search-content-preview .cp-search-content-preview-run,
-.cp-search-container .cp-search-content-preview .cp-search-content-preview-run-task,
-.cp-search-content-preview .cp-search-content-preview-run,
-.cp-search-content-preview .cp-search-content-preview-run-task {
+.cp-search-container .cp-search-content-preview .cp-search-content-preview-run-task {
   color: @search-preview-text-color;
 }
+
 .cp-search-container-light .cp-search-content-preview .cp-search-content-preview-run,
-.cp-search-container-light .cp-search-content-preview .cp-search-content-preview-run-task,
-.cp-search-content-preview .cp-search-content-preview-run,
-.cp-search-content-preview .cp-search-content-preview-run-task {
+.cp-search-container-light .cp-search-content-preview .cp-search-content-preview-run-task {
   color:  @application-color;
 }
 
@@ -264,10 +260,9 @@
 }
 
 .cp-search-description-tag {
-  background-color: @application-color-faded; // rgba(255, 255, 255, 0.1);
-  color: @application-background-color;
+  background-color: @search-highlight-background-color;
+  color: @search-preview-text-color;
 }
-
 
 .cp-search-container .cp-search-attribute-name {
   background-color: @card-service-header-background; // rgba(0, 0, 0, 0.1);
@@ -299,19 +294,18 @@
   color: @application-color;
 }
 
-
 .cp-search-even-table-row {
   background-color: @application-background-color; // rgba(255, 255, 255, 0.05);
 }
 
 .cp-search-highlight {
-  background-color: @application-background-color; // rgba(255, 255, 255, 0.1);
-  color: @panel-border-color; // #ccc;
+  background-color: @search-highlight-background-color;
+  color: @search-highlight-color;
 }
 
 .cp-search-highlight-text {
-  background-color: @alert-warning-border; // rgb(249, 255, 0);
-  color: @application-color; // black;
+  background-color: @search-highlight-text-background-color;
+  color: @search-highlight-text-color;
 }
 
 .cp-search-container-light .cp-search-highlight {
