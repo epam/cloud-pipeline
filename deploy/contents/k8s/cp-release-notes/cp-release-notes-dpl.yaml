@@ -1,0 +1,48 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cp-release-notes
+  namespace: default
+spec:
+  schedule: "${CP_RELEASE_NOTES_SCHEDULE:*/15 * * * *}"
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          namespace: default
+          labels:
+            cloud-pipeline/cp-release-notes: "true"
+        spec:
+          nodeSelector:
+            cloud-pipeline/cp-release-notes: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+          containers:
+            - name: cp-release-notes
+              image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:release-notes-$CP_VERSION
+              securityContext:
+                privileged: true
+              imagePullPolicy: "Always"
+              command: [ "bash" ]
+              args: [ "-c", "/init.sh" ]
+              envFrom:
+                - configMapRef:
+                    name: cp-config-global
+              volumeMounts:
+                - mountPath: /opt/release-notes/logs
+                  name: release-notes-logs
+                - mountPath: /opt/release-notes/templates
+                  name: release-notes-template
+          volumes:
+            - name: release-notes-logs
+              hostPath:
+                path: /opt/release-notes/logs
+            - name: release-notes-template
+              hostPath:
+                path: /opt/release-notes/templates
+          restartPolicy: OnFailure

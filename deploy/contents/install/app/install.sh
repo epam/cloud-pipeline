@@ -304,6 +304,11 @@ CP_POLICY_MANAGER_KUBE_NODE_NAME=${CP_POLICY_MANAGER_KUBE_NODE_NAME:-$KUBE_MASTE
 print_info "-> Assigning cloud-pipeline/cp-run-policy-manager to $CP_POLICY_MANAGER_KUBE_NODE_NAME"
 kubectl label nodes "$CP_POLICY_MANAGER_KUBE_NODE_NAME" cloud-pipeline/cp-run-policy-manager="true" --overwrite
 
+# Allow to schedule release notes agent to the master
+CP_RELEASE_NODE_KUBE_NODE_NAME=${CP_RELEASE_NODE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-release-notes to $CP_RELEASE_NODE_KUBE_NODE_NAME"
+kubectl label nodes "$CP_RELEASE_NODE_KUBE_NODE_NAME" cloud-pipeline/cp-release-notes="true" --overwrite
+
 echo
 
 ##########
@@ -1268,6 +1273,19 @@ if is_service_requested cp-run-policy-manager; then
     print_info "-> Deploying run-policy manager"
     create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
     wait_for_deployment "cp-run-policy-manager"
+  fi
+fi
+
+# Release notes agent - send email with api changes to subscribers
+if is_service_requested cp-release-notes; then
+  print_ok "[Starting release-notes agent deployment]"
+  print_info "-> Deleting existing instance of release-notes agent"
+  delete_deployment_and_service "cp-release-notes" \
+                                  "/opt/release-notes"
+  if is_install_requested; then
+    print_info "-> Deploying release-notes agent"
+    create_kube_resource $K8S_SPECS_HOME/cp-release-notes/cp-release-notes-dpl.yaml
+    wait_for_deployment "cp-release-notes"
   fi
 fi
 

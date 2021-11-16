@@ -202,5 +202,15 @@ CP_GITLAB_READER_INTERNAL_PORT=35800
 CP_GITLAB_READER_INTERNAL_HOST=cp-gitlab-reader.default.svc.cluster.local
 CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
 
+# cp-release-notes
+CP_RELEASE_NOTES_SCHEDULE=*/15 * * * *
+CP_RELEASE_NOTES_VERSION_FILE_PATH=/opt/release-notes/version
+CP_RELEASE_NOTES_GITHUB_BASE_URL=https://api.github.com
+CP_RELEASE_NOTES_TEMPLATE_FOLDER=/opt/release-notes/templates/
+CP_RELEASE_NOTES_ADMIN_TEMPLATE=email-release-notification-to-admin.html
+CP_RELEASE_NOTES_SUBSCRIBERS_TEMPLATE=email-release-notification-to-subscribers.html
+CP_RELEASE_NOTES_ADMIN_SUBJECT=Cloud Pipeline release notes
+CP_RELEASE_NOTES_SUBSCRIBERS_SUBJECT=Cloud Pipeline release notes
+
 # Other params, specified on command line
 #

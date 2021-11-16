@@ -88,6 +88,7 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_BILLING_DISABLE_AZURE_BLOB="true" \
     -env CP_BILLING_CENTER_KEY="billing-group" \
     -s cp-share-srv \
+    -s cp-release-notes \
     -m \
     --external-host-dns \
     -demo
