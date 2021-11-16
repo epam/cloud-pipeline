@@ -18,9 +18,12 @@ package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
+import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.billing.RunBilling;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -29,10 +32,12 @@ import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.opencsv.CSVWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -52,9 +57,9 @@ import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.action.search.RestSearchAction;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -66,13 +71,16 @@ import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.support.IncludeExclude;
+import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ParsedValueCount;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCountAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.InternalSimpleValue;
-import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
@@ -83,10 +91,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
@@ -99,6 +114,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Service
@@ -107,6 +123,8 @@ import java.util.stream.Stream;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class BillingManager {
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
     private static final String COST_FIELD = "cost";
     private static final String ACCUMULATED_COST = "accumulatedCost";
     private static final String RUN_USAGE_AGG = "usage_runs";
@@ -116,6 +134,8 @@ public class BillingManager {
     private static final String TOTAL_STORAGE_USAGE_AGG = "usage_storages";
     private static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     private static final String STORAGE_USAGE_FIELD = "usage_bytes";
+    private static final String TOP_HITS_AGG = "run_id_top_hits";
+    private static final String CARDINALITY_AGG = "cardinality";
     private static final String RUN_ID_FIELD = "run_id";
     private static final String STORAGE_ID_FIELD = "storage_id";
     private static final String UNIQUE_RUNS = "runs";
@@ -133,6 +153,13 @@ public class BillingManager {
     private static final String FIRST_LEVEL_TERMS_AGG_BUCKETS_PATTERN = FIRST_LEVEL_AGG_PATTERN + ".buckets";
     private static final String ES_TERMS_AGG_BUCKET_KEY = "key";
     private static final String BUCKET_DOCUMENTS = "bucketDocs";
+    private static final String OWNER_FIELD = "owner";
+    private static final String PIPELINE_FIELD = "pipeline";
+    private static final String TOOL_FIELD = "tool";
+    private static final String INSTANCE_TYPE_FIELD = "instance_type";
+    private static final String STARTED_FIELD = "started_date";
+    private static final String FINISHED_FIELD = "finished_date";
+    private static final int DEFAULT_BILLINGS_PAGE_SIZE = 1000;
 
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
@@ -147,6 +174,7 @@ public class BillingManager {
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
     private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
     private final ValueCountAggregationBuilder uniqueRunsAggregation;
+    private final TopHitsAggregationBuilder topHitsAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
     private final String emptyValue;
     private final String billingCenterKey;
@@ -191,6 +219,9 @@ public class BillingManager {
         this.storageUsageTotalAggregation = PipelineAggregatorBuilders
             .sumBucket(TOTAL_STORAGE_USAGE_AGG, String.format("%s.%s", STORAGE_GROUPING_AGG, SINGLE_STORAGE_USAGE_AGG));
         this.uniqueRunsAggregation = AggregationBuilders.count(UNIQUE_RUNS).field(RUN_ID_FIELD);
+        this.topHitsAggregation = AggregationBuilders.topHits(TOP_HITS_AGG)
+                .size(1)
+                .sort(BILLING_DATE_FIELD, SortOrder.DESC);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
                                       Function.identity()));
@@ -208,10 +239,7 @@ public class BillingManager {
             final LocalDate to = request.getTo();
             final BillingGrouping grouping = request.getGrouping();
             final DateHistogramInterval interval = request.getInterval();
-            final Map<String, List<String>> filters = MapUtils.isEmpty(request.getFilters())
-                                                      ? new HashMap<>()
-                                                      : request.getFilters();
-            setAuthorizationFilters(filters);
+            final Map<String, List<String>> filters = getFilters(request.getFilters());
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
             } else {
@@ -228,6 +256,162 @@ public class BillingManager {
                               request.getGrouping(),
                               request.getPageNum(),
                               request.getPageSize());
+    }
+
+    public void export(final BillingExportRequest request, final OutputStream out) {
+        try (final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
+             final BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+             final CSVWriter csvWriter = new CSVWriter(bufferedWriter);
+             final RunBillingWriter writer = new RunBillingWriter(csvWriter);
+             final RestClient elasticSearchLowLevelClient = elasticHelper.buildLowLevelClient()) {
+            final RestHighLevelClient elasticSearchClient = new RestHighLevelClient(elasticSearchLowLevelClient);
+            writer.writeHeader();
+            runBillings(elasticSearchClient, request).forEach(writer::write);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    public Stream<RunBilling> runBillings(final RestHighLevelClient elasticSearchClient,
+                                          final BillingExportRequest request) {
+        final LocalDate from = request.getFrom();
+        final LocalDate to = request.getTo();
+        final Map<String, List<String>> filters = getFilters(request.getFilters());
+        final int numberOfPartitions = getEstimatedNumberOfPartitions(elasticSearchClient, from, to, filters);
+        return runBillings(elasticSearchClient, from, to, filters, numberOfPartitions);
+    }
+
+    private int getEstimatedNumberOfPartitions(final RestHighLevelClient elasticSearchClient,
+                                               final LocalDate from,
+                                               final LocalDate to,
+                                               final Map<String, List<String>> filters) {
+        final int numberOfRunBillings = getEstimatedNumberOfRunBillings(elasticSearchClient, from, to, filters);
+        return BigDecimal.valueOf(numberOfRunBillings)
+                .divide(BigDecimal.valueOf(DEFAULT_BILLINGS_PAGE_SIZE), RoundingMode.CEILING)
+                .max(BigDecimal.ONE)
+                .intValue();
+    }
+
+    private int getEstimatedNumberOfRunBillings(final RestHighLevelClient elasticsearchClient,
+                                                final LocalDate from,
+                                                final LocalDate to,
+                                                final Map<String, List<String>> filters) {
+        try {
+            final SearchRequest searchRequest = new SearchRequest();
+            final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                    .aggregation(AggregationBuilders.cardinality(CARDINALITY_AGG)
+                            .field(RUN_ID_FIELD));
+            setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
+            log.debug("Search request: {}", searchRequest);
+            return Optional.of(elasticsearchClient.search(searchRequest))
+                    .map(SearchResponse::getAggregations)
+                    .flatMap(this::cardinalityIntValue)
+                    .orElse(NumberUtils.INTEGER_ZERO);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    private Optional<Integer> cardinalityIntValue(final Aggregations aggregations) {
+        return Optional.ofNullable(aggregations.get(CARDINALITY_AGG))
+                .filter(Cardinality.class::isInstance)
+                .map(Cardinality.class::cast)
+                .map(Cardinality::getValue)
+                .map(Long::intValue);
+    }
+
+    private Stream<RunBilling> runBillings(final RestHighLevelClient elasticSearchClient,
+                                           final LocalDate from,
+                                           final LocalDate to,
+                                           final Map<String, List<String>> filters,
+                                           final int numberOfPartitions) {
+        return IntStream.range(0, numberOfPartitions)
+                .mapToObj(partition -> getRunBillingsRequest(from, to, filters, partition, numberOfPartitions))
+                .peek(request -> log.debug("Search request: {}", request))
+                .map(IOFunction.unchecked(elasticSearchClient::search))
+                .map(this::getRunBillings)
+                .flatMap(List::stream);
+    }
+
+    private SearchRequest getRunBillingsRequest(final LocalDate from,
+                                                final LocalDate to,
+                                                final Map<String, List<String>> filters,
+                                                final int partition,
+                                                final int numberOfPartitions) {
+        final SearchRequest searchRequest = new SearchRequest();
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                .aggregation(AggregationBuilders.terms(RUN_ID_FIELD)
+                        .field(RUN_ID_FIELD)
+                        .includeExclude(new IncludeExclude(partition, numberOfPartitions))
+                        .order(Terms.Order.aggregation(COST_FIELD, false))
+                        .size(Integer.MAX_VALUE)
+                        .minDocCount(1)
+                        .subAggregation(costAggregation)
+                        .subAggregation(runUsageAggregation)
+                        .subAggregation(topHitsAggregation));
+        setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
+        return searchRequest;
+    }
+
+    private List<RunBilling> getRunBillings(final SearchResponse searchResponse) {
+        return Optional.ofNullable(searchResponse.getAggregations())
+                .map(it -> it.get(RUN_ID_FIELD))
+                .filter(ParsedStringTerms.class::isInstance)
+                .map(ParsedStringTerms.class::cast)
+                .map(ParsedTerms::getBuckets)
+                .map(Collection::stream)
+                .orElse(Stream.empty())
+                .map(bucket -> getRunBilling((String) bucket.getKey(), bucket.getAggregations()))
+                .collect(Collectors.toList());
+    }
+
+    private RunBilling getRunBilling(final String runId, final Aggregations aggregations) {
+        final Optional<Long> cost = sumLongValue(aggregations, COST_FIELD);
+        final Optional<Long> duration = sumLongValue(aggregations, RUN_USAGE_AGG);
+        final Map<String, Object> topHitFields = Optional.ofNullable(aggregations.get(TOP_HITS_AGG))
+                .filter(TopHits.class::isInstance)
+                .map(TopHits.class::cast)
+                .map(TopHits::getHits)
+                .map(SearchHits::getHits)
+                .map(Arrays::asList)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .findFirst()
+                .map(SearchHit::getSourceAsMap)
+                .orElseGet(Collections::emptyMap);
+        return RunBilling.builder()
+                .runId(NumberUtils.toLong(runId))
+                .owner(asString(topHitFields.get(OWNER_FIELD)))
+                .pipeline(asString(topHitFields.get(PIPELINE_FIELD)))
+                .tool(asString(topHitFields.get(TOOL_FIELD)))
+                .instanceType(asString(topHitFields.get(INSTANCE_TYPE_FIELD)))
+                .started(asDateTime(topHitFields.get(STARTED_FIELD)))
+                .finished(asDateTime(topHitFields.get(FINISHED_FIELD)))
+                .duration(duration.orElse(0L))
+                .cost(cost.orElse(0L))
+                .build();
+    }
+
+    private String asString(final Object value) {
+        return value != null ? value.toString() : null;
+    }
+
+    private LocalDateTime asDateTime(final Object value) {
+        return value != null ? DATE_TIME_FORMATTER.parse(value.toString(), LocalDateTime::from) : null;
+    }
+
+    private Optional<Long> sumLongValue(final Aggregations aggregations, final String name) {
+        return sumDoubleValue(aggregations, name).map(Double::longValue);
+    }
+
+    private Optional<Double> sumDoubleValue(final Aggregations aggregations, final String name) {
+        return Optional.ofNullable(aggregations.get(name))
+                .filter(ParsedSum.class::isInstance)
+                .map(ParsedSum.class::cast)
+                .map(ParsedSum::getValue)
+                .filter(it -> !it.isInfinite());
     }
 
     public List<String> getAllBillingCenters() {
@@ -260,11 +444,13 @@ public class BillingManager {
         }
     }
 
-    private void setAuthorizationFilters(final Map<String, List<String>> filters) {
+    private Map<String, List<String>> getFilters(final Map<String, List<String>> requestedFilters) {
+        final Map<String, List<String>> filters = new HashMap<>(MapUtils.emptyIfNull(requestedFilters));
         final PipelineUser authorizedUser = authManager.getCurrentUser();
         if (!hasFullBillingAccess(authorizedUser)) {
-            filters.put("owner", Collections.singletonList(authorizedUser.getUserName()));
+            filters.put(OWNER_FIELD, Collections.singletonList(authorizedUser.getUserName()));
         }
+        return filters;
     }
 
     private boolean hasFullBillingAccess(final PipelineUser authorizedUser) {
@@ -571,5 +757,19 @@ public class BillingManager {
             builder.periodEnd(periodStart.atTime(LocalTime.MAX));
         }
         return builder.build();
+    }
+
+    interface IOFunction<T, R> {
+        R apply(T t) throws IOException;
+
+        static <T, R> Function<T, R> unchecked(final IOFunction<T, R> function) {
+            return request -> {
+                try {
+                    return function.apply(request);
+                } catch (IOException e) {
+                    throw new SearchException(e.getMessage(), e);
+                }
+            };
+        }
     }
 }

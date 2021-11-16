@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
+import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -33,6 +34,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -47,9 +50,7 @@ public class BillingController extends AbstractRestController {
         value = "Get info for building expenses charts.",
         notes = "Get info for building expenses charts.",
         produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<BillingChartInfo>> getBillingChartInfo(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfo(request));
     }
@@ -60,11 +61,21 @@ public class BillingController extends AbstractRestController {
         value = "Get paginated info about billing expenses.",
         notes = "Get paginated info about billing expenses.",
         produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<BillingChartInfo>> getBillingChartInfoPaginated(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfoPaginated(request));
+    }
+
+    @RequestMapping(value = "/billing/export", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Export raw info for building expenses.",
+            notes = "Get raw info for building expenses.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public void export(@RequestBody final BillingExportRequest request,
+                       final HttpServletResponse response) throws IOException {
+        writeStreamToResponse(out -> billingApi.export(request, out), response, "billing.export.raw.csv");
     }
 
     @GetMapping(value = "/billing/centers")

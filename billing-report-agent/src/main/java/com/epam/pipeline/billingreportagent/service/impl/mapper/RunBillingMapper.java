@@ -57,7 +57,8 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
                 .field("run_id", run.getId())
                 .field("resource_type", billingInfo.getResourceType())
-                .field("pipeline", run.getPipelineId())
+                .field("pipeline_id", run.getPipelineId())
+                .field("pipeline", run.getPipelineName())
                 .field("tool", run.getDockerImage())
                 .field("instance_type", run.getInstance().getNodeType())
                 .field("compute_type", billingInfo.getEntity().getRunType())
@@ -68,7 +69,9 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("compute_price", scaled(run.getComputePricePerHour()))
                 .field("disk_price", scaled(run.getDiskPricePerHour()))
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
-                .field("created_date", billingInfo.getDate());
+                .field("created_date", billingInfo.getDate())
+                .field("start_date", container.getEntity().getEntity().getPipelineRun().getStartDate())
+                .field("end_date", container.getEntity().getEntity().getPipelineRun().getEndDate());
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;

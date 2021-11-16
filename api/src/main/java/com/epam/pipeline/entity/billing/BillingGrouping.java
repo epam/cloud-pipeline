@@ -20,7 +20,7 @@ public enum BillingGrouping {
     RESOURCE_TYPE("resource_type", false, false),
     RUN_INSTANCE_TYPE("instance_type", true, false),
     RUN_COMPUTE_TYPE("compute_type", false, false),
-    PIPELINE("pipeline", true, false),
+    PIPELINE("pipeline_id", true, false),
     TOOL("tool", true, false),
     STORAGE("storage_id", false, true),
     STORAGE_TYPE("storage_type", false, false),
