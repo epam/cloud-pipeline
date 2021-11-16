@@ -20,6 +20,7 @@ import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import com.epam.release.notes.agent.exception.EmailException;
 import com.epam.release.notes.agent.service.action.mail.TemplateNotificationService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -36,11 +37,14 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
 
     private final JavaMailSender javaMailSender;
     private final TemplateNotificationService templateNotificationService;
+    private final String serviceEmail;
 
     public EmailSendActionNotificationService(final JavaMailSender javaMailSender,
-                                              final TemplateNotificationService templateNotificationService) {
+                                              final TemplateNotificationService templateNotificationService,
+                                              @Value("${spring.mail.username}") final String serviceEmail) {
         this.javaMailSender = javaMailSender;
         this.templateNotificationService = templateNotificationService;
+        this.serviceEmail = serviceEmail;
     }
 
     @Override
@@ -53,6 +57,7 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
         final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         final MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
         try {
+            helper.setFrom(serviceEmail);
             helper.setSubject(getEmailContent(emailContent.getTitle(), "title"));
             helper.setText(getEmailContent(emailContent.getBody(), "body"), true);
             helper.setTo(Optional.ofNullable(emailContent.getRecipients())
