@@ -194,20 +194,27 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                       final Collection<NFSObserverEvent> events) {
         log.debug("Processing {} events for datastorage [id={}]", events.size(), dataStorage.getId());
         final List<NFSObserverEvent> allEvents = flattenEvents(dataStorage, events);
-        final Map<String, SearchHit> searchHitMap = findIndexedFilesEvent(dataStorage, allEvents);
-        log.debug("Found {} search hits for events", searchHitMap.size());
-        final String indexForNewFiles = createIndexForStorageIfNotExists(dataStorage);
-        final Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
-        if (mountFolder == null) {
-            log.warn("Unable to retrieve mount for [{}], skipping...", dataStorage.getName());
-            return;
-        }
-        final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
-        events.stream()
-            .map(event -> mapUpdateEventToFile(requestContainer, mountFolder, searchHitMap, event))
-            .filter(Objects::nonNull)
-            .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file))
-            .forEach(requestContainer::add);
+        StreamUtils.chunked(allEvents.stream(), eventsFileChunkSize)
+                .forEach(eventChunk -> {
+                    log.debug("Processing chunk with {} events for datastorage [id={}]",
+                            eventChunk.size(), dataStorage.getId());
+                    final Map<String, SearchHit> searchHitMap = findIndexedFilesEvent(dataStorage, eventChunk);
+                    log.debug("Found {} search hits for events", searchHitMap.size());
+                    final String indexForNewFiles = createIndexForStorageIfNotExists(dataStorage);
+                    final Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
+                    if (mountFolder == null) {
+                        log.warn("Unable to retrieve mount for [{}], skipping...", dataStorage.getName());
+                        return;
+                    }
+                    final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
+                    eventChunk.stream()
+                        .map(event -> mapUpdateEventToFile(requestContainer, mountFolder, searchHitMap, event))
+                        .filter(Objects::nonNull)
+                        .map(file ->
+                                mapToElasticRequest(dataStorage, searchHitMap,
+                                        indexForNewFiles, permissionsContainer, file))
+                        .forEach(requestContainer::add);
+                });
         log.debug("Finished processing events for datastorage [id={}]", dataStorage.getId());
     }
 
@@ -357,7 +364,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                        .must(QueryBuilders.termQuery(FILE_ID_FIELD, event.getFilePath()))
                        .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
             .size(1);
-        return new SearchRequest("*")
+        return new SearchRequest(getAlias(dataStorage))
             .indicesOptions(IndicesOptions.lenientExpandOpen())
             .source(source);
     }
@@ -370,7 +377,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                        .must(QueryBuilders.prefixQuery(FILE_ID_FIELD, extractFolderFromFolderEvent(eventPath)))
                        .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
             .size(SCROLLING_PAGE_SIZE);
-        return new SearchRequest("*")
+        return new SearchRequest(getAlias(dataStorage))
             .scroll(TIME_SCROLL)
             .indicesOptions(IndicesOptions.lenientExpandOpen())
             .source(source);
@@ -394,7 +401,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     }
 
     private String createIndexForStorageIfNotExists(final AbstractDataStorage dataStorage) {
-        final String alias = getIndexPrefix() + getIndexName() + String.format("-%d", dataStorage.getId());
+        final String alias = getAlias(dataStorage);
         final String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         return Optional.ofNullable(getElasticsearchServiceClient().getIndexNameByAlias(alias))
             .orElseGet(() -> {
@@ -410,6 +417,10 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                     return null;
                 }
             });
+    }
+
+    private String getAlias(final AbstractDataStorage dataStorage) {
+        return getIndexPrefix() + getIndexName() + String.format("-%d", dataStorage.getId());
     }
 
     private Collection<NFSObserverEvent> mergeEvents(final List<NFSObserverEvent> events) {
