@@ -52,8 +52,8 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
             final String emailToSubscribersTemplateName,
             @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
             @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle,
-            @Value("#{'${release.notes.agent.admin.emails}'.split(','):}") final List<String> adminsEmailAddresses,
-            @Value("#{'${release.notes.agent.subscribers.emails}'.split(','):}")
+            @Value("#{'${release.notes.agent.admin.emails:}'.split(',')}") final List<String> adminsEmailAddresses,
+            @Value("#{'${release.notes.agent.subscribers.emails:}'.split(',')}")
             final List<String> subscribersEmailAddresses
     ) {
         this.templateEngine = templateEngine;

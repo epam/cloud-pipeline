@@ -78,7 +78,7 @@ public class ReleaseNotesNotifier {
                 old.getSha(), current.getSha()));
         final List<GitHubIssue> gitHubIssues = gitHubService.fetchIssues(current.getSha(), old.getSha());
         final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
-        log.debug(format("There is: %s github  and %s jira issues to process.",
+        log.debug(format("There are: %s github and %s jira issues to process.",
                 gitHubIssues.size(), jiraIssues.size()));
         final VersionStatusInfo versionStatusInfo = VersionStatusInfo.builder()
                         .oldVersion(old.toString())
