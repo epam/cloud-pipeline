@@ -234,7 +234,7 @@ public class NatGatewayManager {
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
         }
         if (activePorts.containsKey(port)
-            && !kubernetesManager.refreshDeployment(null, tinyproxyServiceName, tinyproxyLabelSelector)) {
+            && !kubernetesManager.refreshDeployment(tinyproxyServiceName, tinyproxyLabelSelector)) {
             return setStatusFailed(
                 serviceName, port,
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
@@ -272,13 +272,13 @@ public class NatGatewayManager {
             removePortForwardingRule(service, activePorts, port);
             removeDnsMaks(service, activePorts, port);
             removePortFromService(service, activePorts, port);
-            return kubernetesManager.refreshDeployment(null, tinyproxyServiceName, tinyproxyLabelSelector);
+            return kubernetesManager.refreshDeployment(tinyproxyServiceName, tinyproxyLabelSelector);
         }
         return true;
     }
 
     private boolean tryRefreshDeployment(final String serviceName, final Integer port) {
-        if (kubernetesManager.refreshDeployment(null, tinyproxyServiceName, tinyproxyLabelSelector)) {
+        if (kubernetesManager.refreshDeployment(tinyproxyServiceName, tinyproxyLabelSelector)) {
             updateStatusForRoutingRule(serviceName, port, NatRouteStatus.ACTIVE);
             return true;
         } else {

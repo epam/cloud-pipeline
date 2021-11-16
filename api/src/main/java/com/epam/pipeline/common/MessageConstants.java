@@ -211,6 +211,8 @@ public final class MessageConstants {
     public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
     public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
     public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
+    public static final String ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED = "error.kube.deployment.refresh.failed";
+    public static final String ERROR_KUBE_NAMESPACE_NOT_SPECIFIED = "error.kube.namespace.not.specified";
 
     // Data storage messages
     public static final String ERROR_DATASTORAGE_NOT_FOUND = "error.datastorage.not.found";

@@ -318,16 +318,22 @@ public class KubernetesManager {
         return new DefaultKubernetesClient(config);
     }
 
+    public boolean refreshDeployment(final String deploymentName, final Map<String, String> labelSelector) {
+        return refreshDeployment(kubeNamespace, deploymentName, labelSelector);
+    }
+
     public boolean refreshDeployment(final String namespace, final String deploymentName,
                                      final Map<String, String> labelSelector) {
+        Assert.isTrue(StringUtils.isNotBlank(namespace),
+                      messageHelper.getMessage(MessageConstants.ERROR_KUBE_NAMESPACE_NOT_SPECIFIED));
         try {
-            final String resolvedNamespace = defaultNamespaceIfEmpty(namespace);
-            deploymentAPIClient.updateDeployment(resolvedNamespace, deploymentName);
+            deploymentAPIClient.updateDeployment(namespace, deploymentName);
             try (KubernetesClient client = getKubernetesClient()) {
-                return waitForPodsStartup(client, resolvedNamespace, labelSelector,
+                return waitForPodsStartup(client, namespace, labelSelector,
                                           DEPLOYMENT_REFRESH_RETRIES, DEPLOYMENT_REFRESH_TIMEOUT_SEC);
             }
         } catch (RuntimeException e) {
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED, e.getMessage()));
             return false;
         }
     }
@@ -979,16 +985,16 @@ public class KubernetesManager {
 
     public Optional<Integer> generateFreeTargetPort() {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Optional<Integer> maxCurrentPort = client.services().list().getItems().stream()
+            return client.services().list().getItems().stream()
                 .map(Service::getSpec)
                 .map(ServiceSpec::getPorts)
                 .flatMap(Collection::stream)
                 .map(ServicePort::getTargetPort)
                 .map(IntOrString::getIntVal)
-                .max(Comparator.naturalOrder());
-            return maxCurrentPort.isPresent()
-                   ? maxCurrentPort.map(value -> value + 1)
-                   : Optional.of(defaultKubeServiceTargetPort);
+                .max(Comparator.naturalOrder())
+                .map(value -> value + 1)
+                .map(Optional::of)
+                .orElse(Optional.of(defaultKubeServiceTargetPort));
         } catch (RuntimeException e) {
             return Optional.empty();
         }
