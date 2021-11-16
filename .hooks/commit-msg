@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# This hook script checks the message commit format.
+# If the message does not include an issue number in the 'Issue # / issue #' format, the script rejects the commit.
+# It is also possible to use the 'Issue #undefined#' format, but this should be avoided.
+#
+
+MESSAGE="$1"
+
+matched=$(grep -E "^.*(((I|i)ssue( |_)#)[1-9]+).*" "$MESSAGE")
+if [ -z "$matched" ] ; then
+    matched_undefined=$(grep -E "#(N|n)o( |_)(I|i)ssue#" "$MESSAGE")
+    if [ -n "$matched_undefined" ] ; then
+      echo "[warning] You are committing without a issue number" >&1
+    else
+      echo "[error] Your message is not formatted correctly. The commit message must contain 'Issue #' or 'issue #'" >&2
+      exit 1
+    fi
+fi
