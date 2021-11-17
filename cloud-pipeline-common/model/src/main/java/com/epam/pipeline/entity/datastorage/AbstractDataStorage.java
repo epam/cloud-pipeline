@@ -75,9 +75,8 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      */
     private boolean sensitive;
 
+    private Long sourceStorageId;
     private Set<String> linkingMasks;
-
-    private AbstractDataStorage sourceStorage;
 
     public AbstractDataStorage(final Long id, final String name,
                                final String path, final DataStorageType type) {

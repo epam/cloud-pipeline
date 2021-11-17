@@ -164,7 +164,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         if (!dataStorage.isShared()) {
             return true;
         }
-        if (dataStorage.getSourceStorage() != null) {
+        if (dataStorage.getSourceStorageId() != null) {
             return false;
         }
         final boolean isPrefixStorage = ListUtils.emptyIfNull(allStorages)
