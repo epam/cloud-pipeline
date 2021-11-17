@@ -17,19 +17,16 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import classNames from 'classnames';
-import {Alert, Input, message, Modal, Row, Table} from 'antd';
+import {Alert, Input, message, Modal, Row} from 'antd';
 import PreferencesUpdate from '../../models/preferences/PreferencesUpdate';
 import PreferenceGroup from './forms/PreferenceGroup';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel';
-import styles from './Preferences.css';
+import SubSettings from './sub-settings';
 
 @inject('preferences', 'router', 'authenticatedUserInfo')
 @observer
 export default class Preferences extends React.Component {
   state = {
-    selectedPreferenceGroup: null,
     operationInProgress: false,
     search: null,
     changesCanBeSkipped: false
@@ -37,20 +34,10 @@ export default class Preferences extends React.Component {
 
   componentDidMount () {
     const {route, router, preferences} = this.props;
-    const {selectedPreferenceGroup} = this.state;
-    if (!selectedPreferenceGroup && this.preferencesGroups.length > 0) {
-      this.selectPreferenceGroup(this.preferencesGroups[0]);
-    }
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
     preferences.fetch();
-  };
-
-  componentDidUpdate () {
-    if (!this.state.selectedPreferenceGroup && this.preferencesGroups.length > 0) {
-      this.selectPreferenceGroup(this.preferencesGroups[0]);
-    }
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -87,15 +74,27 @@ export default class Preferences extends React.Component {
   @computed
   get preferences () {
     if (this.props.preferences.loaded) {
-      if (this.state.search) {
-        return (this.props.preferences.value || [])
-          .filter(p => p.name.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0);
-      }
-      return (this.props.preferences.value || [])
-        .filter(p => p.preferenceGroup === this.state.selectedPreferenceGroup);
+      return (this.props.preferences.value || []).slice();
     }
     return [];
   }
+
+  get filteredPreferencesGroups () {
+    const {search} = this.state;
+    return search
+      ? [{name: `Search '${search}'`}]
+      : this.preferencesGroups.map(g => ({name: g}));
+  }
+
+  getPreferencesForGroup = (group) => {
+    const {search} = this.state;
+    if (search) {
+      return this.preferences
+        .filter(p => p.name.toLowerCase().indexOf(search.toLowerCase()) >= 0);
+    }
+    return this.preferences
+      .filter(p => p.preferenceGroup === group);
+  };
 
   checkSettingsBeforeLeave = (nextLocation) => {
     const {router} = this.props;
@@ -121,59 +120,27 @@ export default class Preferences extends React.Component {
     }
   };
 
-  selectPreferenceGroup = (name) => {
-    const changePreferenceGroup = () => {
-      this.setState({
-        selectedPreferenceGroup: name
-      });
-    };
-    if (this.state.selectedPreferenceGroup && this.templateModified) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        async onOk () {
-          changePreferenceGroup();
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-    } else {
-      changePreferenceGroup();
-    }
-  };
-
-  renderPreferenceGroupsTable = () => {
-    const columns = [
-      {
-        dataIndex: 'name',
-        key: 'name',
-        render: (name) => name || 'Other'
+  canChangePreferenceGroup = () => {
+    return new Promise((resolve) => {
+      if (this.templateModified) {
+        Modal.confirm({
+          title: 'You have unsaved changes. Continue?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            resolve(true);
+          },
+          onCancel () {
+            resolve(false);
+          },
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      } else {
+        resolve(true);
       }
-    ];
-    const dataSource = this.state.search
-      ? [{name: `Search '${this.state.search}'`}]
-      : this.preferencesGroups.map(g => ({name: g}));
-    return (
-      <Table
-        className={styles.table}
-        dataSource={dataSource}
-        columns={columns}
-        showHeader={false}
-        pagination={false}
-        rowKey="name"
-        rowClassName={
-          (group) => classNames(
-            'cp-settings-sidebar-element',
-            {
-              'cp-table-element-selected': group.name === this.state.selectedPreferenceGroup
-            }
-          )
-        }
-        onRowClick={group => this.selectPreferenceGroup(group.name)}
-        size="medium" />
-    );
+    });
   };
 
   preferenceGroupForm;
@@ -189,16 +156,6 @@ export default class Preferences extends React.Component {
     }
     return this.preferenceGroupForm.modified;
   }
-
-  reload = async (clearState = false) => {
-    this.props.preferences.fetch();
-    if (clearState) {
-      this.preferenceGroupForm && this.preferenceGroupForm.resetFormFields();
-      this.setState({
-        selectedPreferenceGroup: null
-      });
-    }
-  };
 
   updatePreferences = async (preferences) => {
     const hide = message.loading('Updating preferences...', -1);
@@ -241,7 +198,7 @@ export default class Preferences extends React.Component {
       return <LoadingView />;
     }
     if (this.props.preferences.error) {
-      return <Alert type="warning" message={this.props.preferences.error} />
+      return <Alert type="warning" message={this.props.preferences.error} />;
     }
     return (
       <div
@@ -253,42 +210,34 @@ export default class Preferences extends React.Component {
       >
         <Row type="flex" style={{marginBottom: 10}}>
           <Input.Search
-            size="small"
+            placeholder="Search preferences"
             onChange={this.onChange}
-            onSearch={this.onSearch} />
+            onSearch={this.onSearch}
+          />
         </Row>
-        <div
-          style={{flex: 1, minHeight: 0}}
+        <SubSettings
+          sections={
+            this.filteredPreferencesGroups.map(group => ({
+              key: group.name,
+              title: group.name,
+              disabled: this.state.operationInProgress
+            }))
+          }
+          canNavigate={this.canChangePreferenceGroup}
         >
-          <SplitPanel
-            contentInfo={[
-              {
-                key: 'groups',
-                size: {
-                  pxDefault: 150
-                }
-              }
-            ]}
-          >
-            <div key="groups">
-              {this.renderPreferenceGroupsTable()}
-            </div>
-            <div
-              key="preferences"
-              style={{
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
+          {
+            (group) => (
               <PreferenceGroup
                 pending={this.state.operationInProgress}
                 onSubmit={this.operationWrapper(this.updatePreferences)}
-                group={this.state.selectedPreferenceGroup}
-                preferences={this.preferences}
+                group={group.key}
+                preferences={this.getPreferencesForGroup(group.key)}
                 wrappedComponentRef={this.initializePreferenceGroupForm}
-                search={this.state.search} />
-            </div>
-          </SplitPanel>
-        </div>
+                search={this.state.search}
+              />
+            )
+          }
+        </SubSettings>
       </div>
     );
   }

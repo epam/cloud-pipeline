@@ -34,13 +34,9 @@
 
 .table,
 .table th {
-  border-bottom: 1px solid rgba(244, 244, 244, 0.4);
+  border-bottom: 1px solid transparent;
   padding: 10px;
   cursor: pointer;
-}
-
-.table thead {
-  background-color: #eee;
 }
 
 .table th {
@@ -63,7 +59,6 @@
   z-index: 1053;
   left: 0;
   max-width: initial;
-  background-color: #eee;
 }
 
 .table tbody tr > th:first-child {
@@ -74,7 +69,6 @@
   margin: 0;
   width: 200px;
   height: 53px;
-  background-color: #fff;
   z-index: 1053;
   left: 0;
   overflow: hidden;
@@ -86,19 +80,6 @@
 .table tbody tr > td:nth-child(2) {
   padding-left: 200px;
   min-width: 300px;
-}
-
-.table tbody tr:nth-child(even) {
-  background-color: rgba(244, 244, 244, 0.4);
-}
-
-.modified-value.input,
-.modified-value > div {
-  background-color: rgba(248, 218, 4, 0.1) !important;
-}
-
-.new-value > div {
-  background-color: rgba(16, 142, 233, 0.1) !important;
 }
 
 .cell {
@@ -119,7 +100,6 @@
 
 .issues {
   margin-left: 2px;
-  color: orange;
 }
 
 .user-name-cell-container {
@@ -127,10 +107,6 @@
   align-items: center;
   width: 100%;
   cursor: default;
-}
-
-.user-name-cell-container.blocked {
-  color: #aaa;
 }
 
 .user-name-cell {

@@ -42,6 +42,7 @@ import {ResponsiveContainer} from './charts/utilities';
 import ClusterNodeUsageReport, * as usageUtilities
   from '../../models/cluster/ClusterNodeUsageReport';
 import ClusterUsageExportSettingsDialog from './ClusterUsageExportSettingsDialog';
+import classNames from "classnames";
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -89,7 +90,7 @@ function ChartContainer (
       style={{width, height}}
     >
       <div
-        className={styles.wrapper}
+        className={classNames(styles.wrapper, 'cp-panel-card')}
         style={{
           width: chartWidth,
           height: chartHeight,

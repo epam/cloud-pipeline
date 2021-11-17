@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
@@ -588,7 +589,13 @@ class Logs extends localization.LocalizedReactComponent {
                 <span
                   key={d.key}
                   style={d.additionalStyle}
-                  className={styles.instanceHeaderItem}>
+                  className={
+                    classNames(
+                      styles.instanceHeaderItem,
+                      'cp-run-instance-tag'
+                    )
+                  }
+                >
                   {d.value}
                 </span>
               );
@@ -1262,7 +1269,12 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Link
           key={index}
-          className={styles.nestedRun}
+          className={
+            classNames(
+              styles.nestedRun,
+              'cp-run-nested-run-link'
+            )
+          }
           to={`/run/${run.id}`}
         >
           <StatusIcon run={run} small />
@@ -1491,7 +1503,14 @@ class Logs extends localization.LocalizedReactComponent {
           );
         } else {
           pipelineLink = (
-            <span className={styles.deletedPipeline}>
+            <span
+              className={
+                classNames(
+                  styles.deletedPipeline,
+                  'cp-danger'
+                )
+              }
+            >
               {pipeline.name} ({pipeline.version})
               <Popover
                 content={(
@@ -1713,7 +1732,7 @@ class Logs extends localization.LocalizedReactComponent {
           ) {
             ActionButton = (
               <a
-                style={{color: 'red'}}
+                className="cp-danger"
                 onClick={() => this.terminatePipeline()}
               >
                 TERMINATE
@@ -1735,7 +1754,7 @@ class Logs extends localization.LocalizedReactComponent {
             ) &&
             canStopRun(this.props.run.value)
           ) {
-            ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
+            ActionButton = <a className="cp-danger" onClick={() => this.stopPipeline()}>STOP</a>;
           }
           break;
         case 'stopped':
@@ -1874,7 +1893,14 @@ class Logs extends localization.LocalizedReactComponent {
 
     return (
       <Card
-        className={styles.logCard}
+        className={
+          classNames(
+            styles.logCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{
           padding: 10,
           display: 'flex',
@@ -1972,7 +1998,8 @@ class Logs extends localization.LocalizedReactComponent {
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
         />
-      </Card>);
+      </Card>
+    );
   }
 
   componentWillReceiveProps (nextProps) {

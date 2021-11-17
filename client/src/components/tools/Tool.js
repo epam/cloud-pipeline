@@ -57,15 +57,12 @@ import {
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY,
   SplitPanel
-} from '../special/splitPanel/SplitPanel';
+} from '../special/splitPanel';
 import Owner from '../special/owner';
 import styles from './Tools.css';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
 import PermissionsForm from '../roleModel/PermissionsForm';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
-import 'highlight.js/styles/github.css';
 import displayDate from '../../utils/displayDate';
 import displaySize from '../../utils/displaySize';
 import LoadToolAttributes from '../../models/tools/LoadToolInfo';
@@ -74,37 +71,21 @@ import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhit
 import ToolScan from '../../models/tools/ToolScan';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import VersionScanResult from './elements/VersionScanResult';
-import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
+import {
+  submitsRun,
+  modifyPayloadForAllowedInstanceTypes,
+  run,
+  runPipelineActions
+} from '../runs/actions';
 import InstanceTypesManagementForm
-  from '../settings/forms/InstanceTypesManagementForm';
+from '../settings/forms/InstanceTypesManagementForm';
 import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
 import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
-
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import Markdown from '../special/markdown';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -526,10 +507,10 @@ export default class Tool extends localization.LocalizedReactComponent {
         const description = this.props.tool.value.description;
         if (description && description.trim().length) {
           return (
-            <div
+            <Markdown
               id="description-text-container"
-              className={styles.mdPreview}
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(description)}} />
+              md={description}
+            />
           );
         } else {
           return <span id="description-text" className={styles.noDescription}>No description</span>;
@@ -855,7 +836,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       return (
         <span
           key={alias}
-          className={styles.versionAliasItem}>
+          className={classNames(styles.versionAliasItem, 'cp-tag')}>
           {alias}
         </span>
       );

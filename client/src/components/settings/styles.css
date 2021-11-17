@@ -21,18 +21,6 @@
   padding: 10px;
 }
 
-.info {
-  color: green;
-}
-
-.warning {
-  color: #ff8818;
-}
-
-.critical {
-  color: #c01911;
-}
-
 .actions button {
   margin-left: 5px;
 }
@@ -57,7 +45,7 @@
   display: flex;
   justify-content: flex-start;
   flex-wrap: wrap;
-  border-bottom: 1px solid #e9e9e9;
+  border-bottom: 1px solid transparent;
 }
 
 .tabs-menu li a {

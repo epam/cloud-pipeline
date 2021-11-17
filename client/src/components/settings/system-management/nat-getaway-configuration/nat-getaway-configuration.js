@@ -111,7 +111,13 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.activeStatus)}
+              className={
+                classNames(
+                  styles.routeStatus,
+                  'cp-nat-route-status',
+                  'cp-primary'
+                )
+              }
               type="play-circle-o"
             />
           </Tooltip>
@@ -121,7 +127,7 @@ export default class NATGetaway extends React.Component {
           <Tooltip title={status}>
             <Icon
               type="hourglass"
-              className={classNames(styles.routeStatus, styles.activeStatus)}
+              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
             />
           </Tooltip>
         );
@@ -132,7 +138,7 @@ export default class NATGetaway extends React.Component {
           <Tooltip title={status}>
             <Icon
               type="loading"
-              className={classNames(styles.routeStatus, styles.activeStatus)}
+              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
             />
           </Tooltip>
         );
@@ -143,7 +149,14 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.scheduledStatus, styles.blink)}
+              className={
+                classNames(
+                  styles.routeStatus,
+                  'cp-nat-route-status',
+                  'cp-warning',
+                  styles.blink
+                )
+              }
               type="clock-circle-o"
             />
           </Tooltip>
@@ -152,7 +165,7 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.failedStatus)}
+              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')}
               type="exclamation-circle-o" />
           </Tooltip>
         );
@@ -160,14 +173,26 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.unknownStatus)}
+              className={
+                classNames(
+                  styles.routeStatus,
+                  'cp-nat-route-status',
+                  'cp-text-not-important'
+                )
+              }
               type="question-circle-o" />
           </Tooltip>
         );
       default:
         return (
           <Icon
-            className={classNames(styles.routeStatus, styles.unknownStatus)}
+            className={
+              classNames(
+                styles.routeStatus,
+                'cp-nat-route-status',
+                'cp-text-not-important'
+              )
+            }
             style={{visibility: 'hidden'}}
             type="question-circle-o"
           />
@@ -317,13 +342,15 @@ export default class NATGetaway extends React.Component {
         </div>
         <Spin spinning={pending}>
           <Table
-            className={styles.table}
+            className={classNames(styles.table, 'cp-settings-nat-table')}
             dataSource={this.sortedContent}
             pagination={false}
             rowKey={getRouteIdentifier}
             rowClassName={record => classNames({
               [styles.removed]: this.routeIsRemoved(record),
-              [styles.new]: record.isNew
+              'cp-nat-route-removed': this.routeIsRemoved(record),
+              'cp-disabled': this.routeIsRemoved(record),
+              'cp-primary': !this.routeIsRemoved(record) && record.isNew
             })}
           >
             <ColumnGroup title="External resources">
@@ -333,7 +360,7 @@ export default class NATGetaway extends React.Component {
                     title={col.prettyName || col.name}
                     dataIndex={col.name}
                     key={col.name}
-                    className={classNames(styles.externalColumn, styles.column)}
+                    className={classNames('external-column', styles.column)}
                     render={(text, record) => (
                       <div>
                         {col.name === 'externalName' && this.renderStatusIcon(record.status)}
@@ -350,7 +377,7 @@ export default class NATGetaway extends React.Component {
                   title={col.prettyName || col.name}
                   dataIndex={col.name}
                   key={col.name}
-                  className={classNames(styles.internalColumn, styles.column)}
+                  className={styles.column}
                 />))
               }
             </ColumnGroup>

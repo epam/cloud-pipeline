@@ -116,11 +116,27 @@ export default `
 @THEME .cp-link[disabled] {
   color: @btn-disabled-color;
 }
+@THEME .cp-text,
+@THEME a.cp-text,
+@THEME a.cp-text:visited {
+  color: @application-color;
+}
 @THEME a:hover,
 @THEME a:focus,
 @THEME .cp-link:hover,
 @THEME .cp-link:focus {
   color: @primary-hover-color;
+}
+@THEME a.cp-text:hover,
+@THEME a.cp-text:focus,
+@THEME a.cp-text:active {
+  color: @application-color-accent;
+}
+@THEME a.cp-danger:hover,
+@THEME a.cp-danger:focus,
+@THEME .cp-link.cp-danger:hover,
+@THEME .cp-link.cp-danger:focus {
+  color: lighten(@color-red, 5%);
 }
 @THEME .cp-divider.top,
 @THEME .cp-divider.horizontal {
@@ -139,13 +155,27 @@ export default `
 @THEME .cp-divider.horizontal {
   width: 100%;
   height: 1px;
+  background-color: transparent;
 }
 @THEME .cp-divider.vertical {
   width: 1px;
   height: 100%;
+  background-color: transparent;
 }
 @THEME .cp-primary {
   color: @primary-color;
+}
+@THEME .cp-disabled {
+  color: @application-color-disabled;
+}
+@THEME .cp-accent {
+  color: @application-color-accent;
+}
+@THEME .cp-warning {
+  color: @color-yellow;
+}
+@THEME .cp-success {
+  color: @color-green;
 }
 @THEME .cp-error,
 @THEME .cp-danger {
@@ -157,6 +187,27 @@ export default `
 @THEME .cp-sensitive-tag {
   background-color: @color-sensitive;
   color: @btn-color;
+}
+@THEME .cp-sensitive-tag.bordered {
+  background-color: transparent;
+  color: @color-sensitive;
+  border-color: currentColor;
+}
+@THEME .cp-tag {
+  background-color: transparent;
+  border: 1px solid @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-tag.disabled {
+  color: @application-color-disabled;
+}
+@THEME .cp-tag.warning {
+  border-color: currentColor;
+  color: @color-yellow;
+}
+@THEME .cp-tag.critical {
+  border-color: currentColor;
+  color: @color-red;
 }
 @THEME .cp-versioned-storage {
   color: @primary-color;
@@ -175,12 +226,42 @@ export default `
 @THEME h5 {
   color: @application-color;
 }
-@THEME .ant-input {
+@THEME .ant-input,
+@THEME .ant-input-number,
+@THEME .ant-input-number-input,
+@THEME .ant-input-number-handler-wrap {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
 }
-@THEME .ant-input-disabled {
+@THEME .ant-input-number-handler:active {
+  color: @primary-text-color;
+  background-color: @primary-color;
+}
+@THEME .ant-input-number-handler-wrap .ant-input-number-handler-down {
+  border-color: @input-border;
+}
+@THEME .ant-input-number-handler-wrap .ant-input-number-handler,
+@THEME .ant-input-number-handler-up-inner,
+@THEME .ant-input-number-handler-down-inner {
+  color: @input-color;
+}
+@THEME .ant-input-number-handler:hover .ant-input-number-handler-up-inner,
+@THEME .ant-input-number-handler:hover .ant-input-number-handler-down-inner {
+  color: @input-border-hover-color;
+}
+@THEME .ant-input-number-handler-down-disabled .ant-input-number-handler-down-inner,
+@THEME .ant-input-number-handler-up-disabled .ant-input-number-handler-down-inner,
+@THEME .ant-input-number-disabled .ant-input-number-handler-down-inner,
+@THEME .ant-input-number-handler-down-disabled .ant-input-number-handler-up-inner,
+@THEME .ant-input-number-handler-up-disabled .ant-input-number-handler-up-inner,
+@THEME .ant-input-number-disabled .ant-input-number-handler-up-inner {
+  color: @application-color-disabled !important;
+}
+@THEME .ant-input-disabled,
+@THEME .ant-input-number-disabled,
+@THEME .ant-input-number-disabled .ant-input-number-handler-wrap,
+@THEME .ant-input-number-input[disabled] {
   background-color: @input-background-disabled;
   color: @application-color-disabled;
 }
@@ -200,26 +281,38 @@ export default `
   color: @input-search-icon-hovered-color;
 }
 @THEME .ant-input:hover:not(.ant-input-disabled),
-@THEME .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled) {
+@THEME .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
+@THEME .ant-input-number:hover:not(.ant-input-number-disabled) {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
 @THEME .ant-input-affix-wrapper:focus .ant-input:not(.ant-input-disabled),
 @THEME .ant-input:focus:not(.ant-input-disabled),
-@THEME .ant-input:active:not(.ant-input-disabled) {
+@THEME .ant-input:active:not(.ant-input-disabled),
+@THEME .ant-input-number:focus:not(.ant-input-number-disabled),
+@THEME .ant-input-number.ant-input-number-focused:not(.ant-input-number-disabled),
+@THEME .ant-input-number:active:not(.ant-input-number-disabled) {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
-@THEME .ant-input.cp-error {
+@THEME .cp-error .ant-input,
+@THEME .ant-input.cp-error,
+@THEME .ant-select.cp-error .ant-select-selection {
   border-color: @color-red;
   color: @color-red;
 }
-@THEME .ant-input.cp-error:hover:not(.ant-input-disabled) {
+@THEME .cp-error .ant-input:hover:not(.ant-input-disabled),
+@THEME .ant-input.cp-error:hover:not(.ant-input-disabled),
+@THEME .ant-select.cp-error:not(.ant-select-disabled) .ant-select-selection:hover {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
+@THEME .cp-error .ant-input:focus:not(.ant-input-disabled),
+@THEME .cp-error .ant-input:active:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:focus:not(.ant-input-disabled),
-@THEME .ant-input.cp-error:active:not(.ant-input-disabled) {
+@THEME .ant-input.cp-error:active:not(.ant-input-disabled),
+@THEME .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:focus,
+@THEME .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:active {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
@@ -234,7 +327,8 @@ export default `
   color: @application-color;
 }
 @THEME .ant-confirm-body,
-@THEME .ant-confirm-body .ant-confirm-title {
+@THEME .ant-confirm-body .ant-confirm-title,
+@THEME .ant-confirm-body .ant-confirm-content {
   color: @application-color;
 }
 @THEME .ant-modal-header,
@@ -331,6 +425,15 @@ export default `
   border-right: 1px solid @card-border-color;
   border-bottom: 1px solid @card-border-color;
 }
+@THEME .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
+  border-bottom: 0;
+}
+@THEME .cp-tabs-content {
+  background-color: @card-background-color;
+  border-left: 1px solid @card-border-color;
+  border-right: 1px solid @card-border-color;
+  border-bottom: 1px solid @card-border-color;
+}
 @THEME .ant-checkbox-wrapper + span {
   color: @application-color;
 }
@@ -378,6 +481,13 @@ export default `
   background-color: @application-background-color;
   height: 100%;
   width: 100%;
+}
+@THEME .ant-modal-content .cp-split-panel,
+@THEME .ant-modal-content .cp-split-panel-panel {
+  background-color: @card-background-color;
+}
+@THEME .ant-modal-content .cp-split-panel-resizer {
+  background-color: @panel-background-color;
 }
 @THEME .cp-button {
   padding: 0 7px;
@@ -533,7 +643,7 @@ export default `
   border-color: @table-border-color;
   background: @card-background-color;
 }
-@THEME .ant-table-small .ant-table-thead > tr > th {
+@THEME .ant-table-thead > tr > th {
   color: @table-head-color;
   background-color: @card-background-color;
   border-color: @table-border-color;
@@ -579,8 +689,15 @@ export default `
   border-color: @border-color;
   background-color: inherit;
 }
+@THEME .ant-checkbox-disabled .ant-checkbox-inner {
+  border-color: @border-color !important;
+}
+@THEME .ant-checkbox-disabled .ant-checkbox-inner,
+@THEME .ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: @input-background-disabled;
+}
 @THEME .ant-checkbox-wrapper:hover .ant-checkbox-inner,
-@THEME .ant-checkbox:hover .ant-checkbox-inner,
+@THEME .ant-checkbox:not(.ant-checkbox-disabled):hover .ant-checkbox-inner,
 @THEME .ant-checkbox-input:focus + .ant-checkbox-inner {
   border-color: @primary-color;
 }
@@ -592,6 +709,9 @@ export default `
 @THEME .ant-checkbox-checked .ant-checkbox-inner::after,
 @THEME .ant-checkbox-inner::after {
   border-color: @card-background-color;
+}
+@THEME .ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: @application-color-disabled;
 }
 @THEME .ant-checkbox-checked::after {
   border-color: @primary-color;
@@ -616,10 +736,18 @@ export default `
 @THEME .ant-select {
   color: @input-color;
 }
+@THEME .ant-select.ant-select-disabled {
+  color: @application-color-disabled;
+}
 @THEME .ant-select-selection {
   color: @input-color;
   background-color: @input-background;
   border-color: @input-border;
+}
+@THEME .ant-select.ant-select-disabled .ant-select-selection {
+  color: @application-color-disabled;
+  background-color: @input-background-disabled;
+  border-color: currentColor;
 }
 @THEME .ant-select-selection:hover {
   border-color: @primary-color;
@@ -631,6 +759,7 @@ export default `
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
 @THEME .ant-select-dropdown,
+@THEME .ant-dropdown-menu,
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
   background-color: @panel-background-color;
@@ -657,11 +786,13 @@ export default `
   color: @application-color;
   background-color: @panel-background-color;
 }
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
   color: @application-color;
 }
 @THEME .ant-select-dropdown-menu-item.cp-danger,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger {
   color: @color-red;
 }
 @THEME .ant-select-dropdown-menu-item-active,
@@ -670,7 +801,10 @@ export default `
 @THEME .rc-menu-submenu-active > .rc-menu-submenu-title,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item:hover,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-active,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-selected {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-selected,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item:hover,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-active,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-selected {
   color: @element-hover-color;
   background-color: @element-hover-background-color;
 }
@@ -680,7 +814,10 @@ export default `
 @THEME .rc-menu-submenu-active.cp-danger > .rc-menu-submenu-title,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger:hover,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-active.cp-danger,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-selected.cp-danger {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-selected.cp-danger,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger:hover,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-active.cp-danger,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-selected.cp-danger {
   color: @btn-color;
   background-color: @btn-danger-active-color;
 }
@@ -688,7 +825,8 @@ export default `
 @THEME .rc-menu-submenu-title.rc-menu-item-disabled,
 @THEME .rc-menu-item.rc-menu-submenu-disabled,
 @THEME .rc-menu-submenu-title.rc-menu-submenu-disabled,
-@THEME .rc-dropdown-menu-item-disabled {
+@THEME .rc-dropdown-menu-item-disabled,
+@THEME .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
 }
 @THEME .ant-select-dropdown-menu-item-selected,
@@ -979,6 +1117,75 @@ export default `
 @THEME .ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected:hover::after {
   color: @primary-color;
 }
+@THEME .ant-collapse {
+  background-color: darken(@card-background-color, 3%);
+  color: @application-color;
+  border-color: @card-border-color;
+}
+@THEME .ant-collapse.ant-collapse-borderless {
+  background-color: transparent;
+}
+@THEME .ant-collapse-content {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+@THEME .ant-collapse > .ant-collapse-item {
+  border-color: @card-border-color;
+}
+@THEME .ant-collapse > .ant-collapse-item > .ant-collapse-header,
+@THEME .ant-collapse > .ant-collapse-item > .ant-collapse-header .arrow {
+  color: @application-color;
+}
+@THEME .ant-collapse > .ant-collapse-item:not(.ant-collapse-item-disabled) > .ant-collapse-header:active {
+  background-color: @card-background-color;
+}
+@THEME .ant-collapse .ant-collapse-item-disabled > .ant-collapse-header,
+@THEME .ant-collapse .ant-collapse-item-disabled > .ant-collapse-header > .arrow {
+  color: @application-color-disabled;
+  background-color: @card-background-color;
+}
+@THEME .ant-collapse-borderless > .ant-collapse-item > .ant-collapse-header:hover {
+  background-color: darken(@card-background-color, 5%);
+}
+@THEME .ant-collapse-borderless > .ant-collapse-item > .ant-collapse-content {
+  border-color: @card-border-color;
+}
+@THEME .ant-form-item {
+  color: @application-color;
+}
+@THEME .ant-form-item-label label {
+  color: @application-color-accent;
+}
+@THEME .ant-form-item-required::before {
+  color: @color-red;
+}
+@THEME .ant-slider-rail {
+  background-color: @card-header-background;
+}
+@THEME .ant-slider-disabled .ant-slider-track {
+  background-color: @application-color-disabled !important;
+}
+@THEME .ant-slider-disabled .ant-slider-handle,
+@THEME .ant-slider-disabled .ant-slider-dot {
+  border-color: @application-color-disabled !important;
+}
+@THEME .ant-slider:hover .ant-slider-rail {
+  background-color: @card-header-background;
+}
+@THEME .ant-slider-track {
+  background-color: @primary-color;
+}
+@THEME .ant-slider:hover .ant-slider-track {
+  background-color: @primary-hover-color;
+}
+@THEME .ant-slider-handle {
+  border-color: @primary-color;
+  background-color: @card-background-color;
+}
+@THEME .ant-slider:hover .ant-slider-handle {
+  border-color: @primary-hover-color;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
@@ -1050,6 +1257,26 @@ export default `
 @THEME .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions:hover .cp-panel-card-actions-background,
 @THEME .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
   background-color: @card-service-actions-active-background;
+}
+@THEME .cp-panel .cp-panel-card.cp-card-no-hover:hover,
+@THEME .cp-panel .cp-panel-card.cp-card-service.cp-card-no-hover:hover {
+  box-shadow: none;
+}
+@THEME .cp-content-panel {
+  background-color: @card-background-color;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-content-panel-header {
+  background-color: @card-header-background;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-resizable-panel-anchor {
+  background-color: @card-header-background;
+}
+@THEME .cp-card-border {
+  border: 1px solid @card-border-color;
 }
 
 @THEME .cp-navigation-panel {
@@ -1238,6 +1465,24 @@ export default `
   background-color: @application-background-color;
   color: @application-color;
 }
+@THEME .cp-scan-result.critical {
+  color: @color-red;
+}
+@THEME .cp-scan-result.high {
+  color: @color-sensitive;
+}
+@THEME .cp-scan-result.medium {
+  color: @color-yellow;
+}
+@THEME .cp-scan-result.low {
+  color: @color-aqua-light;
+}
+@THEME .cp-scan-result.negligible {
+  color: @color-grey;
+}
+@THEME .cp-scan-result.bar {
+  background-color: currentColor;
+}
 
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
@@ -1284,6 +1529,49 @@ export default `
   background-color: @primary-active-color;
   color: @primary-text-color;
   outline: none;
+}
+@THEME .cp-run-instance-tag {
+  background-color: @card-header-background;
+  border: 1px solid @card-border-color;
+}
+@THEME .cp-run-nested-run-link {
+  color: @application-color-accent;
+}
+@THEME .cp-wdl-task[data-type=VisualStep] rect,
+@THEME .cp-wdl-task[data-type=VisualGroup] rect,
+@THEME .cp-wdl-task[data-type=VisualWorkflow] rect {
+  fill: @card-background-color;
+}
+@THEME .cp-wdl-task[data-taskstatus=running] rect {
+  fill: fade(@run-icon-blue, 20%);
+  stroke: @run-icon-blue;
+}
+@THEME .cp-wdl-task[data-taskstatus=running] text {
+  fill: @run-icon-blue;
+}
+@THEME .cp-wdl-task[data-taskstatus=success] rect {
+  fill: fade(@run-icon-green, 20%);
+  stroke: @run-icon-green;
+  opacity: 1;
+}
+@THEME .cp-wdl-task[data-taskstatus=success] text {
+  fill: @run-icon-green;
+}
+@THEME .cp-wdl-task[data-taskstatus=stopped] rect {
+  fill: @card-background-color;
+  stroke: @application-color-faded;
+  opacity: 1;
+}
+@THEME .cp-wdl-task[data-taskstatus=stopped] text {
+  fill: @application-color-faded;
+}
+@THEME .cp-wdl-task[data-taskstatus=failure] rect {
+  fill: fade(@run-icon-red, 20%);
+  stroke: @run-icon-red;
+  opacity: 1;
+}
+@THEME .cp-wdl-task[data-taskstatus=failure] text {
+  fill: @run-icon-red;
 }
 
 @THEME .cp-billing-menu {
@@ -1751,24 +2039,85 @@ export default `
 @THEME .cp-node-tag.cp-node-tag-cp-role {
   color: @primary-color;
 }
+@THEME .cp-cluster-node-even-row {
+  background-color: @even-element-background;
+}
 
-@THEME .cp-settings-sidebar-element {
+@THEME .cp-settings-sidebar-element:not(.cp-table-element-disabled) {
   cursor: pointer;
 }
 @THEME .cp-settings-sidebar-element td {
   padding: 6px;
 }
+@THEME .cp-setting-info {
+  color: @color-green;
+}
+@THEME .cp-setting-warning {
+  color: @color-yellow;
+}
+@THEME .cp-setting-critical {
+  color: @color-red;
+}
+@THEME .cp-settings-table thead,
+@THEME .cp-settings-table thead th {
+  color: @table-head-color;
+  background-color: @card-header-background;
+  border-color: @table-border-color;
+}
+@THEME .cp-settings-table tbody tr,
+@THEME .cp-settings-table tbody th {
+  color: @application-color;
+  background-color: @card-background-color;
+}
+@THEME .cp-settings-table tbody tr:nth-child(even),
+@THEME .cp-settings-table tbody tr:nth-child(even) th {
+  color: @application-color;
+  background-color: @even-element-background;
+}
+@THEME .cp-settings-users-integrity-check.modified:not(.new),
+@THEME .cp-settings-users-integrity-check.modified:not(.new) > div {
+  background-color: @alert-warning-background;
+}
+@THEME .cp-settings-users-integrity-check.new > div {
+  background-color: @alert-info-background;
+}
+@THEME .cp-even-row {
+  background-color: @even-element-background;
+}
+@THEME .cp-settings-form-item-label {
+  color: @application-color-accent;
+}
+@THEME .cp-settings-nat-table thead tr:first-child,
+@THEME .cp-settings-nat-table thead tr:first-child th:first-child,
+@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(3),
+@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(3) {
+  border-right: 2px solid @card-border-color;
+}
+@THEME .cp-settings-nat-table thead tr:first-child th {
+  background: @card-header-background;
+}
+@THEME .cp-settings-nat-table .ant-table-thead > tr > th {
+  border-bottom: 1px solid @table-border-color;
+}
+@THEME .cp-nat-route-removed .cp-nat-route-status {
+  color: currentColor;
+}
 
-@THEME .text-highlight {
+@THEME .code-highlight {
   color: @application-color;
   background-color: @code-background-color;
   border: 1px solid @card-border-color;
   border-radius: 4px;
 }
-@THEME .text-highlight code {
+@THEME .code-highlight code,
+@THEME .markdown code {
   color: @color-pink;
-  background-color: @alert-error-background;
+  background-color: @color-pink-light;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+@THEME .markdown code {
+  padding: 1px 4px;
+  border-radius: 4px;
 }
 @THEME .hljs {
   color: @application-color;
@@ -1830,6 +2179,196 @@ export default `
 }
 @THEME .hljs-addition {
   background: @alert-success-background;
+}
+@THEME .cp-code-editor {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+@THEME .CodeMirror {
+  background-color: @card-background-color;
+  color: @application-color;
+  border: 1px solid @card-border-color;
+}
+@THEME .CodeMirror-cursor {
+  border-color: @application-color;
+}
+@THEME .CodeMirror-gutters {
+  background-color: @card-header-background;
+  border-color: @card-border-color;
+}
+@THEME .CodeMirror-linenumber {
+  color: @application-color-faded;
+}
+@THEME .cm-s-default .cm-header {
+  color: @color-blue;
+}
+@THEME .cm-s-default .cm-quote {
+  color: @color-green;
+}
+@THEME .cm-negative {
+  color: @color-sensitive;
+}
+@THEME .cm-positive {
+  color: @color-green;
+}
+@THEME .cm-s-default .cm-keyword {
+  color: @color-violet;
+}
+@THEME .cm-s-default .cm-atom {
+  color: @color-blue;
+}
+@THEME .cm-s-default .cm-number {
+  color: @color-aqua;
+}
+@THEME .cm-s-default .cm-def {
+  color: @color-blue-dimmed;
+}
+@THEME .cm-s-default .cm-variable-2 {
+  color: @color-blue-dimmed;
+}
+@THEME .cm-s-default .cm-variable-3,
+@THEME .cm-s-default .cm-type {
+  color: @color-green;
+}
+@THEME .cm-s-default .cm-comment {
+  color: @color-yellow;
+}
+@THEME .cm-s-default .cm-string {
+  color: @color-red;
+}
+@THEME .cm-s-default .cm-string-2 {
+  color: @color-yellow;
+}
+@THEME .cm-s-default .cm-meta,
+@THEME .cm-s-default .cm-qualifier {
+  color: @application-color-disabled;
+}
+@THEME .cm-s-default .cm-builtin {
+  color: @color-blue-dimmed;
+}
+@THEME .cm-s-default .cm-bracket {
+  color: @color-grey;
+}
+@THEME .cm-s-default .cm-tag {
+  color: @color-green;
+}
+@THEME .cm-s-default .cm-hr {
+  color: @application-color-faded;
+}
+@THEME .cm-s-default .cm-attribute,
+@THEME .cm-s-default .cm-link {
+  color: @primary-color;
+}
+@THEME .cm-s-default .cm-error,
+@THEME .cm-invalidchar {
+  color: @color-red;
+}
+@THEME div.CodeMirror span.CodeMirror-matchingbracket {
+  color: @color-green;
+}
+@THEME div.CodeMirror span.CodeMirror-nonmatchingbracket {
+  color: @color-red;
+}
+@THEME .CodeMirror-matchingtag { background: fadeout(@color-yellow, 50%); }
+@THEME .CodeMirror-activeline-background {
+  background: @card-header-background;
+}
+@THEME .handsontable {
+  color: @application-color;
+}
+@THEME .handsontable th {
+  background-color: @card-header-background;
+}
+@THEME .handsontable td {
+  background-color: @card-background-color;
+}
+@THEME .handsontable tr th,
+@THEME .handsontable tr td,
+@THEME .handsontable tr:first-child th,
+@THEME .handsontable tr:first-child td {
+  color: @application-color;
+}
+@THEME .handsontable tr th,
+@THEME .handsontable tr td,
+@THEME .handsontable tr:first-child th,
+@THEME .handsontable tr:first-child td,
+@THEME .handsontable.htRowHeaders thead tr th:nth-child(2) {
+  border-color: darken(@card-border-color, 5%);
+}
+@THEME .handsontable tbody th.ht__highlight,
+@THEME .handsontable thead th.ht__highlight {
+  background-color: @primary-color;
+  color: @primary-text-color;
+}
+@THEME .handsontable td.area {
+  background-image: linear-gradient(to bottom, @primary-color-semi-transparent 0%, @primary-color-semi-transparent 100%);
+  background-color: @card-background-color;
+}
+@THEME .cp-pipeline-code-editor-readonly .handsontable td,
+@THEME .cp-pipeline-code-editor-readonly .handsontable td.area,
+@THEME .cp-pipeline-code-editor-readonly .CodeMirror {
+  background-color: lighten(@card-header-background, 2%);
+}
+@THEME .joint-paper.joint-theme-default {
+  background-color: @card-background-color;
+}
+@THEME .joint-type-visualstep .body,
+@THEME .joint-type-visualgroup .body,
+@THEME .joint-type-visualworkflow .body {
+  fill: @card-background-color;
+  stroke: @primary-color;
+}
+@THEME .joint-type-visualstep .port-body.empty,
+@THEME .joint-type-visualgroup .port-body.empty,
+@THEME .joint-type-visualworkflow .port-body.empty {
+  fill: @card-background-color;
+  stroke: @primary-color;
+}
+@THEME .joint-type-visualstep .port-body,
+@THEME .joint-type-visualgroup .port-body,
+@THEME .joint-type-visualworkflow .port-body {
+  fill: @card-background-color;
+  stroke: @color-aqua;
+}
+@THEME .joint-type-visualstep .port-label,
+@THEME .joint-type-visualgroup .port-label,
+@THEME .joint-type-visualworkflow .port-label,
+@THEME .marker-source,
+@THEME .marker-target,
+@THEME .joint-type-visualdeclaration .label {
+  fill: @color-aqua;
+  stroke: @color-aqua;
+}
+@THEME .joint-link .marker-arrowheads .marker-arrowhead,
+@THEME .joint-link .marker-vertex-group .marker-vertex,
+@THEME .joint-link .marker-vertex-group .marker-vertex:hover {
+  fill: @primary-color;
+}
+@THEME .marker-vertex-remove-area {
+  fill: @application-color;
+}
+@THEME .joint-link.joint-theme-default .marker-vertex-remove {
+  fill: @card-background-color;
+}
+@THEME .joint-link.joint-theme-default .connection-wrap,
+@THEME .joint-link .connection {
+  stroke: @color-aqua;
+}
+@THEME .joint-type-visualstep .label,
+@THEME .joint-type-visualgroup .label,
+@THEME .joint-type-visualworkflow .label {
+  fill: @primary-color;
+}
+@THEME .joint-link .link-tools .link-tool .tool-remove circle {
+  fill: @color-red;
+}
+@THEME .cp-pipeline-graph-side-panel:hover {
+  background-color: @card-background-color;
+  box-shadow: 5px 0 15px @card-hovered-shadow-color;
+}
+@THEME .cp-pipeline-graph-properties-panel {
+
 }
 
 `;

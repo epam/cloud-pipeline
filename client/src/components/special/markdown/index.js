@@ -50,7 +50,7 @@ function Markdown ({className, id, md, style}) {
   return (
     <div
       id={id}
-      className={classNames(className, 'text-highlight')}
+      className={classNames(className, 'markdown')}
       dangerouslySetInnerHTML={{__html: html}}
       style={style}
     />
