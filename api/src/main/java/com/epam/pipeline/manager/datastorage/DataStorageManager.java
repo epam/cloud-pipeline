@@ -1242,7 +1242,8 @@ public class DataStorageManager implements SecuredEntityManager {
                 }
             }
         } else {
-            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND));
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND,
+                                                                        sourceStorageId));
         }
     }
 

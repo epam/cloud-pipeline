@@ -148,13 +148,14 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
     @Test
     public void shouldCreateNewMirroringS3Storage() {
         final S3bucketDataStorage sourceDataStorage = new S3bucketDataStorage(null, "sourceStorage", "sourcePath");
+        sourceDataStorage.setOwner(TEST_OWNER);
         dataStorageDao.createDataStorage(sourceDataStorage);
         validateCreatedStorage(sourceDataStorage);
 
         s3Bucket.setLinkingMasks(Collections.singleton(UPDATED_VALUE));
         s3Bucket.setSourceStorageId(sourceDataStorage.getId());
-        AbstractDataStorage loaded = dataStorageDao.loadDataStorage(s3Bucket.getId());
-        validateS3Storage(loaded, s3Bucket);
+        dataStorageDao.createDataStorage(s3Bucket);
+        validateS3Storage(dataStorageDao.loadDataStorage(s3Bucket.getId()), s3Bucket);
     }
 
     @Test

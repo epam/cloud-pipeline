@@ -16,6 +16,9 @@
 
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
+import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFilePathMatchingMasks;
+import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
+
 import com.amazonaws.services.s3.model.CORSRule;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
@@ -28,7 +31,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
-import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -56,7 +58,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -268,7 +269,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             final Set<String> folderMasks = S3Helper.extractFolderMasks(dataStorage.getLinkingMasks());
             return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
                                                                  ProviderUtils.buildPath(dataStorage, path))
-                .filter(item -> dataStorageItemMatching(item, fileMasks, folderMasks));
+                .filter(item -> ProviderUtils.dataStorageItemMatching(item, fileMasks, folderMasks));
         }
     }
 
@@ -418,29 +419,5 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         action.setWriteVersion(useVersion);
         return stsCredentialsGenerator
                 .generate(Collections.singletonList(action), Collections.singletonList(dataStorage));
-    }
-
-    private void validateFilePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
-        validatePathMatchingMasks(dataStorage, path);
-    }
-
-    private void validateFolderPathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
-        Assert.state(StringUtils.isNotBlank(path), "Path for normalization shall be specified");
-        final String folderPath = path.endsWith(ProviderUtils.DELIMITER) ? path : path + ProviderUtils.DELIMITER;
-        validatePathMatchingMasks(dataStorage, folderPath);
-    }
-
-    private void validatePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
-        final Set<String> linkingMasks = dataStorage.getLinkingMasks();
-        if (CollectionUtils.isNotEmpty(linkingMasks)) {
-            Assert.isTrue(S3Helper.matchingMasks(path, linkingMasks), "Requested operation violates masking rules!");
-        }
-    }
-
-    private boolean dataStorageItemMatching(final DataStorageFile item, final Set<String> fileMasks,
-                                            final Set<String> folderMasks) {
-        return S3Helper.matchingMasks(item.getPath(), item.getType().equals(DataStorageItemType.Folder)
-                                                      ? folderMasks
-                                                      : fileMasks);
     }
 }

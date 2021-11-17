@@ -91,7 +91,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -791,7 +790,7 @@ public class S3Helper {
                         listing.setTruncated(false);
                         break;
                     }
-                    if (!matchingMasks(name, resolvedMasks)) {
+                    if (!ProviderUtils.matchingMasks(name, resolvedMasks)) {
                         continue;
                     }
                 }
@@ -809,7 +808,7 @@ public class S3Helper {
                             listing.setTruncated(false);
                             break;
                         }
-                        if (!matchingMasks(requestPath + fileName, resolvedMasks)) {
+                        if (!ProviderUtils.matchingMasks(requestPath + fileName, resolvedMasks)) {
                             continue;
                         }
                     }
@@ -880,7 +879,7 @@ public class S3Helper {
                         versionListing.setTruncated(false);
                         break;
                     }
-                    if (!matchingMasks(commonPrefix, resolvedMasks)) {
+                    if (!ProviderUtils.matchingMasks(commonPrefix, resolvedMasks)) {
                         continue;
                     }
                 }
@@ -907,7 +906,7 @@ public class S3Helper {
                         versionListing.setTruncated(false);
                         break;
                     }
-                    if (!matchingMasks(requestPath + fileName, resolvedMasks)) {
+                    if (!ProviderUtils.matchingMasks(requestPath + fileName, resolvedMasks)) {
                         continue;
                     }
                 }
@@ -1175,14 +1174,25 @@ public class S3Helper {
             .collect(Collectors.toSet());
     }
 
-    public static boolean matchingMasks(final String path, final Set<String> masks) {
-        if (CollectionUtils.isEmpty(masks)) {
-            return true;
+    public static void validateFilePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        if (CollectionUtils.isNotEmpty(dataStorage.getLinkingMasks())) {
+            validatePathMatchingMasks(dataStorage, path);
         }
-        final AntPathMatcher pathMatcher = new AntPathMatcher();
-        return CollectionUtils.emptyIfNull(masks)
-            .stream()
-            .anyMatch(mask -> pathMatcher.match(mask, path));
+    }
+
+    public static void validateFolderPathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        Assert.state(StringUtils.hasValue(path), "Path for normalization shall be specified");
+        final String folderPath = path.endsWith(ProviderUtils.DELIMITER) ? path : path + ProviderUtils.DELIMITER;
+        if (CollectionUtils.isNotEmpty(dataStorage.getLinkingMasks())) {
+            validatePathMatchingMasks(dataStorage, folderPath);
+        }
+    }
+
+    private static void validatePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        final Set<String> linkingMasks = dataStorage.getLinkingMasks();
+        if (CollectionUtils.isNotEmpty(linkingMasks)) {
+            Assert.isTrue(ProviderUtils.matchingMasks(path, linkingMasks), "Requested operation violates masking rules!");
+        }
     }
 
     private String resolveStartAndLastTokens(final String currentFirstToken, final Set<String> resolvedMasks,
