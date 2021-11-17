@@ -39,22 +39,16 @@ public abstract class AbstractDataStorageFactory {
             StoragePolicy policy, String mountOptions, String mountPoint,
             List<String> allowedCidrs, Long regionId, Long fileShareMountId,
             String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus,
-            Set<String> masks,
-            AbstractDataStorage sourceStorage);
+            Set<String> masks, Long sourceStorageId);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
-        return convertToDataStorage(vo, provider, null);
-    }
-
-    public AbstractDataStorage convertToDataStorage(final DataStorageVO vo, final CloudProvider provider,
-                                                    final AbstractDataStorage sourceStorage) {
         DataStorageType type = determineStorageType(vo, provider);
         AbstractDataStorage storage =
                 convertToDataStorage(vo.getId(), vo.getName(), vo.getPath(), type, vo.getStoragePolicy(),
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
                         vo.getRegionId(), vo.getFileShareMountId(),
                         vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
-                        NFSStorageMountStatus.ACTIVE.name(), vo.getLinkingMasks(), sourceStorage);
+                        NFSStorageMountStatus.ACTIVE.name(), vo.getLinkingMasks(), vo.getSourceStorageId());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
@@ -85,9 +79,9 @@ public abstract class AbstractDataStorageFactory {
                                                         final boolean useAssumedCreds,
                                                         final String mountStatus,
                                                         final Set<String> masks,
-                                                        final AbstractDataStorage sourceStorage) {
+                                                        final Long sourceStorageId) {
             final AbstractDataStorage resultStorage;
-            switch (Optional.ofNullable(sourceStorage).map(AbstractDataStorage::getType).orElse(type)) {
+            switch (type) {
                 case S3:
                     S3bucketDataStorage bucket = new S3bucketDataStorage(id, name, path, policy, mountPoint);
                     bucket.setAllowedCidrs(allowedCidrs);
@@ -119,9 +113,9 @@ public abstract class AbstractDataStorageFactory {
                 default:
                     throw new IllegalArgumentException("Unsupported data storage type: " + type);
             }
-            if (sourceStorage != null) {
+            if (sourceStorageId != null) {
                 resultStorage.setLinkingMasks(masks);
-                resultStorage.setSourceStorage(sourceStorage);
+                resultStorage.setSourceStorageId(sourceStorageId);
             }
             return resultStorage;
         }

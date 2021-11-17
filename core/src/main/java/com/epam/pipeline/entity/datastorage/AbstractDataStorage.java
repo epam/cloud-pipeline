@@ -73,7 +73,7 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
     private List<ToolFingerprint> toolsToMount;
 
     private Set<String> linkingMasks;
-    private AbstractDataStorage sourceStorage;
+    private Long sourceStorageId;
 
     public AbstractDataStorage(final Long id, final String name,
             final String path, final DataStorageType type) {

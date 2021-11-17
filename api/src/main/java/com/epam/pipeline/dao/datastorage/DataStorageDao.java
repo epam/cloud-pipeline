@@ -175,7 +175,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return getNamedParameterJdbcTemplate().query(loadAllDataStoragesQuery,
-                DataStorageParameters.getExtendedRowMapper());
+                DataStorageParameters.getRowMapper());
     }
 
     public List<AbstractDataStorage> loadAllDataStoragesWithToolsToMount() {
@@ -205,7 +205,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public AbstractDataStorage loadDataStorage(Long id) {
         List<AbstractDataStorage> items = getJdbcTemplate().query(loadDataStorageByIdQuery,
-                DataStorageParameters.getExtendedRowMapper(), id);
+                DataStorageParameters.getRowMapper(), id);
         AbstractDataStorage storage = !items.isEmpty() ? items.get(0) : null;
         if (storage != null) {
             storage.setToolsToMount(loadToolsToMountForStorage(storage.getId()));
@@ -213,21 +213,21 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         return storage;
     }
 
-    public AbstractDataStorage loadDataStorageByNameOrPath(String name, String path) {
-        List<AbstractDataStorage> items = loadDataStorageByNameOrPath(name, path, false);
+    public AbstractDataStorage loadDataStorageByNameOrPath(final String name, final String path) {
+        final List<AbstractDataStorage> items = loadDataStorageByNameOrPath(name, path, false);
         return !items.isEmpty() ? items.get(0) : null;
     }
 
     public List<AbstractDataStorage> loadDataStorageByNameOrPath(final String name, final String path,
                                                                  final boolean withMirrors) {
-        String usePath = path == null ? name : path;
-        MapSqlParameterSource params = new MapSqlParameterSource();
+        final String usePath = path == null ? name : path;
+        final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(DataStorageParameters.DATASTORAGE_NAME.name(), name);
         params.addValue(DataStorageParameters.PATH.name(), usePath);
         return getNamedParameterJdbcTemplate()
-            .query(loadDataStorageByNameQuery, params, DataStorageParameters.getExtendedRowMapper())
+            .query(loadDataStorageByNameQuery, params, DataStorageParameters.getRowMapper())
             .stream()
-            .filter(storage -> withMirrors || storage.getSourceStorage() == null)
+            .filter(storage -> withMirrors || storage.getSourceStorageId() == null)
             .peek(storage -> storage.setToolsToMount(loadToolsToMountForStorage(storage.getId())))
             .collect(Collectors.toList());
     }
@@ -251,7 +251,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(DataStorageParameters.PATH.name(), prefixes);
         return getNamedParameterJdbcTemplate().query(loadDataStorageByPrefixesQuery, params,
-                DataStorageParameters.getExtendedRowMapper());
+                DataStorageParameters.getRowMapper());
     }
 
     public List<AbstractDataStorage> loadRootDataStorages() {
@@ -461,8 +461,6 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         SOURCE_DATASTORAGE_ID,
         MASKING_RULES;
 
-        private static final String SOURCE_STORAGE_PREFIX = "SOURCE_";
-
         static MapSqlParameterSource getParameters(final AbstractDataStorage dataStorage,
                                                    final boolean setStorageMountStatus) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -501,8 +499,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(MOUNT_STATUS.name(), ((NFSDataStorage) dataStorage).getMountStatus().name());
             }
 
-            if (dataStorage.getSourceStorage() != null) {
-                params.addValue(SOURCE_DATASTORAGE_ID.name(), dataStorage.getSourceStorage().getId());
+            if (dataStorage.getSourceStorageId() != null) {
+                params.addValue(SOURCE_DATASTORAGE_ID.name(), dataStorage.getSourceStorageId());
                 params.addValue(MASKING_RULES.name(),
                                 JsonMapper.convertDataToJsonStringForQuery(dataStorage.getLinkingMasks()));
             }
@@ -539,7 +537,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
         private static AbstractDataStorage getDataStorage(final ResultSet rs, final Folder folder) {
             try {
-                AbstractDataStorage dataStorage = parseDataStorage(rs, false);
+                AbstractDataStorage dataStorage = parseDataStorage(rs);
                 if (folder != null) {
                     dataStorage.setParent(folder);
                     dataStorage.setParentFolderId(folder.getId());
@@ -550,76 +548,65 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             }
         }
 
-        private static AbstractDataStorage parseDataStorage(final ResultSet rs, final boolean extended)
-            throws SQLException {
-            final AbstractDataStorage sourceStorage = !extended || rs.getString(MASKING_RULES.name()) == null
-                                                      ? null
-                                                      : parseDataStorage(rs, SOURCE_STORAGE_PREFIX, null);
-            return parseDataStorage(rs, StringUtils.EMPTY, sourceStorage);
-        }
-
-        private static AbstractDataStorage parseDataStorage(final ResultSet rs, final String prefix,
-                                                            final AbstractDataStorage storage)
-            throws SQLException {
-            String allowedCidrsStr = rs.getString(prefix + ALLOWED_CIDRS.name());
+        private static AbstractDataStorage parseDataStorage(ResultSet rs) throws SQLException {
+            String allowedCidrsStr = rs.getString(ALLOWED_CIDRS.name());
             List<String> allowedCidrs = null;
             if (StringUtils.isNotBlank(allowedCidrsStr)) {
                 allowedCidrs = Arrays.asList(allowedCidrsStr.split(","));
             }
 
-            Long regionId = rs.getLong(prefix + REGION_ID.name());
+            Long regionId = rs.getLong(REGION_ID.name());
             if (rs.wasNull()) {
                 regionId = null;
             }
 
-            Long fileShareMountId = rs.getLong(prefix + FILE_SHARE_MOUNT_ID.name());
+            Long fileShareMountId = rs.getLong(FILE_SHARE_MOUNT_ID.name());
             if (rs.wasNull()) {
                 fileShareMountId = null;
             }
 
+            final Long sourceStorageId = rs.getObject(SOURCE_DATASTORAGE_ID.name(), Long.class);
+            final Set<String> linkingMasks = sourceStorageId == null
+                                             ? Collections.emptySet()
+                                             : JsonMapper.parseData(rs.getString(MASKING_RULES.name()),
+                                                                    new TypeReference<Set<String>>() {});
+
             AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(
-                    rs.getLong(prefix + DATASTORAGE_ID.name()),
-                    rs.getString(prefix + DATASTORAGE_NAME.name()),
-                    rs.getString(prefix + PATH.name()),
-                    DataStorageType.getByName(rs.getString(prefix + DATASTORAGE_TYPE.name())),
+                    rs.getLong(DATASTORAGE_ID.name()),
+                    rs.getString(DATASTORAGE_NAME.name()),
+                    rs.getString(PATH.name()),
+                    DataStorageType.getByName(rs.getString(DATASTORAGE_TYPE.name())),
                     null,
-                    rs.getString(prefix + MOUNT_OPTIONS.name()),
-                    rs.getString(prefix + MOUNT_POINT.name()),
+                    rs.getString(MOUNT_OPTIONS.name()),
+                    rs.getString(MOUNT_POINT.name()),
                     allowedCidrs,
                     regionId,
                     fileShareMountId,
-                    rs.getString(prefix + S3_KMS_KEY_ARN.name()),
-                    rs.getString(prefix + S3_TEMP_CREDS_ROLE.name()),
-                    rs.getBoolean(prefix + S3_USE_ASSUMED_CREDS.name()),
-                    rs.getString(prefix + MOUNT_STATUS.name()),
-                    storage == null
-                    ? Collections.emptySet()
-                    : JsonMapper.parseData(rs.getString(prefix + MASKING_RULES.name()),
-                                           new TypeReference<Set<String>>() {}),
-                    storage);
+                    rs.getString(S3_KMS_KEY_ARN.name()),
+                    rs.getString(S3_TEMP_CREDS_ROLE.name()),
+                    rs.getBoolean(S3_USE_ASSUMED_CREDS.name()),
+                    rs.getString(MOUNT_STATUS.name()),
+                    linkingMasks,
+                    sourceStorageId);
 
-            dataStorage.setShared(rs.getBoolean(prefix + SHARED.name()));
-            dataStorage.setDescription(rs.getString(prefix + DESCRIPTION.name()));
-            dataStorage.setOwner(rs.getString(prefix + OWNER.name()));
-            dataStorage.setCreatedDate(new Date(rs.getTimestamp(prefix + CREATED_DATE.name()).getTime()));
-            dataStorage.setLocked(rs.getBoolean(prefix + DATASTORAGE_LOCKED.name()));
-            Long parentFolderId = rs.getLong(prefix + FOLDER_ID.name());
+            dataStorage.setShared(rs.getBoolean(SHARED.name()));
+            dataStorage.setDescription(rs.getString(DESCRIPTION.name()));
+            dataStorage.setOwner(rs.getString(OWNER.name()));
+            dataStorage.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
+            dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
+            Long parentFolderId = rs.getLong(FOLDER_ID.name());
             if (!rs.wasNull()) {
                 dataStorage.setParentFolderId(parentFolderId);
             }
-            StoragePolicy policy = getStoragePolicy(rs, prefix);
+            StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
-            dataStorage.setSensitive(rs.getBoolean(prefix + SENSITIVE.name()));
-            dataStorage.setRootId(rs.getLong(prefix + DATASTORAGE_ROOT_ID.name()));
+            dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
+            dataStorage.setRootId(rs.getLong(DATASTORAGE_ROOT_ID.name()));
             return dataStorage;
         }
 
         static RowMapper<AbstractDataStorage> getRowMapper() {
-            return (rs, rowNum) -> parseDataStorage(rs, false);
-        }
-
-        static RowMapper<AbstractDataStorage> getExtendedRowMapper() {
-            return (rs, rowNum) -> parseDataStorage(rs, true);
+            return (rs, rowNum) -> parseDataStorage(rs);
         }
 
         public static ResultSetExtractor<Map<Long, List<ToolFingerprint>>> getToolsToMountForAllStorageRowMapper() {
@@ -691,26 +678,22 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
-        public static StoragePolicy getStoragePolicy(final ResultSet rs) throws SQLException {
-            return getStoragePolicy(rs, StringUtils.EMPTY);
-        }
-
-        public static StoragePolicy getStoragePolicy(final ResultSet rs, final String prefix) throws SQLException {
+        public static StoragePolicy getStoragePolicy(ResultSet rs) throws SQLException {
             StoragePolicy policy = new StoragePolicy();
-            policy.setVersioningEnabled(rs.getBoolean(prefix + ENABLE_VERSIONING.name()));
-            int backupDuration = rs.getInt(prefix + BACKUP_DURATION.name());
+            policy.setVersioningEnabled(rs.getBoolean(ENABLE_VERSIONING.name()));
+            int backupDuration = rs.getInt(BACKUP_DURATION.name());
             if (!rs.wasNull()) {
                 policy.setBackupDuration(backupDuration);
             }
-            int stsDuration = rs.getInt(prefix + STS_DURATION.name());
+            int stsDuration = rs.getInt(STS_DURATION.name());
             if (!rs.wasNull()) {
                 policy.setShortTermStorageDuration(stsDuration);
             }
-            int ltsDuration = rs.getInt(prefix + LTS_DURATION.name());
+            int ltsDuration = rs.getInt(LTS_DURATION.name());
             if (!rs.wasNull()) {
                 policy.setLongTermStorageDuration(ltsDuration);
             }
-            int incompleteUploadCleanupDays = rs.getInt(prefix + INCOMPLETE_UPLOAD_CLEANUP_DAYS.name());
+            int incompleteUploadCleanupDays = rs.getInt(INCOMPLETE_UPLOAD_CLEANUP_DAYS.name());
             if (!rs.wasNull()) {
                 policy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
             }

@@ -368,16 +368,10 @@ public class DataStorageManager implements SecuredEntityManager {
         checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
                                     dataStorageVO.getSourceStorageId() != null);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
-
-        final AbstractDataStorage dataStorage =
-            Optional.ofNullable(dataStorageVO.getSourceStorageId())
-                .map(linkedStorageId ->
-                         dataStorageFactory.convertToDataStorage(dataStorageVO, storageRegion.getProvider(),
-                                                                 load(linkedStorageId)))
-                .orElseGet(() -> dataStorageFactory.convertToDataStorage(dataStorageVO, storageRegion.getProvider()));
-
-        validateLinkingMasksStructure(dataStorage);
-
+        validateLinkingMasksStructure(dataStorageVO);
+        
+        AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
+                storageRegion.getProvider());
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
@@ -652,7 +646,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public boolean checkExistence(AbstractDataStorage dataStorage) {
         checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath(),
-                                    dataStorage.getSourceStorage() != null);
+                                    dataStorage.getSourceStorageId() != null);
         return storageProviderManager.checkStorage(dataStorage);
     }
 
@@ -1228,27 +1222,34 @@ public class DataStorageManager implements SecuredEntityManager {
      * If any masks are assigned to the source entity - new masks must be the subset of them,
      * otherwise, they might be used to bypass the source storage restrictions.
      *
-     * @param newStorage storage converted from VO
+     * @param newStorageVO new storage VO
      */
-    private void validateLinkingMasksStructure(final AbstractDataStorage newStorage) {
-        final AbstractDataStorage sourceStorage = newStorage.getSourceStorage();
+    private void validateLinkingMasksStructure(final DataStorageVO newStorageVO) {
+        final Long sourceStorageId = newStorageVO.getSourceStorageId();
+        if (sourceStorageId == null) {
+            return;
+        }
+        final AbstractDataStorage sourceStorage = dataStorageDao.loadDataStorage(sourceStorageId);
         if (sourceStorage != null) {
             final Set<String> sourceStorageMasks = sourceStorage.getLinkingMasks();
             if (CollectionUtils.isNotEmpty(sourceStorageMasks)) {
-                final Set<String> newStorageMasks = newStorage.getLinkingMasks();
+                final Set<String> newStorageMasks = newStorageVO.getLinkingMasks();
                 if (CollectionUtils.isEmpty(newStorageMasks)) {
-                    newStorage.setLinkingMasks(sourceStorageMasks);
+                    newStorageVO.setLinkingMasks(sourceStorageMasks);
                 } else if (!sourceStorageMasks.containsAll(newStorageMasks)) {
                     throw new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE));
                 }
             }
+        } else {
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND));
         }
     }
 
     private AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
         return Optional.of(storage)
-            .map(AbstractDataStorage::getSourceStorage)
+            .map(AbstractDataStorage::getSourceStorageId)
+            .map(dataStorageDao::loadDataStorage)
             .orElse(storage);
     }
 
