@@ -262,7 +262,7 @@ export default class ToolPreview extends React.Component {
       );
       const path = this.path &&
         (
-          <Row key="path" className={styles.subTitle} type="flex" align="middle">
+          <Row key="path" className={classNames(styles.subTitle, 'cp-search-header-sub-title')} type="flex" align="middle">
             {
               this.path
                 .map((n, index) => <span style={{marginRight: 3}} key={index}>{n}</span>)

@@ -134,14 +134,6 @@
   padding: 1px 10px 1px 0;
 }
 
-.run-table .run i {
-  color: #ccc;
-}
-
-.container.light .run-table .run i {
-  color: #555;
-}
-
 .first-cell {
   padding-right: 20px;
 }
@@ -195,9 +187,6 @@
   line-height: 1.5;
   word-break: break-all;
   word-wrap: break-word;
-  color: #333;
-  background-color: #f5f5f5;
-  border: 1px solid #ccc;
   border-radius: 4px;
 }
 

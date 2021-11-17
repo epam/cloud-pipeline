@@ -202,15 +202,15 @@
 }
 
 .cp-search-preview-error {
-  color: @color-red; //#ff556b;
+  color: @color-red;
 }
 
 .cp-search-preview-error-light-mode {
-  color: @color-pink; //#ff0000;
+  color: @color-pink;
 }
 
 .cp-search-first-row {
-  color: @search-first-row-color;   //'#999'
+  color: @search-first-row-color;
 }
 
 .cp-search-container {
@@ -221,25 +221,23 @@
   color: @application-color;
 }
 
-.cp-search-header-title {
-  color: @application-color;
-}
-
 .cp-search-header-description {
-  color: @panel-border-color; //#ccc;
+  color: @panel-border-color;
 }
 
 .cp-search-header-image {
-  background-color: @application-color-faded; // rgba(255, 255, 255, 0.05);
+  background-color: transparent;
 }
 
 .cp-search-header-title,
+.cp-search-header-sub-title,
 .cp-search-header-description,
 .cp-search-container .cp-search-content {
   color: @search-preview-text-color;
 }
 
 .cp-search-container-light .cp-search-header-title,
+.cp-search-container-light .cp-search-header-sub-title,
 .cp-search-container-light .cp-search-header-description,
 .cp-search-container-light .cp-search-content {
   color:  @application-color;
@@ -248,7 +246,6 @@
 .cp-search-content-preview-run,
 .cp-search-content-preview-run-task {
   color: @search-preview-text-color;
-  
 }
 
 .cp-search-container-light .cp-search-content-preview-run,
@@ -297,6 +294,10 @@
 }
 
 .cp-search-even-table-row {
+  background-color: @search-highlight-background-color;
+}
+
+.cp-search-container-light .cp-search-even-table-row {
   background-color: @application-background-color;
 }
 
@@ -326,7 +327,7 @@
 }
 
 .cp-search-csv-table-cell {
-  border: 1px solid @search-table-border-color; 
+  border: 1px solid @search-table-text-color; 
   color: @search-table-text-color;
 }
 .cp-search-container-light .cp-search-csv-table-cell {
@@ -362,11 +363,13 @@
 
 .cp-search-md-preview code {
   color: @color-pink;
-  background-color: @color-pink-pale;
+  background-color: @color-pink-dusty;
   box-shadow: inset 0 -1px 0 @search-md-preview-code-shadow;
 }
 .cp-search-md-preview pre {
   color: @search-md-preview-text-color;
+  background-color: @tag-key-background-color;
+  border: 1px solid @panel-border-color;
 }
 
 .cp-search-container-light .cp-search-md-preview h1,
@@ -377,6 +380,3 @@
 .cp-search-container-light .cp-search-md-preview h6 {
   color: @search-header-light-color;
 }
-// .cp-search-preview-share-url-hovered {  - vsi preview
-//   color: @primary-active-color;
-// }
