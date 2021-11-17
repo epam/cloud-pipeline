@@ -42,7 +42,9 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             entry(ADD_KEY, $(byId("add-key-button"))),
             entry(REMOVE_ALL_KEYS, $(byId("remove-all-keys-button"))),
             entry(ENLARGE, $(PipelineSelectors.buttonByIconClass("anticon-arrows-alt"))),
-            entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea"))
+            entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea")),
+            entry(FILE_SYSTEM_ACCESS, $(byId("value-column-dav-mount"))),
+            entry(DISABLE, $(byClassName("equest-dav-access__disable-button")))
     );
 
     private final String keyElementId = "key-column-%s";
@@ -145,6 +147,11 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                 keyRow.find(byXpath("following-sibling::*[contains(@class, 'metadata__value-row')]")),
                 this
         );
+    }
+
+    public MetadataSectionAO requestFileSystemAccess() {
+        click(FILE_SYSTEM_ACCESS);
+        return this;
     }
 
     @Override

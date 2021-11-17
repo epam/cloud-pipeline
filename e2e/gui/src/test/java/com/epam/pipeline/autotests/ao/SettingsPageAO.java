@@ -1184,6 +1184,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public String getPreference(String preference) {
+            searchPreference(preference);
+            List<String> list = context().$(byClassName("CodeMirror-code"))
+                    .findAll(byClassName("CodeMirror-line")).texts();
+            return (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+        }
+
         public PreferencesAO setCheckboxPreference(String preference, boolean checkboxIsEnable, boolean eyeIsChecked) {
             searchPreference(preference);
             final SelenideElement checkBox = context().shouldBe(visible)
