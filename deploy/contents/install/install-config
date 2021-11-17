@@ -204,7 +204,7 @@ CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
 
 # cp-release-notes
 CP_RELEASE_NOTES_SCHEDULE=*/15 * * * *
-CP_RELEASE_NOTES_VERSION_FILE_PATH=/opt/release-notes/version
+CP_RELEASE_NOTES_VERSION_FILE_PATH=/opt/release-notes/data/version
 CP_RELEASE_NOTES_GITHUB_BASE_URL=https://api.github.com
 CP_RELEASE_NOTES_TEMPLATE_FOLDER=/opt/release-notes/templates/
 CP_RELEASE_NOTES_ADMIN_TEMPLATE=email-release-notification-to-admin.html

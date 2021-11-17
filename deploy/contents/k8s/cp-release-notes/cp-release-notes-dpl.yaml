@@ -28,8 +28,7 @@ spec:
               securityContext:
                 privileged: true
               imagePullPolicy: "Always"
-              command: [ "bash" ]
-              args: [ "-c", "/init.sh" ]
+              command: ["/init"]
               envFrom:
                 - configMapRef:
                     name: cp-config-global
@@ -38,6 +37,8 @@ spec:
                   name: release-notes-logs
                 - mountPath: /opt/release-notes/templates
                   name: release-notes-template
+                - mountPath: /opt/release-notes/data
+                  name: release-notes-data
           volumes:
             - name: release-notes-logs
               hostPath:
@@ -45,4 +46,7 @@ spec:
             - name: release-notes-template
               hostPath:
                 path: /opt/release-notes/templates
+            - name: release-notes-data
+              hostPath:
+                path: /opt/release-notes/data
           restartPolicy: OnFailure
