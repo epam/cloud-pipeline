@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
@@ -704,6 +705,10 @@ public class SystemPreferences {
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
+    public static final ObjectPreference<Map<String, NotificationFilter>>
+            SYSTEM_NOTIFICATIONS_EXCLUDE_PARAMS = new ObjectPreference("system.notifications.exclude.params",
+            null, new TypeReference<Map<String, NotificationFilter>>() {},
+            SYSTEM_GROUP, isNullOrValidJson(new TypeReference<Map<String, NotificationFilter>>() {}));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
