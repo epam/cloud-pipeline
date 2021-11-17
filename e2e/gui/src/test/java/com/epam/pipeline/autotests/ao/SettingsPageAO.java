@@ -71,7 +71,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System events')]"))),
             entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
             entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
-            entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Logs')]"))),
+            entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Management')]"))),
             entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
             entry(CLOUD_REGIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
             entry(MY_PROFILE, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'My Profile')]"))),
@@ -111,9 +111,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
         if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
-            return new SystemLogsAO();
+            return new SystemLogsAO().click(LOG);
         }
-        return new SystemLogsAO().setIncludeServiceAccountEventsOption();
+        return new SystemLogsAO()
+                .click(LOG)
+                .setIncludeServiceAccountEventsOption();
     }
 
     public MyProfileAO switchToMyProfile() {
@@ -1571,6 +1573,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     }
 
     public class SystemLogsAO implements AccessObject<SystemLogsAO> {
+
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(LOG, $$(byClassName("ystem-management__item-row")).findBy(text("LOGS")))
+        );
 
         private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
                 .should(exist)
