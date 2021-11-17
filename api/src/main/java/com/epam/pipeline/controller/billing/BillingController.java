@@ -69,13 +69,13 @@ public class BillingController extends AbstractRestController {
     @RequestMapping(value = "/billing/export", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Export raw info for building expenses.",
-            notes = "Get raw info for building expenses.",
+            value = "Export raw data for billing expenses.",
+            notes = "Export raw data for billing expenses.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public void export(@RequestBody final BillingExportRequest request,
                        final HttpServletResponse response) throws IOException {
-        writeStreamToResponse(out -> billingApi.export(request, out), response, "billing.export.raw.csv");
+        writeStreamToResponse(out -> billingApi.export(request, out), response, "billing.export.csv");
     }
 
     @GetMapping(value = "/billing/centers")
