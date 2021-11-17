@@ -21,7 +21,7 @@
     <p th:if="${gitHubIssues!=null&&!gitHubIssues.isEmpty()}"> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>
     <ul th:if="${gitHubIssues!=null&&!gitHubIssues.isEmpty()}">
         <li th:each="issue : ${gitHubIssues}">
-            <a th:href="${issue.getHtmlUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
+            <a th:href="${issue.getHtmlUrl()}" th:text="|${issue.getNumber()} - ${issue.getTitle()}|"/>
         </li>
     </ul>
     <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>

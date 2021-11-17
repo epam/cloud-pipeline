@@ -15,6 +15,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -133,10 +134,10 @@ public class EmailTemplateNotificationServiceTest {
                 Arguments.of(OLD_VERSION, NEW_MAJOR_VERSION, Collections.emptyList(), Collections.emptyList(),
                         VersionStatus.MAJOR_CHANGED, EXPECTED_EMAIL_TO_ADMIN_BODY, EMAIL_TO_ADMIN_TITLE),
                 Arguments.of(OLD_VERSION, NEW_MINOR_VERSION,
-                        Arrays.asList(JiraIssue.builder().id(ONE).title(SMTH).url(URL).build(),
-                                JiraIssue.builder().id(TWO).title(SMTH_ELSE).url(URL).build()),
-                        Arrays.asList(GitHubIssue.builder().id(1L).title(SMTH).htmlUrl(URL).build(),
-                                GitHubIssue.builder().id(2L).title(SMTH_ELSE).htmlUrl(URL).build()),
+                        new ArrayList<>(Arrays.asList(JiraIssue.builder().id(ONE).title(SMTH).url(URL).build(),
+                                JiraIssue.builder().id(TWO).title(SMTH_ELSE).url(URL).build())),
+                        new ArrayList<>(Arrays.asList(GitHubIssue.builder().number(1L).title(SMTH).htmlUrl(URL).build(),
+                                GitHubIssue.builder().number(2L).title(SMTH_ELSE).htmlUrl(URL).build())),
                         VersionStatus.MINOR_CHANGED, EXPECTED_EMAIL_TO_SUBSCRIBERS_BODY, EMAIL_TO_SUBSCRIBERS_TITLE)
         );
     }
