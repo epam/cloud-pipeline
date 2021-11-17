@@ -75,7 +75,7 @@ public class BillingController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public void export(@RequestBody final BillingExportRequest request,
                        final HttpServletResponse response) throws IOException {
-        writeStreamToResponse(out -> billingApi.export(request, out), response, "billing.export.csv");
+        writeToResponse(response, billingApi.export(request));
     }
 
     @GetMapping(value = "/billing/centers")

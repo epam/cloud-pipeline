@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportType;
@@ -77,7 +78,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjuster;
@@ -172,12 +172,13 @@ public class BillingManager {
                               request.getPageSize());
     }
 
-    public void export(final BillingExportRequest request, final OutputStream out) {
+    public ResultWriter export(final BillingExportRequest request) {
         final BillingExportType exportType = getBillingExportType(request);
         final BillingExporter exporter = billingExporters.get(exportType);
         Assert.notNull(exporter, messageHelper.getMessage(MessageConstants.ERROR_BILLING_EXPORT_TYPE_NOT_SUPPORTED,
                 exportType));
-        exporter.export(request, out);
+        return ResultWriter.unchecked("billing." + exportType.name().toLowerCase() + ".csv",
+                out -> exporter.export(request, out));
     }
 
     private BillingExportType getBillingExportType(final BillingExportRequest request) {

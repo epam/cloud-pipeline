@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.billing;
 
+import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
@@ -23,7 +24,6 @@ import com.epam.pipeline.manager.billing.BillingManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.OutputStream;
 import java.util.List;
 
 @Service
@@ -44,7 +44,7 @@ public class BillingApiService {
         return billingManager.getAllBillingCenters();
     }
 
-    public void export(final BillingExportRequest request, final OutputStream out) {
-        billingManager.export(request, out);
+    public ResultWriter export(final BillingExportRequest request) {
+        return billingManager.export(request);
     }
 }

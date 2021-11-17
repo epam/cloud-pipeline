@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -148,31 +147,22 @@ public abstract class AbstractRestController {
                                          InputStream stream,
                                          String fileName,
                                          MediaType contentType) throws IOException {
-        writeStreamToResponse(response, stream, contentType, "attachment;filename=" + fileName);
-    }
-
-    protected void writeStreamToResponse(HttpServletResponse response,
-                                         InputStream stream,
-                                         MediaType contentType,
-                                         String contentDisposition) throws IOException {
         try (final InputStream in = stream) {
-            writeStreamToResponse(out -> IOUtils.copy(in, out), response, contentType, contentDisposition);
+            writeToResponse(response, ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType);
         }
     }
 
-    protected void writeStreamToResponse(IOConsumer<OutputStream> runnable,
-                                         HttpServletResponse response,
-                                         String fileName) throws IOException {
-        writeStreamToResponse(runnable, response, MediaType.APPLICATION_OCTET_STREAM, "attachment;filename=" + fileName);
+    protected void writeToResponse(final HttpServletResponse response,
+                                 final ResultWriter writer) throws IOException {
+        writeToResponse(response, writer, MediaType.APPLICATION_OCTET_STREAM);
     }
 
-    protected void writeStreamToResponse(IOConsumer<OutputStream> runnable,
-                                         HttpServletResponse response,
-                                         MediaType contentType,
-                                         String contentDisposition) throws IOException {
-        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
+    protected void writeToResponse(final HttpServletResponse response,
+                                 final ResultWriter writer,
+                                 final MediaType contentType) throws IOException {
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + writer.getName());
         response.setContentType(contentType.toString());
-        runnable.accept(response.getOutputStream());
+        writer.write(response);
         response.flushBuffer();
     }
 
@@ -228,7 +218,4 @@ public abstract class AbstractRestController {
         return file;
     }
 
-    public interface IOConsumer<T> {
-        void accept(T t) throws IOException;
-    }
 }
