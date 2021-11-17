@@ -24,8 +24,7 @@
 
 .code-editor {
   height: 50vh;
-  background-color: #efefef;
-  border: 1px solid #ccc;
+  border: 1px solid transparent;
   border-radius: 3px;
   line-height: 15px;
 }

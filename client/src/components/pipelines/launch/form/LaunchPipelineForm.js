@@ -1673,9 +1673,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.estimatedPrice.pending) {
       return undefined;
     }
-    const className = this.state.estimatedPrice.pending
-      ? styles.priceLoading
-      : styles.price;
+    const className = classNames(
+      styles.price,
+      {'cp-text-not-important': this.state.estimatedPrice.pending}
+    );
     if (this.state.estimatedPrice.averagePrice > 0) {
       const info = (
         <Popover
@@ -4489,7 +4490,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           descriptions.filter(d => d && d.length).map((description, index) =>
             <span
               key={`description-${index}`}
-              className={styles.panelDescription}>
+              className={classNames(styles.panelDescription, 'cp-text-not-important')}>
               {description}
             </span>
           )
@@ -4974,7 +4975,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
-          <table style={{width: '100%'}} className={styles.layoutHeader}>
+          <table
+            style={{width: '100%'}}
+            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
+          >
             <tbody>
               <tr>
                 {renderFormTitle()}

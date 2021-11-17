@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import getThemes, {DefaultDarkThemeIdentifier, DefaultLightThemeIdentifier} from './themes';
 import injectTheme from './utilities/inject-theme';
 import './default.theme.less';
@@ -36,7 +36,17 @@ class CloudPipelineThemes {
   @observable systemDarkTheme = DefaultDarkThemeIdentifier;
   @observable isSystemDarkMode = false;
 
+  @computed
+  get currentThemeConfiguration () {
+    const theme = this.themes.find(o => o.identifier === this.currentTheme);
+    if (theme) {
+      return theme.getParsedConfiguration();
+    }
+    return undefined;
+  }
+
   constructor (preferences, userInfo) {
+    this.listeners = [];
     this.preferences = preferences;
     this.userInfo = userInfo;
     (this.initialize)();
@@ -72,6 +82,28 @@ class CloudPipelineThemes {
         }
       });
     }
+  }
+
+  addThemeChangedListener (listener) {
+    if (
+      typeof listener === 'function' &&
+      !this.listeners.includes(listener)
+    ) {
+      this.listeners.push(listener);
+    }
+  }
+
+  removeThemeChangedListener (listener) {
+    if (
+      typeof listener === 'function' &&
+      this.listeners.includes(listener)
+    ) {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    }
+  }
+
+  reportThemeChanged () {
+    this.listeners.forEach(listener => listener(this));
   }
 
   async initialize () {
@@ -181,6 +213,7 @@ class CloudPipelineThemes {
       }
       document.body.classList.add(themeIdentifier);
     }
+    this.reportThemeChanged();
   }
 }
 

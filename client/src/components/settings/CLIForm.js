@@ -23,11 +23,9 @@ import {
   Alert,
   Button,
   DatePicker,
-  Icon,
   message,
   Row,
-  Select,
-  Table
+  Select
 } from 'antd';
 import styles from './styles.css';
 import UserToken from '../../models/user/UserToken';
@@ -39,6 +37,7 @@ import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
 import roleModel from '../../utils/roleModel';
 import BashCode from '../special/bash-code';
+import SubSettings from './sub-settings';
 
 const CLI_KEY = 'cli';
 const GIT_CLI_KEY = 'git cli';
@@ -66,8 +65,7 @@ export default class CLIForm extends React.Component {
     },
     driveMapping: {
       accessKey: null
-    },
-    activeTab: CLI_KEY
+    }
   };
 
   @computed
@@ -468,69 +466,33 @@ export default class CLIForm extends React.Component {
     ].filter(Boolean);
   };
 
-  selectTab = ({key}) => {
-    if (key !== this.state.activeTab) {
-      this.setState({
-        activeTab: key
-      });
-    }
-  };
-
-  columns = [
-    {
-      dataIndex: 'title'
-    }
-  ];
-
-  getTabs = () => {
-    const tabs = [];
-    tabs.push({
+  getSections = () => {
+    const sections = [];
+    sections.push({
       key: CLI_KEY,
-      title: 'Pipe CLI'
+      title: 'Pipe CLI',
+      render: () => this.renderPipeCLIContent()
     });
-    tabs.push({
+    sections.push({
       key: GIT_CLI_KEY,
-      title: 'Git CLI'
+      title: 'Git CLI',
+      render: () => this.renderGitCLIContent()
     });
     if (this.driveMappintAuthUrl) {
-      tabs.push({
+      sections.push({
         key: DRIVE_KEY,
-        title: 'File System Access'
+        title: 'File System Access',
+        render: () => this.renderDrive()
       });
     }
-    return tabs;
-  };
-
-  renderContent = () => {
-    switch (this.state.activeTab) {
-      case CLI_KEY: return this.renderPipeCLIContent();
-      case GIT_CLI_KEY: return this.renderGitCLIContent();
-      case DRIVE_KEY: return this.renderDrive();
-    }
+    return sections;
   };
 
   render () {
     return (
-      <div style={{flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0}}>
-        <div className={classNames('cp-divider', 'right')} style={{width: 200, height: '100%'}}>
-          <Table
-            columns={this.columns}
-            dataSource={this.getTabs()}
-            showHeader={false}
-            bordered={false}
-            size="medium"
-            rowClassName={row => classNames(
-              'cp-settings-sidebar-element',
-              {'cp-table-element-selected': row.key === this.state.activeTab})
-            }
-            onRowClick={this.selectTab}
-            pagination={false} />
-        </div>
-        <div style={{flex: 1, height: '100%', overflow: 'auto', paddingLeft: 10}}>
-          {this.renderContent()}
-        </div>
-      </div>
+      <SubSettings
+        sections={this.getSections()}
+      />
     );
   }
 }
-

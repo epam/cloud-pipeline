@@ -24,8 +24,6 @@
 .layout-header {
   padding: 0 10px 0 4px;
   width: 100%;
-  background-color: white;
-  border-bottom: 1px solid #eee;
   z-index: 5;
 }
 
@@ -41,13 +39,11 @@
   font-size: medium;
   margin-left: 5px;
   vertical-align: middle;
-  color: #444;
 }
 
 .section {
   border-radius: 0;
   margin-bottom: 5px;
-  border: 1px solid #ccc;
 }
 
 .form-item-row {
@@ -68,10 +64,6 @@
 
 }
 
-.price-loading {
-  color: #aaa;
-}
-
 .hidden-item {
   display: none;
 }
@@ -88,7 +80,7 @@
 }
 
 .parameters-menu {
-  cursor: pointer
+  cursor: pointer;
 }
 
 .parameter-name {
@@ -169,7 +161,6 @@
 .panel-description {
   margin-left: 5px;
   white-space: nowrap;
-  color: #777;
 }
 
 .panel-description::after {

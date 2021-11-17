@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import PropTypes from 'prop-types';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
@@ -300,7 +301,6 @@ export default class PipelineCodeForm extends React.Component {
   }
 
   render () {
-    const tableClassName = this.state.editMode ? styles.tableEditor : styles.tableEditorReadonly;
     const title = this.props.file
       ? (
         <Row type="flex" justify="space-between">
@@ -344,7 +344,17 @@ export default class PipelineCodeForm extends React.Component {
       >
         <div className={styles.spinContainer}>
           <Spin spinning={this._fileContents && this._fileContents.pending}>
-            <div className={`${styles.editorContainer} ${tableClassName}`}>
+            <div
+              className={
+                classNames(
+                  styles.editorContainer,
+                  styles.tableEditor,
+                  {
+                    'cp-pipeline-code-editor-readonly': !this.state.editMode
+                  }
+                )
+              }
+            >
               { this.fileEditor }
             </div>
           </Spin>

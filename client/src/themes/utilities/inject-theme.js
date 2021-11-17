@@ -15,7 +15,7 @@
  */
 
 import template from './theme.less.template';
-import {parseFunctions} from "./parse-configuration";
+import {parseFunctions} from './parse-configuration';
 
 function generateTheme (theme = {}) {
   const {

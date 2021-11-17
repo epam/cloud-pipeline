@@ -75,3 +75,57 @@
   color: @primary-text-color;
   outline: none;
 }
+
+.cp-run-instance-tag {
+  background-color: @card-header-background;
+  border: 1px solid @card-border-color;
+}
+
+.cp-run-nested-run-link {
+  color: @application-color-accent;
+}
+
+.cp-wdl-task[data-type=VisualStep] rect,
+.cp-wdl-task[data-type=VisualGroup] rect,
+.cp-wdl-task[data-type=VisualWorkflow] rect {
+  fill: @card-background-color;
+}
+
+.cp-wdl-task[data-taskstatus=running] rect {
+  fill: fade(@run-icon-blue, 20%);
+  stroke: @run-icon-blue;
+}
+
+.cp-wdl-task[data-taskstatus=running] text {
+  fill: @run-icon-blue;
+}
+
+.cp-wdl-task[data-taskstatus=success] rect {
+  fill: fade(@run-icon-green, 20%);
+  stroke: @run-icon-green;
+  opacity: 1;
+}
+
+.cp-wdl-task[data-taskstatus=success] text {
+  fill: @run-icon-green;
+}
+
+.cp-wdl-task[data-taskstatus=stopped] rect {
+  fill: @card-background-color;
+  stroke: @application-color-faded;
+  opacity: 1;
+}
+
+.cp-wdl-task[data-taskstatus=stopped] text {
+  fill: @application-color-faded;
+}
+
+.cp-wdl-task[data-taskstatus=failure] rect {
+  fill: fade(@run-icon-red, 20%);
+  stroke: @run-icon-red;
+  opacity: 1;
+}
+
+.cp-wdl-task[data-taskstatus=failure] text {
+  fill: @run-icon-red;
+}

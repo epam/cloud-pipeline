@@ -44,7 +44,7 @@ function BashCode ({className, code, id, loading, style}) {
       id={id}
       className={
         classNames(
-          'text-highlight',
+          'code-highlight',
           styles.shCode,
           className
         )

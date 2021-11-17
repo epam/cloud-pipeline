@@ -25,6 +25,8 @@
 @primary-active-color: @primary-color;
 @primary-text-color: @application-background-color;
 
+@primary-color-semi-transparent: fade(@primary-color, 20%);
+
 @color-green: #118a4e;
 @color-red: rgb(235, 99, 94);
 @color-yellow: #c28b15;
@@ -32,9 +34,12 @@
 @color-violet: #c942ff;
 @color-sensitive: #ff5c33;
 @color-aqua: #008080;
-@color-pink: #f75d83;
+@color-aqua-light: #7dccc0;
+@color-pink: #f25e83;
 @color-pink-dusty: #4f4f4f;
+@color-pink-light: #fef0ef;
 @color-blue-dimmed: #458;
+@color-grey: #777;
 
 @color-white-dimmed-10: rgba(255, 255, 255, 0.1);
 
@@ -96,7 +101,7 @@
 
 @modal-mask-background: rgba(0, 0, 0, 0.6);
 
-@even-element-background: rgba(255, 255, 255, 0.05);
+@even-element-background: lighten(@card-background-color, 5%);
 
 @alert-success-background: darken(@status-good-color, 15%);
 @alert-success-border: @status-good-color;

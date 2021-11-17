@@ -459,8 +459,10 @@ class StorageReports extends React.Component {
   }
 }
 
-export default inject(injection)(
-  Filters.attach(
-    observer(StorageReports)
+export default inject('reportThemes')(
+  inject(injection)(
+    Filters.attach(
+      observer(StorageReports)
+    )
   )
 );

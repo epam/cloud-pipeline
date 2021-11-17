@@ -17,55 +17,46 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import classNames from 'classnames';
 import NotificationSettings from '../../models/settings/NotificationSettings';
 import NotificationSettingUpdate from '../../models/settings/NotificationSettingUpdate';
 import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
 import NotificationTemplates from '../../models/settings/NotificationTemplates';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel';
-import Users from '../../models/user/Users';
-import {Alert, message, Modal, Table} from 'antd';
+import {Alert, message, Modal} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
-import styles from './EmailNotificationSettings.css';
+import SubSettings from './sub-settings';
 
-@inject('router', 'authenticatedUserInfo')
-@inject(() => {
-  return {
-    notificationSettings: new NotificationSettings(),
-    emailTemplates: new NotificationTemplates(),
-    users: new Users()
-  };
-})
+const notificationSettingsRequest = new NotificationSettings();
+const emailTemplatesRequest = new NotificationTemplates();
+
+@inject('router', 'users', 'authenticatedUserInfo')
+@inject(() => ({
+  notificationSettings: notificationSettingsRequest,
+  emailTemplates: emailTemplatesRequest
+}))
 @observer
 export default class EmailNotificationSettings extends React.Component {
   state = {
-    selectedTemplateId: null,
     changesCanBeSkipped: false
   };
 
   componentDidMount () {
-    const {route, router} = this.props;
+    const {
+      route,
+      router,
+      notificationSettings,
+      emailTemplates
+    } = this.props;
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
+    notificationSettings.fetch();
+    emailTemplates.fetch();
   };
 
-  componentDidUpdate () {
-    if (!this.state.selectedTemplateId && this.templates.length > 0) {
-      this.selectTemplate(this.templates[0]);
-    }
-  }
-
-  reload = async (clearState = false) => {
+  reload = () => {
     this.props.notificationSettings.fetch();
     this.props.emailTemplates.fetch();
-    if (clearState) {
-      this.editEmailNotificationForm && this.editEmailNotificationForm.resetFormFields();
-      this.setState({
-        selectedTemplateId: null
-      });
-    }
   };
 
   @computed
@@ -125,8 +116,7 @@ export default class EmailNotificationSettings extends React.Component {
     }
   };
 
-  updateTemplate = async (values) => {
-    const [template] = this.templates.filter(t => t.id === this.state.selectedTemplateId);
+  updateTemplate = async (template, values) => {
     const [emailTemplate] = this.emailTemplates.filter(t => t.id === template.templateId);
     if (template && emailTemplate) {
       const hide = message.loading('Updating...', -1);
@@ -169,56 +159,27 @@ export default class EmailNotificationSettings extends React.Component {
     }
   };
 
-  selectTemplate = (template) => {
-    const changeTemplate = () => {
-      this.setState({
-        selectedTemplateId: template ? template.id : null
-      });
-    };
-    if (this.state.selectedTemplateId && this.templateModified) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        async onOk () {
-          changeTemplate();
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-    } else {
-      changeTemplate();
-    }
-  };
-
-  renderTemplatesTable = () => {
-    const columns = [
-      {
-        dataIndex: 'type',
-        key: 'name'
+  canChangeTemplate = () => {
+    return new Promise((resolve) => {
+      if (this.templateModified) {
+        Modal.confirm({
+          title: 'You have unsaved changes. Continue?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            resolve(true);
+          },
+          onCancel () {
+            resolve(false);
+          },
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      } else {
+        resolve(true);
       }
-    ];
-    return (
-      <Table
-        className={styles.table}
-        dataSource={this.templates}
-        columns={columns}
-        showHeader={false}
-        pagination={false}
-        rowKey="id"
-        rowClassName={
-          (template) => classNames(
-            'cp-settings-sidebar-element',
-            {
-              'cp-table-element-disabled': !template.enabled,
-              'cp-table-element-selected': template.id === this.state.selectedTemplateId
-            }
-          )
-        }
-        onRowClick={this.selectTemplate}
-        size="medium" />
-    );
+    });
   };
 
   editEmailNotificationForm;
@@ -235,8 +196,7 @@ export default class EmailNotificationSettings extends React.Component {
     return this.editEmailNotificationForm.modified;
   }
 
-  renderTemplateForm = () => {
-    const [template] = this.templates.filter(t => t.id === this.state.selectedTemplateId);
+  renderTemplateForm = (template) => {
     if (!template) {
       return <div />;
     } else {
@@ -247,7 +207,7 @@ export default class EmailNotificationSettings extends React.Component {
       return (
         <EditEmailNotification
           users={this.users}
-          onSubmit={this.updateTemplate}
+          onSubmit={(values) => this.updateTemplate(template, values)}
           wrappedComponentRef={this.initializeEditEmailNotificationForm}
           template={
             Object.assign(
@@ -278,19 +238,16 @@ export default class EmailNotificationSettings extends React.Component {
       return <Alert type="warning" message={this.props.notificationSettings.error} />;
     }
     return (
-      <div style={{flex: 1, minHeight: 0}}>
-        <SplitPanel
-          contentInfo={[{
-            key: 'templates',
-            size: {
-              pxDefault: 200
-            }
-          }]}
-        >
-          <div key="templates">{this.renderTemplatesTable()}</div>
-          <div>{this.renderTemplateForm()}</div>
-        </SplitPanel>
-      </div>
+      <SubSettings
+        sections={
+          this.templates.map(template => ({
+            key: template.type,
+            title: template.type,
+            render: () => this.renderTemplateForm(template)
+          }))
+        }
+        canNavigate={this.canChangeTemplate}
+      />
     );
   }
 }
