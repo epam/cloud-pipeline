@@ -79,7 +79,7 @@ public class BillingHelper {
     public static final String FINISHED_FIELD = "finished_date";
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
-    public static final int DEFAULT_BILLINGS_PAGE_SIZE = 1000;
+    public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
 
     private final AuthManager authManager;
     private final String billingIndicesMonthlyPattern;
@@ -140,9 +140,9 @@ public class BillingHelper {
     }
 
     public void setFiltersAndPeriodForSearchRequest(final LocalDate from, final LocalDate to,
-                                                     final Map<String, List<String>> filters,
-                                                     final SearchSourceBuilder searchSource,
-                                                     final SearchRequest searchRequest) {
+                                                    final Map<String, List<String>> filters,
+                                                    final SearchSourceBuilder searchSource,
+                                                    final SearchRequest searchRequest) {
         searchRequest.indicesOptions(IndicesOptions.strictExpandOpen());
         final BoolQueryBuilder compoundQuery = QueryBuilders.boolQuery();
         if (MapUtils.isNotEmpty(filters)) {

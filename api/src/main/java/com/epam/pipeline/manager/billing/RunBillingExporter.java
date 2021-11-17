@@ -4,8 +4,9 @@ import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportType;
 import com.epam.pipeline.entity.billing.RunBilling;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
-import com.opencsv.CSVWriter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,13 +49,13 @@ public class RunBillingExporter implements BillingExporter {
     private final BillingExportType type = BillingExportType.RUN;
     private final BillingHelper billingHelper;
     private final GlobalSearchElasticHelper elasticHelper;
+    private final PreferenceManager preferenceManager;
 
     @Override
     public void export(final BillingExportRequest request, final OutputStream out) {
         try (final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
              final BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
-             final CSVWriter csvWriter = new CSVWriter(bufferedWriter);
-             final RunBillingWriter writer = new RunBillingWriter(csvWriter, billingHelper);
+             final RunBillingWriter writer = new RunBillingWriter(bufferedWriter, billingHelper, preferenceManager);
              final RestClient elasticSearchLowLevelClient = elasticHelper.buildLowLevelClient()) {
             final RestHighLevelClient elasticSearchClient = new RestHighLevelClient(elasticSearchLowLevelClient);
             writer.writeHeader();
@@ -70,17 +71,16 @@ public class RunBillingExporter implements BillingExporter {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
-        final int numberOfPartitions = getEstimatedNumberOfPartitions(elasticSearchClient, from, to, filters);
+        final int numberOfPartitions = getEstimatedNumberOfRunBillingPartitions(elasticSearchClient, from, to, filters);
         return runBillings(elasticSearchClient, from, to, filters, numberOfPartitions);
     }
 
-    private int getEstimatedNumberOfPartitions(final RestHighLevelClient elasticSearchClient,
-                                               final LocalDate from,
-                                               final LocalDate to,
-                                               final Map<String, List<String>> filters) {
-        final int numberOfRunBillings = getEstimatedNumberOfRunBillings(elasticSearchClient, from, to, filters);
-        return BigDecimal.valueOf(numberOfRunBillings)
-                .divide(BigDecimal.valueOf(BillingHelper.DEFAULT_BILLINGS_PAGE_SIZE), RoundingMode.CEILING)
+    private int getEstimatedNumberOfRunBillingPartitions(final RestHighLevelClient elasticSearchClient,
+                                                         final LocalDate from,
+                                                         final LocalDate to,
+                                                         final Map<String, List<String>> filters) {
+        return BigDecimal.valueOf(getEstimatedNumberOfRunBillings(elasticSearchClient, from, to, filters))
+                .divide(BigDecimal.valueOf(getPartitionSize()), RoundingMode.CEILING)
                 .max(BigDecimal.ONE)
                 .intValue();
     }
@@ -105,6 +105,12 @@ public class RunBillingExporter implements BillingExporter {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
         }
+    }
+
+    private int getPartitionSize() {
+        return Optional.of(SystemPreferences.BILLING_EXPORT_AGGREGATION_PARTITION_SIZE)
+                .map(preferenceManager::getPreference)
+                .orElse(BillingHelper.FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE);
     }
 
     private Stream<RunBilling> runBillings(final RestHighLevelClient elasticSearchClient,
