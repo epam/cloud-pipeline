@@ -983,6 +983,11 @@ if check_cp_cap "CP_CAP_KUBE"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
 
+# We need to make sure that the Systemd is enabled if we use DCV
+if check_cp_cap "CP_CAP_DESKTOP_DCV"; then
+      export CP_CAP_SYSTEMD_CONTAINER="true"
+fi
+
 echo "------"
 echo
 ######################################################

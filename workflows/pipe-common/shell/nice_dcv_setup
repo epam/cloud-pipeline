@@ -32,34 +32,56 @@ function install_prerequisites {
                        gnu-free-mono-fonts gnu-free-sans-fonts \
                        gnu-free-serif-fonts desktop-backgrounds-gnome && \
     yum -y groupinstall "Xfce"
+  else
+    apt update -y && DEBIAN_FRONTEND=noninteractive; apt install -y --no-install-recommends ubuntu-desktop && apt upgrade -y
   fi
   $CP_PYTHON2_PATH -m pip install flask==1.1.1 Flask-HTTPAuth==3.3.0
 }
 
 function install_dcv {
   if [[ "$IS_RPM_BASED" = 0 ]]; then
+    _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-el7-x86_64
     rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
-    wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/nice-dcv-2021.2-11190-el7-x86_64.tgz
-    tar -xvzf nice-dcv-2021.2-11190-el7-x86_64.tgz && cd nice-dcv-2021.2-11190-el7-x86_64
+    wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/${_NICE_DCV_DISTRIBUTION}.tgz
+    tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && cd ${_NICE_DCV_DISTRIBUTION}
     yum install -y nice-dcv-server-2021.2.11190-1.el7.x86_64.rpm \
                    nice-dcv-web-viewer-2021.2.11190-1.el7.x86_64.rpm \
                    nice-xdcv-2021.2.411-1.el7.x86_64.rpm
-    cd .. && rm -rf nice-dcv-2021.2-11190-el7-x86_64*
     systemctl start dbus
+  else
+    _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu1804-x86_64
+    wget https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+    gpg --import NICE-GPG-KEY
+    wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/$_NICE_DCV_DISTRIBUTION.tgz
+    tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION
+    apt install -y ./nice-dcv-server_2021.2.11190-1_amd64.ubuntu1804.deb \
+                   ./nice-dcv-web-viewer_2021.2.11190-1_amd64.ubuntu1804.deb \
+                   ./nice-xdcv_2021.2.411-1_amd64.ubuntu1804.deb
+    service dbus start
   fi
+  cd .. && rm -rf "${_NICE_DCV_DISTRIBUTION}*"
+  pipe_log_info "DCV successfully installed and configured" "$DCV_INSTALL_TASK"
 
+}
+
+function configure_dcv {
   usermod -aG video dcv
   #change auth to none
   sed -i 's|#authentication="none"|authentication="none"|g' /etc/dcv/dcv.conf
-  pipe_log_info "DCV successfully installed and configured" "$DCV_INSTALL_TASK"
+
+cat <<EOF >>/etc/dcv/dcv.conf
+[clipboard]
+primary-selection-copy=true
+primary-selection-paste=true
+EOF
 }
 
 function run_dcv {
+  pipe_log_info "Run DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    pipe_log_info "Run DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
     systemctl start dcvserver
   else
-    pipe_log_warn "DCV desktop port is not set (CP_DCV_DESKTOP_PORT). Desktop session will not be available." "$DCV_INSTALL_TASK"
+    nohup dcvserver --service &> /var/log/dcv/server.log &
   fi
 
   # Wait until dcv server will be ready
@@ -68,7 +90,7 @@ function run_dcv {
       _CHECK_RESULT=$?
 
       if [ $_CHECK_RESULT -ne 0 ]; then
-        pipe_log_warn "[WARNING] DCV server still not running. Try #${_RETRY_ITERATION}." "$DCV_INSTALL_TASK"
+        pipe_log_warn "[WARNING] DCV server is still not running. Try #${_RETRY_ITERATION}." "$DCV_INSTALL_TASK"
         sleep "$_RETRIES_TIMEOUT"
       else
         pipe_log_info "[INFO] DCV server is running. Proceeding." "$DCV_INSTALL_TASK"
@@ -90,14 +112,47 @@ function run_dcv {
                                                           --desktop-port $CP_DCV_DESKTOP_PORT \
                                                           --serving-port $CP_DCV_LOCAL_PORT \
                                                           --proxy-host $CP_DCV_PROXY_HOST \
-                                                          --proxy-port $CP_DCV_PROXY_PORT &> /var/log/nice-dcv-desktop.log
+                                                          --proxy-port $CP_DCV_PROXY_PORT &> /var/log/nice-dcv-desktop.log &
 
+  else
+      pipe_log_warn "DCV desktop port is not set (CP_DCV_DESKTOP_PORT). Desktop session will not be available." "$DCV_INSTALL_TASK"
   fi
+}
+
+function install_extras {
+
+  wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
+    mkdir -p nomachine-common/ /etc/nomachine/ && \
+    tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
+    mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
+    rm -rf nomachine-common*
+    if [[ $? -ne 0 ]]; then
+      exit 1
+    fi
+
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y /opt/google-chrome-stable_current_*.rpm && \
+    rm -f /opt/google-chrome-stable_current_*.rpm
+  else
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update -y && \
+    apt-get install --no-upgrade -y google-chrome-stable
+  fi
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+  mkdir -p /home/${OWNER}/Desktop/ && \
+  bash /tmp/create_chrome_launcher.sh && \
+  rm -f /tmp/create_chrome_launcher.sh
 }
 
 function check_dcv_installation {
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     rpm -qa | grep dcv
+  else
+    dpkg -l | grep dcv
   fi
 }
 
@@ -114,13 +169,6 @@ if [[ "${CLOUD_PROVIDER}" -ne "AWS" ]]; then
     pipe_log_fail "Cloud ${CLOUD_PROVIDER} is not supported, exiting." "$DCV_INSTALL_TASK"
     exit 1
 fi
-
- if [[ "$IS_RPM_BASED" = 0 ]]; then
-    pipe_log_info "RPM based os distribution, proceeding with installation" "$DCV_INSTALL_TASK"
-  else
-    pipe_log_fail "OS is not supported, exiting." "$DCV_INSTALL_TASK"
-    exit 1
-  fi
 
 # Check if required proxy settings are correct
 export CP_DCV_PROXY_HOST="${CP_DCV_PROXY_HOST:-$(echo $CP_CAP_DCV_PROXY_HOST)}"
@@ -142,11 +190,15 @@ fi
 check_dcv_installation
 IS_DCV_INSTALLED=$?
 
-if [ $IS_DCV_INSTALLED -eq 0]; then
+if [ $IS_DCV_INSTALLED -eq 0 ]; then
    pipe_log_info "--> DCV installed already" "$DCV_INSTALL_TASK"
-   exit 0
 else
    install_prerequisites
    install_dcv
-   run_dcv
+   configure_dcv
+   install_extras
 fi
+
+run_dcv
+pipe_log_success "[INFO] DCV server is ready." "$DCV_INSTALL_TASK"
+
