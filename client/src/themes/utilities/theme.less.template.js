@@ -1588,6 +1588,7 @@ export default `
   color:  @application-color;
 }
 @THEME .cp-search-content-preview-run,
+@THEME .cp-search-content-preview-run i,
 @THEME .cp-search-content-preview-run-task {
   color: @search-preview-text-color;
 }
