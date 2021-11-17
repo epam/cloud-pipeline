@@ -83,6 +83,7 @@ class HTMLRenderer extends React.Component {
         style={iframeStyles}
         ref={(iframe) => { this.iframe = iframe; }}
         onLoad={this.onLoad}
+        className={'cp-search-preview-iframe'}
       />
     );
   }

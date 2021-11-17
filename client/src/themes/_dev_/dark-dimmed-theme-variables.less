@@ -32,8 +32,12 @@
 @color-violet: #c942ff;
 @color-sensitive: #ff5c33;
 @color-aqua: #008080;
-@color-pink: #f25e83;
+@color-pink: #f75d83;
+@color-pink-dusty: #4f4f4f;
 @color-blue-dimmed: #458;
+
+@color-white-dimmed-5: rgba(255, 255, 255, 0.05);
+@color-white-dimmed-10: rgba(255, 255, 255, 0.1);
 
 @border-color: lighten(@application-background-color, 15%);
 
@@ -141,3 +145,21 @@
 @date-picker-day-border-color: fadeout(@calendar-border-color, 20%);
 
 @code-background-color: lighten(@card-background-color, 5%);
+
+@search-preview-background-color: @panel-background-color;
+@search-first-row-color: darken(@border-color, 30%);
+@search-header-light-color: @application-color;
+@search-preview-text-color: @application-color;
+@search-preview-attributes-name: @tag-key-background-color;
+@search-preview-attributes-value: @tag-value-background-color;
+@search-preview-attributes-value-hovered: darken(@tag-key-background-color, 15%);
+@search-highlight-color: @application-color;
+@search-highlight-background-color: @code-background-color;
+@search-highlight-text-color: @panel-border-color;
+@search-highlight-text-background-color: @color-yellow;
+//table
+@search-table-background-color: @card-background-color;
+@search-table-border-color: @application-color;
+@search-table-text-color:@application-color;
+@search-md-preview-code-shadow: @color-white-dimmed-10;
+@search-md-preview-text-color: @application-color;

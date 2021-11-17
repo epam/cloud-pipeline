@@ -202,7 +202,9 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.filePreview.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.filePreview.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.filePreview.error}
+          </span>
         </div>
       );
     }
@@ -220,7 +222,7 @@ export default class PipelineDocumentPreview extends React.Component {
         {
           this.state.pdbError &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>
+            <span className={'cp-search-preview-error'}>
               Error loading .pdb visualization: {this.state.pdbError}
             </span>
           </div>
@@ -228,7 +230,7 @@ export default class PipelineDocumentPreview extends React.Component {
         {
           this.structuredTableData && this.structuredTableData.error &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>
+            <span className={'cp-search-preview-error'}>
               Error loading .csv visualization: {this.structuredTableData.message}
             </span>
           </div>
@@ -250,7 +252,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.structuredTableData && !this.structuredTableData.error) {
       return (
         <div className={styles.contentPreview}>
-          <table className={styles.csvTable}>
+          <table className={classNames(styles.csvTable, 'cp-search-csv-table')}>
             {
               this.structuredTableData.data.map((row, rowIndex) => {
                 return (
@@ -258,7 +260,11 @@ export default class PipelineDocumentPreview extends React.Component {
                     {
                       row.map((cell, columnIndex) => {
                         return (
-                          <td className={styles.csvCell} key={`col-${columnIndex}`}>{cell}</td>
+                          <td className={classNames(
+                            styles.csvCell, 'cp-search-csv-table-cell'
+                          )} key={`col-${columnIndex}`}>
+                            {cell}
+                          </td>
                         );
                       })
                     }
@@ -276,7 +282,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
+          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
             <div
               dangerouslySetInnerHTML={{
                 __html: MarkdownRenderer.render(this.filePreview.preview)
@@ -377,21 +383,22 @@ export default class PipelineDocumentPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title}>
+          <Row className={classNames(styles.title, 'cp-search-header-title')}>
             <span>{this.fileName}</span>
           </Row>
-          <Row className={styles.description}>
+          <Row className={classNames(styles.description, 'cp-search-header-description')}>
             {this.renderDescription()}
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {preview && renderSeparator()}

@@ -84,7 +84,9 @@ export default class MetadataEntityPreview extends React.Component {
     if (this.props.metadataEntity.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.metadataEntity.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.metadataEntity.error}
+          </span>
         </div>
       );
     }
@@ -92,17 +94,12 @@ export default class MetadataEntityPreview extends React.Component {
       return null;
     }
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
-
     const items = [];
     for (let key in this.rowData) {
       if (this.rowData.hasOwnProperty(key)) {
         items.push(
           <tr key={key}>
-            <td style={firstCellStyle}>{key}</td>
+            <td className={styles.firstCell}>{key}</td>
             <td>{this.rowData[key].value}</td>
           </tr>
         );
@@ -133,25 +130,26 @@ export default class MetadataEntityPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {items && renderSeparator()}

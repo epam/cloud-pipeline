@@ -16,11 +16,17 @@
 
 import React from 'react';
 import {Row} from 'antd';
+import classNames from 'classnames';
+
+import styles from './preview.css';
 
 export default function renderSeparator (key = undefined) {
   return (
     <Row key={key} style={{width: '100%', padding: '5px 10px'}}>
-      <div style={{height: 1, width: '100%', backgroundColor: '#555'}}>{'\u00A0'}</div>
+      <div className={classNames(
+        styles.renderSeparator,
+        'cp-search-preview-separator'
+      )}>{'\u00A0'}</div>
     </Row>
   );
 }
