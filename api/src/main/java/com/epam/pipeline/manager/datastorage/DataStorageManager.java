@@ -368,7 +368,7 @@ public class DataStorageManager implements SecuredEntityManager {
         checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
                                     dataStorageVO.getSourceStorageId() != null);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
-        validateLinkingMasksStructure(dataStorageVO);
+        validateMirroringParameters(dataStorageVO);
         
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
@@ -1224,7 +1224,7 @@ public class DataStorageManager implements SecuredEntityManager {
      *
      * @param newStorageVO new storage VO
      */
-    private void validateLinkingMasksStructure(final DataStorageVO newStorageVO) {
+    private void validateMirroringParameters(final DataStorageVO newStorageVO) {
         final Long sourceStorageId = newStorageVO.getSourceStorageId();
         if (sourceStorageId == null) {
             return;
@@ -1244,6 +1244,15 @@ public class DataStorageManager implements SecuredEntityManager {
         } else {
             throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND,
                                                                         sourceStorageId));
+        }
+        final DataStorageType newStorageType = newStorageVO.getType();
+        final DataStorageType sourceStorageType = sourceStorage.getType();
+        if (newStorageType == null) {
+            newStorageVO.setType(sourceStorageType);
+        } else {
+            Assert.isTrue(newStorageType.equals(sourceStorageType),
+                          messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_MIRROR_ILLEGAL_TYPE,
+                                                   newStorageType, sourceStorageType));
         }
     }
 
