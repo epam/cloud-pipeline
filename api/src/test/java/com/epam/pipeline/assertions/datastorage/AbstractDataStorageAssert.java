@@ -21,8 +21,11 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.pipeline.Folder;
+import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 
 public abstract class AbstractDataStorageAssert<S extends AbstractDataStorageAssert<S, A>,
         A extends AbstractDataStorage> extends AbstractSecuredEntityAssert<S, A> {
@@ -137,4 +140,37 @@ public abstract class AbstractDataStorageAssert<S extends AbstractDataStorageAss
         return myself;
     }
 
+    public S hasSourceStorageId(final Long sourceStorageId) {
+        isNotNull();
+        if (!Objects.equals(actual.getSourceStorageId(), sourceStorageId)) {
+            failWithMessage("Expected data storage source storage id to be <%d> but was <%d>.",
+                            sourceStorageId, actual.getSourceStorageId());
+        }
+        return myself;
+    }
+
+    public S hasLinkingMasks(final Set<String> linkingMasks) {
+        isNotNull();
+        if (!equalCollections(actual.getLinkingMasks(), linkingMasks)) {
+            failWithMessage("Expected data storage linking masks to be <%s> but was <%s>.",
+                            linkingMasks, actual.getLinkingMasks());
+        }
+        return myself;
+    }
+
+    public static boolean equalCollections(Collection<?> first, Collection<?> second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null) {
+            return second.isEmpty();
+        }
+        if (second == null) {
+            return first.isEmpty();
+        }
+        if (first.size() != second.size()) {
+            return false;
+        }
+        return CollectionUtils.disjunction(first, second).isEmpty();
+    }
 }
