@@ -288,7 +288,6 @@
   transition: opacity 250ms, top 250ms, left 250ms;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 5px;
   text-align: left;
 }

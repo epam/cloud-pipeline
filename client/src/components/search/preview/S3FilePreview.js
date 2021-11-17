@@ -168,7 +168,7 @@ export default class S3FilePreview extends React.Component {
       );
     }
     if (this.props.dataStorageInfo.error) {
-      return <span style={{color: '#ff556b'}}>{this.props.dataStorageInfo.error}</span>;
+      return <span className={'cp-search-preview-error'}>{this.props.dataStorageInfo.error}</span>;
     }
     const path = this.props.item.type !== SearchItemTypes.NFSFile
       ? [this.props.dataStorageInfo.value.pathMask, ...this.props.item.id.split('/')]
@@ -224,7 +224,7 @@ export default class S3FilePreview extends React.Component {
     if (this.filePreview.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.filePreview.error}</span>
+          <span className={'cp-search-preview-error'}>{this.filePreview.error}</span>
         </div>
       );
     }
@@ -242,13 +242,13 @@ export default class S3FilePreview extends React.Component {
         {
           this.state.pdbError &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .pdb visualization: {this.state.pdbError}</span>
+            <span className={'cp-search-preview-error'}>Error loading .pdb visualization: {this.state.pdbError}</span>
           </div>
         }
         {
           this.structuredTableData && this.structuredTableData.error &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .csv visualization: {this.structuredTableData.message}</span>
+            <span className={'cp-search-preview-error'}>Error loading .csv visualization: {this.structuredTableData.message}</span>
           </div>
         }
         {
@@ -268,7 +268,7 @@ export default class S3FilePreview extends React.Component {
     if (this.structuredTableData && !this.structuredTableData.error) {
       return (
         <div className={styles.contentPreview}>
-          <table className={styles.csvTable}>
+          <table className={classNames(styles.csvTable, 'cp-search-csv-table')}>
             {
               this.structuredTableData.data.map((row, rowIndex) => {
                 return (
@@ -276,7 +276,9 @@ export default class S3FilePreview extends React.Component {
                     {
                       row.map((cell, columnIndex) => {
                         return (
-                          <td className={styles.csvCell} key={`col-${columnIndex}`}>{cell}</td>
+                          <td className={classNames(
+                            styles.csvCell, 'cp-search-csv-table-cell'
+                          )} key={`col-${columnIndex}`}>{cell}</td>
                         );
                       })
                     }
@@ -294,7 +296,7 @@ export default class S3FilePreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
+          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
             <div
               dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.filePreview.preview)}} />
           </div>
@@ -419,25 +421,26 @@ export default class S3FilePreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title}>
+          <Row className={classNames(styles.title, 'cp-search-header-title')}>
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
           {
             this.props.item.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.props.item.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {info && renderSeparator()}

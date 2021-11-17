@@ -596,7 +596,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     } else if (this.state.searchResults.length) {
       hintsTooltipPlacement = 'bottom';
     }
-    const previewClassNames = [styles.preview];
+    const previewClassNames = [styles.preview, 'cp-search-preview'];
     if (!this.state.previewAvailable) {
       previewClassNames.push(styles.notAvailable);
     }

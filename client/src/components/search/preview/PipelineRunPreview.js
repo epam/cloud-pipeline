@@ -352,14 +352,14 @@ export default class PipelineRunPreview extends React.Component {
       }
       if (details.length > 0) {
         return (
-          <Row className={`${styles.description} ${styles.tags}`}>
+          <Row className={classNames(styles.description, 'cp-search-header-description', styles.tags)}>
             {
               details.map(d => {
                 return (
                   <span
                     key={d.key}
                     style={d.additionalStyle}
-                    className={d.additionalClassName}>
+                    className={classNames(d.additionalClassName, 'cp-search-description-tag')}>
                     {d.value}
                   </span>
                 );
@@ -388,7 +388,9 @@ export default class PipelineRunPreview extends React.Component {
       if (this.props.runInfo.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.runInfo.error}</span>
+            <span className={'cp-search-preview-error'}>
+              {this.props.runInfo.error}
+            </span>
           </div>
         );
       }
@@ -492,17 +494,19 @@ export default class PipelineRunPreview extends React.Component {
       if (this.props.runTasks.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.runTasks.error}</span>
+            <span className={'cp-search-preview-error'}>
+              {this.props.runTasks.error}
+            </span>
           </div>
         );
       }
       if (this.props.runTasks.loaded) {
         return (
-          <div className={styles.contentPreview}>
+          <div className={classNames(styles.contentPreview, 'cp-search-content-preview')}>
             {
               (this.props.runTasks.value || []).map((task, index) => {
                 return (
-                  <Row key={index} className={styles.task}>
+                  <Row key={index} className={classNames(styles.task, 'cp-search-content-preview-run-task')}>
                     <StatusIcon
                       status={task.status}
                       small
@@ -534,14 +538,15 @@ export default class PipelineRunPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} style={{whiteSpace: 'initial'}}>
+          <Row className={classNames(styles.title, 'cp-search-header-title')} style={{whiteSpace: 'initial'}}>
             {
               this.props.runInfo && this.props.runInfo.loaded
                 ? (
@@ -562,7 +567,7 @@ export default class PipelineRunPreview extends React.Component {
           </Row>
           {description}
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {info && renderSeparator()}

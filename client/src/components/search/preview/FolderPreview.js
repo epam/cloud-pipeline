@@ -94,7 +94,9 @@ export default class FolderPreview extends React.Component {
     if (this.props.folder.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.folder.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.folder.error}
+          </span>
         </div>
       );
     }
@@ -172,10 +174,6 @@ export default class FolderPreview extends React.Component {
       ...(this.props.folder.value.configurations || []).map(mapChild),
       ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: 'appstore-o'}] : [])
     ];
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
     const rowStyle = {
       // borderBottom: '1px solid #555'
     };
@@ -189,7 +187,7 @@ export default class FolderPreview extends React.Component {
                 : items || []).map((item, index) => {
                   return (
                     <tr key={index} style={rowStyle}>
-                      <td style={firstCellStyle}>
+                      <td className={styles.firstCell}>
                         {
                           PreviewIcons[item.type]
                             ? <Icon
@@ -227,19 +225,20 @@ export default class FolderPreview extends React.Component {
         className={
           classNames(
             styles.container,
+            {'cp-search-container': !this.props.lightMode},
             {
-              [styles.light]: this.props.lightMode
+              'cp-search-container-light': this.props.lightMode
             }
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {attributes && renderSeparator()}

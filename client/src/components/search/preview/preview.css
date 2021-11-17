@@ -18,12 +18,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  color: #ddd;
   overflow: auto;
-}
-
-.container.light {
-  color: #555;
 }
 
 .header {
@@ -51,35 +46,25 @@
 .header span,
 .header i {
   margin-right: 7px;
-  color: #ddd;
 }
 
 .header .description {
   font-size: large;
-  color: #ccc;
 }
 
 .header .tool-description {
   font-size: medium;
-  color: #ccc;
 }
 
-.container.light .header span,
-.container.light .header i,
-.container.light .header .description,
-.container.light .header .tool-description {
-  color: #555;
+.header-image {
+  width: 80px;
+  border-radius: 5px;
 }
 
 .description.tags > span {
   font-size: small;
   padding: 2px 5px;
   border-radius: 2px;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.container.light .description.tags > span {
-  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .highlights,
@@ -104,12 +89,7 @@
   font-size: smaller;
 }
 
-.attribute-name {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
 .attribute-value {
-  background-color: rgba(255, 255, 255, 0.05);
   overflow-x: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -117,23 +97,9 @@
 }
 
 .attribute-value:hover {
-  background-color: rgba(255, 255, 255, 0.75);
-  color: black;
   overflow-x: visible;
   white-space: normal;
   word-break: break-all;
-}
-
-.container.light .attribute-name {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.container.light .attribute-value {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.container.light .attribute-value:hover {
-  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .highlights > table,
@@ -150,24 +116,14 @@
 }
 
 .highlight {
-  background-color: rgba(255, 255, 255, 0.1);
   padding: 2px;
-  color: #ccc;
 }
-
-.container.light .highlight {
-  background-color: transparent;
-  color: #555;
+.highlight-text {
+  padding: 0px 2px;
 }
 
 .csv-table {
-  border: 1px solid #666;
-  background-color: rgba(255, 255, 255, 0.05);
   min-width: 100%;
-}
-
-.container.light .csv-table {
-  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .run-table {
@@ -178,65 +134,42 @@
   padding: 1px 10px 1px 0;
 }
 
-.run-table .run i {
-  color: #ccc;
+.first-cell {
+  padding-right: 20px;
 }
 
-.container.light .run-table .run i {
-  color: #555;
+.first-cell.bold {
+  font-weight: bold;
+}
+
+.intermedia-cell {
+  padding-right: 20px;
+  padding-left: 20px;
+}
+
+.last-cell {
+  padding-left: 20px;
 }
 
 .csv-cell {
   white-space: nowrap;
   padding: 5px;
-  border: 1px solid #666;
-}
-
-.container.light .csv-cell {
-  border-color: #ccc;
 }
 
 .content-preview .task span,
 .content-preview .task i,
 .content-preview .task code {
-  color: #ccc;
   margin-right: 5px;
 }
 
 .md-preview {
   font-size: 10pt;
-  color: #ccc;
-}
-
-.md-preview h1,
-.md-preview h2,
-.md-preview h3,
-.md-preview h4,
-.md-preview h5,
-.md-preview h6 {
-  color: #ccc;
-}
-
-.container.light .content-preview .task span,
-.container.light .content-preview .task i,
-.container.light .content-preview .task code,
-.container.light .md-preview,
-.container.light .md-preview h1,
-.container.light .md-preview h2,
-.container.light .md-preview h3,
-.container.light .md-preview h4,
-.container.light .md-preview h5,
-.container.light .md-preview h6 {
-  color: #555;
 }
 
 .md-preview code {
   padding: 2px 4px;
   font-size: 90%;
-  color: #c7254e;
-  background-color: #f9f2f4;
   border-radius: 4px;
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
 .md-preview p {
@@ -254,9 +187,6 @@
   line-height: 1.5;
   word-break: break-all;
   word-wrap: break-word;
-  color: #333;
-  background-color: #f5f5f5;
-  border: 1px solid #ccc;
   border-radius: 4px;
 }
 
@@ -412,12 +342,7 @@
   color: #0e77ca;
 }
 
-.share-url-button {
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
-  height: 45px;
-  width: 45px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+.render-separator {
+  height: 1px;
+  width: 100%;
 }
