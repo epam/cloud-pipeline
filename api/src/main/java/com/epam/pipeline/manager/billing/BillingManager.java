@@ -178,7 +178,7 @@ public class BillingManager {
         Assert.notNull(exporter, messageHelper.getMessage(MessageConstants.ERROR_BILLING_EXPORT_TYPE_NOT_SUPPORTED,
                 exportType));
         return ResultWriter.unchecked("billing." + exportType.name().toLowerCase() + ".csv",
-                out -> exporter.export(request, out));
+            out -> exporter.export(request, out));
     }
 
     private BillingExportType getBillingExportType(final BillingExportRequest request) {

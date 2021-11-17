@@ -17,7 +17,7 @@ public class RunBillingWriter implements Closeable {
 
     private static final char SEPARATOR = ',';
     private static final String[] FALLBACK_HEADER = new String[]{
-            "Run", "Owner", "Pipeline", "Tool", "Instance", "Started", "Finished", "Duration", "Cost"};
+        "Run", "Owner", "Pipeline", "Tool", "Instance", "Started", "Finished", "Duration", "Cost"};
 
     private final CSVWriter writer;
     private final BillingHelper billingHelper;

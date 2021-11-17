@@ -7,5 +7,5 @@ import java.io.OutputStream;
 
 public interface BillingExporter {
     BillingExportType getType();
-    void export(final BillingExportRequest request, final OutputStream out);
+    void export(BillingExportRequest request, OutputStream out);
 }

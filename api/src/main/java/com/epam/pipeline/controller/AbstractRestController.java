@@ -147,19 +147,19 @@ public abstract class AbstractRestController {
                                          InputStream stream,
                                          String fileName,
                                          MediaType contentType) throws IOException {
-        try (final InputStream in = stream) {
+        try (InputStream in = stream) {
             writeToResponse(response, ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType);
         }
     }
 
     protected void writeToResponse(final HttpServletResponse response,
-                                 final ResultWriter writer) throws IOException {
+                                   final ResultWriter writer) throws IOException {
         writeToResponse(response, writer, MediaType.APPLICATION_OCTET_STREAM);
     }
 
     protected void writeToResponse(final HttpServletResponse response,
-                                 final ResultWriter writer,
-                                 final MediaType contentType) throws IOException {
+                                   final ResultWriter writer,
+                                   final MediaType contentType) throws IOException {
         response.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + writer.getName());
         response.setContentType(contentType.toString());
         writer.write(response);
