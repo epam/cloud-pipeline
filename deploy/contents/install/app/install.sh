@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1284,6 +1284,7 @@ if is_service_requested cp-release-notes; then
                                   "/opt/release-notes"
   if is_install_requested; then
     print_info "-> Deploying release-notes agent"
+    export CP_RELEASE_NOTES_SCHEDULE="${CP_RELEASE_NOTES_SCHEDULE:-*/15 * * * *}"
     create_kube_resource $K8S_SPECS_HOME/cp-release-notes/cp-release-notes-dpl.yaml
     wait_for_deployment "cp-release-notes"
   fi

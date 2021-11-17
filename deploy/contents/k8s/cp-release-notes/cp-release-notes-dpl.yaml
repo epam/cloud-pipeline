@@ -4,7 +4,7 @@ metadata:
   name: cp-release-notes
   namespace: default
 spec:
-  schedule: "${CP_RELEASE_NOTES_SCHEDULE:*/15 * * * *}"
+  schedule: ${CP_RELEASE_NOTES_SCHEDULE}
   startingDeadlineSeconds: 300
   successfulJobsHistoryLimit: 5
   failedJobsHistoryLimit: 5
