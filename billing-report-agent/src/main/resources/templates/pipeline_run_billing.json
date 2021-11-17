@@ -4,8 +4,8 @@
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
         "run_id": { "type": "keyword", "store": true },
-        "pipeline_id": { "type": "keyword" },
         "pipeline": { "type": "keyword" },
+        "pipeline_name": { "type": "keyword" },
         "resource_type": { "type": "keyword" },
         "compute_type": { "type": "keyword" },
         "cost": {"type": "long"},

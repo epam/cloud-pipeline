@@ -72,7 +72,7 @@ public class BillingHelper {
     public static final String BUCKET_DOCUMENTS = "bucketDocs";
     public static final String OWNER_FIELD = "owner";
     public static final String CARDINALITY_AGG = "cardinality";
-    public static final String PIPELINE_FIELD = "pipeline";
+    public static final String PIPELINE_FIELD = "pipeline_name";
     public static final String TOOL_FIELD = "tool";
     public static final String INSTANCE_TYPE_FIELD = "instance_type";
     public static final String STARTED_FIELD = "started_date";
