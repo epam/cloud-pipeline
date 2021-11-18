@@ -211,6 +211,8 @@ public final class MessageConstants {
     public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
     public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
     public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
+    public static final String ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED = "error.kube.deployment.refresh.failed";
+    public static final String ERROR_KUBE_NAMESPACE_NOT_SPECIFIED = "error.kube.namespace.not.specified";
 
     // Data storage messages
     public static final String ERROR_DATASTORAGE_NOT_FOUND = "error.datastorage.not.found";
@@ -649,6 +651,18 @@ public final class MessageConstants {
         "storage.quota.unknown.share.type.for.percentage";
 
     // NAT configuration
+    public static final String NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE = "nat.gateway.routes.transfer.to.kube";
+    public static final String NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT = "nat.gateway.route.creation.route.service.port";
+    public static final String NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY = "nat.gateway.route.transfer.summary";
+    public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED =
+        "nat.gateway.route.creation.existing.service.add.port.failed";
+    public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION = "nat.gateway.route.creation.new.service";
+    public static final String NAT_ROUTE_CONFIG_PORT_GENERATION_FAILED =
+        "nat.gateway.route.creation.port.generation.failed";
+    public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION_FAILED =
+        "nat.gateway.route.creation.new.service.failed";
+    public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE =
+        "nat.gateway.route.creation.existing.service.add.port";
     public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
     public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
@@ -663,7 +677,10 @@ public final class MessageConstants {
         "nat.gateway.route.creation.dns.resolving.failed";
     public static final String NAT_ROUTE_CONFIG_CANT_FIND_PORT =
         "nat.gateway.route.creation.port.forwarding.missing.port.error";
+    public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
+        "nat.gateway.route.creation.kube.dns.restart.error";
 
+    public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
     public static final String NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED = "nat.gateway.route.removal.service.port.failed";
     public static final String NAT_ROUTE_REMOVAL_KEEP_DNS_MASK = "nat.gateway.route.removal.keep.dns.entry";
@@ -671,6 +688,8 @@ public final class MessageConstants {
         "nat.gateway.route.removal.deploy.refresh.failed";
     public static final String NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED =
         "nat.gateway.route.removal.port.forwarding.failed";
+    public static final String NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS = "nat.gateway.route.removal.no.service.ports";
+    public static final String NAT_ROUTE_REMOVAL_SERVICE_PORT = "nat.gateway.route.removal.service.port";
 
     // Search
     public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING =
