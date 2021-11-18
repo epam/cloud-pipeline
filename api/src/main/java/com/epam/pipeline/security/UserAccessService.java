@@ -79,10 +79,10 @@ public class UserAccessService {
 
     public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
         final UserContext jwtUser = new UserContext(jwtRawToken, claims);
-        final PipelineUser pipelineUser = userManager.loadUserByName(jwtUser.getUsername());
         if (!validateUser) {
             return jwtUser;
         }
+        final PipelineUser pipelineUser = userManager.loadUserByName(jwtUser.getUsername());
         if (pipelineUser == null) {
             log.info("Failed to find user by name {}. Access is still allowed.", jwtUser.getUsername());
             return jwtUser;
