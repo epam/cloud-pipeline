@@ -34,6 +34,7 @@ export default class AddRouteForm extends React.Component {
     ports: {'port': undefined},
     ip: undefined,
     serverName: undefined,
+    description: undefined,
     errors: {},
     pending: false,
     ipManualInput: false,
@@ -144,6 +145,7 @@ export default class AddRouteForm extends React.Component {
       ports: {[identifier]: undefined},
       ip: undefined,
       serverName: undefined,
+      description: undefined,
       errors: {},
       ipManualInput: false,
       ipResolveForServer: undefined
@@ -170,11 +172,13 @@ export default class AddRouteForm extends React.Component {
       const {
         ports = {},
         serverName,
+        description,
         ip
       } = this.state;
       this.props.onAdd({
         ip,
         serverName,
+        description,
         ports: Object.values(ports)
       });
       this.resetForm();
@@ -244,7 +248,7 @@ export default class AddRouteForm extends React.Component {
 
   render () {
     const {onCancel, visible} = this.props;
-    const {serverName, ip, pending} = this.state;
+    const {serverName, ip, description, pending} = this.state;
     const FormItemError = ({identifier}) => (
       <div
         className={
@@ -356,6 +360,19 @@ export default class AddRouteForm extends React.Component {
                 >
                   Add port
                 </Button>
+              </div>
+              <div className={styles.formItemContainer}>
+                <span className={styles.title}>Comment:</span>
+                <FormItem
+                  className={styles.formItem}
+                  validateStatus={this.getValidationStatus('description')}
+                >
+                  <Input
+                    placeholder="Comment"
+                    value={description}
+                    onChange={this.handleChange('description')}
+                  />
+                </FormItem>
               </div>
             </Form>
           </Spin>
