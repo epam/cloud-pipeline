@@ -84,7 +84,7 @@ function RequestDavAccess (
     storageId,
     storageMask = 0
   } = info || {};
-  const readOnly = !roleModel.readAllowed({mask: storageMask}) || !storageId;
+  const readOnly = !roleModel.writeAllowed({mask: storageMask}) || !storageId;
   const {value = undefined} = metadata;
   const accessInfo = davAccessInfo(value);
   let infoString = 'Request file system access';
