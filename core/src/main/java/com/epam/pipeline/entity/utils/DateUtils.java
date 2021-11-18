@@ -72,4 +72,8 @@ public final class DateUtils {
     public static long daysBetweenDates(final LocalDateTime one, final LocalDateTime another) {
         return Math.abs(Duration.between(one, another).toDays());
     }
+
+    public static long hoursBetweenDates(final LocalDateTime one, final LocalDateTime another) {
+        return Math.abs(Duration.between(one, another).toHours());
+    }
 }

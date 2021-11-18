@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -42,6 +44,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -63,6 +66,8 @@ public class UserAccessService {
     private SamlUserRegisterStrategy autoCreateUsers;
     @Value("${saml.user.allow.anonymous: false}")
     private boolean allowAnonymous;
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     public UserContext parseUser(final String userName,
                                  final List<String> groups,
@@ -75,13 +80,15 @@ public class UserAccessService {
     public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
         final UserContext jwtUser = new UserContext(jwtRawToken, claims);
         final PipelineUser pipelineUser = userManager.loadUserByName(jwtUser.getUsername());
-        userManager.updateLastLoginDate(pipelineUser);
         if (!validateUser) {
             return jwtUser;
         }
         if (pipelineUser == null) {
             log.info("Failed to find user by name {}. Access is still allowed.", jwtUser.getUsername());
             return jwtUser;
+        }
+        if (needToUpdateUserLastLogin(pipelineUser)) {
+            userManager.updateLastLoginDate(pipelineUser);
         }
         if (!jwtUser.getUserId().equals(pipelineUser.getId())) {
             throw new TokenVerificationException(String.format(
@@ -194,5 +201,15 @@ public class UserAccessService {
         userContext.setGroups(groups);
         userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ANONYMOUS_USER.getRole()));
         return userContext;
+    }
+
+    private boolean needToUpdateUserLastLogin(final PipelineUser user) {
+        if (Objects.isNull(user.getLastLoginDate())) {
+            return true;
+        }
+
+        final Integer threshold = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD);
+        return DateUtils.hoursBetweenDates(user.getLastLoginDate(), DateUtils.nowUTC()) >= threshold;
     }
 }
