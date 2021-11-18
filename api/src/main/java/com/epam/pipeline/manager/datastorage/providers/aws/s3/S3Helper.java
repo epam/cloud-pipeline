@@ -1191,7 +1191,8 @@ public class S3Helper {
     private static void validatePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
         final Set<String> linkingMasks = dataStorage.getLinkingMasks();
         if (CollectionUtils.isNotEmpty(linkingMasks)) {
-            Assert.isTrue(ProviderUtils.matchingMasks(path, linkingMasks), "Requested operation violates masking rules!");
+            Assert.isTrue(ProviderUtils.matchingMasks(path, linkingMasks),
+                          "Requested operation violates masking rules!");
         }
     }
 
