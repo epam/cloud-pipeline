@@ -31,6 +31,12 @@ function davAccessInfo (value) {
   };
 }
 
+const WRITE_PERMISSION = 1 << 1;
+
+function writeAllowed (mask) {
+  return (mask & WRITE_PERMISSION) === WRITE_PERMISSION;
+}
+
 function StorageAccess(
   {
     disabled = false,
@@ -39,7 +45,8 @@ function StorageAccess(
   }
 ) {
   const {
-    metadata = {}
+    metadata = {},
+    mask = 1
   } = storage || {};
   const {
     'dav-mount': davMount
@@ -55,7 +62,7 @@ function StorageAccess(
   return (
     <Button
       type="link"
-      disabled={disabled || (info && info.available)}
+      disabled={disabled || (info && info.available) || !writeAllowed(mask)}
       onClick={onRequest}
     >
       {infoString}
