@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@
 package com.epam.pipeline.manager.datastorage.providers;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DatastoragePath;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.AntPathMatcher;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class ProviderUtils {
@@ -121,5 +126,22 @@ public final class ProviderUtils {
 
     public static String getVersionFromSyntheticDeletionMarker(final String version) {
         return StringUtils.removeEnd(version, ProviderUtils.SYNTHETIC_DELETION_MARKER_SUFFIX);
+    }
+
+    public static boolean dataStorageItemMatching(final DataStorageFile item, final Set<String> fileMasks,
+                                                  final Set<String> folderMasks) {
+        return matchingMasks(item.getPath(), item.getType().equals(DataStorageItemType.Folder)
+                                             ? folderMasks
+                                             : fileMasks);
+    }
+
+    public static boolean matchingMasks(final String path, final Set<String> masks) {
+        if (CollectionUtils.isEmpty(masks)) {
+            return true;
+        }
+        final AntPathMatcher pathMatcher = new AntPathMatcher();
+        return CollectionUtils.emptyIfNull(masks)
+            .stream()
+            .anyMatch(mask -> pathMatcher.match(mask, path));
     }
 }

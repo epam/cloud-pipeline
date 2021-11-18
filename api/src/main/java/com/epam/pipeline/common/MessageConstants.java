@@ -269,6 +269,10 @@ public final class MessageConstants {
     public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF =
             "info.datastorage.dav.mount.request.called.off";
 
+    public static final String ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE =
+            "error.datastorage.new.linking.masks.illegal.state";
+    public static final String ERROR_DATASTORAGE_MIRROR_ILLEGAL_TYPE = "error.datastorage.new.mirror.type.mismatch";
+
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
     public static final String ERROR_DATASTORAGE_NFS_MOUNT_2 = "error.datastorage.nfs.mount.2";

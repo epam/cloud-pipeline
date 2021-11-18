@@ -71,6 +71,7 @@ public class DataStoragePathLoader {
         final List<AbstractDataStorage> storages = dataStorageDao.loadDataStoragesByPrefixes(prefixes);
         return ListUtils.emptyIfNull(storages)
                 .stream()
+                .filter(storage -> storage.getSourceStorageId() == null)
                 .filter(storage -> permissionHelper.isAllowed("READ", storage))
                 .max(Comparator.comparing(storage -> storage.getPath().length()));
     }
