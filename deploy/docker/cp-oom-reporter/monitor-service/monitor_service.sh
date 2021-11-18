@@ -15,25 +15,23 @@
 # limitations under the License.
 
 function call_api() {
-  _API="$1"
-  _API_TOKEN="$2"
-  _API_METHOD="$3"
-  _HTTP_METHOD="$4"
-  _HTTP_BODY="$5"
+  _API_METHOD="$1"
+  _HTTP_METHOD="$2"
+  _HTTP_BODY="$3"
   if [[ "$_HTTP_BODY" ]]
   then
     curl -f -s -k -X "$_HTTP_METHOD" \
       --header 'Accept: application/json' \
-      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Authorization: Bearer '"$API_TOKEN" \
       --header 'Content-Type: application/json' \
       --data "$_HTTP_BODY" \
-      "$_API$_API_METHOD"
+      "$API$_API_METHOD"
   else
     curl -f -s -k -X "$_HTTP_METHOD" \
       --header 'Accept: application/json' \
-      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Authorization: Bearer '"$API_TOKEN" \
       --header 'Content-Type: application/json' \
-      "$_API$_API_METHOD"
+      "$API$_API_METHOD"
   fi
 }
 
@@ -75,19 +73,15 @@ function log_oom_killer_events() {
 }
 
 function get_current_run_id() {
-  _API="$1"
-  _API_TOKEN="$2"
-  _NODE="$3"
-  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/run" "GET" |
+  _NODE="$1"
+  call_api "cluster/node/$_NODE/run" "GET" |
     jq -r ".payload.runId" |
     grep -v "^null$"
 }
 
 function get_preference() {
-  _API="$1"
-  _API_TOKEN="$2"
-  _PREFERENCE_NAME="$3"
-  call_api "$_API" "$_API_TOKEN" "preferences/$_PREFERENCE_NAME" "GET" |
+  _PREFERENCE_NAME="$1"
+  call_api "preferences/$_PREFERENCE_NAME" "GET" |
     jq -r ".payload.value" |
     grep -v "^null$"
 }
@@ -163,8 +157,7 @@ pipe_log_debug "Starting monitoring service process for node $NODE..."
 
 pipe_log_debug "Getting OOM logger preferences"
 export OOM_EXCLUDE_EVENTS=$(get_preference "system.oom.exclude.events")
-echo "  -> system.oom.exclude.events: $OOM_EXCLUDE_EVENTS"
-echo
+pipe_log_debug "  -> system.oom.exclude.events: $OOM_EXCLUDE_EVENTS"
 
 while true
 do
@@ -181,7 +174,7 @@ do
     # No new OOM killer events found
     continue
   fi
-  RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
+  RUN_ID=$(get_current_run_id "$NODE")
   if [[ -z "$RUN_ID" ]]
   then
     pipe_log_debug "No run is assigned to the node."
