@@ -22,11 +22,14 @@ import org.springframework.shell.Shell;
 import org.springframework.shell.jline.InteractiveShellApplicationRunner;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Order(InteractiveShellApplicationRunner.PRECEDENCE - 2)
 public class CLIApplicationRunner implements CommandLineRunner {
+
+    private static final String HELP = "help";
 
     private final Shell shell;
     private final ConfigurableEnvironment environment;
@@ -40,9 +43,11 @@ public class CLIApplicationRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         List<String> commandsToRun = Arrays.stream(args)
                 .filter(w -> !w.startsWith("@")).collect(Collectors.toList());
+        InteractiveShellApplicationRunner.disable(environment);
         if (!commandsToRun.isEmpty()) {
-            InteractiveShellApplicationRunner.disable(environment);
             shell.run(new CLIInputProvider(commandsToRun));
+        } else {
+            shell.run(new CLIInputProvider(Collections.singletonList(HELP)));
         }
     }
 

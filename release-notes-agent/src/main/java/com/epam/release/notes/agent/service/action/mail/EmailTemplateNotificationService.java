@@ -27,6 +27,8 @@ import org.thymeleaf.context.Context;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class EmailTemplateNotificationService implements TemplateNotificationService {
@@ -36,6 +38,13 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
     private static final String JIRA_ISSUES = "jiraIssues";
     private static final String GITHUB_ISSUES = "gitHubIssues";
     private static final String EXCEPTION_MESSAGE = "This kind of version status is not handled in current method";
+    private static final String ADMIN_EMAILS_NOT_CONFIGURED = "Admin emails is not configured!";
+    private static final String ADMIN_EMAILS_NOT_CORRECT = "Admin emails is configured incorrectly!";
+    private static final String SUBSCRIBERS_EMAILS_NOT_CONFIGURED = "Subscriber emails is not configured!";
+    private static final String SUBSCRIBERS_EMAILS_NOT_CORRECT = "Subscribers emails is configured incorrectly!";
+    private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@"
+            + "[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+    private static final Pattern PATTERN = Pattern.compile(EMAIL_PATTERN);
 
     private final TemplateEngine templateEngine;
     private final String emailToAdminTemplateName;
@@ -50,10 +59,14 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
             @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
             @Value("${release.notes.agent.name.of.subscribers.email.template}")
             final String emailToSubscribersTemplateName,
-            @Value("${release.notes.agent.email.to.admin.subject}") final String emailToAdminTitle,
-            @Value("${release.notes.agent.email.to.subscribers.subject}") final String emailToSubscribersTitle,
-            @Value("#{'${release.notes.agent.admin.emails:}'.split(',')}") final List<String> adminsEmailAddresses,
-            @Value("#{'${release.notes.agent.subscribers.emails:}'.split(',')}")
+            @Value("#{'${release.notes.agent.email.to.admin.subject}'?:" +
+                    "'Cloud-pipeline major version change notification'}")
+            final String emailToAdminTitle,
+            @Value("#{'${release.notes.agent.email.to.subscribers.subject}'?:" +
+                    "'Cloud-pipeline minor version change notification'}")
+            final String emailToSubscribersTitle,
+            @Value("#{'${release.notes.agent.admin.emails}'.split(',')?:}") final List<String> adminsEmailAddresses,
+            @Value("#{'${release.notes.agent.subscribers.emails}'.split(',')?:}")
             final List<String> subscribersEmailAddresses
     ) {
         this.templateEngine = templateEngine;
@@ -66,10 +79,6 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
         validateProperties();
     }
 
-    private void validateProperties() {
-        adminsEmailAddresses.forEach(e -> Assert.hasText(e, "Admin emails is not configured!"));
-        subscribersEmailAddresses.forEach(e -> Assert.hasText(e, "Subscriber emails is not configured!"));
-    }
 
     @Override
     public EmailContent populate(final VersionStatusInfo versionStatusInfo) {
@@ -107,6 +116,22 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
                                final Context context) {
         context.setVariable(JIRA_ISSUES, jiraIssues);
         context.setVariable(GITHUB_ISSUES, gitHubIssues);
+    }
+
+    private void validateProperties() {
+        adminsEmailAddresses.forEach(e -> {
+            Assert.hasText(e, ADMIN_EMAILS_NOT_CONFIGURED);
+            Assert.isTrue(validateEmails(e), ADMIN_EMAILS_NOT_CORRECT);
+        });
+        subscribersEmailAddresses.forEach(e -> {
+            Assert.hasText(e, SUBSCRIBERS_EMAILS_NOT_CONFIGURED);
+            Assert.isTrue(validateEmails(e), SUBSCRIBERS_EMAILS_NOT_CORRECT);
+        });
+    }
+
+    private boolean validateEmails(final String emailAdress) {
+        final Matcher matcher = PATTERN.matcher(emailAdress);
+        return matcher.matches();
     }
 
 }
