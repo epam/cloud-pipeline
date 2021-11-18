@@ -17,9 +17,9 @@
         "instance_type":  { "type": "keyword" },
         "billing_center":  { "type": "keyword" },
         "cloudRegionId": { "type": "keyword" },
-        "created_date": {"type": "date"},
-        "started_date": {"type": "date"},
-        "finished_date": {"type": "date"}
+        "created_date": { "type": "date" },
+        "started_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
+        "finished_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" }
       }
     }
   },

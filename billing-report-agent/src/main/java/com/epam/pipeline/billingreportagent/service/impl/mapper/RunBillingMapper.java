@@ -21,6 +21,7 @@ import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchron
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
@@ -33,12 +34,15 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Optional;
 
 @Component
 @Getter
 public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInfo> {
-    
+
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE);
     private static final int PRICE_SCALE = 5;
 
     private final String billingCenterKey;
@@ -70,8 +74,8 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("disk_price", scaled(run.getDiskPricePerHour()))
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
                 .field("created_date", billingInfo.getDate())
-                .field("start_date", container.getEntity().getEntity().getPipelineRun().getStartDate())
-                .field("end_date", container.getEntity().getEntity().getPipelineRun().getEndDate());
+                .field("started_date", asString(run.getStartDate()))
+                .field("finished_date", asString(run.getEndDate()));
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
@@ -86,5 +90,9 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .map(BigDecimal::unscaledValue)
                 .map(BigInteger::longValue)
                 .orElse(0L);
+    }
+
+    private String asString(final Date date) {
+        return date != null ? SIMPLE_DATE_FORMAT.format(date) : null;
     }
 }
