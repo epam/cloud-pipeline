@@ -1,0 +1,139 @@
+.pick-up-users-modal {
+  width: 75vw;
+  max-height: 85vh;
+  min-height: unset;
+  overflow: hidden;
+}
+
+.pick-up-users-modal-content {
+  max-height: calc(75vh - 200px);
+  min-height: 25vh;
+  overflow: auto;
+}
+
+.pick-up-users-modal-actions {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pick-up-users-modal-action {
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #333;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #aaa;
+  font-size: larger;
+  text-align: center;
+  min-width: 100px;
+  border-radius: 5px;
+}
+
+.pick-up-users-modal-action:hover {
+  border: 1px solid #666;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: #ccc;
+}
+
+.users-filter {
+  display: flex;
+  align-items: center;
+}
+
+.users-filter-input {
+  line-height: 26px;
+  font-size: 16px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
+  outline: none;
+  border-radius: 5px;
+  color: white;
+  flex: 1;
+}
+
+.user-clear-button {
+  font-size: large;
+  margin-left: 5px;
+  color: #333;
+}
+
+.user-clear-button:hover {
+  color: black;
+}
+
+.show-more {
+  font-size: smaller;
+}
+
+.user-clear-button > svg {
+  fill: rgba(255, 255, 255, 0.5)
+}
+
+.user-clear-button:hover > svg {
+  fill: rgba(255, 255, 255, 0.8)
+}
+
+.users-clear-button:hover {
+  color: white;
+}
+
+.users-filter-input::placeholder {
+  color: #aaa;
+  font-weight: normal;
+  font-style: italic;
+  font-size: smaller;
+}
+
+.empty-selection {
+  margin: 10px 0;
+  color: #aaa;
+  font-size: smaller;
+  width: 100%;
+  text-align: center;
+  font-style: italic;
+}
+
+.selection {
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.selection-item {
+  cursor: pointer;
+  padding: 5px 10px;
+  margin: 2px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user,
+.role {
+  display: flex;
+  align-items: center;
+  font-size: smaller;
+}
+
+.pick-up-users-modal-action.primary {
+  border: 1px solid #777;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.pick-up-users-modal-action.primary:hover {
+  border: 1px solid white;
+  background-color: rgba(255, 255, 255, 0.75);
+  color: black;
+}
+
+.selection-item.selected {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.selection .placeholder {
+  margin-right: 5px;
+}
