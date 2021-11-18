@@ -162,6 +162,13 @@ export default {
     '@search-table-text-color': 'darken(@card-border-color, 20%)',
     '@search-table-dark-background': '@color-black-dimmed-25',
     '@search-md-preview-code-shadow': '@color-white-dimmed-10',
-    '@search-md-preview-text-color': '@application-background-color'
+    '@search-md-preview-text-color': '@application-background-color',
+    '@search-type-button-color': '@card-border-color',
+    '@search-type-button-background-color': '@search-table-dark-background',
+    '@search-type-button-selected': 'fadeout(@application-color, 25%)',
+    '@search-type-button-hover': 'fadeout(@application-color, 30%)',
+    '@search-type-button-disabled': '@application-color-disabled',
+    '@library-storage-region-background-color': '@application-color-faded',
+    '@library-storage-region-color': '@primary-text-color'
   }
 };

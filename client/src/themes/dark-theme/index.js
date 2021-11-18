@@ -143,7 +143,15 @@ export default {
     '@search-table-background-color': '@card-background-color',
     '@search-table-border-color': '@application-color',
     '@search-table-text-color': '@application-color',
+    '@search-table-dark-background': '@color-black-dimmed-25',
     '@search-md-preview-code-shadow': '@color-white-dimmed-10',
-    '@search-md-preview-text-color': '@application-color'
+    '@search-md-preview-text-color': '@application-color',
+    '@search-type-button-color': '@application-color-faded',
+    '@search-type-button-background-color': 'lighten(@application-background-color, 3%)',
+    '@search-type-button-selected': 'lighten(@search-type-button-background-color, 5%)',
+    '@search-type-button-hover': 'lighten(@search-type-button-background-color, 8%)',
+    '@search-type-button-disabled': 'lighten(@application-background-color, 12%)',
+    '@library-storage-region-background-color': '@color-white-dimmed-10',
+    '@library-storage-region-color': '@application-color'
   }
 };

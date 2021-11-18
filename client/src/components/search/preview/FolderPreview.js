@@ -112,7 +112,8 @@ export default class FolderPreview extends React.Component {
       if (item.type === SearchItemTypes.s3Bucket || item.type === SearchItemTypes.gsStorage || item.type === SearchItemTypes.azStorage) {
         nameComponent = (
           <span>
-            <span style={nameStyle}>{item.name}</span><AWSRegionTag darkMode regionId={item.regionId} />
+            <span style={nameStyle}>{item.name}</span>
+            <AWSRegionTag regionId={item.regionId} />
           </span>
         );
       } else {

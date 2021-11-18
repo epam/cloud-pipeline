@@ -125,7 +125,6 @@ export default class S3BucketPreview extends React.Component {
             {
               this.props.dataStorageInfo && this.props.dataStorageInfo.loaded &&
               <AWSRegionTag
-                darkMode
                 regionId={this.props.dataStorageInfo.value.regionId}
                 displayName />
             }

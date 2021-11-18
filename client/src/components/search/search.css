@@ -103,25 +103,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.15);
-  color: white;
   cursor: pointer;
-  border: 2px solid transparent;
-}
-
-.type-button.active {
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 2px solid white;
-}
-
-.type-button:hover {
-  background-color: rgba(0, 0, 0, 0.25);
-}
-
-.type-button.disabled {
-  background-color: transparent;
-  color: rgba(0, 0, 0, 0.2);
-  cursor: not-allowed;
 }
 
 .type-button i {

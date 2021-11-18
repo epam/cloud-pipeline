@@ -1111,10 +1111,6 @@ export default `
 
 @THEME .provider.aws {
   background-image: @aws-icon;
-  background-color: transparent;
-}
-@THEME .cp-search-container .provider.aws {
-  background-image: @aws-icon-light;
 }
 @THEME .provider.gcp {
   background-image: @gcp-icon;
@@ -1159,6 +1155,10 @@ export default `
 }
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
+}
+@THEME .cp-storage-region {
+  background-color: @library-storage-region-background-color;
+  color: @library-storage-region-color;
 }
 
 @THEME @fn: @theme-transition-function;
@@ -1702,6 +1702,52 @@ export default `
 @THEME .cp-search-container-light .cp-search-md-preview h5,
 @THEME .cp-search-container-light .cp-search-md-preview h6 {
   color: @search-header-light-color;
+}
+@THEME .cp-search-faceted-button {
+  color: @application-color;
+  background-color: @panel-background-color;
+  border: 1px solid @btn-border-color;
+}
+@THEME .cp-search-faceted-button:hover,
+@THEME .cp-search-faceted-button:focus {
+  color: @primary-color;
+  background-color: @panel-background-color;
+  border-color: @primary-color;
+}
+@THEME .cp-search-faceted-button.selected {
+  color: @btn-color;
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME .cp-search-faceted-button.selected:hover,
+@THEME .cp-search-faceted-button.selected:focus {
+  color: @btn-color;
+  background-color: @btn-primary-hover;
+  border-color: @btn-primary-hover;
+}
+@THEME .cp-search-faceted-button.disabled,
+@THEME .cp-search-faceted-button:hover.disabled {
+  color: @btn-disabled-color;
+  background-color: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+@THEME .cp-search-type-button {
+  background-color: @search-type-button-background-color;
+  color: @search-type-button-color;
+  border: 2px solid transparent;
+}
+@THEME .cp-search-type-button.selected {
+  background-color: @search-type-button-selected;
+  border: 2px solid @search-type-button-color;
+}
+@THEME .cp-search-type-button:hover {
+  background-color: @search-type-button-hover;
+}
+@THEME .cp-search-type-button.disabled {
+  background-color: transparent;
+  color: @search-type-button-disabled;
+  cursor: not-allowed;
 }
 
 @THEME .cp-versioned-storage-breadcrumb {

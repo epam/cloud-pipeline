@@ -250,7 +250,6 @@ export default class ConfigurationPreview extends React.Component {
       : configuration.configuration && configuration.configuration.docker_image;
     const cloudRegion = !this.isDtsEnvironment && !this.isFireCloudEnvironment
       ? <AWSRegionTag
-          darkMode
           regionId={configuration.configuration.cloudRegionId}
           displayName
           style={{marginLeft: -5, verticalAlign: 'top'}} />
