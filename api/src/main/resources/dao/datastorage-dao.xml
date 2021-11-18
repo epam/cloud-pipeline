@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -49,7 +49,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -76,7 +78,9 @@
                         :S3_KMS_KEY_ARN,
                         :S3_USE_ASSUMED_CREDS,
                         :S3_TEMP_CREDS_ROLE,
-                        :MOUNT_STATUS
+                        :MOUNT_STATUS,
+                        :SOURCE_DATASTORAGE_ID,
+                        to_jsonb(:MASKING_RULES::jsonb)
                     )
                 ]]>
             </value>
@@ -137,7 +141,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -173,7 +179,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -211,7 +219,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -248,7 +258,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -285,7 +297,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -322,7 +336,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -359,7 +375,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -397,7 +415,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -434,7 +454,9 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -489,6 +511,8 @@
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
                             d.mount_status,
+                            d.source_datastorage_id,
+                            d.masking_rules,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -525,6 +549,8 @@
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
                             null as mount_status,
+                            null as source_datastorage_id,
+                            null as masking_rules,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -563,6 +589,8 @@
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
                             d.mount_status,
+                            d.source_datastorage_id,
+                            d.masking_rules,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -595,6 +623,8 @@
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
                             null as mount_status,
+                            null as source_datastorage_id,
+                            null as masking_rules,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m

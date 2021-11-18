@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Input, Modal, message, Spin} from 'antd';
 import moment from 'moment-timezone';
-import requestStorageAccessApi from '../../models/request-storage-access-api';
+import cloudPipelineAPI from '../../models/cloud-pipeline-api';
 import displayDate from '../file-system-tab/display-date';
 import './request-storage-access.css';
 
@@ -65,7 +65,7 @@ function StorageAccess(
 
 function fetchDuration() {
   return new Promise((resolve) => {
-    requestStorageAccessApi.getPreference('storage.webdav.access.duration.seconds')
+    cloudPipelineAPI.getPreference('storage.webdav.access.duration.seconds')
       .then(preference => {
         if (preference && !Number.isNaN(Number(preference))) {
           resolve(Number(preference));
@@ -107,7 +107,7 @@ function RequestStorageAccess (
         0
       );
       addRequest(storage.id);
-      requestStorageAccessApi
+      cloudPipelineAPI
         .requestDavAccess(storage.id, duration)
         .then(() => {
           message.info(
@@ -133,7 +133,7 @@ function RequestStorageAccess (
   useEffect(() => {
     if (visible) {
       setPending(true);
-      requestStorageAccessApi
+      cloudPipelineAPI
         .initialize()
         .getStoragesWithMetadata()
         .then((storages = []) => setStorages(

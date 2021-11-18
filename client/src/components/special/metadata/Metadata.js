@@ -384,7 +384,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   applyRemoveChanges = async ({item, all = false}) => {
     if (all) {
-      return this.applyChanges([], this.metadata.filter(({key}) => !this.isReadOnlyTag(key)));
+      return this.applyChanges(
+        [],
+        this.metadata.filter(
+          ({key, value}) => !this.isReadOnlyTag(key) && !this.isSpecialItem(key)
+        )
+      );
     } else if (item) {
       return this.applyChanges([], [item]);
     } else {
@@ -1513,7 +1518,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
       }
       if (
         editable &&
-        this.metadata.length > 0 &&
+        this.metadata
+          .filter(o => !this.isReadOnlyTag(o.key) && !this.isSpecialItem(o.key)).length > 0 &&
         this.props.removeAllAvailable
       ) {
         actions.push(

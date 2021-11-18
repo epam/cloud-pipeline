@@ -53,6 +53,10 @@ public final class DateUtils {
         return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
+    public static LocalDateTime convertUTCLocalDateTimeToSystemLocalDateTime(final LocalDateTime localDateTime) {
+        return LocalDateTime.ofInstant(localDateTime.atZone(ZoneOffset.UTC).toInstant(), ZoneOffset.systemDefault());
+    }
+
     public static long convertSecsToHours(final long secs) {
         return secs / 3600;
     }

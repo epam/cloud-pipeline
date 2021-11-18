@@ -165,6 +165,8 @@ public class SystemPreferences {
             ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
     public static final IntPreference DATA_STORAGE_DAV_MOUNT_MAX_STORAGES = new IntPreference(
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
+            "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -587,6 +589,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_REQUEST = new ObjectPreference<>(
+            "ui.pipe.file.browser.request", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
@@ -699,6 +704,12 @@ public class SystemPreferences {
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
+    /**
+     * Controls which events will be ommitted from the OOM Logger output (
+     * e.g. flannel, iptables and other system services)
+     */
+    public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
+            "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
             "system.user.monitor.delay.hours", 24, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(

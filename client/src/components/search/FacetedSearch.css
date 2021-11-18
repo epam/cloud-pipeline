@@ -92,6 +92,7 @@
 
 .container .actions .toggle-presentation-mode {
   height: 100%;
+  padding-top: 4px;
 }
 
 .container .actions .pagination {
@@ -124,4 +125,33 @@
 
 .container .clear-filters-btn.disabled {
   transform: translateY(-22px);
+}
+
+.sorting-controls-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 3px;
+}
+
+.sorting-btn {
+  padding: 0 5px;
+  margin: 1px;
+}
+
+.remove-sorting-btn {
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: #5a5a5a;
+  margin-left: 5px !important;
+  pointer-events: all !important;
+}
+
+.remove-sorting-btn-disabled {
+  color: #919191;
+}
+
+.remove-sorting-btn:not(.remove-sorting-btn-disabled):hover {
+  transform: scale(1.15);
+  color: #404040;
 }

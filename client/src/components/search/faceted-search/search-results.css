@@ -219,12 +219,24 @@
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
-  cursor: default;
   background: #fafafa;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
   border-bottom: 1px solid #ddd;
+}
+
+.sorting-container {
+  font-weight: normal;
+}
+
+.sorting-icon {
+  font-size: 10px;
+  margin-right: 5px;
+}
+
+.sorting-number {
+  margin: 0 5px 0 -5px;
 }
 
 .table-cell {

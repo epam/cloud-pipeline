@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 //TODO: refactor this code similar to AbstractCloudRegion hierarchy handling
 public abstract class AbstractDataStorageFactory {
@@ -37,7 +38,8 @@ public abstract class AbstractDataStorageFactory {
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
             List<String> allowedCidrs, Long regionId, Long fileShareMountId,
-            String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus);
+            String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus,
+            Set<String> masks, Long sourceStorageId);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
         DataStorageType type = determineStorageType(vo, provider);
@@ -46,7 +48,7 @@ public abstract class AbstractDataStorageFactory {
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
                         vo.getRegionId(), vo.getFileShareMountId(),
                         vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
-                        NFSStorageMountStatus.ACTIVE.name());
+                        NFSStorageMountStatus.ACTIVE.name(), vo.getLinkingMasks(), vo.getSourceStorageId());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
@@ -75,7 +77,10 @@ public abstract class AbstractDataStorageFactory {
                                                         final Long regionId, final Long fileShareMountId,
                                                         final String kmsKey, final String tempRole,
                                                         final boolean useAssumedCreds,
-                                                        final String mountStatus) {
+                                                        final String mountStatus,
+                                                        final Set<String> masks,
+                                                        final Long sourceStorageId) {
+            final AbstractDataStorage resultStorage;
             switch (type) {
                 case S3:
                     S3bucketDataStorage bucket = new S3bucketDataStorage(id, name, path, policy, mountPoint);
@@ -84,26 +89,35 @@ public abstract class AbstractDataStorageFactory {
                     bucket.setKmsKeyArn(kmsKey);
                     bucket.setTempCredentialsRole(tempRole);
                     bucket.setUseAssumedCredentials(useAssumedCreds);
-                    return bucket;
+                    resultStorage = bucket;
+                    break;
                 case NFS:
                     NFSDataStorage storage = new NFSDataStorage(id, name, path, policy, mountPoint);
                     storage.setMountOptions(mountOptions);
                     storage.setFileShareMountId(fileShareMountId);
                     storage.setMountStatus(NFSStorageMountStatus.fromName(mountStatus));
-                    return storage;
+                    resultStorage = storage;
+                    break;
                 case AZ:
                     final AzureBlobStorage blobStorage = new AzureBlobStorage(id, name, path, policy, mountPoint);
                     blobStorage.setStoragePolicy(null);
                     blobStorage.setRegionId(regionId);
-                    return blobStorage;
+                    resultStorage = blobStorage;
+                    break;
                 case GS:
                     final GSBucketStorage gsBucketStorage = new GSBucketStorage(id, name, path, policy,
                             mountPoint);
                     gsBucketStorage.setRegionId(regionId);
-                    return gsBucketStorage;
+                    resultStorage = gsBucketStorage;
+                    break;
                 default:
                     throw new IllegalArgumentException("Unsupported data storage type: " + type);
             }
+            if (sourceStorageId != null) {
+                resultStorage.setLinkingMasks(masks);
+                resultStorage.setSourceStorageId(sourceStorageId);
+            }
+            return resultStorage;
         }
     }
 }

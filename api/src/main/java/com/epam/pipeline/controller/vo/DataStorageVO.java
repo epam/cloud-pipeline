@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import lombok.Setter;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -59,4 +60,7 @@ public class DataStorageVO {
     private String tempCredentialsRole;
     private String kmsKeyArn;
     private boolean useAssumedCredentials;
+
+    private Long sourceStorageId;
+    private Set<String> linkingMasks;
 }

@@ -124,6 +124,13 @@ public class DataStorageApiService {
         return dataStorageManager.loadByPathOrId(identifier);
     }
 
+    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject, 'READ') OR "
+                + "@grantPermissionManager.storagePermission(filterObject, 'WRITE'))")
+    @AclMaskList
+    public List<AbstractDataStorage> loadAllByPath(final String identifier) {
+        return dataStorageManager.loadAllByPath(identifier);
+    }
+
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageListing getDataStorageItems(final Long id, final String path,
                                                   Boolean showVersion, Integer pageSize, String marker) {

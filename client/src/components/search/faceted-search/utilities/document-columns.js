@@ -28,47 +28,47 @@ import styles from '../search-results.css';
 import OpenInToolAction from '../../../special/file-actions/open-in-tool';
 
 function parseExtraColumns (preferences) {
+  const configuration = preferences.searchExtraFieldsConfiguration;
+  if (configuration) {
+    if (Array.isArray(configuration) || isObservableArray(configuration)) {
+      return configuration.map(field => ({
+        key: field,
+        name: field
+      }));
+    } else {
+      const result = [];
+      const types = Object.keys(configuration);
+      for (let t = 0; t < types.length; t++) {
+        const type = types[t];
+        const subConfiguration = configuration[type];
+        if (Array.isArray(subConfiguration) || isObservableArray(subConfiguration)) {
+          for (let f = 0; f < subConfiguration.length; f++) {
+            const field = subConfiguration[f];
+            let item = result.find(r => r.key === field);
+            if (!item) {
+              item = {
+                key: field,
+                name: field,
+                types: new Set()
+              };
+              result.push(item);
+            }
+            item.types.add(type);
+          }
+        }
+      }
+      return result;
+    }
+  } else {
+    return [];
+  }
+}
+
+function fetchAndParseExtraColumns (preferences) {
   return new Promise((resolve) => {
     preferences
       .fetchIfNeededOrWait()
-      .then(() => {
-        const configuration = preferences.searchExtraFieldsConfiguration;
-        if (configuration) {
-          if (Array.isArray(configuration) || isObservableArray(configuration)) {
-            resolve(
-              configuration.map(field => ({
-                key: field,
-                name: field
-              }))
-            );
-          } else {
-            const result = [];
-            const types = Object.keys(configuration);
-            for (let t = 0; t < types.length; t++) {
-              const type = types[t];
-              const subConfiguration = configuration[type];
-              if (Array.isArray(subConfiguration) || isObservableArray(subConfiguration)) {
-                for (let f = 0; f < subConfiguration.length; f++) {
-                  const field = subConfiguration[f];
-                  let item = result.find(r => r.key === field);
-                  if (!item) {
-                    item = {
-                      key: field,
-                      name: field,
-                      types: new Set()
-                    };
-                    result.push(item);
-                  }
-                  item.types.add(type);
-                }
-              }
-            }
-            resolve(result);
-          }
-        } else {
-          resolve([]);
-        }
-      })
+      .then(() => resolve(parseExtraColumns(preferences)))
       .catch(() => resolve([]));
   });
 }
@@ -223,4 +223,4 @@ const DocumentColumns = [
   }
 ];
 
-export {DocumentColumns, parseExtraColumns};
+export {DocumentColumns, fetchAndParseExtraColumns, parseExtraColumns};
