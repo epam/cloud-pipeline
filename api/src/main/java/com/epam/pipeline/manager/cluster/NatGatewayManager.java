@@ -328,7 +328,8 @@ public class NatGatewayManager {
     }
 
     private NatRoutingRuleDescription mapRouteToDescription(final NatRoute route) {
-        return new NatRoutingRuleDescription(route.getExternalName(), route.getExternalIp(), route.getExternalPort());
+        return new NatRoutingRuleDescription(route.getExternalName(), route.getExternalIp(),
+                route.getExternalPort(), route.getDescription());
     }
 
     private void addQueuedRouteToKubeServices(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
