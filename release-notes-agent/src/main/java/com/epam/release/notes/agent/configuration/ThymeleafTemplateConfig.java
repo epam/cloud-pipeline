@@ -14,6 +14,7 @@
  */
 package com.epam.release.notes.agent.configuration;
 
+import com.epam.pipeline.utils.URLUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,7 +53,7 @@ public class ThymeleafTemplateConfig {
             templateResolver.setPrefix(CLASS_LOADER_RESOLVER_PREFIX);
         } else {
             templateResolver = new FileTemplateResolver();
-            templateResolver.setPrefix(fileResolverPrefix);
+            templateResolver.setPrefix(URLUtils.normalizeUrl(fileResolverPrefix));
         }
         templateResolver.setCharacterEncoding(EMAIL_TEMPLATE_ENCODING);
         return templateResolver;
