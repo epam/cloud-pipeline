@@ -358,12 +358,12 @@ public class DataStorageApiService {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND + AclExpressions.STORAGE_ID_WRITE)
     public void requestDataStorageDavMount(final Long id, final Long time) {
         dataStorageManager.requestDataStorageDavMount(id, time);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND + AclExpressions.STORAGE_ID_WRITE)
     public void callOffDataStorageDavMount(final Long id) {
         dataStorageManager.callOffDataStorageDavMount(id);
     }
