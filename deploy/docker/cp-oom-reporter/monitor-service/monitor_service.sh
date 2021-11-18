@@ -55,7 +55,7 @@ function pipe_log_debug() {
 
 function find_oom_killer_events() {
   if [ "$OOM_EXCLUDE_EVENTS" ]; then
-    local _GREP_EXCLUDE="| grep -E -v '$_EXCLUDE_EVENTS'"
+    local _GREP_EXCLUDE="| grep -E -v '$OOM_EXCLUDE_EVENTS'"
   fi
   local _GREP_CMD="dmesg -T | grep -E -i 'killed process' $_GREP_EXCLUDE"
   eval "$_GREP_CMD"
