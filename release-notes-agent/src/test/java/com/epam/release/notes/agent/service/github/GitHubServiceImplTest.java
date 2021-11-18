@@ -38,6 +38,8 @@ public class GitHubServiceImplTest {
     private static final int MESSAGE_MAX_LENGTH = 100;
     private static final int COMMIT_PAGE_SIZE = 100;
     private static final int COMMIT_PAGES = 10;
+    private static final int FIFTEEN = 0xf;
+    private static final int FOURTEEN = 40;
     private static final String[] ISSUE_TEGS = {"issue #777", "Issue #888", "(issue #999)", "(Issue #7)"};
     private static final String ISSUE_REGEX = "(?i)\\(?issue #.+";
     private static final String ISSUE_NUMBER_REGEX = ".+#(\\d+).*";
@@ -143,8 +145,8 @@ public class GitHubServiceImplTest {
     }
 
     private static String createRandomSha() {
-        return IntStream.rangeClosed(1, 40)
-                .map(i -> new Random().nextInt(0xf))
+        return IntStream.rangeClosed(1, FOURTEEN)
+                .map(i -> new Random().nextInt(FIFTEEN))
                 .mapToObj(i -> String.format("%x", i))
                 .collect(Collectors.joining());
     }

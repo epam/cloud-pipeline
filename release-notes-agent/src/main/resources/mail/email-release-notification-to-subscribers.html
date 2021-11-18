@@ -14,7 +14,7 @@
 </p>
 <p th:if="${jiraIssues!=null&&!jiraIssues.isEmpty()}"> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>
 <ul th:if="${jiraIssues!=null&&!jiraIssues.isEmpty()}">
-    <li th:each="issue : ${jiraIssues}" >
+    <li th:each="issue : ${jiraIssues}">
         <a th:href="${issue.getUrl()}" th:text="|${issue.getId()} - ${issue.getTitle()}|"/>
     </li>
 </ul>

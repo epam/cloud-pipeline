@@ -39,38 +39,52 @@ public class EmailTemplateNotificationServiceTest {
     private static final String URL = "https://github.com";
     private static final List<String> ADMIN_MAILS = Arrays.asList("admin1@mail.com", "admin2@mail.com");
     private static final List<String> SUBSCRIBERS_MAILS = Arrays.asList("subscriber1@mail.com", "subscriber2@mail.com");
-    private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY = "<!DOCTYPE html>\r\n" +
-            "<html>\r\n    <head>\r\n        \r\n" +
-            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n" +
-            "    </head>\r\n    <body>\r\n    <p> Good day! </p>\r\n" +
-            "    <p> A new Cloud-pipeline version has been released. <br>\r\n" +
-            "    Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>\r\n" +
-            "    </p>\r\n    \r\n    \r\n    \r\n    \r\n    \r\n" +
-            "    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>\r\n" +
-            "    </p>\r\n    </body>\r\n</html>\r\n";
-    private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_BODY = "<!DOCTYPE html>\r\n" +
-            "<html>\r\n    <head>\r\n        \r\n" +
-            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n" +
-            "    </head>\r\n    <body>\r\n    <p> Good day! </p>\r\n" +
-            "    <p> A new Cloud-pipeline version has been released. <br>\r\n" +
-            "    Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>\r\n" +
-            "    </p>\r\n    <p>\r\n    The release includes the following changes: <br>\r\n" +
-            "    </p>\r\n    <p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>\r\n" +
-            "    <ul>\r\n        <li >\r\n            <a href=\"https://github.com\">1 - smth</a>\r\n" +
-            "        </li>\r\n        <li >\r\n            <a href=\"https://github.com\">2 - smth2</a>\r\n" +
-            "        </li>\r\n    </ul>\r\n    <p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>\r\n" +
-            "    <ul>\r\n        <li>\r\n            <a href=\"https://github.com\">1 - smth</a>\r\n" +
-            "        </li>\r\n        <li>\r\n            <a href=\"https://github.com\">2 - smth2</a>\r\n" +
-            "        </li>\r\n    </ul>\r\n    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>\r\n" +
-            "    </p>\r\n    </body>\r\n</html>\r\n";
-    private static final String EXPECTED_EMAIL_TO_ADMIN_BODY = "<!DOCTYPE html>\r\n" +
-            "<html>\r\n    <head>\r\n        \r\n" +
-            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\r\n" +
-            "    </head>\r\n    <body>\r\n    <p> Good day! </p>\r\n" +
+    private static final String LINE_SEPARATOR = System.lineSeparator();
+    private static final String P = "    </p>";
+    private static final String LI_CLOSE = "        </li>";
+    private static final String LI_OPEN = "        <li>";
+    private static final String SPACE = "    ";
+    private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_WITHOUT_ISSUES_BODY = "<!DOCTYPE html>" + LINE_SEPARATOR +
+            "<html>" + LINE_SEPARATOR + "    <head>" + LINE_SEPARATOR + "        " + LINE_SEPARATOR +
+            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">" + LINE_SEPARATOR +
+            "    </head>" + LINE_SEPARATOR + "    <body>" + LINE_SEPARATOR + "    <p> Good day! </p>" + LINE_SEPARATOR +
+            "    <p> A new Cloud-pipeline version has been released. <br>" + LINE_SEPARATOR +
+            "    Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>" + LINE_SEPARATOR +
+            P + LINE_SEPARATOR + SPACE + LINE_SEPARATOR + SPACE + LINE_SEPARATOR + SPACE + LINE_SEPARATOR +
+            SPACE + LINE_SEPARATOR + SPACE + LINE_SEPARATOR +
+            "    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>" + LINE_SEPARATOR +
+            P + LINE_SEPARATOR + "    </body>" + LINE_SEPARATOR + "</html>" + LINE_SEPARATOR;
+    private static final String EXPECTED_EMAIL_TO_SUBSCRIBERS_BODY = "<!DOCTYPE html>" + LINE_SEPARATOR +
+            "<html>" + LINE_SEPARATOR + "    <head>" + LINE_SEPARATOR + "        " + LINE_SEPARATOR +
+            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">" + LINE_SEPARATOR +
+            "    </head>" + LINE_SEPARATOR + "    <body>" + LINE_SEPARATOR + "    <p> Good day! </p>" + LINE_SEPARATOR +
+            "    <p> A new Cloud-pipeline version has been released. <br>" + LINE_SEPARATOR +
+            "    Version changed from <span>55.55.55.55.a</span> to <span>55.55.55.56.a</span>" + LINE_SEPARATOR +
+            P + LINE_SEPARATOR + "    <p>" + LINE_SEPARATOR +
+            "    The release includes the following changes: <br>" + LINE_SEPARATOR +
+            "    </p>" + LINE_SEPARATOR + "    <p> &nbsp;&nbsp;&nbsp;&nbsp;Jira issues: </p>" + LINE_SEPARATOR +
+            "    <ul>" + LINE_SEPARATOR + LI_OPEN + LINE_SEPARATOR +
+            "            <a href=\"https://github.com\">1 - smth</a>" + LINE_SEPARATOR +
+            LI_CLOSE + LINE_SEPARATOR + LI_OPEN + LINE_SEPARATOR +
+            "            <a href=\"https://github.com\">2 - smth2</a>" + LINE_SEPARATOR +
+            LI_CLOSE + LINE_SEPARATOR + "    </ul>" + LINE_SEPARATOR +
+            "    <p> &nbsp;&nbsp;&nbsp;&nbsp;Github issues: </p>" + LINE_SEPARATOR +
+            "    <ul>" + LINE_SEPARATOR + LI_OPEN + LINE_SEPARATOR +
+            "            <a href=\"https://github.com\">1 - smth</a>" + LINE_SEPARATOR +
+            LI_CLOSE + LINE_SEPARATOR + LI_OPEN + LINE_SEPARATOR +
+            "            <a href=\"https://github.com\">2 - smth2</a>" + LINE_SEPARATOR +
+            LI_CLOSE + LINE_SEPARATOR + "    </ul>" + LINE_SEPARATOR +
+            "    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>" + LINE_SEPARATOR +
+            P + LINE_SEPARATOR + "    </body>" + LINE_SEPARATOR + "</html>" + LINE_SEPARATOR;
+    private static final String EXPECTED_EMAIL_TO_ADMIN_BODY = "<!DOCTYPE html>" + LINE_SEPARATOR +
+            "<html>" + LINE_SEPARATOR + "    <head>" + LINE_SEPARATOR + "        " + LINE_SEPARATOR +
+            "        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />" + LINE_SEPARATOR +
+            "    </head>" + LINE_SEPARATOR + "    <body>" + LINE_SEPARATOR + "    <p> Good day! </p>" + LINE_SEPARATOR +
             "    <p> Major version of Cloud-pipeline has been changed from <span>55.55.55.55.a</span> to " +
-            "<span>56.55.55.55.a</span>. <br>\r\n    </p>\r\n    <p> Please, take an action. </p>\r\n" +
-            "    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>\r\n" +
-            "    </p>\r\n    </body>\r\n</html>\r\n";
+            "<span>56.55.55.55.a</span>. <br>" + LINE_SEPARATOR + P + LINE_SEPARATOR +
+            "    <p> Please, take an action. </p>" + LINE_SEPARATOR +
+            "    <p> Regards, <br /> &emsp; <em>The Cloud-Pipeline Team</em>" + LINE_SEPARATOR +
+            P + LINE_SEPARATOR + "    </body>" + LINE_SEPARATOR + "</html>" + LINE_SEPARATOR;
 
     private static EmailTemplateNotificationService emailTemplateNotificationService;
 
