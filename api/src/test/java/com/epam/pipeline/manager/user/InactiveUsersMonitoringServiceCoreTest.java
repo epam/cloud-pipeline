@@ -92,11 +92,11 @@ public class InactiveUsersMonitoringServiceCoreTest {
     }
 
     @Test
-    public void shouldNotifyIdelUsers() {
-        final PipelineUser idelUser = idelUser(USER_NAME_1, ID_1);
+    public void shouldNotifyIdleUsers() {
+        final PipelineUser idleUser = idleUser(USER_NAME_1, ID_1);
         final PipelineUser activeUser = activeUser(USER_NAME_2, ID_2);
 
-        doReturn(Arrays.asList(idelUser, activeUser)).when(userManager).loadAllUsers();
+        doReturn(Arrays.asList(idleUser, activeUser)).when(userManager).loadAllUsers();
 
         monitoringService.monitor();
 
@@ -105,7 +105,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         final List<PipelineUser> resultUsers = captor.getValue();
 
         assertThat(resultUsers).hasSize(1);
-        assertThat(resultUsers.get(0)).isEqualTo(idelUser);
+        assertThat(resultUsers.get(0)).isEqualTo(idleUser);
     }
 
     @Test
@@ -156,7 +156,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         return pipelineUser;
     }
 
-    private static PipelineUser idelUser(final String userName, final Long id) {
+    private static PipelineUser idleUser(final String userName, final Long id) {
         final PipelineUser pipelineUser = getPipelineUser(userName, id);
         pipelineUser.setBlocked(false);
         pipelineUser.setLastLoginDate(LocalDateTime.now().minusDays(THRESHOLD_DAYS + 2));

@@ -51,10 +51,10 @@ public class InactiveUsersMonitoringServiceCore {
     public void monitor() {
         final Integer userBlockedDays = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_USER_MONITOR_BLOCKED_DAYS);
-        final Integer userIdelDays = preferenceManager.getPreference(
-                SystemPreferences.SYSTEM_USER_MONITOR_IDEL_DAYS);
+        final Integer userIdleDays = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_USER_MONITOR_IDLE_DAYS);
 
-        if (Objects.isNull(userIdelDays) && Objects.isNull(userBlockedDays)) {
+        if (Objects.isNull(userIdleDays) && Objects.isNull(userBlockedDays)) {
             log.debug("Inactive users monitoring is not enabled");
             return;
         }
@@ -73,7 +73,7 @@ public class InactiveUsersMonitoringServiceCore {
                 .collect(Collectors.toMap(GroupStatus::getGroupName, Function.identity()));
 
         final List<PipelineUser> inactiveUsers = allUsers.stream()
-                .filter(user -> shouldNotify(user, now, userBlockedDays, userIdelDays, blockedGroups))
+                .filter(user -> shouldNotify(user, now, userBlockedDays, userIdleDays, blockedGroups))
                 .collect(Collectors.toList());
 
         notificationManager.notifyInactiveUsers(inactiveUsers);
@@ -81,8 +81,8 @@ public class InactiveUsersMonitoringServiceCore {
     }
 
     private boolean shouldNotify(final PipelineUser user, final LocalDateTime now, final Integer userBlockedDays,
-                                 final Integer userIdelDays, final Map<String, GroupStatus> blockedGroups) {
-        return shouldNotifyIdelUsers(user, now, userIdelDays)
+                                 final Integer userIdleDays, final Map<String, GroupStatus> blockedGroups) {
+        return shouldNotifyIdleUsers(user, now, userIdleDays)
                 || shouldNotifyBlockedUsers(user, now, userBlockedDays, blockedGroups);
     }
 
@@ -94,10 +94,10 @@ public class InactiveUsersMonitoringServiceCore {
                 || hasBlockedGroup(user.getGroups(), blockedGroups));
     }
 
-    private boolean shouldNotifyIdelUsers(final PipelineUser user, final LocalDateTime now,
-                                          final Integer userIdelDays) {
-        return Objects.nonNull(userIdelDays)
-                && allowedPeriodExceeded(now, findUserLastActionDate(user), userIdelDays);
+    private boolean shouldNotifyIdleUsers(final PipelineUser user, final LocalDateTime now,
+                                          final Integer userIdleDays) {
+        return Objects.nonNull(userIdleDays)
+                && allowedPeriodExceeded(now, findUserLastActionDate(user), userIdleDays);
     }
 
     private LocalDateTime findUserLastActionDate(final PipelineUser user) {

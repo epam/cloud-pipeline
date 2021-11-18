@@ -714,8 +714,8 @@ public class SystemPreferences {
             "system.user.monitor.delay.hours", 24, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
             "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_IDEL_DAYS = new IntPreference(
-            "system.user.monitor.idel.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_IDLE_DAYS = new IntPreference(
+            "system.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
 
 
     // FireCloud Integration
