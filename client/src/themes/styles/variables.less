@@ -170,23 +170,21 @@
 @search-first-row-color: darken(@border-color, 30%);
 @search-header-light-color: #555;
 @search-preview-text-color: @card-border-color;
-@search-preview-attributes-name: @tag-key-background-color;
-@search-preview-attributes-value: @tag-value-background-color;
+@search-preview-attributes-name: darken(@tag-key-background-color, 5%);
+@search-preview-attributes-value: darken(@tag-value-background-color, 3%);
 @search-preview-attributes-value-hovered: darken(@tag-key-background-color, 15%);
 @search-highlight-color: @panel-border-color;
-@search-highlight-background-color: @color-white-dimmed-10;
+@search-highlight-background-color: @code-background-color;
 @search-highlight-text-color: @application-color;
 @search-highlight-text-background-color: @color-yellow;
 
 @search-table-background-color: @card-background-color;
 @search-table-border-color: @card-border-color;
-@search-table-text-color: darken(@card-border-color, 20%);
-@search-table-dark-background:  @color-black-dimmed-25;
 @search-md-preview-code-shadow: @color-white-dimmed-10;
 @search-md-preview-text-color: @application-background-color;
 
 @search-type-button-color: @card-border-color;
-@search-type-button-background-color: @search-table-dark-background;
+@search-type-button-background-color: @color-black-dimmed-25;
 @search-type-button-selected: fadeout(@application-color, 25%);
 @search-type-button-hover: fadeout(@application-color, 30%);
 @search-type-button-disabled: @application-color-disabled;
