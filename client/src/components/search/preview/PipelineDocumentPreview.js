@@ -81,8 +81,7 @@ export default class PipelineDocumentPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       pipelineVersion: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   state = {
@@ -383,10 +382,7 @@ export default class PipelineDocumentPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {'cp-search-container': !this.props.lightMode},
-            {
-              'cp-search-container-light': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >

@@ -43,8 +43,7 @@ export default class FolderPreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -105,7 +104,8 @@ export default class FolderPreview extends React.Component {
       let nameStyle;
       if (SHOW_DESCRIPTIONS) {
         nameStyle = {
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          padding: '0px 5px'
         };
       }
 
@@ -226,10 +226,7 @@ export default class FolderPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {'cp-search-container': !this.props.lightMode},
-            {
-              'cp-search-container-light': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >

@@ -74,8 +74,7 @@ export default class ToolPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -310,10 +309,7 @@ export default class ToolPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {'cp-search-container': !this.props.lightMode},
-            {
-              'cp-search-container-light': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >

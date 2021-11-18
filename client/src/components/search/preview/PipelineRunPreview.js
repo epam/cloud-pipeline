@@ -40,82 +40,6 @@ import MultizoneUrl from '../../special/multizone-url';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
-const colors = {
-  [Statuses.failure]: {
-    color: 'rgb(255, 76, 31)'
-  },
-  [Statuses.paused]: {
-    color: 'rgb(78, 186, 255)',
-    fontWeight: 'bold'
-  },
-  [Statuses.pausing]: {
-    color: 'rgb(78, 186, 255)',
-    fontWeight: 'bold'
-  },
-  [Statuses.running]: {
-    color: 'rgb(78, 186, 255)',
-    fontWeight: 'bold'
-  },
-  [Statuses.queued]: {
-    color: 'rgb(78, 186, 255)',
-    fontWeight: 'bold'
-  },
-  [Statuses.resuming]: {
-    color: 'rgb(78, 186, 255)',
-    fontWeight: 'bold'
-  },
-  [Statuses.scheduled]: {
-    color: 'rgb(78, 186, 255)',
-    fontWeight: 'bold'
-  },
-  [Statuses.stopped]: {
-    color: '#f79e2c',
-    fontWeight: 'bold'
-  },
-  [Statuses.success]: {
-    color: 'rgb(66, 255, 83)',
-    fontWeight: 'bold'
-  }
-};
-
-const lightColors = {
-  [Statuses.failure]: {
-    color: 'rgb(177,52,20)'
-  },
-  [Statuses.paused]: {
-    color: 'rgb(29,96,138)',
-    fontWeight: 'bold'
-  },
-  [Statuses.pausing]: {
-    color: 'rgb(29,96,138)',
-    fontWeight: 'bold'
-  },
-  [Statuses.running]: {
-    color: 'rgb(29,96,138)',
-    fontWeight: 'bold'
-  },
-  [Statuses.queued]: {
-    color: 'rgb(29,96,138)',
-    fontWeight: 'bold'
-  },
-  [Statuses.resuming]: {
-    color: 'rgb(29,96,138)',
-    fontWeight: 'bold'
-  },
-  [Statuses.scheduled]: {
-    color: 'rgb(29,96,138)',
-    fontWeight: 'bold'
-  },
-  [Statuses.stopped]: {
-    color: '#c17515',
-    fontWeight: 'bold'
-  },
-  [Statuses.success]: {
-    color: 'rgb(30,100,36)',
-    fontWeight: 'bold'
-  }
-};
-
 const icons = {
   [Statuses.failure]: 'exclamation-circle-o',
   [Statuses.stopped]: 'clock-circle-o'
@@ -149,8 +73,7 @@ export default class PipelineRunPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -305,9 +228,9 @@ export default class PipelineRunPreview extends React.Component {
               value: (
                 <span>
                   <AWSRegionTag
-                    style={{verticalAlign: 'baseline', marginRight: -3, marginLeft: -3}}
+                    style={{verticalAlign: 'baseline', marginLeft: -3}}
                     regionId={instance.cloudRegionId} />
-                  {instance.nodeType}
+                  <span>{instance.nodeType}</span>
                 </span>
               )
             });
@@ -508,7 +431,6 @@ export default class PipelineRunPreview extends React.Component {
                     <StatusIcon
                       status={task.status}
                       small
-                      additionalStyleByStatus={this.props.lightMode ? lightColors : colors}
                       iconSet={icons}
                       displayTooltip={false} />
                     <code>{task.name}</code>
@@ -536,10 +458,7 @@ export default class PipelineRunPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {'cp-search-container': !this.props.lightMode},
-            {
-              'cp-search-container-light': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
@@ -550,7 +469,6 @@ export default class PipelineRunPreview extends React.Component {
                 ? (
                   <StatusIcon
                     run={this.props.runInfo.value}
-                    additionalStyleByStatus={this.props.lightMode ? lightColors : colors}
                     iconSet={icons}
                   />
                 )

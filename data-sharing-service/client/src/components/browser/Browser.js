@@ -467,7 +467,6 @@ export default class Browser extends React.Component {
     }
     return (
       <PreviewModal
-        lightMode
         storageId={this.props.storageId}
         preview={preview}
         onClose={this.closePreview}

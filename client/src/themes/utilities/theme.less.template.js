@@ -95,6 +95,12 @@ export default `
   background-color: @application-color;
 }
 
+@THEME body[class*="dark"] {
+  color-scheme: dark;
+}
+@THEME body[class*="light"] {
+  color-scheme: light;
+}
 @THEME .cp-title {
   font-weight: bold;
 }
@@ -1541,12 +1547,9 @@ export default `
 @THEME .cp-search-preview-wrapper {
   background: @input-placeholder-color;
 }
-@THEME .cp-search-preview-light {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
-}
 @THEME .cp-search-preview {
   background-color: @search-preview-background-color;
+  border: 1px solid @panel-border-color;
 }
 @THEME .cp-search-preview-button {
   color: @application-color;
@@ -1563,12 +1566,6 @@ export default `
 @THEME .cp-search-first-row {
   color: @search-first-row-color;
 }
-@THEME .cp-search-container {
-  color: @card-border-color;
-}
-@THEME .cp-search-container-light {
-  color: @application-color;
-}
 @THEME .cp-search-header-description {
   color: @panel-border-color;
 }
@@ -1579,102 +1576,57 @@ export default `
 @THEME .cp-search-header-sub-title,
 @THEME .cp-search-header-description,
 @THEME .cp-search-container .cp-search-content {
-  color: @search-preview-text-color;
-}
-@THEME .cp-search-container-light .cp-search-header-title,
-@THEME .cp-search-container-light .cp-search-header-sub-title,
-@THEME .cp-search-container-light .cp-search-header-description,
-@THEME .cp-search-container-light .cp-search-content {
-  color:  @application-color;
+  color: @application-color;
 }
 @THEME .cp-search-content-preview-run,
 @THEME .cp-search-content-preview-run i,
 @THEME .cp-search-content-preview-run-task {
-  color: @search-preview-text-color;
-}
-@THEME .cp-search-container-light .cp-search-content-preview-run,
-@THEME .cp-search-container-light .cp-search-content-preview-run i,
-@THEME .cp-search-container-light .cp-search-content-preview-run-task {
   color:  @application-color;
 }
 @THEME .cp-search-preview-iframe {
   background-color:  @search-preview-text-color;
 }
 @THEME .cp-search-description-tag {
-  background-color: @search-highlight-background-color;
-  color: @search-preview-text-color;
-}
-@THEME .cp-search-attribute-name {
-  background-color: @search-table-dark-background;
-}
-@THEME .cp-search-attribute-value {
-  background-color: @search-highlight-background-color;
-}
-@THEME .cp-search-attribute-value:hover {
-  background-color: @application-color-disabled;
-}
-@THEME .cp-search-container-light .cp-search-description-tag {
   background-color: @code-background-color;
   color: @application-color;
 }
-@THEME .cp-search-container-light .cp-search-attribute-name {
+@THEME .cp-search-attribute-name {
   background-color: @search-preview-attributes-name;
 }
-@THEME .cp-search-container-light .cp-search-attribute-value {
+@THEME .cp-search-attribute-value {
   background-color: @search-preview-attributes-value;
 }
-@THEME .cp-search-container-light .cp-search-attribute-value:hover {
+@THEME .cp-search-attribute-value:hover {
   background-color: @search-preview-attributes-value-hovered;
   color: @application-color;
 }
 @THEME .cp-search-even-table-row {
-  background-color: @search-highlight-background-color;
-}
-@THEME .cp-search-container-light .cp-search-even-table-row {
   background-color: @application-background-color;
 }
 @THEME .cp-search-highlight {
   background-color: @search-highlight-background-color;
-  color: @search-highlight-color;
+  color:  @search-header-light-color;
 }
 @THEME .cp-search-highlight-text {
   background-color: @search-highlight-text-background-color;
   color: @search-highlight-text-color;
 }
-@THEME .cp-search-container-light .cp-search-highlight {
-  background-color: transparent;
-  color: @search-header-light-color;
-}
 @THEME .cp-search-csv-table {
-  border: 1px solid @application-color-accent;
-  background-color: @search-table-dark-background;
-}
-@THEME .cp-search-container-light .cp-search-csv-table {
   border: 1px solid @search-table-border-color; 
   background-color: @search-table-background-color;
   color: @application-color;
 }
 @THEME .cp-search-csv-table-cell {
-  border: 1px solid @search-table-text-color; 
-  color: @search-table-text-color;
-}
-@THEME .cp-search-container-light .cp-search-csv-table-cell {
   border-color: @search-table-border-color;
   color: @application-color;
 }
 @THEME .cp-search-run-table-icon {
-  color: @panel-border-color;
-}
-@THEME .cp-search-container-light .cp-search-run-table-icon {
   color: @search-header-light-color;
 }
 @THEME .cp-search-preview-separator {
   background-color: @search-header-light-color;
 }
 @THEME .cp-search-md-preview {
-  color: @search-md-preview-text-color;
-}
-@THEME .cp-search-container-light .cp-search-md-preview {
   color: @application-color;
 }
 @THEME .cp-search-md-preview h1,
@@ -1683,7 +1635,7 @@ export default `
 @THEME .cp-search-md-preview h4,
 @THEME .cp-search-md-preview h5,
 @THEME .cp-search-md-preview h6 {
-  color: @search-md-preview-text-color;
+  color: @search-header-light-color;
 }
 @THEME .cp-search-md-preview code {
   color: @color-pink;
@@ -1694,14 +1646,6 @@ export default `
   color: @search-md-preview-text-color;
   background-color: @tag-key-background-color;
   border: 1px solid @panel-border-color;
-}
-@THEME .cp-search-container-light .cp-search-md-preview h1,
-@THEME .cp-search-container-light .cp-search-md-preview h2,
-@THEME .cp-search-container-light .cp-search-md-preview h3,
-@THEME .cp-search-container-light .cp-search-md-preview h4,
-@THEME .cp-search-container-light .cp-search-md-preview h5,
-@THEME .cp-search-container-light .cp-search-md-preview h6 {
-  color: @search-header-light-color;
 }
 @THEME .cp-search-faceted-button {
   color: @application-color;
