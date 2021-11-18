@@ -802,13 +802,13 @@ public class S3Helper {
                         AbstractS3ObjectWrapper.getWrapper(s3ObjectSummary)
                                 .convertToStorageFile(requestPath, prefix);
                 if (file != null) {
-                    final String fileName = file.getName();
                     if (maskingEnabled) {
+                        final String fileName = requestPath + file.getName();
                         if (StringUtils.compare(fileName, latestMarker) > 0) {
                             listing.setTruncated(false);
                             break;
                         }
-                        if (!ProviderUtils.matchingMasks(requestPath + fileName, resolvedMasks)) {
+                        if (!ProviderUtils.matchingMasks(fileName, resolvedMasks)) {
                             continue;
                         }
                     }
@@ -902,11 +902,12 @@ public class S3Helper {
                 }
                 final String fileName = file.getName();
                 if (maskingEnabled) {
-                    if (StringUtils.compare(fileName, latestMarker) > 0) {
+                    final String fileNameWithFolderPrefix = requestPath + fileName;
+                    if (StringUtils.compare(fileNameWithFolderPrefix, latestMarker) > 0) {
                         versionListing.setTruncated(false);
                         break;
                     }
-                    if (!ProviderUtils.matchingMasks(requestPath + fileName, resolvedMasks)) {
+                    if (!ProviderUtils.matchingMasks(fileNameWithFolderPrefix, resolvedMasks)) {
                         continue;
                     }
                 }
