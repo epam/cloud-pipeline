@@ -61,8 +61,7 @@ export default class ConfigurationPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @observable
@@ -496,10 +495,7 @@ export default class ConfigurationPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            'cp-search-container-color',
-            {
-              'cp-search-light-color': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >

@@ -1002,7 +1002,6 @@ export default class DataStorage extends React.Component {
       <PreviewModal
         preview={previewModal}
         onClose={this.closePreviewModal}
-        lightMode
       />
     );
   };

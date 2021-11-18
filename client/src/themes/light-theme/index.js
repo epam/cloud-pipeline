@@ -146,7 +146,7 @@ export default {
     '@cp-calendar-border-color': '@calendar-border-color',
     '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
     '@code-background-color': 'darken(@card-background-color, 5%)',
-    '@search-preview-background-color': '@input-color',
+    '@search-preview-background-color': '@input-background',
     '@search-first-row-color': 'darken(@border-color, 30%)',
     '@search-header-light-color': '#555',
     '@search-preview-text-color': '@card-border-color',
