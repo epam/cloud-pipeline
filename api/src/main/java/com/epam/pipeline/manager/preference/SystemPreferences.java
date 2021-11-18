@@ -621,6 +621,11 @@ public class SystemPreferences {
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
+    /**
+     * Controls which events will be ommitted from the OOM Logger output (e.g. flannel, iptables and other system services)
+     */
+    public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
+            "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
