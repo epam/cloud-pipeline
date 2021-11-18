@@ -38,4 +38,5 @@ public class NatRoute {
     private final LocalDateTime lastUpdateTime;
     private final LocalDateTime lastErrorTime;
     private final String lastErrorMessage;
+    private final String description;
 }
