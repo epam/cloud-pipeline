@@ -5,18 +5,19 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.AuthManager;
-import lombok.Getter;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.support.IncludeExclude;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
+import org.elasticsearch.search.aggregations.metrics.cardinality.CardinalityAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
@@ -24,7 +25,6 @@ import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationB
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCountAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -54,7 +54,7 @@ public class BillingHelper {
     public static final String TOTAL_STORAGE_USAGE_AGG = "usage_storages";
     public static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     public static final String STORAGE_USAGE_FIELD = "usage_bytes";
-    public static final String TOP_HITS_AGG = "run_id_top_hits";
+    public static final String LAST_BY_DATE_DOC_AGG = "last_by_date";
     public static final String RUN_ID_FIELD = "run_id";
     public static final String STORAGE_ID_FIELD = "storage_id";
     public static final String UNIQUE_RUNS = "runs";
@@ -79,26 +79,22 @@ public class BillingHelper {
     public static final String INSTANCE_TYPE_FIELD = "instance_type";
     public static final String STARTED_FIELD = "started_date";
     public static final String FINISHED_FIELD = "finished_date";
+    public static final String RUN = "run";
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
     public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
 
     private final AuthManager authManager;
     private final String billingIndicesMonthlyPattern;
-    @Getter
+    private final String billingRunIndicesMonthlyPattern;
     private final SumAggregationBuilder costAggregation;
-    @Getter
     private final SumAggregationBuilder runUsageAggregation;
-    @Getter
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
-    @Getter
-    private final TopHitsAggregationBuilder lastByDateDocAggregation;
-    @Getter
     private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
-    @Getter
     private final ValueCountAggregationBuilder uniqueRunsAggregation;
-    @Getter
-    private final TopHitsAggregationBuilder topHitsAggregation;
+    private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
+    private final TopHitsAggregationBuilder lastByDateDocAggregation;
+    private final CardinalityAggregationBuilder runIdCardinalityAggregation;
 
     public BillingHelper(final AuthManager authManager,
                          final @Value("${billing.index.common.prefix}") String commonPrefix) {
@@ -107,22 +103,28 @@ public class BillingHelper {
                 commonPrefix,
                 ES_WILDCARD,
                 ES_MONTHLY_DATE_REGEXP);
+        this.billingRunIndicesMonthlyPattern = String.join("-",
+                commonPrefix,
+                ES_WILDCARD + RUN + ES_WILDCARD,
+                ES_MONTHLY_DATE_REGEXP);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
+        this.uniqueRunsAggregation = AggregationBuilders.count(UNIQUE_RUNS).field(RUN_ID_FIELD);
         this.storageUsageGroupingAggregation = AggregationBuilders
                 .terms(STORAGE_GROUPING_AGG).field(STORAGE_ID_FIELD).size(Integer.MAX_VALUE)
                 .subAggregation(AggregationBuilders.avg(SINGLE_STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD));
-        this.lastByDateDocAggregation = AggregationBuilders.topHits(BUCKET_DOCUMENTS)
-                .size(1)
-                .fetchSource(STORAGE_USAGE_FIELD, null)
-                .sort(BILLING_DATE_FIELD, SortOrder.DESC);
         this.storageUsageTotalAggregation = PipelineAggregatorBuilders
                 .sumBucket(TOTAL_STORAGE_USAGE_AGG,
                         String.format("%s.%s", STORAGE_GROUPING_AGG, SINGLE_STORAGE_USAGE_AGG));
-        this.uniqueRunsAggregation = AggregationBuilders.count(UNIQUE_RUNS).field(RUN_ID_FIELD);
-        this.topHitsAggregation = AggregationBuilders.topHits(TOP_HITS_AGG)
+        this.lastByDateStorageDocAggregation = AggregationBuilders.topHits(BUCKET_DOCUMENTS)
+                .size(1)
+                .fetchSource(STORAGE_USAGE_FIELD, null)
+                .sort(BILLING_DATE_FIELD, SortOrder.DESC);
+        this.lastByDateDocAggregation = AggregationBuilders.topHits(LAST_BY_DATE_DOC_AGG)
                 .size(1)
                 .sort(BILLING_DATE_FIELD, SortOrder.DESC);
+        this.runIdCardinalityAggregation = AggregationBuilders.cardinality(BillingHelper.CARDINALITY_AGG)
+                .field(BillingHelper.RUN_ID_FIELD);
     }
 
     public Map<String, List<String>> getFilters(final Map<String, List<String>> requestedFilters) {
@@ -141,24 +143,119 @@ public class BillingHelper {
                 .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
     }
 
-    public void setFiltersAndPeriodForSearchRequest(final LocalDate from, final LocalDate to,
-                                                    final Map<String, List<String>> filters,
-                                                    final SearchSourceBuilder searchSource,
-                                                    final SearchRequest searchRequest) {
-        searchRequest.indicesOptions(IndicesOptions.strictExpandOpen());
-        final BoolQueryBuilder compoundQuery = QueryBuilders.boolQuery();
-        if (MapUtils.isNotEmpty(filters)) {
-            filters.forEach((k, v) -> compoundQuery.filter(QueryBuilders.termsQuery(k, v)));
-        }
-        compoundQuery.filter(QueryBuilders.rangeQuery(BILLING_DATE_FIELD).from(from, true).to(to, true));
-        final String[] indices = Stream.iterate(from, d -> d.plus(1, ChronoUnit.MONTHS))
+    public String[] indicesByDate(final LocalDate from, final LocalDate to) {
+        return indicesByDate(from, to, billingIndicesMonthlyPattern);
+    }
+
+    public String[] runIndicesByDate(final LocalDate from, final LocalDate to) {
+        return indicesByDate(from, to, billingRunIndicesMonthlyPattern);
+    }
+
+    private String[] indicesByDate(final LocalDate from, final LocalDate to, final String indexPattern) {
+        return Stream.iterate(from, d -> d.plus(1, ChronoUnit.MONTHS))
                 .limit(ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) + 1)
-                .map(date -> String.format(billingIndicesMonthlyPattern, date.getYear(), date.getMonthValue()))
+                .map(date -> String.format(indexPattern, date.getYear(), date.getMonthValue()))
                 .toArray(String[]::new);
-        searchRequest.indices(indices);
-        searchSource.query(compoundQuery);
-        searchSource.size(0);
-        searchRequest.source(searchSource);
+    }
+
+    public BoolQueryBuilder queryByDateAndFilters(final LocalDate from,
+                                                  final LocalDate to,
+                                                  final Map<String, List<String>> filters) {
+        return queryByFilters(filters)
+                .filter(queryByDate(from, to));
+    }
+
+    private BoolQueryBuilder queryByFilters(final Map<String, List<String>> filters) {
+        return MapUtils.emptyIfNull(filters).entrySet().stream()
+                .reduce(QueryBuilders.boolQuery(),
+                    (query, entry) -> query.filter(QueryBuilders.termsQuery(entry.getKey(), entry.getValue())),
+                    BoolQueryBuilder::filter);
+    }
+
+    private RangeQueryBuilder queryByDate(final LocalDate from, final LocalDate to) {
+        return QueryBuilders.rangeQuery(BILLING_DATE_FIELD)
+                .from(from, true)
+                .to(to, true);
+    }
+
+    public TermsAggregationBuilder aggregatePartitionByRunId(final int partition, final int numberOfPartitions) {
+        return AggregationBuilders.terms(BillingHelper.RUN_ID_FIELD)
+                .field(BillingHelper.RUN_ID_FIELD)
+                .includeExclude(new IncludeExclude(partition, numberOfPartitions))
+                .order(Terms.Order.aggregation(BillingHelper.COST_FIELD, false))
+                .size(Integer.MAX_VALUE)
+                .minDocCount(1);
+    }
+
+    public CardinalityAggregationBuilder aggregateCardinalityByRunId() {
+        return runIdCardinalityAggregation;
+    }
+
+    public ValueCountAggregationBuilder aggregateUniqueRunsCount() {
+        return uniqueRunsAggregation;
+    }
+
+    public SumAggregationBuilder aggregateCostSum() {
+        return costAggregation;
+    }
+
+    public SumAggregationBuilder aggregateRunUsageSum() {
+        return runUsageAggregation;
+    }
+
+    public TermsAggregationBuilder aggregateByStorageUsageGrouping() {
+        return storageUsageGroupingAggregation;
+    }
+
+    public SumBucketPipelineAggregationBuilder aggregateStorageUsageTotalSumBucket() {
+        return storageUsageTotalAggregation;
+    }
+
+    public TopHitsAggregationBuilder aggregateLastByDateStorageDoc() {
+        return lastByDateStorageDocAggregation;
+    }
+
+    public TopHitsAggregationBuilder aggregateLastByDateDoc() {
+        return lastByDateDocAggregation;
+    }
+
+    public Optional<Long> getCostSum(final Aggregations aggregations) {
+        return getLongSum(aggregations, BillingHelper.COST_FIELD);
+    }
+
+    public Optional<Long> getRunUsageSum(final Aggregations aggregations) {
+        return getLongSum(aggregations, BillingHelper.RUN_USAGE_AGG);
+    }
+
+    public Optional<Long> getLongSum(final Aggregations aggregations, final String aggregation) {
+        return Optional.ofNullable(aggregations.get(aggregation))
+                .filter(ParsedSum.class::isInstance)
+                .map(ParsedSum.class::cast)
+                .map(ParsedSum::getValue)
+                .filter(it -> !it.isInfinite())
+                .map(Double::longValue);
+    }
+
+    public Optional<Integer> getCardinalityByRunId(final Aggregations aggregations) {
+        return Optional.ofNullable(aggregations.get(CARDINALITY_AGG))
+                .filter(Cardinality.class::isInstance)
+                .map(Cardinality.class::cast)
+                .map(Cardinality::getValue)
+                .map(Long::intValue);
+    }
+
+    public Map<String, Object> getLastByDateDocFields(final Aggregations aggregations) {
+        return Optional.ofNullable(aggregations.get(LAST_BY_DATE_DOC_AGG))
+                .filter(TopHits.class::isInstance)
+                .map(TopHits.class::cast)
+                .map(TopHits::getHits)
+                .map(SearchHits::getHits)
+                .map(Arrays::asList)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .findFirst()
+                .map(SearchHit::getSourceAsMap)
+                .orElseGet(Collections::emptyMap);
     }
 
     public String asString(final Object value) {
@@ -172,39 +269,4 @@ public class BillingHelper {
     public LocalDateTime asDateTime(final Object value) {
         return value != null ? DATE_TIME_FORMATTER.parse(value.toString(), LocalDateTime::from) : null;
     }
-
-    public Optional<Long> getSumLongValue(final Aggregations aggregations, final String aggregation) {
-        return sumDoubleValue(aggregations, aggregation).map(Double::longValue);
-    }
-
-    public Optional<Double> sumDoubleValue(final Aggregations aggregations, final String aggregation) {
-        return Optional.ofNullable(aggregations.get(aggregation))
-                .filter(ParsedSum.class::isInstance)
-                .map(ParsedSum.class::cast)
-                .map(ParsedSum::getValue)
-                .filter(it -> !it.isInfinite());
-    }
-
-    public Optional<Integer> getCardinalityIntValue(final Aggregations aggregations, final String aggregation) {
-        return Optional.ofNullable(aggregations.get(aggregation))
-                .filter(Cardinality.class::isInstance)
-                .map(Cardinality.class::cast)
-                .map(Cardinality::getValue)
-                .map(Long::intValue);
-    }
-
-    public Map<String, Object> getTopHitSourceMap(final Aggregations aggregations, final String aggregation) {
-        return Optional.ofNullable(aggregations.get(aggregation))
-                .filter(TopHits.class::isInstance)
-                .map(TopHits.class::cast)
-                .map(TopHits::getHits)
-                .map(SearchHits::getHits)
-                .map(Arrays::asList)
-                .map(List::stream)
-                .orElseGet(Stream::empty)
-                .findFirst()
-                .map(SearchHit::getSourceAsMap)
-                .orElseGet(Collections::emptyMap);
-    }
-
 }

@@ -39,6 +39,7 @@ import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -225,20 +226,22 @@ public class BillingManager {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_INTERVAL_NOT_SUPPORTED));
         }
-        final SearchRequest searchRequest = new SearchRequest();
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder();
 
         final AggregationBuilder intervalAgg = AggregationBuilders.dateHistogram(
                 BillingHelper.HISTOGRAM_AGGREGATION_NAME)
             .field(BillingHelper.BILLING_DATE_FIELD)
             .dateHistogramInterval(interval)
-            .subAggregation(billingHelper.getCostAggregation())
+            .subAggregation(billingHelper.aggregateCostSum())
             .subAggregation(PipelineAggregatorBuilders.cumulativeSum(BillingHelper.ACCUMULATED_COST,
                     BillingHelper.COST_FIELD));
 
-        searchSource.aggregation(intervalAgg);
-
-        billingHelper.setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
+        final SearchRequest searchRequest = new SearchRequest()
+                .indicesOptions(IndicesOptions.strictExpandOpen())
+                .indices(billingHelper.indicesByDate(from, to))
+                .source(new SearchSourceBuilder()
+                        .size(0)
+                        .aggregation(intervalAgg)
+                        .query(billingHelper.queryByDateAndFilters(from, to, filters)));
 
         try {
             final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
@@ -258,30 +261,34 @@ public class BillingManager {
                                                    final Map<String, List<String>> filters,
                                                    final BillingGrouping grouping,
                                                    final boolean isLoadDetails) {
-        final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         if (grouping != null) {
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
                 .field(grouping.getCorrespondingField())
                 .order(Terms.Order.aggregation(BillingHelper.COST_FIELD, false))
                 .size(Integer.MAX_VALUE);
-            fieldAgg.subAggregation(billingHelper.getCostAggregation());
+            fieldAgg.subAggregation(billingHelper.aggregateCostSum());
             if (grouping.runUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.getRunUsageAggregation());
-                fieldAgg.subAggregation(billingHelper.getUniqueRunsAggregation());
+                fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
+                fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
             }
             if (grouping.storageUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.getStorageUsageGroupingAggregation());
-                fieldAgg.subAggregation(billingHelper.getStorageUsageTotalAggregation());
+                fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
+                fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
                 if (BillingGrouping.STORAGE.equals(grouping)) {
-                    fieldAgg.subAggregation(billingHelper.getLastByDateDocAggregation());
+                    fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
                 }
             }
             searchSource.aggregation(fieldAgg);
         }
-        searchSource.aggregation(billingHelper.getCostAggregation());
+        searchSource.aggregation(billingHelper.aggregateCostSum());
 
-        billingHelper.setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
+        final SearchRequest searchRequest = new SearchRequest()
+                .indicesOptions(IndicesOptions.strictExpandOpen())
+                .indices(billingHelper.indicesByDate(from, to))
+                .source(searchSource
+                        .size(0)
+                        .query(billingHelper.queryByDateAndFilters(from, to, filters)));
 
         try {
             final SearchResponse searchResponse =
@@ -315,17 +322,17 @@ public class BillingManager {
 
     private String buildResponseFilterForGrouping(final String groupingName) {
         final String groupingBuckets = String.format(BillingHelper.FIRST_LEVEL_TERMS_AGG_BUCKETS_PATTERN, groupingName);
-        final List<String> responseFilters = Stream.of(billingHelper.getCostAggregation().getName(),
-                        billingHelper.getRunUsageAggregation().getName(),
-                        billingHelper.getUniqueRunsAggregation().getName(),
-                        billingHelper.getStorageUsageTotalAggregation().getName())
+        final List<String> responseFilters = Stream.of(billingHelper.aggregateCostSum().getName(),
+                        billingHelper.aggregateRunUsageSum().getName(),
+                        billingHelper.aggregateUniqueRunsCount().getName(),
+                        billingHelper.aggregateStorageUsageTotalSumBucket().getName())
             .map(aggName -> String.join(BillingHelper.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
                     BillingHelper.ES_WILDCARD + aggName))
             .collect(Collectors.toList());
         responseFilters.add(groupingBuckets + BillingHelper.ES_DOC_FIELDS_SEPARATOR + BillingHelper.ES_WILDCARD +
-                billingHelper.getLastByDateDocAggregation().getName() + ".hits.hits._source");
+                billingHelper.aggregateLastByDateStorageDoc().getName() + ".hits.hits._source");
         responseFilters.add(String.format(BillingHelper.FIRST_LEVEL_AGG_PATTERN,
-                billingHelper.getCostAggregation().getName()));
+                billingHelper.aggregateCostSum().getName()));
         responseFilters.add(groupingBuckets + BillingHelper.ES_DOC_FIELDS_SEPARATOR +
                 BillingHelper.ES_TERMS_AGG_BUCKET_KEY);
         return String.join(BillingHelper.ES_ELEMENTS_SEPARATOR, responseFilters);
