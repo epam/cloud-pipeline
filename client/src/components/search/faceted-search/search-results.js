@@ -278,7 +278,6 @@ class SearchResults extends React.Component {
     }
     return (
       <PreviewModal
-        lightMode
         preview={preview}
         onClose={this.closePreview}
       />

@@ -36,7 +36,6 @@
 @color-pink-dusty: #4f4f4f;
 @color-blue-dimmed: #458;
 
-@color-white-dimmed-5: rgba(255, 255, 255, 0.05);
 @color-white-dimmed-10: rgba(255, 255, 255, 0.1);
 
 @border-color: lighten(@application-background-color, 15%);
@@ -58,7 +57,7 @@
 @element-selected-background-color: lighten(@panel-background-color, 5%);
 
 @input-background: @panel-background-color;
-@input-background-disabled: darken(@input-background, 10%);
+@input-background-disabled: lighten(@input-background, 5%);
 @input-addon: lighten(@input-background, 5%);
 @input-border: @border-color;
 @input-color: @application-color;
@@ -150,16 +149,24 @@
 @search-first-row-color: darken(@border-color, 30%);
 @search-header-light-color: @application-color;
 @search-preview-text-color: @application-color;
-@search-preview-attributes-name: @tag-key-background-color;
+@search-preview-attributes-name: lighten(@tag-key-background-color, 5%);
 @search-preview-attributes-value: @tag-value-background-color;
-@search-preview-attributes-value-hovered: darken(@tag-key-background-color, 15%);
+@search-preview-attributes-value-hovered: darken(@tag-key-background-color, 5%);
 @search-highlight-color: @application-color;
 @search-highlight-background-color: @code-background-color;
 @search-highlight-text-color: @panel-border-color;
 @search-highlight-text-background-color: @color-yellow;
-//table
+
 @search-table-background-color: @card-background-color;
 @search-table-border-color: @application-color;
-@search-table-text-color:@application-color;
 @search-md-preview-code-shadow: @color-white-dimmed-10;
 @search-md-preview-text-color: @application-color;
+
+@search-type-button-color: @application-color-faded;
+@search-type-button-background-color: fadeout(@application-background-color, 50%);
+@search-type-button-selected: lighten(@search-type-button-background-color, 10%);
+@search-type-button-hover: lighten(@search-type-button-background-color, 7%);
+@search-type-button-disabled: lighten(@application-background-color, 7%);
+
+@library-storage-region-background-color: @color-white-dimmed-10;
+@library-storage-region-color: @application-color;
