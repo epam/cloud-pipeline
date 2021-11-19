@@ -53,19 +53,19 @@ public class RunBillingWriter implements Closeable {
                 .orElse(FALLBACK_HEADER);
     }
 
-    public void write(final RunBilling info) {
+    public void write(final RunBilling billing) {
         writer.writeNext(new String[]{
-                billingHelper.asString(info.getRunId()),
-                info.getOwner(),
-                info.getBillingCenter(),
-                info.getPipeline(),
-                info.getTool(),
-                info.getComputeType(),
-                info.getInstanceType(),
-                billingHelper.asString(info.getStarted()),
-                billingHelper.asString(info.getFinished()),
-                divided(info.getDuration(), DURATION_DIVISOR).toString(),
-                divided(info.getCost(), COST_DIVISOR).toString()});
+                billingHelper.asString(billing.getRunId()),
+                billing.getOwner(),
+                billing.getBillingCenter(),
+                billing.getPipeline(),
+                billing.getTool(),
+                billing.getComputeType(),
+                billing.getInstanceType(),
+                billingHelper.asString(billing.getStarted()),
+                billingHelper.asString(billing.getFinished()),
+                divided(billing.getDuration(), DURATION_DIVISOR).toString(),
+                divided(billing.getCost(), COST_DIVISOR).toString()});
     }
 
     private BigDecimal divided(final Long divider, final Long divisor) {

@@ -384,7 +384,7 @@ public class BillingManager {
         details.put(grouping.name(), emptyValue);
         if (grouping.runUsageDetailsRequired()) {
             details.put(BillingHelper.RUN_USAGE_FIELD, emptyValue);
-            details.put(BillingHelper.UNIQUE_RUNS, emptyValue);
+            details.put(BillingHelper.RUN_COUNT_AGG, emptyValue);
         }
         if (grouping.storageUsageDetailsRequired()) {
             details.put(BillingHelper.STORAGE_USAGE_FIELD, emptyValue);
@@ -454,8 +454,8 @@ public class BillingManager {
                 final ParsedSum usageAggResult = aggregations.get(BillingHelper.RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
                 groupingInfo.put(BillingHelper.RUN_USAGE_AGG, Long.toString(usageVal));
-                final ParsedValueCount uniqueRunIds = aggregations.get(BillingHelper.UNIQUE_RUNS);
-                groupingInfo.put(BillingHelper.UNIQUE_RUNS, Long.toString(uniqueRunIds.getValue()));
+                final ParsedValueCount uniqueRunIds = aggregations.get(BillingHelper.RUN_COUNT_AGG);
+                groupingInfo.put(BillingHelper.RUNS, Long.toString(uniqueRunIds.getValue()));
             }
             if (grouping.storageUsageDetailsRequired()) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(BillingHelper.TOTAL_STORAGE_USAGE_AGG);

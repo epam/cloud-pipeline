@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -87,7 +86,7 @@ public class RunBillingExporter implements BillingExporter {
                                                 final LocalDate to,
                                                 final Map<String, List<String>> filters) {
         return Optional.of(getEstimatedNumberOfRunBillingsRequest(from, to, filters))
-                .map(searchWith(elasticsearchClient))
+                .map(billingHelper.searchWith(elasticsearchClient))
                 .map(SearchResponse::getAggregations)
                 .flatMap(billingHelper::getCardinalityByRunId)
                 .orElse(NumberUtils.INTEGER_ZERO);
@@ -118,8 +117,8 @@ public class RunBillingExporter implements BillingExporter {
                                            final int numberOfPartitions) {
         return IntStream.range(0, numberOfPartitions)
                 .mapToObj(partition -> getRunBillingsRequest(from, to, filters, partition, numberOfPartitions))
-                .map(searchWith(elasticSearchClient))
-                .flatMap(this::getRunBillings);
+                .map(billingHelper.searchWith(elasticSearchClient))
+                .flatMap(this::runBillings);
     }
 
     private SearchRequest getRunBillingsRequest(final LocalDate from,
@@ -139,20 +138,8 @@ public class RunBillingExporter implements BillingExporter {
                                 .subAggregation(billingHelper.aggregateLastByDateDoc())));
     }
 
-    private Function<SearchRequest, SearchResponse> searchWith(final RestHighLevelClient elasticSearchClient) {
-        return request -> {
-            try {
-                log.debug("Billing request: {}", request);
-                return elasticSearchClient.search(request);
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-                throw new SearchException(e.getMessage(), e);
-            }
-        };
-    }
-
-    private Stream<RunBilling> getRunBillings(final SearchResponse searchResponse) {
-        return Optional.ofNullable(searchResponse.getAggregations())
+    private Stream<RunBilling> runBillings(final SearchResponse response) {
+        return Optional.ofNullable(response.getAggregations())
                 .map(it -> it.get(BillingHelper.RUN_ID_FIELD))
                 .filter(ParsedStringTerms.class::isInstance)
                 .map(ParsedStringTerms.class::cast)
