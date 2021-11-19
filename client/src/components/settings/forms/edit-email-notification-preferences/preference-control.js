@@ -16,9 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {
+  Icon,
+  Input,
+  InputNumber,
+  Select,
+  Popover
+} from 'antd';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
-import {Icon, Input, InputNumber, Select, Popover} from 'antd';
+import ExcludeParametersControl from './exclude-parameters-control';
+import compareArrays from '../../../../utils/compareArrays';
 import styles from './preference-control.css';
 
 function wrapValue (value) {
@@ -26,6 +34,45 @@ function wrapValue (value) {
     return null;
   }
   return `${value}`;
+}
+
+function compareExcludedParameters (parameters, initialParameters) {
+  const compareObjects = (objA, objB) => {
+    const arrA = Object.values(objA);
+    const arrB = Object.values(objB);
+    return !arrA
+      .filter(x => !arrB.includes(x))
+      .concat(arrB.filter(x => !arrA.includes(x)))
+      .length;
+  };
+  return !compareArrays(parameters, initialParameters, compareObjects);
+}
+
+function getExcludedParametersPayload (parameters) {
+  const payload = (parameters || [])
+    .filter(parameter => parameter.value !== undefined && parameter.name !== undefined)
+    .reduce((acc, cur) => {
+      acc[cur.name] = {
+        value: cur.value,
+        operator: cur.operator
+      };
+      return acc;
+    }, {});
+  return JSON.stringify(payload);
+}
+
+function processExcludedParameters (excludedParametersObj) {
+  let obj = {};
+  try {
+    obj = JSON.parse(excludedParametersObj);
+  } catch (_) {
+  }
+  return Object.entries((obj || {}))
+    .map(([parameterName, parameterObj]) => ({
+      name: parameterName,
+      value: parameterObj.value,
+      operator: parameterObj.operator
+    }));
 }
 
 class PreferenceControl extends React.Component {
@@ -50,6 +97,11 @@ class PreferenceControl extends React.Component {
     }
   }
 
+  get preference () {
+    const {preference} = this.props;
+    return Preferences.find(p => p.preference === preference);
+  }
+
   updateValues = () => {
     const {preference: preferenceName} = this.props;
     const request = new PreferenceLoad(preferenceName);
@@ -61,11 +113,17 @@ class PreferenceControl extends React.Component {
         .then(() => {
           if (request.loaded) {
             const preference = request.value;
+            const isExcludedParameters = preferenceName &&
+              preferenceName === 'system.notifications.exclude.params';
             if (preference) {
               this.setState({
                 error: undefined,
-                value: wrapValue(preference.value),
-                initialValue: wrapValue(preference.value),
+                value: isExcludedParameters
+                  ? processExcludedParameters(preference.value)
+                  : wrapValue(preference.value),
+                initialValue: isExcludedParameters
+                  ? processExcludedParameters(preference.value)
+                  : wrapValue(preference.value),
                 pending: false,
                 meta: {...preference}
               }, this.onChange);
@@ -98,7 +156,13 @@ class PreferenceControl extends React.Component {
     const {onChange} = this.props;
     if (onChange) {
       const {value, initialValue, meta} = this.state;
-      onChange(value, initialValue !== value, meta);
+      let modified = initialValue !== value;
+      let payload = value;
+      if (this.preference.type === 'excludeParamsControl') {
+        modified = compareExcludedParameters(value, initialValue);
+        payload = getExcludedParametersPayload(value);
+      }
+      onChange(payload, modified, meta);
     }
   };
 
@@ -212,16 +276,69 @@ class PreferenceControl extends React.Component {
     );
   };
 
+  onExcludedParametersChange = (parameter, index) => {
+    const {value} = this.state;
+    const newState = [...(value || [])];
+    let currentParameter = newState[index];
+    if (currentParameter) {
+      currentParameter = parameter;
+      this.setState({
+        value: newState
+      }, this.onChange);
+    }
+  };
+
+  onAddExcludedParameter = (parameter) => {
+    const {value} = this.state;
+    this.setState({
+      value: [...(value || []), parameter]
+    }, this.onChange);
+  };
+
+  onRemoveExcludedParameter = index => {
+    const {value} = this.state;
+    this.setState({
+      value: value.filter((parameter, idx) => idx !== index)
+    }, this.onChange);
+  };
+
+  renderExcludeParamsControl = (preference) => {
+    if (!preference) {
+      return null;
+    }
+    const {value, pending} = this.state;
+    return (
+      <div
+        className={styles.controlRow}
+        style={{alignItems: 'baseline'}}
+      >
+        <span className={styles.label}>
+          {preference.name}
+        </span>
+        <ExcludeParametersControl
+          parameters={value}
+          pending={pending}
+          onChange={this.onExcludedParametersChange}
+          onAdd={this.onAddExcludedParameter}
+          onRemove={this.onRemoveExcludedParameter}
+        />
+        {this.renderHint(preference)}
+      </div>
+    );
+  };
+
   render () {
     const {error} = this.state;
-    const {preference: preferenceName} = this.props;
-    const preference = Preferences.find(p => p.preference === preferenceName);
+    const preference = this.preference;
     let control;
     if (preference) {
       switch (preference.type) {
         case 'number': control = this.renderNumberControl(preference); break;
         case 'enum': control = this.renderEnumControl(preference); break;
-        case 'string':
+        case 'string': control = this.renderStringControl(preference); break;
+        case 'excludeParamsControl':
+          control = this.renderExcludeParamsControl(preference);
+          break;
         default:
           control = this.renderStringControl(preference); break;
       }

@@ -1,0 +1,51 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1;
+}
+
+.controls-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  margin-bottom: 5px;
+}
+
+.control:not(:last-child) {
+  margin-right: 5px;
+  flex-grow: 1;
+}
+
+.control.select {
+  width: 120px;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+
+.control.remove-btn {
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
