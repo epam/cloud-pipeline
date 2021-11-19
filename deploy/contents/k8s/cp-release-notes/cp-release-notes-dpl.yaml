@@ -1,0 +1,52 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cp-release-notes-agent
+  namespace: default
+spec:
+  schedule: ${CP_RELEASE_NOTES_SCHEDULE}
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          namespace: default
+          labels:
+            cloud-pipeline/cp-release-notes-agent: "true"
+        spec:
+          nodeSelector:
+            cloud-pipeline/cp-release-notes-agent: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+          containers:
+            - name: cp-release-notes-agent
+              image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:release-notes-$CP_VERSION
+              securityContext:
+                privileged: true
+              imagePullPolicy: "Always"
+              command: ["/init"]
+              envFrom:
+                - configMapRef:
+                    name: cp-config-global
+              volumeMounts:
+                - mountPath: /opt/release-notes-agent/logs
+                  name: release-notes-logs
+                - mountPath: /opt/release-notes-agent/templates
+                  name: release-notes-template
+                - mountPath: /opt/release-notes-agent/data
+                  name: release-notes-data
+          volumes:
+            - name: release-notes-logs
+              hostPath:
+                path: /opt/release-notes-agent/logs
+            - name: release-notes-template
+              hostPath:
+                path: /opt/release-notes-agent/templates
+            - name: release-notes-data
+              hostPath:
+                path: /opt/release-notes-agent/data
+          restartPolicy: Never

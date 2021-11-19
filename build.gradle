@@ -79,7 +79,7 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           ":data-transfer-service:bootJar", ":data-transfer-service:bundleWindows",
                           ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
-                          ":git-reader:build"]) {
+                          ":git-reader:build", ":release-notes-agent:bootJar"]) {
     group = 'build'
 }
 
@@ -90,7 +90,7 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":data-transfer-service:build", ":data-transfer-service:bundleWindows",
                           ":data-sharing-service:buildAll", ":fs-browser:build", ":billing-report-agent:build",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
-                          ":git-reader:build"]) {
+                          ":git-reader:build", ":release-notes-agent:bootJar"]) {
     group = 'build'
 }
 
@@ -163,7 +163,8 @@ task installDist() {
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
                 "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
-                "$rootDir/git-reader/dist/gitreader.tar.gz"
+                "$rootDir/git-reader/dist/gitreader.tar.gz",
+                "$rootDir/release-notes-agent/build/libs/release-notes-agent.jar"
         )
 
         distFiles.each {

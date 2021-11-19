@@ -30,5 +30,5 @@ public class JiraIssue {
     String githubId;
     String description;
     String url;
-
+    String key;
 }
