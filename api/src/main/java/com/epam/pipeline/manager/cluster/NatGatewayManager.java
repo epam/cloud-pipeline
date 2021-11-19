@@ -400,7 +400,7 @@ public class NatGatewayManager {
                                           route.getRouteId(), correspondingServiceName));
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
-        if (NatRouteStatus.ACTIVE.equals(route.getStatus())) {
+        if (NatRouteStatus.CREATION_SCHEDULED.equals(route.getStatus())) {
             final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
             if (!activePorts.containsKey(externalPort)) {
                 final boolean portCreationResult = kubernetesManager.generateFreeTargetPort()
