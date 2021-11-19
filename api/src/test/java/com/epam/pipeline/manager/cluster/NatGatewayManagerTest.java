@@ -22,8 +22,6 @@ import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRulesRequest;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import com.epam.pipeline.manager.cluster.KubernetesManager;
-import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;

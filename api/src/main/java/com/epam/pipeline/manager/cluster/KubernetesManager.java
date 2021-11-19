@@ -964,29 +964,6 @@ public class KubernetesManager {
         return !isNodeAvailable(node);
     }
 
-    private String resolveNodeServiceName(final String ip) {
-        return "ip-" + ip.replace(".", "-");
-    }
-
-    private Service createServiceIfNotExists(final String name, final int port, final int targetPort) {
-        try (KubernetesClient client = getKubernetesClient()) {
-            final Optional<Service> service = findServiceByName(client, name);
-            if (service.isPresent()) {
-                LOGGER.debug("Service with name '{}' already exists", name);
-                return service.get();
-            }
-            return createService(client, name, port, targetPort);
-        }
-    }
-
-    private Service createService(final KubernetesClient client, final String name, final int port, 
-                                  final int targetPort) {
-        final ServicePort servicePort = new ServicePort();
-        servicePort.setPort(port);
-        servicePort.setTargetPort(new IntOrString(targetPort));
-        return createService(client, name, Collections.emptyMap(), Collections.singletonList(servicePort));
-    }
-
     public Service createService(final String serviceName, final Map<String, String> labels,
                                  final List<ServicePort> ports) {
         return createService(serviceName, labels, ports, labels);

@@ -16,10 +16,10 @@
 
 package com.epam.pipeline.dao.cluster;
 
+import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class NatGatewayDaoTest extends AbstractJdbcTest {
+public class NatGatewayDaoTest extends AbstractSpringTest {
 
     private static final String NAT_ROUTE_DOMAIN_NAME = "nowhere.com";
     private static final String EXTERNAL_IP = "87.1.1.1";

@@ -22,6 +22,7 @@ import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
@@ -213,6 +214,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PreferenceManager preferenceManager;
+
+    @MockBean
+    protected NatGatewayManager natGatewayManager;
 
     @Bean
     public PermissionFactory permissionFactory() {
