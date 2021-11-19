@@ -361,6 +361,7 @@
                       u.default_storage_id as user_default_storage_id,
                       u.default_profile_id as user_default_profile_id,
                       u.blocked as user_blocked,
+                      u.block_date as user_block_date,
                       u.registration_date,
                       u.first_login_date,
                       u.last_login_date,
