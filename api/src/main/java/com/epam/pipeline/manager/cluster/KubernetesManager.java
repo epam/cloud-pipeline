@@ -421,7 +421,7 @@ public class KubernetesManager {
     public Optional<ServicePort> addPortToExistingService(final String serviceName,
                                                           final Integer externalPort, final Integer internalPort) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final ServicePort newPortSpec = getTcpPortSpec(serviceName + "-" + externalPort.toString(),
+            final ServicePort newPortSpec = getTcpPortSpec(getServicePortName(serviceName, externalPort),
                                                            externalPort, internalPort);
             client.services()
                 .inNamespace(kubeNamespace)
@@ -435,6 +435,10 @@ public class KubernetesManager {
         } catch (RuntimeException e) {
             return Optional.empty();
         }
+    }
+
+    public String getServicePortName(final String serviceName, final Integer externalPort) {
+        return serviceName + KubernetesConstants.HYPHEN + externalPort.toString();
     }
 
     public boolean removePortFromExistingService(final String serviceName, final String portName) {

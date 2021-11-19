@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
+
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
@@ -72,7 +74,6 @@ public class NatGatewayManager {
     private static final String UNKNOWN = "UNKNOWN";
     private static final String NEW_LINE = "\n";
     private static final String PORT_FORWARDING_RULE_ATTRIBUTE_DESCRIPTOR = ":";
-    private static final String HYPHEN = "-";
 
     private final NatGatewayDao natGatewayDao;
     private final KubernetesManager kubernetesManager;
@@ -431,8 +432,7 @@ public class NatGatewayManager {
     private ServicePort buildNewServicePort(final String correspondingServiceName, final Integer externalPort,
                                             final IntOrString freeTargetPort) {
         final ServicePort newServicePort = new ServicePort();
-        newServicePort.setName(
-            String.join(HYPHEN, tinyproxyServiceName, correspondingServiceName, externalPort.toString()));
+        newServicePort.setName(kubernetesManager.getServicePortName(correspondingServiceName, externalPort));
         newServicePort.setTargetPort(freeTargetPort);
         newServicePort.setPort(externalPort);
         return newServicePort;
