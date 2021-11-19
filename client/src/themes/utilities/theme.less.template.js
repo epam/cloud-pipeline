@@ -95,6 +95,12 @@ export default `
   background-color: @application-color;
 }
 
+@THEME body[class*="dark"] {
+  color-scheme: dark;
+}
+@THEME body[class*="light"] {
+  color-scheme: light;
+}
 @THEME .cp-title {
   font-weight: bold;
 }
@@ -1160,6 +1166,33 @@ export default `
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
 }
+@THEME .cp-storage-region {
+  background-color: @library-storage-region-background-color;
+  color: @library-storage-region-color;
+}
+
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
+}
 
 @THEME @fn: @theme-transition-function;
 @ms: @theme-transition-duration;
@@ -1541,12 +1574,9 @@ export default `
 @THEME .cp-search-preview-wrapper {
   background: @input-placeholder-color;
 }
-@THEME .cp-search-preview-light {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
-}
 @THEME .cp-search-preview {
   background-color: @search-preview-background-color;
+  border: 1px solid @panel-border-color;
 }
 @THEME .cp-search-preview-button {
   color: @application-color;
@@ -1563,12 +1593,6 @@ export default `
 @THEME .cp-search-first-row {
   color: @search-first-row-color;
 }
-@THEME .cp-search-container {
-  color: @card-border-color;
-}
-@THEME .cp-search-container-light {
-  color: @application-color;
-}
 @THEME .cp-search-header-description {
   color: @panel-border-color;
 }
@@ -1579,102 +1603,57 @@ export default `
 @THEME .cp-search-header-sub-title,
 @THEME .cp-search-header-description,
 @THEME .cp-search-container .cp-search-content {
-  color: @search-preview-text-color;
-}
-@THEME .cp-search-container-light .cp-search-header-title,
-@THEME .cp-search-container-light .cp-search-header-sub-title,
-@THEME .cp-search-container-light .cp-search-header-description,
-@THEME .cp-search-container-light .cp-search-content {
-  color:  @application-color;
+  color: @application-color;
 }
 @THEME .cp-search-content-preview-run,
 @THEME .cp-search-content-preview-run i,
 @THEME .cp-search-content-preview-run-task {
-  color: @search-preview-text-color;
-}
-@THEME .cp-search-container-light .cp-search-content-preview-run,
-@THEME .cp-search-container-light .cp-search-content-preview-run i,
-@THEME .cp-search-container-light .cp-search-content-preview-run-task {
   color:  @application-color;
 }
 @THEME .cp-search-preview-iframe {
   background-color:  @search-preview-text-color;
 }
 @THEME .cp-search-description-tag {
-  background-color: @search-highlight-background-color;
-  color: @search-preview-text-color;
-}
-@THEME .cp-search-attribute-name {
-  background-color: @search-table-dark-background;
-}
-@THEME .cp-search-attribute-value {
-  background-color: @search-highlight-background-color;
-}
-@THEME .cp-search-attribute-value:hover {
-  background-color: @application-color-disabled;
-}
-@THEME .cp-search-container-light .cp-search-description-tag {
   background-color: @code-background-color;
   color: @application-color;
 }
-@THEME .cp-search-container-light .cp-search-attribute-name {
+@THEME .cp-search-attribute-name {
   background-color: @search-preview-attributes-name;
 }
-@THEME .cp-search-container-light .cp-search-attribute-value {
+@THEME .cp-search-attribute-value {
   background-color: @search-preview-attributes-value;
 }
-@THEME .cp-search-container-light .cp-search-attribute-value:hover {
+@THEME .cp-search-attribute-value:hover {
   background-color: @search-preview-attributes-value-hovered;
   color: @application-color;
 }
 @THEME .cp-search-even-table-row {
-  background-color: @search-highlight-background-color;
-}
-@THEME .cp-search-container-light .cp-search-even-table-row {
   background-color: @application-background-color;
 }
 @THEME .cp-search-highlight {
   background-color: @search-highlight-background-color;
-  color: @search-highlight-color;
+  color:  @search-header-light-color;
 }
 @THEME .cp-search-highlight-text {
   background-color: @search-highlight-text-background-color;
   color: @search-highlight-text-color;
 }
-@THEME .cp-search-container-light .cp-search-highlight {
-  background-color: transparent;
-  color: @search-header-light-color;
-}
 @THEME .cp-search-csv-table {
-  border: 1px solid @application-color-accent;
-  background-color: @search-table-dark-background;
-}
-@THEME .cp-search-container-light .cp-search-csv-table {
   border: 1px solid @search-table-border-color; 
   background-color: @search-table-background-color;
   color: @application-color;
 }
 @THEME .cp-search-csv-table-cell {
-  border: 1px solid @search-table-text-color; 
-  color: @search-table-text-color;
-}
-@THEME .cp-search-container-light .cp-search-csv-table-cell {
   border-color: @search-table-border-color;
   color: @application-color;
 }
 @THEME .cp-search-run-table-icon {
-  color: @panel-border-color;
-}
-@THEME .cp-search-container-light .cp-search-run-table-icon {
   color: @search-header-light-color;
 }
 @THEME .cp-search-preview-separator {
   background-color: @search-header-light-color;
 }
 @THEME .cp-search-md-preview {
-  color: @search-md-preview-text-color;
-}
-@THEME .cp-search-container-light .cp-search-md-preview {
   color: @application-color;
 }
 @THEME .cp-search-md-preview h1,
@@ -1683,7 +1662,7 @@ export default `
 @THEME .cp-search-md-preview h4,
 @THEME .cp-search-md-preview h5,
 @THEME .cp-search-md-preview h6 {
-  color: @search-md-preview-text-color;
+  color: @search-header-light-color;
 }
 @THEME .cp-search-md-preview code {
   color: @color-pink;
@@ -1695,13 +1674,51 @@ export default `
   background-color: @tag-key-background-color;
   border: 1px solid @panel-border-color;
 }
-@THEME .cp-search-container-light .cp-search-md-preview h1,
-@THEME .cp-search-container-light .cp-search-md-preview h2,
-@THEME .cp-search-container-light .cp-search-md-preview h3,
-@THEME .cp-search-container-light .cp-search-md-preview h4,
-@THEME .cp-search-container-light .cp-search-md-preview h5,
-@THEME .cp-search-container-light .cp-search-md-preview h6 {
-  color: @search-header-light-color;
+@THEME .cp-search-faceted-button {
+  color: @application-color;
+  background-color: @panel-background-color;
+  border: 1px solid @btn-border-color;
+}
+@THEME .cp-search-faceted-button:hover,
+@THEME .cp-search-faceted-button:focus {
+  color: @primary-color;
+  background-color: @panel-background-color;
+  border-color: @primary-color;
+}
+@THEME .cp-search-faceted-button.selected {
+  color: @btn-color;
+  background-color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME .cp-search-faceted-button.selected:hover,
+@THEME .cp-search-faceted-button.selected:focus {
+  color: @btn-color;
+  background-color: @btn-primary-hover;
+  border-color: @btn-primary-hover;
+}
+@THEME .cp-search-faceted-button.disabled,
+@THEME .cp-search-faceted-button:hover.disabled {
+  color: @btn-disabled-color;
+  background-color: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+@THEME .cp-search-type-button {
+  background-color: @search-type-button-background-color;
+  color: @search-type-button-color;
+  border: 2px solid transparent;
+}
+@THEME .cp-search-type-button.selected {
+  background-color: @search-type-button-selected;
+  border: 2px solid @search-type-button-color;
+}
+@THEME .cp-search-type-button:hover {
+  background-color: @search-type-button-hover;
+}
+@THEME .cp-search-type-button.disabled {
+  background-color: transparent;
+  color: @search-type-button-disabled;
+  cursor: not-allowed;
 }
 
 @THEME .cp-versioned-storage-breadcrumb {
@@ -1732,6 +1749,45 @@ export default `
 }
 @THEME .cp-library-metadata-additional-actions {
   background-color: inherit;
+}
+@THEME .cp-library-attributes-storage-size {
+  color: @application-color;
+}
+@THEME .cp-library-metadata-key-row,
+@THEME .cp-library-metadata-read-only-key-row,
+@THEME .cp-library-metadata-key-row-edit {
+  background-color: @element-selected-background-color;
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-disabled-input {
+  background-color: @input-background-disabled;
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-disabled-input:hover {
+  border-color: @border-color;
+}
+@THEME .cp-library-metadata-disabled-input:focus {
+  box-shadow: 0 0 0 @input-shadow-color;
+  border-color: @input-border;
+  outline: @input-background;
+}
+@THEME .cp-library-metadata-panel-label {
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-special {
+  color: @primary-color;
+  background-color: @primary-hover-color;
+}
+@THEME .cp-library-metadata-special.read-only {
+  color: @application-color-faded;
+  background-color: @element-selected-background-color;
+}
+@THEME .cp-library-metadata-key-row td.key:hover,
+@THEME .cp-library-metadata-value-row td:hover {
+  border: 1px dashed @panel-border-color;
+}
+@THEME .cp-library-metadata-divider {
+  background-color: @card-border-color;
 }
 
 @THEME .cp-node-tag {

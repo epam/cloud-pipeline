@@ -46,8 +46,7 @@ export default class S3BucketPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   renderItems = () => {
@@ -111,21 +110,17 @@ export default class S3BucketPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {'cp-search-container': !this.props.lightMode},
-            {
-              'cp-search-container-light': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
-            <span>{this.props.item.name}</span>
+            <span style={{padding: '0px 5px'}}>{this.props.item.name}</span>
             {
               this.props.dataStorageInfo && this.props.dataStorageInfo.loaded &&
               <AWSRegionTag
-                darkMode
                 regionId={this.props.dataStorageInfo.value.regionId}
                 displayName />
             }

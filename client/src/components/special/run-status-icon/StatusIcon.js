@@ -34,11 +34,6 @@ const StatusIcon = (props) => {
   if (props.additionalStyle) {
     iconStyle = Object.assign(iconStyle, props.additionalStyle);
   }
-  if (props.additionalStyleByStatus &&
-    props.additionalStyleByStatus.hasOwnProperty(status) &&
-    !!props.additionalStyleByStatus[status]) {
-    iconStyle = Object.assign(iconStyle, props.additionalStyleByStatus[status]);
-  }
 
   const result = (
     <Icon
@@ -71,7 +66,6 @@ const StatusIcon = (props) => {
 
 StatusIcon.propTypes = {
   additionalStyle: PropTypes.object,
-  additionalStyleByStatus: PropTypes.object,
   className: PropTypes.string,
   displayTooltip: PropTypes.bool,
   iconSet: PropTypes.object,

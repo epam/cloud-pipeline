@@ -100,7 +100,6 @@ export default class S3FilePreview extends React.Component {
       name: PropTypes.string,
       description: PropTypes.string
     }),
-    lightMode: PropTypes.bool,
     onPreviewLoaded: PropTypes.func,
     fullscreen: PropTypes.bool,
     onFullScreenChange: PropTypes.func,
@@ -180,9 +179,8 @@ export default class S3FilePreview extends React.Component {
             <tr>
               <td style={{whiteSpace: 'nowrap', verticalAlign: 'top'}}>Storage:</td>
               <td style={{paddingLeft: 5}}>
-                {this.props.dataStorageInfo.value.name}
+                <span style={{paddingRight: '5px'}}>{this.props.dataStorageInfo.value.name}</span>
                 <AWSRegionTag
-                  darkMode
                   regionId={this.props.dataStorageInfo.value.regionId}
                 />
               </td>
@@ -421,10 +419,7 @@ export default class S3FilePreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {'cp-search-container': !this.props.lightMode},
-            {
-              'cp-search-container-light': this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >

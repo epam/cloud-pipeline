@@ -70,7 +70,6 @@ export default class S3FilePreview extends React.Component {
       name: PropTypes.string,
       description: PropTypes.string
     }),
-    lightMode: PropTypes.bool,
     onPreviewLoaded: PropTypes.func,
     fullscreen: PropTypes.bool,
     onFullScreenChange: PropTypes.func,
@@ -206,14 +205,7 @@ export default class S3FilePreview extends React.Component {
     const preview = this.renderPreview();
     return (
       <div
-        className={
-          classNames(
-            styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
-          )
-        }
+        className={styles.container}
       >
         <div className={styles.header}>
           <Row className={styles.title}>

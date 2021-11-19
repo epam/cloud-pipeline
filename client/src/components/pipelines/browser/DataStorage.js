@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../utils/connect';
 import {Link} from 'react-router';
+import classNames from 'classnames';
 import {computed, observable} from 'mobx';
 import {
   Alert,
@@ -1025,7 +1026,6 @@ export default class DataStorage extends React.Component {
       <PreviewModal
         preview={previewModal}
         onClose={this.closePreviewModal}
-        lightMode
       />
     );
   };
@@ -1930,8 +1930,10 @@ export default class DataStorage extends React.Component {
                 <span>
                   {this.props.info.value.name}
                   <AWSRegionTag
-                    className={styles.storageRegion}
-                    darkMode
+                    className={classNames(
+                      styles.storageRegion,
+                      'cp-storage-region'
+                    )}
                     displayName
                     flagStyle={{fontSize: 'smaller'}}
                     providerStyle={{fontSize: 'smaller'}}

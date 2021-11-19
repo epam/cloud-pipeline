@@ -30,7 +30,6 @@ export default function preview (props) {
   return (
     <Content
       item={props.item}
-      lightMode={props.lightMode}
       onPreviewLoaded={props.onPreviewLoaded}
       fullscreen={props.fullscreen}
       onFullScreenChange={props.onFullScreenChange}

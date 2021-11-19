@@ -48,8 +48,6 @@
 }
 
 .document-type-filter .filter {
-  background-color: #fafafa;
-  border: 1px solid #ddd;
   border-radius: 5px;
   padding: 3px;
   display: inline-flex;
@@ -61,30 +59,6 @@
   text-align: center;
   cursor: pointer;
   height: 32px;
-}
-
-.document-type-filter .filter:hover {
-  background-color: #eef8ff;
-  border-color: #a2d8ff;
-}
-
-.document-type-filter .filter.selected {
-  background-color: rgb(49, 127, 208);
-  border-color: rgb(49, 127, 208);
-  color: white;
-}
-
-.document-type-filter .filter.selected:hover {
-  background-color: rgb(76, 149, 226);
-  border-color: rgb(49, 127, 208);
-}
-
-.document-type-filter .filter.disabled,
-.document-type-filter .filter:hover.disabled {
-  background-color: transparent;
-  color: #999;
-  border-color: transparent;
-  cursor: default;
 }
 
 .document-type-filter .filter .count {

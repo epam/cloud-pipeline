@@ -632,15 +632,16 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             {
               this.searchTypesArray.map((type, index) => {
                 const disabled = this.state.aggregates && !this.state.aggregates[type.key];
-                const active = !disabled && this.state.selectedGroupTypes.indexOf(type.key) >= 0;
+                const selected = !disabled && this.state.selectedGroupTypes.indexOf(type.key) >= 0;
                 return (
                   <div
                     className={
                       classNames(
                         styles.typeButton,
+                        'cp-search-type-button',
                         {
-                          [styles.disabled]: disabled,
-                          [styles.active]: active
+                          'disabled': disabled,
+                          'selected': selected
                         }
                       )
                     }

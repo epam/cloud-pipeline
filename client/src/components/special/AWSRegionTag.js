@@ -26,7 +26,6 @@ import styles from './AWSRegionTag.css';
 class AWSRegionTag extends React.Component {
   static propTypes = {
     className: PropTypes.string,
-    darkMode: PropTypes.bool,
     displayFlag: PropTypes.bool,
     displayName: PropTypes.bool,
     flagStyle: PropTypes.object,
@@ -40,7 +39,6 @@ class AWSRegionTag extends React.Component {
   };
 
   static defaultProps = {
-    darkMode: false,
     displayName: false,
     displayFlag: true,
     plainMode: false,
@@ -246,8 +244,7 @@ class AWSRegionTag extends React.Component {
               classNames(
                 styles.provider,
                 'provider',
-                this.provider.toLowerCase(),
-                {[styles.dark]: this.props.darkMode}
+                this.provider.toLowerCase()
               )
             }
             key="provider"
@@ -268,10 +265,7 @@ class AWSRegionTag extends React.Component {
                 styles.flag,
                 'flag',
                 info.result,
-                info.zone.toLowerCase(),
-                {
-                  [styles.dark]: this.props.darkMode
-                }
+                info.zone.toLowerCase()
               )
             }
             key="flag"

@@ -56,7 +56,6 @@ class PreviewModal extends React.Component {
   render () {
     const {
       preview,
-      lightMode,
       onClose
     } = this.props;
     if (!preview) {
@@ -75,11 +74,10 @@ class PreviewModal extends React.Component {
         onClick={handleClosePreview}
       >
         <div
-          className={styles.preview}
+          className={styles.preview, 'cp-search-preview'}
         >
           <Preview
             item={preview}
-            lightMode={lightMode}
             onPreviewLoaded={this.onPreviewLoaded}
             fullscreen={maximized}
             onFullScreenChange={this.handleMaximizePreview}
@@ -109,7 +107,6 @@ class PreviewModal extends React.Component {
 PreviewModal.propTypes = {
   preview: PropTypes.object,
   onClose: PropTypes.func,
-  lightMode: PropTypes.bool,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
