@@ -25,7 +25,7 @@
   },
   {
     "name": "CP_CAP_DCV_WEB",
-    "endpoint_env": "CP_CAP_DCV_DESKTOP_PORT",
+    "endpoint_env": "CP_CAP_DCV_WEB_PORT",
     "endpoint_default" : "8443",
     "endpoint_num_env": "CP_CAP_DCV_WEB_ENDPOINT_ID",
     "endpoint_num_default" : "1",
