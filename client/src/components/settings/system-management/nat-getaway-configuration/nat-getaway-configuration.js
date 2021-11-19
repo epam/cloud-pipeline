@@ -419,6 +419,7 @@ export default class NATGetaway extends React.Component {
           visible={this.state.addRouteModalIsOpen}
           onAdd={this.addNewDataToTable}
           onCancel={this.closeAddRouteModal}
+          routes={this.sortedContent}
         />
       </div>
     );

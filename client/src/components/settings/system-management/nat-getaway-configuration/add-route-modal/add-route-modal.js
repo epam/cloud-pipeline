@@ -15,11 +15,16 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Modal, Input, Button, Form, message, Spin} from 'antd';
 import classNames from 'classnames';
 
 import {ResolveIp} from '../../../../../models/nat';
-import {validateIP, validatePort, validateServerName} from '../helpers';
+import {
+  validateIP,
+  validatePort,
+  validateServerName
+} from '../helpers';
 import styles from './add-route-modal.css';
 
 const FormItem = Form.Item;
@@ -28,6 +33,13 @@ export default class AddRouteForm extends React.Component {
   static getPortUID = () => {
     AddRouteForm.portUID += 1;
     return AddRouteForm.portUID;
+  };
+
+  static propTypes = {
+    visible: PropTypes.bool,
+    onAdd: PropTypes.func,
+    onCancel: PropTypes.func,
+    routes: PropTypes.array
   };
 
   state = {
@@ -85,10 +97,15 @@ export default class AddRouteForm extends React.Component {
       serverName,
       ip
     } = this.state;
+    const {
+      routes = []
+    } = this.props;
+    const currentIpRoutes = routes.filter(route => route.externalIp === ip);
     const portValues = Object
       .values(ports)
       .filter(o => !Number.isNaN(Number(o)))
-      .map(o => Number(o));
+      .map(o => Number(o))
+      .concat(currentIpRoutes.map(o => Number(o.externalPort)));
     const errors = {
       serverName: validateServerName(serverName),
       ip: validateIP(ip),
