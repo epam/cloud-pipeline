@@ -41,6 +41,7 @@ public final class JiraIssueMapper {
                 .description(Optional.ofNullable(jiraIssueVO.getFields().get(DESCRIPTION)).orElse(EMPTY))
                 .githubId(Optional.ofNullable(jiraIssueVO.getFields().get(jiraGithubCustomFieldId)).orElse(EMPTY))
                 .url(format("%sbrowse/%s", URLUtils.normalizeUrl(jiraBaseUrl), jiraIssueVO.getKey()))
+                .key(Optional.ofNullable(jiraIssueVO.getKey()).orElse(EMPTY))
                 .build();
     }
 }

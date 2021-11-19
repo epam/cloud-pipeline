@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -281,6 +281,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-monitoring-srv \
                 -t "$CP_MONITORING_SRV_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_MONITORING_SRV_DIST_NAME"
+
+# Release Notes Agent
+CP_RELEASE_NOTES_DIST_NAME=${CP_RELEASE_NOTES_DIST_NAME:-"$CP_DIST_REPO_NAME:release-notes-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-release-notes \
+                -t "$CP_RELEASE_NOTES_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_RELEASE_NOTES_DIST_NAME"
 
 ########################
 # Base tools dockers

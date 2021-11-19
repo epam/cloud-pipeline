@@ -56,26 +56,25 @@ public class EmailTemplateNotificationService implements TemplateNotificationSer
 
     public EmailTemplateNotificationService(
             final TemplateEngine templateEngine,
-            @Value("${release.notes.agent.name.of.admin.email.template}") final String emailToAdminTemplateName,
-            @Value("${release.notes.agent.name.of.subscribers.email.template}")
-            final String emailToSubscribersTemplateName,
-            @Value("#{'${release.notes.agent.email.to.admin.subject}'?:" +
+            @Value("${release.notes.agent.major.version.changed.email.template}") final String majorChangeTemplateName,
+            @Value("${release.notes.agent.minor.version.changed.email.template}") final String minorChangeTemplateName,
+            @Value("#{'${release.notes.agent.major.version.changed.subject}'?:" +
                     "'Cloud-pipeline major version change notification'}")
-            final String emailToAdminTitle,
-            @Value("#{'${release.notes.agent.email.to.subscribers.subject}'?:" +
+            final String majorChangeEmailTitle,
+            @Value("#{'${release.notes.agent.minor.version.changed.subject}'?:" +
                     "'Cloud-pipeline minor version change notification'}")
-            final String emailToSubscribersTitle,
-            @Value("#{'${release.notes.agent.admin.emails}'.split(',')?:}") final List<String> adminsEmailAddresses,
-            @Value("#{'${release.notes.agent.subscribers.emails}'.split(',')?:}")
-            final List<String> subscribersEmailAddresses
-    ) {
+            final String minorChangeEmailTitle,
+            @Value("#{'${release.notes.agent.major.version.changed.subscriber.emails}'.split(',')?:}")
+            final List<String> majorVersionChangeSubscriberEmail,
+            @Value("#{'${release.notes.agent.minor.version.changed.subscriber.emails}'.split(',')?:}")
+            final List<String> minorVersionChangeSubscriberEmail) {
         this.templateEngine = templateEngine;
-        this.emailToAdminTemplateName = emailToAdminTemplateName;
-        this.emailToSubscribersTemplateName = emailToSubscribersTemplateName;
-        this.emailToAdminTitle = emailToAdminTitle;
-        this.emailToSubscribersTitle = emailToSubscribersTitle;
-        this.adminsEmailAddresses = ListUtils.emptyIfNull(adminsEmailAddresses);
-        this.subscribersEmailAddresses = ListUtils.emptyIfNull(subscribersEmailAddresses);
+        this.emailToAdminTemplateName = majorChangeTemplateName;
+        this.emailToSubscribersTemplateName = minorChangeTemplateName;
+        this.emailToAdminTitle = majorChangeEmailTitle;
+        this.emailToSubscribersTitle = minorChangeEmailTitle;
+        this.adminsEmailAddresses = ListUtils.emptyIfNull(majorVersionChangeSubscriberEmail);
+        this.subscribersEmailAddresses = ListUtils.emptyIfNull(minorVersionChangeSubscriberEmail);
         validateProperties();
     }
 
