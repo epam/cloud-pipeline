@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,9 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +33,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,11 +42,15 @@ public class UserAccessService {
 
     private final UserManager userManager;
     private final boolean validateUser;
+    private PreferenceManager preferenceManager;
+
 
     public UserAccessService(final UserManager userManager,
-                             final @Value("${jwt.validate.token.user:false}") boolean validateUser) {
+                             final @Value("${jwt.validate.token.user:false}") boolean validateUser,
+                             final PreferenceManager preferenceManager) {
         this.userManager = userManager;
         this.validateUser = validateUser;
+        this.preferenceManager = preferenceManager;
     }
 
     public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
@@ -54,6 +62,9 @@ public class UserAccessService {
         if (pipelineUser == null) {
             log.info("Failed to find user by name {}. Access is still allowed.", jwtUser.getUsername());
             return jwtUser;
+        }
+        if (needToUpdateUserLastLogin(pipelineUser)) {
+            userManager.updateLastLoginDate(pipelineUser);
         }
         if (!jwtUser.getUserId().equals(pipelineUser.getId())) {
             throw new TokenVerificationException(String.format(
@@ -93,5 +104,15 @@ public class UserAccessService {
                     user.getUserName());
             throw new LockedException("User: " + user.getUserName() + " is blocked!");
         }
+    }
+
+    private boolean needToUpdateUserLastLogin(final PipelineUser user) {
+        if (Objects.isNull(user.getLastLoginDate())) {
+            return true;
+        }
+
+        final Integer threshold = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD);
+        return DateUtils.hoursBetweenDates(user.getLastLoginDate(), DateUtils.nowUTC()) >= threshold;
     }
 }

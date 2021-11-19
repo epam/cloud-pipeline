@@ -38,7 +38,7 @@ public class GroupStatusDaoTest extends AbstractSpringTest {
 
     @Test
     public void testGroupStatusCRUD() {
-        final GroupStatus groupStatusArgument = new GroupStatus(TEST_GROUP_1, false);
+        final GroupStatus groupStatusArgument = new GroupStatus(TEST_GROUP_1, false, null);
         final GroupStatus savedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(groupStatusArgument);
         Assert.assertEquals(TEST_GROUP_1, savedGroupStatus.getGroupName());
         Assert.assertFalse(savedGroupStatus.isBlocked());
@@ -47,7 +47,7 @@ public class GroupStatusDaoTest extends AbstractSpringTest {
         Assert.assertEquals(savedGroupStatus.getGroupName(), loadedGroupStatus.getGroupName());
         Assert.assertEquals(savedGroupStatus.isBlocked(), loadedGroupStatus.isBlocked());
 
-        final GroupStatus blockedGroupStatus = new GroupStatus(TEST_GROUP_1, true);
+        final GroupStatus blockedGroupStatus = new GroupStatus(TEST_GROUP_1, true, null);
         final GroupStatus updatedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(blockedGroupStatus);
         Assert.assertEquals(blockedGroupStatus.getGroupName(), updatedGroupStatus.getGroupName());
         Assert.assertTrue(updatedGroupStatus.isBlocked());
@@ -58,8 +58,8 @@ public class GroupStatusDaoTest extends AbstractSpringTest {
 
     @Test
     public void testGroupStatusLoadAll() {
-        final GroupStatus groupStatus1 = new GroupStatus(TEST_GROUP_1, false);
-        final GroupStatus groupStatus2 = new GroupStatus(TEST_GROUP_2, false);
+        final GroupStatus groupStatus1 = new GroupStatus(TEST_GROUP_1, false, null);
+        final GroupStatus groupStatus2 = new GroupStatus(TEST_GROUP_2, false, null);
         groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus1);
         groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus2);
         final Map<String, Boolean> loadedStatuses = groupStatusDao.loadAllGroupsBlockingStatuses()

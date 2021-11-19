@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -57,5 +58,13 @@ public final class DateUtils {
 
     public static long convertSecsToSecsOfMin(final long secs) {
         return secs % 60;
+    }
+
+    public static long daysBetweenDates(final LocalDateTime one, final LocalDateTime another) {
+        return Math.abs(Duration.between(one, another).toDays());
+    }
+
+    public static long hoursBetweenDates(final LocalDateTime one, final LocalDateTime another) {
+        return Math.abs(Duration.between(one, another).toHours());
     }
 }

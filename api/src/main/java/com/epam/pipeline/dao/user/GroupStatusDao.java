@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.user;
 
+import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.user.GroupStatus;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
@@ -58,18 +59,21 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
     enum GroupParameters {
         GROUP_NAME,
         GROUP_BLOCKED_STATUS,
-        GROUPS;
+        GROUPS,
+        GROUP_BLOCK_DATE;
 
         private static MapSqlParameterSource getParameters(final GroupStatus groupStatus) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(GROUP_NAME.name(), groupStatus.getGroupName());
             params.addValue(GROUP_BLOCKED_STATUS.name(), groupStatus.isBlocked());
+            params.addValue(GROUP_BLOCK_DATE.name(), groupStatus.getLastModifiedData());
             return params;
         }
 
         private static RowMapper<GroupStatus> getRowMapper() {
             return (rs, rowNum) -> new GroupStatus(rs.getString(GROUP_NAME.name()),
-                    rs.getBoolean(GROUP_BLOCKED_STATUS.name()));
+                    rs.getBoolean(GROUP_BLOCKED_STATUS.name()),
+                    DaoHelper.parseTimestamp(rs, GROUP_BLOCK_DATE.name()));
         }
 
         private static MapSqlParameterSource getNamesListParameters(final List<String> groupNames) {

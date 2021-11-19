@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
@@ -45,6 +46,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,6 +114,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private DataStorageManager dataStorageManager;
 
     private final AntPathMatcher matcher = new AntPathMatcher();
 
@@ -462,6 +467,38 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         monitoringNotificationDao.createMonitoringNotification(quotaNotificationMessage);
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyInactiveUsers(final List<PipelineUser> inactiveUsers) {
+        if (CollectionUtils.isEmpty(inactiveUsers)) {
+            LOGGER.debug("No inactive users found");
+            return;
+        }
+        final NotificationSettings notificationSettings =
+                notificationSettingsManager.load(NotificationType.INACTIVE_USERS);
+        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+            LOGGER.info("No template configured for users notifications or it was disabled!");
+            return;
+        }
+
+        final List<Long> ccUserIds = getCCUsers(notificationSettings);
+
+        final List<Long> storageIdsToLoad = inactiveUsers.stream()
+                .map(PipelineUser::getDefaultStorageId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        final Map<Long, String> userStorages = ListUtils.emptyIfNull(
+                dataStorageManager.getDatastoragesByIds(storageIdsToLoad)).stream()
+                .collect(Collectors.toMap(AbstractDataStorage::getId, AbstractDataStorage::getName));
+
+        final NotificationMessage notificationMessage = new NotificationMessage();
+        notificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
+        notificationMessage.setTemplateParameters(buildUsersTemplateArguments(inactiveUsers, userStorages));
+        notificationMessage.setCopyUserIds(ccUserIds);
+        monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+    }
+
     private List<Long> mapRecipientsToUserIds(List<NFSQuotaNotificationRecipient> recipients) {
         return recipients.stream()
             .map(NFSQuotaNotificationRecipient::getName)
@@ -709,5 +746,32 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return true;
         }
         return shouldNotify(runId, notificationSettings);
+    }
+
+    private Map<String, Object> buildUsersTemplateArguments(final List<PipelineUser> users,
+                                                            final Map<Long, String> userStorages) {
+        final Map<String, Object> templateArguments = new HashMap<>();
+        templateArguments.put("users", users.stream()
+                .map(user -> buildUserTemplateArguments(user, userStorages))
+                .collect(Collectors.toList()));
+        return templateArguments;
+    }
+
+    private Map<String, Object> buildUserTemplateArguments(final PipelineUser user,
+                                                           final Map<Long, String> userStorages) {
+        final Map<String, Object> userArguments = new HashMap<>();
+        userArguments.put("name", user.getUserName());
+        userArguments.put("email", user.getEmail());
+        if (Objects.nonNull(user.getDefaultStorageId())) {
+            userArguments.put("storage_name", userStorages.get(user.getDefaultStorageId()));
+        }
+        userArguments.put("registration_date", user.getRegistrationDate());
+        if (Objects.nonNull(user.getLastLoginDate())) {
+            userArguments.put("last_login_date", user.getLastLoginDate());
+        }
+        if (Objects.nonNull(user.getBlockDate())) {
+            userArguments.put("block_date", user.getBlockDate());
+        }
+        return userArguments;
     }
 }

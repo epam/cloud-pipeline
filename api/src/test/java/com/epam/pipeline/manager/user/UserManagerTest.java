@@ -209,15 +209,17 @@ public class UserManagerTest extends AbstractSpringTest {
         userManager.updateUserBlockingStatus(user.getId(), true);
         final PipelineUser blockedPipelineUser = userManager.loadUserById(user.getId());
         Assert.assertTrue(blockedPipelineUser.isBlocked());
+        Assert.assertNotNull(blockedPipelineUser.getBlockDate());
 
         userManager.updateUserBlockingStatus(user.getId(), false);
         final PipelineUser unblockedPipelineUser = userManager.loadUserById(user.getId());
         Assert.assertFalse(unblockedPipelineUser.isBlocked());
+        Assert.assertNull(unblockedPipelineUser.getBlockDate());
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateUserLoginDate() {
+    public void updateUserFirstLoginDate() {
         final PipelineUser user = createDefaultPipelineUser();
         Assert.assertNull(user.getFirstLoginDate());
 
@@ -225,6 +227,18 @@ public class UserManagerTest extends AbstractSpringTest {
         final PipelineUser loaded = userManager.loadUserById(user.getId());
 
         Assert.assertNotNull(loaded.getFirstLoginDate());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateUserLastLoginDate() {
+        final PipelineUser user = createDefaultPipelineUser();
+        Assert.assertNull(user.getLastLoginDate());
+
+        userManager.updateLastLoginDate(user);
+        final PipelineUser loaded = userManager.loadUserById(user.getId());
+
+        Assert.assertNotNull(loaded.getLastLoginDate());
     }
 
     @Test

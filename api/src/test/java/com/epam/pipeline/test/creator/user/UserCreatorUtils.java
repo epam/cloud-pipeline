@@ -99,7 +99,7 @@ public final class UserCreatorUtils {
     }
 
     public static GroupStatus getGroupStatus() {
-        return new GroupStatus(TEST_STRING, true);
+        return new GroupStatus(TEST_STRING, true, null);
     }
 
     public static UserInfo getUserInfo(final PipelineUser pipelineUser) {
