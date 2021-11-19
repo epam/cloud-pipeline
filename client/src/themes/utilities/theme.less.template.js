@@ -1117,6 +1117,10 @@ export default `
 
 @THEME .provider.aws {
   background-image: @aws-icon;
+  background-color: transparent;
+}
+@THEME .cp-search-container .provider.aws {
+  background-image: @aws-icon-light;
 }
 @THEME .provider.gcp {
   background-image: @gcp-icon;
@@ -1165,6 +1169,29 @@ export default `
 @THEME .cp-storage-region {
   background-color: @library-storage-region-background-color;
   color: @library-storage-region-color;
+}
+
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
 }
 
 @THEME @fn: @theme-transition-function;

@@ -95,7 +95,7 @@ export default class PipelinePreview extends React.Component {
         return (
           <div className={styles.contentPreview}>
             <span
-              className={'cp-search-preview-error'}
+              className="cp-search-preview-error"
             >
               {this.props.versions.error}
             </span>
@@ -138,7 +138,7 @@ export default class PipelinePreview extends React.Component {
         return (
           <div className={styles.contentPreview}>
             <span
-              className={'cp-search-preview-error'}
+              className="cp-search-preview-error"
             >
               {this.props.history.error}
             </span>
