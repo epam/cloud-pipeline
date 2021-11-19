@@ -7,9 +7,9 @@
 
 MESSAGE="$1"
 
-matched=$(grep -E "^.*(((I|i)ssue( |_)#)[1-9]+).*" "$MESSAGE")
+matched=$(grep -E "^.*(((I|i)ssue #)[1-9]+).*" "$MESSAGE")
 if [ -z "$matched" ] ; then
-    matched_undefined=$(grep -E "#(N|n)o( |_)(I|i)ssue#" "$MESSAGE")
+    matched_undefined=$(grep -E "#(N|n)o (I|i)ssue#" "$MESSAGE")
     if [ -n "$matched_undefined" ] ; then
       echo "[warning] You are committing without a issue number" >&1
     else
