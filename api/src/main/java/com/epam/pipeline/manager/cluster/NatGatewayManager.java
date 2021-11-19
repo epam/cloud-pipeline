@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
+
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
@@ -72,7 +74,6 @@ public class NatGatewayManager {
     private static final String UNKNOWN = "UNKNOWN";
     private static final String NEW_LINE = "\n";
     private static final String PORT_FORWARDING_RULE_ATTRIBUTE_DESCRIPTOR = ":";
-    private static final String HYPHEN = "-";
 
     private final NatGatewayDao natGatewayDao;
     private final KubernetesManager kubernetesManager;
@@ -82,7 +83,6 @@ public class NatGatewayManager {
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
     private final String hostsKey;
-    private final Map<String, String> tinyproxyLabelSelector;
 
     public NatGatewayManager(@Autowired final NatGatewayDao natGatewayDao,
                              @Autowired final KubernetesManager kubernetesManager,
@@ -104,8 +104,6 @@ public class NatGatewayManager {
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
         this.hostsKey = hostsKey;
-        this.tinyproxyLabelSelector = Collections.singletonMap(
-            KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName, KubernetesConstants.TRUE_LABEL_VALUE);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -184,8 +182,7 @@ public class NatGatewayManager {
     }
 
     private void processExternalPort(final Service service, final Map<String, String> labels, final Integer port) {
-        final Map<Integer, ServicePort> activePorts = service.getSpec().getPorts().stream()
-            .collect(Collectors.toMap(ServicePort::getPort, Function.identity()));
+        final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
         final String targetStatus = labels.get(getTargetStatusLabelName(port));
         final String currentStatus = labels.get(getCurrentStatusLabelName(port));
         if (!targetStatus.equals(currentStatus)) {
@@ -195,6 +192,11 @@ public class NatGatewayManager {
                 processScheduledTermination(service, activePorts, port);
             }
         }
+    }
+
+    private Map<Integer, ServicePort> getServiceActivePorts(final Service service) {
+        return service.getSpec().getPorts().stream()
+            .collect(Collectors.toMap(ServicePort::getPort, Function.identity()));
     }
 
     private Map<String, String> getServiceLabels(final Service service) {
@@ -234,12 +236,13 @@ public class NatGatewayManager {
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
         }
         if (activePorts.containsKey(port)
-            && !kubernetesManager.refreshDeployment(tinyproxyServiceName, tinyproxyLabelSelector)) {
+            && !refreshTinyProxy()) {
             return setStatusFailed(
                 serviceName, port,
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
 
         }
+        refreshKubeDns();
         return removeStatusLabels(service, port);
     }
 
@@ -272,13 +275,13 @@ public class NatGatewayManager {
             removePortForwardingRule(service, activePorts, port);
             removeDnsMaks(service, activePorts, port);
             removePortFromService(service, activePorts, port);
-            return kubernetesManager.refreshDeployment(tinyproxyServiceName, tinyproxyLabelSelector);
+            return refreshTinyProxy();
         }
         return true;
     }
 
     private boolean tryRefreshDeployment(final String serviceName, final Integer port) {
-        if (kubernetesManager.refreshDeployment(tinyproxyServiceName, tinyproxyLabelSelector)) {
+        if (refreshTinyProxy()) {
             updateStatusForRoutingRule(serviceName, port, NatRouteStatus.ACTIVE);
             return true;
         } else {
@@ -397,6 +400,19 @@ public class NatGatewayManager {
                                           route.getRouteId(), correspondingServiceName));
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
+        if (NatRouteStatus.CREATION_SCHEDULED.equals(route.getStatus())) {
+            final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
+            if (!activePorts.containsKey(externalPort)) {
+                final boolean portCreationResult = kubernetesManager.generateFreeTargetPort()
+                    .map(newPort -> kubernetesManager.addPortToExistingService(
+                        service.getMetadata().getName(), externalPort, newPort))
+                    .map(Optional::isPresent)
+                    .orElse(false);
+                if (!portCreationResult) {
+                    return false;
+                }
+            }
+        }
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
         final NatRouteStatus targetStatusInKube =
             NatRouteStatus.valueOf(extractStringFromLabels(service, targetStatusLabelName));
@@ -431,8 +447,7 @@ public class NatGatewayManager {
     private ServicePort buildNewServicePort(final String correspondingServiceName, final Integer externalPort,
                                             final IntOrString freeTargetPort) {
         final ServicePort newServicePort = new ServicePort();
-        newServicePort.setName(
-            String.join(HYPHEN, tinyproxyServiceName, correspondingServiceName, externalPort.toString()));
+        newServicePort.setName(kubernetesManager.getServicePortName(correspondingServiceName, externalPort));
         newServicePort.setTargetPort(freeTargetPort);
         newServicePort.setPort(externalPort);
         return newServicePort;
@@ -633,14 +648,25 @@ public class NatGatewayManager {
     }
 
     private boolean checkNewDnsRecord(final String externalName, final String clusterIP) {
-        if (!kubernetesManager.refreshDeployment(KubernetesConstants.SYSTEM_NAMESPACE, KubernetesConstants.KUBE_DNS_APP,
-                                                 Collections.singletonMap(KubernetesConstants.KUBERNETES_APP_LABEL,
-                                                                          KubernetesConstants.KUBE_DNS_APP))) {
+        if (!refreshKubeDns()) {
             log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
             return false;
         }
         final Set<String> resolvedAddresses = tryResolveAddress(externalName);
         return resolvedAddresses.size() == 1 && resolvedAddresses.contains(clusterIP);
+    }
+
+    private boolean refreshTinyProxy() {
+        return kubernetesManager.refreshDeployment(
+            tinyproxyServiceName,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+                                     KubernetesConstants.TRUE_LABEL_VALUE));
+    }
+
+    private boolean refreshKubeDns() {
+        return kubernetesManager.refreshDeployment(
+            KubernetesConstants.SYSTEM_NAMESPACE, KubernetesConstants.KUBE_DNS_APP,
+            Collections.singletonMap(KubernetesConstants.KUBERNETES_APP_LABEL, KubernetesConstants.KUBE_DNS_APP));
     }
 
     private String convertDnsRecordsListToString(final Set<String> dnsRecords) {
