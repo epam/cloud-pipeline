@@ -851,14 +851,14 @@ export default class Folder extends localization.LocalizedReactComponent {
         .fetch()
         .then(() => {
           if (request.loaded) {
-            const {toolsToMount = []} = request.value || {};
-            return Promise.resolve(toolsToMount);
+            const {toolsToMount = [], sourceStorageId} = request.value || {};
+            return Promise.resolve({toolsToMount, sourceStorageId});
           }
-          return Promise.resolve([]);
+          return Promise.resolve({});
         })
         .catch(() => {})
-        .then((toolsToMount) => {
-          this.setState({editableStorage: {toolsToMount, ...storage}});
+        .then((extra = {}) => {
+          this.setState({editableStorage: {...storage, ...extra}});
         });
     }
   };

@@ -246,6 +246,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getDeleteModalFooter = () => {
+    const isMirrorStorage = !!this.props.dataStorage && !!this.props.dataStorage.sourceStorageId;
     return (
       <Row type="flex" justify="space-between">
         <Col span={12}>
@@ -261,10 +262,17 @@ export class DataStorageEditDialog extends React.Component {
               id="edit-storage-delete-dialog-unregister-button"
               type="danger"
               onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
-            <Button
-              id="edit-storage-delete-dialog-delete-button"
-              type="danger"
-              onClick={() => this.onDeleteClicked(true)}>Delete</Button>
+            {
+              !isMirrorStorage && (
+                <Button
+                  id="edit-storage-delete-dialog-delete-button"
+                  type="danger"
+                  onClick={() => this.onDeleteClicked(true)}
+                >
+                  Delete
+                </Button>
+              )
+            }
           </Row>
         </Col>
       </Row>
