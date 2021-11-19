@@ -93,8 +93,6 @@ public class KubernetesManager {
     private static final int MILLIS_TO_SECONDS = 1000;
     private static final int CONNECTION_TIMEOUT_MS = 2 * MILLIS_TO_SECONDS;
     private static final int ATTEMPTS_STATUS_NODE = 60;
-    private static final long DEPLOYMENT_REFRESH_TIMEOUT_SEC = 3;
-    private static final int DEPLOYMENT_REFRESH_RETRIES = 10;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
     private static final int NODE_PULL_TIMEOUT = 200;
@@ -123,6 +121,12 @@ public class KubernetesManager {
 
     @Value("${kube.default.service.target.port:1000}")
     private Integer defaultKubeServiceTargetPort;
+
+    @Value("${kube.deployment.refresh.timeout.sec:3}")
+    private Integer deploymentRefreshTimeoutSec;
+
+    @Value("${kube.deployment.refresh.retries:15}")
+    private Integer deploymentRefreshRetries;
 
     public List<Service> getServicesByLabel(final String label) {
         return getServicesByLabel(SERVICE_ROLE_LABEL, label);
@@ -330,17 +334,18 @@ public class KubernetesManager {
             deploymentAPIClient.updateDeployment(namespace, deploymentName);
             try (KubernetesClient client = getKubernetesClient()) {
                 return waitForPodsStartup(client, namespace, labelSelector,
-                                          DEPLOYMENT_REFRESH_RETRIES, DEPLOYMENT_REFRESH_TIMEOUT_SEC);
+                                          deploymentRefreshRetries, deploymentRefreshTimeoutSec);
             }
         } catch (RuntimeException e) {
-            log.warn(messageHelper.getMessage(MessageConstants.ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED, e.getMessage()));
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED,
+                                              namespace, deploymentName, e.getMessage()));
             return false;
         }
     }
 
     private boolean waitForPodsStartup(final KubernetesClient client, final String namespace,
                                        final Map<String, String> labelSelector, final int retries,
-                                       final long retryTimeoutSeconds) {
+                                       final int retryTimeoutSeconds) {
         long attempts = retries;
         while (!podsAreReady(client, namespace, labelSelector)) {
             LOGGER.debug("Waiting for pods in [{},{}] to be ready.", namespace, labelSelector);
@@ -416,7 +421,7 @@ public class KubernetesManager {
     public Optional<ServicePort> addPortToExistingService(final String serviceName,
                                                           final Integer externalPort, final Integer internalPort) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final ServicePort newPortSpec = getTcpPortSpec(serviceName + "-" + externalPort.toString(),
+            final ServicePort newPortSpec = getTcpPortSpec(getServicePortName(serviceName, externalPort),
                                                            externalPort, internalPort);
             client.services()
                 .inNamespace(kubeNamespace)
@@ -430,6 +435,10 @@ public class KubernetesManager {
         } catch (RuntimeException e) {
             return Optional.empty();
         }
+    }
+
+    public String getServicePortName(final String serviceName, final Integer externalPort) {
+        return serviceName + KubernetesConstants.HYPHEN + externalPort.toString();
     }
 
     public boolean removePortFromExistingService(final String serviceName, final String portName) {
@@ -912,7 +921,7 @@ public class KubernetesManager {
                 return;
             }
             final String serviceName = resolveNodeServiceName(instance.getNodeIP());
-            createServiceIfNotExists(serviceName, port, port);
+            createServiceIfNotExists(serviceName, port, port, false);
             createEndpointsIfNotExists(serviceName, instance.getNodeIP(), port);
         }
     }
@@ -929,22 +938,26 @@ public class KubernetesManager {
         return "ip-" + ip.replace(".", "-");
     }
 
-    private Service createServiceIfNotExists(final String name, final int port, final int targetPort) {
+    public Service createServiceIfNotExists(final String name, final int port, final int targetPort,
+                                            final boolean setPortName) {
         try (KubernetesClient client = getKubernetesClient()) {
             final Optional<Service> service = findServiceByName(client, name);
             if (service.isPresent()) {
                 LOGGER.debug("Service with name '{}' already exists", name);
                 return service.get();
             }
-            return createService(client, name, port, targetPort);
+            return createService(client, name, port, targetPort, setPortName);
         }
     }
 
     private Service createService(final KubernetesClient client, final String name, final int port, 
-                                  final int targetPort) {
+                                  final int targetPort, final boolean setPortName) {
         final ServicePort servicePort = new ServicePort();
         servicePort.setPort(port);
         servicePort.setTargetPort(new IntOrString(targetPort));
+        if(setPortName) {
+            servicePort.setName(getServicePortName(name, port));
+        }
         return createService(client, name, Collections.emptyMap(), Collections.singletonList(servicePort));
     }
 
