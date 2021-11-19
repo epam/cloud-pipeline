@@ -21,8 +21,6 @@ import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
-import com.epam.pipeline.entity.notification.NotificationGroup;
-import com.epam.pipeline.entity.notification.NotificationType;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -41,7 +39,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.notification.NotificationGroup;
+import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -67,9 +71,6 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
-import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.NotificationSettings;
-import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -136,6 +137,10 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
 
         if (!noneMatchExcludedInstanceType(run, instanceTypesToExclude)) {
+            return;
+        }
+
+        if (matchExcludeRunParameters(run, parseRunExcludeParams())) {
             return;
         }
 
@@ -299,10 +304,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+        final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
 
         final List<Pair<PipelineRun, Double>> filtered = pipelineCpuRatePairs.stream()
                 .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), notificationType, idleRunSettings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
+                .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
                 .collect(Collectors.toList());
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(idleRunSettings, ccUserIds, pipelineOwners, idleCpuLevel, pair))
@@ -689,10 +696,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+        final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
 
         final List<Long> ccUsers = getCCUsers(settings);
         final List<PipelineRun> filtered = pausedRuns.stream()
                 .filter(run -> noneMatchExcludedInstanceType(run, instanceTypesToExclude))
+                .filter(run -> !matchExcludeRunParameters(run, runParametersFilters))
                 .filter(run -> isRunStuckInStatus(settings, now, threshold, run))
                 .collect(Collectors.toList());
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwnersFromRuns(filtered);
@@ -773,5 +782,38 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             userArguments.put("block_date", user.getBlockDate());
         }
         return userArguments;
+    }
+
+    private Map<String, NotificationFilter> parseRunExcludeParams() {
+        final Map<String, NotificationFilter> excludeParams = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_NOTIFICATIONS_EXCLUDE_PARAMS);
+
+        if (CollectionUtils.isEmpty(excludeParams)) {
+            return Collections.emptyMap();
+        }
+
+        return excludeParams;
+    }
+
+    private boolean matchExcludeRunParameters(final PipelineRun run,
+                                              final Map<String, NotificationFilter> filters) {
+        if (CollectionUtils.isEmpty(filters) || CollectionUtils.isEmpty(run.getPipelineRunParameters())) {
+            return false;
+        }
+
+        return run.getPipelineRunParameters().stream()
+                .filter(parameter -> filters.containsKey(parameter.getName()))
+                .anyMatch(parameter -> matchFilter(filters.get(parameter.getName()), parameter.getValue()));
+    }
+
+    private boolean matchFilter(final NotificationFilter filter, final String currentValue) {
+        switch (filter.getOperator()) {
+            case EQUAL:
+                return Objects.equals(currentValue, filter.getValue());
+            case NOT_EQUAL:
+                return !Objects.equals(currentValue, filter.getValue());
+            default:
+                return false;
+        }
     }
 }
