@@ -22,7 +22,6 @@ import {Alert, Button, Col, Icon, Input, Modal, Row, Select, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
-import FolderLoad from '../../../../models/folders/FolderLoad';
 import LoadingView from '../../../special/LoadingView';
 import {
   expandItem,
@@ -34,13 +33,15 @@ import {
 } from '../../model/treeStructureFunctions';
 
 import styles from './Browser.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject(({routing}, params) => ({
-  tree: new FolderLoad(params.initialFolderId ? params.initialFolderId : null)
+@inject('folders')
+@inject(({routing, folders}, params) => ({
+  tree: folders.loadWithoutMetadata(params.initialFolderId ? params.initialFolderId : null)
 }))
+@HiddenObjects.injectTreeFilter
 @observer
 export default class MetadataBrowser extends React.Component {
-
   static propTypes = {
     initialFolderId: PropTypes.number,
     visible: PropTypes.bool,
@@ -233,7 +234,8 @@ export default class MetadataBrowser extends React.Component {
         false,
         folder,
         [],
-        [ItemTypes.metadata]
+        [ItemTypes.metadata],
+        this.props.hiddenObjectsTreeFilter()
       );
       folder.isLeaf = folder.children.length === 0;
       folder.expanded = true;
@@ -570,6 +572,9 @@ export default class MetadataBrowser extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
+    if (prevProps.initialFolderId !== this.props.initialFolderId) {
+      this.props.tree.invalidateCache();
+    }
     if (prevProps.initialFolderId !== this.props.initialFolderId ||
       prevProps.visible !== this.props.visible) {
       this.updateState();
@@ -580,4 +585,7 @@ export default class MetadataBrowser extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    this.props.tree.invalidateCache();
+  }
 }

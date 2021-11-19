@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.manager.issue;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+import org.springframework.security.access.AccessDeniedException;
 
 public class AttachmentFileManagerTest {
     private static final String TEST_SYSTEM_DATA_STORAGE = "testStorage";
@@ -61,7 +65,8 @@ public class AttachmentFileManagerTest {
 
     private AttachmentFileManager attachmentFileManager;
 
-    private S3bucketDataStorage testSystemDataStorage = new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "//");
+    private final S3bucketDataStorage testSystemDataStorage =
+            new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "test");
 
     @Before
     public void setUp() throws Exception {
@@ -129,5 +134,30 @@ public class AttachmentFileManagerTest {
         verify(dataStorageManager).loadByNameOrId(TEST_SYSTEM_DATA_STORAGE);
         verify(attachmentManager).load(1L);
         verify(dataStorageManager).getStreamingContent(testSystemDataStorage.getId(), TEST_ATTACHMENT_PATH, null);
+    }
+
+    @Test
+    public void testDeleteAttachmentForAdmin() {
+        doReturn(true).when(authManager).isAdmin();
+
+        attachmentFileManager.deleteAttachment(anyLong());
+
+        verify(attachmentManager).load(anyLong());
+    }
+
+    @Test
+    public void testDeleteAttachmentForOwnerUser() {
+        final Attachment attachment = new Attachment();
+        attachment.setOwner(TEST_USER);
+        when(attachmentManager.load(Mockito.anyLong())).thenReturn(attachment);
+
+        attachmentFileManager.deleteAttachment(anyLong());
+
+        verify(attachmentManager).load(anyLong());
+    }
+
+    @Test
+    public void testDeleteAttachmentFail() {
+        assertThrows(AccessDeniedException.class, () -> attachmentFileManager.deleteAttachment(anyLong()));
     }
 }

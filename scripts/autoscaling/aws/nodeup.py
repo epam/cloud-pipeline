@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import logging
 import os
 import pytz
 from botocore.exceptions import ClientError
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents, pack_powershell_script_contents
 from itertools import groupby
 from operator import itemgetter
 from random import randint
@@ -34,6 +34,7 @@ import fnmatch
 import sys
 import math
 import socket
+import jwt
 
 SPOT_UNAVAILABLE_EXIT_CODE = 5
 LIMIT_EXCEEDED_EXIT_CODE = 6
@@ -46,11 +47,29 @@ NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 BOTO3_RETRY_COUNT = 6
 MIN_SWAP_DEVICE_SIZE = 5
+LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
+DEFAULT_FS_TYPE = 'btrfs'
+SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 
 current_run_id = 0
 api_url = None
 api_token = None
 script_path = None
+
+
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
 
 
 def pipe_log_init(run_id):
@@ -62,7 +81,7 @@ def pipe_log_init(run_id):
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -72,7 +91,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
@@ -89,7 +108,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -143,18 +162,50 @@ def get_cloud_config_section(aws_region, section_name):
     else:
         return None
 
+# FIXME: this method shall be synced with the pipe-common/autoscaling/awsprovider.py
+def get_networks_config(ec2, aws_region, instance_type):
+    allowed_networks = get_cloud_config_section(aws_region, "networks")
+    valid_networks = {}
 
-def get_networks_config(aws_region):
-    return get_cloud_config_section(aws_region, "networks")
+    if allowed_networks and len(allowed_networks) > 0:
+        try:
+            allowed_networks_details = ec2.describe_subnets(SubnetIds=allowed_networks.values())['Subnets']
+            
+            # Get the list of AZs, which offer the "instance_type", as some of the AZs can't provide certain types and an error is thrown:
+            #   Your requested instance type (xxxxx) is not supported in your requested Availability Zone (xxxxx)
+            # The list of valid AZs will be placed into "instance_type_offerings_az_list"
+            instance_type_offerings = ec2.describe_instance_type_offerings(
+                LocationType='availability-zone',
+                Filters=[
+                    {
+                        'Name': 'instance-type',
+                        'Values': [ instance_type ]
+                    }
+                ]
+            )
+            instance_type_offerings_az_list = [x['Location'] for x in instance_type_offerings['InstanceTypeOfferings']]
+            instance_type_offerings_az_list_empty = len(instance_type_offerings_az_list) == 0
+            if instance_type_offerings_az_list_empty:
+                pipe_log('Empty list for the instance type offerings. Considering this as "All AZs offer this type"')
+            else:
+                pipe_log('Instance type {} is available only in the following AZs: {}'.format(instance_type, instance_type_offerings_az_list))
 
+            for network in allowed_networks_details:
+                subnet_id = network['SubnetId']
+                az_name = network['AvailabilityZone']
+                subnet_ips = int(network['AvailableIpAddressCount'])
+                az_provides_instance_type = az_name in instance_type_offerings_az_list or instance_type_offerings_az_list_empty
+                pipe_log('Subnet {} in {} zone has {} available IP addresses. Offers {} instance type: {}'.format(subnet_id, az_name, str(subnet_ips), instance_type, az_provides_instance_type))
+                if subnet_ips > 0 and az_provides_instance_type:
+                    valid_networks.update({ az_name: subnet_id })
+        except Exception as allowed_networks_details_e:
+            pipe_log_warn('Cannot get the details of the subnets, so we do not validate subnet usage:\n' + str(allowed_networks_details_e))
+            valid_networks = allowed_networks
+
+    return valid_networks
 
 def get_instance_images_config(aws_region):
     return get_cloud_config_section(aws_region, "amis")
-
-
-def get_allowed_zones(aws_region):
-    return list(get_networks_config(aws_region).keys())
-
 
 def get_security_groups(aws_region):
     config = get_cloud_config_section(aws_region, "security_group_ids")
@@ -165,26 +216,38 @@ def get_security_groups(aws_region):
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
-def get_allowed_instance_image(aws_region, instance_type, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script }
+    default_embedded_scripts = None
+    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None }
 
-    instance_images_config = get_instance_images_config(aws_region)
+    instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
         return default_object
 
     for image_config in instance_images_config:
+        image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
-        init_script = None
-        if "init_script" in image_config:
-            init_script = image_config["init_script"]
-        else:
-            init_script = default_object["init_script"]
-        if fnmatch.fnmatch(instance_type, instance_mask):
-            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script":  init_script}
+        init_script = image_config.get("init_script", default_object["init_script"])
+        embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
+        fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
+        additional_spec = image_config.get("additional_spec", None)
+        if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
+            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+                     "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec}
 
     return default_object
+
+def get_possible_kube_node_names(ec2, ins_id):
+    try:
+        response = ec2.describe_instances(InstanceIds=[ins_id])
+        nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
+        nodename = nodename_full.split('.', 1)[0]
+        return [nodename, nodename_full, ins_id]
+    except:
+        return []
 
 #############################
 
@@ -193,7 +256,7 @@ ROOT_DEVICE_DEFAULT = {
                         "Ebs": {"VolumeSize": 40}
                       }
 
-def root_device(ec2, ins_img):
+def root_device(ec2, ins_img, kms_encyr_key_id):
     try:
         pipe_log('- Getting image {} block device mapping details'.format(ins_img))
         img_details = ec2.describe_images(ImageIds=[ins_img])
@@ -215,6 +278,9 @@ def root_device(ec2, ins_img):
             "DeviceName": block_device_name,
             "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
         }
+        if kms_encyr_key_id:
+            device_spec["Ebs"]["Encrypted"] = True
+            device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
         return device_spec
     except Exception as e:
         pipe_log('Error while getting image {} root device, using default device: {}\n{}'.format(ins_img,
@@ -237,14 +303,29 @@ def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
     return block_device_spec
 
 
-def resource_tags():
+def resource_tags(cloud_region):
     tags = []
+    region_tags = get_cloud_config_section(cloud_region, "tags")
     config_regions, config_tags = load_cloud_config()
-    if config_tags is None:
+    merged_tags = merge_tags(region_tags, config_tags)
+    if merged_tags is None:
         return tags
-    for key, value in config_tags.iteritems():
+    for key, value in merged_tags.iteritems():
         tags.append({"Key": key, "Value": value})
     return tags
+
+
+def merge_tags(region_tags, global_tags):
+    if region_tags is None:
+        return global_tags
+    if global_tags is None:
+        return region_tags
+    merged = {}
+    for key, value in global_tags.iteritems():
+        merged[key] = value
+    for key, value in region_tags.iteritems():
+        merged[key] = value
+    return merged
 
 
 def run_id_tag(run_id):
@@ -254,9 +335,9 @@ def run_id_tag(run_id):
     }]
 
 
-def get_tags(run_id):
+def get_tags(run_id, cloud_region):
     tags = run_id_tag(run_id)
-    res_tags = resource_tags()
+    res_tags = resource_tags(cloud_region)
     if res_tags:
         tags.extend(res_tags)
     return tags
@@ -269,34 +350,37 @@ def run_id_filter(run_id):
            }
 
 
-def run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
+def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
+                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client, pre_pull_images,
+                 instance_additional_spec):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
+                                            kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep, swap_size)
+                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                                num_rep, time_rep, swap_size)
+                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
-                           swap_size):
+                           swap_size, kube_client, instance_additional_spec):
     pipe_log('Creating on demand instance')
-    allowed_networks = get_networks_config(aws_region)
-    additional_args = {}
+    allowed_networks = get_networks_config(ec2, aws_region, ins_type)
+    additional_args = instance_additional_spec if instance_additional_spec else {}
     subnet_id = None
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks)-1)
         az_name = allowed_networks.items()[az_num][0]
         subnet_id = allowed_networks.items()[az_num][1]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
-        additional_args = { 'SubnetId': subnet_id, 'SecurityGroupIds': get_security_groups(aws_region)}
+        additional_args.update({ 'SubnetId': subnet_id, 'SecurityGroupIds': get_security_groups(aws_region)})
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-        additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
+        additional_args.update({ 'SecurityGroupIds': get_security_groups(aws_region)})
     response = {}
     try:
         response = ec2.run_instances(
@@ -306,11 +390,11 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             KeyName=ins_key,
             InstanceType=ins_type,
             UserData=user_data_script,
-            BlockDeviceMappings=get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
+            BlockDeviceMappings=get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size),
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
-                    "Tags": get_tags(run_id)
+                    "Tags": get_tags(run_id, aws_region)
                 }
             ],
             **additional_args
@@ -338,10 +422,11 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                                 rep,
                                 'Exceeded retry count ({}) for instance ({}) status check'.format(num_rep, ins_id),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=kube_client)
     pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
 
-    ebs_tags = resource_tags()
+    ebs_tags = resource_tags(aws_region)
     if ebs_tags:
         instance_description = ec2.describe_instances(InstanceIds=[ins_id])['Reservations'][0]['Instances'][0]
         volumes = instance_description['BlockDeviceMappings']
@@ -353,8 +438,19 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     return ins_id, ins_ip
 
 
-def get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
-    block_devices = [root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)]
+def get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size):
+    # Add root device
+    block_devices = [root_device(ec2, ins_img, kms_encyr_key_id)]
+
+    # Check if this is one of 'x5d' instance types (e.g. c5d), which support super fast local SSD
+    # For these instance - we don't create "general" EBS-SSDs
+    local_nvme_family = next(iter([ x for x in LOCAL_NVME_INSTANCE_TYPES if ins_type.startswith(x) ]), None)
+    if local_nvme_family:
+        pipe_log('Instance type family supports local NVME ({}). Will NOT create EBS volume'.format(ins_type))
+    else:
+        block_devices.append(block_device(ins_hdd, kms_encyr_key_id))
+
+    # Add SWAP, if requested
     if swap_size is not None and swap_size > 0:
         block_devices.append(block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
     return block_devices
@@ -493,8 +589,23 @@ def get_swap_ratio(swap_params):
                     pipe_log("Unexpected swap_ratio value: {}".format(item_value))
     return None
 
-def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
-    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
+
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script\
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images))\
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images):
+    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
@@ -503,29 +614,47 @@ def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, 
         init_script.close()
         user_data_script = replace_proxies(aws_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        user_data_script = replace_docker_images(pre_pull_images, user_data_script)
+        fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
+        if fs_type not in SUPPORTED_FS_TYPES:
+            pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
+                          (fs_type, DEFAULT_FS_TYPE))
+            fs_type = DEFAULT_FS_TYPE
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
-                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-                                            .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token)
-
-        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
-        # to minimize the size of the user data
-        # Otherwise - raw script will be used
-        try:
-            from pipeline import pack_script_contents
-            return pack_script_contents(user_data_script)
-        except:
-            return user_data_script
+                                           .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                           .replace('@KUBE_IP@', kube_ip) \
+                                           .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                           .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                           .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                           .replace('@API_URL@', api_url) \
+                                           .replace('@API_TOKEN@', api_token) \
+                                           .replace('@API_USER@', api_user) \
+                                           .replace('@FS_TYPE@', fs_type)
+        embedded_scripts = {}
+        if allowed_instance["embedded_scripts"]:
+            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+                embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
+        if ins_platform == 'windows':
+            return pack_powershell_script_contents(user_data_script, embedded_scripts)
+        else:
+            return pack_script_contents(user_data_script, embedded_scripts)
     else:
         raise RuntimeError('Unable to get init.sh path')
 
 
 def get_current_status(ec2, ins_id):
-    response = ec2.describe_instance_status(InstanceIds=[ins_id])
-    if len(response['InstanceStatuses']) > 0:
-        return response['InstanceStatuses'][0]['InstanceState']['Code']
-    else:
-        return -1
+    try:
+        response = ec2.describe_instance_status(InstanceIds=[ins_id])
+        if len(response['InstanceStatuses']) > 0:
+            return response['InstanceStatuses'][0]['InstanceState']['Code']
+        else:
+            return -1
+    except ClientError as client_error:
+        if 'does not exist' in client_error.message:
+            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, client_error.message))
+            return -1
+        else:
+            raise client_error
 
 def poll_instance(sock, timeout, ip, port):
     result = -1
@@ -537,7 +666,7 @@ def poll_instance(sock, timeout, ip, port):
     sock.settimeout(None)
     return result
 
-def check_instance(ec2, ins_id, run_id, num_rep, time_rep):
+def check_instance(ec2, ins_id, run_id, num_rep, time_rep, kube_client):
     pipe_log('Checking instance ({}) boot state'.format(ins_id))
     port=8888
     response = ec2.describe_instances(InstanceIds=[ins_id])
@@ -553,11 +682,12 @@ def check_instance(ec2, ins_id, run_id, num_rep, time_rep):
         result = poll_instance(sock, time_rep, ipaddr, port)
         rep = increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=kube_client)
     pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
 
 
-def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region):
+def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels):
     pipe_log('Assigning instance {} to RunID: {}'.format(nodename, run_id))
     obj = {
         "apiVersion": "v1",
@@ -570,6 +700,13 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region):
             }
         }
     }
+    if additional_labels:
+        for label in additional_labels:
+            label_parts = label.split("=")
+            if len(label_parts) == 1:
+                obj["metadata"]["labels"][label_parts[0]] = None
+            else:
+                obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
 
     if cluster_name:
         obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name
@@ -608,10 +745,7 @@ def verify_run_id(ec2, run_id):
 
 
 def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
-    response = ec2.describe_instances(InstanceIds=[ins_id])
-    nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
-    nodename = nodename_full.split('.', 1)[0]
-    nodenames = [nodename, nodename_full, ins_id]
+    nodenames = get_possible_kube_node_names(ec2, ins_id)
     pipe_log('Waiting for instance {} registration in cluster with name(s) {}'.format(ins_id, nodenames))
 
     ret_namenode = ''
@@ -621,8 +755,10 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
         if ret_namenode:
             break
         rep = increment_or_fail(num_rep, rep,
-                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename),
-                                kill_instance_id_on_fail=ins_id)
+                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodenames),
+                                ec2_client=ec2,
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=api)
         sleep(time_rep)
 
     if ret_namenode:  # useless?
@@ -636,7 +772,9 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
                 break
             rep = increment_or_fail(num_rep, rep,
                                     'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube node READY check'.format(num_rep, ins_id, ret_namenode),
-                                    kill_instance_id_on_fail=ins_id)
+                                    ec2_client=ec2,
+                                    kill_instance_id_on_fail=ins_id,
+                                    kube_client=api)
             sleep(time_rep)
 
         rep = 0
@@ -651,13 +789,16 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
             pipe_log('- {} of {} agents initialized. Still waiting...'.format(ready_pods, count_pods))
             rep = increment_or_fail(num_rep, rep,
                                     'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode),
-                                    kill_instance_id_on_fail=ins_id)
+                                    ec2_client=ec2,
+                                    kill_instance_id_on_fail=ins_id,
+                                    kube_client=api)
             sleep(time_rep)
-        pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, nodename))
+        pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, ret_namenode))
     return ret_namenode
 
 
-def terminate_instance(ec2_client, instance_id, spot_request_id=None):
+def terminate_instance(ec2_client, instance_id, spot_request_id=None, kube_client=None):
+    # Kill AWS instance    
     if not instance_id or len(instance_id) == 0:
         pipe_log('[ERROR] None or empty string specified when calling terminate_instance, nothing will be done')
         return
@@ -665,7 +806,7 @@ def terminate_instance(ec2_client, instance_id, spot_request_id=None):
     try:
         if spot_request_id:
             pipe_log('Cancel Spot request ({})'.format(spot_request_id))
-            ec2_client.cancel_spot_instance_requests(request_ids=[spot_request_id])
+            ec2_client.cancel_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
 
         response = ec2_client.terminate_instances(
             InstanceIds=[
@@ -687,7 +828,23 @@ def terminate_instance(ec2_client, instance_id, spot_request_id=None):
 
     pipe_log('Instance {} state is changed from {} to {}'.format(instance_id, prev_state, current_state))
 
-def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instance_id_on_fail=None):
+    # Kill kube node as well (if it was able to register)
+    if kube_client:
+        kube_node_names = get_possible_kube_node_names(ec2_client, instance_id)
+        kube_node_real_name = find_node(kube_node_names, kube_client)
+        if kube_node_real_name:
+            pipe_log('Node {} has been found in the kube cluster - it will be deleted'.format(kube_node_real_name))
+            try:
+                kube_node = pykube.Node.objects(kube_client).get(name=kube_node_real_name)
+                kube_node.delete()
+                pipe_log('Node {} has been deleted from the kube cluster'.format(kube_node_real_name))
+            except Exception as node_delete_exception:
+                pipe_log('[ERROR] Cannot delete node {} from the kube cluster:\n{}'.format(kube_node_real_name, str(node_delete_exception)))
+        else:
+            pipe_log('Node {} was not found in the kube cluster'.format(kube_node_real_name))
+
+
+def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instance_id_on_fail=None, kube_client=None):
     rep = rep + 1
     if rep > num_rep:
         if kill_instance_id_on_fail:
@@ -697,7 +854,7 @@ def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instanc
             instance = ec2_client.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
             if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
                 spot_request_id = instance['SpotInstanceRequestId']
-            terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id)
+            terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id, kube_client)
         raise RuntimeError(error_message)
     return rep
 
@@ -731,7 +888,7 @@ def get_availability_zones(ec2):
 
 def get_spot_prices(ec2, aws_region, instance_type, hours=3):
     prices = []
-    allowed_networks = get_networks_config(aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region, instance_type)
     if allowed_networks and len(allowed_networks) > 0:
         zones = list(allowed_networks.keys())
     else:
@@ -759,13 +916,13 @@ def exit_if_spot_unavailable(run_id, last_status):
 
 def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
-                       swap_size):
+                       swap_size, kube_client, instance_additional_spec):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
     spot_prices = get_spot_prices(ec2, aws_region, ins_type)
 
-    allowed_networks = get_networks_config(aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     cheapest_zone = ''
     if len(spot_prices) == 0:
         pipe_log('- Unable to get prices for a spot of type {}, cheapest zone can not be determined'.format(ins_type))
@@ -779,7 +936,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
+            'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size),
         }
     if allowed_networks and cheapest_zone in allowed_networks:
         subnet_id = allowed_networks[cheapest_zone]
@@ -790,6 +947,9 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     else:
         pipe_log('- Networks list NOT found or cheapest zone can not be determined, default subnet in a random AZ will be used')
         specifications['SecurityGroupIds'] = get_security_groups(aws_region)
+
+    if instance_additional_spec:
+        specifications.update(instance_additional_spec)
 
     current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
 
@@ -876,16 +1036,17 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
                                 'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
                                 .format(num_rep, status),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=kube_client)
                 sleep(time_rep)
                 continue
             ins_ip = instance_reservation['PrivateIpAddress']
             ec2.create_tags(
                 Resources=[ins_id],
-                Tags=get_tags(run_id),
+                Tags=get_tags(run_id, aws_region),
             )
 
-            ebs_tags = resource_tags()
+            ebs_tags = resource_tags(aws_region)
             if ebs_tags:
                 volumes = instance_reservation['BlockDeviceMappings']
                 for volume in volumes:
@@ -917,7 +1078,7 @@ def wait_for_fulfilment(status):
            or status == 'pending-fulfillment' or status == 'fulfilled'
 
 
-def check_spot_request_exists(ec2, num_rep, run_id, time_rep):
+def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region):
     pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
     for interation in range(0, 5):
         spot_req = get_spot_req_by_run_id(ec2, run_id)
@@ -942,7 +1103,7 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep):
                         exit_if_spot_unavailable(run_id, status)
                         return '', ''
                 if  instance_is_active(ec2, spot_req['InstanceId']):
-                    return tag_and_get_instance(ec2, spot_req, run_id)
+                    return tag_and_get_instance(ec2, spot_req, run_id, aws_region)
         sleep(5)
     pipe_log('No spot request for RunID {} found\n-'.format(run_id))
     return '', ''
@@ -957,7 +1118,7 @@ def get_spot_req_by_run_id(ec2, run_id):
     return None
 
 
-def tag_and_get_instance(ec2, spot_req, run_id):
+def tag_and_get_instance(ec2, spot_req, run_id, aws_region):
     ins_id = spot_req['InstanceId']
     pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
     instance = ec2.describe_instances(InstanceIds=[ins_id])
@@ -965,7 +1126,7 @@ def tag_and_get_instance(ec2, spot_req, run_id):
     if not tag_name_is_present(instance):  # create tag name if not presents
         ec2.create_tags(
             Resources=[ins_id],
-            Tags=get_tags(run_id),
+            Tags=get_tags(run_id, aws_region),
         )
         pipe_log('Tag ({}) created for instance ({})\n-'.format(run_id, ins_id))
     else:
@@ -993,14 +1154,19 @@ def main():
     parser.add_argument("--ins_type", type=str, default='m4.large')
     parser.add_argument("--ins_hdd", type=int, default=30)
     parser.add_argument("--ins_img", type=str, default='ami-f68f3899')
+    parser.add_argument("--ins_platform", type=str, default='linux')
     parser.add_argument("--num_rep", type=int, default=250) # 250 x 3s = 12.5m
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
     parser.add_argument("--bid_price", type=float, default=1.0)
     parser.add_argument("--kube_ip", type=str, required=True)
     parser.add_argument("--kubeadm_token", type=str, required=True)
+    parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
+    parser.add_argument("--kube_node_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
     args, unknown = parser.parse_known_args()
     ins_key = args.ins_key
@@ -1008,6 +1174,10 @@ def main():
     ins_type = args.ins_type
     ins_hdd = args.ins_hdd
     ins_img = args.ins_img
+    ins_platform = args.ins_platform
+    # Java may pass 'null' (literally) instead of the empty parameter
+    if ins_platform == 'null':
+        ins_platform = 'linux'
     num_rep = args.num_rep
     time_rep = args.time_rep
     is_spot = args.is_spot
@@ -1016,9 +1186,12 @@ def main():
     cluster_role = args.cluster_role
     kube_ip = args.kube_ip
     kubeadm_token = args.kubeadm_token
+    kubeadm_cert_hash = args.kubeadm_cert_hash
+    kube_node_token = args.kube_node_token
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
-
+    pre_pull_images = args.image
+    additional_labels = args.label
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -1032,12 +1205,14 @@ def main():
              '- Type: {}\n'
              '- Disk: {}\n'
              '- Image: {}\n'
+             '- Platform: {}\n'
              '- IsSpot: {}\n'
              '- BidPrice: {}\n-'.format(aws_region,
                                         run_id,
                                         ins_type,
                                         ins_hdd,
                                         ins_img,
+                                        ins_platform,
                                         str(is_spot),
                                         str(bid_price)))
 
@@ -1061,31 +1236,41 @@ def main():
         else:
             ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
-
-
-        # Redefine default instance image if cloud metadata has specific rules for instance type
-        allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
-        if allowed_instance and allowed_instance["instance_mask"]:
-            pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
-                                                                                                                                              ami=allowed_instance["instance_mask_ami"],
-                                                                                                                                              instance_type=ins_type))
-            ins_img = allowed_instance["instance_mask_ami"]
-
-        ins_id, ins_ip = verify_run_id(ec2, run_id)
-        if not ins_id:
-            ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep)
-
-        if not ins_id:
-            ins_id, ins_ip = run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
-                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token)
-
-        check_instance(ec2, ins_id, run_id, num_rep, time_rep)
-
+        # Setup kubernetes client
         api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
         api.session.verify = False
 
+        instance_additional_spec = None
+        allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img)
+        if allowed_instance and allowed_instance["instance_mask"]:
+            pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
+            instance_additional_spec = allowed_instance["additional_spec"]
+            if instance_additional_spec:
+                pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))    
+        if not ins_img or ins_img == 'null':
+            if allowed_instance and allowed_instance["instance_mask_ami"]:
+                ins_img = allowed_instance["instance_mask_ami"]
+                pipe_log('Instance image was not provided explicitly, {instance_image} will be used (retrieved for {instance_mask}/{instance_type} rule)'.format(instance_image=allowed_instance["instance_mask_ami"], 
+                                                                                                                                                                 instance_mask=allowed_instance["instance_mask"],
+                                                                                                                                                                 instance_type=ins_type))
+        else:
+            pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
+
+        ins_id, ins_ip = verify_run_id(ec2, run_id)
+        if not ins_id:
+            ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region)
+
+        if not ins_id:
+            api_url = os.environ["API"]
+            api_token = os.environ["API_TOKEN"]
+            api_user = os.environ["API_USER"]
+            ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
+                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api, pre_pull_images, instance_additional_spec)
+
+        check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
+
         nodename = verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api)
-        label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region)
+        label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels)
         pipe_log('Node created:\n'
                  '- {}\n'
                  '- {}'.format(ins_id, ins_ip))

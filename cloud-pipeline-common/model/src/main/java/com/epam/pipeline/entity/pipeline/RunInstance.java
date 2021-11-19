@@ -19,6 +19,8 @@ package com.epam.pipeline.entity.pipeline;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Objects;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -51,6 +53,10 @@ public class RunInstance {
     private Boolean spot;
     private Long cloudRegionId;
     private CloudProvider cloudProvider;
+    /**
+     * Docker images that shall be pre-pulled to the instance
+     */
+    private Set<String> prePulledDockerImages;
 
     @JsonIgnore
     public boolean isEmpty() {

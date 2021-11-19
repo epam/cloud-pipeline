@@ -18,8 +18,10 @@ package com.epam.pipeline.entity.datastorage;
 
 import java.io.File;
 
+import lombok.EqualsAndHashCode;
 import org.springframework.util.Assert;
 
+@EqualsAndHashCode
 public class DataStorageFolder extends AbstractDataStorageItem {
 
     public DataStorageFolder() {

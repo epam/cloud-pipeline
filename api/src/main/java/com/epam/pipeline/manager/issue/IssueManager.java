@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.issue;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -38,9 +39,11 @@ import com.epam.pipeline.entity.issue.Attachment;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.issue.IssueStatus;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.IssueMapper;
 import org.apache.commons.collections.CollectionUtils;
@@ -84,6 +87,9 @@ public class IssueManager {
     @Autowired
     private AttachmentFileManager attachmentFileManager;
 
+    @Autowired
+    private ToolManager toolManager;
+
     /**
      * Creates a new issue that refers to existing {@link com.epam.pipeline.entity.AbstractSecuredEntity}.
      * If {@link com.epam.pipeline.entity.AbstractSecuredEntity} doesn't exist an error will be occurred.
@@ -97,6 +103,7 @@ public class IssueManager {
         EntityVO entityVO = issueVO.getEntity();
         validateEntityParameters(entityVO);
         AbstractSecuredEntity entity = ensureEntityExists(entityVO);
+        validateEntityCanBeModified(entityVO);
 
         Issue issue = issueMapper.toIssue(issueVO);
         issue.setAuthor(authManager.getAuthorizedUser());
@@ -108,6 +115,20 @@ public class IssueManager {
                                         StringUtils.defaultIfBlank(issueVO.getHtmlText(), issue.getText()));
 
         return issue;
+    }
+
+    private void validateEntityCanBeModified(final EntityVO entity) {
+        loadToolSymlink(entity).ifPresent(tool ->
+                Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
+                        MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
+    }
+
+    private Optional<Tool> loadToolSymlink(final EntityVO entity) {
+        return Optional.of(entity)
+                .filter(ent -> ent.getEntityClass() == AclClass.TOOL)
+                .map(EntityVO::getEntityId)
+                .map(toolManager::load)
+                .filter(Tool::isSymlink);
     }
 
     /**
@@ -154,7 +175,12 @@ public class IssueManager {
      */
     public List<Issue> loadIssuesForEntity(EntityVO entityVO) {
         validateEntityParameters(entityVO);
-        return issueDao.loadIssuesForEntity(entityVO);
+        EntityVO resolvedEntity = resolveSymlinks(entityVO);
+        return issueDao.loadIssuesForEntity(resolvedEntity);
+    }
+
+    private EntityVO resolveSymlinks(final EntityVO entity) {
+        return loadToolSymlink(entity).map(tool -> new EntityVO(tool.getLink(), AclClass.TOOL)).orElse(entity);
     }
 
     /**
@@ -217,16 +243,19 @@ public class IssueManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public List<Issue> deleteIssuesForEntity(EntityVO entity) {
         validateEntityParameters(entity);
+        validateEntityCanBeModified(entity);
         List<Issue> issuesToDelete = issueDao.loadIssuesForEntity(entity);
         if (CollectionUtils.isNotEmpty(issuesToDelete)) {
             List<Long> issuesIds = issuesToDelete.stream().map(Issue::getId).collect(Collectors.toList());
 
             List<Long> commentIds = commentDao.loadCommentsForIssues(issuesIds).values().stream()
-                .flatMap(l -> l.stream().map(c -> c.getId()))
+                .flatMap(Collection::stream)
+                .map(IssueComment::getId)
                 .collect(Collectors.toList());
 
-            List<Attachment> attachments = attachmentDao.loadAttachmentsByCommentIds(commentIds).entrySet()
-                .stream().flatMap(e -> e.getValue().stream()).collect(Collectors.toList());
+            List<Attachment> attachments = attachmentDao.loadAttachmentsByCommentIds(commentIds).values().stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
             attachments.addAll(attachmentDao.loadAttachmentsByIssueIds(issuesIds));
             attachmentFileManager.deleteAttachments(attachments);
 
@@ -260,7 +289,7 @@ public class IssueManager {
 
     /**
      * Loads comment specified by ID. If comment doesn't exist an error will be thrown. If {@code issueId} and
-     * loaded {@link IssueComment#id} are not equal an error will be occurred.
+     * loaded {@link IssueComment#getId()} are not equal an error will be occurred.
      * @param issueId issue's ID
      * @param commentId comment's ID
      * @return existing {@link IssueComment}

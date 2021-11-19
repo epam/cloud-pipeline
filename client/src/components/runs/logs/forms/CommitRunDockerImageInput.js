@@ -101,7 +101,7 @@ export default class CommitRunDockerImageInput extends React.Component {
     } else {
       const allTools = (this.currentGroup.tools || [])
         .map(t => t)
-        .filter(t => roleModel.writeAllowed(t))
+        .filter(t => roleModel.writeAllowed(t) && !t.link)
         .map(t => t.image.split('/')[1]);
       if (!roleModel.writeAllowed(this.currentGroup) && allTools.filter(t => t === this.state.tool).length === 0) {
         this.props.onValidation && this.props.onValidation(false);
@@ -117,7 +117,7 @@ export default class CommitRunDockerImageInput extends React.Component {
     }
     const allTools = (this.currentGroup.tools || [])
       .map(t => t)
-      .filter(t => roleModel.writeAllowed(t))
+      .filter(t => roleModel.writeAllowed(t) && !t.link)
       .map(t => t.image.split('/')[1]);
     if (allTools.length > 0 && !roleModel.writeAllowed(this.currentGroup) && allTools.filter(t => t === this.state.tool).length === 0) {
       this.setState({
@@ -208,7 +208,11 @@ export default class CommitRunDockerImageInput extends React.Component {
     if (!this.currentRegistry) {
       return [];
     }
-    return (this.currentRegistry.groups || []).map(g => g);
+    return (this.currentRegistry.groups || [])
+      .map(g => g)
+      .filter(g => roleModel.writeAllowed(g) ||
+        (g.tools || []).filter(t => roleModel.writeAllowed(t) && !t.link).length > 0
+      );
   }
 
   @computed
@@ -216,7 +220,14 @@ export default class CommitRunDockerImageInput extends React.Component {
     if (!this.currentGroup) {
       return [];
     }
-    const originalTools = (this.currentGroup.tools || []).map(t => t).filter(t => roleModel.writeAllowed(t));
+    const originalToolsAndLinks = (this.currentGroup.tools || [])
+      .map(t => t)
+      .filter(t => roleModel.writeAllowed(t));
+    const originalTools = originalToolsAndLinks.filter(t => !t.link);
+    const links = originalToolsAndLinks.filter(t => !!t.link).map(link => {
+      const image = link.image.split('/')[1];
+      return {name: image};
+    });
     const tools = originalTools.map(tool => {
       const image = tool.image.split('/')[1];
       return {
@@ -227,7 +238,9 @@ export default class CommitRunDockerImageInput extends React.Component {
     }).filter(t => !this.state.tool || t.name.toLowerCase().indexOf(this.state.tool.toLowerCase()) === 0);
     if (this.state.tool && this.state.tool.length &&
         roleModel.writeAllowed(this.currentGroup) &&
-        tools.map(t => t.name.toLowerCase()).indexOf(this.state.tool.toLowerCase()) === -1) {
+        tools.map(t => t.name.toLowerCase()).indexOf(this.state.tool.toLowerCase()) === -1 &&
+        links.filter(t => t.name.toLowerCase() === this.state.tool.toLowerCase()).length === 0
+    ) {
       return [
         {
           name: this.state.tool,

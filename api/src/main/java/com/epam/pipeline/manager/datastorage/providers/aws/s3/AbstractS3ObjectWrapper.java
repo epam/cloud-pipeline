@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public abstract class AbstractS3ObjectWrapper {
         return new S3FileWrapper(objectSummary);
     }
 
-    public DataStorageFile convertToStorageFile(String requestPath) {
+    public DataStorageFile convertToStorageFile(String requestPath, String prefix) {
         String relativePath = getKey();
         if ((relativePath.endsWith(ProviderUtils.DELIMITER) && relativePath.equals(requestPath))
                 || StringUtils.endsWithIgnoreCase(relativePath,
@@ -49,7 +49,7 @@ public abstract class AbstractS3ObjectWrapper {
         String fileName = relativePath.substring(requestPath.length());
         DataStorageFile file = new DataStorageFile();
         file.setName(fileName);
-        file.setPath(relativePath);
+        file.setPath(ProviderUtils.removePrefix(relativePath, prefix));
         file.setSize(getSize());
         file.setVersion(getVersion());
         file.setChanged(S3Constants.getAwsDateFormat().format(getChanged()));

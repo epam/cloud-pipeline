@@ -97,13 +97,11 @@ export class App extends React.Component {
                 listStyleType: 'disc'
               }}>
                 {
-                  this.getBrowsers().map(b => {
-                    return (
-                      <li>
-                        <b>{b.name} >= {b.version}</b>
-                      </li>
-                    );
-                  })
+                  this.getBrowsers().map(b => (
+                    <li key={`${b.name}_${b.version}`}>
+                      <b>{b.name} >= {b.version}</b>
+                    </li>
+                  ))
                 }
               </ul>
             </Row>

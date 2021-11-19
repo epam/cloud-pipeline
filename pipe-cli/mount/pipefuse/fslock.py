@@ -16,6 +16,7 @@ import logging
 import time
 from abc import ABCMeta, abstractmethod
 from threading import RLock, Thread
+from future.utils import iteritems
 
 from fuse import fuse_get_context
 
@@ -29,7 +30,7 @@ def monitor_locks(monitor_lock, locks, timeout):
         try:
             monitor_lock.acquire()
             logging.debug('Updating path lock status')
-            free_paths = [path for path, lock in locks.iteritems() if lock.acquire(blocking=False)]
+            free_paths = [path for path, lock in iteritems(locks) if lock.acquire(blocking=False)]
             logging.debug('Releasing %d locks' % len(free_paths))
             for path in free_paths:
                 del locks[path]

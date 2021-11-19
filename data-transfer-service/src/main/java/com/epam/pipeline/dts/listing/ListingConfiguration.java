@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,13 @@
 
 package com.epam.pipeline.dts.listing;
 
+import com.epam.pipeline.cmd.CmdExecutor;
+import com.epam.pipeline.cmd.ImpersonatingCmdExecutor;
+import com.epam.pipeline.cmd.PlainCmdExecutor;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dts.listing.configuration.ListingRestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.stereotype.Controller;
@@ -27,4 +32,14 @@ import org.springframework.stereotype.Controller;
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ListingRestConfiguration.class),
         @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
 public class ListingConfiguration {
+
+    @Bean
+    public JsonMapper jsonMapper() {
+        return new JsonMapper();
+    }
+    
+    @Bean
+    public CmdExecutor listingCmdExecutor() {
+        return new ImpersonatingCmdExecutor(new PlainCmdExecutor());
+    }
 }

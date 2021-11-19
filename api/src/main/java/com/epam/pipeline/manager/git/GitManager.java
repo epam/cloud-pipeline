@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,24 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitGroup;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitlabUser;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
@@ -42,6 +54,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.GitUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,9 +76,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -85,8 +100,13 @@ public class GitManager {
     public static final String DRAFT_PREFIX = "draft-";
     private static final String ACTION_MOVE = "move";
     private static final String BASE64_ENCODING = "base64";
+    public static final String EXCLUDE_MARK = ":!";
 
     private static final long DEFAULT_TOKEN_DURATION = 1L;
+    private static final String EMPTY = "";
+    private static final String COMMA = ",";
+    private static final String ANY_SUB_PATH = "*";
+    private static final String ROOT_PATH = "/";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -255,10 +275,10 @@ public class GitManager {
         return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
     }
 
-    public List<Revision> getPipelineRevisions(Pipeline pipeline, Long pageSize)
+    public List<Revision> getPipelineRevisions(Pipeline pipeline)
             throws GitClientException {
         GitlabClient client = this.getGitlabClientForPipeline(pipeline);
-        List<Revision> tags = client.getRepositoryRevisions(pageSize).stream()
+        List<Revision> tags = client.getRepositoryRevisions().stream()
                 .map(i -> new Revision(i.getName(), i.getMessage(),
                         parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId(),
                         i.getCommit().getAuthorName(), i.getCommit().getAuthorEmail()))
@@ -310,8 +330,13 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).getCommits(getRevisionName(versionName), since);
     }
 
-    private boolean folderExists(Pipeline pipeline, String folder) throws GitClientException {
-        return this.fileExists(pipeline, Paths.get(folder, GIT_FOLDER_TOKEN_FILE).toString());
+    private boolean folderExists(Pipeline pipeline, String folder) {
+        try {
+            return !getGitlabClientForPipeline(pipeline)
+                    .getRepositoryContents(folder, null, false).isEmpty();
+        } catch (GitClientException e) {
+            return false;
+        }
     }
 
     private boolean fileExists(Pipeline pipeline, String filePath) throws GitClientException {
@@ -334,13 +359,13 @@ public class GitManager {
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_FOLDER_NAME, folderName));
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
-            // Previous path is missing: creating update
+            // Previous path is missing: creating folder
             return createFolder(pipeline,
                     folderVO.getPath(),
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         } else {
-            // else: renaming update
+            // else: renaming folder
             return renameFolder(pipeline,
                     folderVO.getPreviousPath(),
                     folderVO.getPath(),
@@ -349,23 +374,31 @@ public class GitManager {
         }
     }
 
-    private GitCommitEntry createFolder(Pipeline pipeline,
-                                       String folder,
-                                       String lastCommitId,
-                                       String commitMessage) throws GitClientException {
+    private GitCommitEntry createFolder(final Pipeline pipeline,
+                                        final String folder,
+                                        final String lastCommitId,
+                                        String commitMessage) throws GitClientException {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
+        Assert.isTrue(!folderExists(pipeline, folder),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
+
         if (commitMessage == null) {
-            commitMessage = String.format("Creating update %s", folder);
+            commitMessage = String.format("Creating folder %s", folder);
         }
-        List<String> filesToCreate = new ArrayList<>();
+        final List<String> filesToCreate = new ArrayList<>();
+        final List<String> foldersToCheck = new ArrayList<>();
         Path folderToCreate = Paths.get(folder);
         while (folderToCreate != null && !StringUtils.isNullOrEmpty(folderToCreate.toString())) {
             if (!this.folderExists(pipeline, folderToCreate.toString())) {
                 filesToCreate.add(Paths.get(folderToCreate.toString(), GIT_FOLDER_TOKEN_FILE).toString());
+                foldersToCheck.add(folderToCreate.toString());
             }
             folderToCreate = folderToCreate.getParent();
         }
+
+        checkFolderHierarchyIfFileExists(pipeline, foldersToCheck);
+
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);
         for (String file : filesToCreate) {
@@ -378,13 +411,23 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
 
+    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders)
+            throws GitClientException {
+        for (String folder : folders) {
+            if (!this.folderExists(pipeline, folder)) {
+                Assert.isTrue(!fileExists(pipeline, folder),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, folder));
+            }
+        }
+    }
+
     private GitCommitEntry renameFolder(Pipeline pipeline,
                                        String folder,
                                        String newFolderName,
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Renaming update %s to %s", folder, newFolderName);
+            commitMessage = String.format("Renaming folder %s to %s", folder, newFolderName);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -414,7 +457,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Removing update %s", folder);
+            commitMessage = String.format("Removing folder %s", folder);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -482,16 +525,9 @@ public class GitManager {
                             filePath));
         }
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        boolean fileExists = false;
-        try {
-            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            LOGGER.debug(exception.getMessage(), exception);
-        }
-
         GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
         String message =
-                getCommitMessage(commitMessage, filePath, fileExists, gitPushCommitActionEntry);
+                getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
         gitPushCommitActionEntry.setFilePath(filePath);
         gitPushCommitActionEntry.setContent(fileContent);
 
@@ -527,13 +563,7 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
                 action = ACTION_MOVE;
             } else {
-                boolean fileExists = false;
-                try {
-                    fileExists = gitlabClient.getFileContents(sourcePath, GIT_MASTER_REPOSITORY) != null;
-                } catch (UnexpectedResponseStatusException exception) {
-                    LOGGER.debug(exception.getMessage(), exception);
-                }
-                if (fileExists) {
+                if (fileExists(pipeline, sourcePath)) {
                     action = "update";
                 } else {
                     action = "create";
@@ -562,8 +592,11 @@ public class GitManager {
         final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
 
         if (StringUtils.isNullOrEmpty(commitMessage)) {
-            commitMessage = String.format("Renaming '%s' to '%s", filePreviousPath, filePath);
+            commitMessage = String.format("Renaming %s to %s", filePreviousPath, filePath);
         }
+
+        Assert.isTrue(!fileExists(pipeline, filePath),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);
@@ -599,20 +632,14 @@ public class GitManager {
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
 
         for (UploadFileMetadata file : files) {
-            String filePath = folder + PATH_DELIMITER + file.getFileName();
+            final String filePath = getFilePath(folder, file);
             Arrays.stream(filePath.split(PATH_DELIMITER)).forEach(pathPart ->
                     Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                             messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, filePath)));
 
-            boolean fileExists = false;
-            try {
-                fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-            } catch (UnexpectedResponseStatusException exception) {
-                LOGGER.debug(exception.getMessage(), exception);
-            }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
             commitMessage =
-                    getCommitMessage(commitMessage, filePath, fileExists, gitPushCommitActionEntry);
+                    getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
             gitPushCommitActionEntry.setFilePath(filePath);
             gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(file.getBytes()));
             gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
@@ -623,18 +650,25 @@ public class GitManager {
         return gitlabClient.commit(gitPushCommitEntry);
     }
 
+    private String getFilePath(final String folder, final UploadFileMetadata file) {
+        if (StringUtils.isNullOrEmpty(folder) || folder.equals(PATH_DELIMITER)) {
+            return file.getFileName();
+        }
+        return folder + PATH_DELIMITER + file.getFileName();
+    }
+
     private String getCommitMessage(String commitMessage, String filePath, boolean fileExists,
             GitPushCommitActionEntry gitPushCommitActionEntry) {
         String message = commitMessage;
         if (fileExists) {
             gitPushCommitActionEntry.setAction("update");
             if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Updating '%s'", filePath);
+                message = String.format("Updating file %s", filePath);
             }
         } else {
             gitPushCommitActionEntry.setAction("create");
             if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Creating '%s'", filePath);
+                message = String.format("Creating file %s", filePath);
             }
         }
         return message;
@@ -726,6 +760,16 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
+    public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
+        return getDefaultGitlabClient().createEmptyRepository(
+                        GitUtils.convertPipeNameToProject(pipelineName),
+                        description,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        true,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                );
+    }
+
     public boolean checkProjectExists(String name) {
         try {
             return getDefaultGitlabClient().projectExists(name);
@@ -754,6 +798,25 @@ public class GitManager {
         return getGitlabClientForRepository(repository, token, true)
                 .createTemplateRepository(template,
                         description,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+    }
+
+    public GitProject createEmptyRepository(final String pipelineName,
+                                            final String description) throws GitClientException {
+        return getDefaultGitlabClient().createEmptyRepository(
+                GitUtils.convertPipeNameToProject(pipelineName),
+                description,
+                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                false,
+                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+        );
+    }
+
+    public GitProject createEmptyRepository(final String description, final String repository,
+                                            final String token) throws GitClientException {
+        return getGitlabClientForRepository(repository, token, true)
+                .createEmptyRepository(description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
@@ -860,6 +923,252 @@ public class GitManager {
             return getDefaultGitlabClient().updateProjectName(projectIdOrName, newName);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    public GitProject copyRepository(final String projectName, final String newProjectName, final String uuid) {
+        final String tmpGroupName = String.format("TMP_FORK_%s", uuid);
+        final String defaultNamespace = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+
+        createGitGroup(tmpGroupName);
+        LOGGER.debug("The temporary git group '{}' was created for fork operation", tmpGroupName);
+
+        final GitProject forkedProject = copyProject(projectName, newProjectName, tmpGroupName, defaultNamespace);
+
+        deleteGitGroup(tmpGroupName);
+        LOGGER.debug("The temporary git group '{}' was deleted", tmpGroupName);
+
+        return forkedProject;
+    }
+
+    public GitReaderEntryListing<GitReaderObject> lsTreeRepositoryContent(final Long id, final String version,
+                                                                          final String path, final Long page,
+                                                                          final Integer pageSize) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                GitRepositoryUrl.from(pipeline.getRepository()),
+                new GitReaderLogsPathFilter(getContextPathList(path)), version, page, pageSize
+        ));
+    }
+
+    public GitReaderObject lsTreeRepositoryObject(final Long id, final String version, final String path) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final GitReaderEntryListing<GitReaderObject> listing =
+                callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                    GitRepositoryUrl.from(pipeline.getRepository()),
+                        new GitReaderLogsPathFilter(getContextPathList(path)),
+                        version, 0L, 1
+                ));
+        if (CollectionUtils.isNotEmpty(listing.getListing())) {
+            return listing.getListing().get(0);
+        }
+        throw new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_PATH_DOESNT_EXIST, path)
+        );
+    }
+
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
+                                                                                        final String path,
+                                                                                        final Long page,
+                                                                                        final Integer pageSize) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                GitRepositoryUrl.from(pipeline.getRepository()),
+                new GitReaderLogsPathFilter(getContextPathList(path)),
+                version, page, pageSize
+        ));
+    }
+
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(
+        final Long id,
+        final String version,
+        final GitReaderLogsPathFilter paths) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                GitRepositoryUrl.from(pipeline.getRepository()), version, paths
+        ));
+    }
+
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(
+        final Long id,
+        final Long page,
+        final Integer pageSize,
+        final GitCommitsFilter filter) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
+                GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize,
+                buildFiltersWithUsersFromGitLab(filter), getFilesToIgnore()
+        ));
+    }
+
+    public GitReaderDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
+                                                  final GitCommitsFilter filter) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
+                GitRepositoryUrl.from(pipeline.getRepository()),
+                includeDiff, buildFiltersWithUsersFromGitLab(filter), getFilesToIgnore()
+        ));
+    }
+
+    public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit,
+                                                      final String path) {
+        final Pipeline pipeline = pipelineManager.load(id);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
+                GitRepositoryUrl.from(pipeline.getRepository()),
+                commit,
+                new GitReaderLogsPathFilter(
+                        ListUtils.union(getContextPathList(path), getFilesToIgnore())
+                )
+        ));
+    }
+
+    private List<String> getContextPathList(String path) {
+        return Objects.nonNull(path) ? Collections.singletonList(path) : Collections.emptyList();
+    }
+
+    private List<String> getFilesToIgnore() {
+        return Arrays.stream(Optional.ofNullable(
+                        preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_IGNORED_FILES)
+                ).orElse(EMPTY).split(COMMA))
+                .filter(p -> !StringUtils.isNullOrEmpty(p))
+                .map(String::trim)
+                .map(p -> {
+                    if (!p.startsWith(ROOT_PATH)) {
+                        return EXCLUDE_MARK + ANY_SUB_PATH + p;
+                    } else {
+                        return EXCLUDE_MARK + p;
+                    }
+                }).collect(Collectors.toList());
+    }
+
+    private GitCommitsFilter buildFiltersWithUsersFromGitLab(GitCommitsFilter filter) {
+        return filter.toBuilder().authors(
+                CollectionUtils.emptyIfNull(filter.getAuthors()).stream().map(user -> {
+                    try {
+                        return getDefaultGitlabClient().findUser(user)
+                                .map(GitlabUser::getUsername).orElse(user);
+                    } catch (GitClientException e) {
+                        LOGGER.warn(e.getMessage());
+                        return user;
+                    }
+                }).filter(Objects::nonNull).collect(Collectors.toList())
+        ).build();
+    }
+
+    private <T> T callGitReaderApi(final GitClientMethodCall<GitReaderClient, T> method) {
+        try {
+            return method.apply(
+                    new GitReaderClient(
+                            getGitReaderHostPreference(),
+                            authManager.issueAdminToken(null)
+                    )
+            );
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException(
+                    "Something went wrong when trying to request data from Git Reader service", e);
+        }
+    }
+
+    private Pipeline loadPipelineAndCheckRevision(final Long id, final String revision) {
+        final Pipeline pipeline = pipelineManager.load(id);
+        if (!StringUtils.isNullOrEmpty(revision)) {
+            checkRevision(pipeline, revision);
+        }
+        return pipeline;
+    }
+
+    private String getGitReaderHostPreference() {
+        final String gitReaderHost = preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST);
+        Assert.hasText(gitReaderHost, "Preference git.reader.service.host is empty");
+        return gitReaderHost;
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private GitProject copyProject(final String projectName, final String newProjectName, final String tmpGroupName,
+                                   final String defaultNamespace) {
+        try {
+            final GitlabClient gitlabClient = getDefaultGitlabClient();
+            forkProject(gitlabClient, projectName, defaultNamespace, tmpGroupName);
+            LOGGER.debug("The project '{}' was forked to temporary namespace '{}'", projectName, tmpGroupName);
+
+            gitlabClient.updateProjectName(projectName, newProjectName, tmpGroupName);
+
+            final GitProject resultProject = forkProject(gitlabClient, newProjectName, tmpGroupName, defaultNamespace);
+            LOGGER.debug("The project '{}' was forked to default namespace '{}'", newProjectName, defaultNamespace);
+            return resultProject;
+        } catch (Exception e) {
+            deleteGitGroup(tmpGroupName);
+            LOGGER.debug("The temporary git group '{}' was deleted due to unexpected error", tmpGroupName);
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private GitGroup createGitGroup(final String groupName) {
+        try {
+            return getDefaultGitlabClient().createGroup(groupName);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private GitGroup deleteGitGroup(final String groupName) {
+        try {
+            return getDefaultGitlabClient().deleteGroup(groupName);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private GitProject forkProject(final GitlabClient gitlabClient,
+                                   final String projectName,
+                                   final String sourceNamespace,
+                                   final String destinationNamespace) throws GitClientException {
+        final Integer timeout = preferenceManager.getPreference(SystemPreferences.GIT_FORK_WAIT_TIMEOUT);
+        final Integer retryCount = preferenceManager.getPreference(SystemPreferences.GIT_FORK_RETRY_COUNT);
+
+        final List<GitTagEntry> sourceTags = gitlabClient.getRepositoryRevisions(sourceNamespace, projectName);
+        final GitProject resultProject = gitlabClient.forkProject(projectName, sourceNamespace, destinationNamespace);
+        for (int i = 0; i < retryCount; i++) {
+            if (forkedProjectInitialized(gitlabClient, projectName, sourceNamespace, destinationNamespace,
+                    sourceTags)) {
+                return resultProject;
+            }
+            waitTimeout(timeout);
+        }
+        throw new IllegalArgumentException("Cannot fork project correctly.");
+    }
+
+    private boolean forkedProjectInitialized(final GitlabClient gitlabClient,
+                                             final String projectName,
+                                             final String sourceNamespace,
+                                             final String destinationNamespace,
+                                             final List<GitTagEntry> sourceTags) {
+        try {
+            if (!gitlabClient.projectExists(destinationNamespace, projectName)) {
+                LOGGER.debug("The project '{}' was forked but still not exists", projectName);
+                return false;
+            }
+            final List<GitTagEntry> destinationTags = gitlabClient
+                    .getRepositoryRevisions(destinationNamespace, projectName);
+            if (sourceTags.size() != destinationTags.size()) {
+                LOGGER.debug("The projects tag sizes are different (source namespace - '{}', " +
+                        "destination namespace - '{}')", sourceNamespace, destinationNamespace);
+                return false;
+            }
+            return true;
+        } catch (GitClientException e) {
+            LOGGER.debug("An error occurred during fork project initialization. ", e);
+            return false;
+        }
+    }
+
+    private void waitTimeout(final Integer waitTime) {
+        try {
+            Thread.sleep(waitTime);
+        } catch (InterruptedException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 }

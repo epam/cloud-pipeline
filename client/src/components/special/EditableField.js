@@ -192,7 +192,10 @@ export default class EditableField extends React.Component {
           }}>{this.props.displayText || this.props.text}</span>
           <span style={{
             paddingLeft: 5,
-            visibility: this.state.hovered ? 'visible' : 'hidden'
+            display: this.props.readOnly
+              ? 'none'
+              : 'initial',
+            color: this.state.hovered ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.5)'
           }}>
           <Icon type="edit" style={{marginRight: 10}} />
         </span>

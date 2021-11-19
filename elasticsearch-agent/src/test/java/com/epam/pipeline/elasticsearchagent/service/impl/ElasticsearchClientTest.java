@@ -140,7 +140,12 @@ public class ElasticsearchClientTest extends AbstractSpringBootApplicationTest {
 
     private static final class PluginConfigurableNode extends Node {
         private PluginConfigurableNode(Settings settings, Collection<Class<? extends Plugin>> classpathPlugins) {
-            super(InternalSettingsPreparer.prepareEnvironment(settings, null), classpathPlugins);
+            super(InternalSettingsPreparer.prepareEnvironment(settings, null), classpathPlugins, false);
+        }
+
+        @Override
+        protected void registerDerivedNodeNameWithLogger(String nodeName) {
+            //no op
         }
     }
 }

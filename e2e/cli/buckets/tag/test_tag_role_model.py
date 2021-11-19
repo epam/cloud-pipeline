@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@ from buckets.utils.tag_assertion_utils import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.file_utils import *
 from buckets.utils.listing import *
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
 
 class TestS3TaggingRolModel(object):
-    test_file = "s3-tagging-role.txt"
-    bucket = 'epmcmbibpc-s3-tagging-role-{}'.format(get_test_prefix()).lower()
+    test_file = "tagging-role.txt"
+    bucket = format_name('tagging{}'.format(get_test_prefix()).lower())
     path_to_bucket = 'cp://{}'.format(bucket)
     tag1 = ("key1", "value1")
     user_token = os.environ['USER_TOKEN']
@@ -43,18 +44,20 @@ class TestS3TaggingRolModel(object):
         delete_data_storage(cls.bucket)
 
     def test_tag_reading(self):
-        test_case = 'epmcmbibpc-986'
+        """TC-PIPE-TAG-26"""
+        test_case = 'TC-PIPE-TAG-26'
         path = 'cp://{}/{}'.format(self.bucket, self.test_file)
         try:
             set_storage_tags(path, [self.tag1])
-            assert_tags_listing(self.bucket, path, [self.tag1], token=self.user_token)
+            assert_tags_listing(path, [self.tag1], token=self.user_token)
         except AssertionError as e:
             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
         except BaseException as e:
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
 
     def test_tag_updating(self):
-        test_case = 'epmcmbibpc-991'
+        """TC-PIPE-TAG-27"""
+        test_case = 'TC-PIPE-TAG-27'
         path = 'cp://{}/{}'.format(self.bucket, self.test_file)
         try:
             stderr = set_storage_tags(path, [self.tag1], token=self.user_token, expected_status=1)[1]
@@ -65,4 +68,3 @@ class TestS3TaggingRolModel(object):
             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
         except BaseException as e:
             raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
-

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -24,13 +24,15 @@
                 <![CDATA[
                     INSERT INTO pipeline.group_status (
                         group_name,
-                        blocked)
+                        blocked,
+                        last_modification_date)
                     VALUES (
                         :GROUP_NAME,
-                        :GROUP_BLOCKED_STATUS)
+                        :GROUP_BLOCKED_STATUS,
+                        :GROUP_BLOCK_DATE)
                     ON CONFLICT (group_name)
                         DO UPDATE
-                        SET blocked=:GROUP_BLOCKED_STATUS;
+                        SET blocked=:GROUP_BLOCKED_STATUS, last_modification_date=:GROUP_BLOCK_DATE;
                 ]]>
             </value>
         </property>
@@ -39,7 +41,8 @@
                 <![CDATA[
                     SELECT
                         group_name,
-                        blocked as group_blocked_status
+                        blocked as group_blocked_status,
+                        last_modification_date as group_block_date
                     FROM  pipeline.group_status
                     WHERE group_name in (:GROUPS)
                 ]]>
@@ -50,6 +53,17 @@
                 <![CDATA[
                     DELETE FROM pipeline.group_status
                     WHERE group_name = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllGroupsStatusesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        group_name,
+                        blocked as group_blocked_status,
+                        last_modification_date as group_block_date
+                    FROM  pipeline.group_status
                 ]]>
             </value>
         </property>

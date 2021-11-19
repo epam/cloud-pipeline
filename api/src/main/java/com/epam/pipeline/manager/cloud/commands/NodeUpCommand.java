@@ -17,10 +17,14 @@
 package com.epam.pipeline.manager.cloud.commands;
 
 import lombok.Builder;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Builder
 public class NodeUpCommand extends AbstractClusterCommand {
@@ -34,13 +38,18 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final String instanceImage;
     private final String instanceType;
     private final String instanceDisk;
+    private final String instancePlatform;
     private final String kubeIP;
     private final String kubeToken;
+    private final String kubeCertHash;
+    private final String kubeNodeToken;
     private final String region;
     private final String encryptionKey;
     private final boolean isSpot;
     private final String bidPrice;
     private final String cloud;
+    private final Map<String, String> additionalLabels;
+    private final Set<String> prePulledImages;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -52,15 +61,21 @@ public class NodeUpCommand extends AbstractClusterCommand {
         commands.add("--ins_key");
         commands.add(sshKey);
         commands.add("--ins_img");
-        commands.add(instanceImage);
+        commands.add(StringUtils.isBlank(instanceImage) ? "null" : instanceImage);
         commands.add("--ins_type");
         commands.add(instanceType);
         commands.add("--ins_hdd");
         commands.add(instanceDisk);
+        commands.add("--ins_platform");
+        commands.add(instancePlatform);
         commands.add("--kube_ip");
         commands.add(kubeIP);
         commands.add("--kubeadm_token");
         commands.add(kubeToken);
+        commands.add("--kubeadm_cert_hash");
+        commands.add(kubeCertHash);
+        commands.add("--kube_node_token");
+        commands.add(kubeNodeToken);
         commands.add(REGION_PARAMETER);
         commands.add(region);
         commands.add(CLOUD_PARAMETER);
@@ -77,6 +92,14 @@ public class NodeUpCommand extends AbstractClusterCommand {
                 commands.add(String.valueOf(bidPrice));
             }
         }
+        MapUtils.emptyIfNull(additionalLabels).forEach((key, value) -> {
+            commands.add("--label");
+            commands.add(key + "=" + value);
+        });
+        SetUtils.emptyIfNull(prePulledImages).forEach(image -> {
+            commands.add("--image");
+            commands.add(image);
+        });
         return commands;
     }
 }

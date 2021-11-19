@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.acl.LookupStrategyImpl;
 import com.epam.pipeline.security.acl.PermissionGrantingStrategyImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.ehcache.EhCacheFactoryBean;
-import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -38,9 +37,9 @@ import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.AclAuthorizationStrategyImpl;
 import org.springframework.security.acls.domain.AuditLogger;
 import org.springframework.security.acls.domain.ConsoleAuditLogger;
-import org.springframework.security.acls.domain.EhCacheBasedAclCache;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.SidRetrievalStrategyImpl;
+import org.springframework.security.acls.domain.SpringCacheBasedAclCache;
 import org.springframework.security.acls.jdbc.JdbcMutableAclService;
 import org.springframework.security.acls.jdbc.LookupStrategy;
 import org.springframework.security.acls.model.AclCache;
@@ -64,6 +63,9 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     @Autowired
     private PermissionFactory permissionFactory;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     @Override
     protected MethodSecurityExpressionHandler createExpressionHandler() {
         DefaultMethodSecurityExpressionHandler expressionHandler =
@@ -77,7 +79,7 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     @Bean
     public RoleHierarchy roleHierarchy() {
         RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() +  " > " +
+        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() + " > " +
                 DefaultRoles.ROLE_USER.getName());
         return roleHierarchy;
     }
@@ -118,28 +120,14 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
 
     @Bean
     public AclCache aclCache() {
-        return new EhCacheBasedAclCache(ehCacheFactoryBean().getObject(),
+        return new SpringCacheBasedAclCache(
+                cacheManager.getCache(CacheConfiguration.ACL_CACHE),
                 permissionGrantingStrategy(), aclAuthorizationStrategy());
     }
 
     @Bean
     public PermissionGrantingStrategy permissionGrantingStrategy() {
         return new PermissionGrantingStrategyImpl(auditLogger());
-    }
-
-    @Bean
-    public EhCacheFactoryBean ehCacheFactoryBean() {
-        EhCacheFactoryBean factoryBean = new EhCacheFactoryBean();
-        factoryBean.setCacheManager(ehCacheManagerFactoryBean().getObject());
-        factoryBean.setCacheName("aclCache");
-        return factoryBean;
-    }
-
-    @Bean
-    public EhCacheManagerFactoryBean ehCacheManagerFactoryBean() {
-        EhCacheManagerFactoryBean factoryBean = new EhCacheManagerFactoryBean();
-        factoryBean.setCacheManagerName("aclCacheManager");
-        return factoryBean;
     }
 }
 

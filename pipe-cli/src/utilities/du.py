@@ -57,7 +57,7 @@ class DataUsageHelper(object):
         try:
             usage = DataStorage.get_storage_usage(storage_name, relative_path)
         except Exception as e:
-            click.echo("Failed to load usage for datastorage '%s'. Cause: %s" % (storage_name, e.message), err=True)
+            click.echo("Failed to load usage for datastorage '%s'. Cause: %s" % (storage_name, str(e)), err=True)
             return None, None, None
         size = 0
         count = 0

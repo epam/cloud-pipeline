@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.notification;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
@@ -34,6 +33,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.mapper.PipelineRunMapper;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class MonitoringNotificationDaoTest extends AbstractSpringTest {
+public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_POD_ID = "pod1";
@@ -65,6 +65,7 @@ public class MonitoringNotificationDaoTest extends AbstractSpringTest {
     private static final String TEMPLATE_PARAMETER_VALUE = "template_parameter_value";
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
+    private static final String TEST_PLATFORM = "linux";
 
     @Autowired
     private MonitoringNotificationDao monitoringNotificationDao;
@@ -161,12 +162,14 @@ public class MonitoringNotificationDaoTest extends AbstractSpringTest {
         run.setParentRunId(null);
         run.setRunSids(null);
         run.setChildRuns(null);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setSpot(true);
         instance.setNodeId("1");
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setCloudRegionId(region.getId());
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         run.setEntitiesIds(null);
         run.setConfigurationId(null);

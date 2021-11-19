@@ -26,17 +26,22 @@ import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
-import MetadataEntityDeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
+import MetadataEntityDeleteFromProject
+  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
 import PropTypes from 'prop-types';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 @connect({
   folders,
   pipelinesLibrary
 })
+@HiddenObjects.injectTreeFilter
+@HiddenObjects.checkMetadataFolders(props => (props.params || props).id)
 @inject(({folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -46,6 +51,7 @@ import Breadcrumbs from '../../special/Breadcrumbs';
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
     folderId: componentParameters.id,
     entityFields: new MetadataEntityFields(componentParameters.id),
+    metadataClasses: new MetadataClassLoadAll(),
     onReloadTree: params.onReloadTree
   };
 })
@@ -85,8 +91,20 @@ export default class MetadataFolder extends React.Component {
 
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded) {
-      return (this.props.entityFields.value || []).map(e => e);
+    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
+      const entityFields = (this.props.entityFields.value || [])
+        .map(e => e);
+      const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
+      const otherClasses = (this.props.metadataClasses.value || [])
+        .filter(({id}) => !ignoreClasses.has(id))
+        .map(metadataClass => ({
+          fields: [],
+          metadataClass: {...metadataClass, outOfProject: true}
+        }));
+      return [
+        ...entityFields,
+        ...otherClasses
+      ];
     }
     return [];
   }
@@ -131,6 +149,7 @@ export default class MetadataFolder extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        await this.props.entityFields.fetch();
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.folder.value.parentId);
@@ -255,6 +274,7 @@ export default class MetadataFolder extends React.Component {
       actions.push(
         roleModel.manager.entities(
           <Button
+            disabled={this.entityTypes.length === 0}
             size="small"
             onClick={this.openAddInstanceForm}
             key="add-metadata">
@@ -268,8 +288,9 @@ export default class MetadataFolder extends React.Component {
           <UploadButton
             key="upload-metadata"
             multiple={false}
-            synchronous={true}
+            synchronous
             onRefresh={async () => {
+              await this.props.entityFields.fetch();
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -299,7 +320,14 @@ export default class MetadataFolder extends React.Component {
   };
 
   render () {
-    const dataFolder = generateTreeData(this.props.folder.value, false);
+    const dataFolder = generateTreeData(
+      this.props.folder.value,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      this.props.hiddenObjectsTreeFilter()
+    );
     const [metadataFolder] = dataFolder.filter(m => m.type === ItemTypes.metadataFolder);
     let data = metadataFolder ? metadataFolder.children : [];
     if (this.props.folderId) {
@@ -335,12 +363,14 @@ export default class MetadataFolder extends React.Component {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon type="appstore-o" className={styles.editableControl} />
             <Breadcrumbs
               id={parseInt(this.props.folderId)}
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
               readOnlyEditableField={true}
+              icon="appstore-o"
+              iconClassName={styles.editableControl}
+              subject={this.props.folder.value}
             />
           </Col>
           <Col className={styles.currentFolderActions}>

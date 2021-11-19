@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.docker;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -39,6 +41,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -59,7 +62,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -82,8 +88,8 @@ public class DockerContainerOperationManager {
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
     private static final String EMPTY = "";
-    private static final String PAUSE_RUN_TASK = "PausePipelineRun";
     private static final String RESUME_RUN_TASK = "ResumePipelineRun";
+    public static final String PAUSE_RUN_TASK = "PausePipelineRun";
     public static final String DELIMITER = "/";
     public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
 
@@ -123,6 +129,9 @@ public class DockerContainerOperationManager {
     @Autowired
     private RunLogManager runLogManager;
 
+    @Autowired
+    private PipelineRunServiceUrlManager serviceUrlManager;
+
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
 
@@ -132,10 +141,12 @@ public class DockerContainerOperationManager {
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
 
+    private Lock resumeLock = new ReentrantLock();
+
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
-        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(
-                run.getPodId(), run.getDockerImage());
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
+                run.getActualDockerImage());
 
         final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
 
@@ -206,58 +217,20 @@ public class DockerContainerOperationManager {
     }
 
     @Async("pauseRunExecutor")
-    public void pauseRun(PipelineRun run) {
+    public void pauseRun(final PipelineRun run, final boolean rerunPause) {
         try {
-            final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(
-                    run.getPodId(), run.getDockerImage());
-            final String apiToken = authManager.issueTokenForCurrentUser().getToken();
-            Assert.notNull(containerId,
-                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
-
-            final String pauseRunCommand = DockerPauseCommand.builder()
-                    .runPauseScriptUrl(pauseRunScriptUrl)
-                    .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
-                    .apiToken(apiToken)
-                    .pauseDistributionUrl(commitScriptsDistributionsUrl)
-                    .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
-                    .runId(String.valueOf(run.getId()))
-                    .containerId(containerId)
-                    .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
-                    .newImageName(run.getDockerImage())
-                    .defaultTaskName(run.getTaskName())
-                    .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
-                    .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
-                    .build()
-                    .getCommand();
-
-            RunInstance instance = run.getInstance();
-            kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
-                    TaskStatus.PAUSED.name());
-
-            run.setPodIP(null);
-            run.setServiceUrl(null);
-            removeUtilizationLevelTags(run);
-            runManager.updateRunInfo(run);
-
-            Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
-
-            //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
-            // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
-            boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT), TimeUnit.SECONDS);
-
-            if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
-                //TODO: change in according to f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
-                run.setStatus(TaskStatus.RUNNING);
-                runManager.updatePipelineStatus(run);
-                kubernetesManager.removeNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL);
-                return;
+            if (!rerunPause) {
+                final boolean scriptLaunchedSuccessfully = launchPauseRunScript(run);
+                if (!scriptLaunchedSuccessfully) {
+                    return;
+                }
+                addRunLog(run, messageHelper.getMessage(MessageConstants.INFO_LOG_PAUSE_COMPLETED), PAUSE_RUN_TASK,
+                        TaskStatus.SUCCESS);
             }
-            Assert.state(sshConnection.exitValue() == 0,
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_PAUSE_FAILED, run.getId()));
 
+            final RunInstance instance = run.getInstance();
             kubernetesManager.deletePod(run.getPodId());
-            cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
+            stopInstanceIfNeed(run.getId(), instance);
             kubernetesManager.deleteNode(instance.getNodeName());
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
@@ -273,17 +246,17 @@ public class DockerContainerOperationManager {
     public void resumeRun(PipelineRun run, List<String> endpoints) {
         try {
             final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(cloudRegion.getId(),
-                    run.getInstance().getNodeId());
-            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                rollbackRunToPausedState(run, startInstanceResult);
+            final boolean instanceStartedSuccessfully = startInstanceIfNeed(run, run.getInstance().getNodeId(),
+                    cloudRegion.getId());
+            if (!instanceStartedSuccessfully) {
                 return;
             }
+
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
-            PipelineConfiguration configuration = getResumeConfiguration(run);
-            launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                    true, run.getPodId(), null, false);
+
+            launchPodIfRequired(run, endpoints);
+
             kubernetesManager.removeNodeLabel(run.getInstance().getNodeName(),
                     KubernetesConstants.PAUSED_NODE_LABEL);
             run.setStatus(TaskStatus.RUNNING);
@@ -293,6 +266,20 @@ public class DockerContainerOperationManager {
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
+        }
+    }
+
+    //method is synchronized to prevent double pod creation
+    private void launchPodIfRequired(final PipelineRun run, final List<String> endpoints) {
+        resumeLock.lock();
+        try {
+            if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
+                final PipelineConfiguration configuration = getResumeConfiguration(run);
+                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
+            }
+        } finally {
+            resumeLock.unlock();
         }
     }
 
@@ -327,7 +314,7 @@ public class DockerContainerOperationManager {
     }
 
     Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
-        String kubePipelineNodeUserName  = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
+        String kubePipelineNodeUserName = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
         String pemKeyPath = preferenceManager.getPreference(SystemPreferences.COMMIT_DEPLOY_KEY);
 
         String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s",
@@ -351,18 +338,23 @@ public class DockerContainerOperationManager {
 
     private void failRunAndTerminateNode(PipelineRun run, Exception e) {
         LOGGER.error(e.getMessage());
+        nodesManager.terminateNode(run.getInstance().getNodeName(), false);
         run.setEndDate(DateUtils.now());
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
-        nodesManager.terminateNode(run.getInstance().getNodeName());
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
+        addRunLog(run, logMessage, taskName, null);
+    }
+
+    private void addRunLog(final PipelineRun run, final String logMessage, final String taskName,
+                           final TaskStatus status) {
         final RunLog runLog = RunLog.builder()
                 .date(DateUtils.now())
                 .runId(run.getId())
                 .instance(run.getPodId())
-                .status(run.getStatus())
+                .status(Objects.isNull(status) ? run.getStatus() : status)
                 .taskName(taskName)
                 .logText(logMessage)
                 .build();
@@ -375,5 +367,94 @@ public class DockerContainerOperationManager {
             .filter(run::hasTag)
             .forEach(run::removeTag);
     }
-}
 
+    private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {
+        final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(runId);
+        validateInstanceState(cloudInstanceState);
+        switch (cloudInstanceState) {
+            case RUNNING:
+                cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
+                break;
+            case TERMINATED:
+                throw new IllegalStateException(messageHelper
+                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "stop"));
+            default:
+                break;
+        }
+    }
+
+    private boolean startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
+        final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
+        validateInstanceState(cloudInstanceState);
+        switch (cloudInstanceState) {
+            case STOPPED:
+                final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
+                if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                    rollbackRunToPausedState(run, startInstanceResult);
+                    return false;
+                }
+                break;
+            case TERMINATED:
+                throw new IllegalStateException(messageHelper
+                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+            default:
+                break;
+        }
+        return true;
+    }
+
+    private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        final String apiToken = authManager.issueTokenForCurrentUser().getToken();
+        Assert.notNull(containerId,
+                messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+
+        final String pauseRunCommand = DockerPauseCommand.builder()
+                .runPauseScriptUrl(pauseRunScriptUrl)
+                .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
+                .apiToken(apiToken)
+                .pauseDistributionUrl(commitScriptsDistributionsUrl)
+                .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                .runId(String.valueOf(run.getId()))
+                .containerId(containerId)
+                .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
+                .newImageName(run.getActualDockerImage())
+                .defaultTaskName(run.getTaskName())
+                .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
+                .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                .build()
+                .getCommand();
+
+        final RunInstance instance = run.getInstance();
+        kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
+                TaskStatus.PAUSED.name());
+
+        run.setPodIP(null);
+        removeUtilizationLevelTags(run);
+        runManager.updateRunInfo(run);
+        serviceUrlManager.clear(run.getId());
+
+        final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
+
+        //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
+        // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
+        final boolean isFinished = sshConnection.waitFor(
+                preferenceManager.getPreference(SystemPreferences.PAUSE_TIMEOUT), TimeUnit.SECONDS);
+
+        if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
+            //TODO: change in according to f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
+            run.setStatus(TaskStatus.RUNNING);
+            runManager.updatePipelineStatus(run);
+            kubernetesManager.removeNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL);
+            return false;
+        }
+        Assert.state(sshConnection.exitValue() == 0,
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_PAUSE_FAILED, run.getId()));
+        return true;
+    }
+
+    private void validateInstanceState(final CloudInstanceState state) {
+        Assert.notNull(state, "Cannot determine instance state");
+    }
+}

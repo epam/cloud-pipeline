@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,35 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.google.common.collect.Comparators;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
+
+import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertFalse;
 
 public class ShellAO implements AccessObject<ShellAO> {
 
@@ -46,6 +63,11 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertPageContains(String text) {
         $(withText(text)).shouldBe(visible);
+        return this;
+    }
+
+    public ShellAO assertPageContains(String text1, String text2) {
+        $(withText(text1)).shouldHave(text(text2));
         return this;
     }
 
@@ -74,6 +96,55 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertPageAfterCommandContainsStrings(String command, String... messages) {
+        Arrays.stream(messages)
+                .forEach(message -> assertTrue(lastCommandResult(command).contains(message)));
+        return this;
+    }
+
+    public ShellAO assertPageAfterCommandNotContainsStrings(String command, String... messages) {
+        Arrays.stream(messages)
+                .forEach(message -> assertFalse(lastCommandResult(command).contains(message)));
+        return this;
+    }
+
+    public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
+        String results = lastCommandResult(command)
+                .replace(format("root@pipeline-%s:/runs/pipeline-%s#", runID, runID), "");
+        assertEquals(expectedCount, results.split("\\s+").length);
+        return this;
+    }
+
+    public ShellAO assertFileVersionsCount(String command, String fileName, int expectedCount) {
+        String results = lastCommandResult(command);
+        int countMatches = StringUtils.countMatches(results, fileName);
+        assertEquals(expectedCount, countMatches,
+                format("Actual count: %s. Expected count: %s", countMatches, expectedCount));
+        return this;
+    }
+
+    private String lastCommandResult(String command) {
+        return context().text().substring(context().text().indexOf(command))
+                .replace("\n", "").replace(command, "");
+    }
+
+    public ShellAO assertPageContainsString(String str) {
+        context().shouldHave(text(str));
+        return this;
+    }
+
+    public ShellAO assertNextStringIsVisibleAtFileUpload(String str1, String str2) {
+        $(withText(str1)).shouldBe(visible).parent()
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+        return this;
+    }
+
+    public ShellAO assertNextStringIsVisible(String str1, String str2) {
+        $(withText(str1)).shouldBe(visible)
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+        return this;
+    }
+
     public NavigationMenuAO assertAccessIsDenied() {
         assertPageContains("Permission denied");
         return close();
@@ -87,7 +158,7 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO waitUntilTextAppears(final String runId) {
         for (int i = 0; i < 2; i++) {
             sleep(10, SECONDS);
-            if ($(withText(String.format("pipeline-%s", runId))).exists()) {
+            if ($(withText(format("pipeline-%s", runId))).exists()) {
                 break;
             }
             sleep(1, MINUTES);
@@ -99,8 +170,47 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO waitUntilTextLoads(final String runId) {
+        for (int i = 0; i < 3; i++) {
+            sleep(10, SECONDS);
+            if ($(withText(format("pipeline-%s", runId))).exists()) {
+                break;
+            }
+            sleep(1, MINUTES);
+            refresh();
+            sleep(5, SECONDS);
+        }
+        return this;
+    }
+
+    public ShellAO checkVersionsListIsSorted(String command) {
+        List<String> vers = versionsCreationData(command);
+        assertTrue(Comparators.isInOrder(vers, Comparator.reverseOrder()));
+        return this;
+    }
+
+    public ShellAO waitForLog(final String message) {
+        for (int i = 0; i < 15; i++) {
+            if ($(withText(message)).is(matchText(message))) {
+                break;
+            }
+            sleep(20, SECONDS);
+        }
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();
+    }
+
+    private List<String> versionsCreationData(String command) {
+        String log = lastCommandResult(command);
+        List<String> list = new ArrayList<>();
+        Matcher matcher = Pattern.compile(" \\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2} ").matcher(log);
+        while (matcher.find()) {
+            list.add(matcher.group());
+        }
+        return list;
     }
 }

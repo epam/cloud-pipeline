@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from json_parser import JsonParser
+from .json_parser import JsonParser
 
 
 class StoragePolicy:
@@ -33,7 +33,8 @@ class StoragePolicy:
 
 class DataStorage:
     def __init__(self, id, name, description, path, policy, mask, storage_type,
-                 owner, region_id, locked, parentId, mount_point, mount_options, region_name=None):
+                 owner, region_id, locked, parentId, mount_point, mount_options,
+                 region_name=None, sensitive=False, tools_to_mount=None, mount_status=None):
         self.id = int(id)
         self.name = str(name)
         self.description = str(description)
@@ -48,6 +49,9 @@ class DataStorage:
         self.mount_options = str(mount_options) if mount_options is not None else mount_options
         self.region_id = region_id
         self.region_name = region_name
+        self.sensitive = sensitive
+        self.tools_to_mount = tools_to_mount
+        self.mount_status = mount_status
 
     @classmethod
     def from_json(cls, data):
@@ -64,9 +68,14 @@ class DataStorage:
         mount_options = JsonParser.get_optional_field(data, 'mountOptions')
         mount_point = JsonParser.get_optional_field(data, 'mountPoint')
         region_name = JsonParser.get_optional_field(data, 'regionName')
+        sensitive = JsonParser.get_optional_field(data, 'sensitive', default=False)
+        tools_to_mount = JsonParser.get_optional_field(data, 'toolsToMount')
         policy = StoragePolicy.from_json(data['storagePolicy']) if 'storagePolicy' in data else None
+        mount_status = JsonParser.get_optional_field(data, 'mountStatus', default=None)
         return DataStorage(id, name, description, path, policy, mask, type, owner, region_id, locked, parentId,
-                           mount_point, mount_options, region_name)
+                           mount_point, mount_options, region_name, sensitive=sensitive, tools_to_mount=tools_to_mount,
+                           mount_status=mount_status)
+
 
 class FileShareMount:
     def __init__(self, id, region_id, mount_root, mount_options, mount_type):
@@ -85,6 +94,7 @@ class FileShareMount:
         mount_type = JsonParser.get_required_field(data, 'mountType')
 
         return FileShareMount(id, region_id, mount_root, mount_options, mount_type)
+
 
 class DataStorageWithShareMount:
     def __init__(self, storage, file_share_mount):

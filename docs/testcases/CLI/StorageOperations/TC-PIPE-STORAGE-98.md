@@ -1,0 +1,16 @@
+# [CLI] MV: download file with skip existing option
+
+**Actions**:
+1.  Create storage
+2.  Create local file `file_name`
+3.  Upload file to storage: `pipe storage cp file_name cp://storage_name/folder/file_name`
+4.	Put local file `file_name` to `folder/file_name` (create with the same content)
+5.  Download file from storage with `--skip-existing` option: `pipe storage mv cp://storage_name/file_name folder/file_name -s -f -r`
+6.  Delete storage
+
+***
+**Expected result:**
+
+3.	File `file_name` is uploaded successfully
+4.	File `file_name` is created successfully
+5.  File `file_name` is skipped

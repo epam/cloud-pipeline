@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.controller.vo;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class RegisterPipelineVersionVO {
     private Long pipelineId;
     private String commit;

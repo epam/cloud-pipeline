@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TransferTask createTask(@NonNull StorageItem source,
                                    @NonNull StorageItem destination,
-                                   List<String> included) {
+                                   List<String> included,
+                                   String user) {
         TransferTask transferTask = TransferTask.builder()
                 .source(source)
                 .destination(destination)
@@ -47,6 +48,7 @@ public class TaskServiceImpl implements TaskService {
                 .created(Utils.now())
                 .reason("New transfer task created")
                 .included(included)
+                .user(user)
                 .build();
         return taskRepository.save(transferTask);
     }

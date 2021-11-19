@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,14 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -62,13 +65,10 @@ public class PipelineLauncher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineLauncher.class);
 
-    public static final String LAUNCH_TEMPLATE = "set -o pipefail; "
-            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
-            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
-            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'";
     private static final String EMPTY_PARAMETER = "";
     private static final String DEFAULT_CLUSTER_NAME = "CLOUD_PIPELINE";
     private static final String ENV_DELIMITER = ",";
+    private static final String CP_POD_PULL_POLICY = "CP_POD_PULL_POLICY";
 
     @Autowired
     private PipelineExecutor executor;
@@ -85,8 +85,11 @@ public class PipelineLauncher {
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
-    @Value("${launch.script.url}")
-    private String launchScriptUrl;
+    @Value("${launch.script.url.linux}")
+    private String linuxLaunchScriptUrl;
+
+    @Value("${launch.script.url.windows}")
+    private String windowsLaunchScriptUrl;
 
     @Autowired
     private AuthManager authManager;
@@ -101,18 +104,20 @@ public class PipelineLauncher {
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
     public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-            String nodeIdLabel,  String clusterId) {
+                         String nodeIdLabel, String clusterId) {
         return launch(run, configuration, endpoints, nodeIdLabel, true, run.getPodId(), clusterId);
     }
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
-            List<String> endpoints, String nodeIdLabel, boolean useLaunch, String pipelineId, String clusterId) {
-        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId, true);
+                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
+                         String pipelineId, String clusterId) {
+        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId,
+                getImagePullPolicy(configuration));
     }
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
                          List<String> endpoints, String nodeIdLabel, boolean useLaunch,
-                         String pipelineId, String clusterId, boolean pullImage) {
+                         String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
         GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
         Map<SystemParams, String> systemParams = matchSystemParams(
@@ -123,29 +128,43 @@ public class PipelineLauncher {
                 configuration, gitCredentials);
         checkRunOnParentNode(run, nodeIdLabel, systemParams);
         List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
-                buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId()));
+                buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive()));
 
         Assert.isTrue(!StringUtils.isEmpty(configuration.getCmdTemplate()), messageHelper.getMessage(
                 MessageConstants.ERROR_CMD_TEMPLATE_NOT_RESOLVED));
         String pipelineCommand = commandBuilder.build(configuration, systemParams);
         String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());
-        String rootPodCommand = useLaunch ? String.format(LAUNCH_TEMPLATE, launchScriptUrl,
-                launchScriptUrl, gitCloneUrl, run.getRevisionName(), pipelineCommand)
-                : pipelineCommand;
+        String rootPodCommand;
+        if (!useLaunch) {
+            rootPodCommand = pipelineCommand;
+        } else {
+            if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
+                rootPodCommand = String.format(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS), 
+                        windowsLaunchScriptUrl, pipelineCommand);
+            } else {
+                rootPodCommand = String.format(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX), 
+                        linuxLaunchScriptUrl, linuxLaunchScriptUrl, gitCloneUrl,
+                        run.getRevisionName(), pipelineCommand);
+            }
+        }
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, pullImage);
+                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, imagePullPolicy);
         return pipelineCommand;
     }
 
-    private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId) {
-        final Map<String, String> externalProperties = getExternalProperties(cloudRegionId);
+    private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,
+                                                           final boolean sensitiveRun) {
+        final Map<String, String> externalProperties = getExternalProperties(cloudRegionId, sensitiveRun);
         final Map<String, String> cloudEnvVars = cloudFacade.buildContainerCloudEnvVars(cloudRegionId);
         return CommonUtils.mergeMaps(externalProperties, cloudEnvVars);
     }
 
-    private Map<String, String> getExternalProperties(final Long regionId) {
+    private Map<String, String> getExternalProperties(final Long regionId,
+                                                      final boolean sensitiveRun) {
         final EnvVarsSettings podEnvVarsFileMap =
                 preferenceManager.getPreference(SystemPreferences.LAUNCH_ENV_PROPERTIES);
         if (podEnvVarsFileMap == null) {
@@ -153,16 +172,24 @@ public class PipelineLauncher {
         }
         final Map<String, Object> mergedEnvVars = new HashMap<>(
                 MapUtils.emptyIfNull(podEnvVarsFileMap.getDefaultEnvVars()));
-        ListUtils.emptyIfNull(podEnvVarsFileMap.getRegionEnvVars()).stream()
+        if (sensitiveRun) {
+            mergedEnvVars.putAll(MapUtils.emptyIfNull(podEnvVarsFileMap.getSensitiveEnvVars()));
+        }
+        ListUtils.emptyIfNull(podEnvVarsFileMap.getRegionEnvVars())
+                .stream()
                 .filter(region -> regionId.equals(region.getRegionId()))
                 .findFirst()
-                .map(region -> MapUtils.emptyIfNull(region.getEnvVars()))
-                .ifPresent(mergedEnvVars::putAll);
+                .ifPresent(region -> {
+                    mergedEnvVars.putAll(MapUtils.emptyIfNull(region.getEnvVars()));
+                    if (sensitiveRun) {
+                        mergedEnvVars.putAll(MapUtils.emptyIfNull(region.getSensitiveEnvVars()));
+                    }
+                });
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
     private void checkRunOnParentNode(PipelineRun run, String nodeIdLabel,
-            Map<SystemParams, String> systemParams) {
+                                      Map<SystemParams, String> systemParams) {
         if (!run.getId().toString().equals(nodeIdLabel)) {
             systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
         }
@@ -199,6 +226,12 @@ public class PipelineLauncher {
         if (!MapUtils.emptyIfNull(configuration.getEnvironmentParams())
                 .containsKey(SystemParams.RESUMED_RUN.getEnvName())) {
             systemParamsWithValue.put(SystemParams.RESUMED_RUN, "false");
+        }
+        if (run.getSensitive()) {
+            systemParamsWithValue.put(SystemParams.CP_SENSITIVE_RUN, "true");
+        }
+        if (run.getTimeout() != null && run.getTimeout() > 0) {
+            systemParamsWithValue.put(SystemParams.CP_EXEC_TIMEOUT, String.valueOf(run.getTimeout()));
         }
         return systemParamsWithValue;
     }
@@ -239,7 +272,7 @@ public class PipelineLauncher {
         systemParamsWithValue.put(SystemParams.OWNER, run.getOwner());
         if (gitCredentials != null) {
             putIfStringValuePresent(systemParamsWithValue,
-                    SystemParams.GIT_USER,  gitCredentials.getUserName());
+                    SystemParams.GIT_USER, gitCredentials.getUserName());
             putIfStringValuePresent(systemParamsWithValue,
                     SystemParams.GIT_TOKEN, gitCredentials.getToken());
         }
@@ -278,10 +311,19 @@ public class PipelineLauncher {
     }
 
     private void putIfStringValuePresent(EnumMap<SystemParams, String> params,
-                                        SystemParams parameter,
-                                        String value) {
+                                         SystemParams parameter,
+                                         String value) {
         if (StringUtils.hasText(value)) {
             params.put(parameter, value);
         }
+    }
+
+    private ImagePullPolicy getImagePullPolicy(final PipelineConfiguration configuration) {
+        final PipeConfValueVO value = MapUtils.emptyIfNull(configuration.getParameters())
+                .get(CP_POD_PULL_POLICY);
+        if (value == null) {
+            return ImagePullPolicy.ALWAYS;
+        }
+        return ImagePullPolicy.getByNameOrDefault(value.getValue());
     }
 }

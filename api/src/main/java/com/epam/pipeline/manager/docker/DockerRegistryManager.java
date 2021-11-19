@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
@@ -68,6 +69,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -309,6 +311,12 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 .getImageDescription(registry, imageName, tag);
     }
 
+    public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
+                                                   final String tag) {
+        final String token = getImageToken(registry, imageName);
+        return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
+    }
+
     public List<String> loadImageTags(DockerRegistry registry, Tool tool) {
         return loadImageTags(registry, tool.getImage());
     }
@@ -490,7 +498,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
                     toolGroup.getName()));
             toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
                     ToolScanStatus.NOT_SCANNED, DateUtils.now(), event.getTarget().getTag(),
-                    null, event.getTarget().getDigest());
+                    null, event.getTarget().getDigest(), new HashMap<>());
             return toolInGroup;
         }
         if (!permissionManager.isActionAllowedForUser(toolGroup, actor, AclPermission.WRITE)) {
@@ -584,6 +592,12 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 }
             }
 
+            if (isSymlink(entity)) {
+                throw new DockerAuthorizationException(registry.getPath(), messageHelper
+                        .getMessage(MessageConstants.ERROR_REGISTRY_IMAGE_ACTION_IS_NOT_ALLOWED, scope,
+                                claim.getImageName(), userName, registry.getPath()));
+            }
+
             if (!permissionManager.isActionAllowedForUser(entity, userName, permissions)) {
                 throw new DockerAuthorizationException(registry.getPath(), messageHelper
                                 .getMessage(MessageConstants.ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED, scope,
@@ -595,6 +609,10 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     public DockerRegistry getDockerRegistryTree(Long registryId) {
         return dockerRegistryDao.loadDockerRegistryTree(registryId);
+    }
+
+    private boolean isSymlink(final AbstractSecuredEntity entity) {
+        return entity instanceof Tool && ((Tool) entity).isSymlink();
     }
 
     private String getToken(DockerRegistry registry, DockerRegistryClaim claim) {

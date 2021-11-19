@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
@@ -30,10 +34,13 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,9 +51,10 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
     private static final String KEY = "KEY";
     private static final String VALUE = "VALUE";
+    private static final String LIST_PARAMETER = "list";
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
-    private Pattern entitiesValuePatten = Pattern.compile("@ENTITIES@");
+    private Pattern entitiesValuePattern = Pattern.compile("@ENTITIES@");
 
     private String createMetadataItemQuery;
     private String uploadMetadataItemQuery;
@@ -57,7 +65,12 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String deleteMetadataItemKeyQuery;
     private String loadMetadataItemsWithIssuesQuery;
     private String searchMetadataByClassAndKeyValueQuery;
+    private String searchMetadataByClassAndKeyQuery;
+    private String searchMetadataEntriesByClassAndKeyValueQuery;
+    private String searchMetadataEntriesByClassAndKeyQuery;
     private String loadUniqueValuesFromEntitiesAttributes;
+    private String createMetadataDictionary;
+    private String loadMetadataKeysQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerMetadataItem(MetadataEntry metadataEntry) {
@@ -105,14 +118,16 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     }
 
     public MetadataEntry loadMetadataItem(EntityVO entity) {
-        List<MetadataEntry> items = getJdbcTemplate().query(loadMetadataItemQuery,
-                MetadataParameters.getRowMapper(), entity.getEntityId(), entity.getEntityClass().name());
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
+                MetadataParameters.getParameters(entity), 
+                MetadataParameters.getRowMapper());
         return items.isEmpty() ? null : items.get(0);
     }
 
     public boolean hasMetadata(EntityVO entity) {
-        List<MetadataEntry> items = getJdbcTemplate().query(loadMetadataItemQuery,
-                MetadataParameters.getRowMapper(), entity.getEntityId(), entity.getEntityClass().name());
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
+                MetadataParameters.getParameters(entity), 
+                MetadataParameters.getRowMapper());
         return !items.isEmpty() && items.get(0).getData() != null && !items.get(0).getData().isEmpty();
     }
 
@@ -132,21 +147,66 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         return items.isEmpty() ? null : items;
     }
 
+    public List<EntityVO> searchMetadataByClassAndKey(final AclClass entityClass, final String key) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue(MetadataParameters.ENTITY_CLASS.name(), entityClass.name());
+        parameters.addValue(KEY, key);
+        return getNamedParameterJdbcTemplate().query(searchMetadataByClassAndKeyQuery,
+                parameters, MetadataParameters.getEntityVORowMapper());
+    }
+
     public List<EntityVO> searchMetadataByClassAndKeyValue(final AclClass entityClass,
                                                            final Map<String, PipeConfValue> indicator) {
         return getJdbcTemplate().query(searchMetadataByClassAndKeyValueQuery, MetadataParameters.getEntityVORowMapper(),
                         entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
     }
 
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKey(final AclClass entityClass, final String key) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue(MetadataParameters.ENTITY_CLASS.name(), entityClass.name());
+        parameters.addValue(KEY, key);
+        return getNamedParameterJdbcTemplate().query(searchMetadataEntriesByClassAndKeyQuery,
+                parameters, MetadataParameters.getRowMapper());
+    }
+
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKeyValue(final AclClass entityClass,
+                                                           final Map<String, PipeConfValue> indicator) {
+        return getJdbcTemplate().query(searchMetadataEntriesByClassAndKeyValueQuery, MetadataParameters.getRowMapper(),
+                entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
+    }
+
+    public List<CategoricalAttribute> buildFullMetadataDict(final List<String> sensitiveMetadataKeys) {
+        final List<Pair<String, String>> allAttributeValues = getNamedParameterJdbcTemplate()
+            .query(createMetadataDictionary, getSensitiveKeysParams(sensitiveMetadataKeys),
+                   MetadataParameters.getMetadataKeyValueMapper());
+        return CategoricalAttributeDao.convertPairsToAttributesList(allAttributeValues);
+    }
+
     public static String convertDataToJsonStringForQuery(Map<String, PipeConfValue> data) {
         return JsonMapper.convertDataToJsonStringForQuery(data);
     }
 
+    public Set<String> loadMetadataKeys(final AclClass entityClass) {
+        final List<String> result = ListUtils.emptyIfNull(
+                getJdbcTemplate()
+                        .queryForList(loadMetadataKeysQuery, String.class, entityClass.name()));
+        return new HashSet<>(result);
+    }
+
     private String convertEntitiesToString(String query, List<EntityVO> entities) {
-        return entitiesValuePatten.matcher(query)
+        return entitiesValuePattern.matcher(query)
                 .replaceAll(entities.stream()
                         .map(entityVO -> String.format("(%s,'%s')", entityVO.getEntityId(), entityVO.getEntityClass()))
                         .collect(Collectors.joining(",")));
+    }
+
+    private MapSqlParameterSource getSensitiveKeysParams(final List<String> sensitiveMetadataKeys) {
+        final List<String> sensitiveKeysList = CollectionUtils.isEmpty(sensitiveMetadataKeys)
+                                               ? Collections.singletonList(StringUtils.EMPTY)
+                                               : sensitiveMetadataKeys;
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, sensitiveKeysList);
+        return params;
     }
 
     @Required
@@ -197,6 +257,31 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadUniqueValuesFromEntitiesAttributes(final String loadUniqueValuesFromEntitiesAttributes) {
         this.loadUniqueValuesFromEntitiesAttributes = loadUniqueValuesFromEntitiesAttributes;
+    }
+
+    @Required
+    public void setCreateMetadataDictionary(final String createMetadataDictionary) {
+        this.createMetadataDictionary = createMetadataDictionary;
+    }
+
+    @Required
+    public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
+        this.loadMetadataKeysQuery = loadMetadataKeysQuery;
+    }
+
+    @Required
+    public void setSearchMetadataByClassAndKeyQuery(String searchMetadataByClassAndKeyQuery) {
+        this.searchMetadataByClassAndKeyQuery = searchMetadataByClassAndKeyQuery;
+    }
+
+    @Required
+    public void setSearchMetadataEntriesByClassAndKeyValueQuery(String searchMetadataEntriesByClassAndKeyValueQuery) {
+        this.searchMetadataEntriesByClassAndKeyValueQuery = searchMetadataEntriesByClassAndKeyValueQuery;
+    }
+
+    @Required
+    public void setSearchMetadataEntriesByClassAndKeyQuery(String searchMetadataEntriesByClassAndKeyQuery) {
+        this.searchMetadataEntriesByClassAndKeyQuery = searchMetadataEntriesByClassAndKeyQuery;
     }
 
     public enum MetadataParameters {
@@ -263,6 +348,10 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                 String entityClass = rs.getString(ENTITY_CLASS.name());
                 return new EntityVO(entityId, AclClass.valueOf(entityClass));
             };
+        }
+
+        static RowMapper<Pair<String, String>> getMetadataKeyValueMapper() {
+            return (rs, rowNum) -> Pair.of(rs.getString(KEY.toLowerCase()), rs.getString(VALUE.toLowerCase()));
         }
 
         private static ResultSetExtractor<List<String>> getUniqueAttributesExtractor() {

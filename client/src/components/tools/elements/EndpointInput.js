@@ -16,9 +16,16 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Col, Input, Row} from 'antd';
+import {
+  Button,
+  Col,
+  Dropdown,
+  Icon,
+  Input,
+  Menu,
+  Row
+} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
 
@@ -26,7 +33,6 @@ import '../../../staticStyles/EndpointInput.css';
 
 @observer
 export default class EndpointInput extends React.Component {
-
   static propTypes = {
     disabled: PropTypes.bool,
     even: PropTypes.bool,
@@ -67,7 +73,8 @@ export default class EndpointInput extends React.Component {
           port = json.nginx.port;
           additional = json.nginx.additional;
         }
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     const validation = {
       port: this.validatePort(port),
@@ -80,18 +87,17 @@ export default class EndpointInput extends React.Component {
     return !validation.port && !validation.name && !validation.additional;
   };
 
-  @computed
   get name () {
     if (this.state.value) {
       try {
         const json = JSON.parse(this.state.value || '');
         return json.name;
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return undefined;
   }
 
-  @computed
   get port () {
     if (this.state.value) {
       try {
@@ -99,23 +105,55 @@ export default class EndpointInput extends React.Component {
         if (json.nginx && json.nginx.port !== undefined) {
           return json.nginx.port;
         }
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return undefined;
   }
 
-  @computed
   get isDefault () {
     if (this.state.value) {
       try {
         const json = JSON.parse(this.state.value || '');
         return `${json.isDefault}` === 'true';
+      } catch (__) {
+      }
+    }
+    return false;
+  }
+
+  get sslBackend () {
+    if (this.state.value) {
+      try {
+        const json = JSON.parse(this.state.value || '');
+        return `${json.sslBackend}` === 'true';
+      } catch (__) {
+      }
+    }
+    return false;
+  }
+
+  get sameTab () {
+    if (this.state.value) {
+      try {
+        const json = JSON.parse(this.state.value || '');
+        return `${json.sameTab}` === 'true';
+      } catch (__) {
+      }
+    }
+    return false;
+  }
+
+  get customDNS () {
+    if (this.state.value) {
+      try {
+        const json = JSON.parse(this.state.value || '');
+        return `${json.customDNS}` === 'true';
       } catch (__) {}
     }
     return false;
   }
 
-  @computed
   get additional () {
     if (this.state.value) {
       try {
@@ -123,12 +161,22 @@ export default class EndpointInput extends React.Component {
         if (json.nginx) {
           return json.nginx.additional;
         }
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return undefined;
   }
 
-  composeValue = (name, port, additional, isDefault) => {
+  composeValue = (options = {}) => {
+    let {
+      name,
+      port,
+      additional,
+      isDefault,
+      sslBackend,
+      customDNS,
+      sameTab
+    } = options;
     if (name === undefined || name === null) {
       name = this.name;
     }
@@ -141,24 +189,37 @@ export default class EndpointInput extends React.Component {
     if (isDefault === undefined || isDefault === null) {
       isDefault = this.isDefault;
     }
+    if (sslBackend === undefined || sslBackend === null) {
+      sslBackend = this.sslBackend;
+    }
+    if (customDNS === undefined || customDNS === null) {
+      customDNS = this.customDNS;
+    }
+    if (sameTab === undefined || sameTab === null) {
+      sameTab = this.sameTab;
+    }
     const value = {
       name,
       nginx: {
         port,
         additional
       },
-      isDefault
+      isDefault,
+      sslBackend,
+      customDNS,
+      sameTab
     };
     let result = '';
     try {
       result = JSON.stringify(value);
-    } catch (___) {}
+    } catch (___) {
+    }
     return result;
   };
 
   onChangeName = (e) => {
     const name = e.target.value;
-    const value = this.composeValue(name, null, null, null);
+    const value = this.composeValue({name});
     this.setState({
       value
     }, () => {
@@ -169,7 +230,7 @@ export default class EndpointInput extends React.Component {
 
   onChangePort = (e) => {
     const port = e.target.value;
-    const value = this.composeValue(null, port, null, null);
+    const value = this.composeValue({port});
     this.setState({
       value
     }, () => {
@@ -178,9 +239,38 @@ export default class EndpointInput extends React.Component {
     });
   };
 
-  onChangeDefault = (e) => {
-    const checked = e.target.checked;
-    const value = this.composeValue(null, null, null, checked);
+  onChangeDefault = (isDefault) => {
+    const value = this.composeValue({isDefault});
+    this.setState({
+      value
+    }, () => {
+      this.props.onChange && this.props.onChange(value);
+      this.validate();
+    });
+  };
+
+  onChangeSSLBackend = (sslBackend) => {
+    const value = this.composeValue({sslBackend});
+    this.setState({
+      value
+    }, () => {
+      this.props.onChange && this.props.onChange(value);
+      this.validate();
+    });
+  };
+
+  onChangeSameTab = (sameTab) => {
+    const value = this.composeValue({sameTab});
+    this.setState({
+      value
+    }, () => {
+      this.props.onChange && this.props.onChange(value);
+      this.validate();
+    });
+  }
+
+  onChangeCustomDNS = (customDNS) => {
+    const value = this.composeValue({customDNS});
     this.setState({
       value
     }, () => {
@@ -190,7 +280,7 @@ export default class EndpointInput extends React.Component {
   };
 
   onChangeAdditional = (additional) => {
-    const value = this.composeValue(null, null, additional, null);
+    const value = this.composeValue({additional});
     this.setState({
       value
     }, () => {
@@ -204,6 +294,63 @@ export default class EndpointInput extends React.Component {
   };
 
   render () {
+    const options = [];
+    if (this.isDefault) {
+      options.push('Default');
+    }
+    if (this.sslBackend) {
+      options.push('SSL');
+    }
+    if (this.customDNS) {
+      options.push('Sub-Domain');
+    }
+    if (this.sameTab) {
+      options.push('Same Tab');
+    }
+    if (options.length === 0) {
+      options.push('Configure');
+    }
+    const onChange = (opts) => {
+      const {key} = opts;
+      switch (key) {
+        case 'isDefault':
+          this.onChangeDefault(!this.isDefault);
+          break;
+        case 'sslBackend':
+          this.onChangeSSLBackend(!this.sslBackend);
+          break;
+        case 'sameTab':
+          this.onChangeSameTab(!this.sameTab);
+          break;
+        case 'customDNS':
+          this.onChangeCustomDNS(!this.customDNS);
+          break;
+        default:
+          break;
+      }
+    };
+    const overlay = (
+      <Menu
+        onClick={onChange}
+      >
+        <Menu.Item key="isDefault">
+          {this.isDefault ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>Default</span>
+        </Menu.Item>
+        <Menu.Item key="sslBackend">
+          {this.sslBackend ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>SSL backend</span>
+        </Menu.Item>
+        <Menu.Item key="customDNS">
+          {this.customDNS ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>Use sub-domain</span>
+        </Menu.Item>
+        <Menu.Item key="sameTab">
+          {this.sameTab ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>Open in same tab</span>
+        </Menu.Item>
+      </Menu>
+    );
     return (
       <div
         style={{
@@ -220,11 +367,12 @@ export default class EndpointInput extends React.Component {
                 value={this.port}
                 onChange={this.onChangePort}
                 style={{
-                  width: 200,
+                  width: 100,
                   margin: '0px 5px',
                   border: this.state.validation.port ? '1px solid red' : undefined
                 }}
-                size="small" />
+                size="small"
+              />
             </Row>
             {
               this.state.validation.port &&
@@ -243,9 +391,9 @@ export default class EndpointInput extends React.Component {
               </Row>
             }
           </Col>
-          <Col style={{flex: 1}}>
+          <Col style={{width: 190}}>
             <Row type="flex" align="middle">
-              <span>Name:</span>
+              <span style={{fontWeight: 'bold'}}>Name:</span>
               <Input
                 disabled={this.props.disabled}
                 value={this.name}
@@ -255,7 +403,8 @@ export default class EndpointInput extends React.Component {
                   marginLeft: 5,
                   border: this.state.validation.name ? '1px solid red' : undefined
                 }}
-                size="small" />
+                size="small"
+              />
             </Row>
             {
               this.state.validation.name &&
@@ -274,10 +423,16 @@ export default class EndpointInput extends React.Component {
               </Row>
             }
           </Col>
-          <Col style={{paddingLeft: 5}}>
-            <Checkbox checked={this.isDefault} onChange={this.onChangeDefault}>
-              Is default
-            </Checkbox>
+          <Col style={{paddingLeft: 5, flex: 1, textAlign: 'right'}}>
+            <Dropdown
+              overlay={overlay}
+              trigger={['click']}
+            >
+              <a>
+                {options.join(', ')}
+                <Icon type="setting" style={{marginLeft: 2}} />
+              </a>
+            </Dropdown>
           </Col>
           <Col style={{paddingLeft: 5}}>
             <Row type="flex" align="middle" style={{height: 31}}>
@@ -338,4 +493,4 @@ export default class EndpointInput extends React.Component {
       value: this.props.value
     }, this.validate);
   }
-}
+};

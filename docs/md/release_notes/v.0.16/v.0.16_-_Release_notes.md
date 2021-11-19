@@ -1,6 +1,7 @@
 # Cloud Pipeline v.0.16 - Release notes
 
 - [Google Cloud Platform Support](#google-cloud-platform-support)
+- [System logs](#system-logs)
 - [Displaying Cloud Provider's icon](#displaying-cloud-providers-icon-for-the-storagecompute-resources)
 - [Configurable timeout of GE Autoscale waiting](#configurable-timeout-of-ge-autoscale-waiting-for-a-worker-node-up)
 - [Storage mounts data transfer restrictor](#storage-mounts-data-transfer-restrictor)
@@ -10,6 +11,8 @@
 - [Pushing pipeline changes to the GitLab on behalf of the user](#pushing-pipeline-changes-to-the-gitlab-on-behalf-of-the-user)
 - [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
 - [Resource usage form improvement](#resource-usage-form-improvement)
+- [View the historical resources utilization](#allow-to-view-the-historical-resources-utilization)
+- [Ability to schedule automatic pause/restart of the running jobs](#ability-to-schedule-automatic-pauserestart-of-the-running-jobs)
 - [Update pipe CLI version](#update-pipe-cli-version)
 - [Blocking/unblocking users and groups](#blockingunblocking-users-and-groups)
 - [Displaying additional node metrics](#displaying-additional-node-metrics-at-the-runs-page)
@@ -18,7 +21,15 @@
 - [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
 - [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
 - [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
+- [List the users/groups/objects permissions globally via `pipe` CLI](#list-the-usersgroupsobjects-permissions-globally-via-pipe-cli)
+- [Storage usage statistics retrieval via `pipe`](#storage-usage-statistics-retrieval-via-pipe)
 - [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
+- [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
+- [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
+- [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
+- [The ability to force the specific Cloud Provider for an image](#the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image)
+- [Restrict mounting of data storages for a given Cloud Provider](#restrict-mounting-of-data-storages-for-a-given-cloud-provider)
+- [Ability to "symlink" the tools between the tools groups](#ability-to-symlink-the-tools-between-the-tools-groups)
 
 ***
 
@@ -54,6 +65,36 @@ One of the major **`v0.16`** features is a support for the **[Google Cloud Platf
 All the features, that were previously used for **`AWS`** and **`Azure`**, are now available in all the same manner, from all the same GUI/CLI, for **`GCP`**.
 
 This provides an even greater level of a flexibility to launch different jobs in the locations, closer to the data, with cheaper prices or better compute hardware in depend on a specific task.
+
+## System logs
+
+In the current version, the "Security Logging" was implemented.
+
+Now, the system records audit trail events:
+
+- users' authentication attempts
+- users' profiles modifications
+- platform objects' permissions management
+- access to interactive applications from pipeline runs
+- other platform functionality features
+
+Logs are collected/managed at the `Elasticsearch` node and backed up to the object storage (that could be configured during the platform deployment).
+
+The administrator can view/filter these logs via the GUI - in the System-level settings, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SystemLogs_1.png)
+
+Each record in the logs list contains:
+
+| Field | Description |
+|-|-|
+| **Date** | The date and time of the log event |
+| **Log status** | The status of the log message (`INFO`, `ERROR`, etc.) |
+| **Log message** | Description of the log event |
+| **User** | User name who performed the event |
+| **Service** | Service name that registered the event (`api-srv`, `edge`) |
+| **Type** | Log message type (currently, only `security` type is available) |
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-logs).
 
 ## Displaying Cloud Provider's icon for the storage/compute resources
 
@@ -213,6 +254,46 @@ All filters are working for all plots simultaneously: data for all plots will be
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
+## Allow to view the historical resources utilization
+
+Another convenient feature that was implemented in **`v0.16`** linked to the [Cluster nodes monitor](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) is viewing of the detailed history of the resource utilization for any jobs.  
+Previously, it was available only for active jobs. Now, users can view the utilization data even for completed (succeed/stopped/failed) jobs for debugging/optimization purposes.  
+
+The utilization data for all runs is stored for a preconfigured period of time that is set by the system preference **`system.resource.monitoring.stats.retention.period`** (defaults to 5 days).  
+I.e. if the job has been stopped and the specified time period isn't over - the user can access to the resources utilization data of that job:
+
+- Open the **Run logs** page for the completed job:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HistoricalMonitor_1.png)  
+    Click the node name hyperlink
+- The **Monitor** page of the node resources utilization will be opened:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HistoricalMonitor_2.png)
+
+Also now, users have the ability to export the utilization information into a `.csv` file.  
+This is required, if the user wants to keep locally the information for a longer period of time than defined by **`system.resource.monitoring.stats.retention.period`**:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HistoricalMonitor_3.png)  
+The user can select the interval for the utilization statistics output and export the corresponding file.
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor).
+
+## Ability to schedule automatic pause/restart of the running jobs
+
+For certain use cases (e.g. when `Cloud Pipeline` is used as a development/research environment) users can launch jobs and keep them running all the time, including weekends and holidays.  
+To reduce costs, in the current version, the ability to set a **Run schedule** was implemented. This feature allows to automatically pause/resume runs, based on the configuration specified. This feature is applied only to the "Pausable" runs (i.e. "On-demand" and non-cluster):
+
+- The user (who has permissions to pause/resume a run) is able to set a schedule for a run being launched:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_01.png)
+- Schedule is defined as a list of rules - user is able to specify any number of them:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_02.png)  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_03.png)
+- For each rule in the list user is able to set the action (`PAUSE`/`RESUME`) and the recurrence:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_04.png)
+
+If any schedule rule is configured for the launched active run - that run will be paused/restarted accordingly in the scheduled day and time.  
+Also, users (who have permissions to pause/resume a run) can create/view/modify/delete schedule rules anytime run is active via the **Run logs** page:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_05.png)
+
+See more details [here](../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md) (item 5).
+
 ## Update `pipe` CLI version
 
 Previously, if the user installed `pipe` CLI to his local workstation, used it some time - and the Cloud Pipeline API version could be updated during this period - so the user had to manually perform complete re-installing of `pipe` CLI every time to have an actual version.
@@ -364,6 +445,48 @@ Also the specifying of "path" to the object (registry/group/tool) is supported. 
 
 For more details and usage examples see [here](../../manual/14_CLI/14.8._View_tools_definitions_via_CLI.md).
 
+## List the users/groups/objects permissions globally via `pipe` CLI
+
+Administrators may need to receive the following information - in a quick and convenient way:
+
+- Which objects are accessible by a user?
+- Which objects are accessible by a user group?
+- Which user(s)/group(s) have access to the object?
+
+The lattest case was implemented early - see the command [`pipe view-acl`](../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md#view-permissions).
+
+For other cases, new commands were implemented: `pipe view-user-objects <Username> [OPTIONS]` and `pipe view-group-objects <Groupname> [OPTIONS]` - to get a list of objects accessible by a user and by a user group/role respectively:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewUserGroupObjects_1.png)
+
+Each of these commands has the non-required option `-t` (`--object-type`) `<OBJECT_TYPE>` - to restrict the output list of accessible objects only for the specific type (e.g., "pipeline" or "tool", etc.):  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewUserGroupObjects_2.png)
+
+For more details see: [`pipe view-user-objects`](../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md#view-the-list-of-objects-accessible-by-a-user) and [`pipe view-group-objects`](../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md#view-the-list-of-objects-accessible-by-a-group).
+
+## Storage usage statistics retrieval via `pipe`
+
+In some cases, it may be necessary to obtain an information about storage usage or some inner folder(s).  
+In the current version, the command `pipe storage du` is implemented that provides "disk usage" information on the supported data storages/path:
+
+- number of files in the storage/path
+- summary size of the files in the storage/path
+
+In general, the command has the following format:
+
+``` bash
+pipe storage du [OPTIONS] [STORAGE]
+```
+
+Without specifying any options and storage this command prints the full list of the available storages (both types - object and FS) with the "usage" information for each of them.  
+With specifying the storage name this command prints the "usage" information only by that storage, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeDiskUsage_1.png)  
+With `-p` (`--relative-path`) option the command prints the "usage" information for the specified path in the required storage, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeDiskUsage_2.png)  
+With `-d` (`--depth`) option the command prints the "usage" information in the required storage (and path) for the specified folders nesting depth, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeDiskUsage_3.png)
+
+For more details about that command and full list of its options see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#show-storage-usage).
+
 ## GE Autoscaler respects CPU requirements of the job in the queue
 
 At the moment, **GE Autoscaler** treats each job in the queue as a single-core job.  
@@ -371,9 +494,12 @@ Previously, autoscale workers could have only fixed instance type (the same as t
 
 In the current version the `hybrid` behavior for the **GE Autoscaler** was implemented, that allows processing the data even if the initial node type is not enough. That behavior allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied **CPU** requirements of all pending jobs (according to required slots and parallel environment types).
 
-There are several **System parameters** to configure that behavior:
+To enable `hybrid` mode for auto-scaled cluster set the corresponding checkbox in the cluster settings before the run:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HybridAutoscaler_4.png)
 
-- **`CP_CAP_AUTOSCALE_HYBRID`** (_boolean_) - enables the `hybrid` mode. In that mode the additional worker type can vary within either master instance type family (or `CP_CAP_AUTOSCALE_HYBRID_FAMILY` if specified). If `disabled` or not specified - the **GE Autoscaler** will work in a general regimen (when scaled-up workers have the same instance type as the master node)
+On the other hand, there are several **System parameters** to configure `hybrid` behavior in details:
+
+- **`CP_CAP_AUTOSCALE_HYBRID`** (_boolean_) - enables the `hybrid` mode (_the same as the "Enable Hybrid cluster" checkbox setting_). In that mode the additional worker type can vary within either master instance type family (or `CP_CAP_AUTOSCALE_HYBRID_FAMILY` if specified). If `disabled` or not specified - the **GE Autoscaler** will work in a general regimen (when scaled-up workers have the same instance type as the master node)
 - **`CP_CAP_AUTOSCALE_HYBRID_FAMILY`** (_string_) - defines the instance "family", from which the **GE Autoscaler** should pick up the worker node in case of `hybrid` behavior. If not specified (by default) - the **GE Autoscaler** will pick up worker instance from the same "family" as the master node
 - **`CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE`** (_string_) - determines the maximum number of instance cores for the node to be scaled up by the **GE Autoscaler** in case of `hybrid` behavior
 
@@ -386,6 +512,108 @@ Also now, if no matching instance is present for the job (no matter - in `hybrid
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_HybridAutoscaler_3.png)
 
 For more details about **GE Autoscaler** see [here](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md).
+
+## Restrictions of "other" users permissions for the storages mounted via the `pipe storage mount` command
+
+As was introduced in [Release Notes v.0.15](../v.0.15/v.0.15_-_Release_notes.md#mounting-data-storages-to-linux-and-mac-workstations), the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires **`FUSE`** installed) was added.  
+For that, the `pipe storage mount` command was implemented.
+
+Previously, Cloud Pipeline allowed read access to the mounted cloud storages for the other users, by default. This might introduce a security issue when dealing with the sensitive data.
+
+In the current version, for the `pipe storage mount` command the new option is added: `-m` (`--mode`), that allows to set the permissions on the mountpoint at a mount time.  
+Permissions are being configured by the numerical mask - similarly to `chmod` Linux command.  
+
+E.g. to mount the storage with `RW` access to the **OWNER**, `R` access to the **GROUP** and no access to the **OTHERS**:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_MountingMode.png)
+
+If the option `-m` isn't specified - the default permission mask will be set - `700` (full access to the **OWNER** (`RWX`), no access to the **GROUP** and **OTHERS**).
+
+For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+
+## The ability to find the tool by its version/package name
+
+Cloud Pipeline allows searching for the tools in the registry by its name or description. But in some cases, it is more convenient and useful to find which tool contains a specific software package and then use it.
+
+In the current version, this ability - to find a tool by its content - is implemented based on the global search capabilities.  
+Now, via the Global Search, you may find a tool by its version name, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SearchToolByVersionPackage_1.png)  
+And by the package name (from any available ecosystem), e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SearchToolByVersionPackage_2.png)
+
+## The ability to restrict which run statuses trigger the email notification
+
+Cloud Pipeline can be configured to send the email to the owner of the job (or specific users) if its status is changed.  
+But in certain cases - it is not desired to get a notification about all changes of the run state.  
+To reduce a number of the emails in these cases, the ability to configure, which statuses are triggering the notifications, is implemented in **`v0.16`**.
+
+Now, when the administrator configures the emails sending linked to the run status changes - he can select specific run states that will trigger the notifications.  
+It is done through the `PIPELINE_RUN_STATUS` section at the **Email notifications** tab of the System Settings (the "**Statuses to inform**" field):  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_RunStatusChangingTrigger.png)  
+The email notifications will be sent only if the run enters one of the selected states.  
+**_Note_**: if no statuses are selected in the "**Statuses to inform**" field - email notifications will be sent as previously - for all status changes.
+
+For more information how to configure the email notifications see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md).
+
+## The ability to force the usage of the specific Cloud Provider/Region for a given image
+
+Previously, the platform allowed to select a **Cloud Provider** (and **Cloud Region**) for a particular job execution via the **Launch** Form, but a tool/version itself didn't not have any link with a region.
+
+In certain cases, it's necessary to enforce users to run some tools in a specific **Cloud Provider**/**Region**.
+
+In the current version, such ability was implemented. The **Tool**/**Version Settings** forms contain the field for specifying a **Cloud Region**, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_1.png)
+
+By default, this parameter has **`Not configured`** value. This means, that a tool will be launched in a _Default region_ (configured by the Administrator in the global settings). Or a user can set any allowed **Cloud Region**/**Provider** manually. This behavior will be the same as previously.
+
+- Admin or a tool owner can forcibly set a specific **Cloud Region**/**Provider** where the run shall be launched, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_2.png)
+- Then, if a specific **Cloud Region**/**Provider** is configured - users will have to use it, when launching a tool (regardless of how the launch was started - with default or custom settings):  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_3.png)
+- And if a user does not have access to that **Cloud Region**/**Provider** - tool won't launch:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_4.png)  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_5.png)
+
+**_Note_**: if a specific **Cloud Region**/**Provider** is being specified for the Tool, in general - this action enforce the **Region**/**Provider** only for the latest version of that tool. For other versions the settings will remain previous.
+
+See for more details about tool execution settings [here](../../manual/10_Manage_Tools/10._Manage_Tools.md#settings-tab).
+See for more details about tool version execution settings [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#version-settings).
+
+## Restrict mounting of data storages for a given Cloud Provider
+
+Previously, `Cloud Pipeline` attempted to mount all data storages available for the user despite the **Cloud Providers**/**Regions** of these storages. E.g. if a job was launched in the `GCP`, but the user has access to `AWS` S3 buckets - they were also mounted to the `GCP` instance.
+
+In the current version, the ability to restrict storage mount availability for a run, based on its **Cloud Provider**/**Region**, was implemented.
+
+**Cloud Regions** system configuration now has a separate parameter "**_Mount storages across other regions_**":  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_RestrictCrossMount_1.png)
+
+This parameter has 3 possible values:
+
+- **`None`** - if set, storages from this region will be unavailable for a mount to any jobs. Such storages will not be available even to the same regions (e.g. storage from _`AWS us-east-1`_ will be unavailable for a mount to instances launched in _`AWS eu-central-1`_ or any _`GCP`_ region and even in _`AWS us-east-1`_)
+- **`Same Cloud`** - if set, storages from this region will be available only to different **Cloud Regions** of the same **Cloud Provider** (e.g. storage from _`AWS us-east-1`_ will be available to instances launched in _`AWS eu-central-1`_ too, but not in any _`GCP`_ region)
+- **`All`** - if set, storages from this region will be available to all other **Cloud Regions**/**Providers**
+
+## Ability to "symlink" the tools between the tools groups
+
+The majority of the tools are managed by the administrators and are available via the **_library_** tool group.  
+But for some of the users it would be convenient to have separate tool groups, which are going to contain a mix of the custom tools (managed by the users themselves) and the **_library_** tools (managed by the admins).
+
+For the latter ones the ability to create "`symlinks`" into the other tool groups was implemented.
+
+"Symlinked" tools are displayed in that users' tool groups as the original tools but can't be edited/updated. When a run is started with "symlinked" tool as docker image it is being replaced with original image for `Kubernetes` pod spec.
+
+Example of the "symlinked" `ubuntu` tool:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SymlinkedTools.png)
+
+The following behavior is implemented:
+
+- to create a "symlink" to the tool, the user shall have **_READ_** access to the source tool and **_WRITE_** access to the destination tool group
+- for the "symlinked" tool all the same description, icon, settings as in the source image are displayed. It isn't possible to make any changes to the "symlink" data (description, icon, settings. attributes, issues, etc.), even for the admins
+- admins and image OWNERs are able to manage the permissions for the "symlinks". Permissions on the "symlinked" tools are configured separately from the original tool
+- two levels of "symlinks" is not possible ("symlink" to the "symlinked" tool can't be created)
+- it isn't possible to "push" into the "symlinked" tool
+
+For more details see [here](../../manual/10_Manage_Tools/10.8._Symlinks_between_tools.md).
 
 ***
 

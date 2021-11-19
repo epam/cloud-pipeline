@@ -19,6 +19,7 @@ package com.epam.pipeline.billingreportagent.service.impl;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.core.JsonFactory;
 import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.common.Strings;
@@ -72,6 +73,7 @@ public final class TestUtils {
         run.setDockerImage(tool);
         run.setPricePerHour(price);
         run.setInstance(instance);
+        run.setStatus(TaskStatus.RUNNING);
         return run;
     }
 

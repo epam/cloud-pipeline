@@ -47,15 +47,50 @@ CP_GITLAB_SSO_TARGET_URL="${CP_GITLAB_SSO_TARGET_URL:-"https://${CP_IDP_EXTERNAL
 CP_GITLAB_SLO_TARGET_URL="${CP_GITLAB_SLO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"}"
 CP_GITLAB_WINDOW_MEMORY="${CP_GITLAB_WINDOW_MEMORY:-"128m"}"
 CP_GITLAB_PACK_SIZE_LIMIT="${CP_GITLAB_PACK_SIZE_LIMIT:-"512m"}"
+CP_GITLAB_BLOCK_AUTO_CREATED_USERS="${CP_GITLAB_BLOCK_AUTO_CREATED_USERS:-"false"}"
 CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
 CP_GITLAB_SSO_ENDPOINT_ID="${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}"
+CP_GITLAB_SAML_USER_ATTRIBUTES="${CP_GITLAB_SAML_USER_ATTRIBUTES:-email: ['email']}"
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
 echo "idp_sso_target_url: $CP_GITLAB_SLO_TARGET_URL"
 echo
 
+# If the proxies are not set via env vars, gitlab will consider empty values as "no proxy set"
+CP_GITLAB_HTTP_PROXY="${CP_GITLAB_HTTP_PROXY:-$http_proxy}"
+CP_GITLAB_HTTPS_PROXY="${CP_GITLAB_HTTP_PROXY:-$https_proxy}"
+GIT_PROXIES="gitlab_rails['env'] = {
+  \"http_proxy\" => \"$CP_GITLAB_HTTP_PROXY\",
+  \"https_proxy\" => \"$CP_GITLAB_HTTPS_PROXY\"
+}"
+
+# If the smtp configuration is available - add it to gitlab as well
+if [ "$CP_NOTIFIER_SMTP_FROM" ] && \
+    [ "$CP_NOTIFIER_SMTP_PASS" ] && \
+    [ "$CP_NOTIFIER_SMTP_SERVER_HOST" ] && \
+    [ "$CP_NOTIFIER_SMTP_SERVER_PORT" ] && \
+    [ "$CP_NOTIFIER_SMTP_USER" ]; then
+    echo
+    echo "SMTP configuration available:"
+    echo "  Host: ${CP_NOTIFIER_SMTP_SERVER_HOST}:${CP_NOTIFIER_SMTP_SERVER_PORT}"
+    echo "  User: $CP_NOTIFIER_SMTP_USER"
+    echo "  From: $CP_NOTIFIER_SMTP_FROM"
+    echo
+    SMTP_SETTINGS="gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = \"$CP_NOTIFIER_SMTP_SERVER_HOST\"
+gitlab_rails['smtp_port'] = $CP_NOTIFIER_SMTP_SERVER_PORT
+gitlab_rails['smtp_user_name'] = \"$CP_NOTIFIER_SMTP_USER\"
+gitlab_rails['smtp_password'] = \"$CP_NOTIFIER_SMTP_PASS\"
+gitlab_rails['smtp_domain'] = \"$CP_NOTIFIER_SMTP_SERVER_HOST\"
+gitlab_rails['smtp_authentication'] = \"login\"
+gitlab_rails['smtp_enable_starttls_auto'] = ${CP_NOTIFIER_SMTP_START_TLS:-false}
+gitlab_rails['gitlab_email_from'] = \"$CP_NOTIFIER_SMTP_FROM\""
+fi
+
 cat >> /etc/gitlab/gitlab.rb <<-EOF
+
+${GIT_PROXIES}
 
 gitlab_rails['db_adapter'] = '${GITLAB_DATABASE_ADAPTER}'
 gitlab_rails['db_encoding'] = '${GITLAB_DATABASE_ENCODING}'
@@ -75,7 +110,7 @@ omnibus_gitconfig['system'] = { "pack" => ["windowMemory = ${CP_GITLAB_WINDOW_ME
 gitlab_rails['omniauth_enabled'] = true
 gitlab_rails['omniauth_allow_single_sign_on'] = ['saml']
 gitlab_rails['omniauth_auto_link_saml_user'] = true
-gitlab_rails['omniauth_block_auto_created_users'] = false
+gitlab_rails['omniauth_block_auto_created_users'] = ${CP_GITLAB_BLOCK_AUTO_CREATED_USERS}
 gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'saml'
 gitlab_rails['omniauth_providers'] = [
 {
@@ -97,8 +132,10 @@ gitlab_rails['omniauth_providers'] = [
       digest_method: "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
       signature_method: "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
     },
-    attribute_statements: { email: ['email'] }
+    attribute_statements: { $CP_GITLAB_SAML_USER_ATTRIBUTES }
   }
  }
 ]
+
+${SMTP_SETTINGS}
 EOF

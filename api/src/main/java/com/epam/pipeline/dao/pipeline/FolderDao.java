@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -161,6 +162,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         LOCKED,
         PIPELINE_ID,
         PIPELINE_NAME,
+        PIPELINE_TYPE,
         PIPELINE_REPO,
         PIPELINE_REPO_SSH,
         PIPELINE_DESCRIPTION,
@@ -181,6 +183,11 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_ALLOWED_CIDRS,
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
+        DATASTORAGE_SENSITIVE,
+        DATASTORAGE_S3_KMS_KEY_ARN,
+        DATASTORAGE_S3_USE_ASSUMED_CREDS,
+        DATASTORAGE_S3_TEMP_CREDS_ROLE,
+        DATASTORAGE_MOUNT_STATUS,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
@@ -246,6 +253,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         pipeline.setId(pipelineId);
                         pipeline.setName(rs.getString(PIPELINE_NAME.name()));
                         pipeline.setDescription(rs.getString(PIPELINE_DESCRIPTION.name()));
+                        pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
                         pipeline.setRepository(rs.getString(PIPELINE_REPO.name()));
                         pipeline.setRepositorySsh(rs.getString(PIPELINE_REPO_SSH.name()));
                         pipeline.setRepositoryToken(rs.getString(PIPELINE_REPOSITORY_TOKEN.name()));
@@ -254,6 +262,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                 new Date(rs.getTimestamp(PIPELINE_CREATED_DATE.name()).getTime()));
                         pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
                         pipeline.setParentFolderId(folderId);
+                        pipeline.setOwner(rs.getString(OWNER.name()));
                         folder.getPipelines().add(pipeline);
                     }
                     Long dataStorageId = rs.getLong(DATASTORAGE_ID.name());
@@ -284,7 +293,13 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         rs.getString(DATASTORAGE_MOUNT_POINT.name()),
                                         allowedCidrs,
                                         regionId,
-                                        fileShareMountId);
+                                        fileShareMountId,
+                                        rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
+                                        rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
+                                        rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()),
+                                        rs.getString(DATASTORAGE_MOUNT_STATUS.name()),
+                                        Collections.emptySet(),
+                                        null);
                         dataStorage.setDescription(rs.getString(DATASTORAGE_DESCRIPTION.name()));
                         dataStorage.setCreatedDate(
                                 new Date(rs.getTimestamp(DATASTORAGE_CREATED_DATE.name()).getTime())
@@ -294,6 +309,8 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setParentFolderId(folderId);
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
+                        dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
+                        dataStorage.setOwner(rs.getString(OWNER.name()));
                         folder.getStorages().add(dataStorage);
                     }
                     rs.getLong(CONFIG_ID.name());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
@@ -26,6 +27,7 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
@@ -33,18 +35,22 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -55,26 +61,28 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,17 +99,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.entity.configuration.RunConfigurationUtils.getNodeCount;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.REPOSITORY_AND_IMAGE;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 
 @Service
 public class PipelineRunManager {
@@ -113,15 +128,14 @@ public class PipelineRunManager {
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
+    private static final String SHOW_ACTIVE_WORKERS_ONLY_PARAMETER = "CP_SHOW_ACTIVE_WORKERS_ONLY";
+    private static final int USER_PRICE_SCALE = 2;
+    private static final int BILLING_PRICE_SCALE = 5;
+    public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
+    private static final String LIMIT_MOUNTS_NONE = "none";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
-
-    @Autowired
-    private DockerContainerOperationManager dockerContainerOperationManager;
-
-    @Autowired
-    private DockerRegistryManager dockerRegistryManager;
 
     @Autowired
     private PipelineManager pipelineManager;
@@ -145,9 +159,6 @@ public class PipelineRunManager {
     private InstanceOfferManager instanceOfferManager;
 
     @Autowired
-    private AuthManager securityManager;
-
-    @Autowired
     private ToolManager toolManager;
 
     @Autowired
@@ -155,9 +166,6 @@ public class PipelineRunManager {
 
     @Autowired
     private PipelineConfigurationManager configurationManager;
-
-    @Autowired
-    private ToolApiService toolApiService;
 
     @Autowired
     private FolderApiService folderApiService;
@@ -181,10 +189,25 @@ public class PipelineRunManager {
     private RunStatusManager runStatusManager;
 
     @Autowired
-    private UsageMonitoringManager usageMonitoringManager;
+    private NodesManager nodesManager;
+    
+    @Autowired
+    private CheckPermissionHelper permissionHelper;
 
     @Autowired
-    private NodesManager nodesManager;
+    private PipelineRunCRUDService runCRUDService;
+
+    @Autowired
+    private StopServerlessRunManager stopServerlessRunManager;
+
+    @Autowired
+    private DockerRegistryManager dockerRegistryManager;
+
+    @Autowired
+    private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
+
+    @Autowired
+    private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -192,25 +215,29 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
-    public PipelineRun runCmd(PipelineStart runVO) {
+    public PipelineRun runCmd(final PipelineStart runVO) {
+        LOGGER.debug("Tool '{}' will be launched on behalf of '{}'", runVO.getDockerImage(),
+                authManager.getAuthorizedUser());
         Assert.notNull(runVO.getInstanceType(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "instance_type"));
         Assert.notNull(runVO.getHddSize(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "instance_disk"));
 
-        int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
+        final int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
-        Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
-        PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
+        final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
+        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
+                configuration.getSharedWithRoles()));
+        final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
-        PipelineRun run = launchPipeline(configuration, null, null,
+        final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
         run.setParent(tool);
         run.setAclClass(AclClass.TOOL);
 
@@ -246,6 +273,7 @@ public class PipelineRunManager {
         run.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
         run.setPodId(getRootPodIDFromTool(tool.getImage(), run.getId()));
         run.setDockerImage(configuration.getDockerImage());
+        run.setActualDockerImage(tool.getImage());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setTimeout(runVO.getTimeout());
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -265,24 +293,27 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
-    public PipelineRun runPipeline(PipelineStart runVO) {
-        Long pipelineId = runVO.getPipelineId();
-        String version = runVO.getVersion();
-        int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
+    public PipelineRun runPipeline(final PipelineStart runVO) {
+        final Long pipelineId = runVO.getPipelineId();
+        LOGGER.debug("Pipeline '{}' will be launched on behalf of '{}'", pipelineId, authManager.getAuthorizedUser());
+        final String version = runVO.getVersion();
+        final int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
-        Pipeline pipeline = pipelineManager.load(pipelineId);
-        PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
-        boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
+        final Pipeline pipeline = pipelineManager.load(pipelineId);
+        final PipelineConfiguration configuration = configurationManager
+                .getPipelineConfigurationForPipeline(pipeline, runVO);
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
+                configuration.getSharedWithRoles()));
+        final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
-        //check that tool execution is allowed
-        toolApiService.loadToolForExecution(configuration.getDockerImage());
-        PipelineRun run = launchPipeline(configuration, pipeline, version,
+        permissionManager.checkToolRunPermission(configuration.getDockerImage());
+        final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
         run.setParent(pipeline);
 
         if (isClusterRun) {
@@ -314,9 +345,14 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun launchPipeline(PipelineConfiguration configuration, Pipeline pipeline, String version,
             String instanceType, Long parentNodeId, String configurationName, String clusterId,
-            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids) {
+            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids,
+            List<PipelineStartNotificationRequest> notificationRequests) {
         Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
-        AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration);
+        Tool tool = getToolForRun(configuration);
+        Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
+        PipelineConfiguration toolConfiguration = configurationManager.getConfigurationForTool(tool, configuration);
+        AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration, toolConfiguration);
+        validateCloudRegion(toolConfiguration, region);
         validateInstanceAndPriceTypes(configuration, pipeline, region, instanceType);
         String instanceDisk = configuration.getInstanceDisk();
         if (StringUtils.hasText(instanceDisk)) {
@@ -324,14 +360,18 @@ public class PipelineRunManager {
                 Integer.parseInt(instanceDisk) > 0,
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, instanceDisk));
         }
-        Tool tool = getToolForRun(configuration);
 
         adjustInstanceDisk(configuration);
 
         List<String> endpoints = configuration.isEraseRunEndpoints() ? Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, region, parentRun.orElse(null), entityIds,
-                configurationId);
+        final boolean sensitive = checkRunForSensitivity(configuration.getParameters());
+        Assert.isTrue(!sensitive || tool.isAllowSensitive(),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
+
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region, 
+                parentRun.orElse(null), entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
@@ -343,20 +383,39 @@ public class PipelineRunManager {
         run.setActualCmd(launchedCommand);
         save(run);
         dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(run));
+        contextualNotificationRegistrationManager.register(notificationRequests, run);
         return run;
     }
 
     private AbstractCloudRegion resolveCloudRegion(final PipelineRun parentRun,
-                                                   final PipelineConfiguration configuration) {
+                                                   final PipelineConfiguration configuration, 
+                                                   final PipelineConfiguration toolConfiguration) {
         final Optional<Long> configurationRegionId = Optional.ofNullable(configuration)
+                .map(PipelineConfiguration::getCloudRegionId);
+        final Optional<Long> toolConfigurationRegionId = Optional.ofNullable(toolConfiguration)
                 .map(PipelineConfiguration::getCloudRegionId);
         final Optional<Long> parentRunRegionId = Optional.ofNullable(parentRun)
                 .map(PipelineRun::getInstance)
                 .map(RunInstance::getCloudRegionId);
         return configurationRegionId.map(Optional::of)
-                .orElse(parentRunRegionId)
+                .orElse(parentRunRegionId).map(Optional::of)
+                .orElse(toolConfigurationRegionId)
                 .map(cloudRegionManager::load)
                 .orElseGet(cloudRegionManager::loadDefaultRegion);
+    }
+
+    private void validateCloudRegion(final PipelineConfiguration toolConfiguration,
+                                     final AbstractCloudRegion region) {
+        if (!permissionHelper.isAdmin()) {
+            if (toolConfiguration.getCloudRegionId() != null) {
+                Assert.isTrue(toolConfiguration.getCloudRegionId().equals(region.getId()),
+                        messageHelper.getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
+                                cloudRegionManager.load(toolConfiguration.getCloudRegionId()).getName(), 
+                                region.getName()));
+            }
+            Assert.isTrue(permissionHelper.isAllowed("READ", region),
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_CLOUD_REGION_NOT_ALLOWED, region.getName()));
+        }
     }
 
     private void validateInstanceAndPriceTypes(final PipelineConfiguration configuration,
@@ -366,27 +425,31 @@ public class PipelineRunManager {
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
+        final boolean isMaster = PipelineConfigurationManager.isClusterConfiguration(configuration);
         if (pipeline != null) {
-            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId());
+            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId(), isMaster);
         } else {
-            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage());
+            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
+                                              isMaster);
         }
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
                                                        final PriceType priceType,
-                                                       final Long regionId) {
+                                                       final Long regionId,
+                                                       final boolean isMasterNode) {
         Assert.isTrue(!StringUtils.hasText(instanceType)
                         || instanceOfferManager.isInstanceAllowed(instanceType, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
     private void validateToolInstanceAndPriceTypes(final String instanceType,
                                                    final PriceType priceType,
                                                    final Long regionId,
-                                                   final String dockerImage) {
+                                                   final String dockerImage,
+                                                   final boolean isMasterNode) {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
@@ -394,7 +457,7 @@ public class PipelineRunManager {
                         || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource,
                                                     regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
@@ -417,7 +480,7 @@ public class PipelineRunManager {
                 .map(Long::parseLong);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public PipelineRun loadPipelineRun(Long id) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
         Assert.notNull(pipelineRun,
@@ -431,6 +494,11 @@ public class PipelineRunManager {
                 replaceParametersWithEnvVars(pipelineRun.getPipelineRunParameters(), pipelineRun.getEnvVars()));
         dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(pipelineRun));
         return pipelineRun;
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public Optional<PipelineRun> findRun(final Long id) {
+        return Optional.ofNullable(pipelineRunDao.loadPipelineRun(id));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -495,6 +563,11 @@ public class PipelineRunManager {
         return updatePipelineStatus(runId, status, pipelineRun);
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updatePipelineStatus(final PipelineRun run) {
+        return runCRUDService.updateRunStatus(run);
+    }
+
     /**
      * A shorthand method to stop a Pipeline Run
      * @param runId ID of a Pipeline Run
@@ -503,13 +576,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun stop(Long runId) {
         return updatePipelineStatusIfNotFinal(runId, TaskStatus.STOPPED);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updatePipelineStatus(PipelineRun run) {
-        updatePrettyUrlForFinishedRun(run);
-        pipelineRunDao.updateRunStatus(run);
-        return run;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -570,6 +636,13 @@ public class PipelineRunManager {
         return run;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun loadPipelineRunWithStatuses(final Long id) {
+        final PipelineRun run = loadPipelineRun(id);
+        run.setRunStatuses(runStatusManager.loadRunStatus(id));
+        return run;
+    }
+
     /**
      * Method that will return all active runs for which current users is owner or is listed in run sids - a list of
      * identities (user names or groups) that have access to run
@@ -612,9 +685,30 @@ public class PipelineRunManager {
         if (CollectionUtils.isNotEmpty(result.getElements())) {
             Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(result.getElements().stream()
                     .map(PipelineRun::getId).collect(Collectors.toList()));
-            result.getElements().forEach(run -> run.setRunStatuses(runStatuses.get(run.getId())));
+            for (final PipelineRun run : result.getElements()) {
+                run.setRunStatuses(runStatuses.get(run.getId()));
+                run.setChildRuns(getFilteredChildRuns(run));
+            }
         }
         return result;
+    }
+
+    private List<PipelineRun> getFilteredChildRuns(final PipelineRun run) {
+        return showOnlyActiveChildRuns(run) ? getActiveChildRuns(run) : run.getChildRuns();
+    }
+
+    private boolean showOnlyActiveChildRuns(final PipelineRun run) {
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters())
+                .stream()
+                .anyMatch(parameter -> SHOW_ACTIVE_WORKERS_ONLY_PARAMETER.equals(parameter.getName())
+                        && Boolean.parseBoolean(parameter.getValue()));
+    }
+
+    private List<PipelineRun> getActiveChildRuns(final PipelineRun run) {
+        return ListUtils.emptyIfNull(run.getChildRuns())
+                .stream()
+                .filter(childRun -> childRun.getStatus() == TaskStatus.RUNNING)
+                .collect(Collectors.toList());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -629,12 +723,14 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateServiceUrl(Long runId, PipelineRunServiceUrlVO serviceUrl) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
-        pipelineRun.setServiceUrl(serviceUrl.getServiceUrl());
-        pipelineRunDao.updateServiceUrl(pipelineRun);
+    public PipelineRun updateServiceUrl(final Long runId, final String region,
+                                        final PipelineRunServiceUrlVO serviceUrl) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+
+        pipelineRunServiceUrlManager.update(runId, region, serviceUrl);
+        pipelineRun.setServiceUrl(pipelineRunServiceUrlManager.loadByRunId(runId));
+
         //TODO: check if we need it
         setParent(pipelineRun);
         return pipelineRun;
@@ -655,46 +751,6 @@ public class PipelineRunManager {
         //TODO: check if we need it
         setParent(pipelineRun);
         return pipelineRun;
-    }
-
-    /**
-     * Commits docker image and push it to a docker registry from specified run
-     * @param id {@link PipelineRun} id for pipeline run to be committed
-     * @param registryId {@link DockerRegistry} id where new image will be pushed
-     * @param deleteFiles if true files from pipeline working directory will be cleaned
-     * @param stopPipeline if true pipeline will be stopped after commit
-     * @param checkSize if true method will check if free disk space is enough for commit operation
-     * @return  {@link PipelineRun} to be committed
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun commitRun(Long id, Long registryId, String newImageName, boolean deleteFiles,
-                                 boolean stopPipeline, boolean checkSize) {
-        if (checkSize) {
-            Assert.state(checkFreeSpaceAvailable(id),
-                    messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH));
-        }
-
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
-        DockerRegistry dockerRegistry = dockerRegistryManager.load(registryId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, id));
-        Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_FINISHED, id));
-        Assert.notNull(dockerRegistry,
-                messageHelper.getMessage(MessageConstants.ERROR_REGISTRY_NOT_FOUND, registryId));
-        String dockerImageFromRun = retrieveImageName(pipelineRun);
-        String resolvedImageName = StringUtils.isEmpty(newImageName) ? dockerImageFromRun : newImageName;
-
-        //check that there is no tool with this name in another registry
-        toolManager.assertThatToolUniqueAcrossRegistries(resolvedImageName, dockerRegistry.getPath());
-
-        return dockerContainerOperationManager.commitContainer(
-                pipelineRun,
-                dockerRegistry,
-                resolvedImageName,
-                deleteFiles,
-                stopPipeline
-        );
     }
 
     /**
@@ -725,8 +781,9 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration, Pipeline pipeline,
-                                         AbstractCloudRegion region, PipelineRun parentRun, List<Long> entityIds,
-                                         Long configurationId) {
+                                         Tool tool, ToolVersion toolVersion, AbstractCloudRegion region, 
+                                         PipelineRun parentRun, List<Long> entityIds, Long configurationId, 
+                                         boolean sensitive) {
         validateRunParameters(configuration, pipeline);
 
         RunInstance instance = configureRunInstance(configuration, region);
@@ -753,14 +810,18 @@ public class PipelineRunManager {
         run.convertParamsToString(configuration.getParameters());
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
+        run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
+        run.setPlatform(Optional.ofNullable(toolVersion).map(ToolVersion::getPlatform).orElse("linux"));
+        instance.setNodePlatform(run.getPlatform());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
         run.setSshPassword(PasswordGenerator.generatePassword());
-        run.setOwner(securityManager.getAuthorizedUser());
+        run.setOwner(authManager.getAuthorizedUser());
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
+        run.setSensitive(sensitive);
         run.setConfigurationId(configurationId);
         run.setExecutionPreferences(Optional.ofNullable(configuration.getExecutionPreferences())
                 .orElse(ExecutionPreferences.getDefault()));
@@ -774,57 +835,35 @@ public class PipelineRunManager {
         return run;
     }
 
+    private boolean checkRunForSensitivity(final Map<String, PipeConfValueVO> parameters) {
+        List<Long> datastorageIds = MapUtils.emptyIfNull(parameters).entrySet().stream()
+                .filter(v -> v.getKey().equals(CP_CAP_LIMIT_MOUNTS))
+                .map(Map.Entry::getValue)
+                .flatMap(pipeConfValueVO -> {
+                            String limitMounts = pipeConfValueVO.getValue();
+                            if (LIMIT_MOUNTS_NONE.equalsIgnoreCase(limitMounts)) {
+                                return Stream.empty();
+                            }
+                            return Arrays.stream(StringUtils.commaDelimitedListToStringArray(limitMounts))
+                                         .map(Long::valueOf);
+                        }
+                )
+                .collect(Collectors.toList());
+        if (datastorageIds.isEmpty()) {
+            return false;
+        }
+        return dataStorageManager.getDatastoragesByIds(datastorageIds)
+                .stream().anyMatch(AbstractDataStorage::isSensitive);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun save(PipelineRun pipelineRun) {
         pipelineRunDao.createPipelineRun(pipelineRun);
         return pipelineRun;
     }
 
-    /**
-     * Pauses pipeline run for specified {@code runId}.
-     * @param runId {@link PipelineRun} id for pipeline run to be paused
-     * @param checkSize if true method will check if free disk space is enough for commit operation
-     * @return paused {@link PipelineRun}
-     */
-    public PipelineRun pauseRun(Long runId, boolean checkSize) {
-        if (checkSize) {
-            Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
-        }
-        PipelineRun pipelineRun = loadRunForPauseResume(runId);
-        Assert.isTrue(pipelineRun.getInitialized(),
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_INITIALIZED, runId));
-        Assert.notNull(pipelineRun.getDockerImage(),
-                messageHelper.getMessage(MessageConstants.ERROR_DOCKER_IMAGE_NOT_FOUND, runId));
-        Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
-        pipelineRun.setStatus(TaskStatus.PAUSING);
-        updatePipelineStatus(pipelineRun);
-        dockerContainerOperationManager.pauseRun(pipelineRun);
-        return pipelineRun;
-    }
-
-    /**
-     * Resumes pipeline run for specified {@code runId}.
-     * @param runId {@link PipelineRun} id for pipeline run to be resumed
-     * @return resumed {@link PipelineRun}
-     */
-    public PipelineRun resumeRun(Long runId) {
-        PipelineRun pipelineRun = loadRunForPauseResume(runId);
-        Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
-        if (StringUtils.isEmpty(pipelineRun.getActualCmd())) {
-            throw new IllegalArgumentException(messageHelper.getMessage(
-                    MessageConstants.ERROR_ACTUAL_CMD_NOT_FOUND, runId));
-        }
-        Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
-        pipelineRun.setStatus(TaskStatus.RESUMING);
-        updatePipelineStatus(pipelineRun);
-        dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
-        return pipelineRun;
-    }
-
     public Tool getToolForRun(PipelineConfiguration configuration) {
-        return toolManager.loadByNameOrId(configuration.getDockerImage());
+        return toolManager.resolveSymlinks(configuration.getDockerImage());
     }
 
     /**
@@ -893,79 +932,11 @@ public class PipelineRunManager {
             return Collections.emptyList();
         }
 
-        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds).entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> adjustStatuses(e.getValue(), start, end)));
+        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds);
 
         return runs.stream()
-            .peek(run -> {
-                final List<RunStatus> loadedStatuses = runStatuses.get(run.getId());
-                if (CollectionUtils.isNotEmpty(loadedStatuses)) {
-                    run.setRunStatuses(loadedStatuses);
-                } else {
-                    createRunStatusesForRun(run, start, end);
-                }
-            })
-            .filter(run -> CollectionUtils.isNotEmpty(run.getRunStatuses()))
+            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * Create statuses for run based on its start/end date according to requested billing period
-     *
-     * @param run run to create status
-     * @param syncStart start of the billing calculation period
-     * @param syncEnd end of the billing calculation period
-     */
-    void createRunStatusesForRun(final PipelineRun run, final LocalDateTime syncStart, final LocalDateTime syncEnd) {
-        final LocalDateTime runStart = DateUtils.convertDateToLocalDateTime(run.getStartDate());
-        final Date runEnd = run.getEndDate();
-        if ((!Objects.isNull(runEnd) && syncStart.isAfter(DateUtils.convertDateToLocalDateTime(runEnd)))
-            || syncEnd.isBefore(runStart)) {
-            return;
-        } else {
-            final LocalDateTime runStatusStart = syncStart.isBefore(runStart)
-                                                 ? runStart
-                                                 : syncStart;
-            final LocalDateTime runStatusEnd = Objects.isNull(runEnd)
-                                               ? syncEnd
-                                               : ObjectUtils.min(DateUtils.convertDateToLocalDateTime(runEnd), syncEnd);
-            run.setRunStatuses(Arrays.asList(
-                new RunStatus(run.getId(), TaskStatus.RUNNING, EMPTY_STRING, runStatusStart),
-                new RunStatus(run.getId(), TaskStatus.PAUSED, EMPTY_STRING, runStatusEnd)
-            ));
-        }
-    }
-
-    /**
-     * Adjust statuses to the given period: all the statuses after the end of the period are removed,
-     * activity periods completed before start of the period are removed as well.
-     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#timestamp}
-     * will be adjusted to {@code start} time point.
-     *
-     * @param runStatuses statuses to be adjusted
-     * @param start beginning of period
-     * @param end ending of period
-     * @return list of adjusted statuses in natural date order
-     */
-    List<RunStatus> adjustStatuses(final List<RunStatus> runStatuses,
-                                   final LocalDateTime start,
-                                   final LocalDateTime end) {
-        runStatuses.removeIf(runStatus -> runStatus.getTimestamp().isAfter(end));
-        runStatuses.sort(Comparator.comparing(RunStatus::getTimestamp));
-        final int statusesCount = runStatuses.size();
-        for (int i = statusesCount - 1; i >= 0; i--) {
-            final RunStatus runStatus = runStatuses.get(i);
-            if (runStatus.getTimestamp().isBefore(start)) {
-                if (runStatus.getStatus() == TaskStatus.RUNNING) {
-                    runStatus.setTimestamp(start);
-                    runStatuses.set(i, runStatus);
-                    return runStatuses.subList(i, statusesCount);
-                } else {
-                    return runStatuses.subList(Math.min(i + 1, statusesCount), statusesCount);
-                }
-            }
-        }
-        return runStatuses;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -1013,28 +984,6 @@ public class PipelineRunManager {
     }
 
     /**
-     * Checks that free node space is enough. Calls before commit/pause operations.
-     * @param runId {@link PipelineRun} id for pipeline run
-     * @return true if free space is enough
-     */
-    public Boolean checkFreeSpaceAvailable(final Long runId) {
-        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = usageMonitoringManager.getPodDiskSpaceAvailable(
-                pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
-        final long requiredImageSize = (long)Math.ceil(
-                (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())
-                        * preferenceManager.getPreference(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI) / 2);
-        LOGGER.debug("Run {} available disk: {} required for image size: {}", runId, availableDisk, requiredImageSize);
-        if (availableDisk < requiredImageSize) {
-            LOGGER.warn("Free disk space is not enough");
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * Terminates paused run.
      *
      * It terminates the run cloud instance if it exists and stops the run.
@@ -1052,7 +1001,7 @@ public class PipelineRunManager {
                         pipelineRun.getStatus()));
         pipelineRun.setStatus(TaskStatus.STOPPED);
         pipelineRun.setEndDate(DateUtils.now());
-        updatePipelineStatus(pipelineRun);
+        runCRUDService.updateRunStatus(pipelineRun);
         nodesManager.terminateRun(pipelineRun);
         return pipelineRun;
     }
@@ -1082,6 +1031,7 @@ public class PipelineRunManager {
 
     /**
      * Generates launch command for 'pipe run' CLI method.
+     * Note: runParameters should be at the end of the command.
      *
      * @param runVO {@link PipeRunCmdStartVO} contains input arguments for launch command
      * @return launch command
@@ -1091,7 +1041,6 @@ public class PipelineRunManager {
         return new PipeRunCmdBuilder(runVO)
                 .name()
                 .config()
-                .runParameters()
                 .parameters()
                 .yes()
                 .instanceDisk()
@@ -1106,7 +1055,81 @@ public class PipelineRunManager {
                 .regionId()
                 .parentNode()
                 .nonPause()
+                .runParameters()
                 .build();
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
+        return pipelineRunDao.loadRunsByStatuses(statuses);
+    }
+
+    /**
+     * Adjusts run price per hour including provided node disks.
+     *
+     * @param runId of {@link PipelineRun} to update price for.
+     * @param disks of {@link PipelineRun} instance.
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final List<InstanceDisk> disks) {
+        final PipelineRun run = loadPipelineRun(runId);
+        final RunInstance instance = run.getInstance();
+        if (disks.isEmpty()) {
+            LOGGER.warn("Run #{} price per hour won't be adjusted since no disks are provided.", runId);
+            return run;
+        }
+        final BigDecimal pricePerHour = Optional.ofNullable(instance)
+                .filter(runInstance -> !runInstance.isEmpty())
+                .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
+                        getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
+                .map(InstancePrice::getPricePerHour)
+                .map(this::scaledForUser)
+                .orElse(run.getPricePerHour());
+        run.setPricePerHour(pricePerHour);
+        LOGGER.debug("Adjusted price per hour for run #{} to {}", runId, run.getPricePerHour());
+        return updateRunInfo(run);
+    }
+
+    public Optional<PipelineRun> loadActiveRunsByPodIP(final String ip) {
+        return pipelineRunDao.loadRunByPodIP(ip, Arrays.stream(TaskStatus.values())
+                .filter(status -> !status.isFinal())
+                .collect(Collectors.toList()));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void stopServerlessRun(final Long runId) {
+        stop(runId);
+        stopServerlessRunManager.deleteByRunId(runId);
+    }
+
+    public List<PipelineRunWithTool> loadRunsWithTools(final List<Long> runIds) {
+        final List<PipelineRun> runs = runCRUDService.loadRunsByIds(runIds);
+        if (CollectionUtils.isEmpty(runs)) {
+            return Collections.emptyList();
+        }
+        final Map<String, DockerRegistry> allRegistries = ListUtils.emptyIfNull(
+                dockerRegistryManager.loadAllDockerRegistry()).stream()
+                .collect(Collectors.toMap(DockerRegistry::getPath, Function.identity()));
+        final Map<String, Set<String>> imagesByRegistries = runs.stream()
+                .map(PipelineRun::getDockerImage)
+                .map(this::parseDockerImage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(Pair::getKey, mapping(Pair::getValue, toSet())));
+        final Map<String, Tool> tools = imagesByRegistries.entrySet().stream()
+                .flatMap(entry -> ListUtils.emptyIfNull(toolManager.loadAllByRegistryAndImageIn(
+                        parseRegistryId(entry.getKey(), allRegistries), entry.getValue())).stream())
+                .collect(Collectors.toMap(this::buildRegistryPath, Function.identity()));
+        return runs.stream()
+                .map(run -> PipelineRunWithTool.builder()
+                        .pipelineRun(run)
+                        .tool(tools.get(trimToolVersion(run.getDockerImage())))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private int getTotalSize(final List<InstanceDisk> disks) {
+        return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
@@ -1140,7 +1163,8 @@ public class PipelineRunManager {
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
                     runVO.getInstanceType(), runVO.getParentNodeId(),
-                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids());
+                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids(),
+                    runVO.getNotifications());
         }
     }
 
@@ -1191,7 +1215,7 @@ public class PipelineRunManager {
     // PodId should contain only a-z 0-9 and -, it also should be smaller then 63 characters
     private String normalizePodName(String name, String runId) {
         String podName = name.trim().toLowerCase();
-        podName = podName.replaceAll("[^a-z0-9\\-]+", "-");
+        podName = podName.replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");
         if (podName.length() + runId.length() + 1 > POD_ID_LENGTH) {
             podName = podName.substring(0, POD_ID_LENGTH - runId.length() - 1);
         }
@@ -1229,8 +1253,7 @@ public class PipelineRunManager {
         pipelineRun.setTerminating(status.isFinal());
 
         dataStorageManager.analyzePipelineRunsParameters(Arrays.asList(pipelineRun));
-        updatePrettyUrlForFinishedRun(pipelineRun);
-        pipelineRunDao.updateRunStatus(pipelineRun);
+        runCRUDService.updateRunStatus(pipelineRun);
         setParent(pipelineRun);
         return pipelineRun;
     }
@@ -1239,13 +1262,6 @@ public class PipelineRunManager {
         if (run.getPipelineId() != null && run.getPipelineId() != 0L) {
             run.setParent(pipelineManager.load(run.getPipelineId()));
         }
-    }
-
-    private String retrieveImageName(PipelineRun pipelineRun) {
-        String[] registryAndDockerImageFromRun = pipelineRun.getDockerImage().split("/");
-        return registryAndDockerImageFromRun.length == 1
-            ? registryAndDockerImageFromRun[0]
-            : registryAndDockerImageFromRun[1];
     }
 
     private void checkCommitRunStatus(PipelineRun run) {
@@ -1264,23 +1280,34 @@ public class PipelineRunManager {
         }
     }
 
-    List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
+    public List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
                                                             Map<String, String> envVars) {
         if (CollectionUtils.isEmpty(params) || MapUtils.isEmpty(envVars)) {
             return params;
         }
         params.forEach(p -> p.setResolvedValue(p.getValue()));
+        final List<PipelineRunParameter> paramsWithPossibleEnvVars = params.stream()
+                .filter(p -> org.apache.commons.lang3.StringUtils.isNotBlank(p.getValue()) &&
+                        p.getValue().contains("$"))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(paramsWithPossibleEnvVars)) {
+            return params;
+        }
         envVars.forEach((key, value) -> {
-            Pattern pattern = Pattern.compile(String.format("[$]%s[^a-zA-Z0-9_]", key));
-            params.forEach(param ->
+            Pattern pattern = Pattern.compile("[$]" + key + "[^a-zA-Z0-9_]");
+            Pattern patternWithBraces = Pattern.compile("[$]" + key + "$|[$][{]" + key + "[}]");
+            paramsWithPossibleEnvVars.forEach(param ->
                     param.setResolvedValue(
-                        replaceEnvVarInParameter(pattern, key, value, param.getResolvedValue())));
+                        replaceEnvVarInParameter(pattern, patternWithBraces, key, value, param.getResolvedValue())));
         });
         return params;
     }
 
-    private String replaceEnvVarInParameter(Pattern pattern, String envVarName,
-            String envVarValue, String parameter) {
+    private String replaceEnvVarInParameter(final Pattern pattern,
+                                            final Pattern patternWithBraces,
+                                            final String envVarName,
+                                            final String envVarValue,
+                                            final String parameter) {
         if (!StringUtils.hasText(parameter) || !StringUtils.hasText(envVarName)
                 || !StringUtils.hasText(envVarValue)) {
             return parameter;
@@ -1292,8 +1319,7 @@ public class PipelineRunManager {
                 char lastSymbol = matcher.group().toCharArray()[matcher.group().length() - 1];
                 resolvedParameter = matcher.replaceAll(envVarValue + lastSymbol);
             }
-            return resolvedParameter.replaceAll(String.format("[$]%s$|[$][{]%s[}]",
-                    envVarName, envVarName), envVarValue);
+            return patternWithBraces.matcher(resolvedParameter).replaceAll(envVarValue);
         } catch (IllegalArgumentException e) {
             LOGGER.trace(e.getMessage(), e);
             return parameter;
@@ -1322,23 +1348,6 @@ public class PipelineRunManager {
         }
     }
 
-    private void verifyPipelineRunForPauseResume(PipelineRun pipelineRun, Long runId) {
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        Assert.notNull(pipelineRun.getId(),
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_ID_NOT_FOUND, runId));
-        Assert.notNull(pipelineRun.getInstance(), messageHelper.getMessage(
-                MessageConstants.ERROR_INSTANCE_NOT_FOUND, runId));
-        RunInstance instance = pipelineRun.getInstance();
-        Assert.notNull(instance.getNodeId(), messageHelper.getMessage(
-                MessageConstants.ERROR_INSTANCE_ID_NOT_FOUND, runId));
-        Assert.notNull(instance.getNodeIP(), messageHelper.getMessage(
-                MessageConstants.ERROR_INSTANCE_IP_NOT_FOUND, runId));
-        Assert.isTrue(!instance.getSpot(), messageHelper.getMessage(MessageConstants.ERROR_ON_DEMAND_REQUIRED));
-        Assert.notNull(pipelineRun.getPodId(),
-                messageHelper.getMessage(MessageConstants.ERROR_POD_ID_NOT_FOUND, runId));
-    }
-
     private void validatePrettyUrlFree(String url) {
         pipelineRunDao.loadRunByPrettyUrl(url).ifPresent(r -> {
             throw new IllegalArgumentException(
@@ -1346,21 +1355,29 @@ public class PipelineRunManager {
         });
     }
 
-    private void updatePrettyUrlForFinishedRun(PipelineRun run) {
-        if (run.getStatus().isFinal() && StringUtils.hasText(run.getPrettyUrl())) {
-            run.setPrettyUrl(null);
-            pipelineRunDao.updateRun(run);
-        }
-    }
-
     private void setRunPrice(final RunInstance instance, final PipelineRun run) {
         if (!instance.isEmpty()) {
             run.setInstance(instance);
             InstancePrice runPrice = instanceOfferManager.getInstanceEstimatedPrice(
-                    instance.getNodeType(), instance.getNodeDisk(), instance.getSpot(), instance.getCloudRegionId());
+                    instance.getNodeType(), instance.getEffectiveNodeDisk(), instance.getSpot(),
+                    instance.getCloudRegionId());
             LOGGER.debug("Expected price per hour: {}", runPrice.getPricePerHour());
-            run.setPricePerHour(BigDecimal.valueOf(runPrice.getPricePerHour()).setScale(2, RoundingMode.HALF_EVEN));
+            run.setPricePerHour(scaledForUser(runPrice.getPricePerHour()));
+            run.setComputePricePerHour(scaledForBilling(runPrice.getComputePricePerHour()));
+            run.setDiskPricePerHour(scaledForBilling(runPrice.getDiskPricePerHour()));
         }
+    }
+
+    private BigDecimal scaledForUser(final double price) {
+        return scaled(price, USER_PRICE_SCALE);
+    }
+
+    private BigDecimal scaledForBilling(final double price) {
+        return scaled(price, BILLING_PRICE_SCALE);
+    }
+
+    private BigDecimal scaled(final double price, final int scale) {
+        return BigDecimal.valueOf(price).setScale(scale, RoundingMode.HALF_EVEN);
     }
 
     private PipelineRun createRestartRun(final PipelineRun run) {
@@ -1393,6 +1410,8 @@ public class PipelineRunManager {
         restartedRun.parseParameters();
         restartedRun.setTimeout(run.getTimeout());
         restartedRun.setDockerImage(run.getDockerImage());
+        restartedRun.setActualDockerImage(run.getActualDockerImage());
+        restartedRun.setPlatform(run.getPlatform());
         restartedRun.setCmdTemplate(run.getCmdTemplate());
         restartedRun.setNodeCount(run.getNodeCount());
         RunInstance instance = copyInstance(run.getInstance());
@@ -1425,14 +1444,57 @@ public class PipelineRunManager {
             runInstance.setNodeType(i.getNodeType());
             runInstance.setSpot(i.getSpot());
             runInstance.setCloudProvider(i.getCloudProvider());
+            runInstance.setNodePlatform(i.getNodePlatform());
             return runInstance;
         }).orElse(new RunInstance());
     }
 
-    private PipelineRun loadRunForPauseResume(Long runId) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        verifyPipelineRunForPauseResume(pipelineRun, runId);
-        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
-        return pipelineRun;
+    private Pair<String, String> parseDockerImage(final String dockerImage) {
+        final Matcher matcher = REPOSITORY_AND_IMAGE.matcher(dockerImage);
+
+        if (!matcher.find()) {
+            LOGGER.error("Failed to parse docker image ['{}']", dockerImage);
+            return null;
+        }
+
+        final String repository = matcher.group(1);
+        final String imageWithTag = matcher.group(2);
+        final String imageName = getImageWithoutTag(imageWithTag);
+
+        return Pair.of(repository, imageName);
+    }
+
+    private Long parseRegistryId(final String registry, final Map<String, DockerRegistry> allRegistries) {
+        return allRegistries.getOrDefault(registry, new DockerRegistry()).getId();
+    }
+
+    private String buildRegistryPath(final Tool tool) {
+        return formatRegistryPath(tool.getRegistry(), tool.getImage());
+    }
+
+    private String formatRegistryPath(final String registry, final String image) {
+        return String.format("%s/%s", registry, image);
+    }
+
+    private String trimToolVersion(final String docketImage) {
+        final Pair<String, String> parsedImage = parseDockerImage(docketImage);
+        return Objects.isNull(parsedImage)
+                ? null
+                : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
+    }
+
+    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
+                                      final List<RunSid> userSidsFromConfiguration,
+                                      final List<RunSid> roleSidsFromConfiguration) {
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
+        return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
+        return runsSids.stream()
+                .peek(runSid -> runSid.setIsPrincipal(principal))
+                .collect(Collectors.toList());
     }
 }

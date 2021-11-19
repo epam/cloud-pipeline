@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool ADD allow_sensitive BOOLEAN DEFAULT FALSE NOT NULL;

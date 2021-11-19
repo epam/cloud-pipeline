@@ -21,25 +21,14 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
-import com.epam.pipeline.entity.datastorage.ContentDisposition;
-import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DataStorageException;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
-import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
-import com.epam.pipeline.entity.datastorage.DataStorageListing;
-import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
-import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.entity.datastorage.PathDescription;
-import com.epam.pipeline.entity.datastorage.StorageUsage;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
+import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -82,6 +71,7 @@ import java.util.Set;
 public class DataStorageController extends AbstractRestController {
 
     private static final String ID = "id";
+    private static final String FROM_REGION = "fromRegion";
     private static final String PATH = "path";
     private static final String VERSION = "version";
     private static final String PIPELINE_ID = "pipelineId";
@@ -122,14 +112,19 @@ public class DataStorageController extends AbstractRestController {
     @RequestMapping(value = "/datastorage/availableWithMounts", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
-            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
+            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
+                    "If fronRegion is specified this method will return only allowed for mount" +
+                    " storages for specified region.",
+            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
+                    "If fronRegion is specified this method will return only allowed for mount " +
+                    "storages for specified region.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects() {
-        return Result.success(dataStorageApiService.getAvailableStoragesWithShareMount());
+    public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects(
+            @RequestParam(value = FROM_REGION, required = false) final Long regionId) {
+        return Result.success(dataStorageApiService.getAvailableStoragesWithShareMount(regionId));
     }
 
     @RequestMapping(value = "/datastorage/mount", method = RequestMethod.GET)
@@ -170,6 +165,33 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<AbstractDataStorage> findDataStorage(@RequestParam(value = ID) final String identifier) {
         return Result.success(dataStorageApiService.loadByNameOrId(identifier));
+    }
+
+    @RequestMapping(value = "/datastorage/findByPath", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns a datastorage, specified by ID, name or one of path prefixes.",
+            notes = "Returns a datastorage, specified by ID, name or one of path prefixes.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<AbstractDataStorage> findDataStorageByPath(@RequestParam(value = ID) final String identifier) {
+        return Result.success(dataStorageApiService.loadByPathOrId(identifier));
+    }
+
+    @RequestMapping(value = "/datastorage/findAllByPath", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns a list of datastorage, specified by one of path prefixes.",
+            notes = "Returns a list of datastorage, specified by one of path prefixes.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID)
+                                                                          final String identifier) {
+        return Result.success(dataStorageApiService.loadAllByPath(identifier));
     }
 
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.GET)
@@ -424,7 +446,9 @@ public class DataStorageController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GenerateDownloadUrlVO generateDownloadUrlVO) {
         return Result.success(dataStorageApiService
-                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths()));
+                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths(), 
+                        generateDownloadUrlVO.getPermissions(),
+                        generateDownloadUrlVO.getHours()));
     }
 
     @PostMapping("/datastorage/{id}/generateUploadUrl")
@@ -469,8 +493,9 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
             @RequestBody DataStorageVO dataStorageVO,
-            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud) {
-        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud));
+            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud,
+            @RequestParam(value = "skipPolicy", defaultValue = FALSE) final boolean skipPolicy){
+        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud, skipPolicy));
     }
 
     @RequestMapping(value = "/datastorage/update", method = RequestMethod.POST)
@@ -619,7 +644,7 @@ public class DataStorageController extends AbstractRestController {
                                                       @RequestParam(value = PATH) String path,
                                                       @RequestParam(value = VERSION, required = false) String version,
                                                       @RequestBody final Set<String> tags) {
-        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, tags, version));
+        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, version, tags));
     }
 
     @GetMapping(value = "/datastorage/{id}/tags/list")
@@ -651,6 +676,21 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<String> getDataStorageSharedLink(@PathVariable(value = ID) final Long id) {
         return Result.success(dataStorageApiService.getDataStorageSharedLink(id));
+    }
+
+    @PostMapping(value = "/datastorage/{id}/convert")
+    @ResponseBody
+    @ApiOperation(
+            value = "Converts data storage to versioned storage.",
+            notes = "Converts data storage to versioned storage.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<AbstractSecuredEntity> convert(@PathVariable(value = ID) final Long id,
+                                                 @RequestBody(required = false)
+                                                 final DataStorageConvertRequest request) {
+        return Result.success(dataStorageApiService.convert(id, request));
     }
 
     @GetMapping(value = "/datastorage/permission")
@@ -694,5 +734,59 @@ public class DataStorageController extends AbstractRestController {
     public Result<StorageUsage> getStorageUsage(@RequestParam final String id,
                                                 @RequestParam(required = false) final String path) {
         return Result.success(dataStorageApiService.getStorageUsage(id, path));
+    }
+
+    @PostMapping(value = "/datastorage/sharedStorage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            notes = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageMountPath> createSharedFSSPathForRun(@RequestParam final Long runId) {
+        return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, true));
+    }
+
+    @GetMapping(value = "/datastorage/sharedStorage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns storage to be used as shared folder of a Pipeline Run.",
+            notes = "Returns storage to be used as shared folder of a Pipeline Run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageMountPath> getSharedFSSPathForRun(@RequestParam final Long runId) {
+        return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, false));
+    }
+
+    @PostMapping(value = "/datastorage/davmount")
+    @ResponseBody
+    @ApiOperation(
+            value = "Request storage to be mounted to dav service by setting metadata.",
+            notes = "Request storage to be mounted to dav service by setting metadata.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result requestDataStorageDavMount(@RequestBody final DataStorageMountVO request) {
+        dataStorageApiService.requestDataStorageDavMount(request.getId(), request.getTime());
+        return Result.success();
+    }
+
+    @DeleteMapping(value = "/datastorage/{id}/davmount")
+    @ResponseBody
+    @ApiOperation(
+            value = "Call off storage to be mounted to dav service by setting metadata.",
+            notes = "Request storage to be mounted to dav service by setting metadata.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result callOffDataStorageDavMount(@PathVariable(value = ID) final Long id) {
+        dataStorageApiService.callOffDataStorageDavMount(id);
+        return Result.success();
     }
 }

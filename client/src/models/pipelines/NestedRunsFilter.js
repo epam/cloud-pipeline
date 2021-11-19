@@ -27,6 +27,7 @@ class PipelineRunFilter extends RemotePost {
   constructor (params, loadLinks = false) {
     super();
     this.params = params;
+    this.showOnlyActiveWorkers = false;
     this.url = `/run/filter?loadLinks=${loadLinks}`;
     this.fetch();
   };
@@ -43,6 +44,18 @@ class PipelineRunFilter extends RemotePost {
       delete this.refreshInterval;
     }
   }
+
+  setShowOnlyActiveWorkers = (value) => {
+    if (value !== this.showOnlyActiveWorkers) {
+      this.showOnlyActiveWorkers = value;
+      const {statuses, ...rest} = this.params;
+      if (this.showOnlyActiveWorkers) {
+        this.filter({...rest, statuses: ['RUNNING']});
+      } else {
+        this.filter({...rest});
+      }
+    }
+  };
 
   @observable _total = 0;
   @computed

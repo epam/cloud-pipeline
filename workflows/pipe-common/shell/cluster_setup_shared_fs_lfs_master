@@ -31,12 +31,18 @@ pipe_log_info "--> Installing LFS master server" "$FS_SETUP_TASK"
 
 _LFS_INSTALL_RESULT=1
 if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y -q install lizardfs-master
-    _LFS_INSTALL_RESULT=$?
+    _LFS_INSTALL_RESULT=0
+    if ! rpm -q "lizardfs-master"  &> /dev/null; then
+        yum -y -q install lizardfs-master
+        _LFS_INSTALL_RESULT=$?
+    fi
 else
-    apt-get install lsb-release gnupg -y -qq && \
-    apt-get install -t stable lizardfs-master -y -qq
-    _LFS_INSTALL_RESULT=$?
+    _LFS_INSTALL_RESULT=0
+    if ! dpkg -l | grep -q "lizardfs-master"; then
+        apt-get install lsb-release gnupg -y -qq && \
+        apt-get install -t stable lizardfs-master -y -qq
+        _LFS_INSTALL_RESULT=$?
+    fi
 fi
 
 if [ $_LFS_INSTALL_RESULT -ne 0 ]; then
@@ -49,6 +55,9 @@ pipe_log_info "--> LFS master server installed" "$FS_SETUP_TASK"
 ######################################################
 # Configure LFS Master
 ######################################################
+
+rm -rf /var/lib/mfs/metadata.mfs /etc/mfs/mfsexports.cfg /etc/mfs/mfsmaster.cfg /etc/mfs/mfsgoals.cfg
+rm -rf /var/lib/mfs/*lock
 
 cp /var/lib/mfs/metadata.mfs.empty /var/lib/mfs/metadata.mfs
 cp /etc/mfs/mfsexports.cfg.dist /etc/mfs/mfsexports.cfg
@@ -66,13 +75,7 @@ echo "1 1 : _" > /etc/mfs/mfsgoals.cfg
 # Start LFS Master
 ######################################################
 
-if [[ "$IS_RPM_BASED" = 0 ]]; then
-    nohup mfsmaster -d start > /var/log/mfsmaster.out 2>&1 &
-else
-    sed -i "s/fals/tru/g" /etc/default/lizardfs-master
-    service lizardfs-master start
-fi
-
+nohup mfsmaster -d start > /var/log/mfsmaster.out 2>&1 &
 
 if [ $? -ne 0 ]
 then

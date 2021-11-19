@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Disable automatic packages upgrade, if cloud-init is configured
+if [ -d "/etc/cloud/cloud.cfg.d" ]; then
+
+cat <<EOF >/etc/cloud/cloud.cfg.d/99_no_upgrades.cfg
+repo_upgrade: none
+repo_upgrade_exclude:
+ - kernel
+ - nvidia*
+ - cuda*
+ - kubernetes*
+EOF
+
+fi
 
 # Install common
 yum install -y  nc \
                 python \
-                curl && \
-curl https://bootstrap.pypa.io/get-pip.py | python -
+                curl \
+                btrfs-progs
+
+yum install -y iproute-tc
+curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
 
 # Install nvidia driver deps
 yum install -y  gcc \
@@ -52,6 +72,19 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
+# Get the kube docker images, required by the kubelet
+# This is needed, as we don't want to rely on the external repos
+systemctl start docker && \
+mkdir -p /opt/docker-system-images && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-node-v3.14.1.tar" -O /opt/docker-system-images/calico-node-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-pod2daemon-flexvol-v3.14.1.tar" -O /opt/docker-system-images/calico-pod2daemon-flexvol-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-cni-v3.14.1.tar" -O /opt/docker-system-images/calico-cni-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /opt/docker-system-images/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/quay.io-coreos-flannel-v0.11.0.tar" -O /opt/docker-system-images/quay.io-coreos-flannel-v0.11.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /opt/docker-system-images/k8s.gcr.io-pause-3.1.tar
+
+systemctl stop docker
+
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -79,18 +112,31 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
-
-# Setup default cgroups and cadvisor port
-sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 # Install nvidia driver
+# - For k80 and v100
 wget http://us.download.nvidia.com/tesla/384.145/NVIDIA-Linux-x86_64-384.145.run && \
-sh NVIDIA-Linux-x86_64-384.145.run --silent
+sh NVIDIA-Linux-x86_64-384.145.run --silent && \
+rm -f NVIDIA-Linux-x86_64-384.145.run
+# - For a100
+wget https://us.download.nvidia.com/XFree86/Linux-x86_64/470.57.02/NVIDIA-Linux-x86_64-470.57.02.run && \
+sh NVIDIA-Linux-x86_64-470.57.02.run --silent && \
+rm -f NVIDIA-Linux-x86_64-470.57.02.run
+cat > /etc/yum.repos.d/cuda-rhel7.repo <<EOF
+[cuda-rhel7-x86_64]
+name=cuda-rhel7-x86_64
+baseurl=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub
+EOF
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+yum -y install cuda-drivers-fabricmanager-470 && \
+systemctl enable nvidia-fabricmanager
+# -
 
 # Install nvidia docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 

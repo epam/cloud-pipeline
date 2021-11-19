@@ -2,9 +2,13 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": { "type": "keyword", "store": true },
-        "name": { "type": "text", "store": true },
+        "name": { "type": "text", "store": true, "fields": { "keyword": { "type": "keyword" } } },
         "parentId": { "type": "keyword", "store": true, "index": false },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "ownerUserId": { "type": "long" },
@@ -19,6 +23,21 @@
       }
     }
   },
+  "dynamic_templates": [
+    {
+      "metadata": {
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type":  "keyword"
+            }
+          }
+        }
+      }
+    }
+  ],
   "settings": {
     "index": {
       "number_of_shards" : 1,

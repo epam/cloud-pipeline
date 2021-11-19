@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -36,19 +36,23 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.configurationWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CREATE, context().find(byId("create-button"))),
             entry(CREATE_PIPELINE, $(byClassName("create-pipeline-sub-menu-button"))),
-            entry(CREATE_FOLDER, $(byClassName("ant-dropdown-placement-bottomRight"))
+            entry(CREATE_FOLDER, $(byClassName("rc-dropdown-placement-bottomRight"))
                     .find(byText("Folder"))),
             entry(CREATE_STORAGE, $(byClassName("create-storage-sub-menu"))),
             entry(CREATE_CONFIGURATION, $(byClassName("create-configuration-button"))),
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),
-            entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount")))
+            entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount"))),
+            entry(ALL_PIPELINES, $(byText("All pipelines"))),
+            entry(ALL_STORAGES, $(byText("All storages")))
     );
 
     public static final By tree = byId("pipelines-library-tree");
@@ -59,7 +63,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      * Useful when you need to describe any tree item, for instance, when you need all of them, get first one
      * or get one by index.
      */
-    public static final By treeItem = byXpath(".//li[contains(@class, 'pipelines-library-tree-node')]");
+    public static final By treeItem = byXpath(".//li[contains(@class, 'pipelines-library-tree-node-folder_root')]");
 
     /**
      * Selects search input in tree view.
@@ -120,7 +124,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public static By treeItem(final String name) {
         final String treeItemClass = "pipelines-library-tree-node";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//li[contains(@class, '%s') and ./span[contains(., '%s')]]", treeItemClass, name
         ));
     }
@@ -141,7 +145,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public static By browserItem(final String name) {
         final String browserRowClass = "ant-table-row";
         final String nameColumnClass = "browser__tree-item-name";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//tr[contains(@class, '%s') and ./td[@class = '%s' and .//text() = '%s']]",
             browserRowClass, nameColumnClass, name
         ));
@@ -179,11 +183,12 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO createStorage(String storageName) {
         return clickOnCreateStorageButton()
                 .setStoragePath(storageName)
-                .ok();
+                .ok()
+                .checkStorageCreation(storageName);
     }
 
     public CreateStoragePopupAO clickOnCreateStorageButton() {
-        resetMouse().hover(CREATE).click(CREATE_STORAGE);
+        resetMouse().click(CREATE).click(CREATE_STORAGE);
         return new CreateStoragePopupAO();
     }
 
@@ -206,12 +211,12 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
 
     public CreateNfsMountPopupAO clickOnCreateNfsMountButton() {
-        resetMouse().hover(CREATE).hover(CREATE_STORAGE).click(CREATE_NFS_MOUNT);
+        resetMouse().click(CREATE).hover(CREATE_STORAGE).click(CREATE_NFS_MOUNT);
         return new CreateNfsMountPopupAO();
     }
 
     public CreateStoragePopupAO clickOnCreateExistingStorageButton() {
-        resetMouse().hover(CREATE).hover(CREATE_STORAGE).click(ADD_EXISTING_STORAGE);
+        resetMouse().click(CREATE).hover(CREATE_STORAGE).click(ADD_EXISTING_STORAGE);
         return new CreateStoragePopupAO();
     }
 
@@ -275,7 +280,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeFolder(String folderName) {
         cd(folderName)
                 .resetMouse()
-                .hover(byId("edit-folder-menu-button"))
+                .click(byId("edit-folder-menu-button"))
                 .click(byText("Delete"))
                 .click(button("OK"));
         return this;
@@ -284,15 +289,43 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeNotEmptyFolder(String folderName) {
         cd(folderName)
                 .resetMouse()
-                .hover(byId("edit-folder-menu-button"))
+                .click(byId("edit-folder-menu-button"))
                 .click(byText("Delete"))
                 .click(byText("Delete sub-items"))
                 .click(button("OK"));
         return this;
     }
 
-    public ElementsCollection getStorages() {
-        return $$("[class^=pipelines-library-tree-node-storage]");
+    private List<String> allPipelinesStoragesList() {
+        return context().findAll(className("object-name")).texts();
+    }
+
+    public PipelinesLibraryAO ensurePipelineOrStorageIsPresentInTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))).shouldBe(visible);
+         return this;
+    }
+
+    public PipelinesLibraryAO ensurePipelineOrStorageIsNotPresentInTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))).shouldNotBe(visible);
+        return this;
+    }
+
+    public PipelineLibraryContentAO openPipelineFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .shouldBe(visible).click();
+        return new PipelineLibraryContentAO(name);
+    }
+
+    public PipelineRunFormAO runPipelineFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .closest("tr").find(byClassName("ant-btn")).click();
+        return new PipelineRunFormAO();
+    }
+
+    public StorageContentAO openStorageFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .shouldBe(visible).click();
+        return new StorageContentAO();
     }
 
     public PipelinesLibraryAO validateStoragePictogram(final String storage) {
@@ -306,7 +339,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO createFolder(String folderName) {
-        resetMouse().hover(CREATE).click(CREATE_FOLDER);
+        resetMouse().click(CREATE).click(CREATE_FOLDER);
         Utils.getPopupByTitle("Create folder")
                 .find(byId("name")).shouldBe(visible).setValue(folderName);
         $(byId("folder-edit-form-ok-button")).shouldBe(visible).click();
@@ -337,7 +370,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public CreatePipelinePopupAO clickCreatePipelineButton() {
         sleep(2, SECONDS);
-        hover(CREATE).hover(CREATE_PIPELINE).click(CREATE_PIPELINE);
+        click(CREATE).hover(CREATE_PIPELINE).click(CREATE_PIPELINE);
         return new CreatePipelinePopupAO();
     }
 
@@ -363,7 +396,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO createConfiguration(final Consumer<DetachedConfigurationCreationPopup> configuration) {
-        resetMouse().hover(CREATE).click(CREATE_CONFIGURATION);
+        resetMouse().click(CREATE).click(CREATE_CONFIGURATION);
         configuration.accept(new DetachedConfigurationCreationPopup(new Configuration()));
         return this;
     }
@@ -410,13 +443,20 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
                 .performIf(treeItem(storageName), visible, page -> page.removeStorage(storageName));
     }
 
+    private PipelinesLibraryAO checkStorageCreation(final String storageName) {
+        if ($(byId("pipelines-library-tree-container")).shouldBe(visible)
+                .find(titleOfTreeItem(treeItem(storageName))).is(not(exist))
+                && $(withText("The specified bucket does not exist")).exists()
+                && $(withText("Service: Amazon S3; Status Code: 404")).exists()) {
+            screenshot("AmazonS3_404");
+            $(byClassName("ant-confirm-btns")).find(byText("OK")).shouldBe(enabled).click();
+            createStorage(storageName);
+        }
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
-    }
-
-    public void ensurePopupIsClosed() {
-        sleep(2, SECONDS);
-        $(byClassName("ant-modal-body")).shouldNotBe(visible);
     }
 }

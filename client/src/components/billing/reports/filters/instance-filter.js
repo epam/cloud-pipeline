@@ -24,11 +24,13 @@ const filters = {
   },
   usage: {
     dataSample: 'usage',
-    previousDataSample: 'previousUsage'
+    previousDataSample: 'previousUsage',
+    title: 'Usage (hours)'
   },
   runsCount: {
     dataSample: 'runsCount',
-    previousDataSample: 'previousRunsCount'
+    previousDataSample: 'previousRunsCount',
+    title: 'Runs count'
   }
 };
 
@@ -39,7 +41,11 @@ function handle (value, handler) {
 
 export default function ({onChange, value}) {
   return (
-    <Radio.Group value={value} onChange={e => handle(e.target.value, onChange)}>
+    <Radio.Group
+      value={value}
+      onChange={e => handle(e.target.value, onChange)}
+      size="small"
+    >
       <Radio.Button key="value" value="value">Cost</Radio.Button>
       <Radio.Button key="usage" value="usage">Usage (hours)</Radio.Button>
       <Radio.Button key="runsCount" value="runsCount">Runs</Radio.Button>

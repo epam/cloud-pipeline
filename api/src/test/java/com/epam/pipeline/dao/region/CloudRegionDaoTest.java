@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.region;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzurePolicy;
@@ -24,9 +23,12 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.region.CloudRegionAspect;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.lang.math.RandomUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 @Transactional
-public class CloudRegionDaoTest extends AbstractSpringTest {
+public class CloudRegionDaoTest extends AbstractJdbcTest {
 
     private static final String STORAGE_ACCOUNT_KEY = "storageAccountKey";
     private static final AzureRegionCredentials AZURE_CREDENTIALS = new AzureRegionCredentials(STORAGE_ACCOUNT_KEY);
@@ -70,6 +72,9 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
+
+    @MockBean
+    CloudRegionAspect cloudRegionAspect;
 
     @Test
     public void loadAllShouldReturnEmptyListIfThereAreNoRegions() {
@@ -309,6 +314,7 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertThat(expectedRegion.getTempCredentialsRole(), is(actualRegion.getTempCredentialsRole()));
         assertThat(expectedRegion.getBackupDuration(), is(actualRegion.getBackupDuration()));
         assertThat(expectedRegion.isVersioningEnabled(), is(actualRegion.isVersioningEnabled()));
+        assertThat(expectedRegion.getIamRole(), is(actualRegion.getIamRole()));
     }
 
     private void assertRegionEquals(final AzureRegion expectedRegion, final AzureRegion actualRegion) {

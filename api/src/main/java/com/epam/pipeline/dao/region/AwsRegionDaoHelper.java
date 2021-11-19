@@ -44,6 +44,7 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
         params.addValue(CloudRegionParameters.BACKUP_DURATION.name(), region.getBackupDuration());
         params.addValue(CloudRegionParameters.VERSIONING_ENABLED.name(), region.isVersioningEnabled());
         params.addValue(CloudRegionParameters.SSH_KEY_NAME.name(), region.getSshKeyName());
+        params.addValue(CloudRegionParameters.AWS_IAM_ROLE.name(), region.getIamRole());
         return params;
     }
 
@@ -64,6 +65,7 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
         }
         awsRegion.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
         awsRegion.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
+        awsRegion.setIamRole(rs.getString(CloudRegionParameters.AWS_IAM_ROLE.name()));
         return awsRegion;
     }
 

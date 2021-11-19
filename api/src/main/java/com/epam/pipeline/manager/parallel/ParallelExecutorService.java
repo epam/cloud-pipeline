@@ -20,6 +20,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.reactivex.schedulers.Schedulers;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutorService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ExecutorService;
@@ -54,14 +56,16 @@ public class ParallelExecutorService {
             .subscribe((numThreads -> {
                 synchronized (this) {
                     executorService.shutdown();
-                    ThreadPoolExecutor pool = (ThreadPoolExecutor)Executors.newFixedThreadPool(maxNodeUpThreads);
-                    pool.prestartAllCoreThreads();
-                    executorService = pool;
+                    executorService = getExecutorService(maxNodeUpThreads);
                 }
             }));
 
-        ThreadPoolExecutor pool = (ThreadPoolExecutor)Executors.newFixedThreadPool(maxNodeUpThreads);
+        return getExecutorService(maxNodeUpThreads);
+    }
+
+    private ExecutorService getExecutorService(final int maxNodeUpThreads) {
+        ThreadPoolExecutor pool = (ThreadPoolExecutor) Executors.newFixedThreadPool(maxNodeUpThreads);
         pool.prestartAllCoreThreads();
-        return pool;
+        return new DelegatingSecurityContextExecutorService(pool, SecurityContextHolder.getContext());
     }
 }

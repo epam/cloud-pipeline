@@ -2,15 +2,19 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": { "type": "keyword", "store": true },
         "parentId": { "type": "keyword", "store": true },
-        "name": { "type": "text", "store": true },
+        "name": { "type": "text", "store": true, "fields": { "keyword": { "type": "keyword" } } },
         "description": { "type": "text", "store": true },
-        "pipelineId": { "type": "keyword",  "copy_to": "parentId"},
+        "pipelineId": { "type": "keyword" },
         "pipelineName": { "type": "text"},
-        "pipelineVersion": { "type": "text",  "copy_to": "description"},
-        "path": { "type": "text", "analyzer": "file_path_analyzer", "copy_to": ["name", "id"]},
+        "pipelineVersion": { "type": "text" },
+        "path": { "type": "text", "analyzer": "file_path_analyzer" },
         "content": { "type": "text", "store": true },
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },

@@ -15,20 +15,25 @@
  */
 
 import React, {Component} from 'react';
-import {Alert, Menu, Row, Col, Card, Button} from 'antd';
+import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
+import pools from '../../models/cluster/HotNodePools';
+import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
-import {PIPELINE_INFO_LABEL} from './node-roles';
+import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
+import roleModel from '../../utils/roleModel';
 
 @inject((stores, {params, location}) => {
   const {from, to} = location?.query;
   return {
+    pools,
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName),
     chartsData: new ChartsData(params.nodeName, from, to)
@@ -36,12 +41,31 @@ import {PIPELINE_INFO_LABEL} from './node-roles';
 })
 @observer
 class ClusterNode extends Component {
+  @computed
+  get windowsOS () {
+    const {node} = this.props;
+    if (node.loaded) {
+      const {
+        labels = {},
+        systemInfo = {}
+      } = node.value || {};
+      if (systemInfo.operatingSystem) {
+        return /^windows$/i.test(systemInfo.operatingSystem);
+      }
+      return /^windows$/i.test(labels['kubernetes.io.host']);
+    }
+    return false;
+  }
+
   refreshNodeInstance = () => {
     if (!this.props.node.pending) {
       this.props.node.fetch();
     }
     if (!this.props.chartsData.pending) {
       this.props.chartsData.fetch();
+    }
+    if (!this.props.pools.pending) {
+      this.props.pools.fetch();
     }
   };
 
@@ -68,7 +92,10 @@ class ClusterNode extends Component {
     if (this.props.node.pending || this.props.node.error) {
       return null;
     }
-    const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+    let activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+    if (activeTab === 'monitor' && this.windowsOS) {
+      activeTab = 'info';
+    }
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
         <Menu
@@ -87,12 +114,16 @@ class ClusterNode extends Component {
               to={`/cluster/${this.props.name}/jobs`}
               location={this.props.router.location}>Jobs</AdaptedLink>
           </Menu.Item>
-          <Menu.Item key="monitor">
-            <AdaptedLink
-              id="cluster-node-tab-monitor"
-              to={`/cluster/${this.props.name}/monitor`}
-              location={this.props.router.location}>Monitor</AdaptedLink>
-          </Menu.Item>
+          {
+            !this.windowsOS && (
+              <Menu.Item key="monitor">
+                <AdaptedLink
+                  id="cluster-node-tab-monitor"
+                  to={`/cluster/${this.props.name}/monitor`}
+                  location={this.props.router.location}>Monitor</AdaptedLink>
+              </Menu.Item>
+            )
+          }
         </Menu>
       </Row>
     );
@@ -125,8 +156,42 @@ class ClusterNode extends Component {
           marginBottom: 2
         },
         location: this.props.router.location,
-        pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null
+        pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null,
+        pools: this.props.pools.loaded ? (this.props.pools.value || []) : []
       });
+  };
+
+  terminateNode = async () => {
+    const hide = message.loading('Terminating...', 0);
+    const request = new TerminateNodeRequest(this.props.name);
+    await request.fetch();
+    hide();
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      this.props.router.push('/cluster');
+    }
+  };
+
+  nodeTerminationConfirm = (event) => {
+    event.stopPropagation();
+    const terminateNode = this.terminateNode;
+    Modal.confirm({
+      title: `Are you sure you want to terminate '${this.props.name}' node?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        (async () => {
+          await terminateNode();
+        })();
+      }
+    });
+  };
+
+  nodeIsSlave = (node) => {
+    const roles = getRoles(node.labels);
+    return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
   };
 
   render () {
@@ -144,26 +209,37 @@ class ClusterNode extends Component {
       )
     ];
     const nodeLabels = this.renderNodeLabels();
+    const allowToTerminate = this.props.node.loaded &&
+      roleModel.executeAllowed(this.props.node.value) &&
+      roleModel.isOwner(this.props.node.value) &&
+      this.nodeIsSlave(this.props.node.value);
     return (
-      <Card
+      <div
         key={this.props.name}
         className={styles.nodeCard}
-        bodyStyle={{
-          padding: 15,
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 'auto',
-          height: '100%'
-        }}>
+      >
         <Row align="middle">
           <Col span={1}>
             <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
           </Col>
-          <Col span={21}>
+          <Col span={18}>
             <span className={parentStyles.nodeMainInfo}>
               Node: {this.props.name}{nodeLabels}</span>
           </Col>
-          <Col span={2} className={parentStyles.refreshButtonContainer}>
+          <Col span={5} className={parentStyles.refreshButtonContainer}>
+            {
+              allowToTerminate && (
+                <Button
+                  id="terminate-cluster-node-button"
+                  type="danger"
+                  disabled={this.props.node.pending || this.props.chartsData.pending}
+                  style={{marginRight: 5}}
+                  onClick={this.nodeTerminationConfirm}
+                >
+                  Terminate
+                </Button>
+              )
+            }
             <Button
               id="refresh-cluster-node-button"
               onClick={this.refreshNodeInstance}
@@ -173,7 +249,7 @@ class ClusterNode extends Component {
           </Col>
         </Row>
         {result}
-      </Card>
+      </div>
     );
   }
 }

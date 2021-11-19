@@ -12,6 +12,12 @@
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>CP_DOCKER_DIST_SRV</name>
+          <description></description>
+          <defaultValue>quay.io/</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
           <name>SKIP_DEPLOYMENT</name>
           <description></description>

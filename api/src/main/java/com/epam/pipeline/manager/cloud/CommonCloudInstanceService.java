@@ -22,7 +22,7 @@ import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -47,18 +47,18 @@ public class CommonCloudInstanceService {
     private final PreferenceManager preferenceManager;
     private final UserManager userManager;
     private final AuthManager authManager;
-    private final PipelineRunManager pipelineRunManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final KubernetesManager kubernetesManager;
 
     public CommonCloudInstanceService(final PreferenceManager preferenceManager,
                                       final UserManager userManager,
                                       final AuthManager authManager,
-                                      final PipelineRunManager pipelineRunManager,
+                                      final PipelineRunCRUDService runCRUDService,
                                       final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
         this.userManager = userManager;
         this.authManager = authManager;
-        this.pipelineRunManager = pipelineRunManager;
+        this.runCRUDService = runCRUDService;
         this.kubernetesManager = kubernetesManager;
     }
 
@@ -88,6 +88,14 @@ public class CommonCloudInstanceService {
                                          final String command,
                                          final Long oldId,
                                          final Long newId,
+                                         final Map<String, String> envVars) {
+        return runNodeReassignScript(cmdExecutor, command, String.valueOf(oldId), String.valueOf(newId), envVars);
+    }
+
+    public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,
+                                         final String command,
+                                         final String oldId,
+                                         final String newId,
                                          final Map<String, String> envVars) {
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
@@ -131,17 +139,19 @@ public class CommonCloudInstanceService {
     }
 
     private Map<String, String> buildPipeAuthEnvVars(final Long id) {
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put("API", preferenceManager.getPreference(SystemPreferences.BASE_API_HOST));
-        envVars.put("API_TOKEN", getApiTokenForRun(id));
-        return envVars;
+        return buildPipeAuthEnvVars(Optional.ofNullable(id)
+                .map(runCRUDService::loadRunById)
+                .map(PipelineRun::getOwner)
+                .map(userManager::loadUserContext)
+                .orElseGet(authManager::getUserContext));
     }
 
-    private String getApiTokenForRun(final Long runId) {
-        PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
-        UserContext owner = Optional.ofNullable(authManager.getUserContext())
-                .orElse(userManager.loadUserContext(run.getOwner()));
-        return authManager.issueToken(owner, null).getToken();
+    private Map<String, String> buildPipeAuthEnvVars(final UserContext user) {
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put("API", preferenceManager.getPreference(SystemPreferences.BASE_API_HOST));
+        envVars.put("API_TOKEN", authManager.issueToken(user, null).getToken());
+        envVars.put("API_USER", user.getUsername());
+        return envVars;
     }
 
     private void executeCmd(final CmdExecutor cmdExecutor,

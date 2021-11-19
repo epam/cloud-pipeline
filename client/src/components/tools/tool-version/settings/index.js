@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import LoadTool from '../../../../models/tools/LoadTool';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import UpdateToolVersionSettings from '../../../../models/tools/UpdateToolVersionSettings';
@@ -24,7 +24,6 @@ import {
   Alert,
   message
 } from 'antd';
-import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import EditToolForm from '../../forms/EditToolForm';
@@ -73,6 +72,16 @@ export default class ToolSetttings extends React.Component {
     return null;
   }
 
+  @computed
+  get platform () {
+    if (this.props.settings.loaded) {
+      if ((this.props.settings.value || []).length > 0) {
+        return this.props.settings.value[0].platform;
+      }
+    }
+    return undefined;
+  }
+
   updateTool = async (tool, configuration) => {
     const hide = message.loading('Updating version settings...', 0);
     const updateRequest = new UpdateToolVersionSettings(this.props.toolId, this.props.version);
@@ -113,12 +122,20 @@ export default class ToolSetttings extends React.Component {
     }
     return (
       <EditToolForm
+        mode="version"
+        allowSensitive={this.props.tool.value.allowSensitive}
         toolId={this.props.toolId}
         onInitialized={form => { this.versionSettingsForm = form; }}
-        readOnly={this.state.operationInProgress || !roleModel.writeAllowed(this.props.tool.value)}
+        readOnly={
+          this.state.operationInProgress ||
+          !roleModel.writeAllowed(this.props.tool.value) ||
+          !!this.props.tool.value.link
+        }
         defaultPriceTypeIsSpot={this.props.preferences.useSpot}
         configuration={this.settings}
-        onSubmit={this.operationWrapper(this.updateTool)} />
+        platform={this.platform}
+        onSubmit={this.operationWrapper(this.updateTool)}
+      />
     );
   }
 }

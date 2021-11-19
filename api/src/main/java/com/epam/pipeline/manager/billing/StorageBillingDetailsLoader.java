@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.billing;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -43,6 +45,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 @Slf4j
 public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
 
@@ -62,38 +65,55 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Autowired
     private final FileShareMountManager fileShareMountManager;
 
+    @Autowired
+    private final UserBillingDetailsLoader userBillingDetailsLoader;
+
+    @Autowired
+    private final MessageHelper messageHelper;
+
     @Override
     public BillingGrouping getGrouping() {
         return BillingGrouping.STORAGE;
     }
 
     @Override
-    public String loadName(final String entityIdentifier) {
+    public Map<String, String> loadInformation(final String entityIdentifier, final boolean loadDetails) {
+        final Map<String, String> details = new HashMap<>();
         try {
             final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(entityIdentifier);
-            return DataStorageType.NFS.equals(storage.getType())
-                   ? storage.getName()
-                   : storage.getPath();
-        } catch (IllegalArgumentException e) {
-            return entityIdentifier;
-        }
-    }
+            final String storageName = DataStorageType.NFS.equals(storage.getType())
+                             ? storage.getName()
+                             : storage.getPath();
+            details.put(NAME, storageName);
+            if (loadDetails) {
+                details.putAll(getRegionDetails(storage));
+                details.put(OWNER, storage.getOwner());
+                details.put(CREATED, DateTimeFormatter.ISO_DATE_TIME.format(storage.getCreatedDate()
+                                                                                .toInstant()
+                                                                                .atZone(ZoneId.systemDefault())
+                                                                                .toLocalDateTime()));
+                details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(),
+                            userBillingDetailsLoader.getUserBillingCenter(storage.getOwner()));
+                details.put(BillingGrouping.STORAGE_TYPE.getCorrespondingField(), getExplicitStorageType(storage));
 
-    @Override
-    public Map<String, String> loadDetails(final String entityIdentifier) {
-        final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(entityIdentifier);
-        final Map<String, String> details = getRegionDetails(storage);
-        details.put(OWNER, storage.getOwner());
-        details.put(CREATED, DateTimeFormatter.ISO_DATE_TIME.format(storage.getCreatedDate()
-                                                                        .toInstant()
-                                                                        .atZone(ZoneId.systemDefault())
-                                                                        .toLocalDateTime()));
+
+            }
+        } catch (RuntimeException e) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
+                                              entityIdentifier, getGrouping()));
+            details.putIfAbsent(NAME, entityIdentifier);
+            if (loadDetails) {
+                details.putAll(getEmptyDetails());
+            }
+        }
         return details;
     }
 
     @Override
     public Map<String, String> getEmptyDetails() {
-        return Stream.of(PROVIDER, REGION, OWNER, CREATED)
+        return Stream.of(PROVIDER, REGION, OWNER, CREATED,
+                         BillingGrouping.BILLING_CENTER.getCorrespondingField(),
+                         BillingGrouping.STORAGE_TYPE.getCorrespondingField())
             .collect(Collectors.toMap(Function.identity(), k -> emptyValue));
     }
 
@@ -140,5 +160,15 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
             }
         }
         return null;
+    }
+
+    private String getExplicitStorageType(final AbstractDataStorage dataStorage) {
+        final DataStorageType commonType = dataStorage.getType();
+        return commonType != DataStorageType.NFS
+               ? commonType.getId()
+               : fileShareMountManager.find(dataStorage.getFileShareMountId())
+                   .map(FileShareMount::getMountType)
+                   .map(Enum::name)
+                   .orElse(emptyValue);
     }
 }

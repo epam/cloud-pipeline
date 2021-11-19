@@ -21,12 +21,14 @@ import xml.etree.cElementTree as xml
 from numbers import Number
 
 import easywebdav
+import pytz
 import requests
 import urllib3
+from dateutil.tz import tzlocal
 from requests import cookies
 
-import fuseutils
-from fsclient import FileSystemClient, File
+from pipefuse import fuseutils
+from pipefuse.fsclient import FileSystemClient, File
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
@@ -88,7 +90,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             logging.error('WevDav is not available: %s' % str(e.reason))
             return False
         except BaseException as e:
-            logging.error('WevDav is not available: %s' % str(e.message))
+            logging.error('WevDav is not available: %s' % str(e))
             return False
 
     def is_read_only(self):
@@ -109,10 +111,10 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             return
         try:
             time_value = datetime.datetime.strptime(value, date_format)
-            return time.mktime(time_value.timetuple())
+            return time.mktime(time_value.replace(tzinfo=pytz.UTC).astimezone(tzlocal()).timetuple())
         except ValueError as e:
             logging.error(
-                'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, e.message))
+                'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, str(e)))
             return None
 
     def elem2file(self, elem, path):

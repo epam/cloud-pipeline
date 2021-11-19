@@ -69,7 +69,7 @@ class S3Bucket:
         """
         :return: tuple: type, path, size
         """
-        ls_file_command = 'pipe storage ls %s' % target
+        ls_file_command = 'pipe storage ls "%s"' % target
         if recursive:
             ls_file_command += ' -r'
         if all:
@@ -78,11 +78,17 @@ class S3Bucket:
             ls_file_command += ' -l'
         listing = self.get_cmd_stdout(ls_file_command, max_attempts)
         result = []
+        file_path_start = listing[0].index('Name')
         for path in listing[1:]:
             fields = path.strip().split()
             if not fields:
                 continue
-            result.append((fields[0], fields[-1], fields[-2]))
+            line_type = fields[0]
+            size = None
+            if line_type == 'File':
+                size = fields[4]
+            item_path = path[file_path_start:].strip()
+            result.append((line_type, item_path, size))
         return result
 
     def copy_s3(self, source, target, max_attempts):
@@ -121,7 +127,7 @@ class S3Bucket:
             self.sync_s3(run_dir + path, target, max_attempts, exclude)
 
     def pipe_copy(self, source, target, max_attempts, exclude=None):
-        upload_file_command = "{} {} {} {} --recursive --force --quiet".format(PIPE_STORAGE_CP, source, target,
+        upload_file_command = '{} "{}" "{}" {} --recursive --force --quiet'.format(PIPE_STORAGE_CP, source, target,
                                                                        self.__build_tags_command())
         if exclude:
             upload_file_command += " --exclude " + exclude
@@ -133,12 +139,12 @@ class S3Bucket:
         for rule in rules:
             if rule.move_to_sts:
                 allowed_rules += " --include \"{}\"".format(rule.file_mask)
-        upload_file_command = "{} {} {} {} {} --recursive --force --quiet".format(
+        upload_file_command = '{} "{}" "{}" {} {} --recursive --force --quiet'.format(
             PIPE_STORAGE_CP, source, target, allowed_rules, self.__build_tags_command())
         self.execute_command(upload_file_command, max_attempts)
 
     def build_pipe_cp_command(self, source, target, exclude=None, include=None, file_list=None):
-        upload_file_command = '%s %s %s %s --recursive --force --quiet' % \
+        upload_file_command = '%s "%s" "%s" %s --recursive --force --quiet' % \
                               (PIPE_STORAGE_CP, source, target, self.__build_tags_command())
         if exclude:
             for glob in exclude:

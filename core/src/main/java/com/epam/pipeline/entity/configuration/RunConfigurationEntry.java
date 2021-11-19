@@ -81,6 +81,7 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
                 startVO.setHddSize(Integer.parseInt(configuration.getInstanceDisk()));
             }
             startVO.setInstanceType(configuration.getInstanceType());
+            startVO.setInstanceImage(configuration.getInstanceImage());
             startVO.setNodeCount(configuration.getNodeCount());
             startVO.setParams(configuration.getParameters());
             startVO.setTimeout(configuration.getTimeout());

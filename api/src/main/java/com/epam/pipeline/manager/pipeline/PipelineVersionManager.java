@@ -72,6 +72,9 @@ public class PipelineVersionManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
+    @Autowired
+    private PipelineConfigurationPostProcessor postProcessor;
+
     private JsonMapper mapper = new JsonMapper();
 
     @Value("${luigi.graph.script}")
@@ -83,9 +86,9 @@ public class PipelineVersionManager {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    public List<Revision> loadAllVersionFromGit(Long id, Long pageSize) throws GitClientException {
+    public List<Revision> loadAllVersionFromGit(Long id) throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id);
-        return gitManager.getPipelineRevisions(pipeline, pageSize);
+        return gitManager.getPipelineRevisions(pipeline);
     }
 
     public TaskGraphVO getWorkflowGraph(Long id, String version) {
@@ -209,6 +212,7 @@ public class PipelineVersionManager {
                 new PipelineConfigReader().readConfigurations(config, mapper);
         pipelineConfiguration.forEach(entry -> {
             if (entry.getConfiguration() != null) {
+                postProcessor.postProcessPipelineConfig(entry.getConfiguration());
                 setDockerImageFromPropertiesIfAbsent(entry.getConfiguration());
                 setCmdTemplateFromPropertiesIfAbsent(entry.getConfiguration());
                 entry.getConfiguration().buildEnvVariables();

@@ -41,12 +41,13 @@ autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
 def setup_function():
     hosts = [str(run_id) for run_id in range(0, 2 * max_additional_hosts)]
 
-    def add_host():
+    def add_host(_):
         host = hosts.pop()
         host_storage.add_host(host)
         return host
 
     autoscaler.scale_up = MagicMock(side_effect=add_host)
+    autoscaler._scale_down = MagicMock()
     autoscaler.host_storage.clear()
 
 
@@ -59,7 +60,7 @@ def test_scale_up_if_some_of_the_jobs_are_in_queue_for_more_than_scale_up_timeou
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -86,7 +87,7 @@ def test_not_scale_up_if_none_of_the_jobs_are_in_queue_for_more_than_scale_up_ti
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -113,7 +114,7 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -129,7 +130,36 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
     for _ in range(0, max_additional_hosts * 2):
         autoscaler.scale()
 
-    assert autoscaler.scale_up.call_count == 2
+    assert autoscaler.scale_up.call_count == max_additional_hosts
+    assert len(autoscaler.host_storage.load_hosts()) == max_additional_hosts
+
+
+def test_that_scale_up_will_try_to_scale_down_smallest_host_if_additional_workers_limit_has_been_reached():
+    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
+    jobs = [
+        GridEngineJob(
+            id=1,
+            name='name1',
+            user='user',
+            state=GridEngineJobState.RUNNING,
+            datetime=submit_datetime,
+            hosts=[MASTER_HOST]
+        ),
+        GridEngineJob(
+            id=2,
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime
+        )
+    ]
+    grid_engine.get_jobs = MagicMock(return_value=jobs)
+    clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
+
+    for _ in range(0, max_additional_hosts * 2):
+        autoscaler.scale()
+
+    assert autoscaler._scale_down.call_count == max_additional_hosts
     assert len(autoscaler.host_storage.load_hosts()) == max_additional_hosts
 
 
@@ -142,15 +172,49 @@ def test_scale_up_if_some_of_the_array_jobs_are_in_queue_for_more_than_scale_up_
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2.5',
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
             datetime=submit_datetime,
-            array=range(5, 10)
+        ),
+        GridEngineJob(
+            id='2.6',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.7',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.8',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.9',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.10',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -170,15 +234,49 @@ def test_not_scale_up_if_none_of_the_array_jobs_are_in_queue_for_more_than_scale
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2.5',
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
             datetime=submit_datetime,
-            array=range(5, 10)
+        ),
+        GridEngineJob(
+            id='2.6',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.7',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.8',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.9',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.10',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -198,7 +296,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -227,15 +325,49 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2.5',
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
             datetime=submit_datetime,
-            array=range(5, 10)
+        ),
+        GridEngineJob(
+            id='2.6',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.7',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.8',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.9',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.10',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
         )
     ]
     for run_id in range(0, autoscaler.max_additional_hosts):

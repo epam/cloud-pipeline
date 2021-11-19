@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,24 +21,26 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
-import com.epam.pipeline.manager.security.PermissionsService;
-import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
@@ -46,9 +48,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -69,33 +70,36 @@ public class PipelineConfigurationManager {
     private GitManager gitManager;
 
     @Autowired
-    private DataStorageApiService dataStorageApiService;
-
-    @Autowired
-    private PermissionsService permissionsService;
-
-    @Autowired
     private ToolVersionManager toolVersionManager;
 
     @Autowired
     private ToolManager toolManager;
 
     @Autowired
+    private PipelineManager pipelineManager;
+
+    @Autowired
     private MessageHelper messageHelper;
 
-    private Function<AbstractDataStorage, String> mountOptionsSupplier = (ds) -> {
-        if (ds instanceof NFSDataStorage) {
-            String mountOptions = ds.getMountOptions();
-            if (!permissionsService.isMaskBitSet(ds.getMask(), ((AclPermission)AclPermission.WRITE).getSimpleMask())) {
-                mountOptions += ",ro";
-            }
-            return mountOptions;
-        } else {
-            return "";
+    @Autowired
+    private PreferenceManager preferenceManager;
+
+    public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
+                                                                     final PipelineStart runVO) {
+        if (PipelineType.VERSIONED_STORAGE.equals(pipeline.getPipelineType())) {
+            Assert.isTrue(StringUtils.hasText(runVO.getDockerImage()),
+                    messageHelper.getMessage(MessageConstants.ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE));
+            return getPipelineConfiguration(runVO, toolManager.loadByNameOrId(runVO.getDockerImage()));
         }
-    };
+        return getPipelineConfiguration(runVO, null);
+    }
 
     public PipelineConfiguration getPipelineConfiguration(final PipelineStart runVO) {
+        final Long pipelineId = runVO.getPipelineId();
+        if (Objects.nonNull(pipelineId)) {
+            final Pipeline pipeline = pipelineManager.load(pipelineId);
+            return getPipelineConfigurationForPipeline(pipeline, runVO);
+        }
         return getPipelineConfiguration(runVO, null);
     }
 
@@ -118,10 +122,6 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
-        List<AbstractDataStorage> dataStorages = dataStorageApiService.getWritableStorages();
-        configuration.setBuckets(zipToString(dataStorages, AbstractDataStorage::getPathMask));
-        configuration.setNfsMountOptions(zipToString(dataStorages, mountOptionsSupplier));
-        configuration.setMountPoints(zipToString(dataStorages, AbstractDataStorage::getMountPoint));
         //client always sends actual node count value
         configuration.setNodeCount(Optional.ofNullable(runVO.getNodeCount()).orElse(0));
         configuration.setCloudRegionId(runVO.getCloudRegionId());
@@ -166,7 +166,7 @@ public class PipelineConfigurationManager {
             configuration.setInstanceDisk(defaultConfig.getInstanceDisk());
         }
         if (runVO.getInstanceType() != null) {
-            configuration.setInstanceType(String.valueOf(runVO.getInstanceType()));
+            configuration.setInstanceType(runVO.getInstanceType());
         } else {
             configuration.setInstanceType(defaultConfig.getInstanceType());
         }
@@ -174,6 +174,11 @@ public class PipelineConfigurationManager {
             configuration.setTimeout(runVO.getTimeout());
         } else {
             configuration.setTimeout(defaultConfig.getTimeout());
+        }
+        if (runVO.getInstanceImage() != null) {
+            configuration.setInstanceImage(runVO.getInstanceImage());
+        } else {
+            configuration.setInstanceImage(defaultConfig.getInstanceImage());
         }
 
         //client always sends actual node-count
@@ -193,6 +198,9 @@ public class PipelineConfigurationManager {
                 runVO.getWorkerCmd() == null ? defaultConfig.getWorkerCmd() : runVO.getWorkerCmd());
         configuration.setDockerImage(chooseDockerImage(runVO, defaultConfig));
         configuration.buildEnvVariables();
+        configuration.setRunAs(mergeRunAs(runVO, defaultConfig));
+        configuration.setSharedWithUsers(defaultConfig.getSharedWithUsers());
+        configuration.setSharedWithRoles(defaultConfig.getSharedWithRoles());
         return configuration;
     }
 
@@ -204,12 +212,16 @@ public class PipelineConfigurationManager {
      * @return True if this is a cluster configuration.
      */
     public boolean initClusterConfiguration(PipelineConfiguration configuration, boolean isNFS) {
-        if ((configuration.getNodeCount() == null || configuration.getNodeCount() <= 0)
-                && !hasBooleanParameter(configuration, GE_AUTOSCALING)) {
+        if (!isClusterConfiguration(configuration)) {
             return false;
         }
         updateMasterConfiguration(configuration, isNFS);
         return true;
+    }
+
+    public static boolean isClusterConfiguration(final PipelineConfiguration configuration) {
+        return !(configuration.getNodeCount() == null || configuration.getNodeCount() <= 0)
+                || hasBooleanParameter(configuration, GE_AUTOSCALING);
     }
 
     public void updateMasterConfiguration(PipelineConfiguration configuration, boolean isNFS) {
@@ -223,8 +235,20 @@ public class PipelineConfigurationManager {
     public void updateWorkerConfiguration(String parentId, PipelineStart runVO,
             PipelineConfiguration configuration, boolean isNFS, boolean clearParams) {
         configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_WORKER_ENDPOINTS));
-        Map<String, PipeConfValueVO> updatedParams = clearParams ?
+        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(configuration.getParameters()) ?
                 new HashMap<>() : configuration.getParameters();
+        final Map<String, PipeConfValueVO> updatedParams = clearParams ? new HashMap<>() : configParameters;
+        final List<DefaultSystemParameter> systemParameters = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
+        ListUtils.emptyIfNull(systemParameters)
+                .stream()
+                .filter(param -> param.isPassToWorkers() &&
+                        configParameters.containsKey(param.getName()))
+                .forEach(param -> {
+                    final String paramName = param.getName();
+                    updatedParams.put(paramName, configParameters.get(paramName));
+                });
+
         updatedParams.put(PipelineRun.PARENT_ID_PARAM, new PipeConfValueVO(parentId));
         if (isNFS) {
             updatedParams.put(NFS_CLUSTER_ROLE, new PipeConfValueVO("true"));
@@ -245,7 +269,7 @@ public class PipelineConfigurationManager {
         return hasBooleanParameter(entry, NFS_CLUSTER_ROLE);
     }
 
-    private boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
+    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
         return entry.getParameters().entrySet().stream().anyMatch(e ->
                 e.getKey().equals(parameterName) && e.getValue().getValue() != null
                         && e.getValue().getValue().equalsIgnoreCase("true"));
@@ -293,13 +317,6 @@ public class PipelineConfigurationManager {
         }
         configuration.buildEnvVariables();
         return configuration;
-    }
-
-    private String zipToString(List<AbstractDataStorage> dataStorages,
-                               Function<AbstractDataStorage, String> fieldValueSupplier) {
-        return dataStorages.stream()
-            .map(fieldValueSupplier)
-            .collect(Collectors.joining(";"));
     }
 
     private String chooseDockerImage(PipelineStart runVO, PipelineConfiguration defaultConfig) {
@@ -372,5 +389,15 @@ public class PipelineConfigurationManager {
             runVO.setConfigurationName(entry.getName());
         }
         return defaultConfiguration;
+    }
+
+    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
+        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
+                .map(ConfigurationEntry::getConfiguration)
+                .orElseGet(PipelineConfiguration::new);
+    }
+
+    private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {
+        return StringUtils.isEmpty(configuration.getRunAs()) ? runVO.getRunAs() : configuration.getRunAs();
     }
 }

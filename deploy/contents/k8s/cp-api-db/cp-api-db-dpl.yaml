@@ -20,6 +20,9 @@ spec:
         - name: cp-api-db
           image: postgres:9.6
           imagePullPolicy: "IfNotPresent"
+          args:
+            - --shared_buffers=${PSG_SHARED_BUFFERS}
+            - --max_connections=${PSG_MAX_CONNECTIONS}
           ports:
             - containerPort: ${PSG_PORT}
           env:
@@ -36,6 +39,8 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
               name: pgdata
+            - mountPath: /dev/shm
+              name: dshm
           readinessProbe:
             tcpSocket:
               port: ${PSG_PORT}
@@ -51,5 +56,8 @@ spec:
         - name: pgdata
           hostPath:
             path: /opt/postgresql/data
+        - name: dshm
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

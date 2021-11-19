@@ -15,12 +15,14 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
+import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
+import MultizoneUrl from '../../../../special/multizone-url';
+import RunSSHButton from './run-ssh-button';
 
 const ACTION = PropTypes.shape({
   title: PropTypes.string,
@@ -32,7 +34,6 @@ const ACTION = PropTypes.shape({
 const ACTION_MIN_HEIGHT = 18;
 
 @favouriteStorage
-@observer
 export default class CardsPanel extends React.Component {
   static propTypes = {
     search: PropTypes.shape({
@@ -53,7 +54,8 @@ export default class CardsPanel extends React.Component {
     displayOnlyFavourites: PropTypes.bool,
     itemId: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     getFavourites: PropTypes.func,
-    setFavourites: PropTypes.func
+    setFavourites: PropTypes.func,
+    hovered: PropTypes.object
   };
 
   static defaultProps = {
@@ -162,19 +164,87 @@ export default class CardsPanel extends React.Component {
       return (
         <div
           className={
-            `${styles.actionsContainer} ${this.state.popovers.indexOf(index) >= 0 ? styles.hovered : ''}`
-          }>
+            classNames(
+              styles.actionsContainer,
+              {
+                [styles.hovered]: this.state.popovers.indexOf(index) >= 0 ||
+                this.props.hovered === child
+              }
+            )
+          }
+        >
           <div
             type="actions-container-background"
             className={styles.actionsContainerBackground} />
           {
             actions.map((action, index, array) => {
+              const {
+                title,
+                icon,
+                style,
+                overlay,
+                target,
+                multiZoneUrl,
+                runSSH,
+                runId
+              } = action;
+              const containerStyle = {
+                flex: 1.0 / array.length,
+                minHeight: ACTION_MIN_HEIGHT,
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-start'
+              };
+              if (runSSH) {
+                return (
+                  <RunSSHButton
+                    key={index}
+                    runId={runId}
+                    visibilityChanged={onVisibleChange}
+                    className={styles.actionButton}
+                    style={containerStyle}
+                    icon={icon}
+                  />
+                );
+              }
+              if (multiZoneUrl) {
+                return (
+                  <MultizoneUrl
+                    key={index}
+                    className={styles.actionButton}
+                    visibilityChanged={onVisibleChange}
+                    style={containerStyle}
+                    target={target}
+                    configuration={multiZoneUrl}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        display: 'inline'
+                      }}
+                    >
+                      {
+                        icon
+                          ? (
+                            <Icon
+                              style={style}
+                              type={getIconType(action)}
+                            />
+                          )
+                          : undefined
+                      }
+                      <span>{title}</span>
+                    </div>
+                  </MultizoneUrl>
+                );
+              }
               return (
                 <Row
+                  key={index}
                   type="flex"
                   justify="start"
                   align="middle"
-                  key={index}
                   className={styles.actionButton}
                   onClick={e => this.onActionClicked(e, action, child)}
                   style={{
@@ -183,28 +253,29 @@ export default class CardsPanel extends React.Component {
                   }}>
                   <Row type="flex" align="middle">
                     {
-                      action.icon
-                        ? <Icon style={action.style} type={getIconType(action)} />
+                      icon
+                        ? <Icon style={style} type={getIconType(action)} />
                         : undefined
                     }
                     {
-                      action.overlay
-                        ? (
-                          <Popover
-                            onVisibleChange={onVisibleChange}
-                            content={action.overlay}>
-                            <span style={action.style}>{action.title}</span>
-                          </Popover>
-                        )
-                        : <span style={action.style}>{action.title}</span>
+                      overlay && (
+                        <Popover
+                          onVisibleChange={onVisibleChange}
+                          content={overlay}>
+                          <span style={style}>{title}</span>
+                        </Popover>
+                      )
+                    }
+                    {
+                      !overlay && (
+                        <span style={style}>
+                          {title}
+                        </span>
+                      )
                     }
                   </Row>
-                </Row>
-              );
-            })
-          }
-        </div>
-      );
+                </Row>);
+            })}</div>);
     }
     return null;
   };
@@ -232,7 +303,9 @@ export default class CardsPanel extends React.Component {
     if (cardClassName) {
       cardClass = `${cardClassName} ${cardClass}`;
     }
-    cardClass = childIsFavourite ? `${cardClass} ${styles.favouriteItem}` : `${cardClass} ${styles.notFavouriteItem}`;
+    cardClass = childIsFavourite
+      ? `${cardClass} ${styles.favouriteItem}`
+      : `${cardClass} ${styles.notFavouriteItem}`;
     return (
       <Card
         key={child.id || index}
@@ -269,12 +342,18 @@ export default class CardsPanel extends React.Component {
 
   render () {
     const items = this.props.search && this.props.search.searchFn
-      ? (this.props.children || []).filter(item => this.props.search.searchFn(item, this.state.search))
+      ? (this.props.children || [])
+        .filter(item => this.props.search.searchFn(item, this.state.search))
       : (this.props.children || []);
     const personalItemsFiltered = items.filter(item => !item.isGlobal);
     const globalItemsFiltered = items.filter(item => item.isGlobal);
-    let personalItems = [...personalItemsFiltered, ...globalItemsFiltered.filter(this.childIsFavourite)];
-    let globalItems = this.state.search ? globalItemsFiltered.filter(i => !this.childIsFavourite(i)) : [];
+    let personalItems = [
+      ...personalItemsFiltered,
+      ...globalItemsFiltered.filter(this.childIsFavourite)
+    ];
+    let globalItems = this.state.search
+      ? globalItemsFiltered.filter(i => !this.childIsFavourite(i))
+      : [];
     if (!this.state.search && this.props.displayOnlyFavourites) {
       personalItems = personalItems.filter(this.childIsFavourite);
       globalItems = [];

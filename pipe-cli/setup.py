@@ -19,12 +19,15 @@ from src.version import __version__
 with open('requirements.txt') as requirements_file:
     requirements = requirements_file.read().splitlines()
 
+with open('mount/requirements.txt') as mount_requirements_file:
+    requirements.extend(mount_requirements_file.read().splitlines())
+
 setup(
     name='PipelineCLI',
     version=__version__,
     py_modules=['pipe'],
     packages=find_packages(),
-    data_files=[('requirements', ['requirements.txt'])],
+    data_files=[('requirements', ['requirements.txt', 'mount/requirements.txt'])],
     include_package_data=True,
     install_requires=requirements,
     entry_points='''

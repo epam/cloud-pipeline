@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.RawMonitoringStats;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -117,15 +118,16 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     public InputStream getStatsForNodeAsInputStream(final String nodeName,
                                                     final LocalDateTime from,
                                                     final LocalDateTime to,
-                                                    final Duration interval) {
+                                                    final Duration interval,
+                                                    final MonitoringReportType type) {
         throw new UnsupportedOperationException(messageHelper.getMessage(
             MessageConstants.CADVISOR_STATS_REPORTS_NOT_SUPPORTED));
     }
 
     @Override
-    public long getPodDiskSpaceAvailable(final String nodeName,
-                                         final String podId,
-                                         final String dockerImage) {
+    public long getDiskSpaceAvailable(final String nodeName,
+                                      final String podId,
+                                      final String dockerImage) {
         final String dockerDiskName = getDockerDiskName(nodeName, podId, dockerImage);
         final MonitoringStats monitoringStats = getLastMonitoringStat(getStatsForNode(nodeName), nodeName);
         final MonitoringStats.DisksUsage.DiskStats diskStats = monitoringStats.getDisksUsage()

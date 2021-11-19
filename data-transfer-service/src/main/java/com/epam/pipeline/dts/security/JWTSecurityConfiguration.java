@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,12 @@ import com.epam.pipeline.dts.security.service.JwtAuthenticationProvider;
 import com.epam.pipeline.dts.security.service.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.dts.security.service.JwtTokenVerifier;
 import com.epam.pipeline.dts.security.service.RestAuthenticationEntryPoint;
+import com.epam.pipeline.dts.security.service.SecurityService;
+import com.epam.pipeline.dts.security.service.impl.SecurityServiceImpl;
+import com.epam.pipeline.dts.transfer.model.UsernameTransformation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -35,6 +39,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
+@ComponentScan
 public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${jwt.public.key}")
@@ -93,5 +98,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
             "/restapi/webjars/springfox-swagger-ui/**",
             "/restapi/v2/api-docs/**"
         };
+    }
+
+    @Bean
+    public SecurityService securityService(@Value("${dts.impersonation.name.transformation}")
+                                           final UsernameTransformation usernameTransformation) {
+        return new SecurityServiceImpl(usernameTransformation);
     }
 }

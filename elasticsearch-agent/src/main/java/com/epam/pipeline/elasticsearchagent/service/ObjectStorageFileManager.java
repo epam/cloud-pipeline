@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,38 @@
 
 package com.epam.pipeline.elasticsearchagent.service;
 
-import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
-import com.epam.pipeline.elasticsearchagent.service.impl.IndexRequestContainer;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 
+import java.io.InputStream;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 /**
- * Lists all files in specified {@code AbstractDataStorage} and ass them to ES index
+ * Lists all files in specified {@code AbstractDataStorage}
  */
 public interface ObjectStorageFileManager {
+    
+    DataStorageType getType();
 
-    void listAndIndexFiles(String indexName, AbstractDataStorage dataStorage,
-                           TemporaryCredentials credentials,
-                           PermissionsContainer permissionsContainer,
-                           IndexRequestContainer requestContainer);
+    Stream<DataStorageFile> files(String storage,
+                                  String path,
+                                  Supplier<TemporaryCredentials> credentialsSupplier);
+
+    Stream<DataStorageFile> versionsWithNativeTags(String storage,
+                                                   String path,
+                                                   Supplier<TemporaryCredentials> credentialsSupplier);
+
+    default InputStream readFileContent(String storage,
+                                        String path,
+                                        Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deleteFile(String storage,
+                            String path,
+                            Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
+    }
 }

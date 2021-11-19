@@ -41,21 +41,36 @@ export default function getVersionRunningInfo (
       return false;
     };
     const checkVulnerabilitiesNumber = (currentVersion) => {
-      const vulnerabilities = currentVersion.vulnerabilities || [];
-      const countCriticalVulnerabilities =
-        vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Critical').length;
-      const countHighVulnerabilities =
-        vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'High').length;
-      const countMediumVulnerabilities =
-        vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Medium').length;
+      const vulnerabilities = currentVersion.vulnerabilitiesCount || {};
+      const countCriticalVulnerabilities = vulnerabilities.Critical || 0;
+      const countHighVulnerabilities = vulnerabilities.High || 0;
+      const countMediumVulnerabilities = vulnerabilities.Medium || 0;
       return countCriticalVulnerabilities > scanPolicy.maxCriticalVulnerabilities ||
         countHighVulnerabilities > scanPolicy.maxHighVulnerabilities ||
         countMediumVulnerabilities > scanPolicy.maxMediumVulnerabilities;
     };
-    const versionObject = versions[version];
-    const allowedToExecuteFlag = versionObject
-      ? versionObject.allowedToExecute
+    const versionScanResult = versions[version]
+      ? versions[version].scanResult
+      : undefined;
+    const versionPlatform = versions[version] && versions[version].attributes
+      ? versions[version].attributes.platform
+      : undefined;
+    if (/^windows$/i.test(versionPlatform)) {
+      return {
+        allowedToExecute: true,
+        tooltip: null,
+        launchTooltip: null,
+        notLoaded: false
+      };
+    }
+    const allowedToExecuteFlag = versionScanResult
+      ? versionScanResult.allowedToExecute
       : false;
+    const {
+      distribution,
+      version: distrVersion,
+      isAllowed = true
+    } = (versionScanResult ? versionScanResult.toolOSVersion : undefined) || {};
     let tooltip, launchTooltip;
     let defaultTag;
     if (versions['latest']) {
@@ -63,14 +78,22 @@ export default function getVersionRunningInfo (
     } else if (Object.keys(versions).length === 1) {
       defaultTag = Object.keys(versions)[0];
     }
-    const isGrace = isGracePeriod(versionObject);
-    let gracePeriodEnd = isGrace && !isAdmin ? displayDate(versionObject.gracePeriod, 'D MMMM YYYY') : null;
+    const isGrace = isGracePeriod(versionScanResult);
+    let gracePeriodEnd = isGrace && !isAdmin
+      ? displayDate(versionScanResult.gracePeriod, 'D MMMM YYYY')
+      : null;
     const isLatest = version === defaultTag;
     let allowedToExecute = allowedToExecuteFlag || isAdmin || isGrace;
-    if (versionObject && checkVulnerabilitiesNumber(versionObject)) {
+    if (!isAllowed) {
+      const distributionDescription = distribution
+        ? ` (${distribution}${distrVersion ? ` ${distrVersion}` : ''})`
+        : '';
+      tooltip = `This distribution${distributionDescription} is not supported.`;
+      launchTooltip = `This distribution${distributionDescription} is not supported. Run anyway?`;
+    } else if (versionScanResult && checkVulnerabilitiesNumber(versionScanResult)) {
       tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).vulnerabilitiesNumberExceeds;
       launchTooltip = LaunchMessages(gracePeriodEnd).vulnerabilitiesNumberExceeds;
-    } else if (versionObject && versionObject.status === ScanStatuses.notScanned) {
+    } else if (versionScanResult && versionScanResult.status === ScanStatuses.notScanned) {
       tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).notScanned;
       launchTooltip = LaunchMessages(gracePeriodEnd).launchNotScanned;
     } else if (!allowedToExecuteFlag) {

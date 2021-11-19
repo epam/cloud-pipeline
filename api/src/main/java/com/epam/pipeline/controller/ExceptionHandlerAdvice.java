@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.exception.StorageForbiddenOperationException;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -72,6 +73,8 @@ public class ExceptionHandlerAdvice {
             }
         } else if (exception instanceof DockerAuthorizationException) {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.UNAUTHORIZED);
+        } else if (exception instanceof StorageForbiddenOperationException) {
+            return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.FORBIDDEN);
         } else {
             message = exception.getMessage();
         }

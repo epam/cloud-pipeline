@@ -20,7 +20,7 @@ import {AxisDataType} from './controls/utilities';
 import {ChartRenderer, Plot, UsagePlot, formatters} from './controls';
 
 class MemoryUsageChart extends Base {
-  renderPlot (data, width, height) {
+  renderPlot (data, width, height, disableTooltips) {
     const barPlotHeight = 80;
     return (
       <div
@@ -30,11 +30,16 @@ class MemoryUsageChart extends Base {
           width={width}
           height={height - barPlotHeight}
           data={data}
+          disableTooltips={disableTooltips}
           {...this.plotProperties}
           plots={[{
-            name: 'memory', renderer: 'memory-usage', group: 'default', title: 'MB used'
+            name: 'memoryMax', renderer: 'memory-usage', group: 'default', title: 'MB used (max)'
           }, {
-            name: 'percent', isPercent: true, group: 'percent', title: 'MB used (%)'
+            name: 'percentMax', isPercent: true, group: 'percent', title: 'MB used (%, max)'
+          }, {
+            name: 'memory', renderer: 'memory-usage', group: 'default', title: 'MB used (average)'
+          }, {
+            name: 'percent', isPercent: true, group: 'percent', title: 'MB used (%, average)'
           }]}
           dataType={AxisDataType.mBytes}
         >

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +42,24 @@ public class PipelineCliProviderImpl implements PipelineCliProvider {
 
     @Override
     public PipelineCLI getPipelineCLI(final String api, final String apiToken) {
-        final CmdExecutor cmdExecutor = retrieveAuthenticatedCmdExecutor(api, apiToken);
+        final CmdExecutor cmdExecutor =
+                authenticated(api, apiToken,
+                        impersonating(
+                                cmdExecutor()));
         return new PipelineCLIImpl(pipelineCliExecutable, pipeCpSuffix, forceUpload, retryCount, cmdExecutor);
     }
 
-    private CmdExecutor retrieveAuthenticatedCmdExecutor(final String api, final String apiToken) {
-        final CmdExecutor cmdExecutor = retrieveCmdExecutor();
+    private CmdExecutor authenticated(final String api,
+                                      final String apiToken,
+                                      final CmdExecutor cmdExecutor) {
         return cmdExecutorsProvider.getEnvironmentCmdExecutor(cmdExecutor, credentialsParameters(api, apiToken));
     }
 
-    private CmdExecutor retrieveCmdExecutor() {
+    private CmdExecutor impersonating(final CmdExecutor cmdExecutor) {
+        return cmdExecutorsProvider.getImpersonatingCmdExecutor(cmdExecutor);
+    }
+
+    private CmdExecutor cmdExecutor() {
         final CmdExecutor cmdExecutor = cmdExecutorsProvider.getCmdExecutor();
         return isGridUploadEnabled
             ? cmdExecutorsProvider.getQsubCmdExecutor(cmdExecutor, qsubTemplate)

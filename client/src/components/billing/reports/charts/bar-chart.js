@@ -23,6 +23,7 @@ import {
   ChartClickPlugin
 } from './extensions';
 import Export from '../export';
+import {discounts} from '../discounts';
 import {costTickFormatter} from '../utilities';
 
 function toValueFormat (value) {
@@ -56,6 +57,7 @@ function BarChart (
   {
     axisPosition = 'left',
     request,
+    discounts: discountsFn,
     data: rawData,
     dataSample = 'value',
     previousDataSample = 'previous',
@@ -66,17 +68,36 @@ function BarChart (
     subChart,
     top = 10,
     valueFormatter = costTickFormatter,
-    useImageConsumer = true
+    useImageConsumer = true,
+    onImageDataReceived,
+    itemNameFn = o => o
   }
 ) {
   if (!request) {
     return null;
   }
-  const loading = request.pending && !request.loaded;
-  const data = rawData || (request.loaded ? (request.value || {}) : {});
-  const error = request.error;
+  const loading = Array.isArray(request)
+    ? (request.filter(r => r.loading).length > 0)
+    : (request.pending && !request.loaded);
+  const loaded = Array.isArray(request)
+    ? (request.filter(r => !r.loaded).length === 0)
+    : (request.loaded);
+  const value = rawData ||
+    (
+      Array.isArray(request)
+        ? (loaded ? request.map(r => r.value || {}) : {})
+        : (loaded ? (request.value || {}) : {})
+    );
+  const data = discounts.applyGroupedDataDiscounts(
+    value,
+    discountsFn
+  );
+  const [error] = Array.isArray(request)
+    ? request.filter(r => r.error).map(r => r.error)
+    : [request.error];
   const filteredData = filterTopData(data, top, dataSample);
   const groups = filteredData.map(d => d.name);
+  const displayGroups = groups.map(itemNameFn);
   const previousData = getValues(filteredData, previousDataSample);
   const currentData = getValues(filteredData, dataSample);
   const maximum = getMaximum(
@@ -85,7 +106,7 @@ function BarChart (
   );
   const disabled = isNaN(maximum);
   const chartData = {
-    labels: groups,
+    labels: displayGroups,
     datasets: [
       {
         label: 'Previous',
@@ -228,6 +249,7 @@ function BarChart (
           ChartClickPlugin.plugin
         ]}
         useChartImageGenerator={useImageConsumer}
+        onImageDataReceived={onImageDataReceived}
       />
     </Container>
   );

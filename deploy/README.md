@@ -26,6 +26,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
 
 # Run pipectl
+## install
 ```bash
 ~/.pipe/pipectl install \
                 # Docker distribution credentials
@@ -39,10 +40,11 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS= \    # 
                 -env CP_PREF_CLUSTER_INSTANCE_IMAGE \               # Which VM image to use as a default for CPU-only workloads (if a VM manifest  for a current cloud provider exists - this is optional)
                 -env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU \           # Which VM image to use as a default for GPU workloads (if a VM manifest for a current cloud provider exists - this is optional)
+                -env CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN \           # Which VM image to use as a default for Windows workloads (if a VM manifest for a current cloud provider exists - this is optional)
 
                 # Cloud Provider credentials
                 ## Common
-                -env CP_CLOUD_CREDENTIALS_FILE= \                   # Cloud credentials can be specified as a file for any cloud provider (the only available option for Azure and GCP)
+                -env CP_CLOUD_CREDENTIALS_FILE= \                   # Cloud credentials can be specified as a file for any cloud provider (the only available option for GCP)
                 ## AWS
                 -env CP_AWS_ACCESS_KEY_ID= \                        # For AWS key id can be specified via environment variables
                 -env CP_AWS_SECRET_ACCESS_KEY= \                    # For AWS key secret can be specified via environment variables
@@ -50,6 +52,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE= \
                 -env CP_DOCKER_STORAGE_ROOT_DIR= \                  # Root directory within a $CP_DOCKER_STORAGE_CONTAINER, used to store images blobs. If not set - "cloud-pipeline-${CP_DEPLOYMENT_ID}" will be used
                 ## Azure
+                -env CP_AZURE_PROFILE_FILE= \                       # Azure profile file from cli autentication
+                -env CP_AZURE_ACCESS_TOKEN_FILE= \                  # Azure access token file from cli autentication
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default
@@ -59,8 +63,10 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 # Core API
                 -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
                 -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to register all users that have passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions. The following value are available: AUTO (creates a new user if not exists), EXPLICIT (requires users pre-registration (performed by any admin), EXPLICIT_GROUP (requires specific groups pre-registration. If user's SAML groups have no intersections with registered groups the authentication will fail)
+                -env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER= \        # Allows anonymous user access. Works in conjunction with EXPLICIT_GROUP strategy set via CP_API_SRV_SAML_AUTO_USER_CREATE.
                 -env CP_API_SRV_SAML_USER_ATTRIBUTES= \             # Sets a list of the attributes, that will be parsed from the IdP SAML Response object and added to the user's profile. The value shall be comma-delimited list of "User_Attribute=IdP_Attribute" pairs (default: Email=email,FirstName=firstName,LastName=lastName,Name=firstName)
                 -env CP_API_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
+                -env CP_API_SRV_ANONYMOUS_URLS= \                   # Sets a list of urls that can be accessed by anonymous users if anonymous user access is enabled via CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER.
                 -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab
@@ -129,7 +135,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_KUBE_SERVICES_TYPE= \                       # Allows to select a preferred services mode type: "node-port" or "external-ip" (default: "node-port")
 ```
 
-# Examples
+## Examples
 
 ### AWS - install all services
 ```
@@ -181,4 +187,32 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
             -env CP_KUBE_MASTER_DOCKER_PATH="/docker/drive/" \
             -env CP_KUBE_MASTER_ETCD_HOST_PATH="/etcd/drive/" \
             -m
+```
+
+## sync
+This command allows to sync configuration between 2 Cloud Pipeline deployments.
+
+Environment variables for controlling execution flow:
+ ```bash
+ export CP_SYNC_USERS_METADATA_SKIP_KEYS= # describes keys, that shall be skipped during metadata sync in users sync routine (Optional, if not specified all metadata will be transferred without any filtering)
+ export CP_SYNC_TOOLS_METADATA_SKIP_KEYS= # the same, as described above, but for tools sync routine
+ export CP_SYNC_TOOLS_TRANSFER_POOL_SIZE= # amount of threads, that is going to be used for tools transfer.  
+                                          # Note, that it boosts the sync speed, but results in higher storage volume
+                                          # consumption, as all versions of a tool are pulled at first to 
+                                          # a local docker and pushed after to remote registry
+
+```
+
+```bash
+~/.pipe/pipectl   sync \
+# Pipectl sync options
+                --users \                       # enables users/groups synchronization
+                --tools \                       # enables tools synchronization
+                --source-url {url_a} \          # URL of `source` environment's API host
+                --source-token {token_a} \      # JWT token to access `source` environment
+                --target-url {url_b} \          # URL of `destination` environment's API host
+                --target-token {token_b} \      # JWT token to access `destination` environment
+                --docker-cmd {path_to_docker}   # specifies the command, that will be used instead of simple `docker` 
+                                                # during tools synchronization
+            
 ```

@@ -66,6 +66,7 @@ public class AzureRegionHelperTest {
         final AzureRegionHelper azureRegionHelper = new AzureRegionHelper(messageHelper);
 
         final AzurePolicy policy = new AzurePolicy();
+        policy.setIpMax(MAX_IP);
         assertThrows(IllegalArgumentException.class, () -> azureRegionHelper.validateStoragePolicy(policy));
     }
 }

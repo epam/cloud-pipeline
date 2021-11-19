@@ -31,6 +31,8 @@ public class EnvVarsSettings {
 
     @JsonProperty("variables")
     private Map<String, Object> defaultEnvVars;
+    @JsonProperty("sensitive")
+    private Map<String, Object> sensitiveEnvVars;
     @JsonProperty("regions")
     private List<CloudRegionEnvVars> regionEnvVars;
 
@@ -42,6 +44,7 @@ public class EnvVarsSettings {
         private Long regionId;
         @JsonProperty("variables")
         private Map<String, Object> envVars;
-
+        @JsonProperty("sensitive")
+        private Map<String, Object> sensitiveEnvVars;
     }
 }

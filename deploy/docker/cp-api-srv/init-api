@@ -126,6 +126,35 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
+function configure_and_publish_cloud_data_win_distribution() {
+    local _jar_path="$1"
+    local _output_dir="$2"
+    local _cloud_data_name="cloud-data"
+    if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
+        local _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
+        _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
+    fi
+    
+    unzip -p "$_jar_path" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
+    unzip -qq cloud-data-win64.zip
+    rm -f cloud-data-win64.zip
+
+    
+cat > cloud-data-win32-x64/settings.json <<EOF
+{
+ "certificates": [],
+ "ignoreCertificateErrors": true,
+ "api": "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/",
+ "server": "https://${CP_EDGE_EXTERNAL_HOST}:${CP_EDGE_EXTERNAL_PORT}/webdav/<USER_ID>",
+ "username": "<USER_ID>" $_cloud_data_name_json
+}
+EOF
+    mv cloud-data-win32-x64/cloud-data.exe cloud-data-win32-x64/${_cloud_data_name}.exe
+    mv cloud-data-win32-x64 ${_cloud_data_name}-win32-x64
+    zip -q -r "$_output_dir/${_cloud_data_name}-win64.zip" ${_cloud_data_name}-win32-x64
+    rm -rf ${_cloud_data_name}-win32-x64
+}
+
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -166,11 +195,12 @@ export CP_ERROR_REDIRECT_URL="${CP_ERROR_REDIRECT_URL:-https://$CP_API_SRV_EXTER
 export CP_ERROR_PLATFORM_NAME="${CP_ERROR_PLATFORM_NAME:-$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME}"
 export CP_ERROR_SUPPORT_EMAIL="${CP_ERROR_SUPPORT_EMAIL:-$CP_DEFAULT_ADMIN_EMAIL}"
 
-# Setup SSO endpoint ID
+# Setup SSO endpoint ID and binding type
 if [ -z "$CP_API_SRV_SSO_ENDPOINT_ID" ]; then
     export CP_API_SRV_SSO_ENDPOINT_ID="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}${CP_API_SRV_SAML_ID_TRAIL:-/pipeline/}"
     echo "API SSO endpoint URL is not set explicetly, default value will be used: $CP_API_SRV_SSO_ENDPOINT_ID"
 fi
+export CP_API_SRV_SSO_BINDING="${CP_API_SRV_SSO_BINDING:-urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}"
 
 mkdir -p $CP_API_HOME/keystore/
 
@@ -225,6 +255,22 @@ if [ -f "$win_code_sign_cert_path" ]; then
         "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
 
+echo "Copying DTS jar file to static resources"
+cp "$CP_API_HOME/data-transfer-service.jar" "$CP_API_SRV_STATIC_DIR"
+echo "Calculating signature for DTS jar"
+openssl dgst -sha256 -hex -r -sign "$CP_API_SRV_CERT_DIR/ssl-private-key.pem" \
+        "$CP_API_SRV_STATIC_DIR/data-transfer-service.jar" | awk '{print $1}' > "$CP_API_SRV_STATIC_DIR/data-transfer-service.sign"
+
+echo "Copying DTS windows bundle to static resources"
+cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
+
+# Add a deployment specific configuration to the "cloud data" application:
+# - API URL
+# - DAV URL
+# - Application name
+echo "Configuring Cloud Data with the deployment specific settings"
+configure_and_publish_cloud_data_win_distribution "$CP_API_HOME/pipeline.jar" "$CP_API_SRV_STATIC_DIR"
+
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
@@ -250,14 +296,30 @@ if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATI
 fi
 
 # Configure logging and launch
+API_LOG_HOME="/var/log/cp-api/${CP_API_SRV_INSTANCE_NAME:-$CP_API_CURRENT_NODE_NAME}"
+mkdir -p $API_LOG_HOME
+rm -rf $CP_API_HOME/logs
+ln -s $API_LOG_HOME $CP_API_HOME/logs
+
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
-nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar $CP_API_SRV_JAVA_SPRING_OPTS  &> $API_RUN_TIME_LOG &
 APP_PID="$!"
 
 sleep 5
+
+# Run Filebeat
+envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
+nohup filebeat &
+
+# Providing AZURE Cli credentials for nodeup, nodedown scripts, if this type of authentication was configured
+if [ "$CP_CLOUD_PLATFORM" == "az" ] && [ -f /root/.cloud/azureProfile.json ] && [ -f /root/.cloud/accessTokens.json ]; then
+  mkdir -p /root/.azure
+  cp /root/.cloud/* /root/.azure/
+fi
+
 
 # Workaround the container hanging when being terminated
 function sig_handler {

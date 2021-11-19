@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,23 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class PlainCmdExecutor implements CmdExecutor {
 
     private static final String DEFAULT_SHELL = "bash";
+    private static final String WIN_CMD = "cmd.exe";
 
     @Override
     public String executeCommand(final String command,
                                  final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir,
+                                 final String username) {
         StringBuilder output = new StringBuilder();
         StringBuilder errors = new StringBuilder();
         try {
-            Process p = launchCommand(command, environmentVariables, workDir);
+            Process p = launchCommand(command, environmentVariables, workDir, username);
             Thread stdReader = new Thread(() -> readOutputStream(command, output,
                     new InputStreamReader(p.getInputStream())));
             Thread errReader = new Thread(() -> readOutputStream(command, errors,
@@ -47,42 +50,46 @@ public class PlainCmdExecutor implements CmdExecutor {
             stdReader.join();
             errReader.join();
             if (exitCode != 0) {
-                log.error("Command '{}' err output: {}.", command, errors.toString());
-                throw new CmdExecutionException(command, errors.toString());
+                final String errorMessage = String.format("Command '%s' failed with the following stderr: %s", 
+                        command, errors.toString());
+                log.error(errorMessage);
+                throw new CmdExecutionException(errorMessage);
             }
         } catch (InterruptedException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' execution was interrupted", command));
         }
         return output.toString();
     }
 
     @Override
     public Process launchCommand(final String command, final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir, final String username) {
         try {
-            String[] cmd = {DEFAULT_SHELL, "-c", command};
-            if (environmentVariables.isEmpty()) {
-                return Runtime.getRuntime().exec(cmd, null, workDir);
-            } else {
-                final Map<String, String> currentProcessEnvVars = System.getenv();
-                final Map<String, String> mergedEnvVars = new HashMap<>();
-                mergedEnvVars.putAll(currentProcessEnvVars);
+            final String[] cmd = buildCommand(command);
+            final Map<String, String> mergedEnvVars = new HashMap<>(System.getenv());
+            if (!environmentVariables.isEmpty()) {
                 mergedEnvVars.putAll(environmentVariables);
-                final String[] envp = mergedEnvVars.entrySet().stream()
-                        .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
-                        .toArray(String[]::new);
-                return Runtime.getRuntime().exec(cmd, envp, workDir);
             }
+            final String[] envp = mergedEnvVars.entrySet().stream()
+                    .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+                    .toArray(String[]::new);
+            return Runtime.getRuntime().exec(cmd, envp, workDir);
         } catch (IOException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' launching has failed", command), e);
         }
+    }
+
+    private String[] buildCommand(final String command) {
+        return SystemUtils.IS_OS_WINDOWS
+               ? new String[]{WIN_CMD, "/c", command.replace("'", "\"")}
+               : new String[]{DEFAULT_SHELL, "-c", command};
     }
 
     private void readOutputStream(String command, StringBuilder content, InputStreamReader in) {
         try (BufferedReader reader = new BufferedReader(in)) {
             appendReaderContent(content, reader);
         } catch (IOException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' outputs reading has failed", command), e);
         }
     }
 

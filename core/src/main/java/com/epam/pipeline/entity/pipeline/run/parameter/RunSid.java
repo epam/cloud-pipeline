@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package com.epam.pipeline.entity.pipeline.run.parameter;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Objects;
 
 @Getter
 @Setter
-@EqualsAndHashCode
 public class RunSid {
 
     private Long runId;
@@ -30,4 +31,22 @@ public class RunSid {
     private Boolean isPrincipal;
     private RunAccessType accessType;
 
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final RunSid runSid = (RunSid) o;
+        return StringUtils.equalsIgnoreCase(name, runSid.getName())
+                && Objects.equals(accessType, runSid.getAccessType())
+                && Objects.equals(isPrincipal, runSid.getIsPrincipal());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name.toUpperCase(), isPrincipal, accessType);
+    }
 }

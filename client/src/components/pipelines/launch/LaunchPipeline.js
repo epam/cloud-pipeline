@@ -16,32 +16,47 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
-import {Alert, Card} from 'antd';
-import connect from '../../../utils/connect';
+import {observable, computed} from 'mobx';
+import {Alert, Card, Modal, message} from 'antd';
 import localization from '../../../utils/localization';
-import pipelines from '../../../models/pipelines/Pipelines';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
-import preferences from '../../../models/preferences/PreferencesLoad';
 import LoadTool from '../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../models/utils/AllowedInstanceTypes';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
+import FolderProject from '../../../models/folders/FolderProject';
+import ConfigurationLoad from '../../../models/configuration/ConfigurationLoad';
+import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
+import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
+import MetadataBrowser from './dialogs/MetadataBrowser';
 import {submitsRun, run, runPipelineActions} from '../../runs/actions';
 import styles from './LaunchPipeline.css';
 import LoadingView from '../../special/LoadingView';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
+import getToolLaunchingOptions from './utilities/get-tool-launching-options';
+import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
 
-@connect({
-  pipelines, preferences
-})
+const DTS_ENVIRONMENT = 'DTS';
+
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
+@inject('awsRegions', 'pipelines', 'preferences')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
+  const isVersionedStorage = components.vs;
+  let versionedStorageLaunchInfo;
+  if (isVersionedStorage) {
+    versionedStorageLaunchInfo = {
+      toolId: components.tool,
+      tool: components.tool ? new LoadTool(components.tool) : undefined,
+      version: components.tool && components.version
+        ? components.version
+        : undefined
+    };
+  }
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
@@ -55,15 +70,26 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
     tool: params.image ? new LoadTool(params.image) : undefined,
     toolVersion: params.image ? components.version : undefined,
     toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
-    configurations: params.id && params.version
-      ? new PipelineConfigurations(params.id, params.version) : undefined
+    configurations: params.id && params.version && !isVersionedStorage
+      ? new PipelineConfigurations(params.id, params.version)
+      : undefined,
+    isVersionedStorage,
+    versionedStorageLaunchInfo
   };
 })
 @observer
 class LaunchPipeline extends localization.LocalizedReactComponent {
-  state = {launching: false, configName: null};
+  state = {
+    configName: null,
+    launching: false,
+    runPayload: null,
+    showMetadataBrowser: false,
+    currentProjectId: null,
+    currentMetadataEntity: null
+  };
 
   @observable allowedInstanceTypes;
+  @observable versionedStoragesLaunchPayload;
 
   get pipelinePending () {
     return !!this.props.pipeline && this.props.pipeline.pending;
@@ -85,6 +111,25 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return !!this.props.toolSettings && this.props.toolSettings.pending;
   }
 
+  get versionedStoragesLaunchPayloadPending () {
+    return this.props.isVersionedStorage &&
+      (
+        !this.versionedStoragesLaunchPayload ||
+        (
+          this.versionedStoragesLaunchPayload.pending &&
+          !this.versionedStoragesLaunchPayload.loaded
+        )
+      );
+  }
+
+  get currentMetadataEntity () {
+    const {currentMetadataEntity} = this.state;
+    if (currentMetadataEntity) {
+      return currentMetadataEntity.map(m => m);
+    }
+    return [];
+  }
+
   getPipelineParameter = (parameterName) => {
     const configuration = this.getConfigurationParameters();
     if (configuration && configuration.parameters) {
@@ -96,6 +141,15 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     }
     return null;
   };
+
+  @computed
+  get configurationId () {
+    const {run} = this.props;
+    if (run?.value?.configurationId) {
+      return `${run.value.configurationId}`;
+    }
+    return null;
+  }
 
   get configurationName () {
     if (this.state.configName) {
@@ -191,6 +245,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         parameters: versionSettingValue('parameters'),
         node_count: parameterIsNotEmpty(versionSettingValue('node_count'))
           ? +versionSettingValue('node_count')
+          : undefined,
+        cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+          ? versionSettingValue('cloudRegionId')
           : undefined
       };
     } else if (this.props.run && !this.runPending && !this.props.run.error) {
@@ -218,6 +275,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
               ? parameterInfo.required : false;
             parameters.parameters[param.name] = {
               value: param.value,
+              resolvedValue: param.resolvedValue,
               type,
               required,
               enum: param.enum
@@ -228,6 +286,27 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       return parameters;
     } else if (this.getConfigurationParameters()) {
       return this.getConfigurationParameters();
+    } else if (
+      this.props.isVersionedStorage &&
+      this.versionedStoragesLaunchPayload &&
+      this.versionedStoragesLaunchPayload.loaded &&
+      this.versionedStoragesLaunchPayload.value
+    ) {
+      const payload = this.versionedStoragesLaunchPayload.value;
+      return {
+        cmd_template: payload.cmdTemplate,
+        docker_image: payload.dockerImage,
+        is_spot: payload.isSpot,
+        instance_size: payload.instanceType,
+        instance_disk: payload.hddSize,
+        node_count: payload.nodeCount,
+        timeout: payload.timeout,
+        parameters: {...(payload.params || {})},
+        cloudRegionId: payload.cloudRegionId,
+        allowedInstanceTypes: this.props.allowedInstanceTypes,
+        pipelineId: this.props.pipelineId ? +(this.props.pipelineId) : undefined,
+        pipelineVersion: this.props.version
+      };
     }
     return {
       allowedInstanceTypes: this.props.allowedInstanceTypes,
@@ -244,20 +323,189 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return [];
   };
 
-  launch = async (payload) => {
+  getCurrentProject = async () => {
+    const folderProjectRequest = new FolderProject(this.configurationId, 'CONFIGURATION');
+    await folderProjectRequest.fetch();
+    if (folderProjectRequest.error) {
+      message.error(folderProjectRequest.error, 5);
+      return null;
+    }
+    return folderProjectRequest.value;
+  };
+
+  getCurrentMetadataEntity = async (projectId) => {
+    const metadataEntityFieldsRequest = new MetadataEntityFields(projectId);
+    await metadataEntityFieldsRequest.fetch();
+    if (metadataEntityFieldsRequest.error) {
+      message.error(metadataEntityFieldsRequest.error, 5);
+      return null;
+    }
+    return metadataEntityFieldsRequest.value;
+  };
+
+  launch = async (payload, hostedApplicationConfiguration, platform, skipCheck) => {
     payload.configurationName = this.currentConfiguration
       ? this.currentConfiguration.name
       : this.configurationName;
-    if (await run(this)(payload)) {
+    if (await run(this)(
+      payload,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      hostedApplicationConfiguration,
+      platform,
+      skipCheck
+    )) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }
+  };
+
+  showMetadataBrowser = () => {
+    this.setState({showMetadataBrowser: true});
+  };
+
+  closeMetadataBrowser = () => {
+    this.setState({showMetadataBrowser: false}, () => {
+      this.clearRunPayload();
+    });
+  };
+
+  clearRunPayload = () => {
+    this.setState({
+      runPayload: null,
+      currentProjectId: null,
+      currentMetadataEntity: null
+    });
+  };
+
+  prepareRunPayload = async (payload) => {
+    const hide = message.loading('Preparing run payload...', 0);
+    const currentProject = await this.getCurrentProject();
+    if (currentProject?.id) {
+      const currentProjectId = currentProject.id;
+      const metadataEntity = await this.getCurrentMetadataEntity(currentProjectId) || [];
+      this.setState({
+        runPayload: payload,
+        showMetadataBrowser: true,
+        currentProjectId,
+        currentMetadataEntity: metadataEntity
+      });
+    }
+    hide();
+  };
+
+  selectMetadataConfirm = async (entitiesIds) => {
+    const {runPayload} = this.state;
+    let configuration;
+    const configurationRequest = new ConfigurationLoad(this.configurationId);
+    await configurationRequest.fetch();
+    if (configurationRequest.error) {
+      message.error(configurationRequest.error, 5);
+      return;
+    } else {
+      const entries = ((configurationRequest.value || {}).entries || []).slice();
+      configuration = entries.find(entry => entry.default) || entries.pop();
+      let title = `Launch ${configuration.name} configuration ?`;
+      Modal.confirm({
+        title: title,
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk: () => {
+          launchFn();
+        }
+      });
+    }
+    const launchFn = async () => {
+      const metadataControlParameter = (parameter = {}) => {
+        const {value} = parameter;
+        const controlPrefixes = ['this.', 'project.'];
+        if (value && typeof value === 'string') {
+          const normalizedValue = value.trim().toLowerCase();
+          return controlPrefixes.some(prefix => normalizedValue.startsWith(prefix));
+        }
+        return false;
+      };
+      const applyMetadataParamsOverRunParams = (runParams, configParams) => {
+        const mappedParams = {...runParams};
+        for (const key in mappedParams) {
+          if (
+            configParams.hasOwnProperty(key) &&
+            metadataControlParameter(configParams[key])
+          ) {
+            mappedParams[key] = configParams[key];
+          }
+        }
+        return mappedParams;
+      };
+      if (configuration) {
+        configuration.configName = configuration.name;
+        configuration.pipelineId = null;
+        configuration.pipelineVersion = null;
+        configuration.methodName = null;
+        configuration.methodSnapshot = null;
+        configuration.methodConfigurationName = null;
+        configuration.methodConfigurationSnapshot = null;
+        configuration.methodInputs = null;
+        configuration.methodOutputs = null;
+        configuration.executionEnvironment = runPayload.executionEnvironment;
+        configuration.rootEntityId = runPayload.rootEntityId;
+        configuration.endpointName = runPayload.endpointName;
+        configuration.stopAfter = runPayload.stopAfter;
+        runPayload.pipelineId = undefined;
+        runPayload.pipelineVersion = undefined;
+        runPayload.configName = undefined;
+        runPayload.configuration = undefined;
+        runPayload.rootEntityId = undefined;
+        runPayload.methodName = undefined;
+        runPayload.methodSnapshot = undefined;
+        runPayload.methodConfigurationName = undefined;
+        runPayload.methodConfigurationSnapshot = undefined;
+        runPayload.methodInputs = undefined;
+        runPayload.methodOutputs = undefined;
+        runPayload.executionEnvironment = undefined;
+        runPayload.endpointName = undefined;
+        runPayload.stopAfter = undefined;
+        if (configuration.executionEnvironment === DTS_ENVIRONMENT) {
+          for (const key in runPayload) {
+            if (runPayload.hasOwnProperty(key) && runPayload[key] !== undefined) {
+              configuration[key] = runPayload[key];
+            }
+          }
+        } else {
+          const runParams = runPayload.parameters || {};
+          const configParams = configuration.configuration?.parameters || {};
+          runPayload.parameters = applyMetadataParamsOverRunParams(runParams, configParams);
+          configuration.configuration = runPayload;
+        }
+      }
+      const hide = message.loading('Launching...', 0);
+      const request = new ConfigurationRun();
+      await request.send({
+        id: this.configurationId,
+        entries: [configuration],
+        entitiesIds: entitiesIds
+      });
+      hide();
+      if (request.error) {
+        message.error(request.error);
+      } else {
+        this.clearRunPayload();
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      }
+    };
   };
 
   onConfigurationChanged = (name) => {
     this.setState({configName: name});
   };
 
-  componentDidUpdate () {
+  componentDidMount () {
+    this.loadVersionedStorageLaunchPayload();
+  }
+
+  componentDidUpdate (prevProps) {
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = this.props.image
@@ -267,10 +515,66 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     if (parameters) {
       this.allowedInstanceTypes.setParameters({
         isSpot: parameters.is_spot,
-        regionId: parameters.cloudRegionId
+        regionId: parameters.cloudRegionId,
+        toolId: this.props.image
       });
     }
+    if (
+      (!this.versionedStoragesLaunchPayload && this.props.versionedStorageLaunchInfo) ||
+      !versionedStorageLaunchInfoEqual(
+        prevProps.versionedStorageLaunchInfo,
+        this.props.versionedStorageLaunchInfo
+      )
+    ) {
+      this.loadVersionedStorageLaunchPayload();
+    }
   }
+
+  loadVersionedStorageLaunchPayload = () => {
+    const {
+      versionedStorageLaunchInfo,
+      isVersionedStorage
+    } = this.props;
+    if (!isVersionedStorage) {
+      this.versionedStoragesLaunchPayload = undefined;
+    } else if (versionedStorageLaunchInfo && versionedStorageLaunchInfo.tool) {
+      this.versionedStoragesLaunchPayload = {
+        loaded: false,
+        pending: true
+      };
+      versionedStorageLaunchInfo.tool
+        .fetchIfNeededOrWait()
+        .then(() => {
+          if (versionedStorageLaunchInfo.tool.loaded) {
+            return getToolLaunchingOptions(
+              this.props,
+              versionedStorageLaunchInfo.tool.value,
+              versionedStorageLaunchInfo.version
+            );
+          } else {
+            throw new Error(versionedStorageLaunchInfo.tool.error || '');
+          }
+        })
+        .then(launchPayload => {
+          this.versionedStoragesLaunchPayload = {
+            loaded: true,
+            pending: false,
+            value: launchPayload
+          };
+        })
+        .catch((e) => {
+          this.versionedStoragesLaunchPayload = {
+            pending: false,
+            loaded: false,
+            error: e.message
+          };
+        });
+    } else {
+      this.versionedStoragesLaunchPayload = {
+        loaded: true
+      };
+    }
+  };
 
   render () {
     if (this.pipelinePending ||
@@ -278,6 +582,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.runPending ||
       this.toolPending ||
       this.toolSettingsPending ||
+      this.versionedStoragesLaunchPayloadPending ||
       (!this.props.preferences.loaded && this.props.preferences.pending) ||
       !this.allowedInstanceTypes) {
       return <LoadingView />;
@@ -285,18 +590,47 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     if (this.props.pipeline && this.props.pipeline.error) {
       return <Alert type="warning" message={this.props.pipeline.error} />;
     }
-    const errors = [];
+    const pipelineType = this.props.pipeline?.value?.pipelineType || '';
+    const isVersioned = pipelineType.toLowerCase() === 'versioned_storage';
+    const alerts = [];
     if (this.props.configurations && this.props.configurations.error) {
-      errors.push(this.props.configurations.error);
+      alerts.push({
+        message: this.props.configurations.error,
+        type: 'warning'
+      });
     }
     if (this.props.run && this.props.run.error) {
-      errors.push(this.props.run.error);
+      alerts.push({
+        message: this.props.run.error,
+        type: 'warning'
+      });
     }
     if (this.props.tool && this.props.tool.error) {
-      errors.push(this.props.tool.error);
+      alerts.push({
+        message: this.props.tool.error,
+        type: 'warning'
+      });
     }
     if (this.props.toolSettings && this.props.toolSettings.error) {
-      errors.push(this.props.toolSettings.error);
+      alerts.push({
+        message: this.props.toolSettings.error,
+        type: 'warning'
+      });
+    }
+    if (this.versionedStoragesLaunchPayload && this.versionedStoragesLaunchPayload.error) {
+      alerts.push({
+        message: this.versionedStoragesLaunchPayload.error,
+        type: 'warning'
+      });
+    }
+    if (isVersioned) {
+      alerts.push({
+        message: [
+          'You are going to launch a versioned storage.',
+          'The latest revision of the VS will be cloned.'
+        ].join(' '),
+        type: 'info'
+      });
     }
     const parameters = this.getParameters();
     return (
@@ -316,10 +650,25 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           version={this.props.version}
           parameters={parameters}
           configurations={this.getConfigurations()}
-          errors={errors}
+          alerts={alerts}
           onConfigurationChanged={this.onConfigurationChanged}
           onLaunch={this.launch}
-          isDetachedConfiguration={false} />
+          runConfiguration={this.prepareRunPayload}
+          runConfigurationId={this.configurationId}
+          isDetachedConfiguration={false}
+        />
+        <MetadataBrowser
+          multiple={false}
+          readOnly
+          onCancel={this.closeMetadataBrowser}
+          onSelect={this.selectMetadataConfirm}
+          visible={
+            this.state.showMetadataBrowser &&
+            !!this.state.currentProjectId
+          }
+          initialFolderId={this.state.currentProjectId}
+          currentMetadataEntity={this.currentMetadataEntity}
+        />
       </Card>
     );
   }

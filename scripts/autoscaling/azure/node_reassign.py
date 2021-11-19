@@ -20,7 +20,7 @@ from azure.common.client_factory import get_client_from_auth_file, get_client_fr
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
-
+from azure.mgmt.resource.managedapplications.models import GenericResource
 
 RUN_ID_LABEL = 'runid'
 CLOUD_REGION_LABEL = 'cloud_region'
@@ -38,34 +38,44 @@ else:
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
+def resolve_azure_api(resource):
+    """ This method retrieves the latest non-preview api version for
+    the given resource (unless the preview version is the only available
+    api version) """
+    provider = res_client.providers.get(resource.id.split('/')[6])
+    rt = next((t for t in provider.resource_types
+               if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
+    if rt and 'api_versions' in rt.__dict__:
+        api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
+        return api_version[0] if api_version else rt.__dict__['api_versions'][0]
+
+
 def find_and_tag_instance(old_id, new_id):
     ins_id = None
+    retrieved_resources = []
+
+    # first let's filter resources with specific tag and load resource fully with all info
+    # by res_client.resources.get_by_id
+    # if we can't load one of resources from the filtered list - we will fail before we try to change a tag value
     for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + old_id + "'"):
-        resource_group = resource.id.split('/')[4]
         resource_type = str(resource.type).split('/')[-1]
         if resource_type == "virtualMachines":
             ins_id = resource.name
-            resource = compute_client.virtual_machines.get(resource_group, resource.name)
-            resource.tags["Name"] = new_id
-            compute_client.virtual_machines.create_or_update(resource_group, resource.name, resource)
-        elif resource_type == "virtualMachineScaleSets":
-            resource = compute_client.virtual_machine_scale_sets.get(resource_group, resource.name)
-            resource.tags["Name"] = new_id
-            compute_client.virtual_machine_scale_sets.create_or_update(resource_group, resource.name, resource)
-            ins_id, _ = get_instance_name_and_private_ip_from_vmss(resource.name)
-        elif resource_type == "networkInterfaces":
-            resource = network_client.network_interfaces.get(resource_group, resource.name)
-            resource.tags["Name"] = new_id
-            network_client.network_interfaces.create_or_update(resource_group, resource.name, resource)
-        elif resource_type == "publicIPAddresses":
-            resource = network_client.public_ip_addresses.get(resource_group, resource.name)
-            resource.tags["Name"] = new_id
-            network_client.public_ip_addresses.create_or_update(resource_group, resource.name, resource)
-        elif resource_type == "disks":
-            resource = compute_client.disks.get(resource_group, resource.name)
-            resource.tags["Name"] = new_id
-            compute_client.disks.create_or_update(resource_group, resource.name, resource)
 
+        az_api_version = resolve_azure_api(resource)
+        loaded_resource = res_client.resources.get_by_id(resource.id, az_api_version)
+        if not loaded_resource:
+            raise RuntimeError("Failed to load resource by id {}".format(resource.id))
+        retrieved_resources.append(loaded_resource)
+
+    # after all resources are successfully loaded - let's change a tag
+    for resource in retrieved_resources:
+        az_api_version = resolve_azure_api(resource)
+        if not resource.tags:
+            resource.tags = {}
+        resource.tags["Name"] = new_id
+        res_client.resources.update_by_id(resource.id, az_api_version,
+                                          GenericResource(tags=resource.tags))
     if ins_id is not None:
         return ins_id
     else:

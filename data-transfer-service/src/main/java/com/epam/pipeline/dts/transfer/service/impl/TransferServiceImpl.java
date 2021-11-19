@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,10 @@ import com.epam.pipeline.dts.transfer.service.TransferService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class TransferServiceImpl implements TransferService {
@@ -38,7 +36,8 @@ public class TransferServiceImpl implements TransferService {
     private final DataUploaderProviderManager dataUploaderProviderManager;
 
     @Override
-    public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,
+    public TransferTask runTransferTask(@NonNull StorageItem source,
+                                        @NonNull StorageItem destination,
                                         List<String> included) {
         TransferTask transferTask = taskService.createTask(source, destination, included);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);

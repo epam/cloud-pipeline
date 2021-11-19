@@ -11,9 +11,5 @@ spec:
     port: ${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}
     targetPort: 9200
     name: cp-search-elk-elastic-port
-  - protocol: TCP
-    port: ${CP_SEARCH_ELK_KIBANA_INTERNAL_PORT}
-    targetPort: 5601
-    name: cp-search-elk-elastic-kibana
   selector:
     cloud-pipeline/cp-search-elk: "true"

@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -98,6 +99,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     private static final int BACKUP_DURATION = 1;
     private static final String TEST_MOUNT_POINT = "testMountPoint";
     private static final String TEST_MOUNT_OPTIONS = "testMountOptions";
+    private static final String TEST_EXTERNAL_ID = "external-id";
 
     private static final String TEST_USER = "Test";
     private static final String DATA_KEY_1 = "tag";
@@ -155,15 +157,14 @@ public class FolderManagerTest extends AbstractSpringTest {
         awsRegionDTO.setDefault(true);
         awsRegionDTO.setProvider(CloudProvider.AWS);
         cloudRegion = cloudRegionManager.create(awsRegionDTO);
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any());
+        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
 
         folder = new Folder();
         folder.setName(TEST_NAME);
         subFolder = new Folder();
         subFolder.setName(TEST_NAME_1);
         MockitoAnnotations.initMocks(this);
-        when(gitManagerMock.getPipelineRevisions(any(Pipeline.class),
-                any(Long.class))).thenReturn(Collections.emptyList());
+        when(gitManagerMock.getPipelineRevisions(any(Pipeline.class))).thenReturn(Collections.emptyList());
         pipelineManager.setGitManager(gitManagerMock);
     }
 
@@ -490,6 +491,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         metadata.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
         MetadataClass metadataClass = metadataEntityManager.createMetadataClass(TEST_NAME);
         MetadataEntityVO metadataEntity = new MetadataEntityVO();
+        metadataEntity.setExternalId(TEST_EXTERNAL_ID);
         metadataEntity.setParentId(sourceFolder.getId());
         metadataEntity.setClassName(metadataClass.getName());
         metadataEntity.setClassId(metadataClass.getId());

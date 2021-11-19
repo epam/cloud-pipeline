@@ -20,17 +20,19 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -65,6 +67,8 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     @InjectMocks
     private PipelineConfigurationManager pipelineConfigurationManager;
 
+    @Mock
+    private PipelineManager mockPipelineManager;
     @MockBean
     private ToolManager toolManagerMock;
     @MockBean
@@ -72,11 +76,12 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     @MockBean
     private PipelineVersionManager pipelineVersionManagerMock;
     @MockBean
-    private DataStorageApiService dataStorageApiServiceMock;
-    @MockBean
     private PermissionsService permissionsServiceMock;
     @MockBean
     private ToolVersionManager toolVersionManagerMock;
+    @MockBean
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PipelineRunManager pipelineRunManager;
 
     private ConfigurationEntry configurationEntry;
 
@@ -97,7 +102,6 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         when(pipelineVersionManagerMock.loadConfigurationEntry(anyLong(), anyString(), anyString()))
                 .thenReturn(configurationEntry);
         when(pipelineVersionManagerMock.getValidDockerImage(anyString())).thenReturn(TEST_IMAGE);
-        when(dataStorageApiServiceMock.getWritableStorages()).thenReturn(Collections.emptyList());
         when(permissionsServiceMock.isMaskBitSet(anyInt(), anyInt())).thenReturn(true);
         when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
@@ -106,6 +110,10 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
 
     @Test
     public void shouldGetConfigurationForPipelineRun() {
+        final Pipeline pipeline = new Pipeline();
+        pipeline.setPipelineType(PipelineType.PIPELINE);
+        when(mockPipelineManager.load(1L)).thenReturn(pipeline);
+
         PipelineStart vo = getPipelineStartVO();
         vo.setPipelineId(1L);
         vo.setVersion("draft");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.By;
 
 import java.io.File;
 import java.util.Map;
@@ -40,6 +41,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttribu
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showIssues;
+import static com.epam.pipeline.autotests.utils.Utils.resetClick;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
@@ -49,7 +51,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(SETTINGS, $(byId("edit-folder-menu-button"))),
-            entry(EDIT_FOLDER, context().find(menuitem("ant-dropdown-menu-item", "Edit folder"))),
+            entry(EDIT_FOLDER, context().find(menuitem("rc-dropdown-menu-item", "Edit folder"))),
             entry(UPLOAD_METADATA,$(byId("upload-button")))
     );
 
@@ -58,7 +60,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
     }
 
     public LibraryFolderEditPopupAO clickEditButton() {
-        hover(SETTINGS);
+        click(SETTINGS);
         click(EDIT_FOLDER);
         return new LibraryFolderEditPopupAO(this);
     }
@@ -79,27 +81,27 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
         return this;
     }
 
-    public MetadataSectionAO showMetadata() {
+    public MetadataSectionAO showAttributes() {
         sleep(1, SECONDS);
-        final SelenideElement displayButton = $(displayAttributes);
-        displayButton.shouldBe(visible).hover();
-        $(attributesMenu).should(appear);
-        performIf(showAttributes, visible,
-                page -> click(showAttributes),
-                page -> resetMouse()
-        );
+        showMetadata(showAttributes);
         return new MetadataSectionAO(this);
     }
 
     public IssueSectionAO showIssues() {
-        final SelenideElement displayButton = $(displayAttributes);
-        displayButton.shouldBe(visible).hover();
-        $(attributesMenu).should(appear);
-        performIf(showIssues, visible,
-                page -> click(showIssues),
+        showMetadata(showIssues);
+        return new IssueSectionAO(this);
+    }
+
+    private void showMetadata(final By item) {
+        click(displayAttributes);
+        ensure(attributesMenu, appears);
+        performIf(item, visible,
+                page -> {
+                    click(item);
+                    resetClick();
+                },
                 page -> resetMouse()
         );
-        return new IssueSectionAO(this);
     }
 
     public LibraryFolderAO assertPipelineIsNotEditable(String pipelineName) {

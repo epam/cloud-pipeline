@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function is_jq_null() {
+    _VAL="$1"
+    if [ -z "$_VAL" ] || [ "$_VAL" == "null" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+echo "Getting a list of the custom capabilities  from 'launch.capabilities' preference"
+_all_custom_caps="$(curl -s \
+                   --max-time 30 \
+                   --insecure \
+                   --header 'Content-Type: application/json' \
+                   --header 'Accept: application/json' \
+                   --header "Authorization: Bearer $API_TOKEN" \
+                   "$API/preferences/launch.capabilities" | jq -r '.payload.value')"
+
+if is_jq_null "$_all_custom_caps"; then
+    echo "[ERROR] Cannot get list of all custom capabilities from 'launch.capabilities' preference"
+    exit 1
+fi
+
+echo "Checking if any of the capabilities is enabled"
+_custom_cap_prefix="CP_CAP_CUSTOM_"
+for var in $(compgen -e); do
+    if  [[ "$var" != "$_custom_cap_prefix"* ]] || \
+        [ "${!var}" != "true" ]; then
+        continue
+    fi
+
+    _cap_name=${var#"$_custom_cap_prefix"}
+    echo "'$_cap_name' capability is enabled, processing details"
+
+    _cap_commands=$(echo "$_all_custom_caps" | jq -r ".${_cap_name}.commands")
+    if is_jq_null "$_cap_commands"; then
+        echo "[ERROR] '$_cap_name' capability is enabled via '$var', but cannot get commands from 'launch.capabilities'"
+        continue
+    fi
+
+    echo "Running '$_cap_name' commands:"
+    for _cmd_item in $(echo "${_cap_commands}" | jq -r '.[] | @base64'); do
+        _cmd=$(echo ${_cmd_item} | base64 --decode)
+        if is_jq_null "$_cmd"; then
+            echo "[ERROR] Found an empty command for ${_cap_name}, skipping"
+            continue
+        fi
+
+        echo "--> Command: '$_cmd'"
+        bash -c "$_cmd"
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Command failed with a non-zero exit code"
+        else
+            echo "OK"
+        fi
+    done
+done
+echo "Done with the custom capabilities setup"

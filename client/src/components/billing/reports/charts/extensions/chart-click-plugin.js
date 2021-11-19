@@ -28,6 +28,10 @@ function mouseOverElement (mouse, element) {
 const plugin = {
   id,
   beforeEvent: function (chart, event, configuration) {
+    const {pie} = configuration;
+    if (pie) {
+      return this.beforeEventPie(chart, event, configuration);
+    }
     const {axis, handler, scaleHandler} = configuration;
     const {x, y, type} = event;
     const {scales} = chart;
@@ -54,6 +58,46 @@ const plugin = {
     } else if (/^mousemove$/i.test(type) && scaleHovered && scaleHandler) {
       // disable tooltip
       return false;
+    }
+    return true;
+  },
+  beforeEventPie: function (chart, event, configuration) {
+    const {handler} = configuration;
+    const {x, y, type} = event;
+    const {config, chartArea: area, id} = chart;
+    const {datasets} = config.data;
+    const {left, top, right, bottom} = area;
+    const center = {
+      x: (left + right) / 2.0,
+      y: (top + bottom) / 2.0
+    };
+    const dx = x - center.x;
+    const dy = y - center.y;
+    let angle = Math.atan2(dy, dx);
+    if (angle < -Math.PI / 2.0) {
+      angle += (2.0 * Math.PI);
+    }
+    const radius = Math.sqrt(Math.pow(dx, 2.0) + Math.pow(dy, 2.0));
+    if (/^click$/i.test(type) && handler) {
+      for (let i = 0; i < (datasets || []).length; i++) {
+        const {_meta} = datasets[i];
+        if (_meta && _meta[id]) {
+          const {data} = _meta[id];
+          for (let d = 0; d < (data || []).length; d++) {
+            const {_view} = data[d];
+            const {startAngle, endAngle, outerRadius, innerRadius} = _view;
+            if (
+              angle >= startAngle &&
+              angle <= endAngle &&
+              radius >= innerRadius &&
+              radius <= outerRadius
+            ) {
+              handler(d);
+            }
+          }
+        }
+      }
+      return;
     }
     return true;
   }

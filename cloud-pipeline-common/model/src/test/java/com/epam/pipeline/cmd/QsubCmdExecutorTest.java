@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,13 +40,15 @@ public class QsubCmdExecutorTest {
     public void executorShouldDelegateCallToInnerExecutor() {
         qsubCmdExecutor.executeCommand(COMMAND);
 
-        verify(innerExecutor).executeCommand(any(), eq(Collections.emptyMap()), eq(null));
+        verify(innerExecutor).executeCommand(any(), 
+                eq(Collections.emptyMap()), eq(null), eq(null));
     }
 
     @Test
     public void executorShouldCallQsubTemplateCommandInsteadOfTheOriginalOne() {
         qsubCmdExecutor.executeCommand(COMMAND);
 
-        verify(innerExecutor).executeCommand(matches(QSUB_TEMPLATE_PATTERN), eq(Collections.emptyMap()), eq(null));
+        verify(innerExecutor).executeCommand(matches(QSUB_TEMPLATE_PATTERN), 
+                eq(Collections.emptyMap()), eq(null), eq(null));
     }
 }

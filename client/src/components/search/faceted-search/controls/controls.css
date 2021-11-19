@@ -1,0 +1,174 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.expand-btn {
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  font-size: small;
+  border: none;
+  border-radius: 0;
+  color: #1890ff;
+  background-color: #fafafa;
+  border-top: 1px dashed #dfdfdf;
+  width: 100%;
+  height: auto;
+  padding: 2px 5px;
+  margin: 0;
+  line-height: 22px;
+}
+
+.expand-btn:hover {
+  background: #e6f7ff;
+}
+
+.document-type-filter {
+  line-height: 24px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  max-width: 60vw;
+  align-content: flex-start;
+  height: 100%;
+  padding-top: 2px;
+}
+
+.document-type-filter .filter {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 3px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: 135px;
+  margin-right: 5px;
+  text-align: center;
+  cursor: pointer;
+  height: 32px;
+}
+
+.document-type-filter .filter:hover {
+  background-color: #eef8ff;
+  border-color: #a2d8ff;
+}
+
+.document-type-filter .filter.selected {
+  background-color: rgb(49, 127, 208);
+  border-color: rgb(49, 127, 208);
+  color: white;
+}
+
+.document-type-filter .filter.selected:hover {
+  background-color: rgb(76, 149, 226);
+  border-color: rgb(49, 127, 208);
+}
+
+.document-type-filter .filter.disabled,
+.document-type-filter .filter:hover.disabled {
+  background-color: transparent;
+  color: #999;
+  border-color: transparent;
+  cursor: default;
+}
+
+.document-type-filter .filter .count {
+  margin-left: 5px;
+}
+
+.document-type-filter .filter .icon {
+  font-size: large;
+  margin-right: 5px;
+}
+
+.hint code {
+  color: #c7254e;
+  background-color: #f9f2f4;
+}
+
+.view-toggler-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  padding: 0 5px;
+  justify-content: center;
+  align-items: flex-start;
+  font-size: small;
+}
+
+.view-toggler {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.view-toggler > div[class~="ant-btn-group"] {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.view-toggler i[class~="anticon"] {
+  font-size: large;
+}
+
+.view-toggler .toggle-btn {
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 12px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.view-toggler .toggle-btn.toggle-btn-active {
+  background: #317fd0;
+  color: #fff;
+}
+
+.view-toggler .toggle-btn:hover {
+  background-color: #eef8ff;
+  border-color: #a2d8ff;
+}
+
+.view-toggler .toggle-btn.toggle-btn-active:hover {
+  background-color: #458bd4;
+}
+
+.infinite-scroll {
+  overflow: auto;
+}
+
+.scroll-container {
+  position: relative;
+}
+
+.more {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.more.error {
+  justify-content: flex-start;
+  color: red;
+}

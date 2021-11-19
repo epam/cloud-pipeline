@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
-import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
@@ -24,7 +24,6 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.listener.Cloud;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -55,6 +54,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.hintOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -71,7 +71,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     private final String pipeline1263 = resourceName("epmcmbibpc-1263");
     private final String pipeline1500 = resourceName("epmcmbibpc-1500");
     private final String spotPriceName = C.SPOT_PRICE_NAME;
-    private final String onDemandPriceName = "On-demand";
+    private final String onDemandPriceName = ON_DEMAND;
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -157,24 +157,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
             .click(taskWithName("InitializeNode"))
-            .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible);
-        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            new LogAO()
-                    .ensure(logMessage(withActualRunId("Create VMScaleSet with low priority instance for run: run_id")),
-                            not(visible));
-            return;
-        } else if (Cloud.GCP.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            new LogAO()
-                    .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
-                    .ensure(logMessage(withActualRunId("Preemptible instance with run id: run_id will be launched")),
-                            not(visible));
-            return;
-        }
-        new LogAO()
-            .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
-            .ensure(logMessage(withActualRunId("Checking if spot request for RunID run_id already exists...")), visible)
-            .ensure(logMessage(withActualRunId("No spot request for RunID run_id found")), visible)
-            .ensure(logMessage(withActualRunId("Creating on demand instance")), visible);
+            .ensure(logMessage("- IsSpot: False"), visible);
     }
 
     @Test
@@ -277,6 +260,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .clear(NAME).setValue(NAME, "conf")
                                .clear(DISK).setValue(DISK, "23")
                                .clear(TIMEOUT).setValue(TIMEOUT, "2")
+                               .selectValue(INSTANCE_TYPE, C.DEFAULT_INSTANCE)
                                .sleep(2, SECONDS)
                                .click(SAVE)
                 )
@@ -337,8 +321,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
-                        instance.ensure(DISK, text(defaultDisk))
-                                .ensure(TYPE, text(C.DEFAULT_INSTANCE))
+                        instance.ensure(TYPE, text(C.DEFAULT_INSTANCE))
                 )
                 .waitForCompletion();
     }
@@ -375,7 +358,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         );
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
-                .deleteConfiguration(configurationName, popup -> popup.cancel())
+                .deleteConfiguration(configurationName, ConfirmationPopupAO::cancel)
                 .ensure(profileWithName(configurationName), exist.because(deletionWasCancelled))
                 .deleteConfiguration(configurationName, popup -> popup.ensureTitleIs(expectedTitle).ok())
                 .ensure(profileWithName(configurationName), not(exist).because(deletionWasConfirmed))
@@ -391,9 +374,5 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
 
     private static PipelineRunFormAO onLaunchPage() {
         return new PipelineRunFormAO();
-    }
-
-    private String withActualRunId(final String message) {
-        return message.replaceAll("run_id", getLastRunId());
     }
 }

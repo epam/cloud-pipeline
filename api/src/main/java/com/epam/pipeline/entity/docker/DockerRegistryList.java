@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@link DockerRegistryList} represents a pseudo root entity for returning list of
@@ -35,6 +37,7 @@ import java.util.Set;
  */
 @Getter
 @Setter
+@NoArgsConstructor
 public class DockerRegistryList extends AbstractHierarchicalEntity {
     private List<DockerRegistry> registries;
 
@@ -71,5 +74,13 @@ public class DockerRegistryList extends AbstractHierarchicalEntity {
     @Override
     public AclClass getAclClass() {
         return AclClass.DOCKER_REGISTRY;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public DockerRegistryList copyView() {
+        return new DockerRegistryList(
+            this.getRegistries().stream().map(DockerRegistry::copyView).collect(Collectors.toList())
+        );
     }
 }

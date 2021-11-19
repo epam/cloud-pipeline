@@ -20,9 +20,18 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
+import com.epam.pipeline.manager.ldap.LdapManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
+import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
+import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -56,6 +65,7 @@ import java.util.concurrent.Executor;
 @SpringBootConfiguration
 @Import({AppMVCConfiguration.class,
         DBConfiguration.class,
+        CacheConfiguration.class,
         MappersConfiguration.class,
         ContextualPreferenceConfiguration.class})
 @EnableAutoConfiguration(exclude = {
@@ -105,6 +115,33 @@ public class TestApplication {
 
     @MockBean
     public BillingManager billingManager;
+
+    @MockBean
+    public OntologyManager ontologyManager;
+
+    @MockBean
+    public ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    public ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+
+    @MockBean
+    public ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @MockBean
+    public CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
+
+    @MockBean
+    public CloudProfileCredentialsManager cloudProfileCredentialsManager;
+
+    @MockBean
+    public UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
+    public LdapManager ldapManager;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

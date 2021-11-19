@@ -24,6 +24,7 @@ import RunTable from '../../../runs/RunTable';
 import connect from '../../../../utils/connect';
 import pipelineRun from '../../../../models/pipelines/PipelineRun';
 import parseQueryParameters from '../../../../utils/queryParameters';
+import {openReRunForm} from '../../../runs/actions';
 import moment from 'moment-timezone';
 
 const pageSize = 20;
@@ -53,7 +54,8 @@ const pageSize = 20;
     pipeline: pipelines.getPipeline(params.id),
     pipelineId: params.id,
     version: params.version,
-    routing
+    routing,
+    pipelines
   };
 })
 @observer
@@ -104,16 +106,8 @@ export default class PipelineHistory extends Component {
     this.props.runFilter.filter(params, true);
   }
 
-  launchPipeline = ({pipelineId, version, id, configName}) => {
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+  launchPipeline = (run) => {
+    return openReRunForm(run, this.props);
   };
 
   onSelectRun = ({id}) => {

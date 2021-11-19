@@ -67,7 +67,7 @@ class PipelineRunFilter extends Remote {
     try {
       this.constructor.fetchOptions.body = JSON.stringify(params);
     } catch (___) {}
-    this.fetch();
+    return this.fetch();
   }
 
   postprocess (value) {

@@ -17,7 +17,9 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
-import {Alert, Menu, message, Row, Dropdown, Button, Icon, Col} from 'antd';
+import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -35,6 +37,7 @@ import GitRepositoryControl from '../../special/git-repository-control';
 import styles from './PipelineDetails.css';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 @connect({
   pipelines,
@@ -42,6 +45,8 @@ import {ItemTypes} from '../model/treeStructureFunctions';
   folders
 })
 @localization.localizedComponent
+@HiddenObjects.checkPipelines(props => props?.params?.id)
+@HiddenObjects.checkPipelineVersions(props => props?.params?.id, props => props?.params?.version)
 @inject(({pipelines, pipelinesLibrary, routing, folders}, {onReloadTree, params}) => ({
   onReloadTree,
   pipelines,
@@ -56,13 +61,39 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 }))
 @observer
 export default class PipelineDetails extends localization.LocalizedReactComponent {
-
   state = {isModalVisible: false, updating: false, deleting: false};
 
   @observable _graphIsSupported = null;
 
+  componentDidMount () {
+    this.redirectToVersionedStorage();
+  }
+
+  componentDidUpdate () {
+    if (!this.props.language.pending) {
+      const graphIsSupported = graphIsSupportedForLanguage(this.props.language.value);
+      if (graphIsSupported !== this._graphIsSupported) {
+        this._graphIsSupported = graphIsSupported;
+      }
+    }
+    this.redirectToVersionedStorage();
+  }
+
+  redirectToVersionedStorage = () => {
+    if (this.props.pipeline.loaded) {
+      const {id, pipelineType} = this.props.pipeline.value;
+      if (/^versioned_storage$/i.test(pipelineType)) {
+        this.props.router && this.props.router.push(`/vs/${id}`);
+      }
+    }
+  };
+
   toggleModal = () => {
-    this.setState({isModalVisible: !this.state.isModalVisible});
+    this.setState({isModalVisible: !this.state.isModalVisible}, () => {
+      if (!this.state.isModalVisible) {
+        this.props.pipeline.fetch();
+      }
+    });
   };
 
   updatePipeline = (values) => {
@@ -77,6 +108,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         }
       );
       if (updatePipeline.error) {
+        // eslint-disable-next-line
         message.error(`Error updating ${this.localizedString('pipeline')}: ${updatePipeline.error}`);
         this.setState({updating: false});
       } else {
@@ -119,6 +151,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       const deletePipeline = new DeletePipeline(this.props.pipelineId, keepRepository);
       await deletePipeline.fetch();
       if (deletePipeline.error) {
+        // eslint-disable-next-line
         message.error(`Error deleting ${this.localizedString('pipeline')}: ${deletePipeline.error}`);
         this.setState({deleting: false});
       } else {
@@ -156,19 +189,13 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   runPipeline = () => {
-    if (this.props.currentConfiguration) {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/${this.props.currentConfiguration}`);
-    } else {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/default`);
-    }
+    const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
+    this.props.router.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
   };
 
   runPipelineConfiguration = (configuration) => {
-    if (configuration) {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/${configuration}`);
-    } else {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/default`);
-    }
+    const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
+    this.props.router.push(`${baseUrl}/${configuration || 'default'}`);
   };
 
   renderRunButton = () => {
@@ -178,11 +205,15 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         this.runPipelineConfiguration(key);
       };
       const configurationsMenu = (
-        <Menu onClick={onSelectConfiguration}>
+        <Menu
+          onClick={onSelectConfiguration}
+          style={{cursor: 'pointer'}}
+          selectedKeys={[]}
+        >
           {
             configurations.map(c => {
               return (
-                <Menu.Item key={c.name}>{c.name}</Menu.Item>
+                <MenuItem key={c.name}>{c.name}</MenuItem>
               );
             })
           }
@@ -200,7 +231,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           </Button>
           <Dropdown overlay={configurationsMenu} placement="bottomRight">
             <Button size="small" id="run-dropdown-button" type="primary">
-              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
         </Button.Group>
@@ -227,7 +258,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       return <Alert type="error" message={this.props.pipeline.error} />;
     }
 
-    const {id, description} = this.props.pipeline.value;
+    const {id, description, pipelineType} = this.props.pipeline.value;
+    if (/^versioned_storage$/i.test(pipelineType)) {
+      return (
+        <LoadingView />
+      );
+    }
     const {version} = this.props.params;
 
     const {router: {location}} = this.props;
@@ -245,7 +281,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         className={styles.fullHeightContainer}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={browserStyles.itemHeader}>
-            <Icon type="tag" className={browserStyles.editableControl} />
             <Breadcrumbs
               id={parseInt(this.props.pipelineId)}
               type={ItemTypes.pipeline}
@@ -254,6 +289,11 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               editStyleEditableField={{flex: 1}}
               displayTextEditableField={`${this.props.pipeline.value.name} (${this.props.version})`}
               textEditableField={this.props.pipeline.value.name}
+              icon="tag"
+              iconClassName={browserStyles.editableControl}
+              lock={this.props.pipeline.value.locked}
+              lockClassName={browserStyles.editableControl}
+              subject={this.props.pipeline.value}
             />
           </Col>
           <Col className={styles.actionButtons}>
@@ -277,54 +317,59 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         <Row>
           {description}
         </Row>
-        <Row gutter={16} type="flex" justify="center" className={`${styles.rowMenu} ${styles[activeTab] || ''}`}>
-          <Menu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
-            <Menu.Item key="documents">
+        <Row
+          gutter={16}
+          type="flex"
+          justify="center"
+          className={`${styles.rowMenu} ${styles[activeTab] || ''}`}
+        >
+          <TabMenu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
+            <TabMenu.Item key="documents">
               <AdaptedLink
                 to={`/${id}/${version}/documents`}
                 location={location}>
                 Documents
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="code">
+            </TabMenu.Item>
+            <TabMenu.Item key="code">
               <AdaptedLink
                 to={`/${id}/${version}/code`}
                 location={location}>
                 Code
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="configuration">
+            </TabMenu.Item>
+            <TabMenu.Item key="configuration">
               <AdaptedLink
                 to={`/${id}/${version}/configuration`}
                 location={location}>
                 Configuration
               </AdaptedLink>
-            </Menu.Item>
+            </TabMenu.Item>
             {
               displayGraph &&
-              <Menu.Item key="graph">
+              <TabMenu.Item key="graph">
                 <AdaptedLink
                   to={`/${id}/${version}/graph`}
                   location={location}>
                   Graph
                 </AdaptedLink>
-              </Menu.Item>
+              </TabMenu.Item>
             }
-            <Menu.Item key="history">
+            <TabMenu.Item key="history">
               <AdaptedLink
                 to={`/${id}/${version}/history`}
                 location={location}>
                 History
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="storage">
+            </TabMenu.Item>
+            <TabMenu.Item key="storage">
               <AdaptedLink
                 to={`/${id}/${version}/storage`}
                 location={location}>
                 Storage rules
               </AdaptedLink>
-            </Menu.Item>
-          </Menu>
+            </TabMenu.Item>
+          </TabMenu>
         </Row>
         <div
           className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
@@ -344,14 +389,5 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           pipeline={this.props.pipeline.value} />
       </div>
     );
-  }
-
-  componentDidUpdate () {
-    if (!this.props.language.pending) {
-      const graphIsSupported = graphIsSupportedForLanguage(this.props.language.value);
-      if (graphIsSupported !== this._graphIsSupported) {
-        this._graphIsSupported = graphIsSupported;
-      }
-    }
   }
 }

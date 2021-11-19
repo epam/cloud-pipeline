@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
+import classNames from 'classnames';
 import {
   Icon,
   Input,
@@ -32,11 +33,9 @@ import {SearchGroupTypes} from './searchGroupTypes';
 import localization from '../../utils/localization';
 import styles from './search.css';
 import getStyle from '../../utils/browserDependentStyle';
-import MetadataEntityLoad from '../../models/folderMetadata/MetadataEntityLoad';
-import {
-  getPipelineFileInfo,
-  PipelineFileTypes
-} from './utilities/getPipelineFileInfo';
+import {facetedQueryString} from './faceted-search/utilities';
+import {DocumentTypeFilterName} from './faceted-search/filter';
+import getItemUrl from './faceted-search/utilities/get-item-url';
 import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
@@ -44,10 +43,9 @@ const INSTANT_SEARCH_DELAY = 1000;
 const PREVIEW_AVAILABLE_DELAY = 500;
 
 @localization.localizedComponent
-@inject('searchEngine', 'preferences', 'pipelines')
+@inject('searchEngine', 'preferences')
 @observer
 export default class SearchDialog extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onInitialized: PropTypes.func,
     onVisibilityChanged: PropTypes.func,
@@ -60,12 +58,11 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     searching: false,
     searchResults: [],
     searchResultsFor: null,
-    page: 0,
+    hasMore: false,
     hoveredIndex: null,
     previewAvailable: false,
     selectedGroupTypes: [],
-    aggregates: null,
-    totalPages: 0
+    aggregates: null
   };
 
   inputControl;
@@ -121,128 +118,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }
     if (this.state.searchResults.length > itemIndex) {
       const item = this.state.searchResults[itemIndex];
-      switch (item.type) {
-        case SearchItemTypes.azFile:
-        case SearchItemTypes.s3File:
-        case SearchItemTypes.NFSFile:
-        case SearchItemTypes.gsFile:
-          if (item.parentId) {
-            const path = item.id;
-            const parentFolder = path.split('/').slice(0, path.split('/').length - 1).join('/');
-            if (parentFolder) {
-              this.props.router.push(`/storage/${item.parentId}?path=${parentFolder}`);
-            } else {
-              this.props.router.push(`/storage/${item.parentId}`);
-            }
-            this.closeDialog();
-          }
-          break;
-        case SearchItemTypes.azStorage:
-        case SearchItemTypes.s3Bucket:
-        case SearchItemTypes.NFSBucket:
-        case SearchItemTypes.gsStorage:
-          this.props.router.push(`/storage/${item.id}`);
-          this.closeDialog();
-          break;
-        case SearchItemTypes.run:
-          this.props.router.push(`/run/${item.id}`);
-          this.closeDialog();
-          break;
-        case SearchItemTypes.pipeline:
-          this.props.router.push(`/${item.id}`);
-          this.closeDialog();
-          break;
-        case SearchItemTypes.tool:
-          this.props.router.push(`/tool/${item.id}`);
-          this.closeDialog();
-          break;
-        case SearchItemTypes.folder:
-          this.props.router.push(`/folder/${item.id}`);
-          this.closeDialog();
-          break;
-        case SearchItemTypes.configuration:
-          const [id, configName] = item.id.split('-');
-          this.props.router.push(`/configuration/${id}/${configName}`);
-          this.closeDialog();
-          break;
-        case SearchItemTypes.metadataEntity:
-          if (item.parentId) {
-            const request = new MetadataEntityLoad(item.id);
-            await request.fetch();
-            if (request.loaded && request.value.classEntity && request.value.classEntity.name) {
-              this.props.router.push(`/metadata/${item.parentId}/${request.value.classEntity.name}`);
-              this.closeDialog();
-            } else {
-              this.props.router.push(`/metadataFolder/${item.parentId}/`);
-              this.closeDialog();
-            }
-          }
-          break;
-        case SearchItemTypes.issue:
-          if (item.entity) {
-            const {entityClass, entityId} = item.entity;
-            switch (entityClass.toLowerCase()) {
-              case 'folder':
-                this.props.router.push(`/folder/${entityId}/`);
-                this.closeDialog();
-                break;
-              case 'pipeline':
-                this.props.router.push(`/${entityId}/`);
-                this.closeDialog();
-                break;
-              case 'tool':
-                this.props.router.push(`/tool/${entityId}/`);
-                this.closeDialog();
-                break;
-            }
-          }
-          break;
-        case SearchItemTypes.pipelineCode:
-          if (item.parentId && item.description && item.id) {
-            const versions = this.props.pipelines.versionsForPipeline(item.parentId);
-            await versions.fetch();
-            let version = item.description;
-            if (versions.loaded) {
-              let [v] = (versions.value || []).filter(v => v.name === item.description);
-              if (!v && versions.value.length > 0) {
-                const [draft] = versions.value.filter(v => v.draft);
-                if (draft) {
-                  version = draft.name;
-                } else {
-                  version = versions.value[0].name;
-                }
-              }
-            }
-            const hide = message.loading('Navigating...', 0);
-            const fileInfo = await getPipelineFileInfo(item.parentId, version, item.id);
-            let url = `/${item.parentId}/${version}`;
-            if (fileInfo) {
-              switch (fileInfo.type) {
-                case PipelineFileTypes.document:
-                  url = `/${item.parentId}/${version}/documents`;
-                  break;
-                case PipelineFileTypes.source:
-                  if (fileInfo.path) {
-                    url = `/${item.parentId}/${version}/code&path=${fileInfo.path}`;
-                  } else {
-                    url = `/${item.parentId}/${version}/code`;
-                  }
-                  break;
-              }
-            }
-            hide();
-            this.props.router.push(url);
-            this.closeDialog();
-          } else if (item.parentId && item.description) {
-            this.props.router.push(`/${item.parentId}/${item.description}`);
-            this.closeDialog();
-          } else if (item.parentId) {
-            this.props.router.push(`/${item.parentId}`);
-            this.closeDialog();
-          } else {
-            message.error('Cannot navigate to item', 3);
-          }
-          break;
+      const url = await getItemUrl(item);
+      if (url) {
+        this.props.router.push(url);
+        this.closeDialog();
+      } else {
+        message.error('Cannot navigate to item', 3);
       }
     }
     return false;
@@ -265,7 +146,8 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         if (resultAggregates.hasOwnProperty(key)) {
           for (let i = 0; i < this.searchTypesArray.length; i++) {
             if (this.searchTypesArray[i].types.indexOf(key) >= 0) {
-              aggregates[this.searchTypesArray[i].key] = (aggregates[this.searchTypesArray[i].key] || 0) +
+              aggregates[this.searchTypesArray[i].key] =
+                (aggregates[this.searchTypesArray[i].key] || 0) +
                 resultAggregates[key];
             }
           }
@@ -291,8 +173,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         previewAvailable: false,
         aggregates: null,
         selectedGroupTypes: [],
-        totalPages: 0,
-        page: 0
+        hasMore: false
       });
       return;
     }
@@ -300,10 +181,14 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     this.setState({
       searching: true
     }, async () => {
-      await this.props.searchEngine.send(searchCriteria, this.state.page, PAGE_SIZE, this.generateSearchTypes());
+      await this.props.searchEngine.send(
+        searchCriteria,
+        undefined,
+        PAGE_SIZE,
+        this.generateSearchTypes()
+      );
       if (this.state.searchString === searchCriteria) {
         if (this.props.searchEngine.loaded) {
-          const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
           const results = (this.props.searchEngine.value.documents || []).map(d => d);
           const aggregates = this.processAggregates();
           this.setState({
@@ -313,12 +198,13 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             hoveredIndex: null,
             previewAvailable: false,
             aggregates,
-            totalPages
+            hasMore: results.length >= PAGE_SIZE
           });
         } else if (this.props.searchEngine.error) {
           message.error(this.props.searchEngine.error, 5);
           this.setState({
-            searching: false
+            searching: false,
+            hasMore: false
           });
         }
       } else {
@@ -337,10 +223,14 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     this.setState({
       searching: true
     }, async () => {
-      await this.props.searchEngine.send(searchCriteria, this.state.page, PAGE_SIZE, this.generateSearchTypes());
+      await this.props.searchEngine.send(
+        searchCriteria,
+        undefined,
+        PAGE_SIZE,
+        this.generateSearchTypes()
+      );
       if (this.state.searchString === searchCriteria) {
         if (this.props.searchEngine.loaded) {
-          const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
           const results = (this.props.searchEngine.value.documents || []).map(d => d);
           const aggregates = this.processAggregates();
           this.setState({
@@ -350,12 +240,13 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             searchResults: results,
             hoveredIndex: null,
             previewAvailable: false,
-            totalPages
+            hasMore: results.length >= PAGE_SIZE
           });
         } else if (this.props.searchEngine.error) {
           message.error(this.props.searchEngine.error, 5);
           this.setState({
-            searching: false
+            searching: false,
+            hasMore: false
           });
         }
       } else {
@@ -465,7 +356,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             }
             return `${resultItem.name} - ${resultItem.description}`;
           }
-          return resultItem.name;
+          return resultItem.name || `Run ${resultItem.elasticId}`;
         }
         default: return resultItem.name;
       }
@@ -484,7 +375,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           type="flex"
           align="middle"
           onMouseEnter={this.onHover(index)}
-          >
+        >
           <div style={{display: 'inline-block'}}>
             {this.renderIcon(resultItem)}
           </div>
@@ -537,7 +428,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
       this.inputControl.focus();
     }
     this.setState({
-      page: 0,
+      hasMore: false,
       selectedGroupTypes: types
     }, this.specifySearchGroups);
   };
@@ -546,42 +437,52 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
 
   loadMore = (e) => {
     const obj = e.target;
-    if (obj && obj.scrollTop === (obj.scrollHeight - obj.offsetHeight) &&
-      this.state.page < this.state.totalPages &&
-      !this.state.searching) {
+    if (
+      obj &&
+      obj.scrollTop === (obj.scrollHeight - obj.offsetHeight) &&
+      this.state.hasMore &&
+      !this.state.searching
+    ) {
+      if (!this.state.searchString) {
+        return;
+      }
+      const searchCriteria = this.state.searchString;
       this.setState({
-        page: this.state.page + 1
+        searching: true
       }, async () => {
-        if (!this.state.searchString) {
-          return;
-        }
-        const searchCriteria = this.state.searchString;
-        this.setState({
-          searching: true
-        }, async () => {
-          await SearchDialog.wait(1);
-          await this.props.searchEngine.send(searchCriteria, this.state.page, PAGE_SIZE, this.generateSearchTypes());
-          if (this.state.searchString === searchCriteria) {
-            if (this.props.searchEngine.loaded) {
-              const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
-              const results = (this.props.searchEngine.value.documents || []).map(d => d);
-              this.setState({
-                searching: false,
-                searchResults: [...this.state.searchResults, ...results],
-                totalPages
-              });
-            } else if (this.props.searchEngine.error) {
-              message.error(this.props.searchEngine.error, 5);
-              this.setState({
-                searching: false
-              });
-            }
-          } else {
+        await SearchDialog.wait(1);
+        const {searchResults = []} = this.state;
+        const lastResult = searchResults.length > 0
+          ? searchResults[searchResults.length - 1]
+          : undefined;
+        await this.props.searchEngine.send(
+          searchCriteria,
+          lastResult
+            ? {docId: lastResult.elasticId, docScore: lastResult.score, scrollingBackward: false}
+            : undefined,
+          PAGE_SIZE,
+          this.generateSearchTypes()
+        );
+        if (this.state.searchString === searchCriteria) {
+          if (this.props.searchEngine.loaded) {
+            const results = (this.props.searchEngine.value.documents || []).map(d => d);
             this.setState({
-              searching: false
+              searching: false,
+              searchResults: [...this.state.searchResults, ...results],
+              hasMore: results.length >= PAGE_SIZE
+            });
+          } else if (this.props.searchEngine.error) {
+            message.error(this.props.searchEngine.error, 5);
+            this.setState({
+              searching: false,
+              hasMore: false
             });
           }
-        });
+        } else {
+          this.setState({
+            searching: false
+          });
+        }
       });
     }
   };
@@ -631,11 +532,30 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             marginTop: 10
           }}>
           <span style={{fontSize: 'larger'}}>
+            {/* eslint-disable-next-line */}
             In order to search for any of these special characters, they will need to be escaped with <code>\</code>
           </span>
         </Row>
       </div>
     );
+  };
+
+  navigateToAdvancedFilter = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const {searchString, selectedGroupTypes} = this.state;
+    const docTypes = (selectedGroupTypes || [])
+      .map(group => SearchGroupTypes.hasOwnProperty(group) ? SearchGroupTypes[group].types : [])
+      .reduce((r, c) => ([...r, ...c]), []);
+    let queryString = facetedQueryString.build(
+      searchString,
+      {[DocumentTypeFilterName]: docTypes}
+    );
+    if (queryString) {
+      queryString = `?${queryString}`;
+    }
+    this.props.router.push(`/search/advanced${queryString}`);
+    this.closeDialog();
   };
 
   render () {
@@ -645,6 +565,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }
     const searchFormClassNames = [styles.searchForm];
     const searchResultsClassNames = [styles.searchResults];
+    const advancedSearchClassNames = [styles.advanced];
     if (this.state.searchResults.length) {
       searchFormClassNames.push(styles.resultsAvailable);
       searchResultsClassNames.push(styles.resultsAvailable);
@@ -662,6 +583,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }
     if (this.state.previewAvailable) {
       hintContainerClassNames.push(styles.previewAvailable);
+    }
+    if (this.state.searchResults.length) {
+      advancedSearchClassNames.push(styles.resultsAvailable);
+    }
+    if (this.state.previewAvailable) {
+      advancedSearchClassNames.push(styles.previewAvailable);
     }
     let hintsTooltipPlacement;
     if (this.state.previewAvailable && this.state.searchResults.length) {
@@ -708,12 +635,24 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 const active = !disabled && this.state.selectedGroupTypes.indexOf(type.key) >= 0;
                 return (
                   <div
-                    className={`${styles.typeButton} ${disabled ? styles.disabled : ''} ${active ? styles.active : ''}`}
+                    className={
+                      classNames(
+                        styles.typeButton,
+                        {
+                          [styles.disabled]: disabled,
+                          [styles.active]: active
+                        }
+                      )
+                    }
                     onClick={this.enableDisableSearchGroup(type.key, disabled)}
                     key={index}>
                     <Icon type={type.icon} />
                     <span className={styles.typeTitle}>
-                      {type.title(this.localizedString)(this.state.aggregates && this.state.aggregates[type.key])}
+                      {
+                        type.title(this.localizedString)(
+                          this.state.aggregates && this.state.aggregates[type.key]
+                        )
+                      }
                     </span>
                   </div>
                 );
@@ -735,10 +674,19 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             onKeyDown={this.onKeyEnter}
             style={{width: '100%'}} />
           {
-            !this.state.searching && this.state.searchResultsFor && !this.state.searchResults.length &&
-            <Row type="flex" className={styles.searchingInProgressContainer} align="middle" justify="center">
-              <span>Nothing found</span>
-            </Row>
+            !this.state.searching &&
+            this.state.searchResultsFor &&
+            !this.state.searchResults.length &&
+            (
+              <Row
+                type="flex"
+                className={styles.searchingInProgressContainer}
+                align="middle"
+                justify="center"
+              >
+                <span>Nothing found</span>
+              </Row>
+            )
           }
           <div
             onScroll={this.loadMore}
@@ -751,11 +699,25 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           </div>
           {
             this.state.searching &&
-            <Row type="flex" className={styles.searchingInProgressContainer} align="middle" justify="center">
-              <Icon type="loading" />
-            </Row>
+            (
+              <Row
+                type="flex"
+                className={styles.searchingInProgressContainer}
+                align="middle"
+                justify="center"
+              >
+                <Icon type="loading" />
+              </Row>
+            )
           }
         </Row>
+        <div
+          className={advancedSearchClassNames.join(' ')}
+          onClick={this.navigateToAdvancedFilter}
+        >
+          <Icon className={styles.icon} type="filter" />
+          <span className={styles.buttonText}>Advanced search</span>
+        </div>
       </div>
     );
   }
@@ -820,7 +782,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         (this.state.hoveredIndex === null ? initial : this.state.hoveredIndex) +
         this.state.searchResults.length +
         move
-        ) % (this.state.searchResults.length);
+      ) % (this.state.searchResults.length);
       this.onHover(currentIndex)();
       e.preventDefault();
       e.stopPropagation();

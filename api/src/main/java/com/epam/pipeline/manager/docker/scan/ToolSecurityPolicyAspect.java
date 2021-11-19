@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.scan.ToolExecutionCheckStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.ToolExecutionDeniedException;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
@@ -67,9 +68,11 @@ public class ToolSecurityPolicyAspect {
 
         String tag = toolManager.getTagFromImageName(configuration.getDockerImage());
         Tool tool = toolManager.loadByNameOrId(configuration.getDockerImage());
-        if (!clairToolScanManager.checkTool(tool, tag)) {
+        final ToolExecutionCheckStatus checkStatus = clairToolScanManager.checkTool(tool, tag);
+        if (!checkStatus.isAllowed()) {
             throw new ToolExecutionDeniedException(
-                    messageHelper.getMessage(MessageConstants.ERROR_TOOL_SECURITY_POLICY_VIOLATION));
+                    messageHelper.getMessage(MessageConstants.ERROR_TOOL_SECURITY_POLICY_VIOLATION,
+                            checkStatus.getReason()));
         }
     }
 

@@ -56,6 +56,7 @@ system_info = {
 instance_disk = 100
 instance_type = "m4"
 docker_image = "image"
+test_user = "user"
 
 
 def setup_module(module):
@@ -71,7 +72,7 @@ class TestViewPipes(object):
         permission_name = "permission_name"
         expected_permissions = [build_permission_model(name=permission_name, principal=True, write_allowed=True,
                                                        execute_denied=True, read_denied=True)]
-        permissions_mock.return_value = expected_permissions
+        permissions_mock.return_value = expected_permissions, test_user
         expected = build_pipeline_model(identifier=pipeline_id, name=pipeline_name,
                                         current_version=build_version(v_1, None, draft=None,
                                                                       run_parameters=build_run_parameters(

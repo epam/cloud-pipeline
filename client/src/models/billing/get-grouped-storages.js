@@ -16,18 +16,30 @@ export class GetGroupedStorages extends BaseBillingRequest {
 
   prepareStoragesData (raw) {
     const res = {};
+    const GB = 1024 * 1024 * 1024;
+
+    const emptyIfUnknown = (value) => /^unknown$/i.test(value) ? '' : value;
 
     (raw && raw.length ? raw : []).forEach(i => {
       let name = i.info && i.info.name ? i.info.name : i.groupingInfo.STORAGE;
       if (name && name !== 'unknown') {
         res[name] = {
           name,
-          owner: i.groupingInfo.owner,
-          created: i.groupingInfo.created,
-          region: i.groupingInfo.region,
-          provider: i.groupingInfo.provider,
+          owner: emptyIfUnknown(i.groupingInfo.owner),
+          created: emptyIfUnknown(i.groupingInfo.created),
+          region: emptyIfUnknown(i.groupingInfo.region),
+          provider: emptyIfUnknown(i.groupingInfo.provider),
           value: isNaN(i.cost) ? 0 : costMapper(i.cost),
-          ...i
+          usage: isNaN(i.groupingInfo.usage_storages)
+            ? 0
+            : Math.floor(+(i.groupingInfo.usage_storages) / GB * 100) / 100.0,
+          ...i,
+          usageLast: isNaN(i.groupingInfo.usage_storages_last)
+            ? 0
+            : Math.floor(+(i.groupingInfo.usage_storages_last) / GB * 100) / 100.0,
+          ...i,
+          billingCenter: emptyIfUnknown(i.groupingInfo.billing_center),
+          storageType: emptyIfUnknown(i.groupingInfo.storage_type)
         };
       }
     });

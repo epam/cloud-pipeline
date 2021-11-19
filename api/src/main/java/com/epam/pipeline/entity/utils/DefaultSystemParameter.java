@@ -28,8 +28,10 @@ public class DefaultSystemParameter {
     private String type;
     private String description;
     private String defaultValue;
+    private boolean passToWorkers;
 
     public DefaultSystemParameter() {
         this.type = PipeConfValueVO.DEFAULT_TYPE;
+        this.passToWorkers = false;
     }
 }

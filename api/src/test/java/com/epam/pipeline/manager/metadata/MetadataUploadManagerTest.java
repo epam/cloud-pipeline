@@ -46,6 +46,7 @@ public class MetadataUploadManagerTest extends AbstractSpringTest {
 
     private static final String TEST_CSV_FILE = "test.csv";
     private static final String TEST_TAB_FILE = "test.tsv";
+    private static final String SAMPLE_TAB_FILE = "Sample.tsv";
 
     public static final String HEADER1 = "Participant:ID${d}name\n";
     public static final String HEADER2 = "Sample:ID${d}SampleName${d}participant:Participant:ID${d}fast_dir:Path\n";
@@ -53,6 +54,11 @@ public class MetadataUploadManagerTest extends AbstractSpringTest {
     public static final String LINE1 = "p4${d}Participant1\n";
     public static final String LINE2 = "s1${d}Sample1${d}p1${d}set1\n";
     public static final String LINE3 = "s3${d}Sample2${d}p1${d}set2\n";
+    
+    public static final String HEADER_WITH_OMITTED_CLASS_COLUMN =
+            "SampleName${d}Participant:Participant:ID${d}Path:Path\n";
+    public static final String LINE_WITH_OMITTED_CLASS_COLUMN =
+            "Sample1${d}p1${d}Path1\n";
 
     @SpyBean
     private AuthManager authManager;
@@ -106,6 +112,21 @@ public class MetadataUploadManagerTest extends AbstractSpringTest {
         assertEquals(1, uploadMetadata(folder, Arrays.asList(HEADER2, LINE2)).size());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void uploadingMetadataWithOmittedClassColumnUsesFileNameAsMetadataClass() throws IOException {
+        Folder folder = prepareRequiredEntities();
+        entityManager.createMetadataClass(MetadataFileBuilder.SAMPLE_CLASS_NAME);
+        
+        final List<MetadataEntity> entities = uploadMetadata(folder, Arrays.asList(HEADER_WITH_OMITTED_CLASS_COLUMN,
+                LINE_WITH_OMITTED_CLASS_COLUMN), SAMPLE_TAB_FILE);
+        
+        assertEquals(1, entities.size());
+        assertEquals(MetadataFileBuilder.SAMPLE_CLASS_NAME, entities.get(0).getClassEntity().getName());
+        assertEquals("Sample1", entities.get(0).getData().get("SampleName").getValue());
+        assertEquals("p1", entities.get(0).getData().get("Participant").getValue());
+        assertEquals("Path1", entities.get(0).getData().get("Path").getValue());
+    }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -191,11 +212,15 @@ public class MetadataUploadManagerTest extends AbstractSpringTest {
     }
 
     private List<MetadataEntity> uploadMetadata(Folder folder, List<String> lines) throws IOException {
+        return uploadMetadata(folder, lines, TEST_TAB_FILE);
+    }
+
+    private List<MetadataEntity> uploadMetadata(Folder folder, List<String> lines, String fileName) throws IOException {
         try (InputStream inputStream = MetadataFileBuilder.prepareInputData(
                 MetadataParsingUtils.TAB_DELIMITER, lines)
         ) {
             return uploadManager.uploadFromFile(folder.getId(),
-                    new MockMultipartFile(TEST_TAB_FILE, TEST_TAB_FILE, null, inputStream));
+                    new MockMultipartFile(fileName, fileName, null, inputStream));
         }
     }
 

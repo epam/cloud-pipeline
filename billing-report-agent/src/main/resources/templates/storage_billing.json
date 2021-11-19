@@ -5,7 +5,7 @@
         "doc_type": { "type": "keyword", "store": true },
         "storage_id": { "type": "keyword", "store": true },
         "resource_type": { "type": "keyword" },
-        "region": { "type": "keyword" },
+        "cloudRegionId": { "type": "keyword" },
         "provider": { "type": "keyword" },
         "storage_type": { "type": "keyword" },
         "owner": { "type": "keyword" },

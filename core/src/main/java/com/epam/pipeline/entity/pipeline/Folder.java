@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,6 +147,19 @@ public class Folder extends AbstractHierarchicalEntity {
     @Override
     public void clearForReadOnlyView() {
         metadata = new HashMap<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Folder copyView() {
+        final Folder folder = new Folder(this.getId());
+        folder.setName(this.getName());
+        folder.setOwner(this.getOwner());
+        folder.setMask(this.getMask());
+        folder.setParentId(this.getParentId());
+        folder.setParent(this.getParent());
+        folder.setMetadata(this.getMetadata());
+        return folder;
     }
 
     private void addChildren(Map<AclClass, List<Long>> result,

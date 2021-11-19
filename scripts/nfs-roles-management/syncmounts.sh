@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ function clean_outdated {
                 echo "Unable to unmount ${item}, skipping"
                 continue
             fi
-            
+
             echo "$item is unmounted, deleting directory"
             timeout -s 9 $_MOUNT_TIMEOUT_SEC \rm -r "$item"
             if [ $? -ne 0 ]; then
@@ -94,6 +94,9 @@ _API_URL="$1"
 _API_TOKEN="$2"
 _MOUNT_ROOT="$3"
 
+_DAV_MOUNT_TAG_NAME=${CP_DAV_MOUNT_TAG_NAME:-"dav-mount"}
+_DAV_MOUNT_ALL_S3=${CP_DAV_MOUNT_ALL_S3:-"false"}
+
 if [ -z "$_API_URL" ] || [ -z "$_API_TOKEN" ] || [ -z "$_MOUNT_ROOT" ]; then
     echo "[ERROR] Not enough input parameters, exiting"
     exit 1
@@ -110,7 +113,7 @@ if ! command -v "jq" >/dev/null 2>&1 ; then
 fi
 
 fs_mounts="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/cloud/region | \
-    jq -r '.payload[] | .fileShareMounts | select(.!=null)[] | "\(.id)|\(.regionId)|\(.mountRoot)|\(.mountType)"')"
+    jq -r '.payload[] | .fileShareMounts | select(.!=null)[] | "\(.id)|\(.regionId)|\(.mountRoot)|\(.mountType)|\(.mountOptions)"')"
 
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot get list of the file shares, exiting"
@@ -123,39 +126,170 @@ mkdir -p "$_MOUNT_ROOT"
 while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
     echo
     echo "[INFO] Staring processing: $mount_root (id: ${mount_id}, region: ${region_id} type: ${mount_type}, options: ${mount_options})"
-    if [ "$mount_type" == "NFS" ]; then
-        mount_root_srv="$(echo "$mount_root" | cut -f1 -d":")"
+    if [ "$mount_type" == "NFS" ] || [ "$mount_type" == "SMB" ] || [ "$mount_type" == "LUSTRE" ]; then
+
+        # In a SMB paths we have the next structure : {mount_root_srv}/{mount_root_path} without any ':',
+        # that is why we need to do such conditional processing
+        mount_root_srv="$( [ ${mount_type} != "SMB" ] && echo "$mount_root" | cut -f1 -d":" || echo "$mount_root" | cut -f1 -d"/")"
         mount_root_path="/"
-        if [[ "$mount_root" == *":"* ]]; then
+        if [[ "$mount_type" != "SMB" ]] && [[ "$mount_root" == *":"* ]]; then
             mount_root_path="$(echo "$mount_root" | cut -f2 -d":")"
+        elif [[ "$mount_type" == "SMB" ]]; then
+            mount_root_path="$(echo "$mount_root" | cut -f2 -d"/")"
         fi
-        
+
         mount_root_srv_dir="${_MOUNT_ROOT}/${mount_root_srv}/${mount_root_path}"
         if mountpoint -q "$mount_root_srv_dir"; then
             echo "[DONE] $mount_root_srv_dir is already mounted, skipping"
             mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
             continue
         fi
-        
+
         mount_options_opt=
         if [ "$mount_options" ] && [ "$mount_options" != "null" ]; then
             mount_options_opt="-o $mount_options"
         fi
+        mount_protocol="nfs"
+        remote_nfs_path="${mount_root_srv}:${mount_root_path}"
+        if [ "$mount_type" == "SMB" ]; then
+            mount_protocol="cifs"
+            remote_nfs_path="//${mount_root_srv}/${mount_root_path}"
+            region_cred_file="/root/.cloud/regioncreds/${region_id}"
+            if [ ! -f ${region_cred_file} ]; then
+                echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}/${mount_root_path} won't be mounted."
+                continue
+            fi
+            username=$(cat ${region_cred_file} | jq .storage_account)
+            password=$(cat ${region_cred_file} | jq .storage_key)
+            if [ "$mount_options_opt" ] && [ ! -z "$mount_options_opt" ]; then
+              mount_options_opt="${mount_options_opt},username=${username:1:-1},password=${password:1:-1}"
+            else
+              mount_options_opt="-o username=${username:1:-1},password=${password:1:-1}"
+            fi
+        elif [ "$mount_type" == "LUSTRE" ]; then
+          mount_protocol="lustre"
+        fi
 
         mkdir -p "$mount_root_srv_dir"
-        timeout -s 9 $_MOUNT_TIMEOUT_SEC mount -t nfs "${mount_root_srv}:${mount_root_path}" "$mount_root_srv_dir" $mount_options_opt
+        echo "mount -t ${mount_protocol} $remote_nfs_path $mount_root_srv_dir $mount_options_opt"
+        timeout -s 9 $_MOUNT_TIMEOUT_SEC mount -t ${mount_protocol} "$remote_nfs_path" "$mount_root_srv_dir" $mount_options_opt
         if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to mount $mount_root to $mount_root_srv_dir (id: ${mount_id}, type: ${mount_type}), skipping"
             continue
         fi
         echo "[DONE] $mount_root is mounted to $mount_root_srv_dir (id: ${mount_id}, type: ${mount_type})"
         mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
-    # FIXME: Add SMB type handling
     else
         echo "[ERROR] Unsupported mount type $mount_type is specified. $mount_root (id: $mount_id), skipping"
         continue
     fi
 done <<< "$fs_mounts"
+echo
+
+storages="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/datastorage/loadAll | \
+             jq -r '.payload[]? | select(.type!="NFS" and .sensitive==false) | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Cannot get list of the storages, exiting"
+    exit 1
+fi
+
+storages_allowed_for_mount=()
+storages_with_metadata_requested_to_mount="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/metadata/search/entry?entityClass=DATA_STORAGE&key=${_DAV_MOUNT_TAG_NAME}" | \
+                                             jq -r '.payload[]? | (.entity.entityId|tostring) + "|" + (.data."dav-mount".value|tostring)')"
+now=$(date -u +%s)
+while IFS='|' read -r id timestamp; do
+    if [[ "$timestamp" =~ ^[0-9]+$ ]] && [[ "$now" -ge "$timestamp" ]] ; then
+        echo "[INFO] Requested mount time is expired for storage with id $id, dav-mount tag will be deleted."
+        curl -sfk -X DELETE -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/datastorage/$id/davmount/" >> /dev/null
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Cannot remove dav-mount metadata from datastorage with id: $id"
+        fi
+    else
+        echo "[INFO] For Storage with id: $id mount is requested."
+        storages_allowed_for_mount+=($id)
+    fi
+done <<< "$storages_with_metadata_requested_to_mount"
+
+while IFS='|' read -r id name path type region_id; do
+     echo
+     echo "[INFO] Staring processing: $path (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
+
+     if [ -z "$id" ] || [ -z "$name" ] || [ -z "$path" ] || [ -z "$region_id" ] || [ -z "$type" ]; then
+        echo "[ERROR] One of the required parameters for the data storage cannot be retrieved (see message above), skipping."
+        continue
+     fi
+
+     if [[ "${type}" == "AZ" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
+     elif [[ "${type}" == "S3" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/S3/${name}"
+     elif [[ "${type}" == "GCP" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/GCP/${name}"
+     else
+         echo "[INFO] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
+     fi
+
+     # Check if the object storage is allowed to be mounted (via tag/value)
+     if [[ ! " ${storages_allowed_for_mount[@]} " =~ " ${id} " ]] && [ "$_DAV_MOUNT_ALL_S3" != "true" ]; then
+         echo "[INFO] Storage with id: ${id} and path: ${path} is not tagged with ${_DAV_MOUNT_TAG_NAME}, skipping."
+         continue
+     fi
+
+     if mountpoint -q "$mount_root_srv_dir"; then
+        echo "[DONE] $mount_root_srv_dir is already mounted, skipping"
+        mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+        continue
+     fi
+
+     mkdir -p ${mount_root_srv_dir}
+
+     if [[ "${type}" == "AZ" ]]; then
+         CP_TMP_DIR_PATH="/mnt/blobfusetmp/${path}"
+         mkdir -p "$CP_TMP_DIR_PATH"
+         region_cred_file="/root/.cloud/regioncreds/${region_id}"
+         if [[ ! -f ${region_cred_file} ]]; then
+            echo "[ERROR] Cred file for Azure region ${region_id}, not found!"
+            continue
+         fi
+         storage_account=$(cat ${region_cred_file} | jq -r .storage_account)
+         storage_key=$(cat ${region_cred_file} | jq -r .storage_key)
+         export AZURE_STORAGE_ACCOUNT="${storage_account}"
+         export AZURE_STORAGE_ACCESS_KEY="${storage_key}"
+         blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH
+         mount_result=$?
+     elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
+         pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_TIMEOUT:-500} -o allow_other -l /var/log/fuse_${id}.log
+         mount_result=$?
+         # Even in the "pipe storage mount" is OK, it may take a second or two to fully initialized
+         # During this period the directory is considered as an empty "overlayfs"
+         # So here we wait, until the mountpoint becomes a fuse
+         mount_wait_attempts=0
+         unset mounted_fs_type
+         while [[ "$mounted_fs_type" != *"fuse"* ]]; do
+            mounted_fs_type=$(stat -f -c %T ${mount_root_srv_dir})
+            sleep 1
+            mount_wait_attempts=$(($mount_wait_attempts+1))
+            if (( "$mount_wait_attempts" >= "$_MOUNT_TIMEOUT_SEC" )); then
+                echo "[ERROR] $mount_root_srv_dir still $mounted_fs_type after $_MOUNT_TIMEOUT_SEC seconds. While expecting fuse"
+                mount_result=124
+                break
+            fi
+        done
+     else
+         echo "[ERROR] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
+     fi
+
+
+     if [[ $mount_result -ne 0 ]]; then
+        echo "[ERROR] Unable to mount $path to $mount_root_srv_dir (id: ${id}, type: ${type}), skipping"
+        continue
+     fi
+     echo "[DONE] $path is mounted to $mount_root_srv_dir (id: ${id}, type: ${type})"
+     mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+done <<< "$storages"
 echo
 
 echo "Cleaning outdated"

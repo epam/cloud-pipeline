@@ -18,7 +18,6 @@ import RemotePost from '../../basic/RemotePost';
 import buildUrl from './url-builder';
 
 export default class DataStorageTagsDelete extends RemotePost {
-
   constructor (id, path, version) {
     super();
     this.constructor.fetchOptions = {

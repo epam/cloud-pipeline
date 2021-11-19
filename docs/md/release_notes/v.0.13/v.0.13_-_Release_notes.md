@@ -69,7 +69,7 @@ Current version introduces a feature that allows to:
     ![CP_v.0.13_ReleaseNotes](attachments/RN013_SharingInstances_1.png)
     - URL will be generated using the specified name  
     ![CP_v.0.13_ReleaseNotes](attachments/RN013_SharingInstances_2.png)  
-    For more information about "Friendly URL" for persistent services see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-%22friendly%22-url).
+    For more information about "Friendly URL" for persistent services see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-friendly-url).
 2. User can now share a run with others:
     - "Share with: ..." parameter, within a run log form, can be used for this  
     ![CP_v.0.13_ReleaseNotes](attachments/RN013_SharingInstances_3.png)

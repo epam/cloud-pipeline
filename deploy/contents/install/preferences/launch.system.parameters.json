@@ -21,19 +21,27 @@
         "name": "CP_CAP_SGE_QUEUE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine queue",
-        "defaultValue": "main.q"
+        "defaultValue": "main.q",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SGE_PE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine PE",
-        "defaultValue": "local"
+        "defaultValue": "local",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_MODULES",
         "type": "boolean",
         "description": "Enables Environment Modules for a current run",
         "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_MODULES_TYPE",
+        "type": "string",
+        "description": "Declares specific environment module system to use (tcl/lmod)",
+        "defaultValue": "tcl"
     },
     {
         "name": "CP_CAP_SPARK",
@@ -48,22 +56,63 @@
         "defaultValue": "2.4.3"
     },
     {
+        "name": "CP_CAP_KUBE",
+        "type": "boolean",
+        "description": "Enables Kubernetes for a current run (1.15.4), supported for Centos only",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
-        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
-        "defaultValue": "goofys"
+        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse",
+        "defaultValue": "goofys",
+        "passToWorkers": true
     },
     {
         "name": "CP_S3_FUSE_STAT_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache StatObject results and inode attributes. Set this to 0 if you are experiencing issues with files consistency",
-        "defaultValue": "1m0s"
+        "defaultValue": "1m0s",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_S3_FUSE_ENSURE_DISKFREE",
+        "type": "int",
+        "description": "Applied to s3fs FUSE. Sets MB to ensure disk free space. This option means the threshold of free space size on disk which is used for the cache file by s3fs. s3fs makes file for downloading, uploading and caching files. If the disk free space is smaller than this value, s3fs do not use disk space as possible in exchange for the performance.",
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CP_S3_FUSE_TYPE_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
-        "defaultValue": "1m0s"
+        "defaultValue": "1m0s",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_GCS_FUSE_TYPE",
+        "type": "string",
+        "description": "Allows to select which FUSE implementation to use for GCS buckets mounting. Allowed values are: gcsfuse and pipefuse",
+        "defaultValue": "gcsfuse",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_PERSIST_LOGS",
+        "type": "boolean",
+        "description": "Enables pipefuse logging persistence for a current run",
+        "defaultValue": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_DEBUG_LIBFUSE",
+        "type": "boolean",
+        "description": "Enables pipefuse low level logging for a current run",
+        "defaultValue": false
+    },
+    {
+        "name": "CP_PIPE_FUSE_LOGGING_LEVEL",
+        "type": "string",
+        "description": "Declares pipefuse logging level (CRITICAL, ERROR, WARN, INFO or DEBUG)",
+        "defaultValue": "ERROR"
     },
     {
         "name": "CP_CAP_SGE_MASTER_CORES",
@@ -75,7 +124,8 @@
         "name": "CP_CAP_SGE_WORKER_FREE_CORES",
         "type": "string",
         "description": "Allow to keep the specified number of CPUs unused by the GE worker",
-        "defaultValue": "1"
+        "defaultValue": "1",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_NFS",
@@ -99,37 +149,43 @@
         "name": "RUN_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, that holds all run-specific folders (ANALYSIS_DIR, INPUT_DIR, CONFIG_DIR, SCRIPTS_DIR)",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "COMMON_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, that is typically used within custer runs and is mounted as a NFS across cluster nodes",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "ANALYSIS_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used as a Current Working Directory. When a batch run is finished - files from this directory are uploaded to the Output locations",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "INPUT_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CONFIG_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing configuration files",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "SHARED_FOLDER",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing any data that can be shared across nodes within a cluster, that shall be separated from the COMMON_DIR",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CP_TRANSFER_BUCKET",
@@ -141,7 +197,7 @@
         "name": "CP_CAP_AUTOSCALE",
         "type": "boolean",
         "description": "Enables cluster autoscaling",
-        "defaultValue": "false"
+        "defaultValue": "true"
     },
     {
         "name": "CP_CAP_AUTOSCALE_WORKERS",
@@ -150,9 +206,181 @@
         "defaultValue": "3"
     },
     {
+        "name": "CP_CAP_AUTOSCALE_VERBOSE",
+        "type": "boolean",
+        "description": "Enables cluster autoscaling verbose logging",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_PRICE_TYPE",
+        "type": "boolean",
+        "description": "Instance price type that will be used for cluster additional workers",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID",
+        "type": "boolean",
+        "description": "Enables hybrid cluster autoscaling",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID_FAMILY",
+        "type": "string",
+        "description": "Instance type family that will be used for hybrid autoscaling cluster workers",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE",
+        "type": "int",
+        "description": "Maximum number of cores that hybrid autoscaling cluster worker instances can have",
+        "defaultValue": "2"
+    },
+    {
         "name": "CP_CAP_DIND_CONTAINER",
         "type": "boolean",
         "description": "Enable docker engine for a current run using a containerized approach",
         "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_DIND_VERSION",
+        "type": "boolean",
+        "description": "Allows to select docker version, used for DIND setup. Default: 18.09.6",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_SYSTEMD_CONTAINER",
+        "type": "boolean",
+        "description": "Enable systemd for a current run (supported for Centos only)",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_KEEP_FAILED_RUN",
+        "type": "string",
+        "description": "Any job, that is failed due to the <command> or output upload errors, will be kept for this amount of time before terminated. <sleep> format is accepted",
+        "defaultValue": "36000s"
+    },
+    {
+        "name": "CP_CAP_SINGULARITY",
+        "type": "boolean",
+        "description": "Enable singularity for a current run",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_TZ",
+        "type": "string",
+        "description": "Overwrites standard UTC timezone on pipeline run node",
+        "defaultValue": "/usr/share/zoneinfo/UTC",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_TYPE",
+        "type": "string",
+        "description": "Defines which file system shall be used as shared for cluster runs",
+        "defaultValue": "lfs",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_SIZE",
+        "type": "int",
+        "description": "Allows to specify shared file system size (supported for luster FS only)",
+        "defaultValue": "1200",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_HW_ADDR",
+        "type": "string",
+        "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_HW_NAME",
+        "type": "string",
+        "description": "Controls the network interface name, to apply the CP_CAP_HW_ADDR. Default: eth0",
+        "defaultValue": "eth0",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_EXEC_TIMEOUT",
+        "type": "int",
+        "description": "If defined - will terminate job when specified duration in minutes is elapsed",
+        "defaultValue": "",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_LIMIT_MOUNTS",
+        "type": "string",
+        "description": "If defined - will limit mounts for the run",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_FORCE_MOUNTS",
+        "type": "string",
+        "description": "If defined - will force specified mounts for the run, even if the limits are set",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_TIMEOUT",
+        "type": "int",
+        "description": "Allows to specify the pipe fuse timeout",
+        "defaultValue": "500",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_FS_MOUNT_ATTEMPT",
+        "type": "int",
+        "description": "Allows to specify the number of times the NFS client attempts to retries an NFS mount operation after the first attempt fails",
+        "defaultValue": "0",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_FS_MOUNT_TIMEOUT",
+        "type": "int",
+        "description": "Allows to specify the time in deciseconds the NFS client waits for a response before it retries an NFS request",
+        "defaultValue": "7",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_POD_PULL_POLICY",
+        "type": "string",
+        "description": "Allows to specify pod image pull policy. Valid values are 'Always', 'Never', 'IfNotPresent'",
+        "defaultValue": "Always",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_DISABLE_HYPER_THREADING",
+        "type": "boolean",
+        "description": "Disables hyper-threading for a run and its workers",
+        "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_FSBROWSER_ENABLED",
+        "type": "string",
+        "description": "Disables BROWSE button for the job",
+        "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_USERS",
+        "type": "boolean",
+        "description": "Enables cluster users sharing.",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SYNC_USERS",
+        "type": "boolean",
+        "description": "Enables users synchronization.",
+        "defaultValue": "true",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SSH_MODE",
+        "type": "string",
+        "description": "SSH connection mode. Allowed values are: user, owner, owner-sshpass and root.",
+        "defaultValue": "root",
+        "passToWorkers": true
     }
 ]

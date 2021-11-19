@@ -16,7 +16,7 @@ from datetime import datetime
 
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import GridEngineScaleDownHandler, GridEngineJob, GridEngineJobState
+from scripts.autoscale_sge import GridEngineScaleDownHandler, GridEngineJob, GridEngineJobState, ComputeResource
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 HOSTNAME = 'hostname'
@@ -28,7 +28,7 @@ grid_engine = Mock()
 default_hostfile = 'default_hostfile'
 instance_cores = 4
 scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                default_hostfile=default_hostfile, instance_cores=instance_cores)
+                                                default_hostfile=default_hostfile)
 
 
 def setup_function():
@@ -37,6 +37,7 @@ def setup_function():
     grid_engine.disable_host = MagicMock()
     grid_engine.delete_host = MagicMock()
     cmd_executor.execute = MagicMock()
+    grid_engine.get_host_resource = MagicMock(return_value=ComputeResource(instance_cores))
 
 
 def test_not_scaling_down_if_host_has_running_jobs():
@@ -48,7 +49,7 @@ def test_not_scaling_down_if_host_has_running_jobs():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=HOSTNAME
+            hosts=[HOSTNAME]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -70,7 +71,7 @@ def test_scaling_down_if_host_has_no_running_jobs():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=ANOTHER_HOSTNAME
+            hosts=[ANOTHER_HOSTNAME]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)

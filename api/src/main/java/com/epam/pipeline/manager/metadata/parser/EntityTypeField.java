@@ -77,12 +77,15 @@ public class EntityTypeField {
     }
 
     public static EntityTypeField parseFromStringType(String name, String type) {
-        String className = parseClass(type);
-        if (StringUtils.isNotBlank(className)) {
-            return new EntityTypeField(name, className);
-        } else {
-            return new EntityTypeField(name, type);
+        Matcher matcher = REFERENCE_PATTERN.matcher(type);
+        if (matcher.matches()) {
+            return new EntityTypeField(name, matcher.group(1), true, false);
         }
+        matcher = ARRAY_PATTERN.matcher(type);
+        if (matcher.matches()) {
+            return new EntityTypeField(name, matcher.group(1), false, true);
+        }
+        return new EntityTypeField(name, type);
     }
 
     public static String parseClass(String type) {

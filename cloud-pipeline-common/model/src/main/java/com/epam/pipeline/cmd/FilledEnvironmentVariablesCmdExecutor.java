@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,17 +49,19 @@ public class FilledEnvironmentVariablesCmdExecutor implements CmdExecutor {
     @Override
     public String executeCommand(final String command,
                                  final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir,
+                                 final String username) {
         return cmdExecutor.executeCommand(withFilledEnvironmentVariables(command, environmentVariables),
-                environmentVariables, workDir);
+                environmentVariables, workDir, username);
     }
 
     @Override
     public Process launchCommand(final String command,
                                  final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir,
+                                 final String username) {
         return cmdExecutor.launchCommand(withFilledEnvironmentVariables(command, environmentVariables),
-                environmentVariables, workDir);
+                                         environmentVariables, workDir, username);
     }
 
     private String withFilledEnvironmentVariables(final String command,

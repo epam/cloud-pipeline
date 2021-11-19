@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -696,6 +696,25 @@ EOF
             print_err "Unable to get azure meter name for region $CP_CLOUD_REGION_ID, but this is required to setup a region, you will have to specify them manually via GUI/API"
             return 1
         fi
+        if [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
+read -r -d '' payload <<-EOF
+{
+    "regionId":"$region_name",
+    "provider":"AZURE",
+    "name":"$region_name",
+    "default":true,
+    "storageAccount": "$CP_AZURE_STORAGE_ACCOUNT",
+    "storageAccountKey": "$CP_AZURE_STORAGE_KEY",
+    "resourceGroup": "$CP_AZURE_DEFAULT_RESOURCE_GROUP",
+    "subscription": "$CP_AZURE_SUBSCRIPTION_ID",
+    "sshPublicKeyPath": "$CP_PREF_CLUSTER_SSH_KEY_PATH",
+    "meterRegionName": "$azure_meter_name",
+    "azureApiUrl": "$CP_AZURE_API_URL",
+    "priceOfferId": "$CP_AZURE_OFFER_DURABLE_ID",
+    "corsRules": "$cors_rules"
+}
+EOF
+        else
 read -r -d '' payload <<-EOF
 {
     "regionId":"$region_name",
@@ -714,6 +733,7 @@ read -r -d '' payload <<-EOF
     "corsRules": "$cors_rules"
 }
 EOF
+        fi
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
         api_setup_file_based_preferences "$INSTALL_SCRIPT_PATH/../cloud-configs/$CP_GOOGLE/prerequisites"
         local gcp_custom_instance_types_json="$(get_file_based_preference gcp.custom.instance.types other $CP_GOOGLE)"
@@ -855,10 +875,12 @@ function api_setup_base_preferences {
     api_set_preference "cluster.instance.hdd" "${CP_PREF_CLUSTER_INSTANCE_HDD:-50}" "true"
     api_set_preference "cluster.instance.type" "${CP_PREF_CLUSTER_INSTANCE_TYPE}" "true"
     api_set_preference "cluster.allowed.price.types" "${CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES}" "true"
+    api_set_preference "cluster.allowed.price.types.master" "${CP_PREF_CLUSTER_ALLOWED_MASTER_PRICE_TYPES}" "true"
     api_set_preference "cluster.spot" "${CP_PREF_CLUSTER_SPOT:-"true"}" "true"
 
     ## Git
     api_set_preference "git.repository.indexing.enabled" "false" "false"
+    api_set_preference "git.fsbrowser.workdir" "${CP_FSBROWSER_VS_WD:-"/git-workdir"}" "true"
 
     ## Launch
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
@@ -885,6 +907,14 @@ function api_setup_base_preferences {
     api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
     api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
 
+    ## Storage
+    api_set_preference "storage.allow.signed.urls" "${CP_PREF_STORAGE_ALLOW_SIGNED_URLS:-"true"}" "true"
+    api_set_preference "storage.version.storage.ignored.files" ".gitkeep" "true"
+
+    ## Metadata
+    api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"
+    api_set_preference "misc.groups.ui.preferences" "{}" "true"
+    api_set_preference "ui.wsi.magnification.factor" "1" "true"
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
     if [ "$CP_PREF_COMMIT_DEPLOY_KEY" ]; then
@@ -893,6 +923,9 @@ function api_setup_base_preferences {
         print_warn "\"commit.deploy.key\" preference is NOT set. Runs COMMIT will NOT be available. Specify it using \"-env CP_PREF_COMMIT_DEPLOY_KEY=\" option"
     fi
     api_set_preference "commit.timeout" "${CP_PREF_COMMIT_TIMEOUT:-18000}" "true"
+
+    # EDGE
+    api_set_preference "default.edge.region" "${CP_CLOUD_REGION_ID:-"eu-central-1"}" "true"
 
     # Set "file-based" preferences
     ### General
@@ -927,7 +960,7 @@ function api_setup_base_preferences {
     ## Set cluster.networks.config preference
     local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
     if [ -f "$cloud_config_network_file" ]; then
-        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
+        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
         
         # cluster.networks.config shall be visible, or otherwise node_up.py will NOT be able to get the information from the API Services
         api_set_preference "cluster.networks.config" "$cluster_networks_config_json" "true"
@@ -935,6 +968,10 @@ function api_setup_base_preferences {
         print_err "Configuration for the Cloud network is not found at ${cloud_config_network_file}. \"cluster.networks.config\" preference WILL NOT be set"
     fi
 
+}
+
+function api_register_git_reader {
+      api_set_preference "git.reader.service.host" "http://${CP_GITLAB_READER_INTERNAL_HOST:-cp-gitlab-reader.default.svc.cluster.local}:${CP_GITLAB_READER_INTERNAL_PORT:-35800}" "false"
 }
 
 function api_register_search {
@@ -970,7 +1007,7 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     "CONFIGURATION": "cp-run-configuration",
     "PIPELINE": "cp-pipeline",
     "ISSUE": "cp-issue",
-    "PIPELINE_CODE": "cp-code*"
+    "PIPELINE_CODE": "cp-pipeline-code*"
 }
 EOF
 
@@ -1027,6 +1064,8 @@ function api_register_drive_mapping {
                             "$CP_DAV_EXTERNAL_AUTH_URL"
 
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
+
+    api_set_preference"base.invalidate.edge.auth.path" "${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}" "true"
 }
 
 function api_register_share_service {
@@ -1049,7 +1088,7 @@ function idp_register_app {
     local cert="$2"
     
     print_info "Creating IdP connection for $issuer with cert $cert"
-    idp_register_app_response=$(execute_deployment_command cp-idp "saml-idp add-connection $issuer -c $cert")
+    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering IdP connection for $issuer with cert $cert"
         echo "========"
@@ -1069,7 +1108,7 @@ function idp_register_user {
     local email="$5"
 
     print_info "Registering IdP user $username"
-    idp_register_user_response=$(execute_deployment_command cp-idp "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
+    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering user $username"
         echo "========"

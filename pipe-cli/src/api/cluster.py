@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,9 +24,14 @@ class Cluster(API):
     @classmethod
     def list(cls):
         api = cls.instance()
+        result = []
         response_data = api.call('cluster/node/loadAll', None)
-        for cluster_node_json in response_data['payload']:
-            yield ClusterNodeModel.load(cluster_node_json)
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        if 'payload' in response_data:
+            for cluster_node_json in response_data['payload']:
+                result.append(ClusterNodeModel.load(cluster_node_json))
+        return result
 
     @classmethod
     def get(cls, name):
@@ -45,6 +50,25 @@ class Cluster(API):
         api = cls.instance()
         response_data = api.call('cluster/instance/loadAll', None)
         result = []
-        for instance_type_json in response_data['payload']:
-            result.append(ClusterInstanceTypeModel.load(instance_type_json))
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        if 'payload' in response_data:
+            for instance_type_json in response_data['payload']:
+                result.append(ClusterInstanceTypeModel.load(instance_type_json))
         return result
+
+    @classmethod
+    def download_usage_report(cls, instance_id, date_from, date_to, interval, file_path, report_type):
+        api = cls.instance()
+        url_path = 'cluster/node/%s/usage/report?interval=%s&from=%s&to=%s&type=%s' \
+                   % (instance_id, interval, date_from, date_to, report_type.upper())
+        api.download(url_path, file_path)
+
+    @classmethod
+    def get_edge_external_url(cls, region=None):
+        api = cls.instance()
+        url_path = 'cluster/edge/externalUrl'
+        if region:
+            url_path += '?region%s' % region
+        response_data = api.call(url_path, data=None)
+        return response_data.get('payload')

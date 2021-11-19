@@ -77,10 +77,10 @@ public class SMTPNotificationManager implements NotificationManager {
     @Value(value = "${email.from}")
     private String emailFrom;
 
-    @Value(value = "${email.user}")
+    @Value(value = "${email.user:}")
     private String username;
 
-    @Value(value = "${email.password}")
+    @Value(value = "${email.password:}")
     private String password;
 
     @Value(value = "${email.notification.letter.delay:-1}")
@@ -172,7 +172,7 @@ public class SMTPNotificationManager implements NotificationManager {
         for (PipelineUser user : keepInformedUsers) {
             String address = user.getEmail();
             if (address != null) {
-                email.addCc(address);
+                email.addBcc(address);
             }
         }
 

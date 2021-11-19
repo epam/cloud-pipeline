@@ -83,6 +83,19 @@ const ENABLE_SLURM_TOOLTIP = (
     </Row>
   </div>
 );
+const ENABLE_KUBE_TOOLTIP = (
+  <div>
+    <Row>
+      Setting this checkbox will enable the <b>KUBERNETES</b> scheduler for the cluster.
+    </Row>
+    <Row>
+      This checkbox is a convenience option for the <b>"CP_CAP_KUBE=true"</b> parameter.
+    </Row>
+    <Row>
+      This also enables <b>"CP_CAP_DIND_CONTAINER"</b> and <b>"CP_CAP_SYSTEMD_CONTAINER"</b> parameters.
+    </Row>
+  </div>
+);
 const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = (
   <div>
     <Row>
@@ -108,17 +121,34 @@ const AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP = (
     </Row>
   </div>
 );
+const HYBRID_AUTOSCALED_CLUSTER_TOOLTIP = (
+  <div>
+    Compute nodes of the cluster will be created according to the jobs' requirements.
+    By default, the same instance family (as the master) is used.
+    But the size of the node will vary.
+  </div>
+);
+const AUTOSCALE_PRICE_TYPE = (
+  <div>
+    <Row>
+      This is a convenience option for the <b>"CP_CAP_AUTOSCALE_PRICE_TYPE"</b> parameter.
+    </Row>
+  </div>
+);
 
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
   cluster: {
     enableGridEngine: 'enable grid engine',
     enableSpark: 'enable spark',
-    enableSlurm: 'enable slurm'
+    enableSlurm: 'enable slurm',
+    enableKube: 'enable kube'
   },
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
-    defaultNodesCount: 'default nodes count'
+    defaultNodesCount: 'default nodes count',
+    hybridAutoScaledCluster: 'hybrid',
+    autoScalePriceType: 'auto scale price type'
   }
 };
 
@@ -131,10 +161,15 @@ const tooltips = {
     ENABLE_SPARK_TOOLTIP,
   [LaunchClusterTooltip.cluster.enableSlurm]:
     ENABLE_SLURM_TOOLTIP,
+  [LaunchClusterTooltip.cluster.enableKube]:
+    ENABLE_KUBE_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo]:
     AUTOSCALED_CLUSTER_UP_TO_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:
-    AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP
+    AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP,
+  [LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster]:
+    HYBRID_AUTOSCALED_CLUSTER_TOOLTIP,
+  [LaunchClusterTooltip.autoScaledCluster.autoScalePriceType]: AUTOSCALE_PRICE_TYPE
 };
 
 export function renderTooltip (tooltip, style) {

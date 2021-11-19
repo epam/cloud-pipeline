@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # docker build . \
-#   -t lifescience/cloud-pipeline:share-srv-latest \
+#   -t ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:share-srv-latest \
 #   --build-arg CP_API_DIST_URL="https://..."
 
 FROM centos:7

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@
 package com.epam.pipeline.dts.listing.service;
 
 import com.epam.pipeline.dts.listing.model.ListingItemsPaging;
-
-import javax.validation.constraints.NotNull;
-import java.nio.file.Path;
+import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 
 public interface ListingService {
-    ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker);
+    ListingItemsPaging list(ItemsListingRequestDTO request);
 }

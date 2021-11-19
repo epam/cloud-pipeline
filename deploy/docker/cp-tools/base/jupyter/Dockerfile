@@ -27,9 +27,11 @@ RUN yum install -y wget \
                    unzip \
                    git \
                    curl \
-                   epel-release && \
+                   cairo \
+                   epel-release \
+                   nfs-utils && \
     yum clean all && \
-    curl https://bootstrap.pypa.io/get-pip.py | python - 
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
 # Install anaconda
 ENV ANACONDA_HOME=/opt/local/anaconda

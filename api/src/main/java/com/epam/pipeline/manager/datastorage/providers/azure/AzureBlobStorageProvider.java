@@ -35,13 +35,19 @@ import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.microsoft.azure.storage.blob.BlobSASPermission;
+import com.microsoft.azure.storage.blob.ContainerSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -83,9 +89,21 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).listDataStorageFiles(dataStorage, path);
+    }
+
+    @Override
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
         return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage dataStorage,
+                                              final String path,
+                                              final String version) {
+        return getAzureStorageHelper(dataStorage).findFile(dataStorage, path);
     }
 
     @Override
@@ -107,6 +125,50 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
                 .withAdd(true)
                 .withWrite(true);
         return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString());
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateUrl(final AzureBlobStorage dataStorage,
+                                                  final String path,
+                                                  final List<String> permissions,
+                                                  final Duration duration) {
+        return getAzureStorageHelper(dataStorage)
+                .generateGenericPresignedUrl(dataStorage, path, permissions(path, permissions), duration);
+    }
+
+    private String permissions(final String path, final List<String> permissions) {
+        final boolean read = permissions.contains("READ");
+        final boolean write = permissions.contains("WRITE");
+        return permissions(path, read, write);
+    }
+
+    private String permissions(final String path, final boolean read, final boolean write) {
+        return pathPermissions(path, read, write).toString();
+    }
+
+    private Object pathPermissions(final String path, final boolean read, final boolean write) {
+        return StringUtils.isBlank(path) || path.endsWith("/")
+                ? containerPermission(read, write)
+                : blobPermissions(read, write);
+    }
+
+    private BlobSASPermission blobPermissions(final boolean read, final boolean write) {
+        return new BlobSASPermission()
+                .withRead(read)
+                .withAdd(write)
+                .withCreate(write)
+                .withWrite(write)
+                .withDelete(write);
+    }
+
+    private ContainerSASPermission containerPermission(final boolean read, final boolean write) {
+        return new ContainerSASPermission()
+                .withList(read)
+                .withRead(read)
+                .withAdd(write)
+                .withCreate(write)
+                .withWrite(write)
+                .withDelete(write);
     }
 
     @Override
@@ -148,6 +210,17 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public DataStorageFolder moveFolder(final AzureBlobStorage dataStorage, final String oldRawPath,
                                         final String newRawPath) {
         return getAzureStorageHelper(dataStorage).moveFolder(dataStorage, oldRawPath, newRawPath);
+    }
+
+    @Override
+    public DataStorageFile copyFile(final AzureBlobStorage dataStorage, final String oldPath, final String newPath) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageFolder copyFolder(final AzureBlobStorage dataStorage, final String oldPath,
+                                        final String newPath) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

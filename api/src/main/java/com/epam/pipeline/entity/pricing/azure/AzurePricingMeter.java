@@ -16,31 +16,14 @@
 
 package com.epam.pipeline.entity.pricing.azure;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.Map;
 
-@NoArgsConstructor
-@Data
-@Builder
-@AllArgsConstructor
-public class AzurePricingMeter {
-    @JsonProperty(value = "MeterId")
-    private String meterId;
-    @JsonProperty(value = "MeterCategory")
-    private String meterCategory;
-    @JsonProperty(value = "MeterSubCategory")
-    private String meterSubCategory;
-    @JsonProperty(value = "MeterName")
-    private String meterName;
-    @JsonProperty(value = "Unit")
-    private String unit;
-    @JsonProperty(value = "MeterRates")
-    private Map<String, Float> meterRates;
-    @JsonProperty(value = "MeterRegion")
-    private String meterRegion;
+public interface AzurePricingMeter {
+    String getMeterCategory();
+    String getMeterId();
+    String getMeterName();
+    String getMeterSubCategory();
+    String getMeterRegion();
+    String getUnit();
+    Map<String, Float> getMeterRates();
 }

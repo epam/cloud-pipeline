@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,13 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -40,10 +45,13 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -83,15 +91,15 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
 
-        final String command = commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance,
-                getProviderName()).sshKey(region.getSshPublicKeyPath())
-                .isSpot(Optional.ofNullable(instance.getSpot())
-                        .orElse(false))
-                .bidPrice(StringUtils.EMPTY)
-                .build()
-                .getCommand();
-        final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptGCPEnvVars(region));
+    }
+
+    @Override
+    public RunInstance scaleUpPoolNode(final GCPRegion region, final String nodeId, final NodePool node) {
+        final RunInstance instance = node.toRunInstance();
+        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(node));
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -102,8 +110,9 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void scaleUpFreeNode(final GCPRegion region, final String nodeId) {
-        throw new UnsupportedOperationException();
+    public void scaleDownPoolNode(final GCPRegion region, final String nodeLabel) {
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
+        instanceService.runNodeDownScript(cmdExecutor, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -114,6 +123,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                 buildScriptGCPEnvVars(region));
     }
 
+    @Override
+    public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId) {
+        final String command = commandService
+            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel, String.valueOf(newId),
+                                                     buildScriptGCPEnvVars(region));
+    }
 
     @Override
     public void terminateNode(final GCPRegion region, final String internalIp, final String nodeName) {
@@ -136,22 +152,12 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void terminateInstance(final GCPRegion region, final String instanceId) {
-        try {
-            vmService.terminateInstance(region, instanceId);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GCPException(e);
-        }
+        vmService.terminateInstance(region, instanceId);
     }
 
     @Override
     public boolean instanceExists(final GCPRegion region, final String instanceId) {
-        try {
-            return vmService.instanceExists(region, instanceId);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GCPException(e);
-        }
+        return vmService.instanceExists(region, instanceId);
     }
 
     @Override
@@ -159,7 +165,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                                              final RunInstance instance) {
         try {
             return fillRunInstanceFromGcpVm(instance, vmService.getAliveInstance(region, nodeLabel));
-        } catch (IOException e) {
+        } catch (GCPException e) {
             log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
@@ -210,8 +216,68 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final GCPRegion region,
+                                                          final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Creation of DNS record doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final GCPRegion region,
+                                                     final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final GCPRegion region, final String imageName) {
+        return InstanceImage.EMPTY;
+    }
+
+    @Override
+    public List<InstanceDisk> loadDisks(final GCPRegion region, final Long runId) {
+        return vmService.getAliveInstance(region, String.valueOf(runId)).getDisks().stream()
+                .map(disk -> disk.get("diskSizeGb"))
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(Long::valueOf)
+                .map(InstanceDisk::new)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
+        try {
+            final Instance instance = vmService.findInstanceByNameTag(region, nodeLabel);
+            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.STOPPED;
+            }
+            return CloudInstanceState.TERMINATED;
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return CloudInstanceState.TERMINATED;
+        }
+    }
+
+    private String buildNodeUpCommand(final GCPRegion region, final String nodeLabel, final RunInstance instance,
+                                      final Map<String, String> labels) {
+        return commandService
+            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+            .sshKey(region.getSshPublicKeyPath())
+            .isSpot(Optional.ofNullable(instance.getSpot())
+                        .orElse(false))
+            .bidPrice(StringUtils.EMPTY)
+            .additionalLabels(labels)
+            .prePulledImages(instance.getPrePulledDockerImages())
+            .build()
+            .getCommand();
     }
 
     private String getCredentialsFilePath(GCPRegion region) {

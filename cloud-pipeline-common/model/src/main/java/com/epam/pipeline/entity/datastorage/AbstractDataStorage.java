@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Set;
 
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
@@ -33,7 +35,6 @@ import org.springframework.util.StringUtils;
 @Setter
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = S3bucketDataStorage.class, name = "S3"),
@@ -44,6 +45,8 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
 
     private String description;
     private String path;
+    private String root;
+    private String prefix;
     private DataStorageType type;
     private Long parentFolderId;
     private Folder parent;
@@ -67,6 +70,14 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      */
     private boolean shared;
 
+    /**
+     * Defines if 'data-leak' rules applied
+     */
+    private boolean sensitive;
+
+    private Long sourceStorageId;
+    private Set<String> linkingMasks;
+
     public AbstractDataStorage(final Long id, final String name,
                                final String path, final DataStorageType type) {
         this(id, name, path, type, DEFAULT_POLICY, "");
@@ -81,8 +92,12 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
     public AbstractDataStorage() {
     }
 
-    public AbstractDataStorage(final Long id, final String name,
-                               final String path, final DataStorageType type, final StoragePolicy policy, String mountPoint) {
+    public AbstractDataStorage(final Long id,
+                               final String name,
+                               final String path,
+                               final DataStorageType type,
+                               final StoragePolicy policy,
+                               final String mountPoint) {
         super(id, name);
         this.path = path;
         this.type = type;
@@ -120,4 +135,22 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * @return
      */
     public abstract boolean isPolicySupported();
+
+    public String resolveAbsolutePath(final String relativePath) {
+        final String storageAbsolutePrefix = getPrefix();
+        final String strippedRelativePath = StringUtils.strip(relativePath, getDelimiter());
+        if (StringUtils.isBlank(storageAbsolutePrefix)) {
+            return strippedRelativePath;
+        }
+        if (StringUtils.isBlank(strippedRelativePath)) {
+            return storageAbsolutePrefix;
+        }
+        return storageAbsolutePrefix + getDelimiter() + strippedRelativePath;
+    }
+
+    public String resolveRelativePath(final String absolutePath) {
+        final String storageAbsolutePrefix = getPrefix();
+        final String strippedAbsolutePath = StringUtils.strip(absolutePath, getDelimiter());
+        return StringUtils.strip(StringUtils.removeStart(strippedAbsolutePath, storageAbsolutePrefix), getDelimiter());
+    }
 }

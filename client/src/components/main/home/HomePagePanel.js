@@ -23,8 +23,8 @@ import {
   PanelIcons,
   PanelInfos,
   PanelTitles,
-  GridStyles,
-  removePanel} from './layout';
+  AsyncLayout
+} from './layout';
 import {
   ActivitiesPanel,
   MyDataPanel,
@@ -51,8 +51,8 @@ const PanelComponent = {
 };
 
 @localization.localizedComponent
+@AsyncLayout.use
 export default class HomePagePanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onInitialize: PropTypes.func,
     panelKey: PropTypes.string,
@@ -71,7 +71,7 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
     if (e) {
       e.preventDefault();
     }
-    removePanel(this.props.panelKey);
+    this.props.layout.removePanel(this.props.panelKey);
     this.props.onPanelRemoved && this.props.onPanelRemoved(this.props.panelKey);
   };
 
@@ -101,7 +101,7 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
         align="middle"
         justify="space-between">
         <Row
-          className={GridStyles.draggableHandle}
+          className={styles.panelHeader}
           style={{flex: 1}}>
           <span className={styles.panelHeaderTitle}>
             {icon}{title}

@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.datastorage;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,6 +28,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class DataStorageListing {
     private String nextPageMarker;
     private List<AbstractDataStorageItem> results;

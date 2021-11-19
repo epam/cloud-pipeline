@@ -19,12 +19,14 @@ package com.epam.pipeline.util;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
@@ -38,11 +40,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -54,6 +55,13 @@ public final class TestUtils {
     private static final String TEST_DIGEST = "digest";
     public static final String LATEST_TAG = "latest";
     public static final long DOCKER_SIZE = 123456L;
+    public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
+    public static final String TEMPLATE_REPLACE_MARK = "@@";
+    public static final String TEST_PLATFORM = "linux";
+
+    private TestUtils() {
+        // no op
+    }
 
     /**
      * Helper method for mocking DockerClient functionality
@@ -94,20 +102,23 @@ public final class TestUtils {
 
     public static void generateScanResult(int criticalVulnerabilitiesCount, int highVulnerabilitiesCount,
                                     int mediumVulnerabilitiesCount, ToolVersionScanResult versionScanResult) {
-        List<Vulnerability> testVulnerabilities = IntStream
-            .range(0, criticalVulnerabilitiesCount)
-            .mapToObj(i -> createVulnerability(VulnerabilitySeverity.Critical))
-            .collect(Collectors.toList());
-        testVulnerabilities.addAll(IntStream.range(0, highVulnerabilitiesCount)
-                                       .mapToObj(i -> createVulnerability(VulnerabilitySeverity.High))
-                                       .collect(Collectors.toList()));
-        testVulnerabilities.addAll(IntStream.range(0, mediumVulnerabilitiesCount)
-                                       .mapToObj(i -> createVulnerability(VulnerabilitySeverity.Medium))
-                                       .collect(Collectors.toList()));
-        versionScanResult.setVulnerabilities(testVulnerabilities);
+        final HashMap<VulnerabilitySeverity, Integer> count = new HashMap<>();
+        count.put(VulnerabilitySeverity.Critical, criticalVulnerabilitiesCount);
+        count.put(VulnerabilitySeverity.High, highVulnerabilitiesCount);
+        count.put(VulnerabilitySeverity.Medium, mediumVulnerabilitiesCount);
+        versionScanResult.setVulnerabilitiesCount(count);
         versionScanResult.setScanDate(new Date());
         versionScanResult.setSuccessScanDate(new Date());
         versionScanResult.setStatus(ToolScanStatus.COMPLETED);
+        versionScanResult.setToolOSVersion(null);
+    }
+
+    public static void generateScanResult(int criticalVulnerabilitiesCount, int highVulnerabilitiesCount,
+                                          int mediumVulnerabilitiesCount, ToolVersionScanResult versionScanResult,
+                                          ToolOSVersion osVersion) {
+        generateScanResult(criticalVulnerabilitiesCount, highVulnerabilitiesCount, mediumVulnerabilitiesCount,
+                versionScanResult);
+        versionScanResult.setToolOSVersion(osVersion);
     }
 
     public static ToolVersionScanResult generateScanResult(int criticalVulnerabilitiesCount,
@@ -139,16 +150,25 @@ public final class TestUtils {
         run.setOwner(owner);
         run.setParentRunId(parentRunId);
         run.setRunSids(runSids);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setCloudRegionId(regionId);
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setSpot(isSpot);
         instance.setNodeId("1");
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);
         return run;
+    }
+
+    public static Folder createFolder(final String name, final String owner) {
+        Folder folder = new Folder();
+        folder.setName(name);
+        folder.setOwner(owner);
+        return folder;
     }
 
     public static Date convertLocalDateTimeToDate(final LocalDateTime dt) {

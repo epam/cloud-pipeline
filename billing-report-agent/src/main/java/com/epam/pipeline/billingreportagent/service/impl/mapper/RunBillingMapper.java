@@ -30,10 +30,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.Optional;
 
 @Component
 @Getter
 public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInfo> {
+    
+    private static final int PRICE_SCALE = 5;
 
     private final String billingCenterKey;
 
@@ -57,7 +63,10 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("compute_type", billingInfo.getEntity().getRunType())
                 .field("cost", billingInfo.getCost())
                 .field("usage_minutes", billingInfo.getUsageMinutes())
+                .field("paused_minutes", billingInfo.getPausedMinutes())
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
+                .field("compute_price", scaled(run.getComputePricePerHour()))
+                .field("disk_price", scaled(run.getDiskPricePerHour()))
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
                 .field("created_date", billingInfo.getDate());
             buildUserContent(container.getOwner(), jsonBuilder);
@@ -66,5 +75,13 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline run: ", e);
         }
+    }
+
+    private long scaled(final BigDecimal price) {
+        return Optional.ofNullable(price)
+                .map(it -> it.setScale(PRICE_SCALE, RoundingMode.CEILING))
+                .map(BigDecimal::unscaledValue)
+                .map(BigInteger::longValue)
+                .orElse(0L);
     }
 }

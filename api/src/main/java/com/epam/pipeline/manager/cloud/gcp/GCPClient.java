@@ -80,7 +80,10 @@ public class GCPClient {
 
     public Storage buildStorageClient(final GCPRegion region) {
         if (StringUtils.isBlank(region.getAuthFile())) {
-            return StorageOptions.getDefaultInstance().getService();
+            return StorageOptions.newBuilder()
+                    .setProjectId(region.getProject())
+                    .build()
+                    .getService();
         }
         try (InputStream stream = new FileInputStream(region.getAuthFile())) {
             final GoogleCredentials sourceCredentials = GoogleCredentials

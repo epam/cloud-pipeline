@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ public class QsubCmdExecutor implements CmdExecutor {
     @Override
     public String executeCommand(final String originalCommand,
                                  final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir,
+                                 final String username) {
         log.info("Executing command '{}' using qsub", originalCommand);
         Path outputLog = null;
         Path errorLog = null;
@@ -60,13 +61,12 @@ public class QsubCmdExecutor implements CmdExecutor {
                 originalCommandScript.toAbsolutePath().toString()
             );
 
-            executeCommand(environmentVariables, workDir, qsubCommand);
+            cmdExecutor.executeCommand(qsubCommand, environmentVariables, workDir, username);
 
             return Files.lines(outputLog).collect(Collectors.joining("\n"));
-        } catch (IOException e) {
+        } catch (CmdExecutionException | IOException e) {
             throw new CmdExecutionException(String.format(
-                "Qsub execution of original command '%s' went bad", originalCommand
-            ), e);
+                    "Qsub execution of original command '%s' went bad", originalCommand), e);
         } finally {
             Stream.of(outputLog, errorLog, originalCommandScript)
                 .filter(Objects::nonNull)
@@ -75,23 +75,16 @@ public class QsubCmdExecutor implements CmdExecutor {
         }
     }
 
-    private void executeCommand(final Map<String, String> environmentVariables, final File workDir,
-                                final String qsubCommand) {
-        try {
-            cmdExecutor.executeCommand(qsubCommand, environmentVariables, workDir);
-        } catch (CmdExecutionException e) {
-            throw new CmdExecutionException(String.format("Qsub execution '%s' went bad", qsubCommand), e);
-        }
-    }
-
     @Override
-    public Process launchCommand(final String originalCommand, final Map<String, String> environmentVariables,
-                                 final File workDir) {
+    public Process launchCommand(final String originalCommand,
+                                 final Map<String, String> environmentVariables,
+                                 final File workDir,
+                                 final String username) {
         log.info("Executing command '{}' using qsub", originalCommand);
         try {
-            Path outputLog = createFile("qsub-output", ".log");
-            Path errorLog = createFile("qsub-error", ".log");
-            Path originalCommandScript = createFile("qsub-script", ".sh");
+            final Path outputLog = createFile("qsub-output", ".log");
+            final Path errorLog = createFile("qsub-error", ".log");
+            final Path originalCommandScript = createFile("qsub-script", ".sh");
             Files.write(originalCommandScript, Collections.singleton(originalCommand));
 
             final String qsubCommand = String.format(
@@ -101,22 +94,12 @@ public class QsubCmdExecutor implements CmdExecutor {
                 originalCommandScript.toAbsolutePath().toString()
             );
 
-            return launchCommand(environmentVariables, workDir, qsubCommand);
-        } catch (IOException e) {
+            return cmdExecutor.launchCommand(qsubCommand, environmentVariables, workDir, username);
+        } catch (CmdExecutionException | IOException e) {
             throw new CmdExecutionException(String.format(
-                "Qsub launching of original command '%s' went bad", originalCommand
-            ), e);
+                    "Qsub launching of original command '%s' went bad", originalCommand), e);
         }
         // TODO 02.12.18: outputLog, errorLog and originalCommandScript are not being deleted after the process finishes
-    }
-
-    private Process launchCommand(final Map<String, String> environmentVariables, final File workDir,
-                                  final String qsubCommand) {
-        try {
-            return cmdExecutor.launchCommand(qsubCommand, environmentVariables, workDir);
-        } catch (CmdExecutionException e) {
-            throw new CmdExecutionException(String.format("Qsub launching '%s' went bad", qsubCommand), e);
-        }
     }
 
     protected Path createFile(final String prefix, final String extension) throws IOException {

@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: "IfNotPresent"
           command:
           - /heapster
-          - --source=kubernetes:https://$(CP_KUBE_INTERNAL_HOST):$(CP_KUBE_INTERNAL_PORT)
+          - --source=kubernetes:https://$(CP_KUBE_INTERNAL_HOST):$(CP_KUBE_INTERNAL_PORT)?useServiceAccount=true&kubeletHttps=true&kubeletPort=$(CP_KUBE_KUBELET_PORT)&insecure=true
           - --sink=elasticsearch:http://$(CP_HEAPSTER_ELK_INTERNAL_HOST):$(CP_HEAPSTER_ELK_INTERNAL_PORT)?sniff=false
           - --metric_resolution=$(CP_HEAPSTER_METRIC_RESOLUTION)
           envFrom:

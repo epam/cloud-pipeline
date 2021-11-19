@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from functools import update_wrapper
 import base64
 import click
@@ -21,6 +22,7 @@ import os
 import pytz
 import sys
 import tzlocal
+import platform
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
@@ -31,19 +33,17 @@ from .utilities.access_token_validation import check_token
 OWNER_ONLY_PERMISSION = 0o600
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
-ALL_ERRORS = Exception
 
 
 def is_frozen():
     return getattr(sys, 'frozen', False)
 
 
-def silent_print_config_info():
+def silent_print_creds_info():
     config = Config.instance(raise_config_not_found_exception=False)
     if config is not None and config.initialized:
         click.echo()
         config.validate(print_info=True)
-
 
 class ConfigNotFoundError(Exception):
     def __init__(self):
@@ -58,6 +58,8 @@ class ProxyInvalidConfig(Exception):
 
 class Config(object):
     """Provides a wrapper for a pipe command configuration"""
+
+    __USER_TOKEN__ = None
 
     def __init__(self, raise_config_not_found_exception=True):
         self.initialized = False
@@ -99,11 +101,21 @@ class Config(object):
                         self.proxy_ntlm_pass = None
                 if self.api and self.access_key:
                     self.initialized = True
+                if 'codec' in data:
+                    self.change_encoding(data['codec'])
         elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
+        self.validate_pac_proxy(self.proxy)
 
     def validate(self, print_info=False):
         check_token(self.access_key, self.tz, print_info=print_info)
+
+    @classmethod
+    def validate_pac_proxy(cls, proxy):
+        if proxy and str(proxy).lower() == PROXY_TYPE_PAC and platform.system() != 'Windows':
+            click.echo('"pac" (Proxy Auto Configuration) is not supported in the non-Windows environment. '
+                       'Please set the proxy address explicitly or keep it empty (e.g. --proxy "")', err=True)
+            sys.exit(1)
 
     @classmethod
     def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
@@ -116,6 +128,7 @@ class Config(object):
                 if not skip_validation:
                     config = Config.instance(raise_config_not_found_exception=False)
                     if config is not None and config.initialized:
+                        logging.debug('Validating access token...')
                         config.validate()
                 return ctx.invoke(f, *args, **kwargs)
             return update_wrapper(validate_access_token_wrapper, f)
@@ -165,11 +178,11 @@ class Config(object):
         return os.path.join(pipe_path, module)
 
     def build_ntlm_module_path(self):
-        self.build_inner_module_path("ntlmaps/ntlmaps")
+        return self.build_inner_module_path("ntlmaps/ntlmaps")
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
-              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
+              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec, config_store):
         check_token(access_key, timezone)
         if proxy == PROXY_TYPE_PAC and proxy_ntlm:
             raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
@@ -178,6 +191,10 @@ class Config(object):
             raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
         if proxy_ntlm_pass:
             click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
+        if codec and sys.version_info[0] >= 3:
+            click.echo('Encoding can not be configured with current environment.', err=True)
+            sys.exit(1)
+        cls.validate_pac_proxy(proxy)
         config = {'api': api,
                   'access_key': access_key,
                   'tz': timezone,
@@ -185,9 +202,32 @@ class Config(object):
                   'proxy_ntlm': proxy_ntlm,
                   'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
-                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass)
+                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass),
+                  'codec': codec
                   }
-        config_file = cls.config_path()
+        config_store_mode = config_store.lower()
+        install_dir_config = cls.get_install_dir_config_path()
+        if 'install-dir' == config_store_mode:
+            if not install_dir_config:
+                click.echo('`install-dir` configuration mode is not available for SOURCE distribution'
+                           ' and interactive mode'.format(config_store), err=True)
+                sys.exit(1)
+            config_file = install_dir_config
+        elif 'home-dir' == config_store_mode:
+            if install_dir_config and os.path.exists(install_dir_config):
+                try:
+                    os.remove(install_dir_config)
+                except OSError:
+                    click.echo("Unable to cleanup existing config in the installation directory")
+                    sys.exit(1)
+            config_file = cls.get_home_dir_config_path()
+        else:
+            click.echo('Unknown storing mode for CLI config: `{}`, valid types are [home-dir, install-dir].'
+                       .format(config_store),
+                       err=True)
+            sys.exit(1)
+        click.echo('Config storing mode is `{}`, target path `{}`'.format(config_store_mode, config_file))
+
         # create file
         with open(config_file, 'w+'):
             os.utime(config_file, None)
@@ -198,7 +238,30 @@ class Config(object):
             json.dump(config, config_file_stream)
 
     @classmethod
+    def change_encoding(cls, codec):
+        if codec:
+            try:
+                reload(sys)
+                sys.setdefaultencoding(codec)
+            except NameError:
+                pass
+
+    @classmethod
     def config_path(cls):
+        config_path = cls.get_install_dir_config_path()
+        if config_path and os.path.isfile(config_path):
+            return config_path
+        return cls.get_home_dir_config_path()
+
+    @classmethod
+    def get_install_dir_config_path(cls):
+        pipe_binary_path = sys.executable
+        if not pipe_binary_path or 'python' in os.path.basename(pipe_binary_path):
+            return None
+        return os.path.join(os.path.dirname(pipe_binary_path), 'config.json')
+
+    @classmethod
+    def get_home_dir_config_path(cls):
         home = os.path.expanduser("~")
         config_folder = os.path.join(home, '.pipe')
         if not os.path.exists(config_folder):
@@ -231,9 +294,10 @@ class Config(object):
         return cls(raise_config_not_found_exception)
 
     def get_current_user(self):
-        if not self.access_key:
+        token = self.get_token()
+        if not token:
             raise RuntimeError('Access token is not specified. Cannot get user info.')
-        user_info = jwt.decode(self.access_key, verify=False)
+        user_info = jwt.decode(token, verify=False)
         if 'sub' in user_info:
             return user_info['sub']
         raise RuntimeError('User information is not specified to access token is invalid.')
@@ -242,3 +306,8 @@ class Config(object):
         if self.tz == 'utc':
             return pytz.utc
         return tzlocal.get_localzone()
+
+    def get_token(self):
+        if self.__USER_TOKEN__:
+            return self.__USER_TOKEN__
+        return self.access_key

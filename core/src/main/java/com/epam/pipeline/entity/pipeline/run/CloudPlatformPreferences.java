@@ -18,8 +18,10 @@ package com.epam.pipeline.entity.pipeline.run;
 
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.EqualsAndHashCode;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@EqualsAndHashCode
 public class CloudPlatformPreferences implements ExecutionPreferences {
     @Override
     public ExecutionEnvironment getEnvironment() {

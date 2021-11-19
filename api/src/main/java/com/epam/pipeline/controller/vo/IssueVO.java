@@ -21,11 +21,13 @@ import java.util.List;
 
 import com.epam.pipeline.entity.issue.Attachment;
 import com.epam.pipeline.entity.issue.IssueStatus;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class IssueVO {
     private String name;
     private String text;

@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.event;
 
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -26,17 +28,32 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StartupApplicationListener {
     private final DockerRegistryManager dockerRegistryManager;
+    private final CloudRegionManager cloudRegionManager;
+    private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    private final KubernetesManager kubernetesManager;
+
+    public StartupApplicationListener(final DockerRegistryManager dockerRegistryManager,
+                                      final CloudRegionManager cloudRegionManager,
+                                      final PipelineRunDockerOperationManager pipelineRunDockerOperationManager,
+                                      final KubernetesManager kubernetesManager) {
+        this.dockerRegistryManager = dockerRegistryManager;
+        this.cloudRegionManager = cloudRegionManager;
+        this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
+        this.kubernetesManager = kubernetesManager;
+    }
 
     @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void onApplicationEvent(final ContextRefreshedEvent event) {
         try {
             if (Objects.isNull(event.getApplicationContext().getParent())) {
                 dockerRegistryManager.checkDockerSecrets();
+                cloudRegionManager.refreshCloudRegionCredKubeSecret();
+                pipelineRunDockerOperationManager.rerunPauseAndResume();
+                kubernetesManager.getOrCreatePodDnsService();
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);

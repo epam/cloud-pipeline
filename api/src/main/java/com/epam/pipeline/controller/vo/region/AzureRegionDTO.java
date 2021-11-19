@@ -39,4 +39,5 @@ public class AzureRegionDTO extends AbstractCloudRegionDTO {
     private String meterRegionName;
     private String azureApiUrl;
     private String priceOfferId;
+    private Boolean enterpriseAgreements;
 }

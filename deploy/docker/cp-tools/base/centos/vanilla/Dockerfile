@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM centos:7.7.1908
 
 RUN yum install -y wget \
                    bzip2 \
@@ -27,4 +27,4 @@ RUN yum install -y wget \
                    curl \
                    epel-release && \
     yum clean all && \
-    curl https://bootstrap.pypa.io/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -

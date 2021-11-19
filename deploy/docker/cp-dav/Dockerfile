@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,16 +37,17 @@ ENV CFLAGS="-DBIG_SECURITY_HOLE -O2"
 COPY httpd/conf /tmp/
 COPY httpd/modules.shared ${APACHE_BUILD_DIR}/
 COPY httpd/modules.static ${APACHE_BUILD_DIR}/
+RUN rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
 RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
     cd ${APACHE_BUILD_DIR} && \
-    wget -q http://www.apache.org/dist/httpd/httpd-${APACHE_VERSION}.tar.gz && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/httpd/httpd-${APACHE_VERSION}.tar.gz && \
     tar -zxf httpd-${APACHE_VERSION}.tar.gz && \
     rm -f httpd-${APACHE_VERSION}.tar.gz && \
     cd ${APACHE_BUILD_DIR} && \
-    wget -q -c http://mirror.cogentco.com/pub/apache/apr/apr-${APR_VERSION}.tar.gz && \
-    wget -q -c http://mirror.cogentco.com/pub/apache/apr/apr-util-${APR_UTIL_VERSION}.tar.gz && \
+    wget -q -c https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/apr/apr-${APR_VERSION}.tar.gz && \
+    wget -q -c https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/apr/apr-util-${APR_UTIL_VERSION}.tar.gz && \
     tar -zxf apr-${APR_VERSION}.tar.gz && \
     rm -f apr-${APR_VERSION}.tar.gz && \
     tar -zxf apr-util-${APR_UTIL_VERSION}.tar.gz && \
@@ -67,15 +68,29 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
 # Setup nfs sync
 RUN yum install -y cronie \
                    nfs-utils \
-                   python
-RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
+                   cifs-utils \
+                   python blobfuse fuse
+ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+RUN cd /tmp && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    package-cleanup --cleandupes -y && \
+    rm -rf lustre-client*
+
+RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I requests==2.21.0 && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
+
 ENV SYNC_HOME=/opt/sync
 ENV SYNC_LOG_DIR=/var/log/dav/sync
 COPY sync/crontab /tmp/sync
 COPY sync/sync-nfs.sh ${SYNC_HOME}/
+COPY sync/nfs-watcher.sh ${SYNC_HOME}/
 # "nfs-roles-management" shall be copied to the docker build folder from "(repo-root)/scripts/nfs-roles-management"
 # E.g.: cp cp ../../../scripts/nfs-roles-management ./ -r && docker build ...
 COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management

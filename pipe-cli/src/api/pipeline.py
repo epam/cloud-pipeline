@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ from ..model.pipeline_run_model import PipelineRunModel, PriceType
 from ..model.datastorage_rule_model import DataStorageRuleModel
 from ..model.instance_price import InstancePrice
 from ..api.pipeline_run import PipelineRun
+from ..utilities.hidden_object_manager import HiddenObjectManager
 
 TYPE_VALUE_DELIMITER = '?'
 TYPE_DEFAULT = 'string'
@@ -34,12 +35,17 @@ class Pipeline(API):
     @classmethod
     def list(cls):
         api = cls.instance()
+        result = []
         response_data = api.call('pipeline/loadAll?loadVersion=true', None)
-        for pipeline_json in response_data['payload']:
-            pipeline = PipelineModel.load(pipeline_json)
-            if 'currentVersion' in pipeline_json:
-                pipeline.set_current_version(VersionModel.load(pipeline_json['currentVersion']))
-            yield pipeline
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        if 'payload' in response_data:
+            for pipeline_json in response_data['payload']:
+                pipeline = PipelineModel.load(pipeline_json)
+                if 'currentVersion' in pipeline_json:
+                    pipeline.set_current_version(VersionModel.load(pipeline_json['currentVersion']))
+                result.append(pipeline)
+        return result
 
     @classmethod
     def get(cls, identifier, load_storage_rules=True, load_versions=True, load_run_parameters=True, config_name=None):
@@ -65,9 +71,12 @@ class Pipeline(API):
     @classmethod
     def load_versions(cls, identifier):
         api = cls.instance()
+        hidden_object_manager = HiddenObjectManager()
         response_data = api.call('pipeline/{}/versions'.format(identifier), None)
         for version_json in response_data['payload']:
-            yield VersionModel.load(version_json)
+            version = VersionModel.load(version_json)
+            if not hidden_object_manager.is_object_hidden('pipeline_version', str(identifier) + "/" + version.name):
+                yield version
 
     def get_by_id(self, identifier):
         response_data = self.call('pipeline/{}/load'.format(identifier), None)
@@ -99,7 +108,11 @@ class Pipeline(API):
                         instance_disk=None, instance_type=None,
                         docker_image=None, cmd_template=None,
                         timeout=None, config_name=None, instance_count=None,
-                        price_type=None, region_id=None, parent_node=None, non_pause=None):
+                        price_type=None, region_id=None, parent_node=None, non_pause=None, friendly_url=None,
+                        status_notifications=False,
+                        status_notifications_status=None, status_notifications_recipient=None,
+                        status_notifications_subject=None, status_notifications_body=None,
+                        run_as_user=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -129,6 +142,23 @@ class Pipeline(API):
             cls.__add_parent_node_params(payload, parent_node)
         if non_pause is not None:
             payload['nonPause'] = non_pause
+        if friendly_url:
+            payload['prettyUrl'] = friendly_url
+        if run_as_user:
+            payload['runAs'] = run_as_user
+        if status_notifications:
+            if status_notifications_body:
+                with open(status_notifications_body, 'r') as f:
+                    status_notifications_body_content = f.read()
+            else:
+                status_notifications_body_content = None
+            payload['notifications'] = [{
+                'type': 'PIPELINE_RUN_STATUS',
+                'triggerStatuses': status_notifications_status or None,
+                'recipients': status_notifications_recipient or None,
+                'subject': status_notifications_subject or None,
+                'body': status_notifications_body_content or None
+            }]
         data = json.dumps(payload)
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
@@ -137,7 +167,11 @@ class Pipeline(API):
     def launch_command(cls, instance_disk, instance_type,
                        docker_image, cmd_template, parameters,
                        timeout=None, instance_count=None, price_type=None,
-                       region_id=None, parent_node=None, non_pause=None):
+                       region_id=None, parent_node=None, non_pause=None, friendly_url=None,
+                       status_notifications=False,
+                       status_notifications_status=None, status_notifications_recipient=None,
+                       status_notifications_subject=None, status_notifications_body=None,
+                       run_as_user=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -160,6 +194,23 @@ class Pipeline(API):
             cls.__add_parent_node_params(payload, parent_node)
         if non_pause is not None:
             payload['nonPause'] = non_pause
+        if friendly_url:
+            payload['prettyUrl'] = friendly_url
+        if run_as_user:
+            payload['runAs'] = run_as_user
+        if status_notifications:
+            if status_notifications_body:
+                with open(status_notifications_body, 'r') as f:
+                    status_notifications_body_content = f.read()
+            else:
+                status_notifications_body_content = None
+            payload['notifications'] = [{
+                'type': 'PIPELINE_RUN_STATUS',
+                'triggerStatuses': status_notifications_status or None,
+                'recipients': status_notifications_recipient or None,
+                'subject': status_notifications_subject or None,
+                'body': status_notifications_body_content or None
+            }]
         if parameters is not None:
             params = {}
             for key in parameters.keys():
@@ -175,6 +226,18 @@ class Pipeline(API):
         api = cls.instance()
         data = json.dumps({'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')})
         response_data = api.call('run/{}/status'.format(run_id), data)
+        return PipelineRunModel.load(response_data['payload'])
+
+    @classmethod
+    def resume_pipeline(cls, run_id):
+        api = cls.instance()
+        response_data = api.call('/run/{}/resume'.format(run_id), None, http_method='post')
+        return PipelineRunModel.load(response_data['payload'])
+
+    @classmethod
+    def pause_pipeline(cls, run_id, check_size):
+        api = cls.instance()
+        response_data = api.call('/run/{}/pause?checkSize={}'.format(run_id, check_size), None, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
@@ -206,4 +269,3 @@ class Pipeline(API):
                 params['instanceType'] = ins_param[1]
         params['parentRunId'] = parent_node
         params['parentNodeId'] = parent_node
-

@@ -30,8 +30,16 @@ const SummaryHOC = WrappedComponent => {
     };
     render () {
       const {display} = this.state;
+      let {style = {}} = this.props;
+      if (style && style.hasOwnProperty('height') && !isNaN(style.height)) {
+        style.height = +style.height - 22;
+      }
+      const wrappedProps = {
+        ...this.props,
+        style
+      };
       return (
-        <div>
+        <div style={{height: 22}}>
           <Radio.Group
             value={display}
             onChange={this.displayHandler}
@@ -53,7 +61,7 @@ const SummaryHOC = WrappedComponent => {
           </Radio.Group>
           <WrappedComponent
             display={display}
-            {...this.props}
+            {...wrappedProps}
           />
         </div>
       );

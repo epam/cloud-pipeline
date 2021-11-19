@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -37,6 +40,7 @@ import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import javax.sql.DataSource;
 
 @Configuration
 @EnableScheduling
@@ -46,6 +50,7 @@ import java.util.concurrent.Executors;
         "com.epam.pipeline.security",
         "com.epam.pipeline.aspect",
         "com.epam.pipeline.event"})
+@EnableSchedulerLock(interceptMode = EnableSchedulerLock.InterceptMode.PROXY_METHOD, defaultLockAtMostFor = "PT30S")
 public class AppConfiguration implements SchedulingConfigurer {
 
     private static final int MAX_LOG_PAYLOAD_LENGTH = 1000;
@@ -55,6 +60,9 @@ public class AppConfiguration implements SchedulingConfigurer {
 
     @Value("${pause.pool.size:10}")
     private int pausePoolSize;
+
+    @Value("${run.as.pool.size:5}")
+    private int runAsPoolSize;
 
     @Bean
     public MessageHelper messageHelper() {
@@ -106,7 +114,7 @@ public class AppConfiguration implements SchedulingConfigurer {
 
     @Bean
     public Executor pauseRunExecutor() {
-        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun"));
+        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun", pausePoolSize));
     }
 
     @Bean
@@ -114,10 +122,20 @@ public class AppConfiguration implements SchedulingConfigurer {
         return getSingleThreadExecutor("PathExecutor");
     }
 
-    private Executor getThreadPoolTaskExecutor(String name) {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(pausePoolSize);
-        executor.setMaxPoolSize(pausePoolSize);
+    @Bean(name = "lockProvider")
+    public LockProvider lockProvider(DataSource dataSource) {
+        return new JdbcTemplateLockProvider(dataSource);
+    }
+
+    @Bean
+    public Executor runAsExecutor() {
+        return getThreadPoolTaskExecutor("runAsExecutor", runAsPoolSize);
+    }
+
+    private Executor getThreadPoolTaskExecutor(final String name, final int poolSize) {
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(poolSize);
+        executor.setMaxPoolSize(poolSize);
         executor.setThreadNamePrefix(name);
         executor.initialize();
         return executor;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,16 @@
 
 package com.epam.pipeline.dts.transfer.service.impl;
 
-import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.StorageType;
-import com.epam.pipeline.dts.transfer.model.google.GoogleTransferInfo;
-import com.epam.pipeline.dts.transfer.model.google.GoogleCredentials;
-import com.epam.pipeline.dts.util.Utils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.stereotype.Service;
-import java.util.List;
-import java.io.File;
+import com.epam.pipeline.dts.transfer.service.PipelineCliProvider;
 
-import static com.epam.pipeline.dts.transfer.service.impl.GoogleStorageClient.DELIMITER;
+public class GSDataUploader extends AbstractPipeCliDataUploader {
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class GSDataUploader extends AbstractDataUploader {
-    private static final String GS_PREFIX = "gs://";
+    private static final String GCP_PREFIX = "gs://";
 
-    private final GoogleStorageClient client;
+    public GSDataUploader(final PipelineCliProvider pipelineCliProvider) {
+        super(pipelineCliProvider);
+    }
 
     @Override
     public StorageType getStorageType() {
@@ -46,72 +34,7 @@ public class GSDataUploader extends AbstractDataUploader {
 
     @Override
     public String getFilesPathPrefix() {
-        return GS_PREFIX;
+        return GCP_PREFIX;
     }
 
-    /**
-     * @param include Is not supported yet.
-     */
-    @Override
-    public void upload(final StorageItem source, final StorageItem destination, final List<String> include) {
-        upload(source.getPath(), destination.getPath(), destination.getCredentials());
-    }
-
-    private void upload(String source, String destination, String credentials) {
-        File sourceFile = new File(source);
-        GoogleCredentials googleCredentials = GoogleCredentials.from(credentials);
-        GoogleTransferInfo transferInfo = new GoogleTransferInfo()
-            .withCredentials(googleCredentials)
-            .withSource(source);
-        if (sourceFile.isDirectory()) {
-            transferInfo.setDestination(destination);
-            client.uploadDirectory(transferInfo);
-        } else if (sourceFile.isFile()) {
-            String destinationToUpload = destination;
-            if (destinationToUpload.endsWith(DELIMITER)) {
-                destinationToUpload += sourceFile.getName();
-            }
-            transferInfo.setDestination(destinationToUpload);
-            client.uploadFile(transferInfo);
-        } else {
-            throw new IllegalArgumentException(String.format("Cannot find source %s.", source));
-        }
-    }
-
-    /**
-     * @param include Is not supported yet.
-     */
-    @Override
-    public void download(final StorageItem source, final StorageItem destination, final List<String> include) {
-        download(source.getPath(), destination.getPath(), source.getCredentials());
-    }
-
-    private void download(String source, String destination, String credentials) {
-        Pair<String, String> bucketNameAndKey = Utils.getBucketNameAndKey(source);
-        GoogleCredentials googleCredentials = GoogleCredentials.from(credentials);
-        GoogleTransferInfo transferInfo = new GoogleTransferInfo()
-                .withCredentials(googleCredentials)
-                .withBucketName(bucketNameAndKey.getLeft())
-                .withKey(bucketNameAndKey.getRight())
-                .withSource(source);
-        if (client.isFile(transferInfo)) {
-            transferInfo.setDestination(destination);
-            client.downloadFile(transferInfo);
-            log.debug(String.format("File has been successfully downloaded from %s to %s.", source, destination));
-        } else if (client.isDirectory(transferInfo)) {
-            transferInfo.setDestination(StringUtils.removeEnd(destination, DELIMITER));
-            transferInfo.setSource(getRelativeStoragePath(source, bucketNameAndKey.getLeft()));
-            client.downloadDirectory(transferInfo);
-            log.debug(String.format("Files have been successfully downloaded from %s to folder %s.",
-                    source, destination));
-        } else {
-            throw new IllegalArgumentException(String.format("Cannot find source %s.", source));
-        }
-    }
-
-    private String getRelativeStoragePath(String path, String bucketName) {
-        String relativePath = StringUtils.removeStart(path, String.format("gs://%s/", bucketName));
-        relativePath = StringUtils.removeEnd(relativePath, DELIMITER);
-        return relativePath;
-    }
 }

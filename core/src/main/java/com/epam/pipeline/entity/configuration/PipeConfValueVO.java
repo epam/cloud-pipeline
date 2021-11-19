@@ -23,6 +23,7 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Setter
 @Getter
@@ -42,8 +43,21 @@ public class PipeConfValueVO {
     @JsonProperty(value = "required")
     private boolean required;
 
+    @JsonProperty(value = "no_override")
+    private Boolean noOverride;
+
     @JsonProperty(value = "enum")
-    private List<String> availableValues;
+    private List<Object> availableValues;
+
+    private List<Map<String, String>> validation;
+
+    /**
+     * String expression to determine visibility of a param
+     * User for GUI client only
+     */
+    private String visible;
+
+    private String description;
 
     PipeConfValueVO() {
         this(DEFAULT_VALUE, DEFAULT_TYPE, DEFAULT_REQUIRED, DEFAULT_AVAIL_VALUES);
@@ -66,6 +80,7 @@ public class PipeConfValueVO {
         this.type = type;
         this.required = required;
         this.availableValues = Collections.unmodifiableList(availableValues);
+        this.validation = new ArrayList<>();
     }
 
 }

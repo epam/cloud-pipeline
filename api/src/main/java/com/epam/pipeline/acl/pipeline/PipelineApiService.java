@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,20 @@ import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -150,8 +161,8 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public List<Revision> loadAllVersionFromGit(Long id, Long pageSize) throws GitClientException {
-        return versionManager.loadAllVersionFromGit(id, pageSize);
+    public List<Revision> loadAllVersionFromGit(Long id) throws GitClientException {
+        return versionManager.loadAllVersionFromGit(id);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
@@ -299,5 +310,69 @@ public class PipelineApiService {
     public List<GitRepositoryEntry> getPipelineRepositoryContents(Long id, String version, String path)
             throws GitClientException {
         return gitManager.getRepositoryContents(id, version, path);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ') AND "
+            + "(#parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
+            + "hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
+        return pipelineManager.copyPipeline(id, parentFolderId, newName);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryListing<GitReaderObject> lsTreeRepositoryContent(final Long id, final String version,
+                                                                          final String path, final Long page,
+                                                                          final Integer pageSize) {
+        return gitManager.lsTreeRepositoryContent(id, version, path, page, pageSize);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderObject lsTreeRepositoryObject(final Long id, final String version,
+                                                  final String path) {
+        return gitManager.lsTreeRepositoryObject(id, version, path);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
+                                                                                        final String path,
+                                                                                        final Long page,
+                                                                                        final Integer pageSize) {
+        return gitManager.logsTreeRepositoryContent(id, version, path, page, pageSize);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(
+            final Long id,
+            final String version,
+            final GitReaderLogsPathFilter paths) {
+        return gitManager.logsTreeRepositoryContent(id, version, paths);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(
+            final Long id,
+            final Long page,
+            final Integer pageSize,
+            final GitCommitsFilter filter) {
+        return gitManager.logRepositoryCommits(id, page, pageSize, filter);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderDiff logRepositoryCommitDiffs(final Long id,
+                                                  final Boolean includeDiff,
+                                                  final GitCommitsFilter filter) {
+        return gitManager.logRepositoryCommitDiffs(id, includeDiff, filter);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit, final String path) {
+        return gitManager.getRepositoryCommitDiff(id, commit, path);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public VersionStorageReportFile generateReportForVersionedStorage(final Long id,
+                                                                      final GitDiffReportFilter reportFilters) {
+        return fileGenerationManager.generateVersionStorageReport(id, reportFilters);
     }
 }

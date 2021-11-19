@@ -17,7 +17,6 @@
 package com.epam.pipeline.entity.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,12 +24,21 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class MetadataField {
     private String name;
     @JsonIgnore
     private String dbName;
     private boolean predefined = false;
+
+    @SuppressWarnings("linelength")
+    //todo: Replace with @AllArgsConstructor once lombok version 1.16.20 is used.
+    // The current version causes JsonMappingException.
+    // See more https://stackoverflow.com/questions/40546508/jsoncreator-could-not-find-creator-property-with-name-even-with-ignoreunknown
+    public MetadataField(String name, String dbName, boolean predefined) {
+        this.name = name;
+        this.dbName = dbName;
+        this.predefined = predefined;
+    }
 
     @Override public boolean equals(Object o) {
         if (this == o) {

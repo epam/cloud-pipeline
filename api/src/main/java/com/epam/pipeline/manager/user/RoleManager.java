@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -37,11 +38,13 @@ import org.springframework.util.Assert;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * Provides methods for {@link com.epam.pipeline.entity.user.Role} entities management
  */
+@Slf4j
 @Service
 public class RoleManager {
 
@@ -93,7 +96,7 @@ public class RoleManager {
     public Role deleteRole(Long id) {
         Role role = loadRole(id);
         Assert.isTrue(!role.isPredefined(), "Predefined system roles cannot be deleted");
-        permissionHandler.deleteGrantedAuthority(role.getName());
+        permissionHandler.deleteGrantedAuthority(role.getName(), false);
         roleDao.deleteRoleReferences(id);
         roleDao.deleteRole(id);
         return role;
@@ -109,6 +112,8 @@ public class RoleManager {
                 .filter(user -> user.getRoles().stream().noneMatch(role -> role.getId().equals(roleId)))
                 .map(PipelineUser::getId)
                 .collect(Collectors.toList());
+        log.info(messageHelper.getMessage(MessageConstants.INFO_ASSIGN_ROLE, roleId,
+                idsToAdd.stream().map(Object::toString).collect(Collectors.joining(", "))));
         if (CollectionUtils.isNotEmpty(idsToAdd)) {
             userDao.assignRoleToUsers(roleId, idsToAdd);
         }
@@ -125,6 +130,8 @@ public class RoleManager {
                 .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
                 .map(PipelineUser::getId)
                 .collect(Collectors.toList());
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UNASSIGN_ROLE, roleId,
+                idsToRemove.stream().map(Object::toString).collect(Collectors.joining(", "))));
         if (CollectionUtils.isNotEmpty(idsToRemove)) {
             userDao.removeRoleFromUsers(roleId, idsToRemove);
         }
@@ -160,6 +167,10 @@ public class RoleManager {
         return roleDao.loadRoleByName(name)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_ROLE_NAME_NOT_FOUND, name)));
+    }
+
+    public Optional<Role> findRoleByName(final String name) {
+        return roleDao.loadRoleByName(name);
     }
 
     public ExtendedRole loadRoleWithUsers(Long roleId) {

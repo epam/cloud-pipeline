@@ -23,19 +23,40 @@ export default class AdaptedLink extends Component {
     to: PropTypes.string,
     children: PropTypes.any.isRequired,
     location: PropTypes.object,
-    id: PropTypes.string
+    id: PropTypes.string,
+    ignoreCurrentPath: PropTypes.bool
   };
 
+  get currentPath () {
+    const {location} = this.props;
+    return location.pathinfo
+      ? location.pathinfo
+      : location.pathname;
+  }
+
   render () {
-    const {to, children, location: {pathinfo}} = this.props;
+    const {to, children, ignoreCurrentPath} = this.props;
     const additionalProps = {};
+    const linkStyle = {
+      height: '46px'
+    };
     if (this.props.id) {
       additionalProps.id = this.props.id;
     }
+    if (!ignoreCurrentPath && (!to || (this.currentPath && to === this.currentPath))) {
+      return (
+        <span {...additionalProps} style={linkStyle}>{children}</span>
+      );
+    }
     return (
-      !to || (pathinfo && to === pathinfo)
-        ? <span {...additionalProps}>{children}</span>
-        : <Link {...additionalProps} to={to} onClick={(e) => e.stopPropagation()}>{children}</Link>
+      <Link
+        {...additionalProps}
+        style={linkStyle}
+        to={to}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </Link>
     );
   }
 }

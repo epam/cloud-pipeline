@@ -125,17 +125,19 @@ const plugin = {
     if (stroke) {
       ctx.strokeStyle = stroke;
     }
-    ctx.lineWidth = 2;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.rect(position.x, position.y, position.width, position.height);
-    ctx.fill();
-    ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.fillStyle = '#606060';
-    ctx.font = `bold 9pt sans-serif`;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, position.labelX, position.labelY);
-    ctx.restore();
+    if (position) {
+      ctx.lineWidth = 2;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.rect(position.x, position.y, position.width, position.height);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#606060';
+      ctx.font = `bold 9pt sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, position.labelX, position.labelY);
+      ctx.restore();
+    }
   },
   getInitialLabelConfig: function (chart, ease, configuration) {
     const {datasetIndex} = configuration;

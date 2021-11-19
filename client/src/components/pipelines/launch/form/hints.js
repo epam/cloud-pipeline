@@ -44,7 +44,21 @@ const dockerImageHint = (localizedStringFn) => (
 
 const awsRegionHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
-    Select <b>cloud region</b>.<br />
+    Select a <b>Cloud Provider</b> and a corresponding <b>region</b>,
+    where the compute node will be created <br />
+  </Row>
+);
+
+const runCapabilitiesHint = () => (
+  <Row style={{maxWidth: 300}}>
+    Allows to configure additional software packages for the job,
+    e.g. <b>Docker-In-Docker</b>, <b>Singularity</b> and others
+  </Row>
+);
+
+const awsRegionRestrictedByToolSettingsHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    <b>Cloud region</b> selection is restricted to a specific region by the current <b>Docker image</b>'s settings.
   </Row>
 );
 
@@ -85,6 +99,14 @@ const startIdleHint = (localizedStringFn) => (
   </Row>
 );
 
+const useDefaultCommandHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    To use the <b>CMD from the docker image</b> - select <b>Default Command</b> option.
+    <br />
+    This will read a command from the Dockefile's CMD instruction and use it to start the container.
+  </Row>
+);
+
 const priceTypeHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     <b>{localizedStringFn('Spot')}</b> type will provide ~3 times lower prices, but may introduce longer startup time and accidental node failure.<br />
@@ -111,6 +133,12 @@ const limitMountsHint = (localizedStringFn) => (
   </Row>
 );
 
+const doNotMountStoragesHint = () => (
+  <Row style={{maxWidth: 300}}>
+    If enabled, no storages will be mounted to the job
+  </Row>
+);
+
 const prettyUrlHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     This value will be used in the <b>Endpoint URL</b> instead of the general
@@ -125,19 +153,61 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const endpointNameHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value specifies which <b>tool endpoint</b> will be used to process <b>serverless API</b> calls
+  </Row>
+);
+
+const stopAfterHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value specifies how long shall the job be kept running after the last <b>serverless API</b> call
+  </Row>
+);
+
+const executionEnvironmentSummaryHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    General amount of resources that will be allocated during the run execution. Notice that in some specific configurations such as <b>hybrid autoscaling clusters</b> amount of resources can vary beyond the shown interval.
+  </Row>
+);
+
+const hostedApplicationHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    You can specify an internal DNS name for the job
+  </Row>
+);
+
+const jobNotificationsHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    Allows to enable job status notifications over the email.<br />
+    If enabled - job owner will get email, once the job succeeds or fails.<br />
+    It is also possible to override the default statuses, recipients
+    and email body using "Configure" hyperlink.
+  </Row>
+);
+
 const hints = {
   renderHint,
   pipelineHint,
   dockerImageHint,
   instanceTypeHint,
   awsRegionHint,
+  runCapabilitiesHint,
+  awsRegionRestrictedByToolSettingsHint,
   diskHint,
   startIdleHint,
+  useDefaultCommandHint,
   priceTypeHint,
   autoPauseHint,
   timeOutHint,
   limitMountsHint,
-  prettyUrlHint
+  doNotMountStoragesHint,
+  prettyUrlHint,
+  executionEnvironmentSummaryHint,
+  endpointNameHint,
+  stopAfterHint,
+  hostedApplicationHint,
+  jobNotificationsHint
 };
 
 export default hints;

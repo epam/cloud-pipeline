@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.dts;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
+import com.epam.pipeline.entity.dts.DtsDataStorageListingRequest;
 import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.exception.DtsRequestException;
 import retrofit2.Call;
@@ -34,10 +35,8 @@ import java.util.Objects;
 
 public interface DtsClient {
 
-    @GET("list")
-    Call<Result<DtsDataStorageListing>> getList(@Query("path") String path,
-                                                @Query("pageSize") Integer pageSize,
-                                                @Query("marker") String marker);
+    @POST("list")
+    Call<Result<DtsDataStorageListing>> getList(@Body DtsDataStorageListingRequest request);
 
     @POST("submission")
     Call<Result<DtsSubmission>> createSubmission(@Body DtsSubmission submission);

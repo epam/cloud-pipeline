@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
@@ -40,12 +39,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Getter
 @Setter
-@AllArgsConstructor
 public class PipelineRun extends AbstractSecuredEntity {
 
     public static final String PARENT_ID_PARAM = "parent-id";
@@ -65,11 +64,14 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String params;
 
     private String dockerImage;
+    private String actualDockerImage;
+    private String platform;
     private String cmdTemplate;
     private String actualCmd;
-    private String serviceUrl;
+    private Map<String, String> serviceUrl;
 
     private Boolean terminating = false;
+    private Boolean sensitive;
     private String podId;
     private String pipelineName;
     private List<PipelineRunParameter> pipelineRunParameters;
@@ -101,7 +103,18 @@ public class PipelineRun extends AbstractSecuredEntity {
     private LocalDateTime prolongedAtTime;
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;
+    /**
+     * Pipeline run overall instance price per hour.
+     */
     private BigDecimal pricePerHour;
+    /**
+     * Pipeline instance virtual machine price per hour.
+     */
+    private BigDecimal computePricePerHour;
+    /**
+     * Pipeline run instance disk gigabyte price per hour. 
+     */
+    private BigDecimal diskPricePerHour;
     private String stateReasonMessage;
     private List<RestartRun> restartedRuns;
     private List<RunStatus> runStatuses;
@@ -114,7 +127,11 @@ public class PipelineRun extends AbstractSecuredEntity {
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
     private Map<String, String> tags;
-
+    private boolean kubeServiceEnabled;
+    /**
+     * Cluster workers price estimation. This value shall be calculated for master runs only.
+     */
+    private BigDecimal workersPrice;
 
     public PipelineRun() {
         this.terminating = false;
@@ -130,18 +147,34 @@ public class PipelineRun extends AbstractSecuredEntity {
     }
 
     public boolean isClusterRun() {
-                //master node of autoscale cluster
+        return isMasterRun() || isWorkerRun();
+    }
+
+    public boolean isMasterRun() {
+        //master node of autoscale cluster
         return this.hasBooleanParameter(GE_AUTOSCALING)
                 // master node
-                || this.getNodeCount() != null && this.getNodeCount() != 0
-                // worker node
-                || this.getParentRunId() != null;
+                || this.getNodeCount() != null && this.getNodeCount() != 0;
+    }
+
+    public boolean isWorkerRun() {
+        // worker node
+        return this.getParentRunId() != null;
     }
 
     private boolean hasBooleanParameter(String parameterName) {
         return CollectionUtils.emptyIfNull(this.pipelineRunParameters).stream()
                 .anyMatch(p -> p.getName().equals(parameterName) && p.getValue() != null
                                && p.getValue().equalsIgnoreCase("true"));
+    }
+
+    @JsonIgnore
+    public Optional<String> getParameterValue(final String parameterName) {
+        return ListUtils.emptyIfNull(pipelineRunParameters)
+                .stream()
+                .filter(param -> parameterName.equals(param.getName()) && param.getValue() != null)
+                .map(PipelineRunParameter::getValue)
+                .findFirst();
     }
 
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {

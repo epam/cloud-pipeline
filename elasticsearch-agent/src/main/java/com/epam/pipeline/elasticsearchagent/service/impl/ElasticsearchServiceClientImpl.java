@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,16 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.Scroll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -63,7 +67,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
 
         try {
             if (isIndexExists(indexName)) {
-                log.debug("Index with name {} is already exist", indexName);
+                log.debug("Index with name {} already exists", indexName);
                 return;
             }
             CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
@@ -181,6 +185,28 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return client.search(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to find results for search query:" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public SearchResponse nextScrollPage(final String scrollId, final Scroll scroll) {
+        final SearchScrollRequest searchScrollRequest = new SearchScrollRequest();
+        searchScrollRequest.scrollId(scrollId);
+        searchScrollRequest.scroll(scroll);
+        try {
+            return client.scroll(searchScrollRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to retrieve next scroll page for [{}]: {}",
+                                             scrollId, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public MultiSearchResponse search(final MultiSearchRequest request) {
+        try {
+            return client.msearch(request, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to find results for multi-search query:" + e.getMessage(), e);
         }
     }
 }

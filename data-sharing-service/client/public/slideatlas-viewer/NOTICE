@@ -1,0 +1,12 @@
+The following modifications were made to the source files:
+
+viewer.js
+* `TileSource.scannedAt` property added to remove hard-coded value of "40"
+* `TileSource.maxZoomLevel` property added to restrict maximum zoom level
+* Zoom logic modified to introduce "limit maximum zoom value" behaviour
+* New zoom in & zoom out images
+
+"zoomin.svg", "zoomout.svg" images added.
+
+SlideAtlas-viewer original repo: https://github.com/Kitware/SlideAtlas-viewer
+SlideAtlas-viewer with enhancements (current version) repo: https://github.com/rodichenko/SlideAtlas-viewer

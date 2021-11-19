@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@ import java.util.stream.Stream;
 public final class KubernetesConstants {
 
     public static final String RUN_ID_LABEL = "runid";
+    public static final String TYPE_LABEL = "type";
+    public static final String PIPELINE_TYPE = "pipeline";
+    public static final String NODE_POOL_ID_LABEL = "pool_id";
     public static final String CLOUD_REGION_LABEL = "cloud_region";
     public static final String AWS_REGION_LABEL = "aws_region";
     public static final String CLOUD_PROVIDER_LABEL = "cloud_provider";
@@ -39,12 +42,24 @@ public final class KubernetesConstants {
     public static final String PAUSED_NODE_LABEL = "Paused";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
+    public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
 
-    protected static final String POD_SUCCEEDED_PHASE = "Succeeded";
-    protected static final String POD_FAILED_PHASE = "Failed";
-    protected static final String NODE_LOST = "NodeLost";
-    protected static final String POD_UNSCHEDULABLE = "Unschedulable";
-    protected static final String POD_RUNNING_PHASE = "Running";
+    public static final String KUBE_NAME_REGEXP = "[^a-z0-9\\-]+";
+    public static final String KUBE_NAME_FULL_REGEXP = "[^a-zA-Z0-9\\-._]+";
+
+    public static final String POD_SUCCEEDED_PHASE = "Succeeded";
+    public static final String POD_FAILED_PHASE = "Failed";
+    public static final String NODE_LOST = "NodeLost";
+    public static final String POD_UNSCHEDULABLE = "Unschedulable";
+    public static final String POD_RUNNING_PHASE = "Running";
+    public static final String POD_NODE_SELECTOR_OPERATOR_IN = "In";
+
+    public static final String WINDOWS = "windows";
+
+    public static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    public static final String TRUE_LABEL_VALUE = "true";
+    public static final String KUBERNETES_APP_LABEL = "k8s-app";
+    public static final String KUBE_DNS_APP = "kube-dns";
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
@@ -56,16 +71,19 @@ public final class KubernetesConstants {
     protected static final String DISK_PRESSURE = "DiskPressure";
     protected static final String NETWORK_UNAVAILABLE = "NetworkUnavailable";
     protected static final String CONFIG_OK = "ConfigOK";
+    protected static final String PID_PRESSURE = "PIDPressure";
+
     // node condition statuses
     protected static final String TRUE = "True";
     protected static final String FALSE = "False";
     protected static final String UNKNOWN = "Unknown";
 
     protected static final Set<String> NODE_CONDITION_TYPES =
-            Stream.of(OUT_OF_DISK, READY, MEMORY_PRESSURE, DISK_PRESSURE, NETWORK_UNAVAILABLE, CONFIG_OK)
+            Stream.of(OUT_OF_DISK, READY, MEMORY_PRESSURE, DISK_PRESSURE,
+                    NETWORK_UNAVAILABLE, CONFIG_OK, PID_PRESSURE)
                     .collect(Collectors.toSet());
 
-    protected static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
+    public static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
 
     static {
         NODE_OUT_OF_ORDER_REASONS.add("KubeletOutOfDisk");
@@ -88,6 +106,8 @@ public final class KubernetesConstants {
     }
 
     public static final DateTimeFormatter KUBE_DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
+    public static final DateTimeFormatter KUBE_LABEL_DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSSSSS");
 
     private KubernetesConstants() {
         //no op

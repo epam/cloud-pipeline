@@ -16,22 +16,11 @@
 
 import Filters from '../filters';
 
-export default function (filters, users, {key}) {
-  if (filters && users) {
-    users
-      .fetchIfNeededOrWait()
-      .then(() => {
-        if (users.loaded) {
-          const r = new RegExp(`^${key}$`, 'i');
-          const [user] = (users.value || []).filter(({userName}) => r.test(userName));
-          if (user) {
-            filters.reportNavigation(
-              Filters.reportsRoutes.general.name,
-              {id: user.id, type: Filters.runnerTypes.user}
-            );
-          }
-        }
-      })
-      .catch(() => {});
+export default function (filters, {key}) {
+  if (filters) {
+    filters.reportNavigation(
+      Filters.reportsRoutes.general.name,
+      {id: key, type: Filters.runnerTypes.user}
+    );
   }
 }

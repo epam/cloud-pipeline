@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ public abstract class AbstractRunConfigurationEntry {
     private String configName;
     @JsonProperty(value = "default")
     private boolean defaultConfiguration = false;
+    private String endpointName;
+    private Long stopAfter;
 
     public abstract boolean checkConfigComplete();
     public abstract PipelineStart toPipelineStart();

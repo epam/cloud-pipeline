@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,14 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.manager.user.ImpersonateFailureHandler;
+import com.epam.pipeline.manager.user.ImpersonateSuccessHandler;
+import com.epam.pipeline.manager.user.ImpersonationManager;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.velocity.app.VelocityEngine;
 import org.opensaml.saml2.metadata.provider.FilesystemMetadataProvider;
@@ -86,6 +91,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
+import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -135,6 +141,21 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${saml.authn.max.authentication.age:93600}")
     private Long maxAuthentificationAge;
 
+    @Value("${api.security.anonymous.urls:/restapi/route}")
+    private String[] anonymousResources;
+
+    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
+    private String impersonationOperationsRootUrl;
+
+    @Value("#{'${api.security.public.urls}'.split(',')}")
+    private List<String> excludeScripts;
+
+    @Value("${saml.logout.invalidate.session:false}")
+    private boolean logoutInvalidateSession;
+
+    @Value("${saml.validate.message.inresponse:true}")
+    private boolean validateMessageInResponse;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -154,21 +175,31 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .addFilterAfter(samlFilter(), BasicAuthenticationFilter.class);
         http.authorizeRequests()
                 .antMatchers(getUnsecuredResources()).permitAll()
-                .antMatchers(getSecuredResourcesRoot()).authenticated();
+                .antMatchers(getAnonymousResources())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
+                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getImpersonationStartUrl())
+                    .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
+                .antMatchers(getSecuredResourcesRoot())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
     }
 
     public String[] getUnsecuredResources() {
-        return new String[] {
-            "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz",
-            "/pipe-common.tar.gz", "/commit-run-scripts/**", "/restapi/**", "/pipe",
-            "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
-            "/pipe-el6", "/pipe-el6.tar.gz"
-        };
+        final List<String> excludePaths = Arrays.asList(
+                "/saml/web/**",
+                "/restapi/**",
+                "/error",
+                "/error/**");
+        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 
     public String[] getSecuredResourcesRoot() {
         return new String[] {"/**"};
+    }
+
+    public String[] getAnonymousResources() {
+        return anonymousResources;
     }
 
     protected RequestMatcher getFullRequestMatcher() {
@@ -225,7 +256,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     // Provider of default SAML Context
     @Bean
     public SAMLContextProviderImpl contextProvider() {
-        return new SAMLContexProviderCustomSingKey(signingKey);
+        return new SAMLContexProviderCustomSingKey(signingKey, validateMessageInResponse);
     }
 
     // Initialization of OpenSAML library
@@ -422,7 +453,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     public SecurityContextLogoutHandler logoutHandler() {
         SecurityContextLogoutHandler logoutHandler =
                 new SecurityContextLogoutHandler();
-        logoutHandler.setInvalidateHttpSession(false);
+        logoutHandler.setInvalidateHttpSession(logoutInvalidateSession);
         return logoutHandler;
     }
 
@@ -531,5 +562,25 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
+    }
+
+    @Bean
+    public SwitchUserFilter switchUserFilter(final ImpersonationManager impersonationManager) {
+        final SwitchUserFilter filter = new SwitchUserFilter();
+        filter.setUserDetailsService(impersonationManager);
+        filter.setUserDetailsChecker(impersonationManager);
+        filter.setSwitchUserUrl(getImpersonationStartUrl());
+        filter.setExitUserUrl(getImpersonationStopUrl());
+        filter.setFailureHandler(new ImpersonateFailureHandler(getImpersonationStartUrl(), getImpersonationStopUrl()));
+        filter.setSuccessHandler(new ImpersonateSuccessHandler(getImpersonationStartUrl(), getImpersonationStopUrl()));
+        return filter;
+    }
+
+    public String getImpersonationStartUrl() {
+        return impersonationOperationsRootUrl + "/start";
+    }
+
+    public String getImpersonationStopUrl() {
+        return impersonationOperationsRootUrl + "/stop";
     }
 }

@@ -17,14 +17,17 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import EditableField from './EditableField';
 import {Icon} from 'antd';
+import EditableField from './EditableField';
+import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
+import Owner from './owner';
 import styles from './Breadcrumbs.css';
+import HiddenObjects from '../../utils/hidden-objects';
 
 @inject('pipelinesLibrary')
+@HiddenObjects.injectTreeFilter
 @observer
 export default class Breadcrumbs extends React.Component {
 
@@ -37,7 +40,14 @@ export default class Breadcrumbs extends React.Component {
     styleEditableField: PropTypes.object,
     editStyleEditableField: PropTypes.object,
     onSaveEditableField: PropTypes.func,
-    displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object])
+    onNavigate: PropTypes.func,
+    displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    icon: PropTypes.string,
+    iconClassName: PropTypes.string,
+    lock: PropTypes.bool,
+    lockClassName: PropTypes.string,
+    sensitive: PropTypes.bool,
+    subject: PropTypes.object
   };
 
   state = {
@@ -53,7 +63,14 @@ export default class Breadcrumbs extends React.Component {
       name: 'Library',
       ...this.props.pipelinesLibrary.value
     }];
-    const rootItems = generateTreeData({childFolders: rootElements}, false, null);
+    const rootItems = generateTreeData(
+      {childFolders: rootElements},
+      false,
+      null,
+      undefined,
+      undefined,
+      this.props.hiddenObjectsTreeFilter()
+    );
     this.setState({
       rootItems
     });
@@ -90,6 +107,13 @@ export default class Breadcrumbs extends React.Component {
     } else {
       items = findPath(`${this.props.type}_${this.props.id || 'root'}`, this.state.rootItems);
     }
+    if (items && items.length > 0) {
+      items[0].icon = this.props.icon;
+      items[0].iconClassName = this.props.iconClassName;
+      items[0].lock = this.props.lock;
+      items[0].lockClassName = this.props.lockClassName;
+      items[0].sensitive = this.props.sensitive;
+    }
     return items || [];
   }
 
@@ -98,6 +122,10 @@ export default class Breadcrumbs extends React.Component {
       await this.props.onSaveEditableField(name);
     }
   };
+
+  navigateToItem = item => () => {
+    this.props.onNavigate && this.props.onNavigate(item);
+  }
 
   render () {
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
@@ -110,7 +138,7 @@ export default class Breadcrumbs extends React.Component {
       <div
         style={{
           padding: 5,
-          minWidth: '200px',
+          minWidth: '150px',
           display: 'inline-block',
           fontSize: '18px'
         }}>
@@ -125,6 +153,34 @@ export default class Breadcrumbs extends React.Component {
                     display: 'inline-block',
                     marginLeft: -2
                   }}>
+                  {
+                    item.icon ? (
+                      <Icon
+                        type={item.icon}
+                        className={item.iconClassName}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
+                      />
+                    ) : null
+                  }
+                  {
+                    item.lock ? (
+                      <Icon
+                        type="lock"
+                        className={item.lockClassName}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
+                      />
+                    ) : null
+                  }
                   <EditableField
                     text={this.props.textEditableField}
                     displayText={this.props.displayTextEditableField || `${this.props.textEditableField || item.name}`}
@@ -146,6 +202,58 @@ export default class Breadcrumbs extends React.Component {
                 </div>
               ];
             } else {
+              if (this.props.onNavigate) {
+                return [
+                  <div
+                    key={`item-${index}`}
+                    onClick={this.navigateToItem(item)}
+                    style={{
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      display: 'inline-block',
+                      verticalAlign: 'baseline'
+                    }}>
+                    {
+                      item.icon ? (
+                        <Icon
+                          type={item.icon}
+                          className={item.iconClassName}
+                          style={
+                            Object.assign(
+                              {marginRight: 5},
+                              item.sensitive ? {color: '#ff5c33'} : {}
+                            )
+                          }
+                        />
+                      ) : null
+                    }
+                    {
+                      item.lock ? (
+                        <Icon
+                          type="lock"
+                          className={item.lockClassName}
+                          style={
+                            Object.assign(
+                              {marginRight: 5},
+                              item.sensitive ? {color: '#ff5c33'} : {}
+                            )
+                          }
+                        />
+                      ) : null
+                    }
+                    {item.name}
+                  </div>,
+                  <Icon
+                    key={`divider-${index}`}
+                    type="caret-right"
+                    style={{
+                      lineHeight: 2,
+                      verticalAlign: 'middle',
+                      margin: '0px 5px',
+                      fontSize: 'small'
+                    }} />
+                ];
+              }
               return [
                 <Link
                   key={`item-${index}`}
@@ -154,6 +262,34 @@ export default class Breadcrumbs extends React.Component {
                     verticalAlign: 'baseline',
                     color: 'inherit'
                   }}>
+                  {
+                    item.icon ? (
+                      <Icon
+                        type={item.icon}
+                        className={item.iconClassName}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
+                      />
+                    ) : null
+                  }
+                  {
+                    item.lock ? (
+                      <Icon
+                        type="lock"
+                        className={item.lockClassName}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
+                      />
+                    ) : null
+                  }
                   {item.name}
                 </Link>,
                 <Icon
@@ -171,6 +307,9 @@ export default class Breadcrumbs extends React.Component {
             result.push(...itemsArray.filter(i => !!i));
             return result;
           }, [])
+        }
+        {
+          this.props.subject ? (<Owner subject={this.props.subject} />) : null
         }
       </div>
     );

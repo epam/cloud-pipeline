@@ -49,10 +49,12 @@ class ExportStore {
     }
   }
 
-  doCsvExport = (title) => {
-    const promises = this.listeners.map(listener => listener.getExportData());
+  doCsvExport = (title, ...options) => {
+    const hide = message.loading('Exporting...', 0);
+    const promises = this.listeners.map(listener => listener.getExportData(...options));
     Promise.all(promises)
       .then((sheets) => {
+        hide();
         sheets.forEach((sheet, index) => {
           const extra = sheets.length > 1 ? ` (${index + 1} of ${sheets.length})` : '';
           const name = `${title}${extra}.csv`;
@@ -60,11 +62,12 @@ class ExportStore {
         });
       })
       .catch((error) => {
+        hide();
         message.error(error.toString(), 5);
       });
   };
 
-  doImageExport = (title) => {
+  doImageExport = (title, ...options) => {
     const hide = message.loading('Creating an image...', 0);
     setTimeout(() => {
       const listeners = this.imageListeners.sort((a, b) => {
@@ -72,11 +75,12 @@ class ExportStore {
         const {order: bOrder} = b.props;
         return aOrder - bOrder;
       });
-      const promises = listeners.map(listener => listener.getExportData());
+      const promises = listeners.map(listener => listener.getExportData(...options));
       Promise.all(promises)
         .then((canvases) => {
           const filtered = canvases.filter(Boolean);
           const canvasElement = document.createElement('canvas');
+          document.body.style.overflowY = 'hidden';
           document.body.appendChild(canvasElement);
           const titleHeight = 50;
           const width = Math.max(...filtered.map(({width}) => width), 0);
@@ -103,11 +107,12 @@ class ExportStore {
           canvasElement.toBlob((blob) => {
             FileSaver.saveAs(blob, `${title}.png`);
             document.body.removeChild(canvasElement);
+            document.body.style.overflowY = 'unset';
             hide();
           });
         })
-        .catch((error) => {
-          message.error(error.toString(), 5);
+        .catch((_) => {
+          message.error('Error generating image', 5);
           hide();
         });
     }, 250);

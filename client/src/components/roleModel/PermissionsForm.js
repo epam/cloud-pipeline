@@ -16,11 +16,24 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Alert, Row, Col, Button, Icon, AutoComplete, Modal, message, Checkbox} from 'antd';
+import {
+  Alert,
+  AutoComplete,
+  Button,
+  Checkbox,
+  Col,
+  Icon,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Table
+} from 'antd';
 import GrantGet from '../../models/grant/GrantGet';
 import GrantPermission from '../../models/grant/GrantPermission';
 import GrantRemove from '../../models/grant/GrantRemove';
 import GrantOwner from '../../models/grant/GrantOwner';
+import GetAllPermissions from '../../models/grant/GetAllPermissions';
 import UserFind from '../../models/user/UserFind';
 import GroupFind from '../../models/user/GroupFind';
 import Roles from '../../models/user/Roles';
@@ -29,7 +42,15 @@ import {observable} from 'mobx';
 import styles from './PermissionsForm.css';
 import roleModel from '../../utils/roleModel';
 import UserName from '../special/UserName';
+import compareSubObjects from './utilities/compare-sub-objects';
 
+function plural (count, noun) {
+  return `${noun}${count > 1 ? 's' : ''}`;
+}
+
+const MAX_SUB_OBJECTS_WARNINGS_TO_SHOW = 5;
+
+@inject('usersInfo')
 @inject(({routing, authenticatedUserInfo}, params) => ({
   authenticatedUserInfo,
   grant: new GrantGet(params.objectIdentifier, params.objectType),
@@ -37,7 +58,6 @@ import UserName from '../special/UserName';
 }))
 @observer
 export default class PermissionsForm extends React.Component {
-
   state = {
     findUserVisible: false,
     findGroupVisible: false,
@@ -49,7 +69,8 @@ export default class PermissionsForm extends React.Component {
     fetching: false,
     fetchedUsers: [],
     roleName: null,
-    operationInProgress: false
+    operationInProgress: false,
+    subObjectsPermissions: []
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -74,8 +95,23 @@ export default class PermissionsForm extends React.Component {
       PropTypes.string,
       PropTypes.number
     ]),
-    readonly: PropTypes.bool
+    readonly: PropTypes.bool,
+    defaultMask: PropTypes.number,
+    enabledMask: PropTypes.number,
+    subObjectsPermissionsMaskToCheck: PropTypes.number,
+    subObjectsToCheck: PropTypes.arrayOf(PropTypes.shape({
+      entityId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      entityClass: PropTypes.string,
+      name: PropTypes.node,
+      description: PropTypes.node
+    })),
+    subObjectsPermissionsErrorTitle: PropTypes.node
   };
+
+  static defaultProps = {
+    enabledMask: roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1),
+    subObjectsPermissionsMaskToCheck: 0
+  }
 
   lastFetchId = 0;
 
@@ -180,7 +216,17 @@ export default class PermissionsForm extends React.Component {
 
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      return (this.userFind.value || []).map(user => user);
+      const {permissions = []} = this.props.grant && this.props.grant.loaded
+        ? (this.props.grant.value || {})
+        : {};
+      const existingUsers = new Set(
+        permissions
+          .filter(p => p.sid && p.sid.principal)
+          .map(p => p.sid.name)
+      );
+      return (this.userFind.value || [])
+        .filter(user => !existingUsers.has(user.userName))
+        .map(user => user);
     }
     return [];
   };
@@ -193,9 +239,18 @@ export default class PermissionsForm extends React.Component {
   };
 
   findGroupDataSource = () => {
+    const {permissions = []} = this.props.grant && this.props.grant.loaded
+      ? (this.props.grant.value || {})
+      : {};
+    const existingGroups = new Set(
+      permissions
+        .filter(p => p.sid && !p.sid.principal)
+        .map(p => p.sid.name)
+    );
     const roles = (this.props.roles.loaded && this.state.groupSearchString) ? (
       (this.props.roles.value || [])
         .filter(r => r.name.toLowerCase().indexOf(this.state.groupSearchString.toLowerCase()) >= 0)
+        .filter(r => !existingGroups.has(r.name))
         .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
     ) : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
@@ -217,7 +272,7 @@ export default class PermissionsForm extends React.Component {
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.selectedUser, true, 0);
+    await this.grantPermission(this.selectedUser, true, this.props.defaultMask || 0);
     this.closeFindUserDialog();
   };
 
@@ -234,7 +289,7 @@ export default class PermissionsForm extends React.Component {
     const [role] = (this.props.roles.loaded ? this.props.roles.value || [] : [])
       .filter(r => !r.predefined && this.splitRoleName(r.name) === this.selectedGroup);
     const roleName = role ? role.name : this.selectedGroup;
-    await this.grantPermission(roleName, false, 0);
+    await this.grantPermission(roleName, false, this.props.defaultMask || 0);
     this.closeFindGroupDialog();
   };
 
@@ -251,6 +306,14 @@ export default class PermissionsForm extends React.Component {
       message.error(request.error);
     } else {
       await this.props.grant.fetch();
+      if (this.props.grant.loaded) {
+        const selectedPermission = (this.props.grant.value.permissions || [])
+          .map(p => p)
+          .find(p => p.sid && p.sid.name === name && p.sid.principal === principal);
+        if (selectedPermission) {
+          this.setState({selectedPermission});
+        }
+      }
     }
   };
 
@@ -262,18 +325,20 @@ export default class PermissionsForm extends React.Component {
       item.sid.name,
       item.sid.principal
     );
+    this.setState({operationInProgress: true});
     await request.fetch();
     if (request.error) {
       message.error(request.error);
     } else {
+      await this.props.grant.fetch();
       if (this.state.selectedPermission) {
         if (this.state.selectedPermission.sid.name === item.sid.name &&
           this.state.selectedPermission.sid.principal === item.sid.principal) {
-          this.setState({selectedPermission: null});
+          this.setState({selectedPermission: null}, this.selectFirstPermission);
         }
       }
-      this.props.grant.fetch();
     }
+    this.setState({operationInProgress: false});
   };
 
   onAllowDenyValueChanged = (permissionMask, allowDenyMask, allowRead = false) => async (event) => {
@@ -287,6 +352,7 @@ export default class PermissionsForm extends React.Component {
     if (allowRead && event.target.checked) {
       selectedPermission.mask = (selectedPermission.mask & (1 << 2 | 1 << 3 | 1 << 4 | 1 << 5)) | 1;
     }
+    this.setState({operationInProgress: true});
     const request = new GrantPermission();
     await request.send({
       aclClass: this.props.objectType.toUpperCase(),
@@ -296,9 +362,146 @@ export default class PermissionsForm extends React.Component {
       userName: selectedPermission.sid.name
     });
     if (request.error) {
+      this.setState({operationInProgress: false});
       message.error(request.error);
     } else {
-      this.setState({selectedPermission});
+      await this.props.grant.fetch();
+      this.setState({
+        selectedPermission,
+        operationInProgress: false
+      });
+    }
+  };
+
+  renderSubObjectsWarnings = () => {
+    const {subObjectsPermissionsErrorTitle} = this.props;
+    const users = this.props.usersInfo.loaded
+      ? (this.props.usersInfo.value || []).slice()
+      : [];
+    const granted = this.props.grant.value && this.props.grant.value.permissions
+      ? this.props.grant.value.permissions
+      : [];
+    const {subObjectsPermissionsMaskToCheck} = this.props;
+    const {subObjectsPermissions} = this.state;
+    const check = {
+      read: roleModel.readPermissionEnabled(subObjectsPermissionsMaskToCheck),
+      write: roleModel.writePermissionEnabled(subObjectsPermissionsMaskToCheck),
+      execute: roleModel.executePermissionEnabled(subObjectsPermissionsMaskToCheck)
+    };
+    const warnings = [];
+    for (let d = 0; d < granted.length; d++) {
+      const {mask, sid = {}} = granted[d];
+      const maskToCheck = mask & subObjectsPermissionsMaskToCheck;
+      const {name, principal} = sid;
+      const rolesToCheck = [];
+      if (principal) {
+        const userInfo = users.find(u => u.name === name);
+        if (userInfo && userInfo.roles) {
+          rolesToCheck.push(
+            ...(userInfo.roles || []).map(({name}) => ({name, principal: false}))
+          );
+        }
+      }
+      for (let o = 0; o < subObjectsPermissions.length; o++) {
+        const subObjectPermission = subObjectsPermissions[o];
+        const {
+          read,
+          write,
+          execute
+        } = roleModel.checkObjectPermissionsConflict(
+          maskToCheck,
+          sid,
+          rolesToCheck,
+          subObjectPermission.owner,
+          subObjectPermission.permissions
+        );
+        if (check.read && read) {
+          // Read conflict
+          warnings.push((
+            <span>
+              {subObjectPermission.object.name}: read denied for <b>{name}</b>
+            </span>
+          ));
+        }
+        if (check.write && write) {
+          // Write conflict
+          warnings.push((
+            <span>
+              {subObjectPermission.object.name}: write denied for <b>{name}</b>
+            </span>
+          ));
+        }
+        if (check.execute && execute) {
+          // Execute conflict
+          warnings.push((
+            <span>
+              {subObjectPermission.object.name}: execute denied for <b>{name}</b>
+            </span>
+          ));
+        }
+      }
+    }
+    if (warnings.length > 0) {
+      const title = subObjectsPermissionsErrorTitle && (
+        <div style={{marginBottom: 5}}>
+          {subObjectsPermissionsErrorTitle}
+        </div>
+      );
+      const content = (
+        <div>
+          {
+            warnings.map((warning, index) => (
+              <div key={index}>
+                {warning}
+              </div>
+            ))
+          }
+        </div>
+      );
+      if (warnings.length > MAX_SUB_OBJECTS_WARNINGS_TO_SHOW) {
+        const rest = warnings.length - MAX_SUB_OBJECTS_WARNINGS_TO_SHOW;
+        return (
+          <Alert
+            showIcon
+            style={{marginBottom: 5}}
+            message={(
+              <div>
+                {title}
+                {
+                  warnings.slice(0, MAX_SUB_OBJECTS_WARNINGS_TO_SHOW).map((warning, index) => (
+                    <div key={index}>
+                      {warning}
+                    </div>
+                  ))
+                }
+                <div>
+                  <Popover
+                    content={content}
+                  >
+                    <a>
+                      ... and {rest} more {plural(rest, 'warning')}
+                    </a>
+                  </Popover>
+                </div>
+              </div>
+            )}
+            type="warning"
+          />
+        );
+      }
+      return (
+        <Alert
+          showIcon
+          style={{marginBottom: 5}}
+          message={(
+            <div>
+              {title}
+              {content}
+            </div>
+          )}
+          type="warning"
+        />
+      );
     }
   };
 
@@ -344,7 +547,11 @@ export default class PermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={this.props.readonly}
+              disabled={
+                this.state.operationInProgress ||
+                this.props.readonly ||
+                ((item.allowMask & this.props.enabledMask) === 0)
+              }
               checked={item.allowed}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.allowMask, !item.isRead)} />
           )
@@ -355,7 +562,11 @@ export default class PermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={this.props.readonly}
+              disabled={
+                this.state.operationInProgress ||
+                this.props.readonly ||
+                ((item.denyMask & this.props.enabledMask) === 0)
+              }
               checked={item.denied}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.denyMask)} />
           )
@@ -389,8 +600,8 @@ export default class PermissionsForm extends React.Component {
         <Table
           style={{marginTop: 10}}
           key="user permissions"
-          loading={this.props.grant.pending}
-          showHeader={true}
+          loading={!this.props.grant.loaded && this.props.grant.pending}
+          showHeader
           size="small"
           columns={columns}
           pagination={false}
@@ -443,7 +654,7 @@ export default class PermissionsForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
-              disabled={this.props.readonly}
+              disabled={this.state.operationInProgress || this.props.readonly}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
               <Icon type="delete" />
@@ -482,7 +693,7 @@ export default class PermissionsForm extends React.Component {
         }}
         rowClassName={getRowClassName}
         onRowClick={selectPermission}
-        loading={this.props.grant.pending}
+        loading={!this.props.grant.loaded && this.props.grant.pending}
         title={() => title}
         showHeader={false}
         size="small"
@@ -579,11 +790,29 @@ export default class PermissionsForm extends React.Component {
     return (
       <Row>
         {this.renderOwner()}
+        {this.renderSubObjectsWarnings()}
         {this.renderUsers()}
         <Modal
           title="Select user"
           onCancel={this.closeFindUserDialog}
-          onOk={this.onSelectUser}
+          onOk={this.operationWrapper(this.onSelectUser)}
+          footer={(
+            <Row type="flex" justify="end">
+              <Button
+                onClick={this.closeFindUserDialog}
+                style={{marginRight: 5}}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                disabled={this.state.operationInProgress}
+                onClick={this.operationWrapper(this.onSelectUser)}
+              >
+                OK
+              </Button>
+            </Row>
+          )}
           visible={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
@@ -606,6 +835,23 @@ export default class PermissionsForm extends React.Component {
           title="Select group"
           onCancel={this.closeFindGroupDialog}
           onOk={this.onSelectGroup}
+          footer={(
+            <Row type="flex" justify="end">
+              <Button
+                onClick={this.closeFindGroupDialog}
+                style={{marginRight: 5}}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                disabled={this.state.operationInProgress}
+                onClick={this.operationWrapper(this.onSelectGroup)}
+              >
+                OK
+              </Button>
+            </Row>
+          )}
           visible={this.state.findGroupVisible}>
           <AutoComplete
             value={this.selectedGroup}
@@ -618,11 +864,64 @@ export default class PermissionsForm extends React.Component {
     );
   }
 
+  selectFirstPermission = () => {
+    if (this.props.grant) {
+      this.props.grant.fetchIfNeededOrWait()
+        .then(() => {
+          if (this.props.grant.loaded) {
+            const {permissions = []} = this.props.grant.value || {};
+            if (permissions && permissions.length > 0) {
+              const [first] = permissions;
+              this.setState({selectedPermission: first});
+            }
+          }
+        });
+    }
+  };
+
+  fetchSubObjectsPermissions = () => {
+    const wrapPermissionsFetch = (subObject) => new Promise((resolve) => {
+      const request = new GetAllPermissions(subObject.entityId, subObject.entityClass);
+      request.fetch()
+        .then(() => {
+          if (request.loaded) {
+            const {owner, permissions = []} = request.value || {};
+            resolve({object: subObject, permissions, owner});
+          } else {
+            resolve({object: subObject, permissions: []});
+          }
+        })
+        .catch(() => {
+          resolve({object: subObject, permissions: []});
+        });
+    });
+    this.setState({
+      subObjectsPermissions: []
+    }, () => {
+      Promise.all(
+        (this.props.subObjectsToCheck || []).map(wrapPermissionsFetch)
+      )
+        .then(payloads => {
+          this.setState({
+            subObjectsPermissions: payloads
+          });
+        });
+    });
+  };
+
+  componentDidMount () {
+    this.selectFirstPermission();
+    this.fetchSubObjectsPermissions();
+  }
+
   componentDidUpdate (prevProps) {
     if (this.props.objectIdentifier !== prevProps.objectIdentifier) {
       this.setState({
         selectedPermission: null
-      });
+      }, this.selectFirstPermission);
+    }
+    if (!compareSubObjects(this.props.subObjectsToCheck, prevProps.subObjectsToCheck)) {
+      this.fetchSubObjectsPermissions();
     }
   }
 }

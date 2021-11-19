@@ -24,11 +24,9 @@ import {
   Checkbox,
   Col,
   Collapse,
-  Dropdown,
   Form,
   Icon,
   Input,
-  Menu,
   message,
   Modal,
   Popover,
@@ -37,19 +35,23 @@ import {
   Spin
 } from 'antd';
 import styles from './LaunchPipelineForm.css';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
 import BooleanParameterInput from './BooleanParameterInput';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import CodeEditor from '../../../special/CodeEditor';
+import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
-import {LIMIT_MOUNTS_PARAMETER, LimitMountsInput} from './LimitMountsInput';
+import {LimitMountsInput} from './LimitMountsInput';
 
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import FolderProject from '../../../../models/folders/FolderProject';
 import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEntityFields';
+import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
 
 import roleModel from '../../../../utils/roleModel';
 import SystemParametersBrowser from '../dialogs/SystemParametersBrowser';
@@ -65,18 +67,16 @@ import {getSpotTypeName} from '../../../special/spot-instance-names';
 import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
-  CP_CAP_SGE,
-  CP_CAP_SPARK,
-  CP_CAP_SLURM,
-  CP_CAP_AUTOSCALE,
-  CP_CAP_AUTOSCALE_WORKERS,
+  hybridAutoScaledClusterEnabled,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
+  kubeEnabled,
   setClusterParameterValue,
+  getAutoScaledPriceTypeValue
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -86,6 +86,7 @@ import {
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
 import * as prettyUrlGenerator from './utilities/pretty-url';
+import * as parameterUtilities from './utilities/parameter-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
@@ -95,6 +96,33 @@ import {
   getInputPaths,
   getOutputPaths
 } from '../../../runs/actions';
+import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
+import ServerlessAPIButton from '../../../special/serverless-api-button';
+import RunCapabilities, {
+  addCapability,
+  applyCapabilities,
+  getEnabledCapabilities,
+  hasPlatformSpecificCapabilities,
+  isCustomCapability,
+  RUN_CAPABILITIES
+} from './utilities/run-capabilities';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_CAP_SGE,
+  CP_CAP_SPARK,
+  CP_CAP_SLURM,
+  CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE
+} from './utilities/parameters';
+import OOMCheck from './utilities/oom-check';
+import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
+import JobNotifications from '../dialogs/job-notifications';
+import {withCurrentUserAttributes} from "../../../../utils/current-user-attributes";
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -117,9 +145,12 @@ function getFormItemClassName (rootClass, key) {
   'awsRegions',
   'dtsList',
   'preferences',
-  'dockerRegistries'
+  'dockerRegistries',
+  'dataStorageAvailable'
 )
 @localization.localizedComponent
+@roleModel.authenticationInfo
+@withCurrentUserAttributes()
 @observer
 class LaunchPipelineForm extends localization.LocalizedReactComponent {
   localizedStringWithSpotDictionaryFn = (key) => {
@@ -143,6 +174,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return currentConfiguration && currentConfiguration.executionEnvironment === DTS_ENVIRONMENT;
   };
 
+  currentUserName = () => {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return undefined;
+    }
+    return this.props.authenticatedUserInfo.value.userName;
+  };
+
+  friendlyUrlAvailable = () => {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      admin,
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return admin || roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+  };
+
   static propTypes = {
     pipeline: PropTypes.shape(),
     pipelines: PropTypes.array,
@@ -154,7 +203,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     parameters: PropTypes.shape(),
     configurations: PropTypes.array,
     onLaunch: PropTypes.func,
-    errors: PropTypes.array,
+    alerts: PropTypes.arrayOf(PropTypes.shape({
+      message: PropTypes.string,
+      type: PropTypes.string
+    })),
     editConfigurationMode: PropTypes.bool,
     onConfigurationChanged: PropTypes.func,
     currentConfigurationName: PropTypes.string,
@@ -167,6 +219,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     canRemove: PropTypes.bool,
     detached: PropTypes.bool,
     runConfiguration: PropTypes.func,
+    runConfigurationId: PropTypes.string,
     runConfigurationCluster: PropTypes.func,
     onSelectPipeline: PropTypes.func,
     defaultPriceTypeIsSpot: PropTypes.bool,
@@ -196,6 +249,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     execEnvSelectValue: null,
     dtsId: null,
     startIdle: false,
+    useDefaultCmd: false,
     pipelineBrowserVisible: false,
     dockerImageBrowserVisible: false,
     pipeline: null,
@@ -203,9 +257,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     pipelineConfiguration: null,
     launchCluster: false,
     autoScaledCluster: false,
+    hybridAutoScaledClusterEnabled: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
+    autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
@@ -220,6 +277,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     activeAutoCompleteParameterKey: null,
     currentProjectMetadata: null,
     estimatedPrice: {
+      evaluated: false,
       pending: false,
       pricePerHour: 0,
       maximumPrice: 0,
@@ -262,7 +320,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.props.fireCloudMethod.methodOutputs
     ) || [],
     autoPause: true,
-    showLaunchCommands: false
+    showLaunchCommands: false,
+    runCapabilities: [],
+    useResolvedParameters: false,
+    notifications: []
   };
 
   formItemLayout = {
@@ -322,9 +383,48 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable dockerImage = null;
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
+  @observable _toolSettings;
+  @observable toolDefaultCmd;
+  @observable regionDisabledByToolSettings = false;
+  @observable toolCloudRegion = null;
+  @observable toolPlatform = null;
+  @observable toolAllowSensitive = true;
 
   @action
   formFieldsChanged = async () => {
+    const {form, parameters} = this.props;
+    const formParameters = form.getFieldValue(PARAMETERS);
+    const formParametersCorrected = parameterUtilities.correctFormFieldValues(formParameters);
+    if (formParametersCorrected) {
+      form.setFieldsValue({
+        [PARAMETERS]: formParameters
+      });
+    }
+    this.inputPaths = getInputPaths(
+      formParameters,
+      (parameters || {}).parameters
+    );
+    this.outputPaths = getOutputPaths(
+      formParameters,
+      (parameters || {}).parameters
+    );
+    const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
+    if (this.dockerImage !== currentDockerImage) {
+      if (currentDockerImage) {
+        await this.loadToolSettings(currentDockerImage);
+        const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+        const regionId = this.correctCloudRegion(
+          currentValue ||
+          this.defaultCloudRegionId
+        );
+        this.props.form.setFieldsValue({
+          [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+        });
+      } else {
+        this.resetToolSettings();
+      }
+    }
+    this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
     this.modified = checkModifiedState(
       this.props,
       this.state,
@@ -332,22 +432,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         defaultCloudRegionId: this.defaultCloudRegionId,
         execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
         spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue
+        cmdTemplateValue: this.cmdTemplateValue,
+        toolDefaultCmd: this.toolDefaultCmd
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
-    const {form, parameters} = this.props;
-    this.inputPaths = getInputPaths(
-      form.getFieldValue(PARAMETERS),
-      (parameters || {}).parameters
-    );
-    this.outputPaths = getOutputPaths(
-      form.getFieldValue(PARAMETERS),
-      (parameters || {}).parameters
-    );
-    this.dockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) ||
-      this.getDefaultValue('docker_image');
     this.rebuildLaunchCommand();
+    if (this.forceValidation) {
+      this.forceValidation = false;
+      this.props.form.validateFields(undefined, {force: true}, () => {});
+    } else {
+      this.props.form.validateFields();
+    }
   };
 
   rebuildLaunchCommand = () => {
@@ -369,6 +465,41 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   hideLaunchCommands = () => {
     this.setState({showLaunchCommands: false});
   };
+
+  get hyperThreadingDisabled () {
+    return (this.state.runCapabilities || [])
+      .indexOf(RUN_CAPABILITIES.disableHyperThreading) >= 0;
+  }
+
+  @computed
+  get isWindowsPlatform () {
+    return /^windows$/i.test(this.toolPlatform);
+  }
+
+  onRunCapabilitiesSelect = (capabilities) => {
+    this.setState({
+      runCapabilities: (capabilities || []).slice()
+    }, this.formFieldsChanged);
+  };
+
+  renderAdditionalRunCapabilities = () => {
+    if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
+      return (
+        <FormItem
+          className={getFormItemClassName(styles.formItem, 'runCapabilities')}
+          {...this.formItemLayout}
+          label="Run capabilities"
+          hasFeedback
+        >
+          <RunCapabilities
+            values={this.state.runCapabilities}
+            onChange={this.onRunCapabilitiesSelect}
+            platform={this.toolPlatform}
+          />
+        </FormItem>
+      );
+    }
+  }
 
   @observable
   _fireCloudConfigurations = null;
@@ -600,10 +731,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
-          const result = await this.props.onLaunch(payload);
+          const result = await this.props.onLaunch(
+            payload,
+            values[ADVANCED].hostedApplication,
+            this.toolPlatform,
+            this.props.parameters.run_as &&
+            this.currentUserName() !== this.props.parameters.run_as
+          );
           if (result) {
             this.reset();
             this.prepare();
+            this.forceValidation = true;
             this.formFieldsChanged();
           }
         }
@@ -725,13 +863,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   resetState = (keepPipeline) => {
     const {execEnvSelectValue, dtsId} = this.getExecEnvSelectValue();
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
+      this.props.parameters.parameters
+    );
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
+    const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
+    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
+    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
         startIdle: this.props.parameters.cmd_template === 'sleep infinity',
+        useDefaultCmd: false,
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -739,9 +884,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         dockerImageBrowserVisible: false,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
+        hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
+        kubeEnabled: kubeEnabledValue,
+        autoScaledPriceType: autoScaledPriceTypeValue,
+        runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -753,6 +902,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          evaluated: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -771,11 +921,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         fireCloudOutputs: {},
         fireCloudInputsErrors: {},
         fireCloudOutputsErrors: {}
-      }, this.formFieldsChanged);
+      }, () => {
+        this.forceValidation = true;
+        this.formFieldsChanged();
+      });
     } else {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
         startIdle: this.props.parameters.cmd_template === 'sleep infinity',
+        useDefaultCmd: false,
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -786,9 +940,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipelineConfiguration: null,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
+        hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
+        kubeEnabled: kubeEnabledValue,
+        autoScaledPriceType: autoScaledPriceTypeValue,
+        runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -800,6 +958,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          evaluated: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -824,16 +983,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         fireCloudInputsErrors: {},
         fireCloudOutputsErrors: {},
         autoPause: true
-      }, this.formFieldsChanged);
+      }, () => {
+        this.forceValidation = true;
+        this.formFieldsChanged();
+      });
     }
   };
 
   generateConfigurationPayload = (values) => {
+    let cmd = values[ADVANCED].cmdTemplate;
+    if (this.state.useDefaultCmd && this.toolDefaultCmd) {
+      cmd = this.toolDefaultCmd;
+    } else if (this.state.startIdle) {
+      cmd = 'sleep infinity';
+    }
+    const stopAfterIsIncorrect = (o) => o === null || o === undefined || o === '' || isNaN(o);
     let payload = {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      cmd_template: this.state.startIdle ? 'sleep infinity' : values[ADVANCED].cmdTemplate,
+      stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
+        ? undefined
+        : (+values[ADVANCED].stopAfter || 0),
+      endpointName: values[ADVANCED].endpointName,
+      cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
       docker_image: values[EXEC_ENVIRONMENT].dockerImage,
       parameters: {},
@@ -843,6 +1016,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined
     };
+    if (this.isWindowsPlatform) {
+      payload.node_count = undefined;
+    }
+    if (!this.props.detached) {
+      delete payload.endpointName;
+      delete payload.stopAfter;
+    }
     if (this.state.isDts && this.props.detached) {
       payload.instance_size = undefined;
       payload.instance_disk = undefined;
@@ -879,13 +1059,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 ? getBooleanValue(parameter.value)
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
-              enum: parameter.enumeration
+              description: parameter.description,
+              enum: parameter.initialEnumeration,
+              visible: parameter.visible,
+              validation: parameter.validation,
+              no_override: parameter.noOverride
             };
           }
         }
       }
-      if (values[ADVANCED].limitMounts) {
-        payload[PARAMETERS][LIMIT_MOUNTS_PARAMETER] = {
+      if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
+        payload[PARAMETERS][CP_CAP_LIMIT_MOUNTS] = {
           type: 'string',
           required: false,
           value: values[ADVANCED].limitMounts
@@ -908,7 +1092,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 ? getBooleanValue(parameter.value)
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
-              enum: parameter.enumeration
+              description: parameter.description,
+              enum: parameter.initialEnumeration,
+              visible: parameter.visible,
+              validation: parameter.validation
             };
           }
         }
@@ -926,6 +1113,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type: 'int',
           value: +this.state.maxNodesCount
         };
+        if (this.state.autoScaledPriceType) {
+          payload[PARAMETERS][CP_CAP_AUTOSCALE_PRICE_TYPE] = {
+            type: 'string',
+            value: this.state.autoScaledPriceType
+          };
+        } else {
+          delete payload[PARAMETERS][CP_CAP_AUTOSCALE_PRICE_TYPE];
+        }
+        if (this.state.hybridAutoScaledClusterEnabled) {
+          payload[PARAMETERS][CP_CAP_AUTOSCALE_HYBRID] = {
+            type: 'boolean',
+            value: true
+          };
+        }
       }
       if (this.state.launchCluster && this.state.gridEngineEnabled) {
         payload[PARAMETERS][CP_CAP_SGE] = {
@@ -945,7 +1146,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: true
         };
       }
+      if (this.state.launchCluster && this.state.kubeEnabled) {
+        payload[PARAMETERS][CP_CAP_KUBE] = {
+          type: 'boolean',
+          value: true
+        };
+        payload[PARAMETERS][CP_CAP_DIND_CONTAINER] = {
+          type: 'boolean',
+          value: true
+        };
+        payload[PARAMETERS][CP_CAP_SYSTEMD_CONTAINER] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
+    applyCapabilities(
+      payload[PARAMETERS],
+      this.state.runCapabilities,
+      this.props.preferences,
+      this.toolPlatform
+    );
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
       payload.pipelineVersion = this.state.version;
@@ -980,11 +1201,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateLaunchPayload = (values) => {
+    let cmd = values[ADVANCED].cmdTemplate;
+    if (this.state.useDefaultCmd && this.toolDefaultCmd) {
+      cmd = this.toolDefaultCmd;
+    } else if (this.state.startIdle) {
+      cmd = 'sleep infinity';
+    }
     const payload = {
       instanceType: values[EXEC_ENVIRONMENT].type,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      cmdTemplate: this.state.startIdle ? 'sleep infinity' : values[ADVANCED].cmdTemplate,
+      cmdTemplate: cmd,
       nodeCount: this.state.launchCluster ? this.state.nodesCount : undefined,
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
@@ -994,8 +1221,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
-      prettyUrl: this.prettyUrlEnabled ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl) : undefined
+      prettyUrl: this.prettyUrlEnabled
+        ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
+        : undefined,
+      notifications: (this.state.notifications || []).slice()
     };
+    if (this.isWindowsPlatform) {
+      payload.node_count = undefined;
+    }
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
       !this.state.autoScaledCluster &&
@@ -1029,13 +1262,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ? getBooleanValue(parameter.value)
               : (parameter.value || ''),
             required: `${parameter.required || false}`.toLowerCase() === 'true',
-            enum: parameter.enumeration
+            enum: parameter.initialEnumeration,
+            visible: parameter.visible,
+            validation: parameter.validation,
+            no_override: parameter.noOverride
           };
         }
       }
     }
-    if (values[ADVANCED].limitMounts) {
-      payload.params[LIMIT_MOUNTS_PARAMETER] = {
+    if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
+      payload.params[CP_CAP_LIMIT_MOUNTS] = {
         type: 'string',
         required: false,
         value: values[ADVANCED].limitMounts
@@ -1058,7 +1294,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ? getBooleanValue(parameter.value)
               : (parameter.value || ''),
             required: `${parameter.required || false}`.toLowerCase() === 'true',
-            enum: parameter.enumeration
+            description: parameter.description,
+            enum: parameter.initialEnumeration,
+            visible: parameter.visible,
+            validation: parameter.validation
           };
         }
       }
@@ -1076,6 +1315,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         type: 'int',
         value: +this.state.maxNodesCount
       };
+      if (this.state.autoScaledPriceType) {
+        payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
+          type: 'string',
+          value: this.state.autoScaledPriceType
+        };
+      } else {
+        delete payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE];
+      }
+      if (this.state.hybridAutoScaledClusterEnabled) {
+        payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
@@ -1095,6 +1348,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.params[CP_CAP_KUBE] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.params[CP_CAP_DIND_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    applyCapabilities(
+      payload.params,
+      this.state.runCapabilities,
+      this.props.preferences,
+      this.toolPlatform
+    );
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1163,6 +1436,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   @computed
+  get instanceTypesLoaded () {
+    return this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded;
+  }
+
+  @computed
   get instanceTypes () {
     const request = this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded
       ? this.props.allowedInstanceTypes
@@ -1179,8 +1457,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get priceTypes () {
+    let availableMasterNodeTypes = [true, false];
+    if (this.state.launchCluster && this.props.preferences.loaded) {
+      availableMasterNodeTypes = this.props.preferences.allowedMasterPriceTypes;
+    }
     if (!this.props.allowedInstanceTypes || !this.props.allowedInstanceTypes.loaded) {
-      return [true, false];
+      return availableMasterNodeTypes;
     }
     return (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || [])
       .map(v => {
@@ -1191,7 +1473,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
         return undefined;
       })
-      .filter(v => v !== undefined);
+      .filter(v => v !== undefined && availableMasterNodeTypes.indexOf(v) >= 0);
   }
 
   getInstanceTypeParameterDefaultValue = (key) => {
@@ -1226,15 +1508,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   prepare = (updateFireCloud = false) => {
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
+      this.props.parameters.parameters
+    );
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
+    const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
+    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
+    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
+      hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
+      kubeEnabled: kubeEnabledValue,
+      autoScaledPriceType: autoScaledPriceTypeValue,
+      runCapabilities,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -1288,7 +1580,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
     }
     isSpot = `${isSpot}` === 'true';
-    if (!isNaN(disk) && type) {
+    if (!isNaN(disk) && type && !this.state.estimatedPrice.pending) {
       const request = this.props.pipeline
         ? new PipelineRunEstimatedPrice(
           this.props.pipeline.id,
@@ -1314,6 +1606,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
             return cents / 100;
           };
+          estimatedPriceState.evaluated = true;
           estimatedPriceState.averagePrice = adjustPrice(request.value.averageTimePrice);
           estimatedPriceState.maximumPrice = adjustPrice(request.value.maximumTimePrice);
           estimatedPriceState.minimumPrice = adjustPrice(request.value.minimumTimePrice);
@@ -1394,7 +1687,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </Popover>
       );
       const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = `${(pricePerHour * this.multiplyValueBy).toFixed(2)} $`;
+      const priceStr = (
+        <JobEstimatedPriceInfo>
+          {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
+        </JobEstimatedPriceInfo>
+      );
       return (
         <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
           {priceStr} {info}</span>
@@ -1402,7 +1699,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       );
     } else if (this.state.estimatedPrice.pricePerHour > 0) {
       const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = `${(pricePerHour * this.multiplyValueBy).toFixed(2)} $`;
+      const priceStr = (
+        <JobEstimatedPriceInfo>
+          {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
+        </JobEstimatedPriceInfo>
+      );
       return (
         <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
           {priceStr}</span>
@@ -1423,7 +1724,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   cmdTemplateEditorValueChanged = (code) => {
-    const advancedValues = this.getSectionValue(ADVANCED);
+    const advancedValues = this.getSectionValue(ADVANCED) || {};
     advancedValues.cmdTemplate = code;
     this.cmdTemplateValue = code;
     this.props.form.setFieldsValue({[ADVANCED]: advancedValues});
@@ -1452,10 +1753,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.props.parameters.parameters) {
       for (let key in this.props.parameters.parameters) {
         if (this.props.parameters.parameters.hasOwnProperty(key)) {
-          if (this.isSystemParameter({name: key}) !== system) {
+          if (
+            this.isSystemParameter({name: key}) !== system ||
+            isCustomCapability(key, this.props.preferences)
+          ) {
             continue;
           }
-          if ([LIMIT_MOUNTS_PARAMETER, ...getSkippedSystemParametersList()].indexOf(key) >= 0) {
+          if ([CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList()].indexOf(key) >= 0) {
             continue;
           }
           this.parameterIndexIdentifier[parameterIndexIdentifierKey] =
@@ -1464,10 +1768,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`
           );
           let value;
+          let resolvedValue;
           let type = 'string';
           let required = false;
           let readOnly = false;
+          let noOverride = false;
+          let description;
           let enumeration;
+          let initialEnumeration;
+          let visible;
+          let validation;
           const parameter = this.props.parameters.parameters[key];
           if (parameter.value !== undefined ||
             parameter.type !== undefined ||
@@ -1481,37 +1791,63 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }
             }
             value = prevValue && !parameter.value ? prevValue : parameter.value;
+            resolvedValue = parameter.resolvedValue;
             type = parameter.type || 'string';
             enumeration = parameter.enum;
+            description = parameter.description;
+            initialEnumeration = parameter.enum;
+            visible = parameter.visible;
+            validation = parameter.validation;
+            noOverride = `${parameter.no_override}` === 'true';
+            enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
+              resolvedValue = resolvedValue !== undefined
+                ? getBooleanValue(resolvedValue)
+                : resolvedValue;
             }
             required = parameter.required;
-            readOnly = parameter.readOnly || false;
+            readOnly = this.props.isDetachedConfiguration &&
+              this.props.detached &&
+              !!value && noOverride;
           } else {
             value = parameter;
           }
-
-          parameters
-            .params[`param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`] = {
-              name: key,
-              key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
-              type: type,
-              enumeration,
-              value: value,
-              required: required,
-              readOnly: readOnly,
-              system: system
-            };
+          const paramKey = `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`;
+          parameters.params[paramKey] = {
+            name: key,
+            key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
+            type: type,
+            enumeration,
+            initialEnumeration,
+            visible,
+            validation,
+            description,
+            value,
+            resolvedValue,
+            hasResolvedValue: resolvedValue !== undefined && resolvedValue !== value,
+            required: required,
+            readOnly: readOnly,
+            system: system,
+            noOverride
+          };
         }
       }
     }
     return parameters;
   };
 
-  renderStringParameter = (sectionName, {key, value, required, readOnly}, system = false) => {
+  renderStringParameter = (
+    sectionName,
+    {key, value, required, readOnly, validator},
+    system,
+    visible,
+  ) => {
     const rules = [];
-    if (required || system) {
+    if (validator) {
+      rules.push({validator});
+    }
+    if (visible && (required || system)) {
       rules.push({
         required: true,
         message: 'Required'
@@ -1520,18 +1856,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={styles.formItemRow}
-        required={required || system}
+        required={visible && (required || system)}
         hasFeedback>
         {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
               rules: rules,
-              initialValue: value
+              initialValue: value,
+              onChange: () => { this.forceValidation = true; }
             })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
                 readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                hideAutoComplete={!this.props.currentConfigurationIsDefault}
                 placeholder={'Value'}
                 parameterKey={key}
                 currentMetadataEntity={this.state.currentMetadataEntity.slice()}
@@ -1552,10 +1888,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderSelectionParameter = (
     sectionName,
-    {key, value, required, readOnly, enumeration},
-    system = false
+    {key, value, required, readOnly, enumeration, description, validator},
+    system = false,
+    parameters
   ) => {
     const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
     if (required || system) {
       rules.push({
         required: true,
@@ -1571,17 +1911,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
               rules: rules,
-              initialValue: value
+              initialValue: value,
+              onChange: () => { this.forceValidation = true; }
             }
           )(
             <Select
               disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
               placeholder="Value"
-              className={styles.parameterValue}>
+              className={styles.parameterValue}
+            >
               {
-                enumeration.map(e => {
+                enumeration
+                  .filter(e => e.isVisible(parameters))
+                  .map(e => {
                   return (
-                    <Select.Option key={e} value={e}>{e}</Select.Option>
+                    <Select.Option key={e.name} value={e.name}>{e.name}</Select.Option>
                   );
                 })
               }
@@ -1592,13 +1936,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderBooleanParameter = (sectionName, {key, value, readOnly}) => {
+  renderBooleanParameter = (
+    sectionName,
+    {key, value, readOnly, validator}
+  ) => {
+    const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
     return (
       <FormItem className={styles.formItemRow}>
         {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
-              initialValue: value
+              initialValue: value,
+              rules,
+              onChange: () => { this.forceValidation = true; }
             }
           )(
             <BooleanParameterInput
@@ -1629,7 +1982,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       showOnlyFolderInBucketBrowser: false
     });
   };
-  renderPathParameter = (sectionName, {key, value, required, readOnly}, type, system = false) => {
+  renderPathParameter = (
+    sectionName,
+    {key, value, required, readOnly, validator},
+    type,
+    system,
+    visible,
+  ) => {
     let icon;
     switch (type) {
       case 'input': icon = 'download'; break;
@@ -1638,7 +1997,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       default: icon = 'folder'; break;
     }
     const rules = [];
-    if (required || system) {
+    if (validator) {
+      rules.push({validator});
+    }
+    if (visible && (required || system)) {
       rules.push({
         required: true,
         message: 'Required'
@@ -1662,17 +2024,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={styles.formItemRow}
-        required={required || system}
+        required={visible && (required || system)}
         hasFeedback>
         {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`, {
             rules: rules,
-            initialValue: value
+            initialValue: value,
+            onChange: () => { this.forceValidation = true; }
           })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
                 readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                hideAutoComplete={!this.props.currentConfigurationIsDefault}
                 placeholder={'Path'}
                 parameterKey={key}
                 currentMetadataEntity={this.state.currentMetadataEntity.slice()}
@@ -2164,7 +2526,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       callback('Name is reserved for system parameter');
     } else if (value &&
       [
-        LIMIT_MOUNTS_PARAMETER,
+        CP_CAP_LIMIT_MOUNTS,
         ...getSkippedSystemParametersList()
       ].indexOf(value.toUpperCase()) >= 0) {
       // eslint-disable-next-line
@@ -2208,8 +2570,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [currentConfiguration] =
             this.props.configurations.filter(config =>
               config.name === this.props.currentConfigurationName);
-          const rootEntityId =
-            currentConfiguration.rootEntityId ? `${currentConfiguration.rootEntityId}` : '';
+          let rootEntityId = '';
+          if (currentConfiguration.rootEntityId) {
+            const entity = currentMetadataEntity.find(
+              entity => entity.metadataClass &&
+                `${entity.metadataClass.id}` === `${currentConfiguration.rootEntityId}`
+            );
+            if (entity) {
+              rootEntityId = `${currentConfiguration.rootEntityId}`;
+            }
+          }
 
           this.setState({
             currentMetadataEntity,
@@ -2239,7 +2609,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onChangeRootEntity = (rootEntityId = null) => {
-    this.setState({rootEntityId});
+    this.setState({rootEntityId}, this.formFieldsChanged);
   };
 
   openSystemParameterBrowser = () => {
@@ -2250,8 +2620,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({systemParameterBrowserVisible: false});
   };
 
-  renderParameters = (isSystemParametersSection, sectionName) => {
-    if (!this.props.runDefaultParameters.loaded && this.props.runDefaultParameters.pending) {
+  renderParameters = (isSystemParametersSection) => {
+    const sectionName = isSystemParametersSection ? SYSTEM_PARAMETERS : PARAMETERS;
+    if (
+      (!this.props.runDefaultParameters.loaded && this.props.runDefaultParameters.pending) ||
+      (!this.props.preferences.loaded && this.props.preferences.pending)
+    ) {
       return null;
     }
     let parameters;
@@ -2287,13 +2661,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect}>
-        <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
-        <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
-        <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
-        <Menu.Item id="add-input-parameter" key="input">Input path parameter</Menu.Item>
-        <Menu.Item id="add-output-parameter" key="output">Output path parameter</Menu.Item>
-        <Menu.Item id="add-common-parameter" key="common">Common path parameter</Menu.Item>
+      <Menu selectedKeys={[]} onClick={onSelect} className={styles.parametersMenu}>
+        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
+        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
+        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
+        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
+        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
+        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
       </Menu>
     );
 
@@ -2335,7 +2709,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               notToShow={[
                 ...notToShowSystemParametersFn(PARAMETERS, false),
                 ...notToShowSystemParametersFn(SYSTEM_PARAMETERS, true),
-                LIMIT_MOUNTS_PARAMETER, ...getSkippedSystemParametersList(this)]
+                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)]
               }
             />
           </Row>
@@ -2364,7 +2738,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
                       <Button
                         id="add-parameter-dropdown-button"
-                        disabled={this.props.readOnly && !this.props.canExecute}>
+                        disabled={this.props.readOnly && !this.props.canExecute}
+                        style={{padding: '0px 8px'}}
+                      >
                         <Icon type="down" />
                       </Button>
                     </Dropdown>
@@ -2377,8 +2753,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     const renderRootEntity = () => {
-      return this.props.currentConfigurationIsDefault &&
-        this.state.currentMetadataEntity.length > 0 && (
+      return this.state.currentMetadataEntity.length > 0 && (
         <FormItem
           key="root_entity_type_select"
           className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}>
@@ -2409,27 +2784,83 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </FormItem>
       );
     };
-    const renderCurrentParameters = () => {
+
+    const renderUseResolvedParameters = () => {
+      const resolvedParameters = Object.values(parameters?.params || {})
+        .filter(parameter => parameter.hasResolvedValue);
+      if (!resolvedParameters.length) {
+        return null;
+      }
+      return (
+        <Row
+          type="flex"
+          style={{
+            marginBottom: '10px'
+          }}
+          key="use-resolved-parameters_row"
+        >
+          <Col
+            span={isSystemParametersSection ? 16 : 15}
+            offset={isSystemParametersSection ? 4 : 6}
+            style={{
+              textAlign: 'right'
+            }}
+          >
+            <Checkbox
+              checked={this.state.useResolvedParameters}
+              onChange={this.toggleResolvedParameters}
+              style={{
+                userSelect: 'none'
+              }}
+            >
+              Use resolved values
+            </Checkbox>
+          </Col>
+        </Row>
+      );
+    };
+
+    const renderCurrentParameters = (isSystem = false) => {
       if (this.props.isDetachedConfiguration && this.props.selectedPipelineParametersIsLoading) {
         return [];
       } else {
+        const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
         return parameters.keys.map(key => {
           const parameter = (parameters.params ? parameters.params[key] : undefined) ||
             this.addedParameters[key];
           let name = parameter ? parameter.name : '';
           let value = parameter ? parameter.value : '';
+          const resolvedValue = parameter ? parameter.resolvedValue : '';
+          const hasResolvedValue = parameter ? parameter.hasResolvedValue : false;
           let type = parameter ? parameter.type : 'string';
           let readOnly = parameter ? parameter.readOnly : false;
+          const noOverride = parameter ? parameter.noOverride : false;
           const systemParameterValueIsBlocked = isSystemParametersSection &&
             getSystemParameterDisabledState(this, name);
           let required = parameter ? `${parameter.required}` === 'true' : false;
           let enumeration = parameter ? parameter.enumeration : undefined;
-          const systemParameter = this.getSystemParameter(parameter);
-          const systemParameterHint = systemParameter && systemParameter.description
-            ? () => {
-              return systemParameter.description;
+          const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
+          let description = parameter ? parameter.description : undefined;
+          let visible = parameter ? parameter.visible : undefined;
+          let validation = parameter ? parameter.validation : undefined;
+          const validator = validation
+            ? (rule, value, callback) => {
+              const formParameters = this.getSectionValue(sectionName) ||
+                this.buildDefaultParameters(isSystemParametersSection);
+              const modifiedParameters = {
+                ...parameterUtilities.normalizeParameters(formParameters)
+              };
+              if (modifiedParameters.hasOwnProperty(name)) {
+                modifiedParameters[name].value = value;
+              }
+              callback(parameterUtilities.validate(parameter, modifiedParameters));
             }
-            : null;
+            : undefined;
+          const parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
+          const systemParameter = this.getSystemParameter(parameter);
+          const parameterHint = systemParameter ? systemParameter.description : description;
+          const parameterHintFn = parameterHint
+            ? () => { return parameterHint; } : undefined;
           let formItem;
           switch (type.toLowerCase()) {
             case 'path':
@@ -2438,29 +2869,32 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'common':
               formItem = this.renderPathParameter(
                 sectionName,
-                {key, value, required, readOnly},
+                {key, value, required, readOnly, description, validator},
                 type,
-                isSystemParametersSection
+                isSystemParametersSection,
+                parameterIsVisible
               );
               break;
             case 'boolean':
               formItem = this.renderBooleanParameter(
                 sectionName,
-                {key, value, readOnly}
+                {key, value, readOnly, description, validator}
               );
               break;
             default:
               if (enumeration) {
                 formItem = this.renderSelectionParameter(
                   sectionName,
-                  {key, value, required, readOnly, enumeration},
-                  isSystemParametersSection
+                  {key, value, required, readOnly, enumeration, description, validator},
+                  isSystemParametersSection,
+                  normalizedParameters
                 );
               } else {
                 formItem = this.renderStringParameter(
                   sectionName,
-                  {key, value, required, readOnly},
-                  isSystemParametersSection
+                  {key, value, required, readOnly, description, validator},
+                  isSystemParametersSection,
+                  parameterIsVisible
                 );
               }
               break;
@@ -2468,7 +2902,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           return (
             <FormItem
               key={key}
-              className={getFormItemClassName(styles.formItemRow, key)}
+              className={
+                getFormItemClassName(
+                  parameterIsVisible
+                    ? styles.formItemRow
+                    : `${styles.formItemRow} ${styles.hiddenItem}`,
+                  key
+                )
+              }
               {...this.parameterItemLayout}
               hasFeedback>
               <FormItem className={styles.hiddenItem}>
@@ -2477,6 +2918,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     `params.${key}.readOnly`,
                     {initialValue: readOnly}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.noOverride`,
+                    {initialValue: noOverride}
+                  )(<Input disabled />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -2506,8 +2955,56 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <FormItem className={styles.hiddenItem}>
                 {
                   this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.initialEnumeration`,
+                    {initialValue: initialEnumeration}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.visible`,
+                    {initialValue: visible}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.validation`,
+                    {initialValue: validation}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.required`,
                     {initialValue: `${required}`}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.resolvedValue`,
+                    {initialValue: resolvedValue}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.hasResolvedValue`,
+                    {initialValue: hasResolvedValue}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.description`,
+                    {initialValue: description}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
               </FormItem>
@@ -2517,13 +3014,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 offset={isSystemParametersSection ? 0 : 2}>
                 <FormItem
                   className={styles.formItemRow}
-                  required={required}>
+                  required={required && parameterIsVisible}>
                   {this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.name`,
                     {
                       rules: [
                         {
-                          required: true,
+                          required: parameterIsVisible,
                           message: 'Required'
                         },
                         {
@@ -2575,15 +3072,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         className="dynamic-delete-button"
                         type="minus-circle-o"
                         onClick={() => this.removeParameter(sectionName, key)}
+                        style={{marginLeft: 15, width: 15}}
                       />
+                    ) : (
+                      <div
+                        style={{
+                          marginLeft: 15,
+                          width: 15,
+                          display: 'inline-block'
+                        }}>{'\u00A0'}</div>
                     )
-                    : undefined
                 }
                 {
-                  isSystemParametersSection && systemParameterHint &&
+                  parameterHintFn &&
                   hints.renderHint(
                     this.localizedStringWithSpotDictionaryFn,
-                    systemParameterHint,
+                    parameterHintFn,
                     null,
                     {marginLeft: 15}
                   )
@@ -2595,9 +3099,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     };
 
-    const currentParameters = this.isFireCloudSelected ? [] : renderCurrentParameters();
+    const currentParameters = this.isFireCloudSelected
+      ? []
+      : renderCurrentParameters(isSystemParametersSection);
 
     return [
+      renderUseResolvedParameters(),
       this.props.isDetachedConfiguration && !isSystemParametersSection && renderRootEntity(),
       isSystemParametersSection && currentParameters.length > 0 &&
       this.renderSeparator('System parameters', 0, 'header', {marginTop: 20, marginBottom: 10}),
@@ -2700,7 +3207,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled) {
+    if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
@@ -2736,12 +3243,48 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return undefined;
   };
 
+  renderEndpointNameFormItem = () => {
+    if (this.props.detached && this.props.editConfigurationMode) {
+      return (
+        <FormItem
+          className={getFormItemClassName(styles.formItemRow, 'endpointName')}
+          {...this.leftFormItemLayout}
+          label="Endpoint Name"
+          hasFeedback>
+          <Col span={10}>
+            <FormItem
+              className={styles.formItemRow}
+              hasFeedback
+            >
+              {this.getSectionFieldDecorator(ADVANCED)('endpointName',
+                {
+                  initialValue: this.getDefaultValue('endpointName')
+                }
+              )(
+                <Input
+                  disabled={(this.props.readOnly && !this.props.canExecute)} />
+              )}
+            </FormItem>
+          </Col>
+          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.endpointNameHint)}
+          </Col>
+        </FormItem>
+      );
+    }
+    return undefined;
+  };
+
+  cpuMapper = cpu => this.hyperThreadingDisabled && !Number.isNaN(Number(cpu))
+    ? (cpu / 2.0)
+    : cpu;
+
   renderInstanceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
     const instanceTypeStr = (t) =>
-      `${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
+      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -2808,6 +3351,101 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  resetToolSettings = () => {
+    this._toolSettings = null;
+    this.regionDisabledByToolSettings = false;
+    this.toolCloudRegion = null;
+    this.toolPlatform = null;
+    this.toolAllowSensitive = true;
+    this.toolDefaultCmd = undefined;
+    this.setState({
+      useDefaultCmd: false
+    });
+  };
+
+  lastConfirmedImage;
+
+  loadToolSettings = async (dockerImage) => {
+    await this.props.dockerRegistries.fetchIfNeededOrWait();
+    if (this.props.dockerRegistries.loaded) {
+      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
+      const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
+        .filter(r => r.path.toLowerCase() === registry);
+      if (imageRegistry) {
+        const [imageGroup] = (imageRegistry.groups || [])
+          .filter(g => g.name.toLowerCase() === group);
+        if (imageGroup) {
+          const [image, version] = toolAndVersion.split(':');
+          const [im] = (imageGroup.tools || [])
+            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
+          if (im && im.id) {
+            this.toolAllowSensitive = im.allowSensitive;
+            this.toolPlatform = im.platform;
+            this._toolSettings = new LoadToolVersionSettings(im.id, version);
+            await this._toolSettings.fetchIfNeededOrWait();
+
+            if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
+              this._toolSettings.value[0] && this._toolSettings.value[0].settings &&
+              this._toolSettings.value[0].settings[0].configuration &&
+              this._toolSettings.value[0].settings[0].configuration.cloudRegionId) {
+              this.regionDisabledByToolSettings = true;
+              this.toolCloudRegion = `${
+                this._toolSettings.value[0].settings[0].configuration.cloudRegionId
+              }`;
+            } else {
+              this.regionDisabledByToolSettings = false;
+              this.toolCloudRegion = null;
+            }
+
+            const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
+            await defaultCmdRequest.fetch();
+            if (defaultCmdRequest.loaded) {
+              this.toolDefaultCmd = defaultCmdRequest.value;
+              const advancedValues = this.getSectionValue(ADVANCED) || {};
+              const cmd = (advancedValues.cmdTemplate || this.getDefaultValue('cmd_template'));
+              const useDefaultCmd = cmd === this.toolDefaultCmd;
+              if (useDefaultCmd) {
+                this.setState({
+                  useDefaultCmd: true,
+                  startIdle: false
+                }, this.formFieldsChanged);
+              } else {
+                this.setState({
+                  useDefaultCmd: false
+                }, this.formFieldsChanged);
+              }
+            } else {
+              this.toolDefaultCmd = undefined;
+            }
+          } else {
+            this.toolAllowSensitive = true;
+          }
+        } else {
+          this.toolAllowSensitive = true;
+        }
+      } else {
+        this.toolAllowSensitive = true;
+      }
+    }
+  };
+
+  getDefaultCloudRegionValue = () => {
+    if (this.toolCloudRegion) {
+      return this.toolCloudRegion;
+    }
+
+    return this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
+  };
+
+  getInitialCloudRegionNotAvailable = () => {
+    const {getFieldValue} = this.props.form;
+    const initialValue = `${this.getDefaultCloudRegionValue()}`;
+    const currentValue = getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+    return (!currentValue || currentValue === initialValue) &&
+      initialValue &&
+      this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
+  };
+
   renderAWSRegionSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
@@ -2827,11 +3465,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 message: 'Cloud region id is required'
               }
             ],
-            initialValue: this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId
+            initialValue: this.getDefaultCloudRegionValue()
           }
         )(
           <Select
             disabled={
+              this.regionDisabledByToolSettings ||
               !!this.state.fireCloudMethodName ||
               (this.props.readOnly && !this.props.canExecute) ||
               (
@@ -2847,6 +3486,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             filterOption={
               (input, option) =>
                 option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+            {
+              this.getInitialCloudRegionNotAvailable() && (
+                <Select.Option
+                  key={this.getDefaultCloudRegionValue()}
+                  name="Not available"
+                  title="Not available"
+                  value={this.getDefaultCloudRegionValue()}
+                >
+                  Not available
+                </Select.Option>
+              )
+            }
             {
               this.awsRegions
                 .map(region => {
@@ -2888,21 +3539,44 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       launchCluster,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
-      slurmEnabled
+      slurmEnabled,
+      kubeEnabled,
+      autoScaledPriceType
     } = configuration;
+    let {runCapabilities} = this.state;
+    if (kubeEnabled) {
+      runCapabilities = addCapability(
+        runCapabilities,
+        RUN_CAPABILITIES.dinD,
+        RUN_CAPABILITIES.systemD
+      );
+    }
     this.setState({
       launchCluster,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
+      kubeEnabled,
       nodesCount,
-      maxNodesCount
-    }, this.closeConfigureClusterDialog);
+      maxNodesCount,
+      autoScaledPriceType,
+      runCapabilities
+    }, () => {
+      this.closeConfigureClusterDialog();
+      const priceType = this.getSectionFieldValue(ADVANCED)('is_spot') ||
+        this.getDefaultValue('is_spot');
+      const priceTypeField = `${ADVANCED}.is_spot`;
+      this.props.form.setFieldsValue({
+        [priceTypeField]: this.correctPriceTypeValue(priceType)
+      });
+    });
   };
 
   renderExecutionEnvironmentSummary = () => {
@@ -2940,8 +3614,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const lines = [];
     if (cpu) {
       maxCPU && maxCPU > cpu
-        ? lines.push(<span>{cpu} - {maxCPU} <b>CPU</b></span>)
-        : lines.push(<span>{cpu} <b>CPU</b></span>);
+        ? lines.push(<span>{this.cpuMapper(cpu)} - {this.cpuMapper(maxCPU)} <b>CPU</b></span>)
+        : lines.push(<span>{this.cpuMapper(cpu)} <b>CPU</b></span>);
     }
     if (ram) {
       maxRAM && maxRAM > ram
@@ -2959,8 +3633,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         : lines.push(<span>{disk} <b>Gb</b></span>);
     }
     if (lines.length > 0) {
-      return (
-        <div className={styles.summaryContainer}>
+      return [
+        <div key="summary" className={styles.summaryContainer}>
           <div className={styles.summary}>
             {
               lines.map((l, index) => (
@@ -2970,8 +3644,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ))
             }
           </div>
+        </div>,
+        <div key="hint" style={{width: 30, textAlign: 'center'}}>
+          {hints.renderHint(
+            this.localizedStringWithSpotDictionaryFn,
+            hints.executionEnvironmentSummaryHint
+          )}
         </div>
-      );
+      ];
     } else {
       return null;
     }
@@ -3036,8 +3716,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value !== undefined && value !== null) {
-      const [v] = this.instanceTypes.filter(v => v.name === value);
+    if (value !== undefined && value !== null && this.instanceTypesLoaded) {
+      const v = this.instanceTypes.find(v => v.name === value);
       if (v !== undefined) {
         return v.name;
       }
@@ -3072,6 +3752,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       [instanceTypeField]: this.correctInstanceTypeValue(instanceType),
       [priceTypeField]: this.correctPriceTypeValue(priceType)
     });
+  };
+
+  correctCloudRegion = (value) => {
+    const regionId = +value;
+    const [region] = this.awsRegions.filter(r => r.id === regionId);
+    return region ? `${region.id}` : this.defaultCloudRegionId;
   };
 
   renderScheduleControl = () => {
@@ -3195,7 +3881,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <Row type="flex" align="middle">
                 <Col span={10}>
                   <Checkbox checked={this.state.autoPause} onChange={onChange}>
-                    {this.state.autoPause ? 'Enabled' : 'Disabled'}
+                    Enabled
                   </Checkbox>
                 </Col>
                 <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
@@ -3250,41 +3936,233 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderLimitMountsFormItem = () => {
-    const getDefaultValue = () => {
-      if (this.props.parameters.parameters &&
-        this.props.parameters.parameters[LIMIT_MOUNTS_PARAMETER]) {
-        return this.props.parameters.parameters[LIMIT_MOUNTS_PARAMETER].value;
-      }
-      return null;
-    };
+  renderStopAfterFormItem = () => {
+    if (!this.props.detached || !this.props.editConfigurationMode) {
+      return undefined;
+    }
     return (
       <FormItem
-        className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
-        {...this.cmdTemplateFormItemLayout}
-        label="Limit mounts">
-        <Row type="flex" align="middle">
-          <div style={{flex: 1}}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback>
-              {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
-                {
-                  initialValue: getDefaultValue()
+        className={getFormItemClassName(styles.formItemRow, 'stopAfter')}
+        {...this.leftFormItemLayout}
+        label="Stop after (min)"
+        hasFeedback>
+        <Col span={10}>
+          <FormItem
+            className={styles.formItemRow}
+            hasFeedback>
+            {this.getSectionFieldDecorator(ADVANCED)('stopAfter',
+              {
+                rules: [
+                  {
+                    pattern: /^\d+(\.\d+)?$/,
+                    message: 'Please enter a valid positive number'
+                  }
+                ],
+                initialValue: this.getDefaultValue('stopAfter')
+              }
+            )(
+              <Input
+                disabled={
+                  (this.props.readOnly && !this.props.canExecute)
                 }
-              )(
-                <LimitMountsInput
-                  disabled={
-                    !!this.state.fireCloudMethodName ||
-                    (this.props.readOnly && !this.props.canExecute)
-                  } />
-              )}
-            </FormItem>
+              />
+            )}
+          </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.stopAfterHint)}
+        </Col>
+      </FormItem>
+    );
+  };
+
+  renderLimitMountsFormItem = () => {
+    if (this.isWindowsPlatform) {
+      return null;
+    }
+    const {
+      dataStorageAvailable,
+      currentUserAttributes
+    } = this.props;
+    if (dataStorageAvailable.loaded && currentUserAttributes.loaded) {
+      const getDefaultValue = () => {
+        if (this.props.parameters.parameters &&
+          this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
+          return this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
+        }
+        if (
+          !this.props.isDetachedConfiguration &&
+          !this.props.editConfigurationMode &&
+          currentUserAttributes.hasAttribute(CP_CAP_LIMIT_MOUNTS)
+        ) {
+          return currentUserAttributes.getAttributeValue(
+            CP_CAP_LIMIT_MOUNTS,
+            this.toolAllowSensitive
+          );
+        }
+        return null;
+      };
+      const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
+      const defaultValue = (getDefaultValue() || '')
+        .split(',')
+        .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
+        .join(',') || null;
+      let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
+      if (currentValue === undefined) {
+        currentValue = defaultValue;
+      }
+      const noStoragesSelected = /^none$/i.test(currentValue);
+      const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+        this.getDefaultValue('instance_size');
+      const instance = this.instanceTypes.find(t => t.name === instanceType);
+      const toggleDoNotMountStorages = (e) => {
+        if (e.target.checked) {
+          this.props.form.setFieldsValue({
+            [`${ADVANCED}.limitMounts`]: 'None'
+          });
+        } else {
+          this.props.form.setFieldsValue({
+            [`${ADVANCED}.limitMounts`]: null
+          });
+        }
+      };
+      return (
+        <FormItem
+          className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
+          {...this.cmdTemplateFormItemLayout}
+          label="Limit mounts">
+          <div>
+            <Row type="flex" align="middle">
+              <Checkbox
+                checked={/^none$/i.test(currentValue)}
+                onChange={toggleDoNotMountStorages}
+              >
+                Do not mount storages
+              </Checkbox>
+              <div style={{marginLeft: 7, marginTop: 3}}>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.doNotMountStoragesHint)}
+              </div>
+            </Row>
+            <Row
+              type="flex"
+              align="middle"
+              style={{display: noStoragesSelected ? 'none' : undefined}}
+            >
+              <div style={{flex: 1}}>
+                <FormItem
+                  className={styles.formItemRow}
+                >
+                  {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
+                    {
+                      initialValue: defaultValue
+                    }
+                  )(
+                    <LimitMountsInput
+                      allowSensitive={this.toolAllowSensitive}
+                      disabled={
+                        !!this.state.fireCloudMethodName ||
+                        (this.props.readOnly && !this.props.canExecute)
+                      }
+                    />
+                  )}
+                </FormItem>
+              </div>
+              <div style={{marginLeft: 7, marginTop: 3}}>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
+              </div>
+            </Row>
+            {
+              !this.toolAllowSensitive && !noStoragesSelected && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Tool configuration restricts selection of sensitive storages"
+                />
+              )
+            }
+            {
+              !this.props.editConfigurationMode && !noStoragesSelected && (
+                <OOMCheck
+                  dataStorages={
+                    dataStorageAvailable.loaded
+                      ? (dataStorageAvailable.value || [])
+                      : []
+                  }
+                  limitMounts={currentValue}
+                  preferences={this.props.preferences}
+                  instance={instance}
+                  platform={this.toolPlatform}
+                />
+              )
+            }
           </div>
-          <div style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
-          </div>
-        </Row>
+        </FormItem>
+      );
+    }
+    return null;
+  };
+
+  renderHostedAppConfigurationItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
+        {...this.leftFormItemLayout}
+        label="Internal DNS name"
+      >
+        <Col span={10}>
+          <FormItem
+            className={styles.formItemRow}
+          >
+            {
+              this.getSectionFieldDecorator(ADVANCED)('hostedApplication')(
+                <HostedAppConfiguration />
+              )
+            }
+          </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
+        </Col>
+      </FormItem>
+    );
+  };
+
+  renderJobNotificationsItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'notifications')}
+        {...this.leftFormItemLayout}
+        label="Notifications"
+      >
+        <Col span={10}>
+          <FormItem
+            className={styles.formItemRow}
+          >
+            <JobNotifications
+              notifications={this.state.notifications}
+              onChange={notifications => this.setState({
+                notifications: (notifications || []).slice()
+              })}
+            />
+          </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
+        </Col>
       </FormItem>
     );
   };
@@ -3303,14 +4181,31 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 (this.props.readOnly && !this.props.canExecute) ||
                 (this.state.pipeline && this.props.detached)
               }
-              onChange={(e) => this.setState({startIdle: e.target.checked}, this.formFieldsChanged)}
+              onChange={(e) => this.setState({startIdle: e.target.checked, useDefaultCmd: false}, this.formFieldsChanged)}
               checked={this.state.startIdle}>
               Start idle
             </Checkbox>
             {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
           </Row>
           {
-            !this.state.startIdle
+            !!this.toolDefaultCmd && (
+              <Row>
+                <Checkbox
+                  disabled={
+                    !!this.state.fireCloudMethodName ||
+                    (this.props.readOnly && !this.props.canExecute) ||
+                    (this.state.pipeline && this.props.detached)
+                  }
+                  onChange={(e) => this.setState({useDefaultCmd: e.target.checked, startIdle: false}, this.formFieldsChanged)}
+                  checked={this.state.useDefaultCmd}>
+                  Use default command
+                </Checkbox>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.useDefaultCommandHint)}
+              </Row>
+            )
+          }
+          {
+            !this.state.startIdle && !this.state.useDefaultCmd
               ? (
                 <Row>
                   <Col span={24}>
@@ -3351,6 +4246,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 </Row>
               ) : undefined
           }
+          {
+            this.state.useDefaultCmd && this.toolDefaultCmd
+              ? (
+                <Row>
+                  <Col span={24} className={styles.formItemRow}>
+                    <CodeEditor
+                      readOnly
+                      className={styles.codeEditor}
+                      language="shell"
+                      lineWrapping
+                      defaultCode={this.toolDefaultCmd}
+                    />
+                  </Col>
+                </Row>
+              ) : undefined
+          }
         </Row>
       </FormItem>
     );
@@ -3369,7 +4280,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.cmdTemplateValue = undefined;
     }
     this.resetState(keepPipeline);
-  }
+  };
+
+  toggleResolvedParameters = () => {
+    const {parameters, form} = this.props;
+    this.setState(prevState => ({
+      useResolvedParameters: !prevState.useResolvedParameters
+    }), () => {
+      const {useResolvedParameters} = this.state;
+      const formItems = form.getFieldValue(PARAMETERS);
+      formItems.keys.forEach((key) => {
+        const formItem = formItems.params[key];
+        const parameter = parameters.parameters[formItem.name];
+        if (
+          parameter &&
+          parameter.value !== parameter.resolvedValue &&
+          parameter.resolvedValue !== undefined
+        ) {
+          formItem.value = useResolvedParameters
+            ? parameter.resolvedValue
+            : parameter.value;
+          form.setFieldsValue({
+            [PARAMETERS]: formItems
+          });
+        }
+      });
+    });
+  };
 
   renderRunButton = () => {
     if (!this.props.detached || !this.props.canExecute) {
@@ -3378,10 +4315,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
     if (this.props.canRunCluster) {
       const onDropDownSelect = ({key}) => {
-        if (this.state.currentProjectId &&
+        if (
+          this.state.currentProjectId &&
           this.state.rootEntityId &&
-          ((this.props.currentConfigurationIsDefault && key === RUN_SELECTED_KEY) ||
-            key === RUN_CLUSTER_KEY) && this.validateFireCloudConnections()) {
+          this.validateFireCloudConnections()
+        ) {
           this.openMetadataBrowser();
           this.setState({currentLaunchKey: key});
         } else {
@@ -3389,9 +4327,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       };
       const dropDownMenu = (
-        <Menu onClick={onDropDownSelect} selectedKeys={[]}>
-          <Menu.Item key={RUN_SELECTED_KEY}>Run selected</Menu.Item>
-          <Menu.Item key={RUN_CLUSTER_KEY}>Run cluster</Menu.Item>
+        <Menu onClick={onDropDownSelect} selectedKeys={[]} style={{cursor: 'pointer'}}>
+          <MenuItem key={RUN_SELECTED_KEY}>Run selected</MenuItem>
+          <MenuItem key={RUN_CLUSTER_KEY}>Run cluster</MenuItem>
         </Menu>
       );
       return (
@@ -3404,6 +4342,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             id="run-configuration-button" type="primary" style={{marginRight: 10}}
             inputs={this.inputPaths}
             outputs={this.outputPaths}
+            skipCheck={
+              this.props.parameters.run_as &&
+              this.currentUserName() !== this.props.parameters.run_as
+            }
             dockerImage={this.dockerImage}>
             Run <Icon type="down" />
           </SubmitButton>
@@ -3417,6 +4359,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type="primary"
           inputs={this.inputPaths}
           outputs={this.outputPaths}
+          skipCheck={
+            this.props.parameters.run_as &&
+            this.currentUserName() !== this.props.parameters.run_as
+          }
           dockerImage={this.dockerImage}
           onClick={() => {
             if (this.validateFireCloudConnections()) {
@@ -3757,6 +4703,41 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   };
 
+  renderAlerts = () => {
+    const {alerts} = this.props;
+    if (!alerts || !alerts.length) {
+      return null;
+    }
+    const defaultType = 'warning';
+    const groupedAlerts = alerts.reduce((result, alert) => {
+      const {type = defaultType} = alert;
+      (result[type] = result[type] || []).push(alert);
+      return result;
+    }, {});
+    const getMessagesList = (messages) => {
+      return (
+        <ul style={{listStyle: 'none'}}>
+          {messages.map((alert, index) => (
+            <li key={`error_${index}`}>{alert.message}</li>
+          ))}
+        </ul>
+      );
+    };
+    return (
+      <Row style={{marginBottom: '10px'}}>
+        {Object.entries(groupedAlerts).map(([type, messages]) => {
+          return messages && messages.length ? (
+            <Alert
+              key={type}
+              type={type}
+              style={{marginBottom: '4px'}}
+              message={getMessagesList(messages)}
+            />) : null;
+        })}
+      </Row>
+    );
+  };
+
   render () {
     const renderSubmitButton = () => {
       if (this.props.editConfigurationMode) {
@@ -3765,6 +4746,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <FormItem style={{margin: 0}}>
               {
                 this.renderRunButton()
+              }
+              {
+                this.props.detached && this.props.editConfigurationMode && (
+                  <ServerlessAPIButton
+                    style={{verticalAlign: 'middle', marginRight: 10}}
+                    configurationId={this.props.configurationId}
+                    configurationName={this.props.currentConfigurationName}
+                  />
+                )
               }
               {
                 this.props.canRemove && !this.props.readOnly
@@ -3776,8 +4766,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       onClick={
                         () => this.props.onRemoveConfiguration && this.props.onRemoveConfiguration()
                       }
-                      style={{verticalAlign: 'middle'}}>
-                    Remove
+                      style={{verticalAlign: 'middle'}}
+                    >
+                      Remove
                     </Button>
                   ) : undefined
               }
@@ -3814,14 +4805,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </td>
         );
       } else if (!this.props.pipeline || roleModel.executeAllowed(this.props.pipeline)) {
+        const KEYS = {
+          selectMetadata: 'select metadata'
+        };
+        const onDropDownClick = ({key}) => {
+          if (key === KEYS.selectMetadata) {
+            this.run({key: RUN_SELECTED_KEY});
+          }
+        };
+        const dropdownRenderer = () => (
+          <Menu onClick={onDropDownClick} selectedKeys={[]} style={{cursor: 'pointer'}}>
+            <MenuItem key={KEYS.selectMetadata}>
+              Select metadata entries and launch
+            </MenuItem>
+          </Menu>
+        );
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
               {
                 !this.props.detached && !this.props.editConfigurationMode && (
                   <Button
+                    id="launch-command-button"
                     disabled={!this.launchCommandPayload}
-                    style={{verticalAlign: 'middle', marginRight: 5}}
+                    style={{marginRight: 5}}
                     onClick={this.showLaunchCommands}
                   >
                     <Icon type="code" />
@@ -3832,10 +4839,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 id="launch-pipeline-button"
                 inputs={this.inputPaths}
                 outputs={this.outputPaths}
+                skipCheck={
+                  this.props.parameters.run_as &&
+                  this.currentUserName() !== this.props.parameters.run_as
+                }
                 dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
-                style={{verticalAlign: 'middle'}}>
+                dropdown={!!this.props.runConfigurationId}
+                dropdownRenderer={dropdownRenderer}
+                dropdownId="launch-metadata"
+              >
                 Launch
               </SubmitButton>
             </FormItem>
@@ -3967,24 +4981,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               </tr>
             </tbody>
           </table>
-          {
-            this.props.errors && this.props.errors.length > 0
-              ? (
-                <Row>
-                  <Alert
-                    type="warning"
-                    message={
-                      <ul style={{listStyle: 'disc'}}>
-                        {
-                          this.props.errors.map(
-                            (error, index) => <li key={`error_${index}`}>{error}</li>)
-                        }
-                      </ul>
-                    } />
-                  <br />
-                </Row>)
-              : undefined
-          }
+          {this.renderAlerts()}
           {
             this.props.pipeline &&
             !roleModel.executeAllowed(this.props.pipeline) &&
@@ -4023,7 +5020,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     }
                     {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
                     {
-                      !this.state.fireCloudMethodName && !this.state.isDts &&
+                      !this.isWindowsPlatform && !this.state.fireCloudMethodName && !this.state.isDts &&
                       <Row type="flex" justify="end" style={{paddingRight: 30, marginBottom: 10}}>
                         <a
                           onClick={this.openConfigureClusterDialog}
@@ -4036,27 +5033,50 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <ConfigureClusterDialog
                       instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
                       launchCluster={this.state.launchCluster}
+                      cloudRegionProvider={this.currentCloudRegionProvider}
+                      autoScaledPriceType={this.state.autoScaledPriceType}
                       autoScaledCluster={this.state.autoScaledCluster}
+                      hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                       gridEngineEnabled={this.state.gridEngineEnabled}
                       sparkEnabled={this.state.sparkEnabled}
                       slurmEnabled={this.state.slurmEnabled}
+                      kubeEnabled={this.state.kubeEnabled}
                       nodesCount={this.state.nodesCount}
                       maxNodesCount={this.state.maxNodesCount || 1}
                       onClose={this.closeConfigureClusterDialog}
                       onChange={this.onChangeClusterConfiguration}
                       visible={this.state.configureClusterDialogVisible}
-                      disabled={this.props.readOnly && !this.props.canExecute} />
-                    {this.renderFormItemRow(this.renderAWSRegionSelection, hints.awsRegionHint)}
+                      disabled={this.props.readOnly && !this.props.canExecute}
+                    />
+                    {
+                      this.renderFormItemRow(
+                        this.renderAWSRegionSelection,
+                        this.regionDisabledByToolSettings
+                          ? hints.awsRegionRestrictedByToolSettingsHint
+                          : hints.awsRegionHint
+                      )
+                    }
                     {this.renderFormItemRow(this.renderCoresFormItem)}
+                    {
+                      this.renderFormItemRow(
+                        this.renderAdditionalRunCapabilities,
+                        hints.runCapabilitiesHint
+                      )
+                    }
                   </div>
                 </div>
                 <div
                   className={styles.settingsContainer}
                   style={{padding: 5}}>
                   <div className={styles.settingsContent}>
-                    {
-                      this.renderExecutionEnvironmentSummary()
-                    }
+                    <Row
+                      type="flex"
+                      style={{alignItems: 'center'}}
+                    >
+                      {
+                        this.renderExecutionEnvironmentSummary()
+                      }
+                    </Row>
                   </div>
                 </div>
               </Row>
@@ -4070,17 +5090,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
+              {this.renderHostedAppConfigurationItem()}
+              {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
+              {this.renderEndpointNameFormItem()}
+              {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}
               {this.renderCmdTemplateFormItem()}
-              {this.renderParameters(true, SYSTEM_PARAMETERS)}
+              {this.renderParameters(true)}
             </Collapse.Panel>
             <Collapse.Panel
               id="launch-pipeline-parameters-panel"
               key={PARAMETERS}
               className={styles.section}
-              header={this.getPanelHeader(PARAMETERS)}>
-              {this.renderParameters(false, PARAMETERS)}
+              header={this.getPanelHeader(PARAMETERS)}
+            >
+              {this.renderParameters(false)}
               {this.isFireCloudSelected && this.renderFireCloudConfigConnectionsList()}
             </Collapse.Panel>
             {
@@ -4148,6 +5173,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   componentDidMount () {
     this.reset(true);
     this.evaluateEstimatedPrice({});
+    if (this.props.parameters && this.props.parameters.docker_image) {
+      this.loadToolSettings(this.props.parameters.docker_image);
+    }
     this.prepare();
     if (this.props.isDetachedConfiguration) {
       this.loadCurrentProject();
@@ -4199,6 +5227,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.props.allowedInstanceTypes.changed) {
       this.correctAllowedInstanceValues();
       this.props.allowedInstanceTypes.handleChanged();
+    }
+    if ((prevProps.parameters || {}).docker_image !== (this.props.parameters || {}).docker_image) {
+      if (this.props.parameters && this.props.parameters.docker_image) {
+        this.loadToolSettings(this.props.parameters.docker_image);
+      } else {
+        this.resetToolSettings();
+      }
+    }
+    if (prevProps.allowedInstanceTypes.loaded &&
+      !this.state.estimatedPrice.evaluated &&
+      !this.state.estimatedPrice.pending) {
+      this.evaluateEstimatedPrice({});
     }
   }
 
@@ -4284,13 +5324,25 @@ export default class extends React.Component {
   };
 
   onValuesChange = (props, fields) => {
+    const cloudRegionKey = `${EXEC_ENVIRONMENT}.cloudRegionId`;
+    const spotKey = `${ADVANCED}.is_spot`;
     if (fields &&
+      fields[cloudRegionKey] &&
+      props.allowedInstanceTypes) {
+      props.allowedInstanceTypes.setRegionId(+fields[cloudRegionKey]);
+    } else if (fields &&
       fields.exec &&
       fields.exec.cloudRegionId &&
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields.exec.cloudRegionId);
     }
     if (fields &&
+      fields[spotKey] &&
+      fields[spotKey] !== undefined &&
+      fields[spotKey] !== null &&
+      props.allowedInstanceTypes) {
+      props.allowedInstanceTypes.setIsSpot(`${fields[spotKey]}` === 'true');
+    } else if (fields &&
       fields[ADVANCED] &&
       fields[ADVANCED].is_spot !== undefined &&
       fields[ADVANCED].is_spot !== null &&

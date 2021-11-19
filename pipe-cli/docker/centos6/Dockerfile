@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Used to build "lifescience/cloud-pipeline:python2.7-centos6" for the el6 pipe distribution
+# Used to build "${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" for the el6 pipe distribution
 FROM centos:6
 RUN yum install gcc \
                 openssl-devel \
@@ -26,4 +26,4 @@ RUN cd /usr/src && \
     make install -j$(nproc)
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-RUN curl https://bootstrap.pypa.io/get-pip.py | python2
+RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2

@@ -20,6 +20,7 @@ import {observer} from 'mobx-react';
 import {colors} from './colors';
 import Export from '../export';
 import {costTickFormatter, dateRangeRenderer} from '../utilities';
+import {discounts} from '../discounts';
 import styles from './billing-table.css';
 
 function LegendItem ({color}) {
@@ -33,9 +34,21 @@ function LegendItem ({color}) {
   );
 }
 
-function BillingTable ({summary, showQuota = true}) {
-  const data = summary && summary.loaded ? summary.value : {};
-  const filters = summary ? summary.filters : {};
+function BillingTable (
+  {
+    compute,
+    storages,
+    computeDiscounts,
+    storagesDiscounts,
+    showQuota = true
+  }
+) {
+  const summary = discounts.joinSummaryDiscounts(
+    [compute, storages],
+    [computeDiscounts, storagesDiscounts]
+  );
+  const data = summary || {};
+  const [filters = {}] = [compute, storages].filter(Boolean).map(a => a.filters);
   const {
     start,
     endStrict: end,

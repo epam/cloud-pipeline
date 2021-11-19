@@ -24,11 +24,13 @@ import Navigation from './navigation/Navigation';
 import NotificationCenter from './notification/NotificationCenter';
 import searchStyles from '../search/search.css';
 import {SearchDialog} from '../search';
+import roleModel from '../../utils/roleModel';
+import {Pages} from '../../utils/ui-navigation';
 
-@inject('preferences')
+@inject('preferences', 'uiNavigation')
+@roleModel.authenticationInfo
 @observer
 export default class App extends Component {
-
   state = {
     navigationCollapsed: true,
     documentTitleSet: false,
@@ -71,7 +73,10 @@ export default class App extends Component {
   onLibraryCollapsedChange = () => {
     this.info.libraryCollapsed = !this.info.libraryCollapsed;
     try {
-      localStorage.setItem('displayInfo', JSON.stringify({libraryCollapsed: this.info.libraryCollapsed}));
+      localStorage.setItem(
+        'displayInfo',
+        JSON.stringify({libraryCollapsed: this.info.libraryCollapsed})
+      );
     } catch (___) {}
   };
 
@@ -83,11 +88,19 @@ export default class App extends Component {
   };
 
   render () {
-    const {preferences} = this.props;
-    const isMiewApp = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase() === 'miew';
-    const activeTabPath = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase();
+    const {
+      preferences,
+      authenticatedUserInfo,
+      uiNavigation
+    } = this.props;
+    uiNavigation.getActivePage(this.props.router);
+    const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
+      roleModel.isManager.billing(this);
+    const activeTabPath = uiNavigation.getActivePage(this.props.router);
+    const isExternalApp = [Pages.miew, Pages.wsi].indexOf(activeTabPath) >= 0;
+    const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
-    if (isMiewApp) {
+    if (isExternalApp) {
       content = this.props.children;
     } else {
       const searchStyle = [searchStyles.searchBlur];
@@ -108,6 +121,14 @@ export default class App extends Component {
               openSearchDialog={this.openSearchDialog}
               searchControlVisible={this.state.searchFormVisible}
               searchEnabled={preferences.loaded && preferences.searchEnabled}
+              billingEnabled={
+                preferences.loaded &&
+                authenticatedUserInfo.loaded &&
+                (
+                  (!isBillingPrivilegedUser && preferences.billingEnabled) ||
+                  (isBillingPrivilegedUser && preferences.billingAdminsEnabled)
+                )
+              }
               router={this.props.router} />
           </Layout.Sider>
           <Layout.Content
@@ -123,11 +144,16 @@ export default class App extends Component {
     return (
       <LocaleProvider locale={enUS}>
         <div id="root-container" className={styles.appContainer}>
-          <SearchDialog
-            onInitialized={this.onSearchDialogInitialized}
-            router={this.props.router}
-            blockInput={activeTabPath === 'run'}
-            onVisibilityChanged={this.onSearchControlVisibilityChanged} />
+          {
+            this.props.uiNavigation.searchEnabled() && !isExternalApp && (
+              <SearchDialog
+                onInitialized={this.onSearchDialogInitialized}
+                router={this.props.router}
+                blockInput={activeTabPath === Pages.run || isSearch}
+                onVisibilityChanged={this.onSearchControlVisibilityChanged}
+              />
+            )
+          }
           {content}
           <NotificationCenter delaySeconds={2} />
         </div>
@@ -142,5 +168,4 @@ export default class App extends Component {
   componentDidMount () {
     document.title = this.props.preferences.deploymentName || 'Loading...';
   }
-
 }

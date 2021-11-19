@@ -16,7 +16,7 @@
 
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
         mavenCentral()
     }
 }
@@ -41,6 +41,9 @@ jar {
 }
 
 dependencies {
+    // Core library
+    compile project(":cloud-pipeline-common:model")
+
     // Spring Boot
     compile("org.springframework.boot:spring-boot-starter")
     compile("org.springframework.boot:spring-boot-starter-web")
@@ -63,6 +66,8 @@ dependencies {
     // Jackson
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.7'
+    compile group: "com.fasterxml.jackson.datatype", name: "jackson-datatype-jsr310", version: "2.8.7"
+
 
     //Lombok
     compileOnly "org.projectlombok:lombok:1.16.20"

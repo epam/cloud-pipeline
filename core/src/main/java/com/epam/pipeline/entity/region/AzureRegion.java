@@ -50,4 +50,5 @@ public class AzureRegion extends AbstractCloudRegion {
     private String meterRegionName;
     private String azureApiUrl;
     private String priceOfferId;
+    private boolean enterpriseAgreements;
 }

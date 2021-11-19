@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
         final String ip = clusterMenuAO.getNodeAddress(getRunId());
         final int nodesCountBeforeFiltering = clusterMenuAO.getNodesCount();
 
-        clusterMenuAO.filerBy(ClusterMenuAO.HeaderColumn.ADDRESS, ip);
+        clusterMenuAO.filerBy(ClusterMenuAO.HeaderColumn.ADDRESS, ip.substring(0, ip.indexOf("\n")));
         Thread.sleep(2000);
         assertEquals(clusterMenuAO.getNodesCount(), 1);
 

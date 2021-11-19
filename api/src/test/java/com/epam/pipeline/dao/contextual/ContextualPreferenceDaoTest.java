@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,34 @@
 
 package com.epam.pipeline.dao.contextual;
 
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.preference.PreferenceType;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.After;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+import java.util.Optional;
+
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.entity.contextual.ContextualPreference;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
-import com.epam.pipeline.entity.preference.PreferenceType;
-import java.util.List;
-import java.util.Optional;
-import org.junit.After;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
-public class ContextualPreferenceDaoTest extends AbstractSpringTest {
+public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
 
     private static final String NAME = "name";
     private static final String ANOTHER_NAME = "anotherName";
     private static final String VALUE = "value";
     private static final String ANOTHER_VALUE = "anotherValue";
-    private static final int TWO_SEC = 2000;
     private static final PreferenceType TYPE = PreferenceType.INTEGER;
     private static final ContextualPreferenceLevel LEVEL = ContextualPreferenceLevel.USER;
     private static final ContextualPreferenceLevel ANOTHER_LEVEL = ContextualPreferenceLevel.TOOL;
@@ -130,23 +130,6 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
 
         assertTrue(loadedPreference.isPresent());
         assertNotNull(loadedPreference.get().getCreatedDate());
-    }
-
-    @Test
-    public void upsertShouldUpdateCreatedDateWhileUpdatingPreference() throws InterruptedException {
-        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
-                RESOURCE_ID);
-        final ContextualPreference preference = new ContextualPreference(NAME, VALUE, resource);
-        final ContextualPreference oldPreference = contextualPreferenceDao.upsert(preference);
-
-        Thread.sleep(TWO_SEC); // Make sure that old vs loaded creation dates change
-        
-        contextualPreferenceDao.upsert(oldPreference.withValue(ANOTHER_VALUE));
-
-        final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
-
-        assertTrue(loadedPreference.isPresent());
-        assertThat(loadedPreference.get().getCreatedDate(), is(not(oldPreference.getCreatedDate())));
     }
 
     @Test

@@ -1,0 +1,291 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  position: relative;
+}
+
+.container.loading {
+  opacity: 0.7;
+  filter: blur(0.5px);
+  -webkit-filter: blur(0.5px);
+}
+
+.container-spinner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 30px;
+  position: absolute;
+  z-index: 1000;
+}
+
+.container .content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: row;
+}
+
+.container .content .results {
+  flex: 1;
+  overflow: auto;
+}
+
+.container .content .results.hint {
+  display: flex;
+}
+
+
+.container .pagination {
+  height: 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.empty-warning {
+  color: #666;
+  font-size: larger;
+  padding: 20px;
+}
+
+.result-item-container {
+  color: inherit;
+  text-decoration: none !important;
+  display: flex;
+  flex-wrap: nowrap;
+  min-height: 46px;
+}
+
+.result-item-container .preview-btn {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-right-width: 0;
+  border-left-width: 0;
+  margin-right: 0;
+  padding: 0 10px;
+  cursor: pointer;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.result-item-container .preview-btn:first-child {
+  border-radius: 5px 0 0 5px;
+  border-left-width: 1px;
+}
+
+.result-item-container .action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-btn.action {
+  font-size: small;
+}
+
+.result-item {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-left: none;
+  border-radius: 0 5px 5px 0;
+  padding: 2px 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.result-item-container:hover .result-item,
+.result-item-container:hover .preview-btn {
+  background-color: #eef8ff;
+  border-color: #a2d8ff;
+}
+
+.result-item-container .preview-btn:hover {
+  background-color: #1890ff;
+  color: white;
+}
+
+.result-item-container .actions-container {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.result-item.disabled {
+  background-color: #eee;
+  color: #999;
+}
+
+.result-item .icon {
+  margin-right: 5px;
+  font-size: large;
+}
+
+.result-item .title {
+  flex: 1;
+  font-weight: bold;
+}
+
+.table-container {
+  display: flex;
+  flex-wrap: nowrap;
+  flex-direction: column;
+  width: 100%;
+  min-width: 100%;
+  border-radius: 5px 5px 0 0;
+  border: 1px solid #ddd;
+  overflow: auto;
+  flex: 1;
+}
+
+.table-row {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none !important;
+  display: grid;
+  background: #fafafa;
+  transition: background 0.2s ease;
+}
+
+.table-row .icon {
+  font-size: large;
+}
+
+.table-row .preview-btn {
+  padding: 5px;
+  margin-right: 3px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.table-row .preview-btn:hover {
+  border: 1px solid #a2d8ff;
+  background: #1890ff;
+  color: white;
+}
+
+.table-row:not(.table-header):hover {
+  color: #49a9ee;
+}
+
+.table-row:not(.table-header):hover .table-cell,
+.table-row:not(.table-header):hover .table-divider {
+  background-color: #eef8ff;
+}
+
+.table-header {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  color: #333;
+  font-weight: bold;
+}
+
+.header-cell {
+  margin: 0;
+  padding: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  border-bottom: 1px solid #ddd;
+}
+
+.sorting-container {
+  font-weight: normal;
+}
+
+.sorting-icon {
+  font-size: 10px;
+  margin-right: 5px;
+}
+
+.sorting-number {
+  margin: 0 5px 0 -5px;
+}
+
+.table-cell {
+  margin: 0;
+  padding: 5px 0 5px 5px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.table-cell .cell-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-divider {
+  background: #fafafa;
+  height: 100%;
+  user-select: none;
+  width: 4px;
+}
+
+.table-header .table-divider {
+  cursor: col-resize;
+  background: #fafafa;
+  border-left: 1px solid #ddd;
+}
+
+.table-header .table-divider:not(:last-child) {
+  border-bottom: 1px solid #ddd;
+}
+
+.table-header .table-divider:hover {
+  border-left: 1px solid #8c8c8c;
+}
+
+.table-divider.divider-active {
+  border-left: 1px solid #69c0ff;
+}
+
+.infinite-scroll.list,
+.infinite-scroll.table {
+  height: 100%;
+}
+
+.overflow-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

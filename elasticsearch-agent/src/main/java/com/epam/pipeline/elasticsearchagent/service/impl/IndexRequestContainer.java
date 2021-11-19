@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.service.BulkRequestCreator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,7 +28,7 @@ import java.util.List;
 
 @Slf4j
 public class IndexRequestContainer implements AutoCloseable {
-    private List<IndexRequest> requests;
+    private List<DocWriteRequest> requests;
     private BulkRequestCreator bulkRequestCreator;
     private Integer bulkSize;
 
@@ -37,7 +38,7 @@ public class IndexRequestContainer implements AutoCloseable {
         this.bulkSize = bulkSize;
     }
 
-    public void add(final IndexRequest request) {
+    public void add(final DocWriteRequest request) {
         requests.add(request);
         if (requests.size() == bulkSize) {
             flush();
@@ -55,13 +56,27 @@ public class IndexRequestContainer implements AutoCloseable {
     private void flush() {
         BulkResponse documents = bulkRequestCreator.sendRequest(requests);
         long successfulRequestsCount = 0L;
+        long unsuccessfulRequestsCount = 0L;
         if (documents != null && documents.getItems() != null) {
-            successfulRequestsCount = Arrays
-                    .stream(documents.getItems())
-                    .filter(response -> !response.isFailed())
-                    .count();
+            for (final BulkItemResponse response : documents.getItems()) {
+                if (response.isFailed()) {
+                    unsuccessfulRequestsCount += 1;
+                } else {
+                    successfulRequestsCount += 1;
+                }
+            }
         }
-        log.info("{} files has been uploaded", successfulRequestsCount);
+        if (unsuccessfulRequestsCount == 0) {
+            log.info("{} files have been uploaded", successfulRequestsCount);
+        } else {
+            log.info("{} files have been uploaded and {} files have not been uploaded",
+                    successfulRequestsCount, unsuccessfulRequestsCount);
+            Arrays.stream(documents.getItems())
+                    .filter(BulkItemResponse::isFailed)
+                    .findFirst()
+                    .ifPresent(response -> log.debug("One of the files has not been uploaded due to: {}",
+                            response.getFailureMessage()));
+        }
         requests.clear();
     }
 }

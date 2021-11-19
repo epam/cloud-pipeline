@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.entity.pipeline;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class DocumentGenerationProperty {
     private Long pipelineId;
     private String propertyName;

@@ -20,12 +20,28 @@ RUN yum install -y \
                 curl \
                 java-1.8.0-openjdk \
                 python \
-                unzip
+                unzip \
+                sudo \
+                nfs-utils \
+                samba \
+                samba-client \
+                cifs-utils
+
+ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+RUN cd /tmp && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    package-cleanup --cleandupes -y && \
+    rm -rf lustre-client*
 
 # API distribution
 ARG CP_API_DIST_URL=""
-ENV CP_SEARCH_HOME="/opt/search" \
-    CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
+ENV CP_SEARCH_HOME="/opt/search"
+ENV CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
@@ -38,5 +54,8 @@ ADD config $CP_SEARCH_HOME/config
 
 ADD init /init
 RUN chmod +x /init
+
+ADD liveness.sh /liveness.sh
+RUN chmod +x /liveness.sh
 
 CMD ["/init"]

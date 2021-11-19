@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,18 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.CollectionCondition;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +42,13 @@ import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 
 public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
@@ -78,6 +83,21 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO completedRuns() {
         $(byId("completed-runs-button")).shouldBe(visible).click();
         tableShouldAppear();
+        return new RunsMenuAO();
+    }
+
+    public RunsMenuAO nextPageCompletedRuns() {
+        if ($(byClassName(" ant-pagination-next")).attr("aria-disabled").equals("false")) {
+            $(byClassName(" ant-pagination-next")).click();
+            tableShouldAppear();
+        }
+        return new RunsMenuAO();
+    }
+
+    public RunsMenuAO switchAllPagesCompletedRuns() {
+        while ($(byClassName(" ant-pagination-next")).attr("aria-disabled").equals("false")) {
+            nextPageCompletedRuns();
+        }
         return new RunsMenuAO();
     }
 
@@ -138,7 +158,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             System.out.println("[WARN] retrying click run logs");
             if (trys++ > 5) {
                 Selenide.screenshot(GET_LOGS_ERROR);
-                throw new RuntimeException(String.format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR));
+                throw new ElementNotFound(format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR), exist);
             }
 
             show(runId);
@@ -162,6 +182,43 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO validateStatus(final String runId, final LogAO.Status status) {
         $(byClassName("run-" + runId)).find(byCssSelector("i")).shouldHave(cssClass(status.reached.toString()));
+        return this;
+    }
+
+    public RunsMenuAO validateColumnName(final String... heads) {
+        List<String> columns = context().find(byClassName("ant-table-thead")).$$("th")
+                .stream()
+                .map(SelenideElement::text)
+                .collect(toList());
+        Arrays.stream(heads).forEach(head -> assertTrue(columns.contains(head),
+                format("Column head %s isn't found",head)));
+        return this;
+    }
+
+    public RunsMenuAO validateAllRunsHaveButton(String button) {
+        allRuns().forEach(row -> row.$(byText(button)).shouldBe(visible));
+        return this;
+    }
+
+    public RunsMenuAO validateRunsHaveButton(final List<String> runIds, final String button) {
+        runIds.forEach(id -> $("tbody")
+                .find(withText(id))
+                .closest(".ant-table-row")
+                .find(byText(button))
+                .shouldBe(visible)
+        );
+        return this;
+    }
+
+    public RunsMenuAO validateAllRunsHaveCost() {
+        allRuns().forEach(row -> row.$(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible)
+                .shouldHave(text("Cost:")));
+        return this;
+    }
+
+    public RunsMenuAO validateRowsCount(CollectionCondition condition) {
+        allRuns().shouldHave(condition);
         return this;
     }
 
@@ -207,12 +264,25 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO assertLatestPipelineHasRunID(String runId) {
+        $("tbody")
+                .find("tr")
+                .find(byClassName(HeaderColumn.RUN.cssClass))
+                .shouldHave(text(runId));
+        return this;
+    }
+
     public RunsMenuAO validateOnlyMyPipelines() {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
                 .findAll(byClassName("run-table__run-row-owner"))
                 .excludeWith(text(C.ANOTHER_LOGIN))
                 .shouldBe(empty);
+        return this;
+    }
+
+    public RunsMenuAO validatePipelineOwner(String id, String owner) {
+        $(byClassName(format("run-%s", id))).shouldHave(matchText(owner));
         return this;
     }
 
@@ -257,10 +327,9 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO stopRunIfPresent(String id) {
-        activeRuns();
-        final SelenideElement run = $(tagName("tbody")).findAll(tagName("tr")).findBy(text(id));
+        activeRuns().viewAvailableActiveRuns();
         sleep(10, SECONDS);
-        if (run.is(exist)) {
+        if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);
         }
@@ -281,12 +350,15 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO shouldContainRun(String pipelineName, String runId) {
-        return validatePipelineIsPresent(String.format("%s-%s", pipelineName, runId));
+        return validatePipelineIsPresent(format("%s-%s", pipelineName, runId));
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
-        sleep(2, SECONDS);
+        $(withText("Currently viewing")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        if ($(elementWithText(tagName("a"), "View other available active runs")).isDisplayed()) {
+            $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
+            sleep(2, SECONDS);
+        }
         return this;
     }
 
@@ -298,7 +370,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
         new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(String.format("Do you want to pause %s", pipelineName))
+                .ensureTitleContains(format("Do you want to pause %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("PAUSE"));
         return this;
@@ -312,7 +384,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO resume(final String runId, final String pipelineName) {
         $("#run-" + runId + "-resume-button").shouldBe(visible).click();
         new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(String.format("Do you want to resume %s", pipelineName))
+                .ensureTitleContains(format("Do you want to resume %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("RESUME"));
         return this;
@@ -338,7 +410,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             if (new LogAO().logMessages().filter(l -> l.contains("Started initialization of new calculation node"))
                     .count() > 2 || attempts == 0) {
                 screenshot("failed_node_for_run_" + runId);
-                throw new IllegalArgumentException(String.format("Node for %s run was not initialized", runId));
+                throw new IllegalArgumentException(format("Node for %s run was not initialized", runId));
             }
             sleep(1, MINUTES);
             attempts--;
@@ -349,5 +421,57 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();
+    }
+
+    public RunsMenuAO filterBy(HeaderColumn header, String ip) {
+        SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
+        createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
+        switch (header) {
+            case PIPELINE:
+                inputFilterValue(ip);
+                $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
+                        .click();
+                break;
+            case DOCKER_IMAGE:
+                inputFilterValue(ip);
+                $(byXpath(format(".//span[.='%s']", ip))).parent()
+                        .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
+                break;
+            default:
+                throw new IllegalArgumentException("Could be filtered only by Label of Address");
+        }
+        $$(byText("OK")).find(visible).click();
+        return this;
+    }
+
+    public RunsMenuAO resetFiltering(HeaderColumn header) {
+        SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
+        createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
+
+        $$(byText("Clear")).find(visible).click();
+        return this;
+    }
+
+    private void inputFilterValue(String value) {
+        $(byClassName("run-table__filter-popover-container"))
+                .$$("input").findBy(attribute("placeholder", "Filter"))
+                .setValue(value);
+    }
+
+    public enum HeaderColumn {
+        RUN("run-table__run-row-name"),
+        PARENT_RUN("run-table__run-row-parent-run"),
+        PIPELINE("run-table__run-row-pipeline"),
+        DOCKER_IMAGE("run-table__run-row-docker-image"),
+        STARTED("run-table__run-row-started"),
+        COMPLETED("run-table__run-row-completed"),
+        ELAPSED("run-table__run-row-elapsed-time"),
+        OWNER("run-table__run-row-owner");
+
+        private String cssClass;
+
+        HeaderColumn(String cssClass) {
+            this.cssClass = cssClass;
+        }
     }
 }

@@ -17,13 +17,17 @@
 import React from 'react';
 import {observable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
+import Discounts from '../discounts';
 import FilterStore from './filter-store';
 import PeriodFilter from './period-filter';
 import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
+import ProviderFilter from './provider-filter';
 import reportsRouting from './reports-routing';
 import Divider from './divider';
-import ExportReports from '../export';
+import {RestoreButton} from '../layout';
+import ExportReports, {ExportFormat} from '../export';
+import roleModel from '../../../../utils/roleModel';
 import styles from '../reports.css';
 
 class Filters extends React.Component {
@@ -32,7 +36,6 @@ class Filters extends React.Component {
   static runnerTypes = RunnerType;
 
   @observable filterStore = new FilterStore();
-
   componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
@@ -41,11 +44,25 @@ class Filters extends React.Component {
     this.filterStore.rebuild(this.props);
   }
 
+  componentDidUpdate (prevProps) {
+    const {location} = this.props;
+    if (location) {
+      const {pathname, search} = location;
+      const {pathname: prevPathname, search: prevSearch} = prevProps.location;
+      if (prevSearch !== search || prevPathname !== pathname) {
+        this.filterStore.rebuild(this.props);
+      }
+    }
+  }
+
   render () {
     if (!this.filterStore) {
       return null;
     }
-    const {children, users} = this.props;
+    const {children, users, cloudRegionsInfo} = this.props;
+    const exportFormats = /^general$/i.test(this.filterStore.report)
+      ? [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image]
+      : [ExportFormat.csv, ExportFormat.image];
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>
@@ -56,20 +73,42 @@ class Filters extends React.Component {
         </div>
         <div className={styles.billingContainer}>
           <div className={styles.periodFilters}>
-            <PeriodFilter
-              filter={this.filterStore.period}
-              range={this.filterStore.range}
-              onChange={this.filterStore.periodNavigation}
-            />
-            <Divider />
-            <RunnerFilter
-              filter={this.filterStore.runner}
-              onChange={this.filterStore.buildNavigationFn('runner')}
-            />
-            <ExportReports
-              className={styles.exportReportsButton}
-              documentName={() => this.filterStore.getDescription({users})}
-            />
+            <div className={styles.filters}>
+              <PeriodFilter
+                filter={this.filterStore.period}
+                range={this.filterStore.range}
+                onChange={this.filterStore.periodNavigation}
+              />
+              <Divider />
+              {
+                roleModel.manager.billing(
+                  <RunnerFilter
+                    filter={this.filterStore.runner}
+                    onChange={this.filterStore.buildNavigationFn('runner')}
+                  />,
+                  'runner filter'
+                )
+              }
+              <Divider />
+              <ProviderFilter
+                filter={this.filterStore.region}
+                onChange={this.filterStore.buildNavigationFn('region')}
+              />
+            </div>
+            <div className={styles.actionsBlock}>
+              {
+                roleModel.manager.billing(
+                  <Discounts.Button className={styles.discountsButton} />,
+                  'discounts button'
+                )
+              }
+              <RestoreButton className={styles.restoreLayoutButton} />
+              <ExportReports
+                className={styles.exportReportsButton}
+                documentName={() => this.filterStore.getDescription({users, cloudRegionsInfo})}
+                formats={exportFormats}
+              />
+            </div>
           </div>
           <Provider filters={this.filterStore}>
             <ExportReports.Provider>
@@ -82,4 +121,8 @@ class Filters extends React.Component {
   }
 }
 
-export default inject('users')(observer(Filters));
+const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
+const REGION_SEPARATOR = FilterStore.REGION_SEPARATOR;
+
+export {RUNNER_SEPARATOR, REGION_SEPARATOR};
+export default inject('users', 'cloudRegionsInfo')(roleModel.authenticationInfo(observer(Filters)));

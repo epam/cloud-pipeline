@@ -9,6 +9,13 @@
 - [Scheduled instances PAUSE/RESUME](#scheduled-instances-pauseresume)
 - [Spending quotas](#spending-quotas)
 - [Billing reports](#billing-reports)
+    - [General costs report](#general-costs-report)
+    - [User report](#user-report)
+    - [Billing center/group report](#billing-centergroup-report)
+    - [Resources reports](#resources-reports)
+        - [Storages report](#storages-report)
+        - [Compute instances report](#compute-instances-report)
+    - [Report aggregation level according to the permissions](#report-aggregation-level-according-to-the-permissions)
 
 Any job, run in the Cloud Pipeline, or any file placed into the Cloud Storage - cost money. These costs are incurred by the underlying provider: AWS/GCP/Azure/etc.
 
@@ -165,23 +172,152 @@ This reporting feature is available in two flavors:
     ![CP_AppendixD](attachments/Costs_management_3.png)
 - Compute and storage costs are aggregated into the ElasticSearch index on a daily basis and can be queried to build the historical reports
 
+### General costs report
+
 The latter one offers graphical/tabular visualization options to get the insights on a current or a previous period bills  
     ![CP_AppendixD](attachments/Costs_management_4.png)
 
-- Daily/Monthly costs
-- Compute costs
-    - By workload type (CPU/GPU)
-    - By toolset used (e.g. docker image)
-    - By compute instance type (e.g. p2.xlarge)
-- Storage costs
-    - By object storages
-    - By file storages
-- By group/user/billing center
+By these forms users can view the whole system spendings, or spendings divided by the specific resources.  
+Presented metrics (resources):
 
-According to the permissions - aggregation level can be limited:
+- costs of launching compute instances, used for tools/pipelines runs. There could be:
+    - CPU instances
+    - GPU instances
+- costs of storing user data in storages. There could be costs of storing:
+    - in Object storages
+    - in File storages
+- info about auxiliary costs isn't supported yet
 
-- General user can view only own reports
-- Group leader - can view usage for all project members
-- Platform admin – can view all available reports
+All costs are aggregated and displayed for the specific period (by default - the current calendar month). Selected specific period, for which the costs should be calculated and displayed, is called "**current**". Also, for comparison, the costs for the analogical previous period are displayed in diagrams/charts (where this data is available).  
+The user can select the desired (current) period to view the costs incurred:
 
-More details on the implementation and graphical representation are provided in the [issue #761](https://github.com/epam/cloud-pipeline/issues/761#issuecomment-563301237).
+- from one of predefined periods. For each of them there will be a specific "previous" period:
+    - **Month**. If the month is selected as current period - the "previous" period will be the previous calendar month of the selected one
+    - **Quarter**. If the quarter is selected as current period - the "previous" period will be the same quarter in the previous calendar year
+    - **Year**. If the year is selected as current period - the "previous" period will be the previous calendar year
+- custom period. That period is configured by the user manually in months and can have any duration. The "previous" period isn't displayed in this case
+
+By default, the "Billing Visualization" form looks like on the picture above.  
+It contains:
+
+- General report table with the following data:
+    - current and previous periods, for which the costs are calculated
+    - summary spendings according to selected configurations in the toolbar for the current and previous periods
+    - the difference between the costs of current period and the previous one in percentage with a certain mark to determine whether spendings grow or reduce  
+    ![CP_AppendixD](attachments/Costs_management_7.png)
+- The main summary costs diagram. On this diagram, the user can see summary spendings over the current and the previous time periods according to selected configurations in the toolbar. This data could be displayed with the accumulation (as _line chart_) or as fact (as _bar chart_ with actual spending values in each time point of the period without accumulation)
+    - if the selected "current" period coincides with the current corresponding calendar period - there a slice line is displayed on the current calendar date: on its intersection with the "current" chart line, the amount of money which was spent from the beginning of the period to the current date is displayed and on its intersection with the "previous" chart line - the amount of money which was spent for the same previous time period is displayed
+    - the user can hover any point of the "current"/"previous" line of the diagram - the summary spendings at the corresponding datetime appear in the tooltip
+        - the aggregation value of timeline division for selected periods less than 4 months is 1 day, in other cases - 1 month  
+        > **_Note_**: costs of the current calendar day is being aggregated in the following day, so they aren't displayed in diagrams
+
+        With accumulation:  
+        ![CP_AppendixD](attachments/Costs_management_8.png)  
+        And actual values (without accumulation):  
+        ![CP_AppendixD](attachments/Costs_management_9.png)  
+
+- The spendings bar chart with the **Resources** division. On this chart, the user can view the division of summary spendings in a selected time period over the resource groups - _Storages_ (with division on _Object_ and _File_ storages) and _Compute Instances_ (with division on _CPU_ and _GPU_). Also, for each resource, the summary spendings for the same previous period are presented as well:  
+    ![CP_AppendixD](attachments/Costs_management_10.png)
+- The spendings bar chart with the **Billing centers** division. On this chart, the user can view the division of summary spendings in a selected time period over the billing centers (the system displays only top `N` most costly billing centers). For each displayed center/group, the summary spendings for the same previous period is presented as well:  
+    ![CP_AppendixD](attachments/Costs_management_11.png)
+- The report toolbar with the following controls:
+    - the "period selector" to select a current time period for the report - from one of predefined periods or the manual custom period
+    - the additional calendar control - to select another "current" period that doesn't coincide with the current calendar period (for predefined periods) or manually select desired period duration (for custom period)
+    - the control to select the specific billing center (user group) or user. By default, all available centers/users are selected
+    - the export control to download a data of displayed report in _\*.csv_ format to the local workstation
+
+    ![CP_AppendixD](attachments/Costs_management_12.png)
+
+The billing report form described above is the general.
+
+To get info/charts of summary spendings in any desired period (from available) you should select the corresponding period via the _Period selector_ and _Calendar control_ (if necessary).
+
+To get info/charts of summary spendings in the selected period only for the specific resource group you can click that resource in the **Resources** chart or use the corresponding item of the menu in the left side of the page (for more details see sections [below](#resources-reports)).
+
+### User report
+
+To get info/charts of summary spendings in the selected period only for the specific user you can select the desired user from the dropdown list in the main toolbar. In this case:
+
+- the costs data will be calculated and displayed only for the selected user (in the general report table, in the main diagram and in the resources chart)
+- the spendings bar chart with the **Billing centers** division will disappear, e.g.:  
+    ![CP_AppendixD](attachments/Costs_management_13.png)
+
+### Billing center/group report
+
+To get info/charts of summary spendings in the selected period only for the specific Billing center you can select the desired one from the dropdown list in the main toolbar or by click the corresponding Billing Center's bar in the **Billing centers** division chart. In this case:
+
+- the costs data will be calculated and displayed only for the selected Billing center (summary for all its users - in the general report table, in the main diagram and in the resources chart)
+- the bar chart with the top `N` of users' spendings in the selected period (among all users in that Billing center) will appear
+- the table with short info about summary spendings of each user of that Billing center in the selected period (also info contains summary duration and count of the runs launched by the user, used storages volume) will appear, e.g.:  
+    ![CP_AppendixD](attachments/Costs_management_14.png)
+
+### Resources reports
+
+If you wish - you may get info/charts of summary spendings not for all resources but for the specific resource group.  
+Also, for these charts you may select the desired time period and specific user/Billing center (group) to view costs in the way analogical as described above.
+
+#### Storages report
+
+To get info/charts of summary spendings in the selected period only for the _Storages_ resource group (costs of the storing data in storages) you can click the corresponding item of the menu in the left side of the page:  
+    ![CP_AppendixD](attachments/Costs_management_18.png)
+
+In this case, the summary costs for all used storages during the selected period by selected users/Billing center will be calculated and displayed (both types - Object/File storages).
+
+In the appeared page, you can see:
+
+- General report table with summary costs for all used storages during the selected and previous (_if it's available_) periods
+- The summary _Storages_ spendings diagram over the current and the previous time periods according to selected configurations in the toolbar. This data could be displayed with the accumulation (as _line chart_) or as fact (as _bar chart_ with actual spending values in each time point of the period without accumulation)
+- The spendings bar chart with top `N` most costly storages used during the selected period compared with the previous one (_if it's available_)
+    - The detailed spendings table under the chart with the _full_ list of storages used during the selected period by selected user/Billing center
+
+Example:  
+    ![CP_AppendixD](attachments/Costs_management_19.png)
+
+By default, in this form there isn't the division by storage type (Object/File). All data is calculated and displayed summary for both types.  
+If you want to view costs only for storages with the specific type - you can select the corresponding one in the menu at the left side of the page.  
+E.g., for Object storages:  
+    ![CP_AppendixD](attachments/Costs_management_20.png)
+
+#### Compute instances report
+
+To get info/charts of summary spendings in the selected period only for the _Compute instances_ resource group (costs of the launching instances for running tools/pipelines) you can click the corresponding item of the menu in the left side of the page:  
+    ![CP_AppendixD](attachments/Costs_management_15.png)
+
+In this case, the summary costs for all launched instances during the selected period by selected users/Billing center will be calculated and displayed (launched tools/pipelines and both instance types - CPU/GPU).
+
+In the appeared page, you can see:
+
+- General report table with summary costs for all runs launched in the selected and previous (_if it's available_) periods
+- The summary _Compute instances_ spendings diagram over the current and the previous time periods according to selected configurations in the toolbar. This data could be displayed with the accumulation (as _line chart_) or as fact (as _bar chart_ with actual spending values in each time point of the period without accumulation)
+- The spendings bar chart with top `N` most costly instance types launched in the selected period compared to the previous one (_if it's available_)
+    - The detailed spendings table under that chart with the _full_ list of launched instance types in the selected period
+- The spendings bar chart with top `N` most costly tools launched in the selected period compared to the previous one (_if it's available_)
+    - The detailed spendings table under that chart with the _full_ list of launched tools in the selected period
+- The spendings bar chart with top `N` most costly pipelines launched in the selected period compared to the previous one (_if it's available_)
+    - The detailed spendings table under that chart with the full list of launched pipelines in the selected period
+- Additional control that allows to change displaying of spendings bar charts with the following possible values:
+    - **cost** (default) - on 3 above described bar charts top `N` most costly objects (instance types, tools, pipelines) are displayed. Data Unit - _currency_
+    - **usage** - on 3 above described bar charts top `N` most involved objects (instance types, tools, pipelines) are displayed. Data Unit - _usage hours_
+    - **runs** - on 3 above described bar charts top `N` objects (instance types, tools, pipelines) with the largest runs count are displayed. Data Unit - _runs count_
+
+Example:  
+    ![CP_AppendixD](attachments/Costs_management_16.png)
+
+By default, in this form there isn't the division by workload type (CPU/GPU). All data is calculated and displayed summary for both types.  
+If you want to view costs only for instances with the specific workload type - you can select the corresponding one in the menu at the left side of the page.  
+E.g., for CPU:  
+    ![CP_AppendixD](attachments/Costs_management_17.png)
+
+### Report aggregation level according to the permissions
+
+Available reports are calculated and displayed according to the user permissions:
+
+- _general user_ can view:
+    - general report with only own costs (User report, without Billing center report)
+    - resources report with only own costs
+- _Billing center (group) leader_ can view:
+    - general report with costs of that Billing center
+    - Billing center report
+    - user report for any user of that Billing center
+    - resources report with costs of that Billing center on the whole and for any user of that Billing center separately
+- _platform admin_ can view all available reports

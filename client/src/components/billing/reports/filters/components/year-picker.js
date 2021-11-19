@@ -23,6 +23,7 @@ import PickerButton from './picker-button';
 
 class YearPicker extends React.Component {
   static propTypes = {
+    title: PropTypes.string,
     value: PropTypes.object,
     minimum: PropTypes.object,
     maximum: PropTypes.object,
@@ -36,6 +37,24 @@ class YearPicker extends React.Component {
     opened: false
   };
 
+  get canNavigateBack () {
+    const {minimum, value} = this.props;
+    const minimumValue = minimum
+      ? moment.utc(minimum).endOf('y')
+      : moment.utc({y: 1900}).endOf('y');
+    const current = value ? moment.utc(value) : moment.utc();
+    return current > minimumValue;
+  }
+
+  get canNavigateForward () {
+    const {maximum, value} = this.props;
+    const maximumValue = maximum
+      ? moment.utc(maximum).startOf('y')
+      : moment.utc().startOf('y');
+    const current = value ? moment.utc(value) : moment.utc();
+    return current < maximumValue;
+  }
+
   componentDidMount () {
     this.rebuildValues(this.props);
   }
@@ -45,6 +64,28 @@ class YearPicker extends React.Component {
       this.rebuildValues(this.props);
     }
   }
+
+  onNavigateBack = () => {
+    const {value, onChange} = this.props;
+    if (onChange) {
+      onChange(
+        value
+          ? moment.utc(value).add(-1, 'y')
+          : moment.utc().add(-1, 'y')
+      );
+    }
+  };
+
+  onNavigateForward = () => {
+    const {value, onChange} = this.props;
+    if (onChange) {
+      onChange(
+        value
+          ? moment.utc(value).add(1, 'y')
+          : moment.utc().add(1, 'y')
+      );
+    }
+  };
 
   rebuildValues = (props) => {
     const {value} = props;
@@ -69,9 +110,9 @@ class YearPicker extends React.Component {
   };
 
   getDisplayName = () => {
-    const {value} = this.props;
+    const {value, title} = this.props;
     if (!value) {
-      return undefined;
+      return title;
     }
     const year = moment(value).get('Y');
     return `${year} year`;
@@ -185,10 +226,15 @@ class YearPicker extends React.Component {
         overlay={this.renderOverlay()}
       >
         <PickerButton
-          className={styles.button}
+          className={styles.buttonContainer}
           style={style}
           valueIsSet={!!value}
           onRemove={this.onRemove}
+          navigationEnabled
+          canNavigateBack={this.canNavigateBack}
+          canNavigateForward={this.canNavigateForward}
+          onNavigateBack={this.onNavigateBack}
+          onNavigateForward={this.onNavigateForward}
         >
           {this.getDisplayName()}
         </PickerButton>

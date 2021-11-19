@@ -17,7 +17,13 @@
 yum install -y  nc \
                 python \
                 curl \
-                coreutils
+                coreutils \
+                btrfs-progs \
+                iproute-tc
+
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
 
 # Install Docker
 yum install -y yum-utils \
@@ -43,6 +49,19 @@ if [ $? -ne 0 ]; then
     exit 1
   fi
 fi
+
+# Get the kube docker images, required by the kubelet
+# This is needed, as we don't want to rely on the external repos
+systemctl start docker && \
+mkdir -p /opt/docker-system-images && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-node-v3.14.1.tar" -O /opt/docker-system-images/calico-node-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-pod2daemon-flexvol-v3.14.1.tar" -O /opt/docker-system-images/calico-pod2daemon-flexvol-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-cni-v3.14.1.tar" -O /opt/docker-system-images/calico-cni-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /opt/docker-system-images/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/quay.io-coreos-flannel-v0.11.0.tar" -O /opt/docker-system-images/quay.io-coreos-flannel-v0.11.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /opt/docker-system-images/k8s.gcr.io-pause-3.1.tar
+
+systemctl stop docker
 
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
@@ -71,58 +90,28 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 # Setup default cgroups and cadvisor port
 sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
-# create a script that will parse and run user data every start up time
-CUSTOM_USER_ACTIONS_SCRIPT="/usr/local/user-data-execute"
-cat <<'EOF' >$CUSTOM_USER_ACTIONS_SCRIPT
-#!/bin/bash
+sed -i 's|Provisioning.DecodeCustomData=n|Provisioning.DecodeCustomData=y|g' /etc/waagent.conf
+sed -i 's|Provisioning.ExecuteCustomData=n|Provisioning.ExecuteCustomData=y|g' /etc/waagent.conf
 
-exec > /var/log/user_data_rc.log 2>&1
+# Upgrade to the latest mainline kernel (4.17+)
+rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org && \
+rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-4.el7.elrepo.noarch.rpm && \
+yum --enablerepo=elrepo-kernel install kernel-ml -y && \
+sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
+grub2-mkconfig -o /boot/grub2/grub.cfg
 
-rdom () { local IFS=\> ; read -d \< E C ;}
-
-custom_data_file=/var/lib/waagent/CustomData
-waagent_file=/var/lib/waagent/ovf-env.xml
-
-wait_attempts=120
-while [ "$wait_attempts" -ne 0 ]; do
-  if [ -f "$custom_data_file" ]; then
-    echo "Custom data file found at $custom_data_file"
-    cat /var/lib/waagent/CustomData | base64 --decode | /bin/bash
-    echo "$custom_data_file executed"
-    exit 0
-  fi
-  if [ -f "$waagent_file" ]; then
-    echo "Custom data file found at $waagent_file"
-    while rdom; do
-      if [[ $E = *CustomData* ]]; then
-          echo $C | base64 --decode | /bin/bash
-          echo "$waagent_file executed"
-          exit 0
-      fi
-    done < $waagent_file
-
-    echo "$waagent_file WAS NOT executed, as <CustomData> tag was not found. Will proceed with waiting"
-  fi
-  wait_attempts=$((wait_attempts-1))
-  sleep 1
-done
-
-echo "None of the Custom Data files was found: $custom_data_file , $waagent_file in the $wait_attempts seconds"
-EOF
-
-chmod +x $CUSTOM_USER_ACTIONS_SCRIPT
-
-echo "bash $CUSTOM_USER_ACTIONS_SCRIPT" >> /etc/rc.d/rc.local
-chmod +x /etc/rc.d/rc.local
-
-# delete CustomData from the image
-rm -f /var/lib/waagent/CustomData
+# Make image public
+# GCP_IMG_NAME=cloudpipeline-image-common-us-$VERSION-$COMMIT_SHA
+# GCP_PRJ_NAME=epm-...
+# gcloud compute images add-iam-policy-binding $GCP_IMG_NAME \
+#     --member='allAuthenticatedUsers' \
+#     --role='roles/compute.imageUser' \
+#     --project $GCP_PRJ_NAME

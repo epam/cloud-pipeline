@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,18 +15,20 @@
 from buckets.utils.listing import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.utilities_for_test import *
+from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 
 
 class TestLsWithRoleModel(object):
-    epam_test_case = "EPMCMBIBPC-629"
+    epam_test_case = "TC-PIPE-STORAGE-37"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = "epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower()
+    bucket_name = format_name("ls-roles{}".format(get_test_prefix()).lower())
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name)
         create_default_test_folder(cls.resources_root)
@@ -40,16 +42,19 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=1)
     def test_list_folder_without_permission(self):
+        """TC-PIPE-STORAGE-37"""
         try:
             error_text = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.bucket_name, self.resources_root))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
 
     @pytest.mark.run(order=2)
     def test_list_from_root(self):
-        case = "EPMCMBIBPC-699"
+        """TC-PIPE-STORAGE-44"""
+        case = "TC-PIPE-STORAGE-44"
         try:
             buckets = get_pipe_listing(None, show_details=False)
             available_buckets = map(lambda bucket: filter(None, bucket.name.split(" ")[0]), buckets)
@@ -63,6 +68,7 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=3)
     def test_list_folder_with_permission(self):
+        """TC-PIPE-STORAGE-37"""
         try:
             set_storage_permission(self.user, self.bucket_name, allow='r')
             output = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
@@ -73,10 +79,12 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=4)
     def test_list_folder_with_write_permission(self):
+        """TC-PIPE-STORAGE-37"""
         try:
             set_storage_permission(self.user, self.bucket_name, allow='w', deny='r')
             error_text = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.bucket_name, self.resources_root))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))

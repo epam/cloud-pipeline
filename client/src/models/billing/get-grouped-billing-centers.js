@@ -2,14 +2,29 @@ import BaseBillingRequest from './base-billing-request';
 import {costMapper, minutesToHours, bytesToGbs} from './utils';
 import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import moment from 'moment-timezone';
 
 export class GetGroupedBillingCenters extends BaseBillingRequest {
   constructor (filters, pagination = null) {
-    super(filters, true, pagination);
-    if (this.filters && this.filters.group) {
+    const {resourceType, fetchLastDay, ...rest} = filters || {};
+    super(rest, true, pagination);
+    this.resourceType = resourceType;
+    this.fetchLastDay = fetchLastDay;
+    if (this.filters && this.filters.group && this.filters.group.length === 1) {
       this.grouping = 'USER';
     } else {
       this.grouping = 'BILLING_CENTER';
+    }
+  }
+
+  async prepareBody () {
+    await super.prepareBody();
+    if (this.fetchLastDay && this.filters && this.filters.endStrict) {
+      this.body.from = moment(this.filters.endStrict).startOf('d');
+      this.body.to = moment(this.filters.endStrict).endOf('d');
+    }
+    if (this.resourceType) {
+      this.body.filters.resource_type = [this.resourceType];
     }
   }
 

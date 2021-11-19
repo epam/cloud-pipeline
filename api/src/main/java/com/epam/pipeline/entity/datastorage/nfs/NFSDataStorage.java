@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@ package com.epam.pipeline.entity.datastorage.nfs;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -28,7 +31,10 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@NoArgsConstructor
 public class NFSDataStorage extends AbstractDataStorage {
+
+    private NFSStorageMountStatus mountStatus = NFSStorageMountStatus.ACTIVE;
 
     public NFSDataStorage(Long id, String name, String path) {
         super(id, name, normalizeNfsPath(path), DataStorageType.NFS);
@@ -45,12 +51,17 @@ public class NFSDataStorage extends AbstractDataStorage {
 
     @Override
     public String getPathMask() {
-        return String.format("nfs://%s", getPath());
+        return "nfs://" + getPath();
     }
 
     @Override
     public boolean isPolicySupported() {
         return false;
+    }
+
+    @Override
+    public String getRoot() {
+        return NFSHelper.getNfsRootPath(getPath());
     }
 
     private static String normalizeNfsPath(String path) {

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,16 +32,21 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents, pack_powershell_script_contents
+import jwt
 
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
 
+DISABLE_ACCESS = 'disable_external_access'
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
+
+DEFAULT_FS_TYPE = 'btrfs'
+SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 
 MIN_SWAP_DEVICE_SIZE = 5
 
@@ -49,6 +54,21 @@ current_run_id = 0
 api_url = None
 api_token = None
 script_path = None
+
+
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
 
 
 def pipe_log_init(run_id):
@@ -60,7 +80,7 @@ def pipe_log_init(run_id):
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -70,7 +90,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
@@ -87,7 +107,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -166,24 +186,26 @@ def get_well_known_hosts(cloud_region):
     return get_cloud_config_section(cloud_region, "well_known_hosts")
 
 
-def get_allowed_instance_image(cloud_region, instance_type, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_object = {"instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script}
+    default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
+    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE}
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
         return default_object
 
     for image_config in instance_images_config:
+        image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
-        init_script = None
-        if "init_script" in image_config:
-            init_script = image_config["init_script"]
-        else:
-            init_script = default_object["init_script"]
-        if fnmatch.fnmatch(instance_type, instance_mask):
-            return {"instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script}
+        init_script = image_config.get("init_script", default_object["init_script"])
+        embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
+        fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
+        if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
+            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            "embedded_scripts": embedded_scripts, "fs_type": fs_type}
 
     return default_object
 
@@ -215,19 +237,24 @@ else:
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
-def run_instance(instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
-                 ins_type, is_spot, kube_ip, kubeadm_token):
+def run_instance(api_url, api_token, api_user, instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ins_platform, ssh_pub_key, user,
+                 ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, ins_img, ins_platform, kube_ip,
+                                            kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                            swap_size, pre_pull_images)
+    access_config = get_access_config(cloud_region)
+    disable_external_access = False
+    if access_config is not None:
+        disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
     if not is_spot:
-        create_public_ip_address(instance_name, run_id)
-        create_nic(instance_name, run_id)
+        create_nic(instance_name, run_id, disable_external_access)
         return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
                          user_data_script, ins_key, user, swap_size)
     else:
         return create_low_priority_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
-                                      user_data_script, ins_key, user, swap_size)
+                                      user_data_script, ins_key, user, swap_size, disable_external_access)
 
 
 def read_ssh_key(ssh_pub_key):
@@ -257,13 +284,7 @@ def create_public_ip_address(instance_name, run_id):
     return creation_result.result()
 
 
-def create_nic(instance_name, run_id):
-
-    public_ip_address = network_client.public_ip_addresses.get(
-        resource_group_name,
-        instance_name + '-ip'
-    )
-
+def create_nic(instance_name, run_id, disable_external_access):
     subnet_info = get_subnet_info()
     security_group_info = get_security_group_info()
 
@@ -271,7 +292,6 @@ def create_nic(instance_name, run_id):
         'location': zone,
         'ipConfigurations': [{
             'name': 'IPConfig',
-            'publicIpAddress': public_ip_address,
             'subnet': {
                 'id': subnet_info.id
             }
@@ -281,6 +301,15 @@ def create_nic(instance_name, run_id):
         },
         'tags': get_tags(run_id)
     }
+
+    if not disable_external_access:
+        create_public_ip_address(instance_name, run_id)
+        public_ip_address = network_client.public_ip_addresses.get(
+            resource_group_name,
+            instance_name + '-ip'
+        )
+        nic_params["ipConfigurations"][0]["publicIpAddress"] = public_ip_address
+
     creation_result = network_client.network_interfaces.create_or_update(
         resource_group_name,
         instance_name + '-nic',
@@ -288,6 +317,10 @@ def create_nic(instance_name, run_id):
     )
 
     return creation_result.result()
+
+
+def get_access_config(cloud_region):
+    return get_cloud_config_section(cloud_region, "access_config")
 
 
 def get_security_group_info():
@@ -444,7 +477,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
 
 def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script,
-                           ssh_pub_key, user, swap_size):
+                           ssh_pub_key, user, swap_size, disable_external_access):
 
     pipe_log('Create VMScaleSet with low priority instance for run: {}'.format(run_id))
     resource_group, image_name = get_res_grp_and_res_name_from_string(instance_image, 'images')
@@ -487,9 +520,6 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
                                 "ipConfigurations": [
                                     {
                                         "name": scale_set_name + "-ip",
-                                        "publicIPAddressConfiguration": {
-                                            "name": scale_set_name + "-publicip"
-                                        },
                                         "properties": {
                                             "subnet": {
                                                 "id": subnet_info.id
@@ -505,6 +535,11 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
         },
         'tags': get_tags(run_id)
     }
+    if not disable_external_access:
+        vmss_parameters['properties']['virtualMachineProfile'] \
+                       ['network_profile']['networkInterfaceConfigurations'][0] \
+                       ['properties']['ipConfigurations'][0] \
+                       ['publicIPAddressConfiguration'] = {"name": scale_set_name + "-publicip"}
     create_node_resource(service, scale_set_name, vmss_parameters)
     return get_instance_name_and_private_ip_from_vmss(scale_set_name)
 
@@ -693,7 +728,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
     return ret_namenode
 
 
-def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region):
+def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels):
     pipe_log('Assigning instance {} to RunID: {}'.format(nodename, run_id))
     obj = {
         "apiVersion": "v1",
@@ -706,6 +741,14 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region):
             }
         }
     }
+
+    if additional_labels:
+        for label in additional_labels:
+            label_parts = label.split("=")
+            if len(label_parts) == 1:
+                obj["metadata"]["labels"][label_parts[0]] = None
+            else:
+                obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
 
     if cluster_name:
         obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name
@@ -815,7 +858,7 @@ def detach_disks_and_nic(vm_name):
         nic.ip_configurations[0].public_ip_address = None
         network_client.network_interfaces.create_or_update(resource_group_name, vm_name + '-nic', nic).wait()
     except Exception as e:
-        print e
+        print(e)
 
 
 def replace_common_params(cloud_region, init_script, config_section):
@@ -914,29 +957,54 @@ def get_swap_ratio(swap_params):
     return None
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
-    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script \
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images)) \
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, ins_img, ins_platform, kube_ip,
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images):
+    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
         certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(cloud_region)
+        fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
+        if fs_type not in SUPPORTED_FS_TYPES:
+            pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
+                          (fs_type, DEFAULT_FS_TYPE))
+            fs_type = DEFAULT_FS_TYPE
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                             .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token)
-
-        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
-        # to minimize the size of the user data
-        # Otherwise - raw script will be used
-        try:
-            from pipeline import pack_script_contents
-            return pack_script_contents(user_data_script)
-        except:
-            return user_data_script
+                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                            .replace('@API_URL@', api_url) \
+                                            .replace('@API_TOKEN@', api_token) \
+                                            .replace('@API_USER@', api_user) \
+                                            .replace('@FS_TYPE@', fs_type)
+        embedded_scripts = {}
+        if allowed_instance["embedded_scripts"]:
+            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+                embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
+        if ins_platform == 'windows':
+            return pack_powershell_script_contents(user_data_script, embedded_scripts)
+        else:
+            return pack_script_contents(user_data_script, embedded_scripts)
     else:
         raise RuntimeError('Unable to get init.sh path')
 
@@ -982,14 +1050,19 @@ def main():
     parser.add_argument("--ins_type", type=str, default='Standard_B2s')
     parser.add_argument("--ins_hdd", type=int, default=30)
     parser.add_argument("--ins_img", type=str, default='pipeline-azure-group/pipeline-base-image')
+    parser.add_argument("--ins_platform", type=str, default='linux')
     parser.add_argument("--num_rep", type=int, default=250) # 250 x 3s = 12.5m
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
     parser.add_argument("--bid_price", type=float, default=1.0)
     parser.add_argument("--kube_ip", type=str, required=True)
     parser.add_argument("--kubeadm_token", type=str, required=True)
+    parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
+    parser.add_argument("--kube_node_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
     args, unknown = parser.parse_known_args()
     ins_key_path = args.ins_key
@@ -997,6 +1070,7 @@ def main():
     ins_type = args.ins_type
     ins_hdd = args.ins_hdd
     ins_img = args.ins_img
+    ins_platform = args.ins_platform
     is_spot = args.is_spot
     num_rep = args.num_rep
     time_rep = args.time_rep
@@ -1004,7 +1078,11 @@ def main():
     cluster_role = args.cluster_role
     kube_ip = args.kube_ip
     kubeadm_token = args.kubeadm_token
+    kubeadm_cert_hash = args.kubeadm_cert_hash
+    kube_node_token = args.kube_node_token
     region_id = args.region_id
+    pre_pull_images = args.image
+    additional_labels = args.label
 
     global zone
     zone = region_id
@@ -1019,11 +1097,13 @@ def main():
              '- RunID: {}\n'
              '- Type: {}\n'
              '- Disk: {}\n'
-             '- Image: {}\n'.format(cloud_region,
-                                    run_id,
-                                    ins_type,
-                                    ins_hdd,
-                                    ins_img))
+             '- Image: {}\n'
+             '- Platform: {}\n'.format(cloud_region,
+                                       run_id,
+                                       ins_type,
+                                       ins_hdd,
+                                       ins_img,
+                                       ins_platform))
 
     try:
         api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
@@ -1035,21 +1115,27 @@ def main():
 
     try:
 
-        # Redefine default instance image if cloud metadata has specific rules for instance type
-        allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
-        if allowed_instance and allowed_instance["instance_mask"]:
-            pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}'
-                     '\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
-                                                         ami=allowed_instance["instance_mask_ami"], instance_type=ins_type))
-            ins_img = allowed_instance["instance_mask_ami"]
+        if not ins_img or ins_img == 'null':
+            # Redefine default instance image if cloud metadata has specific rules for instance type
+            allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
+            if allowed_instance and allowed_instance["instance_mask"]:
+                pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}'
+                         '\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
+                                                             ami=allowed_instance["instance_mask_ami"], instance_type=ins_type))
+                ins_img = allowed_instance["instance_mask_ami"]
+        else:
+            pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
         ins_id, ins_ip = verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path,
-                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token)
+            api_url = os.environ["API"]
+            api_token = os.environ["API_TOKEN"]
+            api_user = os.environ["API_USER"]
+            ins_id, ins_ip = run_instance(api_url, api_token, api_user, resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_platform, ins_key_path,
+                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
-        label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region)
+        label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels)
         pipe_log('Node created:\n'
                  '- {}\n'
                  '- {}'.format(ins_id, ins_ip))

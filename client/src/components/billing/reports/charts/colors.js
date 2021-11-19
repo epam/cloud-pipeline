@@ -34,6 +34,41 @@ const colors = {
   gray: 'rgb(170, 170, 170)'
 };
 
+const rgbColors = [
+  [106, 173, 79], // current
+  [11, 127, 214], // blue
+  [255, 191, 51], // quota
+  [245, 124, 62], // orange
+  [245, 54, 88] // red
+];
+
+function generateColors (count, useHover = false, hover = false) {
+  const totalUnique = rgbColors.length;
+  const blocks = Math.ceil(count / totalUnique);
+  const maxAlpha = useHover && !hover ? 0.9 : 1.0;
+  const minAlpha = 0.25;
+  const alphaDiff = blocks === 1 ? 0 : (maxAlpha - minAlpha) / (blocks - 1);
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    const uniqueIndex = i % totalUnique;
+    const alpha = maxAlpha - alphaDiff * Math.floor(i / totalUnique);
+    const [r, g, b] = rgbColors[uniqueIndex];
+    colors.push(`rgba(${r}, ${g}, ${b}, ${alpha})`);
+  }
+  return colors;
+}
+
+function generateBorderColors (count) {
+  const totalUnique = rgbColors.length;
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    const uniqueIndex = i % totalUnique;
+    const [r, g, b] = rgbColors[uniqueIndex];
+    colors.push(`rgb(${r}, ${g}, ${b})`);
+  }
+  return colors;
+}
+
 function getColorConfiguration (config, name) {
   if (!config) {
     return {};
@@ -52,4 +87,4 @@ function getBackgroundColor (config, name) {
   return getColorConfiguration(config, name).background;
 }
 
-export {colors, getColor, getBackgroundColor};
+export {colors, getColor, getBackgroundColor, generateColors, generateBorderColors};

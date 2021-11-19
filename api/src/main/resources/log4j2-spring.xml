@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -18,19 +18,20 @@
 <Configuration monitorInterval="60">
     <Properties>
         <Property name="log-path">logs</Property>
+        <Property name="cp-api-logger-hostname">$${env:CP_API_CURRENT_POD_NAME:-cp-api-srv}</Property>
     </Properties>
     <Appenders>
         <Console name="Console-Appender" target="SYSTEM_OUT">
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>>
             </PatternLayout>
         </Console>
         <RollingFile  name="App-Appender" fileName="${log-path}/pipeline.log"
                       filePattern="${log-path}/pipeline-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="pipeline-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="20"/>
@@ -43,14 +44,34 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
+        </RollingFile >
+        <RollingFile  name="JSONSecurityLogsAppender" fileName="${log-path}/security.json"
+                      filePattern="${log-path}/security-%d{yyyyMMdd}.json">
+            <DefaultRolloverStrategy>
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
+                    <IfFileName glob="security-*.json">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="20"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+            <JsonLayout complete="false" compact="true" eventEol="true" stacktraceAsString="true">
+                <KeyValuePair key="user" value="$${ctx:user:-NotAuthorized}" />
+                <KeyValuePair key="log_context" value="Security" />
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
+            </JsonLayout>
         </RollingFile >
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
                       filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="spring-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="2"/>
@@ -63,7 +84,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -73,7 +94,7 @@
                 <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
             </Filters>
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="error-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="5"/>
@@ -86,14 +107,14 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
         <RollingFile  name="Requests-Appender" fileName="${log-path}/requests.log"
                       filePattern="${log-path}/requests-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="requests-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="5"/>
@@ -106,7 +127,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -114,6 +135,18 @@
     <Loggers>
         <Logger name="com.epam.pipeline" level="debug" additivity="true">
             <AppenderRef ref="App-Appender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.security" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.manager.security" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.manager.user" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="org.springframework.security.saml" level="error" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
         </Logger>
         <Logger name="org.springframework.security.saml" level="debug" additivity="false">
             <AppenderRef ref="Spring-Appender"/>

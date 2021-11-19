@@ -36,6 +36,7 @@ fi
 
 echo "Deploying using $PIPECTL_DIST_URL to a VM $AZURE_VM_NAME in $AZURE_VM_RG resource group"
 
+source "${JENKINS_ENV}"
 export DEPLOY_DIR="$WORKSPACE/assets"
 rm -rf "$DEPLOY_DIR"
 mkdir -p "$DEPLOY_DIR"

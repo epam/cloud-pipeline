@@ -18,7 +18,6 @@ import Remote from '../basic/Remote';
 import NodeInstance from './NodeInstance';
 
 class ClusterNodes extends Remote {
-
   constructor () {
     super();
     this.url = '/cluster/node/loadAll';

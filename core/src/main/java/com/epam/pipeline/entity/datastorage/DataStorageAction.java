@@ -17,14 +17,18 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class DataStorageAction {
 
     private Long id;
+    private boolean list;
+    private boolean listVersion;
     private boolean read;
     private boolean readVersion = false;
     private boolean write;
@@ -32,5 +36,12 @@ public class DataStorageAction {
 
     @JsonIgnore
     private String bucketName;
+    @JsonIgnore
+    private String path;
+
+    @JsonIgnore
+    public boolean isListOnly() {
+        return list || listVersion && (!read && !readVersion && !write && !writeVersion);
+    }
 
 }

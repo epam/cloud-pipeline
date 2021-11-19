@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,8 +24,10 @@ import java.util.Date;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class DataStorageDownloadFileUrl {
     private String url;
     private Date expires;
     private String tagValue;
+    private String cannedACLValue;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,17 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -32,7 +37,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.alive.policy.NodeExpirationService;
 import com.epam.pipeline.manager.execution.SystemParams;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -55,7 +60,7 @@ public class CloudFacadeImpl implements CloudFacade {
     private final MessageHelper messageHelper;
     private final CloudRegionManager regionManager;
     private final PreferenceManager preferenceManager;
-    private final PipelineRunManager pipelineRunManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final KubernetesManager kubernetesManager;
     private final Map<CloudProvider, CloudInstanceService> instanceServices;
     private final Map<CloudProvider, CloudInstancePriceService> instancePriceServices;
@@ -64,7 +69,7 @@ public class CloudFacadeImpl implements CloudFacade {
     public CloudFacadeImpl(final MessageHelper messageHelper,
                            final CloudRegionManager regionManager,
                            final PreferenceManager preferenceManager,
-                           final PipelineRunManager pipelineRunManager,
+                           final PipelineRunCRUDService runCRUDService,
                            final KubernetesManager kubernetesManager,
                            final List<CloudInstanceService> instanceServices,
                            final List<CloudInstancePriceService> instancePriceServices,
@@ -72,7 +77,7 @@ public class CloudFacadeImpl implements CloudFacade {
         this.messageHelper = messageHelper;
         this.regionManager = regionManager;
         this.preferenceManager = preferenceManager;
-        this.pipelineRunManager = pipelineRunManager;
+        this.runCRUDService = runCRUDService;
         this.kubernetesManager = kubernetesManager;
         this.instanceServices = CommonUtils.groupByCloudProvider(instanceServices);
         this.instancePriceServices = CommonUtils.groupByCloudProvider(instancePriceServices);
@@ -82,23 +87,42 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        return getInstanceService(region).scaleUpNode(region, runId, instance);
+        final RunInstance scaledUpInstance = getInstanceService(region).scaleUpNode(region, runId, instance);
+        kubernetesManager.createNodeService(scaledUpInstance);
+        return scaledUpInstance;
     }
 
     @Override
-    public void scaleUpFreeNode(final String nodeId) {
-        AbstractCloudRegion defaultRegion = regionManager.loadDefaultRegion();
-        getInstanceService(defaultRegion).scaleUpFreeNode(defaultRegion, nodeId);
+    public RunInstance scaleUpPoolNode(final String nodeId, final NodePool node) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(node.getRegionId());
+        return getInstanceService(region).scaleUpPoolNode(region, nodeId, node);
     }
 
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
+        try {
+            final PipelineRun run = runCRUDService.loadRunById(runId);
+            final RunInstance instance = run.getInstance();
+            kubernetesManager.deleteNodeService(instance);
+        } catch (IllegalArgumentException e) {
+            log.debug(e.getMessage(), e);
+        }
         getInstanceService(region).scaleDownNode(region, runId);
     }
 
     @Override
+    public void scaleDownPoolNode(final String nodeLabel) {
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        getInstanceService(region).scaleDownPoolNode(region, nodeLabel);
+    }
+
+    @Override
     public void terminateNode(final AbstractCloudRegion region, final String internalIp, final String nodeName) {
+        runCRUDService.loadRunsForNodeName(nodeName).stream()
+                .map(PipelineRun::getInstance)
+                .findFirst()
+                .ifPresent(kubernetesManager::deleteNodeService);
         getInstanceService(region).terminateNode(region, internalIp, nodeName);
     }
 
@@ -121,6 +145,12 @@ public class CloudFacadeImpl implements CloudFacade {
     public boolean reassignNode(final Long oldId, final Long newId) {
         final AbstractCloudRegion region = getRegionByRunId(oldId);
         return getInstanceService(region).reassignNode(region, oldId, newId);
+    }
+
+    @Override
+    public boolean reassignPoolNode(final String nodeLabel, final Long newId) {
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId);
     }
 
     @Override
@@ -232,17 +262,51 @@ public class CloudFacadeImpl implements CloudFacade {
         getInstanceService(region).attachDisk(region, runId, request);
     }
 
+    @Override
+    public List<InstanceDisk> loadDisks(final Long regionId, final Long runId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).loadDisks(region, runId);
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final Long runId) {
+        final AbstractCloudRegion region = getRegionByRunId(runId);
+        return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
+    }
+
+    @Override
+    public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
+        final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
+        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(cloudRegion, dnsRecord);
+    }
+
+    @Override
+    public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
+        final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
+        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(cloudRegion, dnsRecord);
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final Long regionId, final String imageName) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).getInstanceImageDescription(region, imageName);
+    }
+
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
         try {
-            final PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+            final PipelineRun run = runCRUDService.loadRunById(runId);
             return regionManager
                     .load(run.getInstance().getCloudRegionId());
         } catch (IllegalArgumentException e) {
             log.trace(e.getMessage(), e);
             log.debug("RunID {} was not found. Trying to get instance details from Node", runId);
-            final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(String.valueOf(runId));
-            return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
+            return loadRegionFromNodeLabels(String.valueOf(runId));
         }
+    }
+
+    private AbstractCloudRegion loadRegionFromNodeLabels(final String nodeLabel) {
+        final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(nodeLabel);
+        return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
     }
 
     private List<InstanceType> loadInstancesForAllRegions(final Boolean spot) {

@@ -16,17 +16,26 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Row, Upload, Button, Icon, Modal, Progress, Col, Tooltip} from 'antd';
+import {observer} from 'mobx-react';
+import {observable} from 'mobx';
+import {
+  Row,
+  Upload,
+  Button,
+  Icon,
+  Modal,
+  Progress,
+  Col,
+  Tooltip
+} from 'antd';
+import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
 const KB = 1024;
 const MB = 1024 * KB;
-const GB = 1024 * MB;
-const MAX_S3_FILE_SIZE_GB = 5;
 const MAX_NFS_FILE_SIZE_MB = 500;
 
-export default class UploadButton extends React.Component {
-
+class UploadButton extends React.Component {
   static propTypes = {
     action: PropTypes.string,
     multiple: PropTypes.bool,
@@ -35,7 +44,13 @@ export default class UploadButton extends React.Component {
     uploadToS3: PropTypes.bool,
     uploadToNFS: PropTypes.bool,
     title: PropTypes.string,
-    validate: PropTypes.func
+    validate: PropTypes.func,
+    path: PropTypes.string,
+    storageInfo: PropTypes.object,
+    region: PropTypes.string,
+    owner: PropTypes.string,
+    onInitialized: PropTypes.func,
+    style: PropTypes.object
   };
 
   state = {
@@ -43,6 +58,72 @@ export default class UploadButton extends React.Component {
     uploadInfoClosable: false,
     uploadingFiles: [],
     synchronousUploadingFiles: []
+  };
+
+  @observable s3Storage;
+  @observable s3StorageError;
+  uploadButton;
+
+  componentDidMount () {
+    this.createS3Storage();
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this);
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      this.props.storageId !== prevProps.storageId ||
+      this.props.uploadToS3 !== prevProps.uploadToS3 ||
+      this.props.path !== prevProps.path ||
+      this.props.storageInfo !== prevProps.storageInfo ||
+      this.props.region !== prevProps.region
+    ) {
+      this.createS3Storage();
+    }
+  }
+
+  triggerClick = () => {
+    if (
+      this.uploadButton &&
+      this.uploadButton.refs &&
+      this.uploadButton.refs.upload &&
+      this.uploadButton.refs.upload.uploader &&
+      this.uploadButton.refs.upload.uploader.fileInput &&
+      this.uploadButton.refs.upload.uploader.fileInput.click
+    ) {
+      this.uploadButton.refs.upload.uploader.fileInput.click();
+    }
+  };
+
+  createS3Storage = () => {
+    const {storageId, uploadToS3, path: prefix, storageInfo, region} = this.props;
+    if (uploadToS3 && storageId && storageInfo) {
+      const {delimiter, path} = storageInfo;
+      const storage = {
+        id: storageId,
+        path,
+        delimiter,
+        region
+      };
+      if (this.s3Storage) {
+        this.s3Storage.storage = storage;
+      } else {
+        this.s3Storage = new S3Storage(storage);
+      }
+      if (this.s3Storage.prefix !== prefix) {
+        this.s3Storage.prefix = prefix;
+      }
+      this.s3Storage.updateCredentials()
+        .then(() => {
+          this.s3StorageError = undefined;
+        })
+        .catch((e) => {
+          this.s3Storage = undefined;
+          this.s3StorageError = e.toString();
+        });
+    } else {
+      this.s3Storage = undefined;
+    }
   };
 
   showUploadInfo = (files) => {
@@ -62,10 +143,26 @@ export default class UploadButton extends React.Component {
     });
   };
 
+  hideUploadInfoDelayedIfDone = () => {
+    const {uploadingFiles = []} = this.state;
+    const allDone = !uploadingFiles.find(f => !f.done);
+    const haveRetry = uploadingFiles.find(f => f.done && !!f.retryCb && (!!f.error || f.aborted));
+    this.setState({
+      uploadInfoClosable: allDone
+    }, () => {
+      if (allDone && !haveRetry) {
+        setTimeout(this.hideUploadInfo, 2000);
+      }
+    });
+  };
+
   hideUploadInfo = () => {
     if (!this.state.uploadInfoClosable) {
       return;
     }
+    const {
+      uploadingFiles = []
+    } = this.state;
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,
@@ -73,18 +170,38 @@ export default class UploadButton extends React.Component {
       synchronousUploadingFiles: []
     }, async () => {
       if (this.props.onRefresh) {
-        this.props.onRefresh();
+        this.props.onRefresh(uploadingFiles.map(f => f.name));
       }
     });
   };
 
   onUploadStatusChangedSynchronous = async () => {
+    const {validate, validateAndFilter} = this.props;
+    const {synchronousUploadingFiles} = this.state;
     if (this.uploadTimeout) {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    if (this.props.validate) {
-      const validationResult = await this.props.validate(this.state.synchronousUploadingFiles);
+    if (validateAndFilter) {
+      const validationResult = await validateAndFilter(synchronousUploadingFiles);
+      if (validationResult && Array.isArray(validationResult) && validationResult.length) {
+        this.setState({
+          uploadInfoVisible: false,
+          uploadInfoClosable: false,
+          uploadingFiles: validationResult,
+          synchronousUploadingFiles: validationResult
+        });
+      } else {
+        this.setState({
+          uploadInfoVisible: false,
+          uploadInfoClosable: false,
+          uploadingFiles: [],
+          synchronousUploadingFiles: []
+        });
+        return;
+      }
+    } else if (validate) {
+      const validationResult = await validate(this.state.synchronousUploadingFiles);
       if (!validationResult) {
         this.setState({
           uploadInfoVisible: false,
@@ -115,7 +232,7 @@ export default class UploadButton extends React.Component {
         };
         if (uploadingFile) {
           if (this.props.uploadToNFS && file.size >= MAX_NFS_FILE_SIZE_MB * MB) {
-            updateError(`error: Maximum ${MAX_NFS_FILE_SIZE_MB}Gb per file`);
+            updateError(`error: Maximum ${MAX_NFS_FILE_SIZE_MB}Mb per file`);
             resolve();
             return;
           }
@@ -175,99 +292,6 @@ export default class UploadButton extends React.Component {
       }
       this.hideUploadInfoDelayed(this.state.uploadingFiles);
     });
-  };
-
-  uploadItemToStorage = async (file) => {
-    const request =
-      new DataStorageGenerateUploadUrl(
-        this.props.storageId,
-        this.props.path ? `${this.props.path}/${file.name}` : file.name
-      );
-    await request.fetch();
-    if (request.error) {
-      return Promise.reject(new Error(request.error));
-    } else {
-      const url = request.value.url;
-      const tagValue = request.value.tagValue;
-      return new Promise((resolve) => {
-        const files = this.state.uploadingFiles;
-        const [uploadingFile] = files.filter(f => f.uid === file.uid);
-
-        const updatePercent = ({loaded, total}) => {
-          uploadingFile.percent = Math.min(100, Math.ceil(loaded / total * 100));
-          this.setState({uploadingFiles: files});
-        };
-        const updateError = (error) => {
-          uploadingFile.percent = 100;
-          uploadingFile.error = error;
-          uploadingFile.done = true;
-          this.setState({uploadingFiles: files});
-        };
-        const updateStatus = (status) => {
-          uploadingFile.percent = 100;
-          uploadingFile.status = status;
-          if (status === 'canceled' || status === 'error' || status === 'done') {
-            uploadingFile.done = true;
-          }
-          this.setState({uploadingFiles: files});
-        };
-
-        if (uploadingFile) {
-          if (uploadingFile.done) {
-            resolve();
-            return;
-          }
-          if (file.size >= MAX_S3_FILE_SIZE_GB * GB) {
-            updateError(`error: Maximum ${MAX_S3_FILE_SIZE_GB}Gb per file`);
-            resolve();
-            return;
-          }
-          uploadingFile.status = 'uploading...';
-          this.setState({
-            uploadingFiles: files
-          });
-        } else {
-          resolve();
-          return;
-        }
-
-        const request = new XMLHttpRequest();
-        request.upload.onprogress = (event) => {
-          updatePercent(event);
-        };
-        request.upload.onload = () => {
-          updateStatus('processing...');
-        };
-        request.upload.onerror = () => {
-          updateError('error');
-        };
-        request.upload.onabort = (event) => {
-          updateStatus('canceled');
-          resolve();
-        };
-        request.onreadystatechange = () => {
-          if (request.readyState !== 4) return;
-
-          if (request.status !== 200) {
-            updateError(request.statusText);
-          } else {
-            updateStatus('done');
-          }
-          resolve();
-        };
-        request.open('PUT', url, true);
-        if (tagValue) {
-          request.setRequestHeader('x-amz-tagging', tagValue);
-        }
-        request.send(file);
-        uploadingFile.abortCallback = () => {
-          request.abort();
-        };
-        this.setState({
-          uploadingFiles: files
-        });
-      });
-    }
   };
 
   onUploadStatusChanged = (info) => {
@@ -351,24 +375,167 @@ export default class UploadButton extends React.Component {
       status: 'waiting...',
       percent: 0
     }));
-    uploadingFiles.forEach(f => {
-      f.abortCallback = () => {
-        const files = this.state.uploadingFiles;
-        const [file] = files.filter(uploadingFile => f.uid === uploadingFile.uid);
-        if (file) {
-          file.done = true;
-          file.percent = 100;
-          file.status = 'canceled';
-          this.setState({uploadingFiles: files});
-        }
-      };
-    });
     this.setState({uploadInfoVisible: true, uploadingFiles: uploadingFiles}, async () => {
       for (let i = 0; i < this.state.synchronousUploadingFiles.length; i++) {
-        await this.uploadItemToStorage(this.state.synchronousUploadingFiles[i]);
+        await this.uploadItemToStorageSDK(this.state.synchronousUploadingFiles[i]);
       }
-      this.hideUploadInfoDelayed(this.state.uploadingFiles);
+      this.hideUploadInfoDelayedIfDone();
     });
+  };
+
+  uploadItemToStorageSDK = (file) => {
+    const files = this.state.uploadingFiles;
+    const uploadingFile = files.find(f => f.uid === file.uid);
+    if (uploadingFile) {
+      uploadingFile.status = 'uploading...';
+      this.setState({
+        uploadingFiles: files
+      });
+    }
+
+    const onProgress = (percent) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile && !uFile.aborted) {
+        uFile.percent = uFile.done
+          ? 100
+          : Math.min(100, Math.round(percent * 100));
+        if (!uFile.done) {
+          uFile.status = 'uploading...';
+        }
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const onError = (error) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile && error) {
+        uFile.error = error.toString();
+        uFile.status = 'error';
+        uFile.done = true;
+        this.setState({uploadingFiles}, this.hideUploadInfoDelayedIfDone);
+      }
+    };
+
+    const onDone = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.status = 'done';
+        uFile.done = true;
+        uFile.aborting = false;
+        this.setState({uploadingFiles}, this.hideUploadInfoDelayedIfDone);
+      }
+    };
+
+    const abort = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.aborted = true;
+        uFile.aborting = false;
+        uFile.status = 'aborted';
+        uFile.uploadID = undefined;
+        uFile.partNumber = undefined;
+        uFile.parts = [];
+        this.setState({uploadingFiles}, this.hideUploadInfoDelayedIfDone);
+      }
+    };
+
+    const startAborting = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.uploadID = undefined;
+        uFile.aborting = true;
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const setAbort = (abortFn) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.cancelCb = () => {
+          startAborting();
+          abortFn && abortFn().then(abort).catch(abort);
+        };
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const setMultipartUploadParts = (id, parts) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.uploadID = id;
+        uFile.parts = parts;
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const onPartError = (partNumber, error) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.error = error;
+        uFile.partNumber = partNumber;
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const callbacks = {
+      onPartError,
+      onProgress,
+      setAbort,
+      setMultipartUploadParts
+    };
+
+    const doUpload = (uploadID = undefined, partNumber = 0, multipartParts = []) => {
+      return new Promise((resolve) => {
+        this.s3Storage.doUpload(
+          file,
+          {
+            uploadID,
+            partNumber,
+            multipartParts,
+            owner: this.props.owner
+          },
+          callbacks
+        )
+          .then((error) => {
+            if (error) {
+              onError(error);
+              resolve();
+            } else {
+              onDone();
+              resolve();
+            }
+          })
+          .catch(error => {
+            onError(error);
+            resolve();
+          });
+      });
+    };
+
+    uploadingFile.retryCb = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile && this.s3Storage) {
+        const {uploadID, partNumber, parts: multipartParts} = uFile;
+        uFile.error = undefined;
+        uFile.done = false;
+        uFile.aborted = false;
+        uFile.status = 'uploading...';
+        uFile.percent = 0;
+        this.setState({uploadingFiles}, () => {
+          doUpload(uploadID, partNumber, multipartParts);
+        });
+      }
+    };
+    return doUpload();
   };
 
   render () {
@@ -399,7 +566,11 @@ export default class UploadButton extends React.Component {
       uploadProps.onChange = this.onUploadStatusChanged;
     }
     const button = (
-      <Button size="small" id="upload-button">
+      <Button
+        size="small"
+        id="upload-button"
+        disabled={this.props.uploadToS3 && !!this.s3StorageError}
+      >
         <Icon type="upload" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
       </Button>
@@ -407,10 +578,26 @@ export default class UploadButton extends React.Component {
 
     return (
       <div style={{display: 'inline'}}>
-        <Upload {...uploadProps}>
+        <Upload
+          {...uploadProps}
+          disabled={this.props.uploadToS3 && !!this.s3StorageError}
+          ref={component => {
+            this.uploadButton = component;
+          }}
+          style={this.props.style}
+        >
           {
-            this.props.uploadToS3 && !this.props.uploadToNFS &&
-            <Tooltip title={`Maximum ${MAX_S3_FILE_SIZE_GB}Gb per file`} trigger="hover">
+            this.props.uploadToS3 && this.s3StorageError && !this.props.uploadToNFS &&
+            <Tooltip
+              title={this.s3StorageError}
+              trigger="hover"
+            >
+              {button}
+            </Tooltip>
+          }
+          {
+            this.props.uploadToS3 && !this.s3StorageError && !this.props.uploadToNFS &&
+            <Tooltip title={`Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`} trigger="hover">
               {button}
             </Tooltip>
           }
@@ -454,7 +641,7 @@ export default class UploadButton extends React.Component {
                     </span>
                   </Row>
                   <Row type="flex" style={{width: '100%'}}>
-                    <Col span={22}>
+                    <Col span={21}>
                       <Progress
                         strokeWidth={3}
                         key={`${f.uid}-progress`}
@@ -463,16 +650,25 @@ export default class UploadButton extends React.Component {
                     </Col>
                     {
                       this.props.uploadToS3 &&
-                      !f.done &&
-                      f.abortCallback &&
-                      <Col span={2}>
-                        <Row type="flex" justify="center">
-                          <Button
-                            shape="circle"
-                            type="danger"
-                            size="small"
-                            icon="close"
-                            onClick={() => f.abortCallback()} />
+                      <Col span={3}>
+                        <Row type="flex" justify="space-around">
+                          {
+                            f.done && (f.error || f.aborted) && f.retryCb && !f.aborting &&
+                            <Button
+                              size="small"
+                              shape="circle"
+                              icon="reload"
+                              onClick={() => f.retryCb()} />
+                          }
+                          {
+                            !f.done && f.cancelCb && f.uploadID &&
+                            <Button
+                              size="small"
+                              shape="circle"
+                              type="danger"
+                              icon="close"
+                              onClick={() => f.cancelCb()} />
+                          }
                         </Row>
                       </Col>
                     }
@@ -486,3 +682,5 @@ export default class UploadButton extends React.Component {
     );
   }
 }
+
+export default observer(UploadButton);

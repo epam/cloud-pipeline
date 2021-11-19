@@ -26,6 +26,7 @@ class DataStorageModel(DataStorageItemModel):
         self.parent_folder_id = None
         self.mask = 0
         self.policy = StoragePolicy()
+        self.region = None
 
     @classmethod
     def load(cls, json):
@@ -44,6 +45,30 @@ class DataStorageModel(DataStorageItemModel):
             instance.parent_folder_id = json['parentFolderId']
         if 'mask' in json:
             instance.mask = json['mask']
+        instance.policy = StoragePolicy()
+        if 'storagePolicy' in json:
+            cls.parse_policy(instance.policy, json['storagePolicy'])
+        return instance
+
+    @classmethod
+    def load_with_region(cls, json, region_data):
+        instance = DataStorageModel()
+        instance.initialize(json)
+        instance.identifier = json['id']
+        if 'description' in json:
+            instance.description = json['description']
+        if 'type' in json:
+            instance.type = json['type']
+        if 'delimiter' in json:
+            instance.delimiter = json['delimiter']
+        if 'createdDate' in json:
+            instance.changed = date_utilities.server_date_representation(json['createdDate'])
+        if 'parentFolderId' in json:
+            instance.parent_folder_id = json['parentFolderId']
+        if 'mask' in json:
+            instance.mask = json['mask']
+        if 'regionId' in json:
+            instance.region = cls._find_region_code(json['regionId'], region_data)
         instance.policy = StoragePolicy()
         if 'storagePolicy' in json:
             cls.parse_policy(instance.policy, json['storagePolicy'])
@@ -70,6 +95,13 @@ class DataStorageModel(DataStorageItemModel):
             return '{}{}{}'.format(self.root_path(), self.delimiter, path)
         else:
             return '{}/{}'.format(self.root_path(), path)
+
+    @staticmethod
+    def _find_region_code(region_id, region_data):
+        for region in region_data:
+            if int(region.get('id', 0)) == int(region_id):
+                return region.get('regionId', None)
+        return None
 
 
 class StoragePolicy(object):

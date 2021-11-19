@@ -23,7 +23,9 @@ print_info "Installing common packages"
 yum install -y \
             curl \
             wget \
-            git
+            git \
+            gettext \
+            iproute-tc
 
 git config --global http.sslVerify "false"
 

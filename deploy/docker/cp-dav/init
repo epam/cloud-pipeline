@@ -23,6 +23,14 @@ export APACHE_LOG_DIR="${APACHE_LOG_DIR:-/var/log/dav/httpd}"
 export SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
 export APACHE_DAV_LOCK_DB="${APACHE_DAV_LOCK_DB:-$APACHE_HOME/dav/DavLock}"
 
+function download_file {
+    local _FILE_URL=$1
+    echo "Downloading ${_FILE_URL}"
+    wget -q --no-check-certificate ${_FILE_URL} 2>/dev/null || curl -s -k -O ${_FILE_URL}
+    _DOWNLOAD_RESULT=$?
+    return "$_DOWNLOAD_RESULT"
+}
+
 if [ -z "$API" ] && ([ -z "$CP_API_SRV_INTERNAL_HOST" ] || [ -z "$CP_API_SRV_INTERNAL_PORT" ]); then
     echo "$API is not set, and we cannot construct it as $CP_API_SRV_INTERNAL_HOST or $CP_API_SRV_INTERNAL_PORT are not set as well, exiting"
     exit 1
@@ -35,9 +43,42 @@ if [ -z "$API_TOKEN" ] && [ -z "$CP_API_JWT_ADMIN" ]; then
 fi
 export API_TOKEN="${API_TOKEN:-$CP_API_JWT_ADMIN}"
 
+export DISTRIBUTION_URL="${DISTRIBUTION_URL:-https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/pipe.tar.gz}"
+download_file "${DISTRIBUTION_URL}"
+
+if [ $? -eq 0 ]; then
+      echo "'pipe' CLI download succeeded."
+      mv pipe.tar.gz /opt/ && \
+      cd /opt && \
+      tar -zxf pipe.tar.gz && \
+      rm -rf pipe.tar.gz && \
+      ln -s /opt/pipe/pipe /usr/bin/pipe
+      if [ $? -eq 0 ]; then
+        pipe configure --auth-token "$API_TOKEN" --api "${API}" --timezone local --proxy ''
+      fi
+fi
+
 # Create the required directories
 mkdir -p "$CP_DAV_SERVE_DIR" "$CP_DAV_MOUNT_POINT" "$APACHE_LOG_DIR" "$SYNC_LOG_DIR"
 mkdir -p $(dirname $APACHE_DAV_LOCK_DB)
+
+# Unpack and configure NFS observer script
+if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
+  export PIPE_COMMON_DISTRIBUTION_URL="${PIPE_COMMON_DISTRIBUTION_URL:-https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/pipe-common.tar.gz}"
+  download_file "${PIPE_COMMON_DISTRIBUTION_URL}"
+  if [ $? -eq 0 ]; then
+        echo "'pipe-common' package was downloaded successfully."
+        inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
+        tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
+        mv watch_mount_shares.py $SYNC_HOME/ && \
+        rm -rf pipe-common.tar.gz && \
+        sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
+        sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
+        echo "* * * * * root flock -w 1 /var/run/nfs-watcher.lock bash \${SYNC_HOME}/nfs-watcher.sh" >> /tmp/sync
+  else
+    echo "Unable to retrieve 'pipe-common' package"
+  fi
+fi
 
 # Persist environment for a cron job
 env > $SYNC_HOME/env.sh
@@ -52,6 +93,9 @@ crond
 envsubst < /tmp/httpd.conf > ${APACHE_HOME}/conf/httpd.conf
 envsubst < /tmp/webdav.conf > ${APACHE_HOME}/conf/extra/webdav.conf
 rm -rf /tmp/*.conf
+
+# Apache shall use 0002 mask to allow owner and group rw access
+umask ${CP_DAV_UMASK:-0002}
 
 # Start Apache in the foreground
 ${APACHE_HOME}/bin/apachectl -DFOREGROUND

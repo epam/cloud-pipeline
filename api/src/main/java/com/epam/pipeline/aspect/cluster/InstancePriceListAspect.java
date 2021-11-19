@@ -17,6 +17,7 @@
 package com.epam.pipeline.aspect.cluster;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +41,20 @@ public class InstancePriceListAspect {
     @Async("pauseRunExecutor")
     @AfterReturning(pointcut = "execution(* com.epam.pipeline.manager.region.CloudRegionManager.create(..))",
             returning = "region")
-    public void updatePriceList(JoinPoint joinPoint, AbstractCloudRegion region) {
+    public void updatePriceListForNewRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
         log.debug("Scheduling price update for new region {}", region.getRegionCode());
         instanceOfferScheduler.updatePriceList(region);
         log.debug("Finished price update for new region {}", region.getRegionCode());
+    }
+
+    @Async("pauseRunExecutor")
+    @AfterReturning(pointcut = "execution(* com.epam.pipeline.manager.region.CloudRegionManager.update(..))",
+            returning = "region")
+    public void updatePriceListForUpdatedRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
+        if (region.getProvider().equals(CloudProvider.GCP)) {
+            log.debug("Scheduling price update for updated region {}", region.getRegionCode());
+            instanceOfferScheduler.updatePriceList(region);
+            log.debug("Finished price update for updated region {}", region.getRegionCode());
+        }
     }
 }

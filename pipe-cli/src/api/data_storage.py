@@ -36,18 +36,21 @@ class DataStorage(API):
     def load_from_uri(cls, path):
         url = urlparse(path)
         requested_scheme = url.scheme
+        full_path = path.replace(requested_scheme + "://", '')
         if requested_scheme not in WrapperType.cloud_schemes():
             raise RuntimeError('Supported schemes for datastorage are: {}. '
                                'Actual scheme is "{}".'
                                .format('"' + '", "'.join(WrapperType.cloud_schemes()) + '"', requested_scheme))
-        storage = DataStorage.get(url.netloc)
+        storage = DataStorage.get_by_path(full_path)
         expected_scheme = WrapperType.cloud_scheme(storage.type)
         if not WrapperType.is_dynamic_cloud_scheme(requested_scheme) and requested_scheme != expected_scheme:
             raise RuntimeError('Requested datastorage scheme differs with its type. '
                                'Expected scheme is "{}". '
                                'Actual scheme is "{}".'.format(expected_scheme, requested_scheme))
 
-        return storage, url.path[1:]
+        return storage, \
+               full_path.replace(url.netloc, '').lstrip(storage.delimiter), \
+               full_path.replace(storage.path, '').lstrip(storage.delimiter)
 
     @classmethod
     def list(cls):
@@ -76,9 +79,21 @@ class DataStorage(API):
         if name is None:
             return None
         api = cls.instance()
-        response_data = api.call('datastorage/find?id={}'.format(name), None)
+        params = urlencode({'id': name})
+        response_data = api.call('datastorage/find?' + params, None)
         if 'payload' in response_data:
             return DataStorageModel.load(response_data['payload'])
+        return None
+
+    @classmethod
+    def get_by_path(cls, path):
+        if path is None:
+            return None
+        api = cls.instance()
+        params = urlencode({'id': path})
+        response_data = api.call('datastorage/findByPath?' + params, None)
+        if 'payload' in response_data:
+            return DataStorageModel.load_with_region(response_data['payload'], cls.get_region_info())
         return None
 
     @classmethod
@@ -228,7 +243,13 @@ class DataStorage(API):
     @staticmethod
     def create_operation_info(source_bucket, destination_bucket, command, versioning=False):
         operations = []
-        if source_bucket and command == "cp":
+        if source_bucket and command == 'ls':
+            operation = {'id': source_bucket, 'list': True}
+            if versioning:
+                operation['listVersion'] = True
+                operation['readVersion'] = True
+            operations.append(operation)
+        if source_bucket and command == 'cp':
             operation = {'id': source_bucket, 'read': True, 'write': False}
             if versioning:
                 operation['readVersion'] = True
@@ -270,50 +291,55 @@ class DataStorage(API):
     @classmethod
     def set_object_tags(cls, identifier, path, tags, version):
         api = cls.instance()
-        data = json.dumps(tags)
-        endpoint = 'datastorage/{}/tags?path={}'.format(identifier, path)
-        if version:
-            endpoint = '&version='.join([endpoint, version])
-        response_data = api.call(endpoint, data=data, http_method='POST')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to update tags for object {}.".format(path))
+        return api.retryable_call('POST', 'datastorage/{}/tags?path={}'.format(identifier, path) + \
+                                  ('&version=' + version if version else ''),
+                                  data=tags) \
+               or []
 
     @classmethod
     def get_object_tags(cls, identifier, path, version):
         api = cls.instance()
-        endpoint = 'datastorage/{}/tags?path={}'.format(identifier, path)
-        if version:
-            endpoint = '&version='.join([endpoint, version])
-        response_data = api.call(endpoint, None)
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to update tags for object {}.".format(path))
+        return api.retryable_call('GET', 'datastorage/{}/tags?path={}'.format(identifier, path) + \
+                                  ('&version=' + version if version else '')) \
+               or []
 
     @classmethod
     def delete_object_tags(cls, identifier, path, tags, version):
         api = cls.instance()
-        data = json.dumps(tags)
-        endpoint = 'datastorage/{}/tags?path={}'.format(identifier, path)
-        if version:
-            endpoint = '&version='.join([endpoint, version])
-        response_data = api.call(endpoint, data=data, http_method='DELETE')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to update tags for object {}.".format(path))
+        api.retryable_call('DELETE', 'datastorage/{}/tags?path={}'.format(identifier, path) + \
+                           ('&version=' + version if version else ''),
+                           data=tags)
+
+    @classmethod
+    def batch_insert_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        api.retryable_call('PUT', 'datastorage/{}/tags/batch/insert'.format(identifier),
+                           data={'requests': requests})
+
+    @classmethod
+    def batch_copy_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        api.retryable_call('PUT', 'datastorage/{}/tags/batch/copy'.format(identifier),
+                           data={'requests': requests})
+
+    @classmethod
+    def batch_load_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        return api.retryable_call('POST', 'datastorage/{}/tags/batch/load'.format(identifier),
+                                  data={'requests': requests}) \
+               or []
+
+    @classmethod
+    def batch_delete_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        api.retryable_call('DELETE', 'datastorage/{}/tags/batch/delete'.format(identifier),
+                           data={'requests': requests})
+
+    @classmethod
+    def batch_delete_all_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        api.retryable_call('DELETE', 'datastorage/{}/tags/batch/deleteAll'.format(identifier),
+                           data={'requests': requests})
 
     @classmethod
     def get_storage_usage(cls, name, path=None):
@@ -330,6 +356,19 @@ class DataStorage(API):
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to load usage statistic for storage '{}'.".format(name))
+
+    @classmethod
+    def get_region_info(cls):
+        api = cls.instance()
+        response_data = api.call('cloud/region/info', None)
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to load regions info")
 
 
 def __create_policy__(sts_duration, lts_duration, versioning, backup_duration):

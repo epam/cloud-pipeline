@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@ import fnmatch
 import logging
 import json
 import math
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents, pack_powershell_script_contents
+import jwt
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 MIN_SWAP_DEVICE_SIZE = 5
+
+DEFAULT_FS_TYPE = 'btrfs'
+SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 
 current_run_id = 0
 api_url = None
@@ -29,7 +33,23 @@ api_token = None
 script_path = None
 
 
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
+
+
 def pipe_log_init(run_id):
+    global api_user
     global api_token
     global api_url
     global current_run_id
@@ -37,8 +57,9 @@ def pipe_log_init(run_id):
 
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
+    api_user = os.environ["API_USER"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -48,7 +69,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -68,7 +89,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
@@ -122,12 +143,24 @@ def get_networks_config(cloud_region):
     return get_cloud_config_section(cloud_region, "networks")
 
 
+def get_access_config(cloud_region):
+    return get_cloud_config_section(cloud_region, "access_config")
+
+
 def get_instance_images_config(cloud_region):
     return get_cloud_config_section(cloud_region, "amis")
 
 
+def get_network_tags(cloud_region):
+    return get_cloud_config_section(cloud_region, "network_tags")
+
+
 def get_allowed_zones(cloud_region):
     return list(get_networks_config(cloud_region).keys())
+
+
+def get_region_tags(cloud_region):
+    return get_cloud_config_section(cloud_region, "tags")
 
 
 def get_security_groups(cloud_region):
@@ -145,24 +178,26 @@ def get_well_known_hosts(cloud_region):
     return get_cloud_config_section(cloud_region, "well_known_hosts")
 
 
-def get_allowed_instance_image(cloud_region, instance_type, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_object = {"instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script}
+    default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
+    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE}
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
         return default_object
 
     for image_config in instance_images_config:
+        image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
-        init_script = None
-        if "init_script" in image_config:
-            init_script = image_config["init_script"]
-        else:
-            init_script = default_object["init_script"]
-        if fnmatch.fnmatch(instance_type, instance_mask):
-            return {"instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script}
+        init_script = image_config.get("init_script", default_object["init_script"])
+        embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
+        fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
+        if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
+            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            "embedded_scripts": embedded_scripts, "fs_type": fs_type}
 
     return default_object
 
@@ -236,29 +271,56 @@ def replace_swap(swap_size, init_script):
     return init_script
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
-    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script \
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images)) \
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                         swap_size, pre_pull_images=[]):
+    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
         certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(cloud_region)
+        fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
+        if fs_type not in SUPPORTED_FS_TYPES:
+            pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
+                          (fs_type, DEFAULT_FS_TYPE))
+            fs_type = DEFAULT_FS_TYPE
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        if pre_pull_images:
+            user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string)\
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string)\
                                             .replace('@KUBE_IP@', kube_ip)\
-                                            .replace('@KUBE_TOKEN@', kubeadm_token)
-
-        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
-        # to minimize the size of the user data
-        # Otherwise - raw script will be used
-        try:
-            from pipeline import pack_script_contents
-            return pack_script_contents(user_data_script)
-        except:
-            return user_data_script
+                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                            .replace('@API_URL@', api_url) \
+                                            .replace('@API_TOKEN@', api_token) \
+                                            .replace('@API_USER@', api_user) \
+                                            .replace('@FS_TYPE@', fs_type)
+        embedded_scripts = {}
+        if allowed_instance["embedded_scripts"]:
+            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+                embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
+        if ins_platform == 'windows':
+            return pack_powershell_script_contents(user_data_script, embedded_scripts)
+        else:
+            return pack_script_contents(user_data_script, embedded_scripts)
     else:
         raise RuntimeError('Unable to get init.sh path')
 
@@ -298,7 +360,7 @@ def poll_instance(sock, timeout, ip, port):
     try:
         result = sock.connect_ex((ip, port))
     except Exception as e:
-        print e
+        print(e)
     sock.settimeout(None)
     return result
 

@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        table,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<p>Dear user,</p>
+<p>*** This is a system generated email, do not reply to this email ***</p>
+<p>Please be informed, that a data storage <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/storage/${CP_DOLLAR}templateParameters.get("storageId")">${CP_DOLLAR}templateParameters.get("storageName")</a> has reached a ${CP_DOLLAR}templateParameters.get("threshold") volume consumption threshold.</p>
+<p>Previous data storage state is <b>${CP_DOLLAR}templateParameters.get("previousMountStatus")</b></p>
+<p>New data storage state is <b>${CP_DOLLAR}templateParameters.get("newMountStatus")</b></p>
+<br/>
+<hr align="left" width="300" size="2" color="#000000" />
+<p><b>Storage statuses meanings:</b></p>
+<ul>
+    <li><b>ACTIVE</b>: data storage is accessible as usual. Data can be read/written using the GUI and compute jobs.</li>
+    <li><b>MOUNT_DISABLED</b>: data storage becomes <b>read-only</b> for the compute jobs. But the GUI still allows write operations, which allows to perform the cleanup.</li>
+    <li><b>READ_ONLY</b>: data storage is <b>read-only</b> from the GUI and compute jobs. Cleanup is possible via a request to the platform support team.</li>
+  </ul>
+<hr align="left" width="300" size="2" color="#000000" />
+<br />
+<p>Best regards,</p>
+<p>$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</p>
+</body>
+
+</html>

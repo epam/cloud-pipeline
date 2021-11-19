@@ -40,8 +40,10 @@ RUN yum -y install epel-release && \
                     which \
                     mesa-libGLU
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install --upgrade pip flask
+
+RUN pip install -I setuptools
 
 # Install git from sources, as it conflicts with nvidia/cuda docker base image
 ADD centos/scripts/install_git.sh /opt/install_git.sh
@@ -94,3 +96,4 @@ RUN wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86
 # Add Chrome desktop icon
 ADD create_chrome_launcher.sh /caps/create_chrome_launcher.sh
 RUN echo "bash /caps/create_chrome_launcher.sh" >> /caps.sh
+RUN cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template

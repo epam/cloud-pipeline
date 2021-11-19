@@ -44,8 +44,9 @@ export default class BooleanParameterInput extends React.Component {
         className={this.props.className}
         disabled={this.props.disabled}
         checked={this.checked}
-        onChange={this.onChange}>
-        {this.checked ? 'Enabled' : 'Disabled'}
+        onChange={this.onChange}
+      >
+        Enabled
       </Checkbox>
     );
   };

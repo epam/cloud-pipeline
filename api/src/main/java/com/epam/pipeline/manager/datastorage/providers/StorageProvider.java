@@ -17,8 +17,12 @@
 package com.epam.pipeline.manager.datastorage.providers;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
@@ -49,13 +53,19 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void restoreFileVersion(T dataStorage, String path, String version)
             throws DataStorageException;
 
+    Stream<DataStorageFile> listDataStorageFiles(T dataStorage, String path);
+
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
+
+    Optional<DataStorageFile> findFile(T dataStorage, String path, String version);
 
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);
 
     DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(T dataStorage, String path);
+
+    DataStorageDownloadFileUrl generateUrl(T dataStorage, String path, List<String> permissions, Duration duration);
 
     DataStorageFile createFile(T dataStorage, String path, byte[] contents)
             throws DataStorageException;
@@ -77,6 +87,10 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     DataStorageFolder moveFolder(T dataStorage, String oldPath, String newPath)
             throws DataStorageException;
+
+    DataStorageFile copyFile(T dataStorage, String oldPath, String newPath);
+
+    DataStorageFolder copyFolder(T dataStorage, String oldPath, String newPath);
 
     boolean checkStorage(T dataStorage);
 

@@ -16,22 +16,40 @@
 
 package com.epam.pipeline.entity.cluster;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@RequiredArgsConstructor
+@EqualsAndHashCode
 public class InstancePrice {
     private String instanceType;
     private int instanceDisk;
+    /**
+     * An overall instance price per hour.
+     */
     private double pricePerHour;
+    /**
+     * Instance virtual machine price per hour.
+     */
+    private double computePricePerHour;
+    /**
+     * Instance disk gigabyte price per hour. 
+     */
+    private double diskPricePerHour;
     private double minimumTimePrice;
     private double averageTimePrice;
     private double maximumTimePrice;
 
-    public InstancePrice(String instanceType, int instanceDisk, double pricePerHour) {
+    public InstancePrice(String instanceType, int instanceDisk, double pricePerHour, double computePricePerHour, 
+                         double diskPricePerHour) {
         this.instanceType = instanceType;
         this.instanceDisk = instanceDisk;
         this.pricePerHour = pricePerHour;
+        this.computePricePerHour = computePricePerHour;
+        this.diskPricePerHour = diskPricePerHour;
     }
 }

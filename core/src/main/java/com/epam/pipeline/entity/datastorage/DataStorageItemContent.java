@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class DataStorageItemContent {
     private byte[] content;
     private String contentType;

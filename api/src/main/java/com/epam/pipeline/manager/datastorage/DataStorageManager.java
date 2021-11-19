@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -27,6 +29,7 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -38,31 +41,53 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.ToolFingerprint;
+import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.templates.DataStorageTemplate;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import org.apache.commons.collections.MapUtils;
+import com.epam.pipeline.utils.PipelineStringUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -77,14 +102,18 @@ import org.springframework.util.Assert;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,9 +127,14 @@ import java.util.stream.Collectors;
 
 @Service
 @AclSync
+@Slf4j
 public class DataStorageManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorageManager.class);
+    private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
+    private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
+    public static final String DAV_MOUNT_TAG = "dav-mount";
+    private static final String SHARED_STORAGE_SUFFIX = "share";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -141,6 +175,21 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private SearchManager searchManager;
 
+    @Autowired
+    private DataStoragePathLoader pathLoader;
+
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private DataStorageTagProviderManager tagProviderManager;
+
+    @Autowired
+    private ToolVersionManager toolVersionManager;
+
+    @Autowired
+    private ToolManager toolManager;
+
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -148,15 +197,24 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadAllDataStorages();
     }
 
-    public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject() {
-        return dataStorageDao.loadAllDataStorages().stream().map(storage -> {
-            if (storage.getFileShareMountId() != null) {
-                return new DataStorageWithShareMount(storage,
-                        fileShareMountManager.load(storage.getFileShareMountId()));
-            } else {
-                return new DataStorageWithShareMount(storage, null);
-            }
-        }).collect(Collectors.toList());
+    public List<AbstractDataStorage> getDataStoragesWithToolsToMount() {
+        return dataStorageDao.loadAllDataStoragesWithToolsToMount();
+    }
+
+    public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
+        final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
+                .map(cloudRegionManager::load).orElse(null);
+        return getDataStoragesWithToolsToMount().stream()
+                .filter(dataStorage -> !dataStorage.isSensitive())
+                .map(storage -> {
+                    if (storage.getFileShareMountId() != null) {
+                        return new DataStorageWithShareMount(storage,
+                                fileShareMountManager.load(storage.getFileShareMountId()));
+                    } else {
+                        return new DataStorageWithShareMount(storage, null);
+                    }
+                }).filter(storage -> filterDataStorage(storage, fromRegion))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -165,6 +223,17 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.notNull(dbDataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, id));
         dbDataStorage.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(id, AclClass.DATA_STORAGE)));
         return dbDataStorage;
+    }
+
+    public boolean exists(final Long id) {
+        return dataStorageDao.loadDataStorage(id) != null;
+    }
+
+    public List<AbstractDataStorage> getDatastoragesByIds(final List<Long> ids) {
+        if(CollectionUtils.isEmpty(ids)) {
+            return Collections.emptyList();
+        }
+        return dataStorageDao.loadDataStoragesByIds(ids);
     }
 
     @Override
@@ -177,6 +246,16 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Override public AclClass getSupportedClass() {
         return AclClass.DATA_STORAGE;
+    }
+
+    public AbstractDataStorage loadByPathOrId(final String identifier) {
+        return pathLoader.loadDataStorageByPathOrId(identifier);
+    }
+
+    public List<AbstractDataStorage> loadAllByPath(final String identifier) {
+        Assert.isTrue(StringUtils.isNotBlank(identifier),
+                      messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
+        return dataStorageDao.loadDataStorageByNameOrPath(identifier, identifier, true);
     }
 
     public AbstractDataStorage loadByNameOrId(final String identifier) {
@@ -193,12 +272,7 @@ public class DataStorageManager implements SecuredEntityManager {
             if (pathWithName.endsWith("/")) {
                 pathWithName = pathWithName.substring(0, pathWithName.length() - 1);
             }
-
-            dataStorage = loadDataStorageFromFolder(pathWithName);
-
-            if (dataStorage == null) {
-                dataStorage = dataStorageDao.loadDataStorageByNameOrPath(pathWithName, pathWithName);
-            }
+            dataStorage = dataStorageDao.loadDataStorageByNameOrPath(pathWithName, pathWithName);
         }
         Assert.notNull(dataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, identifier));
         dataStorage.setHasMetadata(metadataManager.hasMetadata(new EntityVO(dataStorage.getId(),
@@ -228,6 +302,7 @@ public class DataStorageManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public AbstractDataStorage update(DataStorageVO dataStorageVO) {
         assertDataStorageMountPoint(dataStorageVO);
+        assertToolsToMount(dataStorageVO);
         AbstractDataStorage dataStorage = load(dataStorageVO.getId());
         AbstractDataStorage updated = updateDataStorageObject(dataStorage, dataStorageVO);
         dataStorageDao.updateDataStorage(updated);
@@ -244,11 +319,37 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public AbstractDataStorage updateMountStatus(final AbstractDataStorage storage,
+                                                 final NFSStorageMountStatus status) {
+        final NFSDataStorage existingStorage = Optional.of(load(storage.getId()))
+            .filter(dataStorage -> DataStorageType.NFS.equals(dataStorage.getType()))
+            .map(NFSDataStorage.class::cast)
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_SUPPORTED,
+                                         storage.getId(), storage.getType())));
+        if (!existingStorage.getMountStatus().equals(status)) {
+            dataStorageDao.updateDataStorageMountStatus(existingStorage.getId(), status);
+            existingStorage.setMountStatus(status);
+        }
+        return existingStorage;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final Boolean proceedOnCloud,
                                                                final Boolean checkExistence,
-                                                               final boolean replaceStoragePath)
+                                                               final boolean replaceStoragePath) {
+        return create(dataStorageVO, proceedOnCloud, checkExistence, replaceStoragePath, false);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final Boolean proceedOnCloud,
+                                                               final Boolean checkExistence,
+                                                               final boolean replaceStoragePath,
+                                                               final boolean skipPolicy)
             throws DataStorageException {
+        dataStorageVO.setName(createStorageNameIfRequired(dataStorageVO));
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
@@ -259,21 +360,24 @@ public class DataStorageManager implements SecuredEntityManager {
         }
 
         assertDataStorageMountPoint(dataStorageVO);
+        assertToolsToMount(dataStorageVO);
 
-        dataStorageVO.setName(dataStorageVO.getName().trim());
 
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
-        checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath());
+        checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
+                                    dataStorageVO.getSourceStorageId() != null);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
-
+        validateMirroringParameters(dataStorageVO);
+        
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
-                storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
+                storageProviderManager.getStorageProvider(dataStorage)
+                    .getDefaultMountOptions(getLinkOrStorage(dataStorage)));
         }
 
         if (proceedOnCloud) {
@@ -282,13 +386,15 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             String created = storageProviderManager.createBucket(dataStorage);
             dataStorage.setPath(created);
-
-            createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
+            if (skipPolicy) {
+                createdStorage.setActionStatus(ActionStatus.success());
+            } else {
+                createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
+            }
         } else if (checkExistence && !storageProviderManager.checkStorage(dataStorage)) {
             throw new IllegalStateException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, dataStorage.getName(),
                             dataStorage.getPath()));
-
         }
 
         dataStorage.setOwner(authManager.getAuthorizedUser());
@@ -297,13 +403,62 @@ public class DataStorageManager implements SecuredEntityManager {
             dataStorage.setParent(parent);
         }
 
-        if (dataStorage.isPolicySupported()) {
+        if (!skipPolicy && dataStorage.isPolicySupported()) {
             storageProviderManager.applyStoragePolicy(dataStorage);
         }
 
         dataStorageDao.createDataStorage(dataStorage);
 
         return createdStorage;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<Long> tryInitUserDefaultStorage(final PipelineUser user) {
+        final boolean shouldCreateDefaultHome =
+            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
+        return shouldCreateDefaultHome
+               ? createDefaultStorageForUser(user.getUserName()).map(AbstractDataStorage::getId)
+               : Optional.empty();
+    }
+
+    public Optional<AbstractDataStorage> createDefaultStorageForUser(final String userName) {
+        final DataStorageTemplate dataStorageTemplate =
+            Optional
+                .ofNullable(preferenceManager.getSystemPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE))
+                .map(preference -> preference.get(Function.identity()))
+                .map(templateJson -> JsonMapper.<DataStorageTemplate>
+                    parseData(replaceInTemplate(templateJson, userName), new TypeReference<DataStorageTemplate>() {}))
+                .orElseGet(() -> {
+                    final DataStorageVO storageVO = new DataStorageVO();
+                    storageVO.setName(replaceInTemplate(DEFAULT_USER_STORAGE_NAME_TEMPLATE, userName));
+                    storageVO.setDescription(replaceInTemplate(DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE, userName));
+                    return new DataStorageTemplate(storageVO, Collections.emptyList(), Collections.emptyMap());
+                });
+        final DataStorageVO dataStorageDetails = dataStorageTemplate.getDatastorage();
+        if (dataStorageDetails.getPath() == null) {
+            dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
+        }
+        final AbstractDataStorage correspondingExistingStorage =
+            dataStorageDao.loadDataStorageByNameOrPath(dataStorageDetails.getName(), dataStorageDetails.getPath());
+        if (correspondingExistingStorage != null) {
+            log.warn(messageHelper.getMessage(MessageConstants.DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS,
+                                              dataStorageDetails.getPath(),
+                                              userName,
+                                              correspondingExistingStorage.getId()));
+            return Optional.empty();
+        }
+        if (!folderManager.exists(dataStorageDetails.getParentFolderId())) {
+            dataStorageDetails.setParentFolderId(null);
+        }
+        if (dataStorageDetails.getServiceType() == null) {
+            dataStorageDetails.setServiceType(StorageServiceType.OBJECT_STORAGE);
+        }
+        final AbstractDataStorage dataStorage = create(dataStorageDetails, true, true, true).getEntity();
+        metadataManager
+            .updateEntityMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId(), AclClass.DATA_STORAGE);
+        permissionManager
+            .setPermissionsToEntity(dataStorageTemplate.getPermissions(), dataStorage.getId(), AclClass.DATA_STORAGE);
+        return Optional.of(dataStorage);
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -316,7 +471,10 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
-        AbstractDataStorage dataStorage = load(id);
+        final AbstractDataStorage dataStorage = load(id);
+
+        Assert.isTrue(Objects.isNull(dataStorage.getSourceStorageId()) || !proceedOnCloud,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_MIRROR_DELETION));
 
         validateStorageIsNotUsedAsDefault(id, roleManager.loadRolesByDefaultStorage(id));
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
@@ -327,6 +485,7 @@ public class DataStorageManager implements SecuredEntityManager {
             } catch (DataStorageException e) {
                 LOGGER.error(e.getMessage(), e);
             }
+            tagProviderManager.deleteStorageTags(dataStorage);
         }
         dataStorageDao.deleteDataStorage(id);
         return dataStorage;
@@ -353,15 +512,17 @@ public class DataStorageManager implements SecuredEntityManager {
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
+    @Transactional
     public void restoreVersion(Long id, String path, String version) throws DataStorageException {
         Assert.notNull(path, "Path is required to restore file version");
         Assert.notNull(version, "Version is required to restore file version");
-        AbstractDataStorage dataStorage = load(id);
+        final AbstractDataStorage dataStorage = load(id);
         if (!dataStorage.isVersioningEnabled()) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
         storageProviderManager.restoreFileVersion(dataStorage, path, version);
+        tagProviderManager.restoreFileTags(dataStorage, path, version);
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long dataStorageId,
@@ -375,14 +536,26 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUrl(final Long dataStorageId,
-                                                                       final List<String> paths) {
-        AbstractDataStorage dataStorage = load(dataStorageId);
-        List<DataStorageDownloadFileUrl> urls = new ArrayList<>();
-        if (paths == null) {
-            return urls;
-        }
-        paths.forEach(path -> urls.add(storageProviderManager.generateDownloadURL(dataStorage, path, null, null)));
-        return urls;
+                                                                       final List<String> paths,
+                                                                       final List<String> permissions,
+                                                                       final long hours) {
+        final AbstractDataStorage dataStorage = load(dataStorageId);
+        final List<String> adjustedPermissions = adjustPermissions(permissions);
+        final Duration duration = resolveDuration(hours);
+        return CollectionUtils.emptyIfNull(paths)
+                .stream()
+                .map(path -> storageProviderManager.generateUrl(dataStorage, path, adjustedPermissions, duration))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> adjustPermissions(final List<String> permissions) {
+        return Optional.ofNullable(permissions)
+                .filter(CollectionUtils::isNotEmpty)
+                .orElseGet(() -> Collections.singletonList("READ"));
+    }
+
+    private Duration resolveDuration(final long hours) {
+        return hours > 0 ? Duration.ofHours(hours) : Duration.ZERO;
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(Long id, String path) {
@@ -442,22 +615,32 @@ public class DataStorageManager implements SecuredEntityManager {
         });
     }
 
+    @Transactional
     public DataStorageFile createDataStorageFile(final Long dataStorageId,
-            String path,
-            byte[] contents)
-            throws DataStorageException {
+                                                 final String path,
+                                                 final byte[] contents) throws DataStorageException {
         AbstractDataStorage dataStorage = load(dataStorageId);
-        return storageProviderManager.createFile(dataStorage, path, contents);
+        return createDataStorageFile(dataStorage, path, contents);
     }
 
+    @Transactional
     public DataStorageFile createDataStorageFile(final Long dataStorageId,
-                                                 String folder,
+                                                 final String folder,
                                                  final String name,
-                                                 byte[] contents)
-            throws DataStorageException {
+                                                 final byte[] contents) throws DataStorageException {
         AbstractDataStorage dataStorage = load(dataStorageId);
         String path = getRelativePath(folder, name, dataStorage);
-        return storageProviderManager.createFile(dataStorage, path, contents);
+        return createDataStorageFile(dataStorage, path, contents);
+    }
+
+    @Transactional
+    public DataStorageFile createDataStorageFile(final Long dataStorageId,
+                                                 final String folder,
+                                                 final String name,
+                                                 final InputStream contentStream) {
+        AbstractDataStorage dataStorage = load(dataStorageId);
+        String path = getRelativePath(folder, name, dataStorage);
+        return createDataStorageFile(dataStorage, path, contentStream);
     }
 
     public String buildFullStoragePath(AbstractDataStorage dataStorage, String name) {
@@ -465,7 +648,8 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public boolean checkExistence(AbstractDataStorage dataStorage) {
-        checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath());
+        checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath(),
+                                    dataStorage.getSourceStorageId() != null);
         return storageProviderManager.checkStorage(dataStorage);
     }
 
@@ -487,13 +671,7 @@ public class DataStorageManager implements SecuredEntityManager {
         return path;
     }
 
-    public DataStorageFile createDataStorageFile(final Long dataStorageId, final String path, final String name,
-                                      InputStream contentStream) {
-        AbstractDataStorage dataStorage = load(dataStorageId);
-        String newFilePath = getRelativePath(path, name, dataStorage);
-        return storageProviderManager.createFile(dataStorage, newFilePath, contentStream);
-    }
-
+    @Transactional
     public List<AbstractDataStorageItem> updateDataStorageItems(final Long dataStorageId,
             List<UpdateDataStorageItemVO> list)
             throws DataStorageException{
@@ -505,6 +683,7 @@ public class DataStorageManager implements SecuredEntityManager {
         return updatedItems;
     }
 
+    @Transactional
     public int deleteDataStorageItems(final Long dataStorageId, List<UpdateDataStorageItemVO> list,
             Boolean totally)
             throws DataStorageException{
@@ -525,46 +704,54 @@ public class DataStorageManager implements SecuredEntityManager {
         return storageProviderManager.getFile(dataStorage, path, version);
     }
 
+    @Transactional
     public Map<String, String> loadDataStorageObjectTags(Long id, String path, String version) {
-        AbstractDataStorage dataStorage = load(id);
+        final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        return storageProviderManager.listObjectTags(dataStorage, path, version);
+        checkDataStorageObjectExists(dataStorage, path, version);
+        return tagProviderManager.loadFileTags(dataStorage, path, version);
     }
 
-    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, Set<String> tags, String version) {
-        AbstractDataStorage dataStorage = load(id);
+    @Transactional
+    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, String version,
+                                                           Set<String> tags) {
+        final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        return storageProviderManager.deleteObjectTags(dataStorage, path, tags, version);
+        checkDataStorageObjectExists(dataStorage, path, version);
+        tagProviderManager.deleteFileTags(dataStorage, path, version, tags);
+        return tagProviderManager.loadFileTags(dataStorage, path, version);
     }
 
-    public AbstractDataStorageItem getDataStorageItemWithTags(final Long dataStorageId, final String path,
-            Boolean showVersion) {
-        List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
+    @Transactional
+    public AbstractDataStorageItem getDataStorageItemWithTags(final Long dataStorageId,
+                                                              final String path,
+                                                              final Boolean showVersion) {
+        final List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
                 null, null).getResults();
         if (CollectionUtils.isEmpty(dataStorageItems)) {
             return null;
         }
-        DataStorageFile dataStorageFile = (DataStorageFile) dataStorageItems.get(0);
+        final DataStorageFile dataStorageFile = (DataStorageFile) dataStorageItems.get(0);
+        final AbstractDataStorage dataStorage = load(dataStorageId);
         if (MapUtils.isEmpty(dataStorageFile.getVersions())) {
-            dataStorageFile.setTags(loadDataStorageObjectTags(dataStorageId, path, null));
+            dataStorageFile.setTags(tagProviderManager.loadFileTags(dataStorage, path, null));
         } else {
             dataStorageFile
                     .getVersions()
-                    .forEach((version, item) -> item.setTags(loadDataStorageObjectTags(dataStorageId, path, version)));
+                    .forEach((version, item) ->
+                            item.setTags(tagProviderManager.loadFileTags(dataStorage, path, version)));
         }
         return dataStorageFile;
     }
 
-    public Map<String, String> updateDataStorageObjectTags(Long id, String path, Map<String, String> tagsToAdd,
-            String version, Boolean rewrite) {
-        AbstractDataStorage dataStorage = load(id);
+    @Transactional
+    public Map<String, String> updateDataStorageObjectTags(Long id, String path,
+                                                           Map<String, String> tagsToAdd, String version,
+                                                           Boolean rewrite) {
+        final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        Map<String, String> resultingTags = new HashMap<>();
-        if (!rewrite) {
-            resultingTags = storageProviderManager.listObjectTags(dataStorage, path, version);
-        }
-        resultingTags.putAll(tagsToAdd);
-        return storageProviderManager.updateObjectTags(dataStorage, path, resultingTags, version);
+        checkDataStorageObjectExists(dataStorage, path, version);
+        return tagProviderManager.updateFileTags(dataStorage, path, version, tagsToAdd, rewrite);
     }
 
     public DataStorageStreamingContent getStreamingContent(long dataStorageId, String path, String version) {
@@ -614,6 +801,79 @@ public class DataStorageManager implements SecuredEntityManager {
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
         return searchManager.getStorageUsage(dataStorage, path);
+    }
+
+    public void requestDataStorageDavMount(final Long id, final Long time) {
+        log.debug(messageHelper.getMessage(MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST, id, time));
+        // check that storage exists
+        final AbstractDataStorage storage = load(id);
+        Assert.isTrue(0 < time,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME));
+        final Map<String, PipeConfValue> metadata = Optional.ofNullable(
+                metadataManager.loadMetadataItem(storage.getId(), AclClass.DATA_STORAGE)
+        ).map(MetadataEntry::getData).orElse(Collections.emptyMap());
+        final PipeConfValue davMountTimestamp = metadata.get(DAV_MOUNT_TAG);
+        final long now = DateUtils.nowUTC().toEpochSecond(ZoneOffset.UTC);
+        if (davMountTimestamp != null) {
+            final long timestamp = NumberUtils.isDigits(davMountTimestamp.getValue())
+                    ? Long.parseLong(davMountTimestamp.getValue()) : 0;
+            final long remain = timestamp - now;
+            if (remain > time) {
+                throw new IllegalStateException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED,
+                        DateUtils.convertSecsToHours(remain), DateUtils.convertSecsToMinOfHour(remain),
+                        DateUtils.convertSecsToSecsOfMin(remain)));
+            }
+        }
+        checkDavMountQuotas();
+        log.info(messageHelper.getMessage(
+                MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED, storage.getId(), time));
+        metadataManager.updateMetadataItemKey(
+                MetadataVO.builder()
+                        .entity(new EntityVO(storage.getId(), AclClass.DATA_STORAGE))
+                        .data(Collections.singletonMap(DAV_MOUNT_TAG,
+                                new PipeConfValue(EntityTypeField.DEFAULT_TYPE, String.valueOf(now + time))))
+                        .build()
+        );
+    }
+
+    public void callOffDataStorageDavMount(final Long id) {
+        // check that storage exists
+        final AbstractDataStorage storage = load(id);
+        log.info(messageHelper.getMessage(
+                MessageConstants.INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF, storage.getId()));
+        metadataManager.deleteMetadataItemKey(new EntityVO(storage.getId(), AclClass.DATA_STORAGE), DAV_MOUNT_TAG);
+    }
+
+    private boolean filterDataStorage(DataStorageWithShareMount storage, AbstractCloudRegion region) {
+        if (Objects.isNull(region)) {
+            return true;
+        }
+
+        final AbstractCloudRegion storageRegion = storage.getStorage().getType().equals(DataStorageType.NFS)
+                ? cloudRegionManager.load(storage.getShareMount().getRegionId())
+                : cloudRegionManager.load(getCloudRegionId(storage.getStorage()));
+
+        switch (storageRegion.getMountStorageRule()) {
+            case CLOUD:
+                return region.getProvider().equals(storageRegion.getProvider());
+            case ALL:
+                return true;
+            case NONE:
+            default:
+                return false;
+        }
+    }
+
+    private Long getCloudRegionId(final AbstractDataStorage dataStorage) {
+        if (dataStorage instanceof S3bucketDataStorage) {
+            return ((S3bucketDataStorage) dataStorage).getRegionId();
+        } else if (dataStorage instanceof GSBucketStorage) {
+            return ((GSBucketStorage) dataStorage).getRegionId();
+        } else if (dataStorage instanceof AzureBlobStorage) {
+            return ((AzureBlobStorage) dataStorage).getRegionId();
+        }
+        throw new IllegalArgumentException("Unsupported type of DataStorage!");
     }
 
     private Collection<String> getRootPaths(final List<String> paths) {
@@ -678,29 +938,50 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private DataStorageFolder moveDataStorageFolder(final AbstractDataStorage dataStorage,
-                                                   final String oldPath,
-                                                   final String newPath)
-            throws DataStorageException {
-        return storageProviderManager.moveFolder(dataStorage, oldPath, newPath);
+                                                    final String oldPath,
+                                                    final String newPath) throws DataStorageException {
+        final DataStorageFolder folder = storageProviderManager.moveFolder(dataStorage, oldPath, newPath);
+        tagProviderManager.moveFolderTags(dataStorage, oldPath, newPath);
+        return folder;
     }
 
     private DataStorageFile moveDataStorageFile(final AbstractDataStorage dataStorage,
-                                               final String oldPath,
-                                               final String newPath)
-            throws DataStorageException {
-        return storageProviderManager.moveFile(dataStorage, oldPath, newPath);
+                                                final String oldPath,
+                                                final String newPath) throws DataStorageException {
+        final DataStorageFile file = storageProviderManager.moveFile(dataStorage, oldPath, newPath);
+        tagProviderManager.moveFileTags(dataStorage, oldPath, newPath, file.getVersion());
+        return file;
     }
 
-    private void deleteDataStorageFolder(final AbstractDataStorage dataStorage, final String path,
-            Boolean totally)
-            throws DataStorageException {
+    private DataStorageFolder copyDataStorageFolder(final AbstractDataStorage dataStorage,
+                                                    final String oldPath,
+                                                    final String newPath) {
+        final DataStorageFolder folder = storageProviderManager.copyFolder(dataStorage, oldPath, newPath);
+        tagProviderManager.copyFolderTags(dataStorage, oldPath, newPath);
+        return folder;
+    }
+
+    private DataStorageFile copyDataStorageFile(final AbstractDataStorage dataStorage,
+                                                final String oldPath,
+                                                final String newPath) {
+        final DataStorageFile file = storageProviderManager.copyFile(dataStorage, oldPath, newPath);
+        tagProviderManager.copyFileTags(dataStorage, oldPath, newPath, file.getVersion());
+        return file;
+    }
+
+    private void deleteDataStorageFolder(final AbstractDataStorage dataStorage,
+                                         final String path,
+                                         final Boolean totally) throws DataStorageException {
         storageProviderManager.deleteFolder(dataStorage, path, totally);
+        tagProviderManager.deleteFolderTags(dataStorage, path, totally);
     }
 
-    private void deleteDataStorageFile(final AbstractDataStorage dataStorage, final String path,
-            String version, Boolean totally)
-            throws DataStorageException {
+    private void deleteDataStorageFile(final AbstractDataStorage dataStorage,
+                                       final String path,
+                                       final String version,
+                                       final Boolean totally) throws DataStorageException {
         storageProviderManager.deleteFile(dataStorage, path, version, totally);
+        tagProviderManager.deleteFileTags(dataStorage, path, version, totally);
     }
 
     private void deleteDataStorageItem(final AbstractDataStorage dataStorage, UpdateDataStorageItemVO item,
@@ -750,6 +1031,9 @@ public class DataStorageManager implements SecuredEntityManager {
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
         }
 
+        if (dataStorageVO.getToolsToMount() != null) {
+            dataStorage.setToolsToMount(dataStorageVO.getToolsToMount());
+        }
         return dataStorage;
     }
 
@@ -761,11 +1045,12 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorage;
     }
 
-    private void checkDatastorageDoesntExist(String name, String path) {
-        String usePath = StringUtils.isEmpty(path) ? name : path;
-        Assert.isNull(dataStorageDao.loadDataStorageByNameOrPath(name, usePath),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST,
-                        name, usePath));
+    private void checkDatastorageDoesntExist(final String name, final String path, final boolean isMirror) {
+        final String usePath = StringUtils.isEmpty(path) ? name : path;
+        final List<AbstractDataStorage> matchingStorage =
+            dataStorageDao.loadDataStorageByNameOrPath(name, isMirror ? null : usePath, true);
+        Assert.isTrue(CollectionUtils.isEmpty(matchingStorage),
+                      messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST, name, path));
     }
 
     private void verifyStoragePolicy(StoragePolicy policy) {
@@ -794,46 +1079,46 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private DataStorageFile createDataStorageFile(final AbstractDataStorage storage,
-            final String path,
-            byte[] contents)
-            throws DataStorageException {
-        return storageProviderManager.createFile(storage, path, contents);
+                                                  final String path,
+                                                  final byte[] contents) throws DataStorageException {
+        final DataStorageFile file = storageProviderManager.createFile(storage, path, contents);
+        tagProviderManager.createFileTags(storage, path, file.getVersion());
+        return file;
+    }
+
+    private DataStorageFile createDataStorageFile(final AbstractDataStorage storage, 
+                                                  final String path, 
+                                                  final InputStream contentStream) {
+        final DataStorageFile file = storageProviderManager.createFile(storage, path, contentStream);
+        tagProviderManager.createFileTags(storage, path, file.getVersion());
+        return file;
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,
-            UpdateDataStorageItemVO item)
-            throws DataStorageException{
-        AbstractDataStorageItem result = null;
+                                                          final UpdateDataStorageItemVO item) {
         switch (item.getType()) {
-            case Folder: result = updateFolderItem(storage, item); break;
-            case File: result = updateFileItem(storage, item); break;
-            default: break;
+            case Folder: return updateFolderItem(storage, item);
+            case File: return updateFileItem(storage, item);
+            default: return null;
         }
-        return result;
     }
 
-    private DataStorageFolder updateFolderItem(final AbstractDataStorage storage,
-            UpdateDataStorageItemVO item)
-            throws DataStorageException{
-        DataStorageFolder folder = null;
+    private DataStorageFolder updateFolderItem(final AbstractDataStorage storage, final UpdateDataStorageItemVO item) {
         switch (item.getAction()) {
-            case Create: folder = createDataStorageFolder(storage, item.getPath()); break;
-            case Move: folder = moveDataStorageFolder(storage, item.getOldPath(), item.getPath()); break;
-            default: break;
+            case Create: return createDataStorageFolder(storage, item.getPath());
+            case Move: return moveDataStorageFolder(storage, item.getOldPath(), item.getPath());
+            case Copy: return copyDataStorageFolder(storage, item.getOldPath(), item.getPath());
+            default: return null;
         }
-        return folder;
     }
 
-    private DataStorageFile updateFileItem(final AbstractDataStorage storage,
-            UpdateDataStorageItemVO item)
-            throws DataStorageException{
-        DataStorageFile file = null;
+    private DataStorageFile updateFileItem(final AbstractDataStorage storage, final UpdateDataStorageItemVO item) {
         switch (item.getAction()) {
-            case Create: file = createDataStorageFile(storage, item.getPath(), item.getContents()); break;
-            case Move: file = moveDataStorageFile(storage, item.getOldPath(), item.getPath()); break;
-            default: break;
+            case Create: return createDataStorageFile(storage, item.getPath(), item.getContents());
+            case Move: return moveDataStorageFile(storage, item.getOldPath(), item.getPath());
+            case Copy: return copyDataStorageFile(storage, item.getOldPath(), item.getPath());
+            default: return null;
         }
-        return file;
     }
 
     private void checkDataStorageVersioning(AbstractDataStorage dataStorage, String version) {
@@ -843,13 +1128,49 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
+    private void checkDataStorageObjectExists(final AbstractDataStorage dataStorage,
+                                              final String path,
+                                              final String version) {
+        Assert.isTrue(storageProviderManager.findFile(dataStorage, path, version).isPresent(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
+                        path, dataStorage.getRoot()));
+    }
+
+    private void assertToolsToMount(final DataStorageVO dataStorageVO) {
+        if (!CollectionUtils.isEmpty(dataStorageVO.getToolsToMount())) {
+            for (ToolFingerprint tool : dataStorageVO.getToolsToMount()) {
+                Assert.notNull(tool.getId(),
+                        "Tool id is not provided when specifying to which tools storage should be mounted");
+                Assert.notNull(toolManager.load(tool.getId()),
+                        messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, tool.getId()));
+                if (CollectionUtils.isNotEmpty(tool.getVersions())) {
+                    Assert.isTrue(tool.getVersions().stream().allMatch(tv -> StringUtils.isNotBlank(tv.getVersion())),
+                            "Version could not be empty when configure tools to mount");
+                    final Map<String, ToolVersion> tagsToToolVersions = toolVersionManager
+                            .loadToolVersions(tool.getId(), tool.getVersions().stream()
+                                    .map(ToolVersionFingerprint::getVersion)
+                                    .filter(StringUtils::isNotBlank)
+                                    .collect(Collectors.toList()));
+                    for (ToolVersionFingerprint version : tool.getVersions()) {
+                        Assert.isTrue(tagsToToolVersions.containsKey(version.getVersion()),
+                                "There is no version: " + version.getVersion());
+                        if (version.getId() == null) {
+                            version.setId(tagsToToolVersions.get(version.getVersion()).getId());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private List<DataStorageLink> getLinks(AbstractDataStorage dataStorage, String paramValue) {
         if (StringUtils.isBlank(paramValue)) {
             return Collections.emptyList();
         }
-        final String mask = String.format("%s%s", dataStorage.getPathMask(), ProviderUtils.DELIMITER);
+        final String mask = dataStorage.getPathMask() + ProviderUtils.DELIMITER;
         List<DataStorageLink> links = new ArrayList<>();
-        for (String path : paramValue.split("[,;]")) {
+        String paramDelimiter = paramValue.contains(",") ? "," : ";";
+        for (String path : paramValue.split(paramDelimiter)) {
             if (path.toLowerCase().trim().startsWith(mask.toLowerCase())) {
                 DataStorageLink dataStorageLink = new DataStorageLink();
                 dataStorageLink.setAbsolutePath(path.trim());
@@ -886,25 +1207,84 @@ public class DataStorageManager implements SecuredEntityManager {
                         values.stream().map(v -> String.valueOf(v.getId())).collect(Collectors.joining(","))));
     }
 
-    private AbstractDataStorage loadDataStorageFromFolder(final String pathWithName) {
-        String[] pathParts = pathWithName.split("/");
-        String dataStorageName = pathParts[pathParts.length - 1];
-        Long parentFolderId = null;
-        if (pathParts.length > 1) {
-            try {
-                final Folder parentFolder = folderManager.loadByNameOrId(
-                                String.join("/", Arrays.asList(pathParts).subList(0, pathParts.length - 1)));
-                if (parentFolder != null) {
-                    parentFolderId = parentFolder.getId();
-                }
-            } catch (IllegalArgumentException e) {
-                LOGGER.error(e.getMessage());
-            }
+    private String replaceInTemplate(final String template, final String replacement) {
+        return template.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, replacement);
+    }
+
+    private void checkDavMountQuotas() {
+        final int davMountedStoragesMaxValue = preferenceManager.getIntPreference(
+                SystemPreferences.DATA_STORAGE_DAV_MOUNT_MAX_STORAGES.getKey());
+        final List<EntityVO> davMountedStorages = ListUtils.emptyIfNull(
+                metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
+        Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
+    }
+
+    /**
+     * This method compares linking masks of new storage and its source one.
+     * If any masks are assigned to the source entity - new masks must be the subset of them,
+     * otherwise, they might be used to bypass the source storage restrictions.
+     *
+     * @param newStorageVO new storage VO
+     */
+    private void validateMirroringParameters(final DataStorageVO newStorageVO) {
+        final Long sourceStorageId = newStorageVO.getSourceStorageId();
+        if (sourceStorageId == null) {
+            return;
         }
-        if (parentFolderId != null) {
-            return dataStorageDao.loadDataStorageByNameAndParentId(dataStorageName, parentFolderId);
+        final AbstractDataStorage sourceStorage = dataStorageDao.loadDataStorage(sourceStorageId);
+        if (sourceStorage != null) {
+            final Set<String> sourceStorageMasks = sourceStorage.getLinkingMasks();
+            if (CollectionUtils.isNotEmpty(sourceStorageMasks)) {
+                final Set<String> newStorageMasks = newStorageVO.getLinkingMasks();
+                if (CollectionUtils.isEmpty(newStorageMasks)) {
+                    newStorageVO.setLinkingMasks(sourceStorageMasks);
+                } else if (!sourceStorageMasks.containsAll(newStorageMasks)) {
+                    throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE));
+                }
+            }
         } else {
-            return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND,
+                                                                        sourceStorageId));
+        }
+        final DataStorageType newStorageType = newStorageVO.getType();
+        final DataStorageType sourceStorageType = sourceStorage.getType();
+        if (newStorageType == null) {
+            newStorageVO.setType(sourceStorageType);
+        } else {
+            Assert.isTrue(newStorageType.equals(sourceStorageType),
+                          messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_MIRROR_ILLEGAL_TYPE,
+                                                   newStorageType, sourceStorageType));
+        }
+    }
+
+    private AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
+        return Optional.of(storage)
+            .map(AbstractDataStorage::getSourceStorageId)
+            .map(dataStorageDao::loadDataStorage)
+            .orElse(storage);
+    }
+
+    private String createStorageNameIfRequired(final DataStorageVO dataStorageVO) {
+        final String nameSpecified = dataStorageVO.getName();
+        final String path = dataStorageVO.getPath();
+        if (dataStorageVO.getSourceStorageId() == null || dataStorageVO.getName() != null || path == null) {
+            return Optional.ofNullable(nameSpecified).map(String::trim).orElse(null);
+        } else {
+            final String sharedPathNamePrefix = PipelineStringUtils.convertToAlphanumericWithDashes(path.trim());
+            final Long latestMirrorNumber = dataStorageDao.loadDataStorageByNameOrPath(path, path, true).stream()
+                .map(AbstractDataStorage::getName)
+                .filter(existingName -> existingName.startsWith(sharedPathNamePrefix))
+                .map(existingName -> existingName.split(PipelineStringUtils.DASH))
+                .map(parts -> parts[parts.length - 1])
+                .map(StringUtils::trim)
+                .filter(NumberUtils::isDigits)
+                .map(Long::valueOf)
+                .max(Comparator.naturalOrder())
+                .orElse(0L);
+            return String.join(PipelineStringUtils.DASH,
+                               sharedPathNamePrefix, SHARED_STORAGE_SUFFIX, Long.toString(latestMirrorNumber + 1));
         }
     }
 }

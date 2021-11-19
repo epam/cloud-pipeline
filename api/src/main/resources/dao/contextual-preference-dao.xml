@@ -49,18 +49,35 @@
             <value>
                 <!--loadContextualPreferenceQuery-->
                 <![CDATA[
-                    SELECT
-                        p.name,
-                        p.value,
-                        p.type,
-                        p.created_date,
-                        p.level,
-                        p.resource_id
-                    FROM
-                        pipeline.contextual_preference p
-                    WHERE p.name = ?
-                    AND p.level = ?
-                    AND p.resource_id = ?
+                    (
+                        SELECT
+                            p.name,
+                            p.value,
+                            p.type,
+                            p.created_date,
+                            p.level,
+                            p.resource_id
+                        FROM pipeline.contextual_preference p
+                        WHERE p.name = :NAME
+                        AND p.level = :LEVEL
+                        AND p.resource_id = :RESOURCE_ID
+                    )
+                    UNION
+                    (
+                        SELECT
+                            p.name,
+                            p.value,
+                            p.type,
+                            p.created_date,
+                            p.level,
+                            p.resource_id
+                        FROM pipeline.contextual_preference p
+                        JOIN pipeline.tool tl ON tl.id::text = p.resource_id
+                        JOIN pipeline.tool t ON t.link = tl.id
+                        WHERE p.name = :NAME
+                        AND p.level = :LEVEL
+                        AND t.id::text = :RESOURCE_ID
+                    )
                 ]]>
             </value>
         </constructor-arg>

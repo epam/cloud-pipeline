@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.preference;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -32,7 +33,7 @@ import org.apache.commons.lang.StringUtils;
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode
-public class Preference {
+public class Preference implements Serializable {
     private String name;
     private Date createdDate;
     private String value;

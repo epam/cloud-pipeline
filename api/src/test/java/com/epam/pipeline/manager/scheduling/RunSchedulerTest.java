@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.user.UserManager;
@@ -75,6 +76,9 @@ public class RunSchedulerTest extends AbstractSpringTest {
     private PipelineRunManager pipelineRunManager;
 
     @MockBean
+    private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
     private RunConfigurationManager configurationManager;
 
     @MockBean
@@ -89,7 +93,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
         Mockito.when(pipelineRunDao.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
         Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
-        Mockito.when(pipelineRunManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean())).thenReturn(pipelineRun);
+        Mockito.when(pipelineRunDockerOperationManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean()))
+                .thenReturn(pipelineRun);
         Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);
         Mockito.when(userManager.loadUserByName(Mockito.any())).thenReturn(new PipelineUser(USER_OWNER));
     }
@@ -105,7 +110,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.unscheduleRunSchedule(runSchedule);
 
         final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        Mockito.verify(pipelineRunManager, Mockito.times(numberOfInvocations)).pauseRun(RUN_ID, true);
+        Mockito.verify(pipelineRunDockerOperationManager, Mockito.times(numberOfInvocations))
+                .pauseRun(RUN_ID, true);
     }
 
     @Test
@@ -123,7 +129,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.unscheduleRunSchedule(confSchedule);
 
         final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        Mockito.verify(pipelineRunManager, Mockito.times(numberOfInvocations)).pauseRun(RUN_ID, true);
+        Mockito.verify(pipelineRunDockerOperationManager, Mockito.times(numberOfInvocations))
+                .pauseRun(RUN_ID, true);
         Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
                 .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
@@ -171,7 +178,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
         //check that job was invoked only ony time, right after creation
-        Mockito.verify(pipelineRunManager, Mockito.times(1)).pauseRun(RUN_ID, true);
+        Mockito.verify(pipelineRunDockerOperationManager, Mockito.times(1))
+                .pauseRun(RUN_ID, true);
     }
 
     private RunSchedule getRunSchedule(final Long id, final Long runId, final ScheduleType type,

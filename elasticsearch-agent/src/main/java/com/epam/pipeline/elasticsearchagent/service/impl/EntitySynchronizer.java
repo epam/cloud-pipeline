@@ -39,6 +39,15 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
     private final ElasticIndexService indexService;
     private final BulkRequestSender bulkRequestSender;
     private final int chunkSize;
+    private final int sendRequestChunkSize;
+
+    public EntitySynchronizer(final PipelineEventDao pipelineEventDao, final PipelineEvent.ObjectType objectType,
+                              final String indexMappingFile, final EventToRequestConverter converter,
+                              final ElasticIndexService indexService, final BulkRequestSender bulkRequestSender,
+                              final int chunkSize) {
+        this(pipelineEventDao, objectType, indexMappingFile, converter, indexService, bulkRequestSender,
+                chunkSize, chunkSize);
+    }
 
     @Override
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -65,7 +74,7 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
                 return;
             }
             log.debug("Creating {} requests for {} entity.", documentRequests.size(), objectType);
-            bulkRequestSender.indexDocuments(indexName, objectType, documentRequests, syncStart, chunkSize);
+            bulkRequestSender.indexDocuments(indexName, objectType, documentRequests, syncStart, sendRequestChunkSize);
             log.debug("Successfully finished {} synchronization.", objectType);
         } catch (Exception e) {
             log.error("An error during {} synchronization: {}", objectType, e.getMessage());

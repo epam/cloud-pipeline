@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -39,12 +39,14 @@
                         r.node_name,
                         r.node_image,
                         r.node_cloud_region,
+                        r.node_platform,
                         r.docker_image,
+                        r.actual_docker_image,
+                        r.platform,
                         r.cmd_template,
                         r.actual_cmd,
                         r.timeout,
                         r.owner,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.last_change_commit_time,
@@ -61,15 +63,19 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        pipelines.pipeline_name
+                        r.sensitive,
+                        r.kube_service_enabled,
+                        r.pipeline_name,
+                        r.cluster_price
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     WHERE @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -83,7 +89,6 @@
                         count(*) as count
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     WHERE @WHERE@
                 ]]>
             </value>

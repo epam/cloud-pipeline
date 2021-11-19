@@ -81,10 +81,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -92,7 +95,6 @@ public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
     private static final String LIFECYCLE_CONTENT_TYPE = "application/json";
-    private static final String LATEST_VERSION_DELETION_MARKER = "_d";
 
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -117,6 +119,17 @@ public class GSBucketStorageHelper {
         deleteBucket(bucketName, client);
     }
 
+    public Stream<DataStorageFile> listDataStorageFiles(final GSBucketStorage storage, final String path) {
+        final String folderPath = normalizeFolderPath(path);
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        final Page<Blob> blobs = client.list(bucketName, 
+                Storage.BlobListOption.prefix(folderPath));
+        final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
+        return StreamSupport.stream(spliterator, false)
+                .map(this::createDataStorageFile);
+    }
+
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
                                         final Integer pageSize, final String marker) {
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
@@ -136,6 +149,19 @@ public class GSBucketStorageHelper {
                 ? listItemsWithVersions(blobs)
                 : listItemsWithoutVersions(blobs);
         return new DataStorageListing(blobs.getNextPageToken(), items);
+    }
+
+    public Optional<DataStorageFile> findFile(final GSBucketStorage storage, final String path, final String version) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        return Optional.ofNullable(client.get(BlobId.of(storage.getPath(), path,
+                StringUtils.isNotBlank(version) ? Long.valueOf(version) : null)))
+                .map(blob -> {
+                    final DataStorageFile file = new DataStorageFile();
+                    file.setName(blob.getName());
+                    file.setPath(blob.getName());
+                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
+                    return file;
+                });
     }
 
     public DataStorageFile createFile(final GSBucketStorage storage, final String path,
@@ -183,8 +209,8 @@ public class GSBucketStorageHelper {
             return;
         }
 
-        if (latestVersionHasDeletedMarker(version)) {
-            restoreFileVersion(dataStorage, path, cleanupVersion(version));
+        if (ProviderUtils.isSyntheticDeletionMarker(version)) {
+            restoreFileVersion(dataStorage, path, ProviderUtils.getVersionFromSyntheticDeletionMarker(version));
             return;
         }
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
@@ -201,7 +227,7 @@ public class GSBucketStorageHelper {
 
         final String bucketName = dataStorage.getPath();
         if (totally) {
-            deleteAllVersions(bucketName, path, client);
+            deleteAllVersions(bucketName, folderPath, client);
             return;
         }
 
@@ -515,7 +541,7 @@ public class GSBucketStorageHelper {
             }
             items.add(blob.isDirectory()
                     ? createDataStorageFolder(blob.getName())
-                    : createDataStorageFile(blob));
+                    : createDataStorageFileWithoutVersion(blob));
         }
         return items;
     }
@@ -562,7 +588,8 @@ public class GSBucketStorageHelper {
             notDeletedLatestVersion.setDeleteMarker(false);
             filesByVersion.put(latestVersionFile.getVersion(), notDeletedLatestVersion);
 
-            latestVersionFile.setVersion(latestVersionFile.getVersion() + LATEST_VERSION_DELETION_MARKER);
+            latestVersionFile.setVersion(ProviderUtils.getSyntheticDeletionMarkerFromVersion(
+                    latestVersionFile.getVersion()));
             latestVersionFile.setSize(0L);
         }
         filesByVersion.put(latestVersionFile.getVersion(), latestVersionFile.copy(latestVersionFile));
@@ -623,7 +650,15 @@ public class GSBucketStorageHelper {
         return folder;
     }
 
+    private DataStorageFile createDataStorageFileWithoutVersion(final Blob blob) {
+        return createDataStorageFile(blob, false);
+    }
+
     private DataStorageFile createDataStorageFile(final Blob blob) {
+        return createDataStorageFile(blob, true);
+    }
+    
+    private DataStorageFile createDataStorageFile(final Blob blob, final boolean withVersion) {
         final TimeZone tz = TimeZone.getTimeZone("UTC");
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         df.setTimeZone(tz);
@@ -635,6 +670,9 @@ public class GSBucketStorageHelper {
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         file.setChanged(df.format(new Date(blob.getUpdateTime())));
+        if (withVersion) {
+            file.setVersion(String.valueOf(blob.getGeneration()));
+        }
         return file;
     }
 
@@ -703,20 +741,9 @@ public class GSBucketStorageHelper {
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, folderPath, bucketName));
     }
 
-    private String cleanupVersion(final String version) {
-        if (latestVersionHasDeletedMarker(version)) {
-            return version.replace(LATEST_VERSION_DELETION_MARKER, StringUtils.EMPTY);
-        }
-        return version;
-    }
-
     private void checkVersionHasNotDeletedMarker(final String version) {
-        if (latestVersionHasDeletedMarker(version)) {
+        if (ProviderUtils.isSyntheticDeletionMarker(version)) {
             throw new DataStorageException("Operation is not allowed for deleted version");
         }
-    }
-
-    private boolean latestVersionHasDeletedMarker(final String version) {
-        return StringUtils.isNotBlank(version) && version.endsWith(LATEST_VERSION_DELETION_MARKER);
     }
 }

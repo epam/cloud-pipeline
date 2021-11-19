@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.epam.pipeline.dao.notification;
 
 import static com.epam.pipeline.config.JsonMapper.parseData;
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +41,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
@@ -56,7 +56,6 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     private String updateNotificationTimestampQuery;
     private String loadNotificationTimestampQuery;
     private String deleteNotificationTimestampsByRunIdQuery;
-    private String deleteNotificationTimestampsByPipelineIdQuery;
     private String deleteNotificationsByUserIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -125,11 +124,6 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteNotificationTimestampsForRun(final Long runId) {
         getJdbcTemplate().update(deleteNotificationTimestampsByRunIdQuery, runId);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteNotificationTimestampsForPipeline(final Long pipelineId) {
-        getJdbcTemplate().update(deleteNotificationTimestampsByPipelineIdQuery, pipelineId);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -248,11 +242,6 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteNotificationTimestampsByRunIdQuery(String deleteNotificationTimestampsByRunIdQuery) {
         this.deleteNotificationTimestampsByRunIdQuery = deleteNotificationTimestampsByRunIdQuery;
-    }
-
-    @Required
-    public void setDeleteNotificationTimestampsByPipelineIdQuery(String deleteNotificationTimestampsByPipelineIdQuery) {
-        this.deleteNotificationTimestampsByPipelineIdQuery = deleteNotificationTimestampsByPipelineIdQuery;
     }
 
     @Required

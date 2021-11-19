@@ -30,7 +30,7 @@ RUN if [ ! -f /var/lib/dpkg/available ]; then \
         dselect update; \
     fi
 
-RUN  apt-get install -y automake \
+RUN apt-get update && apt-get install -y automake \
                         autotools-dev \
                         fuse \
                         g++ \
@@ -51,7 +51,7 @@ RUN  apt-get install -y automake \
                         libncurses5-dev \
                         gettext-base \
                         libjsoncpp-dev && \
-    curl https://bootstrap.pypa.io/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
     # Install gitfs
 RUN apt-get install -y libssl1.0-dev \
                         libffi-dev \
@@ -64,6 +64,8 @@ RUN  wget -q https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && \
         make && make install && cd ..
 
 RUN ldconfig
+RUN pip install cffi==1.14.6
+RUN pip install atomiclong==0.1.1 six==1.10.0 raven==5.27.0 fusepy==2.0.2
 RUN pip install 'pygit2==0.24.1'
 
 RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.4.5.1 && \

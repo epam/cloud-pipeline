@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import java.util.Optional;
 public class SubmissionSchedulerImpl implements SubmissionScheduler {
 
     private final Path workDir;
-    private final Path qsubTemplate;
+    private final String qsubTemplateFilePath;
     private final SubmissionPreference preference;
     private final FileService fileService;
     private final TemplateEngine templateEngine;
@@ -56,14 +56,14 @@ public class SubmissionSchedulerImpl implements SubmissionScheduler {
     public SubmissionSchedulerImpl(final SubmissionPreference preference,
                                    final FileService fileService,
                                    final TemplateEngine templateEngine,
-                                   final CmdExecutor cmdExecutor,
+                                   final CmdExecutor submissionCmdExecutor,
                                    final SubmissionConverter converter) {
         this.workDir = fileService.getOrCreateFolder(preference.getWorkdir());
-        this.qsubTemplate = fileService.getLocalFile(preference.getQsubTemplate());
+        this.qsubTemplateFilePath = preference.getQsubTemplate();
         this.preference = preference;
         this.fileService = fileService;
         this.templateEngine = templateEngine;
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.converter = converter;
     }
 
@@ -157,7 +157,8 @@ public class SubmissionSchedulerImpl implements SubmissionScheduler {
                                  final Path doneToken,
                                  final Path logFile) throws SubmissionException {
         final SubmissionTemplate template = converter.convertToTemplate(submission);
-        final String scriptContent = buildScriptText(template, doneToken, logFile);
+        final Path qsubTemplate = fileService.getLocalFile(qsubTemplateFilePath);
+        final String scriptContent = buildScriptText(template, doneToken, logFile, qsubTemplate);
         final Path script = submissionFolder.resolve(qsubTemplate.getFileName());
         try {
             fileService.writeToFile(script, scriptContent);
@@ -179,7 +180,8 @@ public class SubmissionSchedulerImpl implements SubmissionScheduler {
                 .build(qsubTemplate);
     }
 
-    private String buildScriptText(final SubmissionTemplate template, final Path doneToken, final Path logFile) {
+    private String buildScriptText(final SubmissionTemplate template, final Path doneToken, final Path logFile,
+                                   final Path qsubTemplate) {
         final Context ctx = new Context(Locale.getDefault());
         ctx.setVariable("template", template);
         ctx.setVariable("logFile", logFile.toAbsolutePath().toString());

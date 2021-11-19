@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,9 @@ public enum AnalyzeEnabler {
     ANALYZER_RUBY_GEMSPEC("analyzer.ruby.gemspec.enabled", RubyGemspecAnalyzer.DEPENDENCY_ECOSYSTEM),
     ANALYZER_CENTRAL("analyzer.central.enabled", AnalyzerConstants.SYSTEM),
     ANALYZER_NEXUS("analyzer.nexus.enabled", AnalyzerConstants.SYSTEM),
-    ANALYZER_R_PACKAGE("analyzer.r.package.enabled", "R.Pkg");
+    ANALYZER_R_PACKAGE("analyzer.r.package.enabled", "R.Pkg"),
+    ANALYZER_OS_PACKAGE("analyzer.os.enabled", "OS");
+
 
     private final String value;
     private final String ecosystem;

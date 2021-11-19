@@ -16,21 +16,16 @@
 
 package com.epam.pipeline.app;
 
-import java.beans.PropertyVetoException;
-import javax.sql.DataSource;
-
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import javax.sql.DataSource;
+import java.beans.PropertyVetoException;
 
 @Configuration
-@EnableCaching
 @ImportResource({"classpath*:dao/*.xml"})
 public class DBConfiguration {
 
@@ -62,10 +57,5 @@ public class DBConfiguration {
         dataSource.setMaxPoolSize(maxPoolSize);
         dataSource.setInitialPoolSize(initialPoolSize);
         return dataSource;
-    }
-
-    @Bean
-    public CacheManager cacheManager() {
-        return new ConcurrentMapCacheManager("preferences");
     }
 }

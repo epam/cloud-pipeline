@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,14 @@ package com.epam.pipeline.manager.docker.scan;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.docker.ManifestV2;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolDependency;
+import com.epam.pipeline.entity.scan.ToolExecutionCheckStatus;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
@@ -32,6 +36,7 @@ import com.epam.pipeline.exception.ToolScanExternalServiceException;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.clair.ClairScanRequest;
 import com.epam.pipeline.manager.docker.scan.clair.ClairScanResult;
 import com.epam.pipeline.manager.docker.scan.clair.ClairService;
@@ -40,6 +45,7 @@ import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanR
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanResult;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -87,6 +93,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     private static final int DISABLED = -1;
     private static final long SECONDS_IN_HOUR = 3600;
+    private static final String WINDOWS_PLATFORM = "Windows";
+    public static final String NOT_DETERMINED = "NotDetermined";
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -102,6 +110,12 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     @Autowired
     private MessageHelper messageHelper;
+
+    @Autowired
+    private ToolScanInfoManager toolScanInfoManager;
+
+    @Autowired
+    private ToolVersionManager toolVersionManager;
 
     private ClairService clairService;
     private DockerComponentScanService dockerComponentService;
@@ -182,8 +196,26 @@ public class AggregatingToolScanManager implements ToolScanManager {
         return scanTool(tool, tag, rescan);
     }
 
-    public boolean checkTool(Tool tool, String tag) {
-        Optional<ToolVersionScanResult> versionScanOp = toolManager.loadToolVersionScan(tool.getId(), tag);
+    public ToolExecutionCheckStatus checkTool(Tool tool, String tag) {
+        final Optional<ToolVersionScanResult> versionScanOp =
+                toolScanInfoManager.loadToolVersionScanInfo(tool.getId(), tag);
+        return checkStatus(tool, tag, versionScanOp);
+    }
+
+    public ToolExecutionCheckStatus checkScan(final Tool tool, final String tag, final ToolVersionScanResult scan) {
+        return checkStatus(tool, tag, Optional.ofNullable(scan));
+    }
+
+    private ToolExecutionCheckStatus checkStatus(final Tool tool, final String tag,
+                                                 final Optional<ToolVersionScanResult> versionScanOp) {
+        final boolean isWindowsTool = toolVersionManager.findToolVersion(tool.getId(), tag)
+            .map(ToolVersion::getPlatform)
+            .filter(WINDOWS_PLATFORM::equalsIgnoreCase)
+            .isPresent();
+        if (isWindowsTool) {
+            LOGGER.debug("Tool [id={}, version={}] is Windows-based, proceed with running.", tool.getId(), tag);
+            return ToolExecutionCheckStatus.success();
+        }
 
         int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
 
@@ -193,7 +225,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
         if (isGracePeriodOrWhiteList) {
             LOGGER.debug("Tool: " + tool.getId() + " version: " + tag +
                     " is from White list or Grace period still active! Proceed with running!");
-            return true;
+            return ToolExecutionCheckStatus.success();
         }
 
         boolean denyNotScanned = preferenceManager.getPreference(
@@ -201,42 +233,40 @@ public class AggregatingToolScanManager implements ToolScanManager {
         if (denyNotScanned && (!versionScanOp.isPresent()
                 || versionScanOp.get().getStatus() == ToolScanStatus.NOT_SCANNED
                 || versionScanOp.get().getSuccessScanDate() == null)) {
-            return false;
+            return ToolExecutionCheckStatus.fail("Tool is not scanned.");
         }
 
         if (versionScanOp.isPresent()) {
             ToolVersionScanResult toolVersionScanResult = versionScanOp.get();
-            Map<VulnerabilitySeverity, Integer> severityCounters = toolVersionScanResult.getVulnerabilities().stream()
-                    .collect(
-                        HashMap::new,
-                        (map, v) -> {
-                            if (map.containsKey(v.getSeverity())) {
-                                map.put(v.getSeverity(), map.get(v.getSeverity()) + 1);
-                            } else {
-                                map.put(v.getSeverity(), 1);
-                            }
-                        },
-                        (map1, map2) -> map1.keySet().forEach(k -> map1.merge(k, map2.get(k), (a, b) -> a + b)));
+            Map<VulnerabilitySeverity, Integer> severityCounters = toolVersionScanResult.getVulnerabilitiesCount();
             int maxCriticalVulnerabilities = preferenceManager.getPreference(
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_CRITICAL_VULNERABILITIES);
             if (maxCriticalVulnerabilities != DISABLED &&
                     maxCriticalVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.Critical, 0)) {
-                return false;
+                return ToolExecutionCheckStatus.fail("Max number of CRITICAL vulnerabilities is reached");
             }
             int maxHighVulnerabilities = preferenceManager.getPreference(
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_HIGH_VULNERABILITIES);
             if (maxHighVulnerabilities != DISABLED &&
                     maxHighVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.High, 0)) {
-                return false;
+                return ToolExecutionCheckStatus.fail("Max number of HIGH vulnerabilities is reached");
             }
             int maxMediumVulnerabilities = preferenceManager.getPreference(
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_MEDIUM_VULNERABILITIES);
             if (maxMediumVulnerabilities != DISABLED &&
                     maxMediumVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.Medium, 0)) {
-                return false;
+                return ToolExecutionCheckStatus.fail("Max number of MEDIUM vulnerabilities is reached");
+            }
+
+            LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
+            if (toolVersionScanResult.getToolOSVersion() != null
+                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion())) {
+                LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
+                        tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
+                return ToolExecutionCheckStatus.fail("This type of OS is not supported.");
             }
         }
-        return true;
+        return ToolExecutionCheckStatus.success();
     }
 
     private boolean gracePeriodIsActive(ToolVersionScanResult versionScan, int graceHours) {
@@ -397,10 +427,13 @@ public class AggregatingToolScanManager implements ToolScanManager {
         return dockerClientFactory.getDockerClient(registry, token);
     }
 
-    private ToolVersionScanResult convertResults(ClairScanResult clairScanResult,
-                                                 DockerComponentScanResult compScanResult,
-                                                 Tool tool, String tag, String digest) {
-        List<Vulnerability> vulnerabilities = Optional.ofNullable(clairScanResult)
+    private ToolVersionScanResult convertResults(final ClairScanResult clairScanResult,
+                                                 final DockerComponentScanResult compScanResult,
+                                                 final Tool tool,
+                                                 final String tag,
+                                                 final String digest) {
+        final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
+        final List<Vulnerability> vulnerabilities = Optional.ofNullable(clairScanResult)
                 .map(result -> ListUtils.emptyIfNull(result.getFeatures()).stream())
                 .orElse(Stream.empty())
             .flatMap(f -> f.getVulnerabilities() != null ? f.getVulnerabilities().stream().map(v -> {
@@ -412,6 +445,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 vulnerability.setSeverity(v.getSeverity());
                 vulnerability.setFeature(f.getName());
                 vulnerability.setFeatureVersion(f.getVersion());
+                vulnerabilitiesCount.merge(v.getSeverity(), 1,  (oldVal, newVal) -> oldVal + 1);
                 return vulnerability;
             }) : Stream.empty())
             .collect(Collectors.toList());
@@ -419,7 +453,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
         LOGGER.debug("Found: " + vulnerabilities.size() + " vulnerabilities for " + tool.getImage() + ":" + tag);
 
         //Concat dependencies from Clair and DockerCompScan
-        List<ToolDependency> dependencies = Stream.concat(
+        final List<ToolDependency> dependencies = Stream.concat(
                 Optional.ofNullable(compScanResult).map(result ->
                                 ListUtils.emptyIfNull(result.getLayers()).stream())
                         .orElse(Stream.empty())
@@ -437,8 +471,23 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
         LOGGER.debug("Found: " + dependencies.size() + " dependencies for " + tool.getImage() + ":" + tag);
 
+        final ToolOSVersion osVersion = dependencies.stream()
+                .filter(td -> td.getEcosystem() == ToolDependency.Ecosystem.OS)
+                .findFirst().map(td -> new ToolOSVersion(td.getName(), td.getVersion()))
+                .orElseGet(() -> createEmptyToolOsVersion(tool, tag));
 
-        return new ToolVersionScanResult(tag, vulnerabilities, dependencies, ToolScanStatus.COMPLETED,
-                clairScanResult.getName(), digest);
+        final ToolVersionScanResult result = new ToolVersionScanResult(tag, osVersion, vulnerabilities,
+                dependencies, ToolScanStatus.COMPLETED, clairScanResult.getName(), digest);
+        result.setVulnerabilitiesCount(vulnerabilitiesCount);
+        return result;
+    }
+
+    private ToolOSVersion createEmptyToolOsVersion(final Tool tool, final String tag) {
+        return Optional.of(toolManager.loadToolVersionAttributes(tool.getId(), tag))
+            .map(ToolVersionAttributes::getAttributes)
+            .map(ToolVersion::getPlatform)
+            .filter(WINDOWS_PLATFORM::equalsIgnoreCase)
+            .map(platform -> new ToolOSVersion(WINDOWS_PLATFORM, StringUtils.EMPTY))
+            .orElse(new ToolOSVersion(NOT_DETERMINED, NOT_DETERMINED));
     }
 }

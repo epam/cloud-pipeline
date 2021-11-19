@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
 import com.epam.pipeline.autotests.ao.Template;
@@ -28,6 +29,8 @@ import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -39,7 +42,9 @@ import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.*;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.*;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.NodePage.*;
+import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
@@ -47,6 +52,7 @@ import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.openqa.selenium.By.className;
 
 public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implements Authorization {
@@ -181,13 +187,23 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
                 "expectedRunLogPython.txt").toArray(String[]::new);
         final String[] mountDataTexts = prepareExpectedLogMessages(mountStorageTaskName, getLastRunId(),
                 "expectedRunLogMountDataStoragesTask.txt").toArray(String[]::new);
-        onRunPage()
-            .click(taskWithName("Task1"))
-            .ensure(log(), containsMessage("Running python pipeline"))
-            .click(taskWithName(mountStorageTaskName))
-            .ensure(log(), containsMessages(mountDataTexts))
-            .click(taskWithName(pipeline100))
-            .ensure(log(), containsMessages(texts));
+        Set<String> mountMessages = onRunPage()
+                .click(taskWithName("Task1"))
+                .ensure(log(), containsMessage("Running python pipeline"))
+                .click(taskWithName(mountStorageTaskName))
+                .ensure(STATUS, SUCCESS.reached)
+                .logMessages()
+                .collect(toSet());
+        Arrays.stream(mountDataTexts)
+                .map(String::trim)
+                .forEach(t -> onRunPage().logContainsMessage(mountMessages, t));
+        Set<String> pipelineLog = onRunPage()
+                .click(taskWithName(pipeline100))
+                .logMessages()
+                .collect(toSet());
+        Arrays.stream(texts)
+                .map(String::trim)
+                .forEach(t -> onRunPage().logContainsMessage(pipelineLog, t));
     }
 
     @Test(priority = 1, dependsOnMethods = "logShouldBeValid")
@@ -246,7 +262,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
     @TestCase({"EPMCMBIBPC-280", "EPMCMBIBPC-301"})
     public void nodePageShouldBeValid() {
-        final By nonMasterNode = Combiners.select(not(master()), node(), "any non-master node");
+        final By nonMasterNode = Combiners.select(
+                and("node neither master nor windows", not(master()), not(windows())),
+                node(), "any non-master node");
         clusterMenu()
             .click(nonMasterNode, NodePage::new)
             .ensure(button("Refresh"), visible, enabled)

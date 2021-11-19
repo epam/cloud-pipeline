@@ -38,9 +38,13 @@
 - [Run a single command or an interactive session over the SSH protocol via `pipe`](#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe)
 - [Perform objects restore in a batch mode via `pipe`](#perform-objects-restore-in-a-batch-mode-via-pipe)
 - [Mounting data storages to Linux and Mac workstations](#mounting-data-storages-to-linux-and-mac-workstations)
+- [Allow to run `pipe` commands on behalf of the other user](#allow-to-run-pipe-commands-on-behalf-of-the-other-user)
 - [Ability to restrict the visibility of the jobs](#ability-to-restrict-the-visibility-of-the-jobs)
 - [Ability to perform scheduled runs from detached configurations](#ability-to-perform-scheduled-runs-from-detached-configurations)
+- [Using custom domain names as a "friendly URL" for the interactive services](#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services)
 - [Displaying of the additional support icon/info](#displaying-of-the-additional-support-iconinfo)
+- [Pass proxy settings to the `DIND` containers](#pass-proxy-settings-to-the-dind-containers)
+- [Interactive endpoints can be (optionally) available to the anonymous users](#interactive-endpoints-can-be-optionally-available-to-the-anonymous-users)
 
 ***
 
@@ -67,6 +71,7 @@
     - [`endDate` isn't set when node of a paused run was terminated](#enddate-isnt-set-when-node-of-a-paused-run-was-terminated)
     - [AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed](#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed)
     - [Resume job timeout throws strange error message](#resume-job-timeout-throws-strange-error-message)
+    - [GE autoscaler doesn't remove dead additional workers from cluster](#ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster)
     - [Broken layouts](#broken-layouts)
 
 ***
@@ -476,9 +481,9 @@ See an example [here](../../manual/15_Interactive_services/15.2._Using_Terminal_
 
 As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#running-instances-sharing-with-other-users-or-groups-of-users), for certain use cases it is beneficial to be able to share applications with other users/groups.  
 
-**`v0.15`** introduces a feature that allows to share SSH-sessions for such shared runs:
+**`v0.15`** introduces a feature that allows to share the SSH-session of any active run (regardless of whether the job type is interactive or not):
 
-1. User can share a run with others:
+1. The user can share an interactive run with others:
     - "Share with: ..." parameter, within a run log form, can be used for this  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_1.png)
     - Specific users or whole groups can be set for sharing  
@@ -486,9 +491,16 @@ As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#
     - Once this is set - other users will be able to access run's endpoints
     - Also you can share SSH access to the running instance via setting "**Enable SSH connection**" checkbox  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
-2. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
+2. Also, the user can share a non-interactive run:
+    - "Share with: ..." parameter, within a run log form, can be used for this  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_5.png)
+    - Specific users or whole groups can be set for sharing  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_6.png)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_7.png)  
+    - Once this is set - specified users/groups will be able to access the running instance via the SSH
+3. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
 To open shared instance application user should click the service name.  
-To get SSH-access to the shared instance user should hover over service "card" and click the **SSH** hyperlink  
+To get SSH-access to the shared instance (regardless of whether the job type is interactive or not), the user should hover over the service "card" and click the **SSH** hyperlink  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
 
 For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
@@ -730,6 +742,29 @@ To unmount a mountpoint the `pipe storage umount` command was implemented.
 
 For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
 
+## Allow to run `pipe` commands on behalf of the other user
+
+In the current version, the ability to run `pipe` commands on behalf of the other user was implemented.  
+It could be convenient when administrators need to perform some operations on behalf of the other user (e.g. check permissions/act as a service account/etc.).
+
+This feature is implemented via the common option that was added to **all** `pipe` commands: **`--user|-u <USER_ID>`** (where **`<USER_ID>`** is the name of the user account).  
+**_Note_**: the option isn't available for the following `pipe` commands: `configure`, `--version`, `--help`.
+
+If this option is specified - operation (command execution) will be performed using the corresponding user account, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeBehalfOfOtherUser_1.png)  
+In the example above, active runs were outputted from the admin account (firstly) and then on behalf of the user without _ROLE\_ADMIN_ role.
+
+Additionally, a new command **`pipe token <USER_ID>`** was implemented. It prints the `JWT` token for a specified user.  
+This command also can be used with non-required option **`-d`** (**`--duration`**), that specified the number of days the token will be valid. If it's not set - the default value will be used, same as in the GUI.  
+Example of using:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeBehalfOfOtherUser_2.png)
+
+Then, the generated `JWT` token could be used manually with the `pipe configure` command - to configure `pipe` CLI on behalf of the desired user.
+
+**_Note_**: both - the command (`pipe token`) and the option (`--user`) - are available only for admins.
+
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#allow-to-run-pipe-commands-on-behalf-of-the-other-user).
+
 ## Ability to restrict the visibility of the jobs
 
 Previously, `Cloud Pipeline` inherited the pipeline jobs' permissions from the parent pipeline object. So, if two users had permissions on the same pipeline, then when the first user had launched that pipeline - the second user also could view (not manage) launched run in the **Active Runs** tab.  
@@ -772,6 +807,24 @@ If any schedule rule is configured for the detached configuration - a correspond
 
 See more details [here](../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md#schedule-a-launch-from-the-detached-configuration).
 
+## The ability to use custom domain names as a "friendly URL" for the interactive services
+
+In **[`v0.13`](../v.0.13/v.0.13_-_Release_notes.md#running-instances-sharing-with-other-users-or-groups-of-users)** the ability to set a "friendly URL" for the interactive services endpoint was implemented. It allows to configure the view of the interactive service endpoint:
+
+- Default view: `https://<host>/pipeline-<run-id>-<port>`  
+- "Friendly" view: `https://<host>/<friendly-url>`
+
+In the current version this feature is expanded: users allow to specify a custom host.  
+So the endpoint url now can look like: `https://<custom-host>` or `https://<custom-host>/<friendly-url>`.  
+**_Note_**: custom host should exist, be valid and configured.
+
+The custom host is being specified into the same field as a "friendly URL" previously, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_CustomDomainNames_1.png)  
+Final URL for the service endpoint will be generated using the specified host and friendly URL:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_CustomDomainNames_2.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-friendly-url).
+
 ## Displaying of the additional support icon/info
 
 In certain cases, users shall have a quick access to the help/support information (e.g. links to docs/faq/support request/etc.)
@@ -787,6 +840,48 @@ The displaying of this icon and the info content can be configured by admins via
     - specified text is displayed in the support icon tooltip (support info)
 
 For more details see [UI system settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#user-interface).
+
+## Pass proxy settings to the `DIND` containers
+
+Previously, `DIND` containers configuration included only registry credentials and a couple of driver settings.  
+In certain environments, it is not possible to access external networks (e.g. for the packages installation) without the proxy settings.  
+So the users had to pass this manually every time when using the `docker run` command.
+
+In the current version, a new system preference **`launch.dind.container.vars`** is introduced. It allows to specify all the additions variables, which will be passed to the `DIND` containers (if they are set for the host environment).  
+
+By default, the following variables are set for the `launch.dind.container.vars` preference (and so will be passed to `DIND` container): `http_proxy`,`https_proxy`, `no_proxy`, `API`, `API_TOKEN`. Variables are being specified as a comma-separated list.
+
+Example of using:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_DINDvariations_1.png)
+
+At the same time, a new system parameter (per run) was added - **`CP_CAP_DIND_CONTAINER_NO_VARS`**, which disables described behavior. You can set it before any run if you don't want to pass any additional variations to the `DIND` container.
+
+## Interactive endpoints can be (optionally) available to the anonymous users
+
+Cloud Pipeline allows sharing the interactive and SSH endpoints with the other users/groups.
+
+Previously, this necessary required the end-user to be registered in the Cloud Pipeline users database.
+
+For certain use-cases, it is required to allow such type of access for any user, who has successfully passed the IdP authentication but is not registered in the Cloud Pipeline and also such users shall not be automatically registered at all and remain `Anonymous`.
+
+In the current version, such ability is implemented. It's enabled by the following application properties:
+
+- `saml.user.auto.create=EXPLICIT_GROUP`
+- `saml.user.allow.anonymous=true`
+
+After that, to share any interactive run with the `Anonymous` - it's simple enough to share endpoints with the following user group - `ROLE_ANONYMOUS_USER`:
+
+- At the **Run logs** page:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EndpointToAnonymous_01.png)
+- The user should select the `ROLE_ANONYMOUS_USER` role to share:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EndpointToAnonymous_03.png)
+- Sharing with the `Anonymous` will be displayed at the Run logs page:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EndpointToAnonymous_04.png)
+- That's all. Now, the endpoint-link of the run could be sent to the `Anonymous` user.
+
+If that `Anonymous` user passes `SAML` authentication, he will get access to the endpoint. Attempts to open any other Platform pages will fail.
+
+For more details see [here](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md#sharing-runs-with-the-anonymous-users).
 
 ***
 
@@ -942,6 +1037,12 @@ Now, checks that instance associated with `SpotRequest` (created for the first a
 [#832](https://github.com/epam/cloud-pipeline/issues/832)
 
 Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.
+
+### GE autoscaler doesn't remove dead additional workers from cluster
+
+[#946](https://github.com/epam/cloud-pipeline/issues/946)
+
+Previously, the Grid Engine Autoscaler didn't properly handle dead workers downscaling. For example, if some spot worker instance was preempted during the run then the autoscaler could not remove such worker from GE. Moreover, such cluster was blocked from accepting new jobs.
 
 ### Broken layouts
 

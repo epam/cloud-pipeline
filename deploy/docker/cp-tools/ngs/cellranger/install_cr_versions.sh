@@ -33,11 +33,17 @@ mkdir -p $_CELLRANGER_HOME
 CELLRANGER_URL_LIST=($CELLRANGER_URL)
 
 cd /tmp
+INCOMPATIBILITY_VERSION="4.0.0"
 for CELLRANGER_URL_ITEM in "${CELLRANGER_URL_LIST[@]}"; do
     wget -q -O cellranger.tar.gz "${CELLRANGER_URL_ITEM}"
     tar -zxvf cellranger.tar.gz
     rm -rf cellranger.tar.gz
-    \cp /tmp/sge.template cellranger-*/martian-cs/*/jobmanagers/
+    ITEM_VERSION=$(echo cellranger-* | awk -F cellranger- '{ print $2 }')
+    if [ "$INCOMPATIBILITY_VERSION" == $(echo -e "$ITEM_VERSION\n$INCOMPATIBILITY_VERSION" | sort -V | head -n1) ]; then
+      cp /tmp/sge.template cellranger-*/external/martian/jobmanagers/
+    else
+      cp /tmp/sge.template cellranger-*/martian-cs/*/jobmanagers/
+    fi
     mv cellranger-* $CELLRANGER_HOME/
 done
 rm -f /tmp/sge.template

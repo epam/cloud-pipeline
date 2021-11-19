@@ -24,6 +24,8 @@ import com.epam.pipeline.exception.MetadataReadingException;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Optional;
+
 @NoArgsConstructor
 public class ColumnHeaderParser {
 
@@ -33,18 +35,18 @@ public class ColumnHeaderParser {
     private static final int REFERENCE_COLUMN_PARTS = 3;
     private static final int MEMBERSHIP_COLUMN_PARTS = 4;
 
-    public String readClassColumn(String name) {
+    public Optional<String> readClassColumn(String name) {
         if (StringUtils.isBlank(name)) {
-            throw new MetadataReadingException("Missing column name.");
+            return Optional.empty();
         }
         String[] chunks = name.split(NAME_DELIMITER);
         if (chunks.length != CLASS_COLUMN_PARTS || !REFERENCE_SUFFIX.equals(chunks[1])) {
-            throw new MetadataReadingException("First column must match format: 'Type:ID'.");
+            return Optional.empty();
         }
         if (StringUtils.isBlank(chunks[0])) {
-            throw new MetadataReadingException("Entity type shouldn't be empty");
+            return Optional.empty();
         }
-        return chunks[0];
+        return Optional.of(chunks[0]);
     }
 
     public EntityTypeField readFieldColumn(String name) {

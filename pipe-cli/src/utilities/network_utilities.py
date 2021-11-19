@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import atexit
+import platform
 from contextlib import closing
 import os
 import signal
@@ -51,7 +52,14 @@ class NTLMProxy(object):
                         "--downstream-proxy-port", str(proxy_port)]
 
         with open(os.devnull, 'w') as dev_null:
-            ntlm_aps_proc = subprocess.Popen(ntlm_aps_cmd, stdout=dev_null, stderr=dev_null)
+            if platform.system() == 'Windows':
+                # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
+                CREATE_NO_WINDOW = 0x08000000
+                creationflags = CREATE_NO_WINDOW
+            else:
+                creationflags = 0
+            ntlm_aps_proc = subprocess.Popen(ntlm_aps_cmd, stdout=dev_null, stderr=dev_null,
+                                             creationflags=creationflags)
             self.proxy_pid = ntlm_aps_proc.pid
 
     def kill_ntlm_aps(self):

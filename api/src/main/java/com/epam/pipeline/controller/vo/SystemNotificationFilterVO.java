@@ -18,6 +18,8 @@ package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
 import com.epam.pipeline.entity.notification.SystemNotificationState;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections.CollectionUtils;
@@ -27,11 +29,13 @@ import java.util.List;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class SystemNotificationFilterVO {
     private List<SystemNotificationSeverity> severityList;
     private List<SystemNotificationState> stateList;
     private Date createdDateAfter;
 
+    @JsonIgnore
     public boolean isEmpty() {
         return CollectionUtils.isEmpty(this.severityList) &&
                 CollectionUtils.isEmpty(this.stateList) &&

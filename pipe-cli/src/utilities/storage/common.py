@@ -16,12 +16,17 @@ import os
 import re
 
 from abc import abstractmethod, ABCMeta
+from collections import namedtuple
 
 import click
 import jwt
 
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
+
+TransferResult = namedtuple('TransferResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
+
+UploadResult = namedtuple('UploadResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
 
 
 class StorageOperations:
@@ -115,8 +120,8 @@ class StorageOperations:
         return re.sub(delimiter + '+', delimiter, path)
 
     @classmethod
-    def show_progress(cls, quiet, size):
-        return not quiet and size is not None and size != 0
+    def show_progress(cls, quiet, size, lock=None):
+        return not quiet and size is not None and size != 0 and lock is None
 
     @classmethod
     def get_local_file_size(cls, path):
@@ -169,7 +174,7 @@ class StorageOperations:
     @classmethod
     def get_user(cls):
         config = Config.instance()
-        user_info = jwt.decode(config.access_key, verify=False)
+        user_info = jwt.decode(config.get_token(), verify=False)
         if 'sub' in user_info:
             return user_info['sub']
         raise RuntimeError('Cannot find user info.')
@@ -214,8 +219,20 @@ class AbstractTransferManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
+    def get_destination_key(self, destination_wrapper, relative_path):
+        pass
+
+    @abstractmethod
+    def get_source_key(self, source_wrapper, source_path):
+        pass
+
+    @abstractmethod
+    def get_destination_size(self, destination_wrapper, destination_key):
+        pass
+
+    @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -230,9 +247,31 @@ class AbstractTransferManager:
         :param size: Size of the transfer source object.
         :param tags: Additional tags that will be included to the transferring object.
         Tags CP_SOURCE and CP_OWNER will be included by default.
-        :param skip_existing: Skips transfer objects that already exist in the destination storage.
+        :param io_threads: Number of threads to be used for a single file io operations.
+        :param lock: The lock object if multithreaded transfer is requested
+        :type lock: multiprocessing.Lock
         """
         pass
+
+    @staticmethod
+    def skip_existing(source_key, source_size, destination_key, destination_size, quiet):
+        if destination_size is not None and destination_size == source_size:
+            if not quiet:
+                click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
+            return True
+        return False
+
+    @staticmethod
+    def create_local_folder(destination_key, lock):
+        folder = os.path.dirname(destination_key)
+        if lock:
+            lock.acquire()
+        try:
+            if folder and not os.path.exists(folder):
+                os.makedirs(folder)
+        finally:
+            if lock:
+                lock.release()
 
 
 class AbstractListingManager:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.datastorage;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -28,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,13 +36,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.assertions.ProjectAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
-public class DataStorageDaoTest extends AbstractSpringTest {
+public class DataStorageDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_OWNER = "testOwner";
     private static final String TEST_STORAGE_NAME = "testStorage";
@@ -96,7 +97,7 @@ public class DataStorageDaoTest extends AbstractSpringTest {
         policy.setVersioningEnabled(true);
         s3Bucket.setStoragePolicy(policy);
 
-        nfsStorage = new NFSDataStorage(null, "NFS_STORAGE", "nfs_path");
+        nfsStorage = new NFSDataStorage(null, "NFS_STORAGE", "127.0.0.1@tcp1:/path");
         nfsStorage.setOwner(TEST_OWNER);
         nfsStorage.setDescription("NFS");
         nfsStorage.setParentFolderId(testFolder.getId());
@@ -142,6 +143,19 @@ public class DataStorageDaoTest extends AbstractSpringTest {
     public void shouldCreateNewS3Storage() {
         dataStorageDao.createDataStorage(s3Bucket);
         validateCreatedStorage(s3Bucket);
+    }
+
+    @Test
+    public void shouldCreateNewMirroringS3Storage() {
+        final S3bucketDataStorage sourceDataStorage = new S3bucketDataStorage(null, "sourceStorage", "sourcePath");
+        sourceDataStorage.setOwner(TEST_OWNER);
+        dataStorageDao.createDataStorage(sourceDataStorage);
+        validateCreatedStorage(sourceDataStorage);
+
+        s3Bucket.setLinkingMasks(Collections.singleton(UPDATED_VALUE));
+        s3Bucket.setSourceStorageId(sourceDataStorage.getId());
+        dataStorageDao.createDataStorage(s3Bucket);
+        validateS3Storage(dataStorageDao.loadDataStorage(s3Bucket.getId()), s3Bucket);
     }
 
     @Test
@@ -378,7 +392,9 @@ public class DataStorageDaoTest extends AbstractSpringTest {
 
         assertThat(bucket)
                 .hasRegionId(expected.getRegionId())
-                .hasAllowedCidrs(expected.getAllowedCidrs());
+                .hasAllowedCidrs(expected.getAllowedCidrs())
+                .hasSourceStorageId(expected.getSourceStorageId())
+                .hasLinkingMasks(expected.getLinkingMasks());
     }
 
     private void validateCommonStorage(AbstractDataStorage actual, AbstractDataStorage expected) {

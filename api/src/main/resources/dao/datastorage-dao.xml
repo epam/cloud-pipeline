@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -43,13 +44,21 @@
                         shared,
                         allowed_cidrs,
                         region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
                         :DESCRIPTION,
                         :DATASTORAGE_TYPE,
                         :PATH,
+                        :DATASTORAGE_ROOT_ID,
                         :STS_DURATION,
                         :LTS_DURATION,
                         :INCOMPLETE_UPLOAD_CLEANUP_DAYS,
@@ -64,7 +73,14 @@
                         :SHARED,
                         :ALLOWED_CIDRS,
                         :REGION_ID,
-                        :FILE_SHARE_MOUNT_ID
+                        :FILE_SHARE_MOUNT_ID,
+                        :SENSITIVE,
+                        :S3_KMS_KEY_ARN,
+                        :S3_USE_ASSUMED_CREDS,
+                        :S3_TEMP_CREDS_ROLE,
+                        :MOUNT_STATUS,
+                        :SOURCE_DATASTORAGE_ID,
+                        to_jsonb(:MASKING_RULES::jsonb)
                     )
                 ]]>
             </value>
@@ -105,6 +121,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -119,9 +136,56 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
+                    ORDER BY datastorage_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStoragesByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        datastorage_root_id,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        datastorage_id IN (:DATASTORAGE_IDS)
                     ORDER BY datastorage_id
                 ]]>
             </value>
@@ -135,6 +199,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -149,7 +214,14 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -166,6 +238,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -180,7 +253,14 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -197,6 +277,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -211,11 +292,57 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
                         lower(datastorage_name) = lower(:DATASTORAGE_NAME) or lower(path) = lower(:PATH)
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageByPrefixesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        datastorage_root_id,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        path IN (:PATH)
                 ]]>
             </value>
         </property>
@@ -228,6 +355,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -242,7 +370,14 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -260,6 +395,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -274,11 +410,57 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
                         path like ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStoragesFileShareId">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        datastorage_root_id,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id,
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        file_share_mount_id = ?
                 ]]>
             </value>
         </property>
@@ -309,6 +491,7 @@
                             d.description,
                             d.datastorage_type,
                             d.path,
+                            d.datastorage_root_id,
                             d.sts_duration,
                             d.lts_duration,
                             d.incomplete_upload_cleanup_days,
@@ -323,6 +506,13 @@
                             d.allowed_cidrs,
                             d.region_id as region_id,
                             d.file_share_mount_id,
+                            d.sensitive,
+                            d.s3_kms_key_arn,
+                            d.s3_use_assumed_creds,
+                            d.s3_temp_creds_role,
+                            d.mount_status,
+                            d.source_datastorage_id,
+                            d.masking_rules,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -339,6 +529,7 @@
                             null as description,
                             null as datastorage_type,
                             null as path,
+                            null as datastorage_root_id,
                             null as sts_duration,
                             null as lts_duration,
                             null as incomplete_upload_cleanup_days,
@@ -353,6 +544,13 @@
                             null as allowed_cidrs,
                             null as region_id,
                             null as file_share_mount_id,
+                            null as sensitive,
+                            null as s3_kms_key_arn,
+                            null as s3_use_assumed_creds,
+                            null as s3_temp_creds_role,
+                            null as mount_status,
+                            null as source_datastorage_id,
+                            null as masking_rules,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -371,6 +569,7 @@
                             d.description,
                             d.datastorage_type,
                             d.path,
+                            d.datastorage_root_id,
                             d.sts_duration,
                             d.lts_duration,
                             d.incomplete_upload_cleanup_days,
@@ -385,6 +584,13 @@
                             d.allowed_cidrs,
                             d.region_id as region_id,
                             d.file_share_mount_id,
+                            d.sensitive,
+                            d.s3_kms_key_arn,
+                            d.s3_use_assumed_creds,
+                            d.s3_temp_creds_role,
+                            d.mount_status,
+                            d.source_datastorage_id,
+                            d.masking_rules,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -397,6 +603,7 @@
                             null as description,
                             null as datastorage_type,
                             null as path,
+                            null as datastorage_root_id,
                             null as sts_duration,
                             null as lts_duration,
                             null as incomplete_upload_cleanup_days,
@@ -411,11 +618,97 @@
                             null as allowed_cidrs,
                             null as region_id,
                             null as file_share_mount_id,
+                            null as sensitive,
+                            null as s3_kms_key_arn,
+                            null as s3_use_assumed_creds,
+                            null as s3_temp_creds_role,
+                            null as mount_status,
+                            null as source_datastorage_id,
+                            null as masking_rules,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
 	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
 	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageRootQuery">
+            <value>
+                <![CDATA[
+                    SELECT r.datastorage_root_id, r.datastorage_root_path
+                    FROM pipeline.datastorage_root r
+                    WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                ]]>
+            </value>
+        </property>
+        <property name="addToolVersionToMountQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_tool_version(datastorage_id, tool_id, tool_version_id)
+                    VALUES (:DATASTORAGE_ID, :TOOL_ID, :TOOL_VERSION_ID);
+                ]]>
+            </value>
+        </property>
+        <property name="deleteToolsToMountQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tool_version AS dtv
+                    WHERE dtv.datastorage_id = ?;
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsToMountQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                    WHERE dtv.datastorage_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsToMountsForAllStoragesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                ]]>
+            </value>
+        </property>
+        <property name="createDataStorageRootQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_root (datastorage_root_path)
+                    VALUES (:DATASTORAGE_ROOT_PATH)
+                    ON CONFLICT (datastorage_root_path) 
+                    DO NOTHING;
+                ]]>
+            </value>
+        </property>
+        <property name="updateDataStorageMountStatusQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.datastorage SET
+                        mount_status = :MOUNT_STATUS
+                    WHERE
+                        datastorage_id = :DATASTORAGE_ID
                 ]]>
             </value>
         </property>

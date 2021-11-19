@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -33,14 +34,14 @@ import styles from './preview.css';
 })
 @observer
 export default class DockerRegistryPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    })
+    }),
+    lightMode: PropTypes.bool
   };
 
   @computed
@@ -131,7 +132,16 @@ export default class DockerRegistryPreview extends React.Component {
     const groups = this.renderGroups();
 
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />

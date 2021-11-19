@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import org.openqa.selenium.WebElement;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -33,10 +34,13 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 
 public class LogAO implements AccessObject<LogAO> {
     public static final long SSH_LINK_APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
@@ -55,9 +59,13 @@ public class LogAO implements AccessObject<LogAO> {
             entry(COMMIT, $$(tagName("a")).findBy(exactText("COMMIT"))),
             entry(PAUSE, $$(tagName("a")).findBy(exactText("PAUSE"))),
             entry(RESUME, $$(tagName("a")).findBy(exactText("RESUME"))),
+            entry(STOP, $$(tagName("a")).findBy(exactText("STOP"))),
+            entry(RERUN, $$(tagName("a")).findBy(exactText("RERUN"))),
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
-            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]")))
+            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
+            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
     );
 
     public LogAO waitForCompletion() {
@@ -71,7 +79,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForSshLink() {
-        get(SSH_LINK).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        get(SSH_LINK).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
     }
 
@@ -147,10 +155,30 @@ public class LogAO implements AccessObject<LogAO> {
         clickOnPauseButton();
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs(
-                        String.format("Do you want to pause %s?", pipelineName))
+                        format("Do you want to pause %s?", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
+    }
+
+    public LogAO clickOnStopButton() {
+        get(STOP).shouldBe(visible).click();
+        return this;
+    }
+
+    public LogAO stop(final String pipelineName) {
+        clickOnStopButton();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleIs(
+                        format("Stop %s?", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button(STOP.name()));
+        return this;
+    }
+
+    public PipelineRunFormAO clickOnRerunButton() {
+        get(RERUN).shouldBe(visible).click();
+        return new PipelineRunFormAO();
     }
 
     public LogAO assertPausingFinishedSuccessfully() {
@@ -169,7 +197,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO resume(final String pipelineName) {
         get(RESUME).shouldBe(visible).click();
         new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(String.format("Do you want to resume %s?", pipelineName))
+                .ensureTitleContains(format("Do you want to resume %s?", pipelineName))
                 .sleep(2, SECONDS)
                 .click(button(RESUME.name()));
         return this;
@@ -184,15 +212,85 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public ToolPageAO clickOnEndpointLink() {
+        String endpoint = getEndpointLink();
+        get(ENDPOINT).click();
+        switchTo().window(1);
+        return new ToolPageAO(endpoint);
+    }
+
+    public ToolPageAO clickOnEndpointLink(String link) {
+        String endpoint = getEndpointLink(link);
+        $(byXpath(format(".//a[.='%s']", link))).click();
+        switchTo().window(1);
+        return new ToolPageAO(endpoint);
+    }
+
+    public String getEndpointLink() {
+        return get(ENDPOINT).shouldBe(visible).attr("href");
+    }
+
+    public String getEndpointName() {
+        return get(ENDPOINT).shouldBe(visible).text();
+    }
+
+    public String getEndpointLink(String link){
+        return $(withText("Endpoint")).closest("tr").$(byXpath(format(".//a[.='%s']", link)))
+                .shouldBe(visible).attr("href");
+    }
+
+    public LogAO waitForNestedRunsLink() {
+        get(NESTED_RUNS).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public LogAO clickOnNestedRunLink() {
+        get(NESTED_RUNS).click();
+        return this;
+    }
+
+    public String getNestedRunID(int childNum) {
+        return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
+    }
+
+    public LogAO shareWithGroup(final String groupName) {
+        click(SHARE_WITH);
+        new ShareWith().addGroupToShare(groupName);
+        return this;
+    }
+
+    public LogAO shareWithUser(final String userName, boolean sshConnection) {
+        click(SHARE_WITH);
+        new ShareWith().addUserToShare(userName, sshConnection);
+        return this;
+    }
+
+    public LogAO setEnableSShConnection(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().selectEnableSShConnection(name);
+        return this;
+    }
+
+    public LogAO removeShareUserGroup(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().removeUserFromShare(name);
+        return this;
+    }
+
+    public LogAO validateShareLink(final String link) {
+        get(SHARE_WITH).shouldHave(text(link));
+        return this;
+    }
+
     public LogAO validateException(final String exception) {
-        $(byClassName("ant-alert-error")).has(text(exception));
+        $(byClassName("ant-alert-error")).shouldHave(text(exception));
         return this;
     }
 
     public LogAO waitForLog(final String message) {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 70; i++) {
             refresh();
-            if ($(log()).is(matchText(message))) {
+            if ($(log()).shouldBe(visible).is(matchText(message))) {
                 break;
             }
             sleep(20, SECONDS);
@@ -214,6 +312,12 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
         return this;
+    }
+
+
+    public String getParameterValue(final String name) {
+        expandTab(INSTANCE);
+        return $(InstanceParameters.parameterWithName(name)).text();
     }
 
     /**
@@ -242,7 +346,7 @@ public class LogAO implements AccessObject<LogAO> {
      * @return Qualifier of a parameter with such {@code name} and {@code value}.
      */
     public static By configurationParameter(final String name, final String value) {
-        return byXpath(String.format(".//*/*[normalize-space(translate(., ' \t\n', '   ')) = '%s:%s']", name, value));
+        return byXpath(format(".//*/*[normalize-space(translate(., ' \t\n', '   ')) = '%s:%s']", name, value));
     }
 
     public LogAO validateRunTitle(String title) {
@@ -264,7 +368,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By detailsWithLabel(final String label) {
         Objects.requireNonNull(label);
-        return byXpath(String.format("//tr[.//th[normalize-space(text()) = '%s:']]//td", label));
+        return byXpath(format("//tr[.//th[normalize-space(text()) = '%s:']]//td", label));
     }
 
     public static By taskList() {
@@ -277,34 +381,68 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By taskWithName(final String name) {
         Objects.requireNonNull(name);
-        final By taskQualifier = byXpath(String.format(".//li[contains(., '%s')]", name));
-        return Combiners.confine(taskQualifier, taskList(), String.format("task with name %s", name));
+        final By taskQualifier = byXpath(format(".//li[contains(., '%s')]", name));
+        return Combiners.confine(taskQualifier, taskList(), format("task with name %s", name));
     }
 
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
-        return byXpath(String.format(
+        return byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
                         ".//td[contains(., '%s')]]", name, value));
+    }
+
+    public LogAO checkMountLimitsParameter(String...storages) {
+        Arrays.stream(storages)
+                .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                        .shouldHave(text(storage)));
+        return this;
+    }
+
+    public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
+        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage)).click();
+        return new StorageContentAO();
     }
 
     public static By log() {
         return byClassName("ReactVirtualized__List");
     }
 
+    public LogAO logContainsMessage(Set<String> logMess, final String message) {
+        assertTrue(logMess.stream().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't contained in log", message));
+        return this;
+    }
+
+    public LogAO logNotContainsMessage(Set<String> logMess, final String message) {
+        assertTrue(logMess.stream().noneMatch(mes -> mes.contains(message)), format("Message '%s' is contained in log", message));
+        return this;
+    }
+
+    public LogAO checkAvailableStoragesCount(Set<String> logMess, int count) {
+        String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
+                        .asPredicate()).findFirst().toString();
+        Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
+        assert matcher.find();
+        int res = Integer.parseInt(matcher.group().replace(" ", ""));
+        assertTrue(res >= count,
+               format("Available storages count (actual %s) should be more or equal %s", res, count));
+        return this;
+    }
+
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
         final String messageClass = "log__log-row";
-        final By messageQualifier = byXpath(String.format(
+        final By messageQualifier = byXpath(format(
                 "//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., \"%s\")]]",
                 messageClass, text
         ));
-        return Combiners.confine(messageQualifier, log(), String.format("log message with text {%s}", text));
+        return Combiners.confine(messageQualifier, log(), format("log message with text {%s}", text));
     }
 
     public static By timeInfo(final String label) {
         Objects.requireNonNull(label);
-        return byXpath(String.format(
+        return byXpath(format(
             ".//*[@class = 'task-link__time-info' and contains(.//text(), '%s')]",
             label
         ));
@@ -312,7 +450,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static Condition containsMessage(final String text) {
         Objects.requireNonNull(text);
-        return new Condition(String.format("contains message {%s}", text)) {
+        return new Condition(format("contains message {%s}", text)) {
 
             private static final String container = ".log__logs-table";
             private final By message = logMessage(text);
@@ -355,8 +493,8 @@ public class LogAO implements AccessObject<LogAO> {
 
             @Override
             public String actualValue(final WebElement logElement) {
-                final String allMissingMessages = missingMessages.stream().collect(Collectors.joining("\n"));
-                return String.format("Following messages wasn't found in log:%n%s", allMissingMessages);
+                final String allMissingMessages = String.join("\n", missingMessages);
+                return format("Following messages wasn't found in log:%n%s", allMissingMessages);
             }
         };
     }
@@ -369,13 +507,14 @@ public class LogAO implements AccessObject<LogAO> {
                 entry(DEFAULT_COMMAND, context().find(parameterWithName("Cmd template"))),
                 entry(TIMEOUT, context().find(parameterWithName("Timeout"))),
                 entry(PRICE_TYPE, context().find(parameterWithName("Price type"))),
-                entry(IP, context().find(parameterWithName("IP")))
+                entry(IP, context().find(parameterWithName("IP"))),
+                entry(NODE_IMAGE, context().find(parameterWithName("Node image")))
         );
 
         public static By parameterWithName(final String name) {
             final String parameterName = "log__node-parameter-name";
             final String parameterValue = "log__node-parameter-value";
-            return byXpath(String.format(
+            return byXpath(format(
                 ".//*[contains(@class, '%s') and text() = '%s']/following-sibling::*[contains(@class, '%s')]",
                 parameterName, name, parameterValue
             ));
@@ -428,6 +567,60 @@ public class LogAO implements AccessObject<LogAO> {
                     return iconClass;
                 }
             };
+        }
+    }
+
+    public static class ShareWith implements AccessObject<ShareWith> {
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(ADD_USER, context().find(byCssSelector(".anticon-user-add")).closest("button")),
+                entry(ADD_GROUP, context().find(byCssSelector(".anticon-usergroup-add")).closest("button")),
+                entry(OK, context().find(button("OK")))
+        );
+
+        public void addGroupToShare(final String groupName) {
+            click(ADD_GROUP);
+            setValue($(byClassName("ant-select-search__field")), groupName).enter();
+            click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
+                    ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
+            click(OK);
+        }
+
+        public void addUserToShare(final String userName, boolean sshConnection) {
+            click(ADD_USER);
+            SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
+            setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName);
+            $(byXpath(format("//div[.='%s']", userName))).click();
+            selectUserPopup.find(button("OK")).shouldBe(visible).click();
+            if (sshConnection) {
+                checkEnableSShConnection(userName);
+            }
+            click(OK);
+        }
+
+        public void selectEnableSShConnection(final String name) {
+            checkEnableSShConnection(name);
+            click(OK);
+        }
+
+        public void checkEnableSShConnection(final String userName) {
+            $(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().closest("td")
+                    .find(By.xpath("following-sibling::td[.='Enable SSH connection']")).parent().click();
+        }
+
+        public void removeUserFromShare(final String userName) {
+            context().$(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().parent().parent()
+                    .parent().find("button").shouldBe(visible).click();
+            click(OK);
+        }
+
+        @Override
+        public SelenideElement context() {
+            return Utils.getPopupByTitle("Share with users and groups");
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 }

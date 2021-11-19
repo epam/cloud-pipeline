@@ -45,8 +45,8 @@ class ExportImageConsumer extends React.Component {
     exportStore.detachImage(this);
   }
 
-  getExportData = () => {
-    return this.imageGenerator.generate();
+  getExportData = (...options) => {
+    return this.imageGenerator.generate(...options);
   };
 
   render () {

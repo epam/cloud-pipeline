@@ -19,7 +19,19 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
 import FileSaver from 'file-saver';
-import {Alert, Card, Col, Collapse, Icon, Menu, message, Modal, Popover, Row, Spin} from 'antd';
+import {
+  Alert,
+  Card,
+  Col,
+  Collapse,
+  Icon,
+  Menu,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Spin
+} from 'antd';
 import SplitPane from 'react-split-pane';
 import {
   PipelineRunCommitCheck,
@@ -30,18 +42,22 @@ import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
-import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
-import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
+import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
+import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
+import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
+  canCommitRun,
   canPauseRun,
   canStopRun,
   runPipelineActions,
-  terminateRun
+  terminateRun,
+  openReRunForm,
+  runIsCommittable
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
@@ -49,7 +65,6 @@ import displayDate from '../../../utils/displayDate';
 import displayDuration from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
-import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import parseQueryParameters from '../../../utils/queryParameters';
 import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
@@ -62,6 +77,7 @@ import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
 import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
@@ -73,11 +89,17 @@ import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import VSActions from '../../versioned-storages/vs-actions';
+import MultizoneUrl from '../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 const MAX_NESTED_RUNS_TO_DISPLAY = 10;
+const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 
 @connect({
   pipelineRun,
@@ -85,8 +107,9 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList')
-@inject(({pipelineRun, routing, pipelines}, {params}) => {
+@inject('preferences', 'dtsList', 'multiZoneManager')
+@VSActions.check
+@inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -102,22 +125,22 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
     nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
-    runSSH: new PipelineRunSSH(params.runId),
-    runFSBrowser: new PipelineRunFSBrowser(params.runId),
+    runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
+    runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     runSchedule: new RunSchedules(params.runId),
+    runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
     task,
     pipelines,
     roles: new Roles(),
-    routing
+    routing,
+    multiZone: multiZoneManager
   };
 })
 @observer
 class Logs extends localization.LocalizedReactComponent {
-
   @observable language = null;
   @observable _pipelineLanguage = null;
-
   state = {
     timings: false,
     commitRun: false,
@@ -133,6 +156,7 @@ class Logs extends localization.LocalizedReactComponent {
     const {runTasks, runSchedule} = this.props;
     runTasks.fetch();
     runSchedule.fetch();
+    this.updateShowOnlyActiveRuns();
   }
 
   componentWillUnmount () {
@@ -198,6 +222,17 @@ class Logs extends localization.LocalizedReactComponent {
       return payload;
     }
     return null;
+  }
+
+  get showActiveWorkersOnly () {
+    const {run} = this.props;
+    if (run.loaded) {
+      const {pipelineRunParameters} = run.value;
+      const [showActiveWorkersOnly] = (pipelineRunParameters || [])
+        .filter(parameter => parameter.name === 'CP_SHOW_ACTIVE_WORKERS_ONLY');
+      return showActiveWorkersOnly && /^true$/i.test(showActiveWorkersOnly.value);
+    }
+    return false;
   }
 
   exportLog = async () => {
@@ -295,16 +330,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   reRunPipeline = () => {
-    const {pipelineId, version, id, configName} = this.props.run.value;
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+    return openReRunForm(this.props.run.value, this.props);
   };
 
   loadParentRunInfo = (runId) => {
@@ -388,6 +414,27 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
+    } else if (runParameter.name === CP_CAP_LIMIT_MOUNTS) {
+      const values = (valueSelector() || '').split(',').map(v => v.trim());
+      const isNone = /^none$/i.test(valueSelector());
+      return (
+        <tr key={runParameter.name}>
+          <td
+            className={styles.taskParameterName}
+            style={{verticalAlign: 'middle'}}
+          >
+            {runParameter.name}:
+          </td>
+          <td>
+            {
+              isNone && (<span>None</span>)
+            }
+            {
+              !isNone && (<DataStorageList identifiers={values} />)
+            }
+          </td>
+        </tr>
+      );
     } else {
       let values = (valueSelector() || '').split(',').map(v => v.trim());
       if (values.length === 1) {
@@ -464,6 +511,10 @@ class Logs extends localization.LocalizedReactComponent {
 
     return environment;
   };
+
+  buttonsWrapper = (button) => button
+    ? (<div style={{lineHeight: '29px', height: '29px'}}>{button}</div>)
+    : undefined;
 
   renderInstanceHeader = (instance, run) => {
     if (this.state.openedPanels.indexOf('instance') >= 0) {
@@ -901,7 +952,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   renderContentPlainMode () {
-    const {runId}=this.props.params;
+    const {runId} = this.props.params;
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
     let Tasks;
 
@@ -1086,11 +1137,18 @@ class Logs extends localization.LocalizedReactComponent {
 
   @computed
   get sshEnabled () {
-    if (this.props.run.loaded && this.props.runSSH.loaded && this.initializeEnvironmentFinished &&
-      !this.isDtsEnvironment) {
-      const {status, podIP} = this.props.run.value;
+    if (
+      this.props.run.loaded &&
+      this.props.runSSH.loaded &&
+      this.initializeEnvironmentFinished &&
+      !this.isDtsEnvironment
+    ) {
+      const {status, podIP, sshPassword} = this.props.run.value;
       return status.toLowerCase() === 'running' &&
-        roleModel.executeAllowed(this.props.run.value) &&
+        (
+          roleModel.executeAllowed(this.props.run.value) ||
+          sshPassword
+        ) &&
         podIP;
     }
     return false;
@@ -1104,7 +1162,20 @@ class Logs extends localization.LocalizedReactComponent {
       this.initializeEnvironmentFinished &&
       !this.isDtsEnvironment
     ) {
-      const {status, podIP} = this.props.run.value;
+      const {
+        status,
+        platform,
+        podIP,
+        pipelineRunParameters = []
+      } = this.props.run.value;
+      if (/^windows$/i.test(platform)) {
+        return false;
+      }
+      const cpFSBrowserEnabled = pipelineRunParameters
+        .find(p => /^CP_FSBROWSER_ENABLED$/i.test(p.name));
+      if (cpFSBrowserEnabled && `${cpFSBrowserEnabled.value}` === 'false') {
+        return false;
+      }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(this.props.run.value) &&
         podIP;
@@ -1201,6 +1272,11 @@ class Logs extends localization.LocalizedReactComponent {
         </Link>
       );
     };
+    const searchParts = [`parent.id=${this.props.runId}`];
+    if (this.showActiveWorkersOnly) {
+      searchParts.push('status=RUNNING');
+    }
+    const search = searchParts.join(' and ');
     return (
       <tr>
         <th
@@ -1216,7 +1292,7 @@ class Logs extends localization.LocalizedReactComponent {
             total > MAX_NESTED_RUNS_TO_DISPLAY &&
             <Link
               className={styles.allNestedRuns}
-              to={`/runs/filter?search=${encodeURIComponent(`parent.id=${this.props.runId}`)}`}
+              to={`/runs/filter?search=${encodeURIComponent(search)}`}
             >
               show all {total} runs
             </Link>
@@ -1275,18 +1351,83 @@ class Logs extends localization.LocalizedReactComponent {
       const owner = (this.props.run.value.owner || '').toLowerCase();
       const podIP = this.props.run.value.podIP;
       const podStatus = this.props.run.value.podStatus;
+      const sensitive = this.props.run.value.sensitive;
+      const isRemovedPipeline = !!version && !pipelineId;
+      const kubeServiceEnabled = this.props.run.value.kubeServiceEnabled;
+      let kubeServiceInfo;
+      if (
+        kubeServiceEnabled &&
+        /^running$/i.test(this.props.run.value.status) &&
+        this.props.runKubeServices.loaded
+      ) {
+        kubeServiceInfo = this.props.runKubeServices.value;
+      }
       let endpoints;
       let share;
+      let kubeServices;
       if (this.endpointAvailable) {
-        const urls = parseRunServiceUrl(this.props.run.value.serviceUrl);
+        const regionedUrls = parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
-            <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ': 'Endpoint: '}</th>
+            <th style={{verticalAlign: 'middle'}}>
+              {
+                regionedUrls.length > 1
+                  ? 'Endpoints: '
+                  : 'Endpoint: '
+              }
+            </th>
             <td>
               <ul>
                 {
-                  urls.map((url, index) =>
-                    <li key={index}><a href={url.url} target="_blank">{url.name || url.url}</a></li>
+                  regionedUrls.map(({name, url, sameTab}, index) =>
+                    <li key={index}>
+                      <MultizoneUrl
+                        target={sameTab ? '_top' : '_blank'}
+                        configuration={url}
+                        style={{display: 'inline-flex'}}
+                        dropDownIconStyle={{marginTop: 5}}
+                      >
+                        {name}
+                      </MultizoneUrl>
+                    </li>
+                  )
+                }
+              </ul>
+            </td>
+          </tr>
+        );
+      }
+      if (kubeServiceInfo) {
+        const {hostName, ports = []} = kubeServiceInfo;
+        const firstPorts = ports.slice(0, MAX_KUBE_SERVICES_TO_DISPLAY);
+        const renderPort = (port) => (
+          <span>
+            {hostName}:{port.port}
+          </span>
+        );
+        kubeServices = (
+          <tr>
+            <th style={{verticalAlign: 'top'}}>{ports.length > 1 ? 'Services: ' : 'Service: '}</th>
+            <td>
+              <ul>
+                {
+                  firstPorts.map((port) =>
+                    <li key={port.port}>{renderPort(port)}</li>
+                  )
+                }
+                {
+                  ports.length > MAX_KUBE_SERVICES_TO_DISPLAY && (
+                    <li>
+                      <Popover
+                        placement="right"
+                        content={
+                          <div style={{maxHeight: '50vh', overflow: 'auto', paddingRight: 20}}>
+                            {ports.map((port) => <Row key={port.port}>{renderPort(port)}</Row>)}
+                          </div>
+                        }>
+                        <a>And {ports.length - MAX_KUBE_SERVICES_TO_DISPLAY} more</a>
+                      </Popover>
+                    </li>
                   )
                 }
               </ul>
@@ -1322,10 +1463,10 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
-      const pipeline = pipelineName && pipelineId && version
+      const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
-      const {runId}= this.props.params;
+      const {runId} = this.props.params;
 
       const {
         startDate,
@@ -1340,13 +1481,35 @@ class Logs extends localization.LocalizedReactComponent {
       ResumeFailureReason = resumeFailureReason
         ? (<Alert type="warning" message={resumeFailureReason} />)
         : null;
-      const pipelineLink = pipeline
-        ? (
-          <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
-            {pipeline.name} ({pipeline.version})
-          </Link>
-        )
-        : undefined;
+      let pipelineLink;
+      if (pipeline) {
+        if (pipeline.id) {
+          pipelineLink = (
+            <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
+              {pipeline.name} ({pipeline.version})
+            </Link>
+          );
+        } else {
+          pipelineLink = (
+            <span className={styles.deletedPipeline}>
+              {pipeline.name} ({pipeline.version})
+              <Popover
+                content={(
+                  <span>{this.localizedString('Pipeline')} <b>{pipeline.name}</b> has been removed</span>
+                )}
+              >
+                <Icon
+                  type="exclamation-circle"
+                  style={{
+                    marginLeft: 5,
+                    fontSize: 'smaller'
+                  }}
+                />
+              </Popover>
+            </span>
+          );
+        }
+      }
 
       const failureReason = status === 'FAILURE' && podStatus
         ? <span style={{fontWeight: 'normal', marginLeft: 5}}>({podStatus})</span> : undefined;
@@ -1409,8 +1572,16 @@ class Logs extends localization.LocalizedReactComponent {
         price = (
           <tr>
             <th>Estimated price:</th>
-            <td>{adjustPrice(evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour).toFixed(2)}
-              $
+            <td>
+              <JobEstimatedPriceInfo>
+                {
+                  adjustPrice(
+                    evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour +
+                    (this.props.run.value.workersPrice || 0)
+                  ).toFixed(2)
+                }
+                $
+              </JobEstimatedPriceInfo>
             </td>
           </tr>
         );
@@ -1420,14 +1591,22 @@ class Logs extends localization.LocalizedReactComponent {
         <div>
           <table className={styles.runDetailsTable}>
             <tbody>
+              {
+                sensitive ? (
+                  <tr>
+                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                  </tr>
+                ) : undefined
+              }
               {endpoints}
+              {kubeServices}
               {share}
               <tr>
-                <th>Owner: </th><td><UserName userName={owner}/></td>
+                <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
               {
-                configName ?
-                  (
+                configName
+                  ? (
                     <tr>
                       <th>Configuration:</th>
                       <td>{configName}</td>
@@ -1521,73 +1700,124 @@ class Logs extends localization.LocalizedReactComponent {
             </ul>
           </Collapse.Panel>
         </Collapse>;
-      if (roleModel.executeAllowed(this.props.run.value)) {
-        switch (status.toLowerCase()) {
-          case 'paused':
-            if (roleModel.isOwner(this.props.run.value)) {
-              ActionButton = <a style={{color: 'red'}} onClick={() => this.terminatePipeline()}>TERMINATE</a>;
-            }
-            break;
-          case 'running':
-          case 'pausing':
-          case 'resuming':
-            if (roleModel.isOwner(this.props.run.value) && canStopRun(this.props.run.value)) {
-              ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
-            }
-            break;
-          case 'stopped':
-          case 'failure':
-          case 'success':
-            ActionButton = <a onClick={() => this.reRunPipeline()}>RERUN</a>;
-            break;
-        }
-        if (roleModel.isOwner(this.props.run.value) &&
-          this.props.run.value.initialized && !(this.props.run.value.nodeCount > 0) &&
-          !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) &&
-          this.props.run.value.instance && this.props.run.value.instance.spot !== undefined &&
-          !this.props.run.value.instance.spot) {
-          switch (status.toLowerCase()) {
-            case 'running':
-              if (canPauseRun(this.props.run.value)) {
-                PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
-              }
-              break;
-            case 'paused':
-              PauseResumeButton = <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
-              break;
-            case 'pausing':
-              PauseResumeButton = <span>PAUSING</span>;
-              break;
-            case 'resuming':
-              PauseResumeButton = <span>RESUMING</span>;
-              break;
+      switch (status.toLowerCase()) {
+        case 'paused':
+          if (
+            roleModel.executeAllowed(this.props.run.value) &&
+            roleModel.isOwner(this.props.run.value)
+          ) {
+            ActionButton = (
+              <a
+                style={{color: 'red'}}
+                onClick={() => this.terminatePipeline()}
+              >
+                TERMINATE
+              </a>
+            );
           }
+          break;
+        case 'running':
+        case 'pausing':
+        case 'resuming':
+          if (
+            (
+              roleModel.executeAllowed(this.props.run.value) ||
+              this.props.run.value.sshPassword
+            ) &&
+            (
+              roleModel.isOwner(this.props.run.value) ||
+              this.props.run.value.sshPassword
+            ) &&
+            canStopRun(this.props.run.value)
+          ) {
+            ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
+          }
+          break;
+        case 'stopped':
+        case 'failure':
+        case 'success':
+          if (
+            roleModel.executeAllowed(this.props.run.value) &&
+            !isRemovedPipeline
+          ) {
+            ActionButton = <a onClick={() => this.reRunPipeline()}>RERUN</a>;
+          }
+          break;
+      }
+      if (roleModel.executeAllowed(this.props.run.value) &&
+        roleModel.isOwner(this.props.run.value) &&
+        this.props.run.value.initialized && !(this.props.run.value.nodeCount > 0) &&
+        !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) &&
+        this.props.run.value.instance && this.props.run.value.instance.spot !== undefined &&
+        !this.props.run.value.instance.spot) {
+        switch (status.toLowerCase()) {
+          case 'running':
+            if (canPauseRun(this.props.run.value)) {
+              PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
+            }
+            break;
+          case 'paused':
+            PauseResumeButton = <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
+            break;
+          case 'pausing':
+            PauseResumeButton = <span>PAUSING</span>;
+            break;
+          case 'resuming':
+            PauseResumeButton = <span>RESUMING</span>;
+            break;
         }
       }
 
       if (this.sshEnabled) {
-        SSHButton = (<a href={this.props.runSSH.value} target="_blank">SSH</a>);
+        SSHButton = (
+          <MultizoneUrl
+            configuration={this.props.runSSH.value}
+            dropDownIconStyle={{
+              paddingLeft: 4,
+              marginLeft: -2
+            }}
+          >
+            SSH
+          </MultizoneUrl>
+        );
       }
       if (this.fsBrowserEnabled) {
-        FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
+        FSBrowserButton = (
+          <MultizoneUrl
+            configuration={this.props.runFSBrowser.value}
+            dropDownIconStyle={{
+              paddingLeft: 4,
+              marginLeft: -2
+            }}
+          >
+            BROWSE
+          </MultizoneUrl>
+        );
       }
 
-      if (!(this.props.run.value.nodeCount > 0) &&
-        !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) && podIP) {
-        if (status.toLowerCase() === 'running' &&
-          (commitStatus || '').toLowerCase() !== 'committing' &&
-          roleModel.executeAllowed(this.props.run.value)) {
+      if (runIsCommittable(this.props.run.value)) {
+        if (canCommitRun(this.props.run.value) && roleModel.executeAllowed(this.props.run.value)) {
           let previousStatus;
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
-            case 'committing': previousStatus = <span><Icon type="loading" /> COMMITTING...</span>; break;
+            case 'committing':
+              previousStatus = (
+                <span>
+                  <Icon type="loading" /> COMMITTING...
+                </span>
+              );
+              break;
             case 'failure': previousStatus = <span>COMMIT FAILURE ({commitDate})</span>; break;
             case 'success': previousStatus = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
           if (previousStatus) {
-            CommitStatusButton = (<Row>{previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a></Row>);
+            CommitStatusButton = (
+              <Row>
+                {previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a>
+              </Row>
+            );
           } else {
             CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
@@ -1667,7 +1897,16 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}{ActionButton}{SSHButton}{FSBrowserButton}{ExportLogsButton}
+              {
+                this.buttonsWrapper(
+                  this.props.run.value.platform !== 'windows' &&
+                  PauseResumeButton
+                )
+              }
+              {this.buttonsWrapper(ActionButton)}
+              {this.buttonsWrapper(SSHButton)}
+              {this.buttonsWrapper(FSBrowserButton)}
+              {this.buttonsWrapper(ExportLogsButton)}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
@@ -1677,6 +1916,22 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {CommitStatusButton}
             </Row>
+            <br />
+            {
+              !this.props.run.value.sensitive &&
+              this.props.run.value.platform !== 'windows' &&
+              this.props.vsActions.available && (
+                <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+                  <VSActions
+                    run={this.props.run.value}
+                    showDownIcon
+                    trigger={['click']}
+                  >
+                    VERSIONED STORAGE
+                  </VSActions>
+                </Row>
+              )
+            }
           </Col>
         </Row>
         <Row>
@@ -1719,6 +1974,9 @@ class Logs extends localization.LocalizedReactComponent {
     if (nextProps.runId !== this.props.runId) {
       this.language = null;
       this._pipelineLanguage = null;
+      this.props.run.clearInterval();
+      this.props.runTasks.clearInterval();
+      this.props.nestedRuns.clearRefreshInterval();
     }
   }
 
@@ -1754,7 +2012,12 @@ class Logs extends localization.LocalizedReactComponent {
         this.props.runTasks.clearInterval();
         this.props.nestedRuns.clearRefreshInterval();
       }
+      this.updateShowOnlyActiveRuns();
     }
+  }
+
+  updateShowOnlyActiveRuns = () => {
+    this.props.nestedRuns.setShowOnlyActiveWorkers(this.showActiveWorkersOnly);
   }
 }
 

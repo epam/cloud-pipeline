@@ -52,4 +52,3 @@ export default class MetadataCache {
     MetadataCache.invalidateCache(this._metadataCache, id, type);
   }
 }
-

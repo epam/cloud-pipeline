@@ -27,9 +27,9 @@ import sys
 
 from botocore.exceptions import ClientError
 
-from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from .cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
 from pipeline import TaskStatus
-from pipeline.autoscaling import utils
+from . import utils
 
 ROOT_DEVICE_DEFAULT = {
     "DeviceName": "/dev/sda1",
@@ -67,15 +67,16 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         else:
             self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token):
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, kms_encyr_key_id,
+                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[]):
 
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, time_rep)
         if ins_id:
             return ins_id, ins_ip
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "AWS")
-        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token,
-                                                      swap_size)
+        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, ins_platform, kube_ip,
+                                                      kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                                      swap_size, pre_pull_images)
         if is_spot:
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
                                                        kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size)
@@ -604,7 +605,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 instance = self.ec2.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
                 if instance["SpotInstanceRequestId"]:
                     utils.pipe_log('Cancel Spot request ({})'.format(instance["SpotInstanceRequestId"]))
-                    self.ec2.cancel_spot_instance_requests(request_ids=[instance["SpotInstanceRequestId"]])
+                    self.ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[instance["SpotInstanceRequestId"]])
 
                 utils.pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
                          'See more details below'.format(kill_instance_id_on_fail))

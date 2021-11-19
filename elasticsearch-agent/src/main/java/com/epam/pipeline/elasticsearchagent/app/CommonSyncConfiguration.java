@@ -83,7 +83,8 @@ public class CommonSyncConfiguration {
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
                 requestSender,
-                syncChunkSize);
+                syncChunkSize,
+                bulkSize);
     }
 
     @Bean

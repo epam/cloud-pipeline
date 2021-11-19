@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.and;
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -35,17 +36,23 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SET_AS_DEFAULT;
 import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
 import static com.codeborne.selenide.Condition.visible;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Profile implements AccessObject<Profile> {
@@ -75,7 +82,12 @@ public class Profile implements AccessObject<Profile> {
                 entry(ADVANCED_PANEL, context().find(byId("launch-pipeline-advanced-panel"))),
                 entry(PARAMETERS, context().find(byId("launch-pipeline-parameters-panel"))),
                 entry(DELETE, context().find(byId("remove-pipeline-configuration-button"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
+                entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud Region')]"))
+                        .closest(".ant-row").find(by("role", "combobox")))
         );
     }
 
@@ -116,6 +128,10 @@ public class Profile implements AccessObject<Profile> {
         return this;
     }
 
+    public String getCloudRegion() {
+        return get(CLOUD_REGION).text();
+    }
+
     public static Stream<ParameterFieldAO> parameters() {
         return ParameterFieldAO.parameters();
     }
@@ -151,7 +167,7 @@ public class Profile implements AccessObject<Profile> {
     }
 
     public Profile waitUntilSaveEnding(final String name) {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
                 sleep(3, SECONDS);
                 break;

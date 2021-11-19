@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {computed, observable} from 'mobx';
+import {observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree} from 'antd';
@@ -40,6 +40,7 @@ import {
 } from '../../model/treeStructureFunctions';
 
 import styles from './Browser.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -58,6 +59,7 @@ const GS_BUCKET_TYPE = 'GS';
   storages: dataStorages,
   library: pipelinesLibrary
 }))
+@HiddenObjects.injectTreeFilter
 @observer
 export default class BucketBrowser extends React.Component {
 
@@ -417,7 +419,7 @@ export default class BucketBrowser extends React.Component {
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
       this.setState({
-        path: item.path,
+        path: decodeURIComponent(item.path || ''),
         pageMarkers: [null],
         pagePerformed: false,
         currentPage: 0
@@ -468,6 +470,7 @@ export default class BucketBrowser extends React.Component {
       case DTS_ITEM_TYPE: icon = 'desktop'; break;
       case DTS_ROOT_ITEM_TYPE: icon = 'inbox'; break;
       case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.versionedStorage: icon = 'fork'; break;
       case ItemTypes.folder: icon = 'folder'; break;
       case ItemTypes.version: icon = 'tag'; break;
       case ItemTypes.storage:
@@ -608,12 +611,18 @@ export default class BucketBrowser extends React.Component {
             null,
             [],
             [ItemTypes.storage],
-            (item, type) => {
-              if (!this.props.bucketTypes || this.props.bucketTypes.length === 0 || type !== ItemTypes.storage) {
-                return true;
+            this.props.hiddenObjectsTreeFilter(
+              (item, type) => {
+                if (
+                  !this.props.bucketTypes ||
+                  this.props.bucketTypes.length === 0 ||
+                  type !== ItemTypes.storage
+                ) {
+                  return true;
+                }
+                return this.props.bucketTypes.indexOf(item.type) >= 0;
               }
-              return this.props.bucketTypes.indexOf(item.type) >= 0;
-            }
+            )
           )
         )];
     }
@@ -774,7 +783,7 @@ export default class BucketBrowser extends React.Component {
             bucket: bucket,
             expandedKeys,
             selectedKeys: [bucketKey],
-            path: pathCorrected,
+            path: decodeURIComponent(pathCorrected || ''),
             selectedItems: (path || '').split(',').map(p => ({name: p.trim()}))
           });
       }
@@ -861,7 +870,7 @@ export default class BucketBrowser extends React.Component {
           bucket,
           expandedKeys,
           selectedKeys: [`storage_${bucket.id}`],
-          path: pathCorrected,
+          path: decodeURIComponent(pathCorrected || ''),
           pageMarkers: [null],
           pagePerformed: false,
           currentPage: 0
@@ -869,7 +878,7 @@ export default class BucketBrowser extends React.Component {
       } else if (this.state.path !== firstItemPath) {
         this.setState({
           selectedKeys: [],
-          path: firstItemPath,
+          path: decodeURIComponent(firstItemPath || ''),
           pageMarkers: [null],
           pagePerformed: false,
           currentPage: 0
@@ -883,7 +892,12 @@ export default class BucketBrowser extends React.Component {
       if (this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
         this.storage = new DTSRequest(this.state.bucket.id, this.state.bucket.prefix, this.state.path, PAGE_SIZE);
       } else {
-        this.storage = new DataStorageRequest(this.state.bucket.id, this.state.path, false, PAGE_SIZE);
+        this.storage = new DataStorageRequest(
+          this.state.bucket.id,
+          this.state.path,
+          false,
+          PAGE_SIZE
+        );
       }
       this.storage.type = this.state.bucket.type;
       this.storage.fetch();
@@ -896,7 +910,12 @@ export default class BucketBrowser extends React.Component {
       if (this.storage.type === DTS_ROOT_ITEM_TYPE) {
         this.storage = new DTSRequest(this.state.bucket.id, this.state.bucket.prefix, this.state.path, PAGE_SIZE);
       } else {
-        this.storage = new DataStorageRequest(this.state.bucket.id, this.state.path, false, PAGE_SIZE);
+        this.storage = new DataStorageRequest(
+          this.state.bucket.id,
+          this.state.path,
+          false,
+          PAGE_SIZE
+        );
       }
       this.storage.type = this.state.bucket.type;
       this.storage.fetch();

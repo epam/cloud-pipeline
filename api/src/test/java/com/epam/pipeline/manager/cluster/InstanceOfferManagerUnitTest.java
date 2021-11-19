@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,8 @@ public class InstanceOfferManagerUnitTest {
             SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER.getKey();
     private static final String ALLOWED_PRICE_TYPES_PREFERENCE =
             SystemPreferences.CLUSTER_ALLOWED_PRICE_TYPES.getKey();
+    private static final String ALLOWED_MASTER_PRICE_TYPES_PREFERENCES =
+            SystemPreferences.CLUSTER_ALLOWED_MASTER_PRICE_TYPES.getKey();
     private static final List<String> INSTANCE_TYPES_PREFERENCES =
             Collections.singletonList(ALLOWED_INSTANCE_TYPES_PREFERENCE);
     private static final List<String> DOCKER_INSTANCE_TYPES_PREFERENCES =
@@ -128,6 +130,9 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
+        when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)),
+                eq(null)))
+                .thenReturn(new ContextualPreference(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES, SPOT_AND_ON_DEMAND_TYPES));
         when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
@@ -152,6 +157,9 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
+        when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)),
+                eq(TOOL_RESOURCE)))
+                .thenReturn(new ContextualPreference(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES, SPOT_AND_ON_DEMAND_TYPES));
         when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =

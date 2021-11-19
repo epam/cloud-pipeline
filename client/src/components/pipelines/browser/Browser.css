@@ -50,6 +50,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   min-width: max-content;
 }
 
+.tree-item-row {
+  cursor: pointer;
+}
+
 .metadata-folder-item-name {
   cursor: pointer;
   width: unset;
@@ -359,7 +363,8 @@ tr.table-row-selected {
 }
 
 .metadata-table {
-  border-radius: 5px;
+  border-radius: 0 0 5px 5px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .metadata-table div {
@@ -368,9 +373,12 @@ tr.table-row-selected {
 
 .metadata-column-header {
   cursor: pointer;
-  display: block;
-  text-align: left;
-  padding: 6px 0;
+  height: 28px;
+  width: 100%;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .metadata-column-cell {
@@ -385,6 +393,27 @@ tr.table-row-selected {
 
 .metadata-additional-actions {
   background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px 5px 0 0;
+  border-bottom: none;
+  padding: 5px;
+  min-height: 37px;
+}
+
+.menu-container > .menu > .actions-sub-menu > div,
+.menu-container > .menu > .menu-item,
+.menu-container > .menu .actions-sub-menu .menu-item {
+  padding: 7px 8px;
+}
+
+.menu-container > .menu {
+  padding-top: 0;
+  padding-bottom: 0;
+  cursor: pointer;
+}
+
+.menu-item {
+  cursor: pointer;
 }
 
 .actions-sub-menu ul {
@@ -448,6 +477,17 @@ tr.table-row-selected {
   overflow: auto;
   max-width: none;
   white-space: normal;
+}
+
+.metadata-preview-btn {
+  color: #108ee9;
+  padding: 0 5px;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.metadata-preview-btn:hover {
+  color: #49a9ee;
 }
 
 .run-table {
@@ -577,11 +617,13 @@ tr.table-row-selected {
   position: relative;
   color: rgba(0, 0, 0, 0.65);
   background-color: #fff;
+  text-decoration: none !important;
 }
 
-.download-button i {
+.download-button i,
+.download-button span {
   line-height: 1;
-  text-decoration: none;
+  text-decoration: none !important;
 }
 
 .download-button:hover {
@@ -589,6 +631,12 @@ tr.table-row-selected {
   background-color: #fff;
   border-color: #108ee9;
   text-decoration: none;
+}
+
+.noData {
+  margin: auto;
+  padding: 5px;
+  color: rgba(0, 0, 0, 0.5);
 }
 
 @media screen and (max-width: 1280px) {

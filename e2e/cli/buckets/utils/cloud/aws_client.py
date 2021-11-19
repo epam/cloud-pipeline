@@ -1,4 +1,17 @@
-import json
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from time import sleep
 
 import boto3
@@ -22,25 +35,18 @@ class S3Client(CloudClient):
     def folder_exists(self, bucket_name, key):
         return len(self.list_s3_folder(bucket_name, key)) > 0
 
-    def list_object_tags(self, bucket, key, version=None, args=None):
-        command = ['aws', 's3api', 'get-object-tagging', '--bucket', bucket, '--key', key]
-        if version:
-            command.extend(['--version-id', version])
-        stdout = get_command_output(command, args=args, expected_status=0)[0]
-        tags = json.loads(''.join(stdout).strip())['TagSet']
-        result = {}
-        for tag in tags:
-            result[tag['Key']] = tag['Value']
-        return result
-
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
-        sleep(5)
+        sleep(40)
         actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
         if sts:
-            assert actual_policy['shortTermStorageDuration'] == sts, "STS assertion failed"
+            assert actual_policy['shortTermStorageDuration'] == sts, \
+                "STS assertion failed: expected sts is {}, but actual is {}"\
+                    .format(sts, actual_policy['shortTermStorageDuration'])
         if lts:
             assert actual_policy['longTermStorageDuration'] == lts, "LTS assertion failed"
         if backup_duration:
+            if backup_duration != actual_policy['backupDuration']:
+                actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
             assert actual_policy['backupDuration'] == backup_duration, "Backup Duration assertion failed"
 
     def get_modification_date(self, path):
@@ -83,7 +89,11 @@ class S3Client(CloudClient):
     @staticmethod
     def s3_get_bucket_lifecycle(bucket):
         s3 = boto3.resource('s3')
-        rules = s3.BucketLifecycle(bucket).rules
+        try:
+            rules = s3.BucketLifecycle(bucket).rules
+        except:
+            sleep(30)
+            rules = s3.BucketLifecycle(bucket).rules
         result = {'shortTermStorageDuration': None, 'longTermStorageDuration': None, 'backupDuration': None}
         for rule in rules:
             if 'ID' not in rule:

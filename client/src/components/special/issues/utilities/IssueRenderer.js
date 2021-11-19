@@ -105,17 +105,18 @@ const STYLE =
   '}';
 
 export default class IssueRenderer {
-
   @observable _pipelinesLibrary;
   @observable _dockerRegistries;
   @observable _preferences;
+  @observable _hiddenObjects;
   _markdownRenderer; // used for GUI renderer
   _simpleMarkdownRenderer; // used for email body renderer
 
-  constructor (pipelinesLibrary, dockerRegistries, preferences) {
+  constructor (pipelinesLibrary, dockerRegistries, preferences, hiddenObjects) {
     this._pipelinesLibrary = pipelinesLibrary;
     this._dockerRegistries = dockerRegistries;
     this._preferences = preferences;
+    this._hiddenObjects = hiddenObjects;
     this._markdownRenderer = new Remarkable('commonmark', {
       html: true,
       xhtmlOut: true,
@@ -167,6 +168,9 @@ export default class IssueRenderer {
         let icon;
         switch (linkType) {
           case ItemTypes.pipeline: icon = <Icon type="fork" />; break;
+          case ItemTypes.versionedStorage:
+            icon = <Icon type="inbox" style={{color: '#2796dd'}} />;
+            break;
           case ItemTypes.configuration: icon = <Icon type="setting" />; break;
           case ItemTypes.storage: icon = <Icon type="hdd" />; break;
           case 'tool': icon = <Icon type="tool" />; break;
@@ -328,7 +332,9 @@ export default class IssueRenderer {
       this._dockerRegistries &&
       this._dockerRegistries.loaded &&
       this._preferences &&
-      this._preferences.loaded;
+      this._preferences.loaded &&
+      this._hiddenObjects &&
+      this._hiddenObjects.loaded;
   }
 
   getLinks = () => {
@@ -339,7 +345,8 @@ export default class IssueRenderer {
         false,
         null,
         [],
-        [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage]
+        [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
+        this._hiddenObjects.treeFilter()
       );
       const makeFlat = (children) => {
         const result = [];
@@ -360,9 +367,10 @@ export default class IssueRenderer {
       };
       links.push(...makeFlat(items));
     }
-    if (this._dockerRegistries && this._dockerRegistries.loaded) {
-      for (let r = 0; r < (this._dockerRegistries.value.registries || []).length; r++) {
-        const registry = this._dockerRegistries.value.registries[r];
+    if (this._dockerRegistries && this._dockerRegistries.loaded && this._hiddenObjects.loaded) {
+      const {registries} = this._hiddenObjects.toolTreeFilter(this._dockerRegistries.value);
+      for (let r = 0; r < registries.length; r++) {
+        const registry = registries[r];
         for (let g = 0; g < (registry.groups || []).length; g++) {
           const group = registry.groups[g];
           for (let t = 0; t < (group.tools || []).length; t++) {
@@ -406,6 +414,9 @@ export default class IssueRenderer {
     }
     if (this._preferences) {
       await this._preferences.fetchIfNeededOrWait();
+    }
+    if (this._hiddenObjects) {
+      await this._hiddenObjects.fetchIfNeededOrWait();
     }
   };
 

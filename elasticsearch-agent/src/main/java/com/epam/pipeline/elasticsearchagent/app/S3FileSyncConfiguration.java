@@ -24,6 +24,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.elasticsearchagent.service.impl.S3FileManager;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,7 +32,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "sync.s3-file.disable", matchIfMissing = true, havingValue = "false")
 public class S3FileSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
@@ -42,15 +42,16 @@ public class S3FileSyncConfiguration {
     private String indexSettingsPath;
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
-    @Value("${sync.s3-file.enable.tags}")
-    private Boolean enableTags;
+    @Value("${sync.s3-file.bulk.load.tags.size:100}")
+    private Integer bulkLoadTagsSize;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
-        return new S3FileManager(enableTags);
+        return new S3FileManager();
     }
 
     @Bean
+    @ConditionalOnProperty(value = "sync.s3-file.disable", matchIfMissing = true, havingValue = "false")
     public ObjectStorageIndex s3FileSynchronizer(
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
@@ -58,7 +59,9 @@ public class S3FileSyncConfiguration {
             final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 s3FileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.S3);
+                indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
+                DataStorageType.S3,
+                SearchDocumentType.S3_FILE);
     }
 
 }

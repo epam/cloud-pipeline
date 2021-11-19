@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,14 +21,30 @@ import sys
 import time
 import urllib3
 
-from region import CloudRegion
-from datastorage import DataStorage
-from datastorage import DataStorageWithShareMount
+from .region import CloudRegion
+from .datastorage import DataStorage
+from .datastorage import DataStorageWithShareMount
 
 # Date format expected by Pipeline API
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # date format for filename generation
 FILE_DATE_FORMAT = "%Y%m%d"
+
+
+class LaunchError(RuntimeError):
+    pass
+
+
+class ServerError(RuntimeError):
+    pass
+
+
+class HTTPError(ServerError):
+    pass
+
+
+class APIError(ServerError):
+    pass
 
 
 class Tool:
@@ -198,6 +214,11 @@ class PipelineAPI:
     NOTIFICATION_URL = '/notification'
     REGION_URL = '/cloud/region'
     LOAD_ALLOWED_INSTANCE_TYPES = '/cluster/instance/allowed?regionId=%s&spot=%s'
+    LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
+    LOAD_PROFILES = 'cloud/credentials'
+    LOAD_CURRENT_USER = 'whoami'
+    LOAD_ROLES = 'role/loadAll?loadUsers={}'
+    LOAD_ROLE = 'role/{}'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -251,6 +272,43 @@ class PipelineAPI:
                 sys.stderr.write('An error has occurred during request to API: {}'.format(str(e.message)))
             time.sleep(self.timeout)
         raise RuntimeError('Exceeded maximum retry count {} for API request'.format(self.attempts))
+
+    def load_run_efficiently(self, run_id):
+        return self._request('GET', 'run/' + str(run_id)) or {}
+
+    def log_efficiently(self, run_id, message, task, status, date):
+        self._request('POST', 'run/' + str(run_id) + '/log', data={
+            'runId': run_id,
+            'logText': message,
+            'taskName': task,
+            'status': status,
+            'date': date
+        })
+
+    def _request(self, http_method, endpoint, data=None):
+        url = '{}/{}'.format(self.api_url, endpoint)
+        count = 0
+        exceptions = []
+        while count < self.attempts:
+            count += 1
+            try:
+                response = requests.request(method=http_method, url=url, data=json.dumps(data),
+                                            headers=self.header, verify=False,
+                                            timeout=self.connection_timeout)
+                if response.status_code != 200:
+                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                response_data = response.json()
+                status = response_data.get('status') or 'ERROR'
+                message = response_data.get('message') or 'No message'
+                if status != 'OK':
+                    raise APIError('%s: %s' % (status, message))
+                return response_data.get('payload')
+            except APIError as e:
+                raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.timeout)
+        raise exceptions[-1]
 
     def load_tool(self, image, registry):
         result = requests.get(str(self.api_url) + self.TOOL_URL.format(image=image, registry=registry),
@@ -334,14 +392,11 @@ class PipelineAPI:
         url = self.GET_TASK_URL.format(run_id, task_name)
         if parameters:
             url += "&parameters={}".format(parameters)
-        result = requests.get(str(self.api_url) + url, headers=self.header, verify=False)
-        if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
-            raise RuntimeError('Failed to load task {}. API response: {}'.format(run_id, result.json()['message']))
-        if 'payload' in result.json():
-            return result.json()['payload']
-        else:
-            return None
-
+        try:
+            return self.execute_request(str(self.api_url) + url)
+        except Exception as e:
+            raise RuntimeError("Failed to load task {}. API response: {}".format(run_id, str(e.message)))
+    
     def launch_pipeline(self, pipeline_id, pipeline_version, parameters,
                         cmd=None, docker=None, instance=None, disk=None, parent_node_id=None, parent_run_id=None):
         request = {'pipelineId': pipeline_id, 'version': pipeline_version, 'params': parameters}
@@ -565,9 +620,12 @@ class PipelineAPI:
             raise RuntimeError("Failed to load storages with READ and WRITE permissions. "
                                "Error message: {}".format(str(e.message)))
 
-    def load_available_storages_with_share_mount(self):
+    def load_available_storages_with_share_mount(self, from_region_id=None):
         try:
-            result = self.execute_request(str(self.api_url) + self.LOAD_AVAILABLE_STORAGES_WITH_MOUNTS)
+            url = str(self.api_url) + self.LOAD_AVAILABLE_STORAGES_WITH_MOUNTS
+            if from_region_id is not None:
+                url += "?fromRegion={}".format(from_region_id)
+            result = self.execute_request(url)
             if result is None:
                 return []
             return [DataStorageWithShareMount.from_json(item) for item in result]
@@ -840,3 +898,51 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load generated upload url for storage ID {}. "
                                "Error message: {}".format(str(storage_id), str(e.message)))
+
+    def load_profile_credentials(self, profile_id, region_id=None):
+        try:
+            url = str(self.api_url) + self.LOAD_PROFILE_CREDENTIALS % int(profile_id)
+            if region_id:
+                url += '?regionId=%d' % int(region_id)
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to generate profile credentials for profile ID '{}'. "
+                               "Error message: {}".format(str(profile_id), str(e.message)))
+
+    def load_profiles_for_user(self, user_id=None):
+        try:
+            url = str(self.api_url) + self.LOAD_PROFILES
+            if user_id:
+                url += '?userId=%d' % int(user_id)
+            result = self.execute_request(url, method='get')
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to load profile credentials. Error message: {}".format(str(e.message)))
+
+    def get_region(self, region_id):
+        try:
+            url = str(self.api_url) + self.REGION_URL + '/%d' % region_id
+            return self.execute_request(url, method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to get region by ID '{}'. Error message: {}".format(str(region_id),
+                                                                                           str(e.message)))
+
+    def load_current_user(self):
+        try:
+            url = str(self.api_url) + self.LOAD_CURRENT_USER
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+
+    def load_roles(self, load_users=False):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
+        except Exception as e:
+            raise RuntimeError("Failed to load roles.", "Error message: {}".format(str(e.message)))
+
+    def load_role(self, role_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE.format(role_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
+                                                                                             str(e.message)))

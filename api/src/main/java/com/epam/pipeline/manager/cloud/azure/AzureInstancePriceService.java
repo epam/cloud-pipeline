@@ -26,9 +26,7 @@ import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -54,10 +52,14 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     public List<InstanceOffer> refreshPriceListForRegion(final AzureRegion region) {
         try {
             final String authPath = region.getAuthFile();
-            Assert.isTrue(StringUtils.isNotBlank(authPath), "Azure auth file path must be specified");
-            return new AzurePriceListLoader(authPath, region.getPriceOfferId(),
-                    region.getMeterRegionName(), region.getAzureApiUrl())
-                    .load(region);
+            if (region.isEnterpriseAgreements()) {
+                return new AzureEAPriceListLoader(authPath, region.getMeterRegionName(), region.getAzureApiUrl())
+                        .load(region);
+            } else {
+                return new AzureRateCardPriceListLoader(authPath, region.getPriceOfferId(),
+                        region.getMeterRegionName(), region.getAzureApiUrl())
+                        .load(region);
+            }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();

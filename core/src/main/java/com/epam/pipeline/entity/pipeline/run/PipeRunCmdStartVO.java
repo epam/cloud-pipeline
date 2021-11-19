@@ -30,4 +30,5 @@ public class PipeRunCmdStartVO {
     private boolean yes;
     private boolean showParams;
     private boolean sync;
+    private OsType runStartCmdExecutionEnvironment = OsType.LINUX;
 }

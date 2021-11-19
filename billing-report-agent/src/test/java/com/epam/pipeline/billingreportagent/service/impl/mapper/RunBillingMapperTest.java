@@ -71,7 +71,7 @@ public class RunBillingMapperTest {
             TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE_ID, TEST_TOOL_IMAGE, TEST_PRICE,
                                             TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
         final PipelineRunBillingInfo billing = PipelineRunBillingInfo.builder()
-            .run(new PipelineRunWithType(run, ComputeType.CPU))
+            .run(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU))
             .date(TEST_DATE)
             .cost(TEST_COST)
             .usageMinutes(TEST_USAGE_MINUTES)

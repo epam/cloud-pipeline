@@ -45,8 +45,10 @@ RUN apt-get update -y && \
                         python \
                         sudo
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install --upgrade pip flask
+
+RUN pip install -I setuptools
 
 ARG GUI_ENV="xfce4 xfce4-xkb-plugin"
 RUN apt-get update -y && \
@@ -77,8 +79,11 @@ RUN sed -i 's@_XKB_PLUGIN_ID_@9@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce
 
 ADD nomachine_launcher.sh /etc/nomachine/nomachine_launcher.sh
 
+ARG WITH_OFFICE="yes"
 ADD ubuntu/scripts/libreoffice.sh /opt/libreoffice.sh
-RUN chmod +x /opt/libreoffice.sh && /opt/libreoffice.sh && rm -f /opt/libreoffice.sh
+RUN if [ "$WITH_OFFICE" = "yes" ]; then \
+        chmod +x /opt/libreoffice.sh && /opt/libreoffice.sh && rm -f /opt/libreoffice.sh ; \
+    fi
 
 # Install Chrome
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
@@ -89,3 +94,4 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 # Add Chrome desktop icon
 ADD create_chrome_launcher.sh /caps/create_chrome_launcher.sh
 RUN echo "bash /caps/create_chrome_launcher.sh" >> /caps.sh
+RUN cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template

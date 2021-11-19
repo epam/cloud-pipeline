@@ -30,12 +30,14 @@ import {
 } from 'antd';
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
+import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeServices';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 import {
@@ -46,6 +48,12 @@ import {
   PermissionErrorsTitle
 } from './execution-allowed-check';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
+import SensitiveBucketsWarning from './sensitive-buckets-warning';
+import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
+import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
+import {
+  applyCustomCapabilitiesParameters
+} from '../../pipelines/launch/form/utilities/run-capabilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -57,9 +65,106 @@ export function run (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"run" function should be called with parent component passed to arguments:');
   }
-  return function (payload, confirm = true, title, warning, allowedInstanceTypesRequest) {
-    return runFn(payload, confirm, title, warning, parent.props, callback, allowedInstanceTypesRequest);
+  return function (
+    payload,
+    confirm = true,
+    title,
+    warning,
+    allowedInstanceTypesRequest,
+    hostedApplicationConfiguration,
+    platform,
+    skipCheck = false
+  ) {
+    return runFn(
+      payload,
+      confirm,
+      title,
+      warning,
+      parent.props,
+      callback,
+      allowedInstanceTypesRequest,
+      hostedApplicationConfiguration,
+      platform,
+      skipCheck
+    );
   };
+}
+
+export function openReRunForm (run, props) {
+  const {
+    router,
+    pipelines
+  } = props;
+  if (!run || !router) {
+    return Promise.resolve();
+  }
+  const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
+    pipelineRequest
+      .fetch()
+      .then(() => {
+        if (pipelineRequest.error || !pipelineRequest.loaded) {
+          throw new Error();
+        }
+        resolve(pipelineRequest.value);
+      })
+      .catch(reject)
+      .then(() => callback && callback());
+  });
+  return new Promise((resolve) => {
+    const {
+      pipelineId,
+      version: runVersion,
+      id,
+      configName,
+      dockerImage
+    } = run;
+    Promise.resolve()
+      .then(() => {
+        if (pipelines && pipelineId) {
+          const hide = message.loading('Fetching pipeline info...', 0);
+          return wrapPipelineInfoPromise(
+            pipelines.getPipeline(pipelineId),
+            hide
+          );
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then((pipelineInfo) => {
+        if (pipelineInfo) {
+          return Promise.resolve({
+            pipelineInfo,
+            versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
+          });
+        }
+        return Promise.resolve();
+      })
+      .catch(() => Promise.resolve())
+      .then((options) => {
+        const {
+          versionedStorage = false,
+          pipelineInfo
+        } = options || {};
+        let link;
+        const version = versionedStorage && pipelineInfo?.currentVersion?.name
+          ? pipelineInfo.currentVersion.name
+          : runVersion;
+        const query = versionedStorage ? `?vs=true` : '';
+        if (pipelineId && version && id) {
+          link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;
+        } else if (pipelineId && version && configName) {
+          link = `/launch/${pipelineId}/${version}/${configName}${query}`;
+        } else if (pipelineId && version) {
+          link = `/launch/${pipelineId}/${version}/default${query}`;
+        } else if (id) {
+          link = `/launch/${id}${query}`;
+        }
+        if (link) {
+          router.push(link);
+        }
+        resolve(link);
+      });
+  });
 }
 
 export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTypesRequest) {
@@ -110,11 +215,34 @@ async function saveRunSchedule (runId, scheduleRules) {
   }
 }
 
-function runFn (payload, confirm, title, warning, stores, callbackFn, allowedInstanceTypesRequest) {
+async function runHostedApp (runId, configuration) {
+  if (configuration) {
+    const {service, ports = []} = configuration;
+    const request = new PipelineRunKubeServices(runId, service);
+    await request.send(ports);
+    if (request.error) {
+      message.error(request.error);
+    }
+  }
+}
+
+function runFn (
+  payload,
+  confirm,
+  title,
+  warning,
+  stores,
+  callbackFn,
+  allowedInstanceTypesRequest,
+  hostedApplicationConfiguration,
+  platform,
+  skipCheck
+) {
   return new Promise(async (resolve) => {
     let launchName;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
+    const {dataStorageAvailable} = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -142,6 +270,39 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         availableInstanceTypes = (stores[storeName].value || []).map(i => i);
       }
     }
+    if (stores.preferences) {
+      await stores.preferences.fetchIfNeededOrWait();
+    }
+    if (
+      dataStorageAvailable &&
+      stores.preferences &&
+      stores.preferences.loaded &&
+      /^skip$/i.test(stores.preferences.nfsSensitivePolicy) &&
+      payload &&
+      payload.params &&
+      payload.params[CP_CAP_LIMIT_MOUNTS] &&
+      payload.params[CP_CAP_LIMIT_MOUNTS].value &&
+      !/^none$/i.test(payload.params[CP_CAP_LIMIT_MOUNTS].value)
+    ) {
+      dataStorageAvailable && await dataStorageAvailable.fetchIfNeededOrWait();
+      if (dataStorageAvailable.loaded) {
+        const ids = new Set(payload.params[CP_CAP_LIMIT_MOUNTS].value.split(',').map(i => +i));
+        const selection = (dataStorageAvailable.value || []).filter(s => ids.has(+s.id));
+        const hasSensitive = !!selection.find(s => s.sensitive);
+        const filtered = selection
+          .filter(
+            filterNFSStorages(
+              stores.preferences.nfsSensitivePolicy,
+              hasSensitive
+            )
+          );
+        if (filtered.length) {
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+        } else {
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+        }
+      }
+    }
     if (stores.awsRegions) {
       await stores.awsRegions.fetchIfNeededOrWait();
     }
@@ -166,6 +327,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
       scheduleRules = payload.scheduleRules;
       delete payload.scheduleRules;
     }
+    payload.params = applyCustomCapabilitiesParameters(payload.params, stores.preferences);
     const launchFn = async () => {
       const hide = message.loading(`Launching ${launchName}...`, -1);
       await PipelineRunner.send({...payload, force: true});
@@ -178,6 +340,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         if (scheduleRules && scheduleRules.length > 0) {
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
+        await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
         resolve(true);
         callbackFn && callbackFn(true);
       }
@@ -185,7 +348,6 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     if (!confirm) {
       await launchFn();
     } else {
-      const {dataStorageAvailable} = stores;
       const inputs = getInputPaths(null, payload.params);
       const outputs = getOutputPaths(null, payload.params);
       const {errors: permissionErrors} = await performAsyncCheck({
@@ -193,7 +355,8 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         dataStorages: dataStorageAvailable,
         inputs,
         outputs,
-        dockerImage: payload.dockerImage
+        dockerImage: payload.dockerImage,
+        skipCheck
       });
       let dataStorages;
       if (dataStorageAvailable) {
@@ -212,6 +375,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         content: (
           <RunSpotConfirmationWithPrice
             ref={ref}
+            platform={platform}
             warning={warning}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
@@ -229,10 +393,13 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             parameters={payload.params}
             permissionErrors={permissionErrors}
             limitMounts={
-              payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]
-                ? payload.params[LIMIT_MOUNTS_PARAMETER].value
+              payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]
+                ? payload.params[CP_CAP_LIMIT_MOUNTS].value
                 : undefined
-            } />
+            }
+            preferences={stores.preferences}
+            skipCheck={skipCheck}
+          />
         ),
         style: {
           wordWrap: 'break-word'
@@ -249,13 +416,13 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
                 if (!payload.params) {
                   payload.params = {};
                 }
-                payload.params[LIMIT_MOUNTS_PARAMETER] = {
+                payload.params[CP_CAP_LIMIT_MOUNTS] = {
                   type: 'string',
                   required: false,
                   value: limitMounts
                 };
-              } else if (payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]) {
-                delete payload.params[LIMIT_MOUNTS_PARAMETER];
+              } else if (payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]) {
+                delete payload.params[CP_CAP_LIMIT_MOUNTS];
               }
             }
           }
@@ -275,6 +442,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
               if (scheduleRules && scheduleRules.length > 0) {
                 await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
               }
+              await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
               resolve(true);
               callbackFn && callbackFn(true);
             }
@@ -299,7 +467,6 @@ function notUniqueInArray(element, index, array) {
 
 @observer
 export class RunConfirmation extends React.Component {
-
   state = {
     isSpot: false,
     instanceType: null,
@@ -308,6 +475,7 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -326,6 +494,8 @@ export class RunConfirmation extends React.Component {
     hddSize: PropTypes.number,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -333,43 +503,68 @@ export class RunConfirmation extends React.Component {
   };
 
   @computed
+  get currentRegion () {
+    const [currentRegion] = (this.props.cloudRegions || [])
+      .filter(p => +p.id === +this.props.cloudRegionId);
+    return currentRegion;
+  }
+
+  @computed
   get currentCloudProvider () {
-    const [currentProvider] = (this.props.cloudRegions || []).filter(p => +p.id === +this.props.cloudRegionId);
+    const [currentProvider] = (this.props.cloudRegions || [])
+      .filter(p => +p.id === +this.props.cloudRegionId);
     return currentProvider ? currentProvider.provider : null;
   }
 
   @computed
   get gpuEnabled () {
-    const [currentInstanceType] = (this.props.instanceTypes || []).filter(i => i.name === this.state.instanceType);
-    return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') && +currentInstanceType.gpu > 0;
+    const [currentInstanceType] = (this.props.instanceTypes || [])
+      .filter(i => i.name === this.state.instanceType);
+    return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') &&
+      +currentInstanceType.gpu > 0;
   }
 
   @computed
-  get initialSelectedDataStorageIndecis() {
-    return (this.props.limitMounts || this.dataStorages.map(d => `${d.id}`).join(','))
+  get initialSelectedDataStorageIndecis () {
+    if (/^none$/i.test(this.props.limitMounts)) {
+      return [];
+    }
+    return (
+      this.props.limitMounts ||
+      this.dataStorages.filter(d => !d.sensitive)
+        .map(d => `${d.id}`).join(',')
+    )
       .split(',')
       .map(d => +d);
   }
 
   @computed
-  get selectedDataStorageIndecis() {
-    return (this.state.limitMounts || this.dataStorages.map(d => `${d.id}`).join(','))
+  get selectedDataStorageIndecis () {
+    if (/^none$/i.test(this.state.limitMounts)) {
+      return [];
+    }
+    return (
+      this.state.limitMounts ||
+      this.dataStorages.filter(d => !d.sensitive)
+        .map(d => `${d.id}`).join(',')
+    )
       .split(',')
       .map(d => +d);
   }
 
   @computed
-  get dataStorages() {
+  get dataStorages () {
     return (this.props.dataStorages || []).map(d => d);
   }
 
   @computed
-  get initialSelectedDataStorages() {
-    return this.dataStorages.filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
+  get initialSelectedDataStorages () {
+    return this.dataStorages
+      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
   }
 
   @computed
-  get conflicting() {
+  get conflicting () {
     return this.initialSelectedDataStorages
       .filter((d, i, a) =>
         !!d.mountPoint &&
@@ -378,7 +573,7 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get notConflictingIndecis() {
+  get notConflictingIndecis () {
     return this.initialSelectedDataStorages
       .filter((d, i, a) =>
         !d.mountPoint ||
@@ -388,7 +583,7 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get initialLimitMountsHaveConflicts() {
+  get initialLimitMountsHaveConflicts () {
     return this.dataStorages
       .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
       .map(d => d.mountPoint)
@@ -397,7 +592,7 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get limitMountsHaveConflicts() {
+  get limitMountsHaveConflicts () {
     return this.dataStorages
       .filter(d => this.selectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
       .map(d => d.mountPoint)
@@ -412,7 +607,7 @@ export class RunConfirmation extends React.Component {
     const instanceTypes = [];
     for (let i = 0; i < this.props.instanceTypes.length; i++) {
       const instanceType = this.props.instanceTypes[i];
-      if (instanceTypes.filter(t => t.name === instanceType.name).length === 0) {
+      if (!instanceTypes.find(t => t.name === instanceType.name)) {
         instanceTypes.push(instanceType);
       }
     }
@@ -426,6 +621,13 @@ export class RunConfirmation extends React.Component {
       return vcpuCompared === 0 ? skuCompare(typeA, typeB) : vcpuCompared;
     });
   };
+
+  get currentInstanceType () {
+    if (!this.props.instanceTypes || !this.state.instanceType) {
+      return undefined;
+    }
+    return this.getInstanceTypes().find(t => t.name === this.state.instanceType);
+  }
 
   setOnDemand = (onDemand) => {
     this.setState({
@@ -487,7 +689,7 @@ export class RunConfirmation extends React.Component {
     const selectedIds = [...this.notConflictingIndecis, ...selectedConflictingIds];
     if (selectedIds.length > 0) {
       this.setState({
-        limitMounts: selectedIds.length === this.dataStorages.length ? undefined : selectedIds.join(',')
+        limitMounts: selectedIds.join(',')
       }, () => {
         this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(this.state.limitMounts);
       });
@@ -712,6 +914,14 @@ export class RunConfirmation extends React.Component {
             />
           )
         }
+        <OOMCheck
+          style={{margin: 2}}
+          limitMounts={this.state.limitMounts}
+          dataStorages={this.props.dataStorages}
+          preferences={this.props.preferences}
+          instance={this.currentInstanceType}
+          platform={this.props.platform}
+        />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
             ? (
@@ -728,11 +938,30 @@ export class RunConfirmation extends React.Component {
             )
             : undefined
         }
+        {
+          !this.currentRegion && (
+            <Alert
+              type="error"
+              style={{margin: 2}}
+              showIcon
+              message={
+                <div>
+                  <b>Cloud region not available.</b>
+                </div>
+              }
+            />
+          )
+        }
         <EstimatedDiskSizeWarning
+          skipCheck={this.props.skipCheck}
           nodeCount={this.props.nodeCount}
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
           onDiskSizeChanged={this.props.onChangeHddSize}
+        />
+        <SensitiveBucketsWarning
+          parameters={this.props.parameters}
+          style={{margin: 2}}
         />
       </div>
     );
@@ -755,6 +984,7 @@ export class RunConfirmation extends React.Component {
 export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
@@ -774,6 +1004,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     onChangeLimitMounts: PropTypes.func,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
+    preferences: PropTypes.object,
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -842,6 +1074,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
@@ -860,6 +1093,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             hddSize={this.props.hddSize}
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
+            preferences={this.props.preferences}
+            skipCheck={this.props.skipCheck}
           />
         </Row>
         {
@@ -872,10 +1107,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             message={
               this._estimatedPriceType.pending
                 ? <Row>Estimated price: <Icon type="loading" /></Row>
-                : <Row>Estimated price: <b>{
+                : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
                 (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
                   .toFixed(2)
-                }$</b> per hour.</Row>
+                }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
       </div>

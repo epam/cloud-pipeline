@@ -68,8 +68,8 @@ export default class AllowedInstanceTypes extends Remote {
     }
   }
 
-  setRegionId (value) {
-    if (value && this._regionId !== value) {
+  setRegionId (value, force = false) {
+    if ((value || force) && this._regionId !== value) {
       this._regionId = value;
       this.fetchOnChange();
     }

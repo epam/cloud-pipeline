@@ -1,44 +1,33 @@
 # Requirements
 
-* **[Oracle JDK 8](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html)** or **[Open JDK 8](http://openjdk.java.net/install/)**
-* **[Google Chrome](https://support.google.com/chrome/answer/95346?co=GENIE.Platform%3DDesktop&hl=en-GB)**
-* **[Chrome Driver](https://chromedriver.storage.googleapis.com/index.html?path=2.31/)**
-
-You can use the `install.sh` scripts to meet all requirements:
-
-```
-$ sh install.sh
-```
+* **Linux OS (Debian 9/Ubuntu 16/EL7)**
+* **Docker**
 
 # Running tests
 
-To run autotests use Gradle task:
+* Prepare a test configuration.
 
+  Fill in all the required fields in the configuration file: `/path_to_e2e/e2e/gui/default.conf`
+    
+* Build the docker image:
+
+```bash
+docker build --build-arg RECORDING=<true/false> -t <image_name> .
 ```
-$ ./gradlew test
+By default `RECORDING=false`
+
+* Launch the docker container with tests:
+```bash
+# navigate to the source code folder
+cd /path_to_e2e/e2e/gui
+export USER_HOME_DIR="/headless"
+docker run  -it \
+            --rm \
+            -v ~/path_to_e2e/e2e/gui:/headless/e2e/gui \
+            --user 0:0 \
+            -p 5901:5901 \
+            -p 6901:6901 \
+            -v /dev/shm:/dev/shm \
+            <image_name>
 ```
-# Test extension
-
-To extend the test cases, it's necessary the `service` and the `driver` to be created and closed at the end in each test.
-
-```
-@BeforeClass
-public void preparationService() {
-    service = WebDriverUtils.createAndStartChromeService();
-}
-
-@Before
-public void preparationDriver() {
-    driver = WebDriverUtils.createChromeWebDriverInstance(service);
-}
-
-@After
-public void quitDriver() {
-    WebDriverUtils.destroyWebDriverInstance(driver);
-}
-
-@AfterClass
-public void createAndStopService() {
-    service.stop();
-}
-```
+In the running container `/tmp/run.sh` script is run by default. This script launches `/gradlew clean test` and screen recording if `RECORDING=true`.

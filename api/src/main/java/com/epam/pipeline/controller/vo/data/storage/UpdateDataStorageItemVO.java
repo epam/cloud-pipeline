@@ -17,11 +17,13 @@
 package com.epam.pipeline.controller.vo.data.storage;
 
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class UpdateDataStorageItemVO {
     private String path;
     private String oldPath;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,24 +33,18 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
-import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
-import static com.epam.pipeline.autotests.ao.Primitive.CONFIRM_RELEASE;
-import static com.epam.pipeline.autotests.ao.Primitive.CROSS;
-import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
-import static com.epam.pipeline.autotests.ao.Primitive.EDIT_REPOSITORY_SETTINGS;
-import static com.epam.pipeline.autotests.ao.Primitive.FIRST_VERSION;
-import static com.epam.pipeline.autotests.ao.Primitive.RELEASE;
-import static com.epam.pipeline.autotests.ao.Primitive.REPOSITORY;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
-import static com.epam.pipeline.autotests.ao.Primitive.VERSION;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttributes;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.Utils.getPopupByTitle;
+import static com.epam.pipeline.autotests.utils.Utils.resetClick;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.xpath;
 
 public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryContentAO> {
 
@@ -58,7 +52,10 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
             entry(RELEASE, $(button("RELEASE"))),
             entry(CONFIRM_RELEASE, $(byId("register-version-form-release-button"))),
             entry(VERSION, $(byId("version"))),
-            entry(FIRST_VERSION, $(byCssSelector(".ant-table-row .anticon-tag")).closest(".ant-table-row"))
+            entry(FIRST_VERSION, $(byCssSelector(".ant-table-row .anticon-tag")).closest(".ant-table-row")),
+            entry(SETTINGS, $(byId("edit-pipeline-menu-button"))),
+            entry(EDIT, context().find(menuitem("rc-dropdown-menu-item", " Edit"))),
+            entry(GIT_REPOSITORY, $(byId("pipeline-repository-button")))
     );
     private final String pipelineName;
 
@@ -102,8 +99,16 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return ensure(FIRST_VERSION, text(version));
     }
 
+    public PipelineLibraryContentAO assertPipelineName(String name){
+        return ensure(xpath("//div[@class = 'browser__item-header']//span"), text(name));
+    }
+
     public PipelineLibraryContentAO assertVersionNot(String version) {
         return ensure(FIRST_VERSION, not(text(version)));
+    }
+
+    public String getFirstVersionName(){
+        return $(byCssSelector(".browser__tree-item-version")).text();
     }
 
     public PipelineLibraryContentAO assertReleaseButton() {
@@ -118,12 +123,13 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
 
     public PipelineEditPopupAO clickEditButton() {
         sleep(5, SECONDS);
-        $(byId("edit-pipeline-button")).shouldBe(visible).click();
+        hover(SETTINGS);
+        click(EDIT);
         return new PipelineEditPopupAO();
     }
 
     public PipelineLibraryContentAO assertEditButtonIsDisplayed() {
-        $(byId("edit-pipeline-button")).shouldBe(visible);
+        get(SETTINGS).shouldBe(visible);
         return this;
     }
 
@@ -132,11 +138,19 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return this;
     }
 
+    public PipelineLibraryContentAO assertRunButtonIsNotDisplayed() {
+        $$(tagName("button")).find(text("Run")).shouldNotBe(visible);
+        return this;
+    }
+
     public MetadataSectionAO showMetadata() {
-        hover(displayAttributes);
+        click(displayAttributes);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
-                page -> click(showAttributes),
+                page -> {
+                    click(showAttributes);
+                    resetClick();
+                },
                 page -> resetMouse()
         );
         return new MetadataSectionAO(this);
@@ -154,7 +168,8 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
                 entry(SAVE, $(byId("edit-pipeline-form-save-button"))),
                 entry(CANCEL, $(byId("edit-pipeline-form-cancel-button"))),
                 entry(REPOSITORY, $(byId("repository"))),
-                entry(CROSS, $(byClassName("ant-modal-close")))
+                entry(CROSS, $(byClassName("ant-modal-close"))),
+                entry(NAME, $(byId("name")))
         );
 
         public PipelineEditPopupAO() {
@@ -171,6 +186,10 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
             sleep(5, SECONDS);
             ensure(DELETE, enabled).click(DELETE);
             return new DeletionConfirmationPopupAO();
+        }
+
+        public PipelineEditPopupAO rename(String newName) {
+            return clear(NAME).setValue(NAME, newName);
         }
 
         public PipelineLibraryContentAO save() {
@@ -211,7 +230,8 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public class DeletionConfirmationPopupAO {
-        private final SelenideElement element = $$(className("ant-modal")).findBy(text("Do you want to delete a pipeline with repository or only unregister it?"));
+        private final SelenideElement element = $$(className("ant-modal"))
+                .findBy(text("Do you want to delete a pipeline with repository or only unregister it?"));
         private final ElementsCollection buttons = element.findAll(className("ant-btn"));
         private final SelenideElement cancelButton = buttons.findBy(text("Cancel"));
         private final SelenideElement unregisterButton = $(byId("edit-pipeline-delete-dialog-unregister-button"));

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 # Preflight setup
 ##########
 INSTALL_SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
-K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
+export K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
 
 source format-utils.sh
 source install-utils.sh
@@ -127,7 +127,7 @@ set -o pipefail
 export CP_KUBE_KUBEADM_TOKEN=$(kubeadm token list | tail -n 1 | cut -f1 -d' ')
 set +o pipefail
 if [ $? -ne 0 ]; then
-    print_err "Errors occured during retrieval of the kubeadm token. Please review any output above, exiting"
+    print_err "Errors occurred during retrieval of the kubeadm token. Please review any output above, exiting"
     exit 1
 else
     print_info "-> kubeadm token retrieved: $CP_KUBE_KUBEADM_TOKEN"
@@ -137,6 +137,41 @@ else
 fi
 echo
 
+set -o pipefail
+export CP_KUBE_KUBEADM_CERT_HASH="$(openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
+set +o pipefail
+if [ $? -ne 0 ]; then
+    print_err "Errors occurred during retrieval of the kubeadm cert hash. Please review any output above, exiting"
+    exit 1
+else
+    print_info "-> kubeadm cert hash retrieved: $CP_KUBE_KUBEADM_CERT_HASH"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_KUBE_KUBEADM_CERT_HASH" \
+                        "$CP_KUBE_KUBEADM_CERT_HASH"
+fi
+echo
+
+# Get kube account token
+print_ok "[Configuring kube node credentials]"
+
+set -o pipefail
+export CP_KUBE_NODE_TOKEN="$(kubectl --namespace=kube-system describe sa canal \
+  | grep Tokens \
+  | cut -d: -f2 \
+  | xargs kubectl --namespace=kube-system get secret -o json \
+  | jq -r '.data.token' \
+  | base64 --decode)"
+set +o pipefail
+if [ $? -ne 0 ]; then
+    print_err "Errors occurred during retrieval of the kube node token. Please review any output above, exiting"
+    exit 1
+else
+    print_info "-> kube node token retrieved: $CP_KUBE_ACCOUNT_TOKEN"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_KUBE_NODE_TOKEN" \
+                        "$CP_KUBE_NODE_TOKEN"
+fi
+echo
 
 ##########
 # Setup config for Kube
@@ -187,6 +222,7 @@ CP_EDGE_KUBE_NODE_NAME=${CP_EDGE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-edge to $CP_EDGE_KUBE_NODE_NAME"
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/cp-edge="true" --overwrite
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/role="EDGE" --overwrite
+kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/region="$CP_CLOUD_REGION_ID" --overwrite
 
 # Allow to schedule notifier to the master
 CP_NOTIFIER_KUBE_NODE_NAME=${CP_NOTIFIER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
@@ -203,6 +239,11 @@ CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE
 print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_DOCKER_COMP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DOCKER_COMP_KUBE_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
 
+# Allow to schedule GitLab Reader scanner to the master
+CP_GITLAB_READER_NODE_NAME=${CP_GITLAB_READER_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-gitlab-reader to $CP_GITLAB_READER_NODE_NAME"
+kubectl label nodes "$CP_GITLAB_READER_NODE_NAME" cloud-pipeline/cp-gitlab-reader="true" --overwrite
+
 # Allow to schedule Clair scanner to the master
 CP_CLAIR_KUBE_NODE_NAME=${CP_CLAIR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-clair to $CP_CLAIR_KUBE_NODE_NAME"
@@ -217,6 +258,11 @@ kubectl label nodes "$CP_SEARCH_ELK_KUBE_NODE_NAME" cloud-pipeline/cp-search-elk
 CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
+
+# Allow to schedule Kibana service to the master
+CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-search-kibana to $CP_SEARCH_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-kibana="true" --overwrite
 
 # Allow to schedule Heapster ELK to the master
 CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
@@ -248,6 +294,16 @@ CP_BILLING_SRV_KUBE_NODE_NAME=${CP_BILLING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE
 print_info "-> Assigning cloud-pipeline/cp-billing-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_BILLING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-billing-srv="true" --overwrite
 
+# Allow to schedule Share service to the master
+CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
+kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
+
+# Allow to schedule policy-manager service to the master
+CP_POLICY_MANAGER_KUBE_NODE_NAME=${CP_POLICY_MANAGER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-run-policy-manager to $CP_POLICY_MANAGER_KUBE_NODE_NAME"
+kubectl label nodes "$CP_POLICY_MANAGER_KUBE_NODE_NAME" cloud-pipeline/cp-run-policy-manager="true" --overwrite
+
 echo
 
 ##########
@@ -255,16 +311,23 @@ echo
 ##########
 print_ok "[Setting up docker distr registry credentials]"
 
+if [ -z "$CP_DOCKER_DIST_SRV" ]; then
+    print_warn "CP_DOCKER_DIST_SRV is not set, https://index.docker.io/v1/ is used to authenticate against docker dist registry and create a kube secret"
+    export CP_DOCKER_DIST_SRV="https://index.docker.io/v1/"
+fi
+
+if [ "${CP_DOCKER_DIST_SRV: -1}" != "/" ]; then
+    echo "CP_DOCKER_DIST_SRV doesn't end with '/': ${CP_DOCKER_DIST_SRV}, will additionally add it."
+    export CP_DOCKER_DIST_SRV="${CP_DOCKER_DIST_SRV}/"
+fi
+
 if [ -z "$CP_DOCKER_DIST_USER" ] || [ -z "$CP_DOCKER_DIST_PASS" ]; then
     print_warn "CP_DOCKER_DIST_USER or CP_DOCKER_DIST_PASS is not set, proceeding without registry authentication"
 else
-    if [ -z "$CP_DOCKER_DIST_SRV" ]; then
-        print_warn "CP_DOCKER_DIST_SRV is not set, https://index.docker.io/v1/ is used to authenticate against docker dist registry and create a kube secret"
-        export CP_DOCKER_DIST_SRV="https://index.docker.io/v1/"
-    fi
-
     print_info "Logging docker into $CP_DOCKER_DIST_SRV as $CP_DOCKER_DIST_USER"
-    docker login -u $CP_DOCKER_DIST_USER -p $CP_DOCKER_DIST_PASS
+    docker login "$CP_DOCKER_DIST_SRV" \
+                -u "$CP_DOCKER_DIST_USER" \
+                -p "$CP_DOCKER_DIST_PASS"
     if [ $? -ne 0 ]; then
         print_err "Error occured while logging into the distr docker regsitry, exiting"
         exit 1
@@ -474,13 +537,13 @@ if is_service_requested cp-api-srv; then
         wait_for_deployment "cp-api-srv"
 
         print_info "-> Generating admin JWT token for admin user \"$CP_DEFAULT_ADMIN_NAME\""
-        CP_API_JWT_ADMIN=$(execute_deployment_command cp-api-srv "java  -jar /opt/api/jwt-generator.jar \
-                                                                        --private $CP_API_SRV_CERT_DIR/jwt.key.private \
-                                                                        --expires 94608000 \
-                                                                        --claim user_id=1 \
-                                                                        --claim user_name=$CP_DEFAULT_ADMIN_NAME \
-                                                                        --claim role=ROLE_ADMIN \
-                                                                        --claim group=ADMIN")
+        CP_API_JWT_ADMIN=$(execute_deployment_command cp-api-srv cp-api-srv "java  -jar /opt/api/jwt-generator.jar \
+                                                                            --private $CP_API_SRV_CERT_DIR/jwt.key.private \
+                                                                            --expires 94608000 \
+                                                                            --claim user_id=1 \
+                                                                            --claim user_name=$CP_DEFAULT_ADMIN_NAME \
+                                                                            --claim role=ROLE_ADMIN \
+                                                                            --claim group=ADMIN")
         if [ $? -ne 0 ]; then
             print_err "Error ocurred while generating admin JWT token, docker registry and edge services cannot be configured to integrate with the API Services"
         else
@@ -802,7 +865,7 @@ if is_service_requested cp-git; then
                 init_kube_config_map
 
                 print_info "-> Setting trust for GitLab SSL certificate in API Services"
-                execute_deployment_command cp-api-srv "/update-trust $CP_GITLAB_CERT_DIR/ssl-public-cert.pem cp-git"
+                execute_deployment_command cp-api-srv cp-api-srv "/update-trust $CP_GITLAB_CERT_DIR/ssl-public-cert.pem cp-git"
 
                 print_info "-> Register GitLab in API Services"
                 print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before registration (while health endpoint reported OK - gitlab may still fail with 502)"
@@ -859,6 +922,27 @@ if is_service_requested cp-git-sync; then
         print_info "-> Waiting for Git Sync to initialize"
         wait_for_deployment "cp-git-sync"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-git-sync: deployed"
+    fi
+    echo
+fi
+
+# GitLab Reader
+if is_service_requested cp-gitlab-reader; then
+    print_ok "[Starting GitLab Reader deployment]"
+
+    print_info "-> Deleting existing instance of GitLab Reader"
+    delete_deployment_and_service   "cp-gitlab-reader" \
+                                    "/opt/gitlab-reader"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-gitlab-reader"
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-svc.yaml
+
+        print_info "-> Waiting for GitLab Reader to initialize"
+        wait_for_deployment "cp-gitlab-reader"
+        api_register_git_reader
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-reader: deployed"
     fi
     echo
 fi
@@ -959,7 +1043,11 @@ if is_service_requested cp-search; then
 
     print_info "-> Deleting existing instance of Search ELK service"
     delete_deployment_and_service   "cp-search-elk" \
-                                    "/opt/search-elk"    
+                                    "/opt/search-elk"
+
+     print_info "-> Deleting existing instance of Search KIBANA service"
+    delete_deployment_and_service   "cp-search-kibana" \
+                                    "/opt/search-kibana"
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
@@ -969,9 +1057,16 @@ if is_service_requested cp-search; then
         print_info "-> Waiting for Search ELK service to initialize"
         wait_for_deployment "cp-search-elk"
 
+        print_info "-> Deploying Search KIBANA service"
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-svc.yaml
+
+        print_info "-> Waiting for Search KIBANA service to initialize"
+        wait_for_deployment "cp-search-kibana"
+
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_KIBANA_INTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_KIBANA_INTERNAL_HOST:$CP_SEARCH_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
@@ -1092,6 +1187,43 @@ if is_service_requested cp-share-srv; then
     echo
 fi
 
+# Tinyproxy
+if is_service_requested cp-tinyproxy; then
+    print_ok "[Starting Tinyproxy deployment]"
+
+    print_info "-> Deleting existing instance of Tinyproxy"
+    delete_deployment_and_service   "cp-tinyproxy" \
+                                    "/opt/tinyproxy"
+
+    if is_install_requested; then
+        print_info "-> Deploying Tinyproxy"
+        create_kube_resource $K8S_SPECS_HOME/cp-tinyproxy/cp-tinyproxy-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-tinyproxy/cp-tinyproxy-svc.yaml
+
+        print_info "-> Waiting for Tinyproxy to initialize"
+        wait_for_deployment "cp-tinyproxy"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-tinyproxy: Use http://${CP_TP_INTERNAL_HOST}:${CP_TP_INTERNAL_PORT} as an egress proxy"
+    fi
+    echo
+
+    print_ok "[Starting Tinyproxy (sensitive) deployment]"
+    print_info "-> Deleting existing instance of Tinyproxy (sensitive)"
+    delete_deployment_and_service   "cp-sensitive-proxy" \
+                                    "/opt/sensitive-proxy"
+
+    if is_install_requested; then
+        print_info "-> Deploying Tinyproxy"
+        create_kube_resource $K8S_SPECS_HOME/cp-sensitive-proxy/cp-sensitive-proxy-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-sensitive-proxy/cp-sensitive-proxy-svc.yaml
+
+        print_info "-> Waiting for Tinyproxy (sensitive) to initialize"
+        wait_for_deployment "cp-sensitive-proxy"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-sensitive-proxy: Use http://${CP_SP_INTERNAL_HOST}:${CP_SP_INTERNAL_PORT} as an egress proxy"
+    fi
+    echo
+fi
 
 #Billing Service
 if is_service_requested cp-billing-srv; then
@@ -1112,6 +1244,31 @@ if is_service_requested cp-billing-srv; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-billing-srv: http://$CP_BILLING_INTERNAL_HOST:$CP_BILLING_INTERNAL_PORT"
     fi
     echo
+fi
+
+# OOM reporter - monitor and report OOM related events for each pipeline run
+if is_service_requested cp-oom-reporter; then
+  print_ok "[Starting OOM reporter daemonset deployment]"
+
+  print_info "-> Deleting existing instance of OOM reporter daemonset"
+  kubectl delete daemonset cp-oom-reporter
+  if is_install_requested; then
+    print_info "-> Deploying OOM reporter daemonset"
+    create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
+  fi
+fi
+
+# Run-policy manager - monitor and manage network policies to implement restrictions on inter-run connections
+if is_service_requested cp-run-policy-manager; then
+  print_ok "[Starting run-policy manager deployment]"
+  print_info "-> Deleting existing instance of run-policy manager"
+  delete_deployment_and_service "cp-run-policy-manager" \
+                                  "/opt/run-policy-manager"
+  if is_install_requested; then
+    print_info "-> Deploying run-policy manager"
+    create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
+    wait_for_deployment "cp-run-policy-manager"
+  fi
 fi
 
 print_ok "Installation done"

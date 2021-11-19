@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import {
   Tabs
 } from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
+import RestrictDockerImages from './restrict-docker-images';
 import roleModel from '../../../../utils/roleModel';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {
@@ -65,9 +66,11 @@ export class DataStorageEditDialog extends React.Component {
 
   state = {
     deleteDialogVisible: false,
+    toolsToMount: undefined,
     activeTab: 'info',
     versioningEnabled: false,
-    sharingEnabled: false
+    sharingEnabled: false,
+    sensitive: false
   };
 
   formItemLayout = {
@@ -96,7 +99,7 @@ export class DataStorageEditDialog extends React.Component {
     }
   };
   handleSubmit = (e) => {
-    e.preventDefault();
+    e && e.preventDefault();
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         values.serviceType = this.isNfsMount
@@ -107,6 +110,9 @@ export class DataStorageEditDialog extends React.Component {
         } else {
           values.backupDuration = undefined;
           values.versioningEnabled = false;
+        }
+        if (!this.isNfsMount) {
+          values.sensitive = this.state.sensitive;
         }
         values.shared = !this.isNfsMount && this.state.sharingEnabled;
         values.regionId = +values.regionId;
@@ -161,6 +167,21 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get isStoragePathValid () {
     return this.state.nfsStoragePathValid || false;
+  }
+
+  @computed
+  get toolsToMount () {
+    const {dataStorage} = this.props;
+    if (dataStorage) {
+      return (dataStorage.toolsToMount || [])
+        .map((tool) => ({
+          id: tool.id,
+          toolId: tool.id,
+          image: `${tool.registry}/${tool.image}`,
+          versions: (tool.versions || []).map(v => v.version)
+        }));
+    }
+    return [];
   }
 
   onNfsPathValidation = (valid) => {
@@ -225,6 +246,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getDeleteModalFooter = () => {
+    const isMirrorStorage = !!this.props.dataStorage && !!this.props.dataStorage.sourceStorageId;
     return (
       <Row type="flex" justify="space-between">
         <Col span={12}>
@@ -240,10 +262,17 @@ export class DataStorageEditDialog extends React.Component {
               id="edit-storage-delete-dialog-unregister-button"
               type="danger"
               onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
-            <Button
-              id="edit-storage-delete-dialog-delete-button"
-              type="danger"
-              onClick={() => this.onDeleteClicked(true)}>Delete</Button>
+            {
+              !isMirrorStorage && (
+                <Button
+                  id="edit-storage-delete-dialog-delete-button"
+                  type="danger"
+                  onClick={() => this.onDeleteClicked(true)}
+                >
+                  Delete
+                </Button>
+              )
+            }
           </Row>
         </Col>
       </Row>
@@ -368,9 +397,23 @@ export class DataStorageEditDialog extends React.Component {
                   {...this.formItemLayout}
                   label="Description">
                   {getFieldDecorator('description', {
-                    initialValue: this.props.dataStorage ? this.props.dataStorage.description : undefined
+                    initialValue: this.props.dataStorage
+                      ? this.props.dataStorage.description
+                      : undefined
                   })(
                     <Input type="textarea" disabled={this.props.pending || isReadOnly} />
+                  )}
+                </Form.Item>
+                <Form.Item
+                  className={styles.dataStorageFormItem}
+                  {...this.formItemLayout}
+                  label="Allow mount to">
+                  {getFieldDecorator('toolsToMount', {
+                    initialValue: this.props.dataStorage
+                      ? this.props.dataStorage.toolsToMount
+                      : undefined
+                  })(
+                    <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 {
@@ -404,6 +447,22 @@ export class DataStorageEditDialog extends React.Component {
                         disabled={this.props.pending || isReadOnly} />
                     )}
                   </Form.Item>
+                }
+                {
+                  !this.isNfsMount &&
+                  <Row>
+                    <Col xs={24} sm={6} />
+                    <Col xs={24} sm={18}>
+                      <Form.Item className={styles.dataStorageFormItem}>
+                        <Checkbox
+                          disabled={this.props.pending || isReadOnly || !!this.props.dataStorage}
+                          onChange={(e) => this.setState({sensitive: e.target.checked})}
+                          checked={this.state.sensitive}>
+                          Sensitive storage
+                        </Checkbox>
+                      </Form.Item>
+                    </Col>
+                  </Row>
                 }
                 {
                   !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
@@ -512,10 +571,13 @@ export class DataStorageEditDialog extends React.Component {
     if (!prevProps || prevProps.dataStorage !== this.props.dataStorage) {
       const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy ?
         this.props.dataStorage.storagePolicy.versioningEnabled: true;
+      const sensitive = this.props.dataStorage
+        ? this.props.dataStorage.sensitive
+        : false;
       const sharingEnabled = !this.isNfsMount && this.props.dataStorage
         ? this.props.dataStorage.shared
         : false;
-      this.setState({versioningEnabled, sharingEnabled});
+      this.setState({versioningEnabled, sharingEnabled, sensitive});
     }
   };
 

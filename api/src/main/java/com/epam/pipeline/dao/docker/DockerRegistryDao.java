@@ -144,15 +144,18 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         SECURITY_SCAN_ENABLED,
         TOOL_ID,
         TOOL_IMAGE,
+        TOOL_LINK,
         TOOL_CPU,
         TOOL_RAM,
         TOOL_DESCRIPTION,
         TOOL_SHORT_DESCRIPTION,
+        TOOL_PLATFORM,
         TOOL_LABELS,
         TOOL_ENDPOINTS,
         TOOL_DEFAULT_COMMAND,
         TOOL_OWNER,
         TOOL_ICON_ID,
+        TOOL_ALLOW_SENSITIVE,
         GROUP_ID,
         GROUP_NAME,
         GROUP_DESCRIPTION,
@@ -245,10 +248,17 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             tool.setId(toolId);
             tool.setImage(rs.getString(TOOL_IMAGE.name()));
             tool.setCpu(rs.getString(TOOL_CPU.name()));
+            tool.setRam(rs.getString(TOOL_RAM.name()));
             tool.setRegistryId(registryId);
             tool.setRegistry(registry.getPath());
             tool.setDescription(rs.getString(TOOL_DESCRIPTION.name()));
             tool.setShortDescription(rs.getString(TOOL_SHORT_DESCRIPTION.name()));
+            tool.setPlatform(rs.getString(TOOL_PLATFORM.name()));
+            tool.setAllowSensitive(rs.getBoolean(TOOL_ALLOW_SENSITIVE.name()));
+            long toolLink = rs.getLong(TOOL_LINK.name());
+            if (!rs.wasNull()) {
+                tool.setLink(toolLink);
+            }
 
             long longVal = rs.getLong(TOOL_ICON_ID.name());
             if (!rs.wasNull()) {
@@ -275,6 +285,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             DockerRegistry registry;
             registry = new DockerRegistry();
             registry.setId(registryId);
+            registry.setName(rs.getString(REGISTRY_PATH.name()));
             registry.setPath(rs.getString(REGISTRY_PATH.name()));
             registry.setDescription(rs.getString(REGISTRY_DESCRIPTION.name()));
             registry.setOwner(rs.getString(OWNER.name()));

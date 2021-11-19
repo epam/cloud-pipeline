@@ -1,0 +1,423 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  color: #ddd;
+  overflow: auto;
+}
+
+.container.light {
+  color: #555;
+}
+
+.header {
+  font-size: x-large;
+  padding: 10px;
+}
+
+.header .title {
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+.header .sub-title {
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+.header .sub-title span,
+.header .sub-title span > i {
+  font-size: medium;
+}
+
+.header span,
+.header i {
+  margin-right: 7px;
+  color: #ddd;
+}
+
+.header .description {
+  font-size: large;
+  color: #ccc;
+}
+
+.header .tool-description {
+  font-size: medium;
+  color: #ccc;
+}
+
+.container.light .header span,
+.container.light .header i,
+.container.light .header .description,
+.container.light .header .tool-description {
+  color: #555;
+}
+
+.description.tags > span {
+  font-size: small;
+  padding: 2px 5px;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.container.light .description.tags > span {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.highlights,
+.info,
+.attributes,
+.content-preview {
+  padding: 0 10px;
+}
+
+.attribute {
+  display: flex;
+  flex-direction: column;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  max-width: 33%;
+}
+
+.attribute-name,
+.attribute-value {
+  padding: 1px 5px;
+  font-family: Consolas, Menlo, Courier, monospace;
+  font-size: smaller;
+}
+
+.attribute-name {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.attribute-value {
+  background-color: rgba(255, 255, 255, 0.05);
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.attribute-value:hover {
+  background-color: rgba(255, 255, 255, 0.75);
+  color: black;
+  overflow-x: visible;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.container.light .attribute-name {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.container.light .attribute-value {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.container.light .attribute-value:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.highlights > table,
+.info > table,
+.attributes > table,
+.content-preview > table {
+  border-collapse: collapse;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
+.highlight {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px;
+  color: #ccc;
+}
+
+.container.light .highlight {
+  background-color: transparent;
+  color: #555;
+}
+
+.csv-table {
+  border: 1px solid #666;
+  background-color: rgba(255, 255, 255, 0.05);
+  min-width: 100%;
+}
+
+.container.light .csv-table {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.run-table {
+  min-width: 100%;
+}
+
+.run-table .run {
+  padding: 1px 10px 1px 0;
+}
+
+.run-table .run i {
+  color: #ccc;
+}
+
+.container.light .run-table .run i {
+  color: #555;
+}
+
+.csv-cell {
+  white-space: nowrap;
+  padding: 5px;
+  border: 1px solid #666;
+}
+
+.container.light .csv-cell {
+  border-color: #ccc;
+}
+
+.content-preview .task span,
+.content-preview .task i,
+.content-preview .task code {
+  color: #ccc;
+  margin-right: 5px;
+}
+
+.md-preview {
+  font-size: 10pt;
+  color: #ccc;
+}
+
+.md-preview h1,
+.md-preview h2,
+.md-preview h3,
+.md-preview h4,
+.md-preview h5,
+.md-preview h6 {
+  color: #ccc;
+}
+
+.container.light .content-preview .task span,
+.container.light .content-preview .task i,
+.container.light .content-preview .task code,
+.container.light .md-preview,
+.container.light .md-preview h1,
+.container.light .md-preview h2,
+.container.light .md-preview h3,
+.container.light .md-preview h4,
+.container.light .md-preview h5,
+.container.light .md-preview h6 {
+  color: #555;
+}
+
+.md-preview code {
+  padding: 2px 4px;
+  font-size: 90%;
+  color: #c7254e;
+  background-color: #f9f2f4;
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.md-preview p {
+  margin: 5px 0;
+}
+
+.md-preview p a {
+  margin: 0 2px;
+}
+
+.md-preview pre {
+  display: block;
+  padding: 10px;
+  margin: 10px 0;
+  line-height: 1.5;
+  word-break: break-all;
+  word-wrap: break-word;
+  color: #333;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.md-preview pre > code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  white-space: pre-wrap;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.md-preview ul,
+.md-preview ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+
+.md-preview li {
+  display: list-item;
+  margin: 5px;
+}
+
+.md-preview img {
+  max-width: 100%;
+}
+
+.tool-version-scan-results {
+  width: 100px;
+}
+
+.vsi-content-preview {
+  max-width: 100%;
+  width: 50vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  overflow: hidden;
+}
+
+.vsi-sa-view.read-only img[class~="saEditToggle"] {
+  display: none !important;
+}
+
+.wsi-page .vsi-content-preview {
+  width: 100vw;
+}
+
+.vsi-content-preview.tiles {
+  width: auto;
+  min-width: 50vw;
+  height: 50vh;
+  position: relative;
+}
+
+.wsi-page .vsi-content-preview.tiles {
+  height: 100vh;
+}
+
+.vsi-content-preview.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  z-index: 1001;
+  padding: 20px;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: large;
+  color: #666;
+  cursor: pointer;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button:hover {
+  color: #333;
+}
+
+.vsi-content-preview img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.container:not(.light) .tabs {
+  color: #aaa;
+  font-weight: normal;
+}
+
+.vsi-preview-button-container {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+}
+
+.vsi-preview-button {
+  z-index: 1002;
+  padding: 0 5px;
+  transition: none;
+  height: 24px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 5px;
+  border-color: rgba(187, 187, 187, 0.6);
+}
+
+.vsi-preview-button:not(:first-child) {
+  margin-left: 5px;
+}
+
+.vsi-preview-button,
+.vsi-preview-button:hover,
+.vsi-preview-button:focus {
+  outline: none;
+  border-color: rgba(187, 187, 187, 0.8);
+  color: #777;
+}
+
+.vsi-preview-button:hover {
+  background-color: #f4f4f4;
+}
+
+.vsi-sa-view-hidden {
+  display: none;
+}
+
+.share-url-popover {
+  min-width: 25vw;
+  max-width: 400px;
+}
+
+.share-url-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.share-url-action {
+  cursor: pointer;
+  width: 20px;
+}
+
+.share-url-action:hover {
+  color: #0e77ca;
+}
+
+.share-url-button {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  height: 45px;
+  width: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}

@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.datastorage.rules;
 
 import java.util.Date;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class DataStorageRule {
 
     public static final String DEFAULT_FILE_MASK = "*";

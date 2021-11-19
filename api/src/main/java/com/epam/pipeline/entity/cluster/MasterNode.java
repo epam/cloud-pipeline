@@ -18,8 +18,8 @@ package com.epam.pipeline.entity.cluster;
 
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeAddress;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 public final class MasterNode {
 
     public static final String K8S_MASTER_PORT_LABEL = "cloud-pipeline/k8s_master_port";

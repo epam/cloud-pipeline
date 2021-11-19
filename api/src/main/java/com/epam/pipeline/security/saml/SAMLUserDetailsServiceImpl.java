@@ -16,16 +16,10 @@
 
 package com.epam.pipeline.security.saml;
 
-import com.epam.pipeline.common.MessageConstants;
-import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.user.GroupStatus;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -34,9 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.LockedException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 import org.springframework.stereotype.Service;
@@ -50,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
 
@@ -62,97 +54,32 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     @Value("#{'${saml.user.attributes}'.split(',')}")
     private Set<String> samlAttributes;
 
-    @Value("${saml.user.auto.create: EXPLICIT}")
-    private SamlUserRegisterStrategy autoCreateUsers;
-
     @Value("${saml.user.blocked.attribute: }")
     private String blockedAttribute;
 
     @Value("${saml.user.blocked.attribute.true.val: true}")
     private String blockedAttributeTrueValue;
-
+    
     @Autowired
     private UserManager userManager;
 
     @Autowired
-    private RoleManager roleManager;
-
-    @Autowired
-    private MessageHelper messageHelper;
-
-    @Autowired
-    private GrantPermissionManager permissionManager;
+    private UserAccessService accessService;
 
     @Override
     public UserContext loadUserBySAML(SAMLCredential credential) {
         final String userName = credential.getNameID().getValue().toUpperCase();
         final List<String> groups = readAuthorities(credential);
         final Map<String, String> attributes = readAttributes(credential);
-        final UserContext userContext = Optional.ofNullable(userManager.loadUserByName(userName))
-            .map(loadedUser -> processRegisteredUser(userName, groups, attributes, loadedUser))
-            .orElseGet(() -> processNewUser(userName, groups, attributes));
-        validateGroupsBlockingStatus(userContext.getAuthorities(), userName);
+        final UserContext userContext = accessService.parseUser(userName, groups, attributes);
+        accessService.validateUserGroupsBlockStatus(userContext.toPipelineUser());
         if (hasBlockedStatusAttribute(credential)) {
-            userManager.updateUserBlockingStatus(userContext.getUserId(), true);
-            throwUserIsBlocked(userName);
+            Optional.ofNullable(userContext.getUserId())
+                    .ifPresent(id -> userManager.updateUserBlockingStatus(id, true));
+            accessService.throwUserIsBlocked(userName);
         }
+        LOGGER.info("Successfully authenticate user: " + userContext.getUsername());
         return userContext;
-    }
-
-    private UserContext processNewUser(final String userName, final List<String> groups,
-                                       final Map<String, String> attributes) {
-        checkAbilityToCreate(userName, groups);
-        LOGGER.debug(messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
-        final List<Long> roles = roleManager.getDefaultRolesIds();
-        final PipelineUser createdUser = userManager.createUser(userName,
-                                                                roles, groups, attributes, null);
-        userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
-        LOGGER.debug("Created user {} with groups {}", userName, groups);
-        final UserContext userContext = new UserContext(createdUser.getId(), userName);
-        userContext.setGroups(createdUser.getGroups());
-        userContext.setRoles(createdUser.getRoles());
-        return userContext;
-    }
-
-    private UserContext processRegisteredUser(final String userName, final List<String> groups,
-                                              final Map<String, String> attributes, final PipelineUser loadedUser) {
-        LOGGER.debug("Found user by name {}", userName);
-        if (loadedUser.isBlocked()) {
-            throwUserIsBlocked(userName);
-        }
-        loadedUser.setUserName(userName);
-        final List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
-        if (loadedUser.getFirstLoginDate() == null) {
-            userManager.updateUserFirstLoginDate(loadedUser.getId(), DateUtils.nowUTC());
-        }
-        if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
-            final PipelineUser updatedUser =
-                userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
-            LOGGER.debug("Updated user groups {} ", groups);
-            return new UserContext(updatedUser);
-        } else {
-            return new UserContext(loadedUser);
-        }
-    }
-
-    private void validateGroupsBlockingStatus(final List<GrantedAuthority> authorities, final String userName) {
-        final List<String> groups = ListUtils.emptyIfNull(authorities)
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .distinct()
-                .collect(Collectors.toList());
-        final boolean isValidGroupList = ListUtils.emptyIfNull(userManager.loadGroupBlockingStatus(groups))
-                .stream()
-                .noneMatch(GroupStatus::isBlocked);
-        if (!isValidGroupList) {
-            LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
-            throw new LockedException("User is blocked!");
-        }
-    }
-
-    private void throwUserIsBlocked(final String userName) {
-        LOGGER.debug("User {} is blocked!", userName);
-        throw new LockedException("User is blocked!");
     }
 
     private boolean hasBlockedStatusAttribute(final SAMLCredential credential) {
@@ -205,19 +132,4 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         return parsedAttributes;
     }
 
-    private void checkAbilityToCreate(final String userName, final List<String> groups) {
-        switch (autoCreateUsers) {
-            case EXPLICIT:
-                throw new UsernameNotFoundException(
-                        messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
-            case EXPLICIT_GROUP:
-                if (!permissionManager.isGroupRegistered(groups)) {
-                    throw new UsernameNotFoundException(
-                            messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, userName));
-                }
-                break;
-            default:
-                break;
-        }
-    }
 }

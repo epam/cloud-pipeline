@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +45,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -60,11 +64,26 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${jwt.use.for.all.requests:false}")
     private boolean useJwtAuthForAllRequests;
 
+    @Value("${jwt.disable.session:true}")
+    private boolean disableJwtSession;
+    
+    @Value("${api.security.anonymous.urls:/restapi/route}")
+    private String[] anonymousResources;
+
+    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
+    private String impersonationOperationsRootUrl;
+
+    @Value("#{'${api.security.public.urls}'.split(',')}")
+    private List<String> excludeScripts;
+
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
 
     @Autowired
     private SAMLEntryPoint samlEntryPoint;
+
+    @Autowired
+    private UserAccessService userAccessService;
 
     protected String getPublicKey() {
         return publicKey;
@@ -87,11 +106,18 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .and()
                 .requestMatcher(getFullRequestMatcher())
                 .authorizeRequests()
-                    .antMatchers(HttpMethod.OPTIONS).permitAll()
-                    .antMatchers(getUnsecuredResources()).permitAll()
-                    .antMatchers(getSecuredResources()).authenticated()
+                .antMatchers(HttpMethod.OPTIONS).permitAll()
+                .antMatchers(getUnsecuredResources()).permitAll()
+                .antMatchers(getAnonymousResources())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
+                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getImpersonationStartUrl())
+                     .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
+                .antMatchers(getSecuredResources())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .sessionManagement().sessionCreationPolicy(
+                        disableJwtSession ? SessionCreationPolicy.NEVER : SessionCreationPolicy.IF_REQUIRED)
                 .and()
                 .requestCache().requestCache(requestCache())
                 .and()
@@ -104,11 +130,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     @Bean protected JwtAuthenticationProvider jwtAuthenticationProvider() {
-        return new JwtAuthenticationProvider(jwtTokenVerifier());
+        return new JwtAuthenticationProvider(jwtTokenVerifier(), userAccessService);
     }
 
     protected JwtFilterAuthenticationFilter getJwtAuthenticationFilter() {
-        return new JwtFilterAuthenticationFilter(jwtTokenVerifier());
+        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService);
     }
 
     protected RequestMatcher getFullRequestMatcher() {
@@ -120,18 +146,24 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected String[] getUnsecuredResources() {
-        return new String[] {
-            "/restapi/dockerRegistry/oauth",
-            "/restapi/swagger-resources/**",
-            "/restapi/swagger-ui.html",
-            "/restapi/webjars/springfox-swagger-ui/**",
-            "/restapi/v2/api-docs/**",
-            "/restapi/proxy/**",
-            "/launch.sh", "/PipelineCLI.tar.gz",
-            "/pipe-common.tar.gz", "/commit-run-scripts/**", "/pipe",
-            "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
-            "/pipe-el6", "/pipe-el6.tar.gz"
-        };
+        final List<String> excludePaths = Arrays.asList(
+                "/restapi/dockerRegistry/oauth",
+                "/restapi/swagger-resources/**",
+                "/restapi/swagger-ui.html",
+                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/v2/api-docs/**",
+                "/restapi/proxy/**",
+                "/error",
+                "/error/**");
+        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+    }
+
+    public String[] getAnonymousResources() {
+        return anonymousResources;
+    }
+
+    public String getImpersonationStartUrl() {
+        return impersonationOperationsRootUrl + "/start";
     }
 
     //List of urls under REST that should be redirected back after authorization

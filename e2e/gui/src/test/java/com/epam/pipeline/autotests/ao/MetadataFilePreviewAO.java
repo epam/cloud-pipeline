@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 
@@ -71,6 +72,7 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
     }
 
     public StorageContentAO editFileWithText(String text) {
+        get(EDIT).waitUntil(enabled, C.DEFAULT_TIMEOUT * 2L);
         click(EDIT);
         sleep(3, SECONDS);
         Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), text);

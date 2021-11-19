@@ -31,14 +31,14 @@ public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage>
 
     private Long usageBytes;
     private StorageType storageType;
-    private String regionName;
+    private Long regionId;
 
     @Builder
     public StorageBillingInfo(final LocalDate date, final AbstractDataStorage storage, final Long cost,
-                              final Long usageBytes, final StorageType storageType, final String regionName) {
+                              final Long usageBytes, final StorageType storageType, final Long regionId) {
         super(date, storage, cost, ResourceType.STORAGE);
         this.usageBytes = usageBytes;
         this.storageType = storageType;
-        this.regionName = regionName;
+        this.regionId = regionId;
     }
 }

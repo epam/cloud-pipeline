@@ -16,11 +16,9 @@
 
 package com.epam.pipeline.manager.notification;
 
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -41,9 +39,6 @@ public class NotificationAspect {
     public static final String RESUME_RUN_FAILED = "Resume run failed.";
 
     @Autowired
-    private PipelineManager pipelineManager;
-
-    @Autowired
     private NotificationManager notificationManager;
 
     @Autowired
@@ -58,7 +53,7 @@ public class NotificationAspect {
         pointcut =
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.runPipeline(..)) || " +
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.runCmd(..)) ||" +
-            "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.updatePipelineStatus(" +
+            "execution(* com.epam.pipeline.manager.pipeline.PipelineRunCRUDService.updateRunStatus(" +
             "com.epam.pipeline.entity.pipeline.PipelineRun)) || " +
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.updatePipelineStatusIfNotFinal(..)) ||" +
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager"
@@ -78,20 +73,9 @@ public class NotificationAspect {
                           run.getVersion(), run.getStatus());
             return;
         }
-
-        if (run.getPipelineName() == null) {
-            if (run.getPipelineId() != null) {
-                Pipeline pipeline = pipelineManager.load(run.getPipelineId());
-                run.setPipelineName(pipeline.getName());
-            } else {
-                run.setPipelineName("pipeline");
-            }
-        }
-
         LOGGER.debug("Notify all about pipelineRun status changed {} {} {}: {}",
                      run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
         notificationManager.notifyRunStatusChanged(run);
     }
-
 }
 

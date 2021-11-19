@@ -47,8 +47,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MonitoringESDaoTest {
     private static Node node = null;
-    private static final String POD1_NAME = "pod1";
-    private static final String POD2_NAME = "pod2";
+    private static final String NODE1_NAME = "node1";
+    private static final String NODE2_NAME = "node2";
     private static final String HEAPSTER_TOKEN = "heapster-";
     private static final String CPU_TYPE = "cpu";
     private static final int HALF_AN_HOUR = 30;
@@ -101,9 +101,8 @@ public class MonitoringESDaoTest {
         record1.put("Metrics", metrics);
 
         Map<String, Object> metricsTags = new HashMap<>();
-        metricsTags.put("pod_name", POD1_NAME);
-        metricsTags.put("type", "pod_container");
-        metricsTags.put("namespace_name", "default");
+        metricsTags.put("nodename", NODE1_NAME);
+        metricsTags.put("type", "node");
         record1.put("MetricsTags", metricsTags);
 
         client.prepareIndex(indexName, CPU_TYPE).setSource(record1).get();
@@ -115,11 +114,11 @@ public class MonitoringESDaoTest {
         client.prepareIndex(indexName, CPU_TYPE).setSource(record2).get();
 
         Map<String, Object> record3 = new HashMap<>(record1);
-        ((Map<String, Object>) record3.get("MetricsTags")).put("pod_name", POD2_NAME);
+        ((Map<String, Object>) record3.get("MetricsTags")).put("nodename", NODE2_NAME);
         client.prepareIndex(indexName, CPU_TYPE).setSource(record3).get();
 
         Map<String, Object> record4 = new HashMap<>(record2);
-        ((Map<String, Object>) record4.get("MetricsTags")).put("pod_name", POD2_NAME);
+        ((Map<String, Object>) record4.get("MetricsTags")).put("nodename", NODE2_NAME);
         ((Map<String, Object>) record4.get("Metrics")).put("cpu/usage_rate", Collections.singletonMap("value", 4));
         client.prepareIndex(indexName, CPU_TYPE).setSource(record4).get();
 
@@ -162,11 +161,11 @@ public class MonitoringESDaoTest {
     @Test
     public void testLoadCpuUsageRateMetrics() {
         Map<String, Double> stats = monitoringESDao.loadMetrics(ELKUsageMetric.CPU,
-                Arrays.asList(POD1_NAME, POD2_NAME), NOW.minusMinutes(HALF_AN_HOUR), NOW);
+                Arrays.asList(NODE1_NAME, NODE2_NAME), NOW.minusMinutes(HALF_AN_HOUR), NOW);
 
         Assert.assertEquals(2, stats.size());
-        Assert.assertEquals(3, stats.get(POD1_NAME), TEST_DELTA);
-        Assert.assertEquals(3, stats.get(POD2_NAME), TEST_DELTA);
+        Assert.assertEquals(3, stats.get(NODE1_NAME), TEST_DELTA);
+        Assert.assertEquals(3, stats.get(NODE2_NAME), TEST_DELTA);
     }
 
     @Test

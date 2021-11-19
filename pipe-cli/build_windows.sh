@@ -17,7 +17,7 @@
 # Step 1: Build NTLM APS with Python 2
 #######################################
 
-CP_PYINSTALL_WIN32_PY2_DOCKER="lifescience/cloud-pipeline:pyinstaller-win32-py2"
+CP_PYINSTALL_WIN32_PY2_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pyinstaller-win32-py2"
 docker pull $CP_PYINSTALL_WIN32_PY2_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_PYINSTALL_WIN32_PY2_DOCKER image, it will be rebuilt"
@@ -67,7 +67,7 @@ rm -f $_BUILD_SCRIPT_NAME
 # Step 2: pipe CLI
 #######################################
 
-CP_PYINSTALL_WIN64_DOCKER="lifescience/cloud-pipeline:pyinstaller-win64"
+CP_PYINSTALL_WIN64_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pyinstaller-win64"
 docker pull $CP_PYINSTALL_WIN64_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_PYINSTALL_WIN64_DOCKER image, it will be rebuilt"
@@ -81,7 +81,33 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
 pip install --upgrade 'setuptools<=45.1.0' && \
 pip install -r /pipe-cli/requirements.txt && \
-pip install pywin32 && \
+pip install pywin32==300 && \
+cd /pipe-cli/mount && \
+cp libfuse/dokanfuse1.dll.1.5.0.3000 libfuse/dokanfuse1.dll.frozen && \
+pip install -r /pipe-cli/mount/requirements.txt && \
+pyinstaller --hidden-import=UserList \
+            --hidden-import=UserString \
+            --hidden-import=commands \
+            --hidden-import=ConfigParser \
+            --hidden-import=UserDict \
+            --hidden-import=itertools \
+            --hidden-import=collections \
+            --hidden-import=future.backports.misc \
+            --hidden-import=commands \
+            --hidden-import=base64 \
+            --hidden-import=__builtin__ \
+            --hidden-import=math \
+            --hidden-import=reprlib \
+            --hidden-import=functools \
+            --hidden-import=re \
+            --hidden-import=subprocess \
+            --hidden-import=pkg_resources.py2_warn \
+            --additional-hooks-dir="/pipe-cli/mount/hooks" \
+            -y \
+            --clean \
+            --distpath /tmp/mount/dist \
+            --add-data "/pipe-cli/mount/libfuse/dokanfuse1.dll.frozen;libfuse" \
+            /pipe-cli/mount/pipe-fuse.py && \
 cd /pipe-cli && \
 pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=boto3 \
@@ -111,6 +137,7 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --distpath /pipe-cli/dist/win64 \
             pipe.py \
             --add-data "/pipe-cli/ntlmaps;ntlmaps" \
+            --add-data "/tmp/mount/dist/pipe-fuse;mount" \
             --version-file /tmp/pipe-win-version-info.txt \
             --icon /pipe-cli/res/cloud-pipeline.ico && \
 cd /pipe-cli/dist/win64 && \

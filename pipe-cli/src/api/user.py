@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from src.api.entity import Entity
 from .base import API
 import json
 from ..model.object_permission_model import ObjectPermissionModel
@@ -23,8 +23,13 @@ class User(API):
 
     @classmethod
     def get_permissions(cls, identifier, acl_class):
+        entity = Entity.load_by_id_or_name(identifier, acl_class)
+        return cls.permissions(entity['id'], entity['aclClass']), entity['owner']
+
+    @classmethod
+    def permissions(cls, id, acl_class):
         api = cls.instance()
-        response_data = api.call('grant?id={}&aclClass={}'.format(identifier, acl_class.upper()), None)
+        response_data = api.call('permissions?id={}&aclClass={}'.format(id, acl_class.upper()), None)
         if 'payload' in response_data and 'permissions' in response_data['payload']:
             permissions = []
             for permission_json in response_data['payload']['permissions']:
@@ -62,4 +67,37 @@ class User(API):
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:
-            raise RuntimeError("Failed to load metadata.")
+            raise RuntimeError("Failed to change owner.")
+
+    @classmethod
+    def generate_user_token(cls, user_name, duration):
+        api = cls.instance()
+        query = '/user/token?name=%s' % user_name
+        if duration:
+            query = '&expiration='.join([query, str(duration)])
+        response_data = api.call(query, None)
+        if 'payload' in response_data and 'token' in response_data['payload']:
+            return response_data['payload']['token']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to generate user token.")
+
+    @classmethod
+    def import_users(cls, file_path, create_user, create_group, create_metadata):
+        api = cls.instance()
+        query = '/users/import?createUser=%s&createGroup=%s' % (create_user, create_group)
+        if create_metadata:
+            query = '%s&createMetadata=%s' % (query, ",".join(create_metadata))
+        response_data = api.upload(query, file_path)
+        if 'payload' in response_data:
+            return response_data['payload']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            return []
+
+    @classmethod
+    def whoami(cls):
+        api = cls.instance()
+        return api.retryable_call('GET', '/whoami') or {}

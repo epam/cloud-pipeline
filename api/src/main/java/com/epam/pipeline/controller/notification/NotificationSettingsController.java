@@ -21,7 +21,7 @@ import java.util.List;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.notification.NotificationSettings;
-import com.epam.pipeline.manager.notification.NotificationSettingsApiService;
+import com.epam.pipeline.acl.notification.NotificationSettingsApiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

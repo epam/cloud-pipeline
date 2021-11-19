@@ -1,0 +1,44 @@
+task build(type: Exec) {
+    group = 'build'
+    doFirst {
+        setGRVersion()
+    }
+    commandLine 'python', "$project.rootDir/git-reader/setup.py", 'sdist'
+    doLast {
+        cleanGRVersion()
+        delete("$project.rootDir/api/src/main/resources/static/gitreader.tar.gz")
+        copy {
+            from "$project.rootDir/git-reader/dist/gitreader-${version}.tar.gz"
+            into "$project.rootDir/api/src/main/resources/static/"
+            rename { String fileName ->
+                fileName.replace("gitreader-${version}", "gitreader")
+            }
+        }
+        copy {
+            from "$project.rootDir/git-reader/dist/gitreader-${version}.tar.gz"
+            into "$project.rootDir/git-reader/dist/"
+            rename { String fileName ->
+                fileName.replace("gitreader-${version}", "gitreader")
+            }
+        }
+    }
+}
+
+def setGRVersion() {
+    copy {
+        from('gitreader/version.py')
+        into('temp')
+    }
+    def proj = file('gitreader/version.py')
+    def text = proj.getText("UTF-8")
+    text = text.replaceAll(/(__version__='.+')/, "__version__=\'$version\'")
+    proj.write(text, "UTF-8")
+}
+
+def cleanGRVersion() {
+    copy {
+        from('temp/version.py')
+        into('gitreader')
+    }
+    delete("temp")
+}

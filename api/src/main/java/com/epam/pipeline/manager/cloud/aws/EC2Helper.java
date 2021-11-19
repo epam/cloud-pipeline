@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,14 @@ import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
+import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesRequest;
+import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesResult;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
 import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.EbsInstanceBlockDevice;
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
@@ -35,6 +39,7 @@ import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.NetworkInterface;
 import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
@@ -50,6 +55,8 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -59,6 +66,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,14 +102,25 @@ public class EC2Helper {
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
 
-    public AmazonEC2 getEC2Client(String awsRegion) {
-        AmazonEC2ClientBuilder builder = AmazonEC2ClientBuilder.standard();
-        builder.setRegion(awsRegion);
-        return builder.build();
+    public AmazonEC2 getEC2Client(final AwsRegion awsRegion) {
+        return AmazonEC2ClientBuilder
+                .standard()
+                .withCredentials(AWSUtils.getCredentialsProvider(awsRegion))
+                .withRegion(awsRegion.getRegionCode())
+                .build();
+    }
+
+    public Optional<NetworkInterface> getNetworkInterface(final String interfaceId, final AwsRegion region) {
+        final DescribeNetworkInterfacesResult result = getEC2Client(region).describeNetworkInterfaces(
+                new DescribeNetworkInterfacesRequest().withNetworkInterfaceIds(interfaceId));
+        return ListUtils.emptyIfNull(result.getNetworkInterfaces())
+                .stream()
+                .filter(networkInterface -> interfaceId.equals(networkInterface.getNetworkInterfaceId()))
+                .findFirst();
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {
-        AmazonEC2 client = getEC2Client(region.getRegionCode());
+        AmazonEC2 client = getEC2Client(region);
         Collection<String> availabilityZones = getAvailabilityZones(client, region.getRegionCode());
         if (CollectionUtils.isEmpty(availabilityZones)) {
             LOGGER.debug("Failed to find availability zones;");
@@ -126,7 +145,7 @@ public class EC2Helper {
                 .orElse(0.0);
     }
 
-    public void stopInstance(String instanceId, String awsRegion) {
+    public void stopInstance(String instanceId, AwsRegion awsRegion) {
         AmazonEC2 client = getEC2Client(awsRegion);
         StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instanceId);
         client.stopInstances(stopInstancesRequest);
@@ -134,7 +153,7 @@ public class EC2Helper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
-    public void terminateInstance(String instanceId, String awsRegion) {
+    public void terminateInstance(String instanceId, AwsRegion awsRegion) {
         AmazonEC2 client = getEC2Client(awsRegion);
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest()
                 .withInstanceIds(instanceId);
@@ -143,7 +162,7 @@ public class EC2Helper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
-    public CloudInstanceOperationResult startInstance(String instanceId, String awsRegion) {
+    public CloudInstanceOperationResult startInstance(String instanceId, AwsRegion awsRegion) {
         try {
             AmazonEC2 client = getEC2Client(awsRegion);
             StartInstancesRequest startInstancesRequest = new StartInstancesRequest().withInstanceIds(instanceId);
@@ -163,7 +182,7 @@ public class EC2Helper {
         );
     }
 
-    public Optional<StateReason> getInstanceStateReason(String instanceId, String awsRegion) {
+    public Optional<StateReason> getInstanceStateReason(String instanceId, AwsRegion awsRegion) {
         try {
             return ListUtils.emptyIfNull(
                     getEC2Client(awsRegion)
@@ -194,7 +213,7 @@ public class EC2Helper {
      * @param awsRegion Instance aws region.
      * @return Instance launch time in UTC.
      */
-    public LocalDateTime getInstanceLaunchTime(final String runId, final String awsRegion) {
+    public LocalDateTime getInstanceLaunchTime(final String runId, final AwsRegion awsRegion) {
         final Instance instance = getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId));
         final Date launchTime = instance.getLaunchTime();
         return LocalDateTime.ofInstant(launchTime.toInstant(), UTC);
@@ -207,7 +226,7 @@ public class EC2Helper {
      * @param awsRegion Instance aws region.
      * @return Required instance.
      */
-    public Instance getActiveInstance(final String runId, final String awsRegion) {
+    public Instance getActiveInstance(final String runId, final AwsRegion awsRegion) {
         return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
                 new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE));
     }
@@ -219,13 +238,13 @@ public class EC2Helper {
      * @param awsRegion Instance aws region.
      * @return Required instance.
      */
-    public Instance getAliveInstance(final String runId, final String awsRegion) {
+    public Instance getAliveInstance(final String runId, final AwsRegion awsRegion) {
         return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
                 new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE,
                         STOPPING_STATE, STOPPED_STATE));
     }
 
-    private Instance getInstance(final String runId, final String awsRegion, final Filter... filters) {
+    private Instance getInstance(final String runId, final AwsRegion awsRegion, final Filter... filters) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final List<Reservation> reservations = client.describeInstances(new DescribeInstancesRequest()
                 .withFilters(filters))
@@ -243,7 +262,7 @@ public class EC2Helper {
         return instances.get(0);
     }
 
-    public Optional<Instance> findInstance(final String instanceId, final String awsRegion) {
+    public Optional<Instance> findInstance(final String instanceId, final AwsRegion awsRegion) {
         return getEC2Client(awsRegion)
                 .describeInstances(new DescribeInstancesRequest()
                         .withInstanceIds(instanceId)
@@ -258,12 +277,28 @@ public class EC2Helper {
                 .findFirst();
     }
 
-    public void createAndAttachVolume(final String runId, final Long size, final String awsRegion) {
+    public InstanceImage getInstanceImageDescription(final AwsRegion awsRegion, final String instanceImage) {
+        return getEC2Client(awsRegion)
+            .describeImages(new DescribeImagesRequest().withImageIds(Collections.singletonList(instanceImage)))
+            .getImages()
+            .stream()
+            .findFirst()
+            .map(awsImage -> InstanceImage.builder()
+                .imageId(awsImage.getImageId())
+                .name(awsImage.getName())
+                .platform(awsImage.getPlatform())
+                .build())
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_IMAGE_NOT_FOUND, instanceImage, awsRegion)));
+    }
+
+    public void createAndAttachVolume(final String runId, final Long size,
+                                      final AwsRegion awsRegion, final String kmsKeyArn) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
         final String device = getVacantDeviceName(instance);
         final String zone = getAvailabilityZone(instance);
-        final Volume volume = createVolume(client, size, zone);
+        final Volume volume = createVolume(client, size, zone, kmsKeyArn);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
     }
@@ -305,12 +340,16 @@ public class EC2Helper {
                         "has no associated availability zone", instance.getInstanceId())));
     }
 
-    private Volume createVolume(final AmazonEC2 client, final Long size, final String zone) {
-        final Volume volume = client.createVolume(new CreateVolumeRequest()
+    private Volume createVolume(final AmazonEC2 client, final Long size, final String zone, final String kmsKeyArn) {
+        final CreateVolumeRequest request = new CreateVolumeRequest()
                 .withVolumeType(VolumeType.Gp2)
                 .withSize(size.intValue())
-                .withAvailabilityZone(zone))
-                .getVolume();
+                .withAvailabilityZone(zone);
+        if (StringUtils.isNotBlank(kmsKeyArn)) {
+            request.setEncrypted(true);
+            request.setKmsKeyId(kmsKeyArn);
+        }
+        final Volume volume = client.createVolume(request).getVolume();
         final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeAvailable();
         waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volume.getVolumeId())));
         return volume;
@@ -350,6 +389,31 @@ public class EC2Helper {
     private void deleteVolume(final AmazonEC2 client, final String volumeId) {
         client.deleteVolume(new DeleteVolumeRequest()
                 .withVolumeId(volumeId));
+    }
+
+    public List<InstanceDisk> loadAttachedVolumes(final String runId, final AwsRegion awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+        return attachedVolumes(client, instance).map(this::toDisk).collect(Collectors.toList());
+    }
+
+    private Stream<Volume> attachedVolumes(final AmazonEC2 client, final Instance instance) {
+        return volumes(client, getVolumeIds(instance));
+    }
+
+    private Stream<Volume> volumes(final AmazonEC2 client, final List<String> volumeIds) {
+        return client.describeVolumes(new DescribeVolumesRequest(volumeIds)).getVolumes().stream();
+    }
+
+    private List<String> getVolumeIds(final Instance instance) {
+        return CollectionUtils.emptyIfNull(instance.getBlockDeviceMappings()).stream()
+                .map(InstanceBlockDeviceMapping::getEbs)
+                .map(EbsInstanceBlockDevice::getVolumeId)
+                .collect(Collectors.toList());
+    }
+
+    private InstanceDisk toDisk(final Volume volume) {
+        return new InstanceDisk(volume.getSize().longValue());
     }
 
     private double getMeanValue(List<SpotPrice> value) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
@@ -27,15 +27,18 @@ import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
+import VSActions from '../../../versioned-storages/vs-actions';
+import {openReRunForm} from '../../../runs/actions';
 import roleModel from '../../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
+@inject('pipelines', 'multiZoneManager')
+@VSActions.check
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     panelKey: PropTypes.string,
     completedRuns: PropTypes.object,
@@ -105,7 +108,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
   };
 
   reRun = (run) => {
-    this.props.router.push(`/launch/${run.id}`);
+    return openReRunForm(run, this.props);
   };
 
   renderContent = () => {
@@ -116,40 +119,45 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
       content = <Alert type="warning" message={this.props.completedRuns.error} />;
     } else {
       content = [
-        <CardsPanel
-          key="runs"
-          panelKey={this.props.panelKey}
-          cardClassName={styles.runCard}
-          onClick={this.navigateToRun}
-          emptyMessage="There are no completed runs yet."
-          actions={
-            getRunActions({
-              pause: run => this.confirm(
-                `Are you sure you want to pause run ${run.podId}?`,
-                'PAUSE',
-                () => this.pauseRun(run)
-              ),
-              resume: run => this.confirm(
-                `Are you sure you want to resume run ${run.podId}?`,
-                'RESUME',
-                () => this.resumeRun(run)
-              ),
-              stop: run => this.confirm(
-                `Are you sure you want to stop run ${run.podId}?`,
-                'STOP',
-                () => this.stopRun(run)
-              ),
-              run: this.reRun
-            })
-          }
-          style={{flex: 1}}
-          childRenderer={renderRunCard}>
-          {
-            this.props.completedRuns.loaded
-              ? (this.props.completedRuns.value || []).map(r => r).filter(r => ['SUCCESS', 'STOPPED', 'FAILURE'].indexOf(r.status) >= 0)
-              : []
-          }
-        </CardsPanel>,
+        <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
+          <CardsPanel
+            key="runs"
+            panelKey={this.props.panelKey}
+            cardClassName={styles.runCard}
+            onClick={this.navigateToRun}
+            emptyMessage="There are no completed runs yet."
+            actions={
+              getRunActions(
+                this.props,
+                {
+                  pause: run => this.confirm(
+                    `Are you sure you want to pause run ${run.podId}?`,
+                    'PAUSE',
+                    () => this.pauseRun(run)
+                  ),
+                  resume: run => this.confirm(
+                    `Are you sure you want to resume run ${run.podId}?`,
+                    'RESUME',
+                    () => this.resumeRun(run)
+                  ),
+                  stop: run => this.confirm(
+                    `Are you sure you want to stop run ${run.podId}?`,
+                    'STOP',
+                    () => this.stopRun(run)
+                  ),
+                  run: this.reRun
+                })
+            }
+            childRenderer={renderRunCard}>
+            {
+              this.props.completedRuns.loaded
+                ? (this.props.completedRuns.value || [])
+                  .map(r => r)
+                  .filter(r => ['SUCCESS', 'STOPPED', 'FAILURE'].indexOf(r.status) >= 0)
+                : []
+            }
+          </CardsPanel>
+        </Row>,
         <Row
           key="explore other"
           type="flex"

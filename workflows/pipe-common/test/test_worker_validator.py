@@ -59,7 +59,7 @@ def test_stopping_invalid_worker_pipeline():
 
 
 def test_force_killing_invalid_host_jobs():
-    jobs = [GridEngineJob(id=1, name='', user='', state='', datetime='', host=HOST2)]
+    jobs = [GridEngineJob(id=1, name='', user='', state='', datetime='', hosts=[HOST2])]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
 
     worker_validator.validate_hosts()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,17 @@ import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -36,6 +39,7 @@ import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -43,6 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
@@ -66,8 +71,15 @@ import java.util.Map;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ResourceMonitoringManagerTest {
     private static final long TEST_OK_RUN_ID = 1;
     private static final double TEST_OK_RUN_CPU_LOAD = 800.0;
@@ -96,7 +108,9 @@ public class ResourceMonitoringManagerTest {
         Collections.singletonMap(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
     private static final Map<String, String> PRESSURE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
+    private static final String PLATFORM = "linux";
 
+    @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
 
     @Mock
@@ -115,6 +129,10 @@ public class ResourceMonitoringManagerTest {
     private MessageHelper messageHelper;
     @Mock
     private AuthManager authManager;
+    @Mock
+    private StopServerlessRunManager stopServerlessRunManager;
+    @Mock
+    private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -122,6 +140,8 @@ public class ResourceMonitoringManagerTest {
     ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyIdleCaptor;
     @Captor
     ArgumentCaptor<List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>>> runsToNotifyResConsumingCaptor;
+    @Captor
+    ArgumentCaptor<List<PipelineRun>> runsToUpdateTagsCaptor;
 
     private InstanceType testType;
     private PipelineRun okayRun;
@@ -131,18 +151,23 @@ public class ResourceMonitoringManagerTest {
     private PipelineRun highConsumingRun;
     private PipelineRun autoscaleMasterRun;
 
-
     private Map<String, Double> mockStats;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        resourceMonitoringManager = new ResourceMonitoringManager(pipelineRunManager, preferenceManager,
-                                                                  notificationManager, instanceOfferManager,
-                                                                  monitoringESDao, taskScheduler, messageHelper);
+        ResourceMonitoringManager.ResourceMonitoringManagerCore core =
+            new ResourceMonitoringManager.ResourceMonitoringManagerCore(pipelineRunManager,
+                                                                        pipelineRunDockerOperationManager,
+                                                                        notificationManager,
+                                                                        monitoringESDao,
+                                                                        messageHelper,
+                                                                        preferenceManager,
+                                                                        stopServerlessRunManager);
+        resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
-
+        Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(resourceMonitoringManager, "scheduler", taskScheduler);
         when(preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(Observable.empty());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
@@ -160,6 +185,11 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
+                .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
+                .thenReturn(LongPausedRunAction.NOTIFY.name());
+        when(stopServerlessRunManager.loadActiveServerlessRuns()).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");
@@ -177,7 +207,7 @@ public class ResourceMonitoringManagerTest {
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(mockSubject);
 
         RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "spotNode", true, null, null);
+                null, null, "spotNode", PLATFORM, true, null, null, null);
         final Map <String, String> stubTagMap = new HashMap<>();
         okayRun = new PipelineRun();
         okayRun.setInstance(spotInstance);
@@ -191,7 +221,7 @@ public class ResourceMonitoringManagerTest {
 
         idleSpotRun = new PipelineRun();
         idleSpotRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "idleSpotNode", true, null, null));
+                null, null, "idleSpotNode", PLATFORM, true, null, null, null));
         idleSpotRun.setPodId("idle-spot");
         idleSpotRun.setId(TEST_IDLE_SPOT_RUN_ID);
         idleSpotRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
@@ -202,19 +232,22 @@ public class ResourceMonitoringManagerTest {
 
         autoscaleMasterRun = new PipelineRun();
         autoscaleMasterRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "autoscaleMasterRun", false, null, null));
+                null, null, "autoscaleMasterRun", PLATFORM, false, null, null, null));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
-        autoscaleMasterRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
-                .toEpochMilli()));
+        autoscaleMasterRun
+            .setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
+                                       .toEpochMilli()));
         autoscaleMasterRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
         autoscaleMasterRun.setTags(stubTagMap);
-        autoscaleMasterRun.setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
+        autoscaleMasterRun
+            .setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
 
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
-                new RunInstance(testType.getName(), 0, 0, null, null, null, "idleNode", false, null, null));
+                new RunInstance(testType.getName(), 0, 0, null, null, null, 
+                        "idleNode", PLATFORM, false, null, null, null));
         idleOnDemandRun.setPodId("idle-on-demand");
         idleOnDemandRun.setId(TEST_IDLE_ON_DEMAND_RUN_ID);
         idleOnDemandRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -225,7 +258,8 @@ public class ResourceMonitoringManagerTest {
 
         idleRunToProlong = new PipelineRun();
         idleRunToProlong.setInstance(
-                new RunInstance(testType.getName(), 0, 0, null, null, null, "prolongedNode", false, null, null));
+                new RunInstance(testType.getName(), 0, 0, null, null, null, 
+                        "prolongedNode", PLATFORM, false, null, null, null));
         idleRunToProlong.setPodId("idle-to-prolong");
         idleRunToProlong.setId(TEST_IDLE_RUN_TO_PROLONG_ID);
         idleRunToProlong.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -236,7 +270,7 @@ public class ResourceMonitoringManagerTest {
 
         highConsumingRun = new PipelineRun();
         highConsumingRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "highConsumingNode", true, null, null));
+                null, null, "highConsumingNode", PLATFORM, true, null, null, null));
         highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
         highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
         highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
@@ -245,11 +279,11 @@ public class ResourceMonitoringManagerTest {
         highConsumingRun.setTags(stubTagMap);
 
         mockStats = new HashMap<>();
-        mockStats.put(okayRun.getPodId(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
-                                                                    // should be = 40% load
-        mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
-        mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
-        mockStats.put(autoscaleMasterRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
+        // in milicores, equals 80% of core load, per 2 cores, should be = 40% load
+        mockStats.put(okayRun.getInstance().getNodeName(), TEST_OK_RUN_CPU_LOAD);
+        mockStats.put(idleSpotRun.getInstance().getNodeName(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
+        mockStats.put(idleOnDemandRun.getInstance().getNodeName(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
+        mockStats.put(autoscaleMasterRun.getInstance().getNodeName(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(mockStats);
@@ -262,7 +296,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.init();
 
         verify(taskScheduler).scheduleWithFixedDelay(any(), eq(TEST_RESOURCE_MONITORING_DELAY.longValue()));
-        Assert.assertNotNull(Whitebox.getInternalState(resourceMonitoringManager, "instanceTypeMap"));
+        Assert.assertNotNull(Whitebox.getInternalState(core, "instanceTypeMap"));
     }
 
     @Test
@@ -287,7 +321,7 @@ public class ResourceMonitoringManagerTest {
         Assert.assertEquals(2, runsToNotify.size());
         Assert.assertTrue(runsToNotify.stream().anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
         Assert.assertEquals(
-            mockStats.get(idleSpotRun.getPodId()) / MILICORES_TO_CORES / testType.getVCPU(),
+            mockStats.get(idleSpotRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId()))
                 .findFirst().get().getRight(),
@@ -296,7 +330,7 @@ public class ResourceMonitoringManagerTest {
         Assert.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId())));
         Assert.assertEquals(
-            mockStats.get(idleOnDemandRun.getPodId()) / MILICORES_TO_CORES / testType.getVCPU(),
+            mockStats.get(idleOnDemandRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId()))
                 .findFirst().get().getRight(),
@@ -311,7 +345,8 @@ public class ResourceMonitoringManagerTest {
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class)))
-                .thenReturn(Collections.singletonMap(idleRunToProlong.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
+                .thenReturn(Collections.singletonMap(idleRunToProlong.getInstance().getNodeName(), 
+                        TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
 
@@ -433,8 +468,8 @@ public class ResourceMonitoringManagerTest {
                               .get()
                               .getLastIdleNotificationTime());
 
-        verify(pipelineRunManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
-        verify(pipelineRunManager, never()).pauseRun(TEST_OK_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(1, runsToNotify.size());
@@ -455,8 +490,7 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
         // but pause run wasn't called
-        verify(pipelineRunManager, never()).pauseRun(TEST_AUTOSCALE_RUN_ID, true);
-
+        verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_AUTOSCALE_RUN_ID, true);
     }
 
     @Test
@@ -483,10 +517,10 @@ public class ResourceMonitoringManagerTest {
                               .get()
                               .getLastIdleNotificationTime());
 
-        verify(pipelineRunManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
         verify(pipelineRunManager).stop(TEST_IDLE_SPOT_RUN_ID);
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
-        verify(pipelineRunManager, never()).pauseRun(TEST_OK_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
         Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
     }
@@ -522,7 +556,7 @@ public class ResourceMonitoringManagerTest {
             .thenReturn(IdleRunAction.STOP.name());
 
         mockAlreadyNotifiedRuns();
-        mockStats.put(idleSpotRun.getPodId(), NON_IDLE_CPU_LOAD); // mock not idle anymore
+        mockStats.put(idleSpotRun.getInstance().getNodeName(), NON_IDLE_CPU_LOAD); // mock not idle anymore
 
         Thread.sleep(10);
         idleSpotRun.setTags(new HashMap<>());
@@ -548,7 +582,7 @@ public class ResourceMonitoringManagerTest {
     @Test
     public void testNoActionIfActionTimeoutIsNotFulfilled() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.NOTIFY.name());
+            .thenReturn(IdleRunAction.STOP.name());
 
         LocalDateTime now = DateUtils.nowUTC();
         idleOnDemandRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
@@ -561,14 +595,23 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        // checks notifications were sent
+        verify(notificationManager, atLeastOnce())
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
-        Assert.assertEquals(0, updatedRuns.size());
+        // checks runs were not updated
+        verify(pipelineRunManager, atLeastOnce()).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(0, runsToNotify.size());
+        verify(pipelineRunManager, atLeastOnce()).updateRunsTags(runsToUpdateTagsCaptor.capture());
+        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
+
+        // checks stop action is not performed
+        verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
+        verify(pipelineRunManager, never()).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
+        verify(pipelineRunManager, never()).stop(TEST_IDLE_SPOT_RUN_ID);
+
+        verify(notificationManager, never()).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
     }
 
     @Test
@@ -630,7 +673,7 @@ public class ResourceMonitoringManagerTest {
         verifyZeroInteractionWithTagsMethods(spyIdledRun, UTILIZATION_LEVEL_LOW);
         verifyZeroInteractionWithTagsMethods(spyPressuredRun, UTILIZATION_LEVEL_HIGH);
     }
-    
+
     private void setTagsAndLastNotificationTimeOfRun(final PipelineRun run, final Map<String, String> tags,
                                                      final LocalDateTime lastNotificationTime) {
         run.setTags(new HashMap<>(tags));

@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
@@ -36,6 +37,9 @@ public class RunScheduleJob implements Job {
     private PipelineRunManager pipelineRunManager;
 
     @Autowired
+    private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @Autowired
     private MessageHelper messageHelper;
 
     @Override
@@ -50,9 +54,9 @@ public class RunScheduleJob implements Job {
         Assert.notNull(pipelineRun,
                        messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, pipelineRun.getName()));
         if (action.equals(RunScheduledAction.RESUME.name())) {
-            pipelineRunManager.resumeRun(runId);
+            pipelineRunDockerOperationManager.resumeRun(runId);
         } else if (action.equals(RunScheduledAction.PAUSE.name())) {
-            pipelineRunManager.pauseRun(runId, true);
+            pipelineRunDockerOperationManager.pauseRun(runId, true);
         }
 
         log.debug("Next job scheduled " + context.getNextFireTime());

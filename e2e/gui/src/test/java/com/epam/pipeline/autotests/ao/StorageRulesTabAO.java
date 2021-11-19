@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,9 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
             entry(DELETE, $$(tagName("a")).findBy(text("Delete"))),
             entry(ADD_NEW_RULE, $$(tagName("button")).findBy(text("Add new rule")))
     );
-    private final String pipelineName;
 
     public StorageRulesTabAO(String pipelineName) {
         super(pipelineName);
-        this.pipelineName = pipelineName;
     }
 
     @Override
@@ -64,7 +62,7 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
 
     public StorageRulesTabAO addNewStorageRule(String fileMaskString) {
         return openAddNewStorageDialog()
-                .pipelineNameShouldBe(pipelineName)
+                .pipelineNameShouldBe(this.getPipelineName())
                 .setFileMask(fileMaskString)
                 .enableMoveToSTS()
                 .ok();

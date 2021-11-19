@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,20 @@
 from time import sleep
 
 import click
+import json
 import sys
-import requests
 from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
 from src.api.tool import Tool
+from src.api.user import User
 from src.model.pipeline_run_model import PriceType
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
 from src.utilities.cluster_manager import ClusterManager
+from src.utilities.user_token_operations import UserTokenOperations
 
 from src.api.pipeline import Pipeline
-from src.config import ConfigNotFoundError
 
 DELAY = 30
 
@@ -38,31 +39,30 @@ class PipelineRunOperations(object):
     def stop(cls, run_id, yes):
         if not yes:
             click.confirm('Are you sure you want to stop run {}?'.format(run_id), abort=True)
-        try:
-            pipeline_run_model = Pipeline.stop_pipeline(run_id)
-            pipeline_name = pipeline_run_model.pipeline
-            if not pipeline_name:
-                try:
-                    pipeline_model = Pipeline.get(pipeline_run_model.pipeline_id, load_versions=False,
-                                                  load_storage_rules=False, load_run_parameters=False)
-                    pipeline_name = pipeline_model.name
-                except RuntimeError:
-                    pass
-            click.echo('RunID {} of "{}@{}" stopped'.format(run_id, pipeline_name, pipeline_run_model.version))
-
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        pipeline_run_model = Pipeline.stop_pipeline(run_id)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        click.echo('RunID {} of "{}" stopped'.format(
+            run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))
 
     @classmethod
     def run(cls, pipeline, config, parameters, yes, run_params, instance_disk, instance_type, docker_image,
             cmd_template, timeout, quiet, instance_count, cores, sync, price_type=None, region_id=None,
-            parent_node=None, non_pause=None):
+            parent_node=None, non_pause=None, friendly_url=None,
+            status_notifications=False,
+            status_notifications_status=None, status_notifications_recipient=None,
+            status_notifications_subject=None, status_notifications_body=None,
+            run_as_user=None):
+
+        if run_as_user:
+            user = User.whoami()
+            user_groups = user.get('groups', [])
+            user_roles = [role.get('name') for role in user.get('roles', [])]
+            # Preserving old style impersonation for admin users. Specified user token is generated and used
+            # for impersonation rather than run as capability which is used for non-admin users.
+            if 'ROLE_ADMIN' in (user_groups + user_roles):
+                UserTokenOperations().set_user_token(run_as_user)
+                run_as_user = None
+
         # All pipeline run parameters can be specified as options, e.g. --read1 /path/to/reads.fastq
         # In this case - runs_params_dict will contain keys-values for each option, e.g. {'--read1': '/path/to/reads.fastq'}
         # So they can be addressed with run_params_dict['--read1']
@@ -88,6 +88,9 @@ class PipelineRunOperations(object):
             else:
                 instance_count = None
             instance_type = nodes_spec["name"]
+
+        if friendly_url:
+            friendly_url = cls._build_pretty_url(friendly_url)
 
         try:
             if not pipeline and docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk,
@@ -190,11 +193,19 @@ class PipelineRunOperations(object):
                                                                       price_type=price_type,
                                                                       region_id=region_id,
                                                                       parent_node=parent_node,
-                                                                      non_pause=non_pause)
+                                                                      non_pause=non_pause,
+                                                                      friendly_url=friendly_url,
+                                                                      status_notifications=status_notifications,
+                                                                      status_notifications_status=status_notifications_status,
+                                                                      status_notifications_recipient=status_notifications_recipient,
+                                                                      status_notifications_subject=status_notifications_subject,
+                                                                      status_notifications_body=status_notifications_body,
+                                                                      run_as_user=run_as_user)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
-                            click.echo('"{}@{}" pipeline run scheduled with RunId: {}'
-                                       .format(pipeline_model.name, pipeline_run_parameters.version, pipeline_run_id))
+                            click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
+                                cls.build_image_name(pipeline_model.name, pipeline_run_parameters.version),
+                                pipeline_run_id))
                             if sync:
                                 pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
                                 click.echo('Pipeline run {} completed with status {}'
@@ -242,7 +253,14 @@ class PipelineRunOperations(object):
                                                              price_type=price_type,
                                                              region_id=region_id,
                                                              parent_node=parent_node,
-                                                             non_pause=non_pause)
+                                                             non_pause=non_pause,
+                                                             friendly_url=friendly_url,
+                                                             status_notifications=status_notifications,
+                                                             status_notifications_status=status_notifications_status,
+                                                             status_notifications_recipient=status_notifications_recipient,
+                                                             status_notifications_subject=status_notifications_subject,
+                                                             status_notifications_body=status_notifications_body,
+                                                             run_as_user=run_as_user)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))
@@ -262,28 +280,36 @@ class PipelineRunOperations(object):
 
         except click.exceptions.Abort:
             sys.exit(0)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-            if quiet:
-                sys.exit(2)
-        except requests.exceptions.RequestException as http_error:
-            if not quiet:
-                click.echo('Http error: {}'.format(str(http_error)), err=True)
+
+    @classmethod
+    def resume(cls, run_id, sync):
+        pipeline_run_model = Pipeline.resume_pipeline(run_id)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        pipeline_version = pipeline_run_model.version
+        image_name = cls.build_image_name(pipeline_name, pipeline_version)
+        click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
+        if sync:
+            status = cls.get_resuming_pipeline_status(run_id)
+            if status == 'RUNNING':
+                click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
+                sys.exit(1)
             else:
-                click.echo(str(http_error), err=True)
-                sys.exit(2)
-        except RuntimeError as runtime_error:
-            if not quiet:
-                click.echo('Error: {}'.format(str(runtime_error)), err=True)
+                click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
+
+    @classmethod
+    def pause(cls, run_id, check_size, sync):
+        pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        pipeline_version = pipeline_run_model.version
+        image_name = cls.build_image_name(pipeline_name, pipeline_version)
+        click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
+        if sync:
+            status = cls.get_pausing_pipeline_status(run_id)
+            if status == 'PAUSED':
+                click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
+                sys.exit(1)
             else:
-                click.echo(str(runtime_error), err=True)
-                sys.exit(2)
-        except ValueError as value_error:
-            if not quiet:
-                click.echo('Error: {}'.format(str(value_error)), err=True)
-            else:
-                click.echo(str(value_error), err=True)
-                sys.exit(2)
+                click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
 
     @staticmethod
     @wait_for_server_enabling_if_needed()
@@ -292,7 +318,8 @@ class PipelineRunOperations(object):
 
     @staticmethod
     def print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters):
-        click.echo('"{}@{}" pipeline arguments:'.format(pipeline_model.name, pipeline_run_parameters.version))
+        click.echo('"{}" pipeline arguments:'.format(
+            PipelineRunOperations.build_image_name(pipeline_model.name, pipeline_run_parameters.version)))
         if len(pipeline_run_parameters.parameters) > 0:
             for parameter in pipeline_run_parameters.parameters:
                 if parameter.required:
@@ -307,8 +334,20 @@ class PipelineRunOperations(object):
 
     @classmethod
     def get_pipeline_processed_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['SCHEDULED', 'RUNNING'])
+
+    @classmethod
+    def get_resuming_pipeline_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['PAUSED', 'RESUMING'])
+
+    @classmethod
+    def get_pausing_pipeline_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['RUNNING', 'PAUSING'])
+
+    @classmethod
+    def get_pipeline_status(cls, identifier, hanging_statuses):
         status = cls.pipeline_run_get(identifier).status
-        while status.upper() == 'SCHEDULED' or status.upper() == 'RUNNING':
+        while status.upper() in hanging_statuses:
             sleep(DELAY)
             status = cls.pipeline_run_get(identifier).status
         return status
@@ -353,3 +392,41 @@ class PipelineRunOperations(object):
     @staticmethod
     def required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
         return parent_node is None and (instance_type is None or instance_disk is None or cmd_template is None)
+
+    @staticmethod
+    def build_image_name(name, version):
+        if not name:
+            return '<unknown>'
+        elif not version:
+            return name
+        else:
+            return '{}@{}'.format(name, version)
+
+    @classmethod
+    def _build_pretty_url(cls, pretty_url):
+        path = str(pretty_url).strip('/')
+        try:
+            json.loads(path)
+            return path
+        except ValueError:
+            pass
+
+        parts = path.split('/')
+        if len(parts) > 2:
+            click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
+            sys.exit(1)
+        if len(parts) == 1:
+            return '{"path":"%s"}' % parts[0]
+        return '{"domain":"%s","path":"%s"}' % (parts[0], parts[1])
+
+    @classmethod
+    def extract_pipeline_name(cls, pipeline_run_model):
+        pipeline_name = pipeline_run_model.pipeline
+        if not pipeline_name:
+            try:
+                pipeline_model = Pipeline.get(pipeline_run_model.pipeline_id, load_versions=False,
+                                              load_storage_rules=False, load_run_parameters=False)
+                pipeline_name = pipeline_model.name
+            except RuntimeError:
+                pass
+        return pipeline_name

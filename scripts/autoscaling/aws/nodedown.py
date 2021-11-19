@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,12 @@
 import boto3
 import argparse
 import pykube
+import time
 
 RUN_ID_LABEL = 'runid'
 AWS_REGION_LABEL = 'aws_region'
 CLOUD_REGION_LABEL = 'cloud_region'
-
+AWS_TERMINATION_ATTEMPTS = 3
 
 
 def find_instance(ec2, run_id):
@@ -38,6 +39,10 @@ def find_instance(ec2, run_id):
         ins_id = None
     return ins_id
 
+def terminate_instance(ec2, run_id, ins_id):
+    ec2.terminate_instances(InstanceIds=[ins_id])
+    terminated_instance_id = find_instance(ec2, run_id)
+    return terminated_instance_id == None
 
 def run_id_filter(run_id):
     return {
@@ -109,7 +114,6 @@ def get_kube_api():
     api.session.verify = False
     return api
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", "-kid", type=str, required=True)
@@ -132,8 +136,17 @@ def main():
             nodename = None
 
         delete_kube_node(nodename, run_id, api)
-        ec2.terminate_instances(InstanceIds=[ins_id])
-
+        termination_attempts = 1
+        is_terminated = False
+        while termination_attempts <= AWS_TERMINATION_ATTEMPTS:
+            is_terminated = terminate_instance(ec2, run_id, ins_id)
+            if is_terminated:
+                break
+            else:
+                time.sleep(1)
+            termination_attempts+=1
+        if not is_terminated:
+            raise RuntimeError("Unable to terminate {} after {} attempts".format(ins_id, termination_attempts))
 
 if __name__ == '__main__':
     main()

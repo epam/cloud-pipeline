@@ -11,6 +11,7 @@ pytest==3.2.5
 pytest-cov==2.5.1
 boto3==1.6.9
 botocore==1.9.9
+s3transfer==0.1.13
 future
 PyJWT==1.6.1
 tld==0.10
@@ -19,10 +20,15 @@ beautifulsoup4==4.6.1
 azure-storage-blob==1.5.0
 google-resumable-media==0.3.2
 google-cloud-storage==1.15.0
+protobuf==3.17.3
 paramiko==2.6.0
+scp==0.13.3
 pyasn1-modules==0.2.4
 pyasn1==0.4.5
 colorama==0.4.1
 pyopenssl==19.0.0
 setuptools
 treelib==1.5.5
+cryptography==2.9.2
+bcrypt==3.1.7
+psutil==5.7.3

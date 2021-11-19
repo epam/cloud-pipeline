@@ -16,7 +16,7 @@
 
 import Fields from './fields';
 
-function compose (csv, resources) {
+function compose (csv, discounts, exportOptions, resources) {
   return new Promise((resolve, reject) => {
     if (!resources.loaded) {
       reject(new Error('Resources data is not available'));

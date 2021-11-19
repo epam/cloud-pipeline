@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.metadata.parser.MetadataEntityConverter;
@@ -38,6 +39,7 @@ import com.epam.pipeline.manager.metadata.parser.MetadataParsingResult;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +48,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,7 +56,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -82,7 +85,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
     public Map<String, Integer> loadRootMetadataEntities() {
         Map<String, Integer> countEntities = new HashMap<>();
         List<MetadataEntity> entities = metadataEntityDao.loadRootMetadataEntities();
-        entities.forEach(e -> countEntities.merge(e.getClassEntity().getName(), 1, (p, i) -> p + i));
+        entities.forEach(e -> countEntities.merge(e.getClassEntity().getName(), 1, Integer::sum));
         return countEntities;
     }
 
@@ -139,9 +142,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         Assert.notNull(metadataEntityVO.getParentId(),
                 messageHelper.getMessage(MessageConstants.ERROR_PARENT_REQUIRED));
         MetadataEntity metadataEntity = metadataEntityVO.convertToMetadataEntity();
-        if (metadataEntity.getParent() != null) {
-            folderManager.load(metadataEntity.getParent().getId());
-        }
+        folderManager.load(metadataEntity.getParent().getId());
         Long entityId = metadataEntity.getId();
         if (entityId != null) {
             MetadataEntity existingMetadataEntity = existingMetadataItem(entityId, false);
@@ -151,6 +152,16 @@ public class MetadataEntityManager implements SecuredEntityManager {
             }
             LOGGER.debug("Metadata entity with id %d was not found. A new one will be created.", entityId);
         }
+        String externalId = metadataEntity.getExternalId();
+        if (StringUtils.isNotBlank(externalId)) {
+            Optional<MetadataEntity> existingMetadataEntity = metadataEntityDao.loadByExternalId(
+                    metadataEntity.getParent().getId(), metadataEntity.getClassEntity().getName(), externalId);
+            Assert.isTrue(!existingMetadataEntity.isPresent(),
+                    messageHelper.getMessage(MessageConstants.ERROR_METADATA_ENTITY_ALREADY_EXIST, externalId));
+        } else {
+            metadataEntity.setExternalId(UUID.randomUUID().toString());
+        }
+        metadataEntity.setCreatedDate(DateUtils.now());
         metadataEntityDao.createMetadataEntity(metadataEntity);
         return metadataEntity;
     }
@@ -242,7 +253,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteMetadataEntitiesInProject(Long projectId, String entityClassName) {
         Objects.requireNonNull(projectId);
-        if (StringUtils.hasText(entityClassName)) {
+        if (StringUtils.isNotBlank(entityClassName)) {
             MetadataClass metadataClass =  loadClass(entityClassName);
             metadataEntityDao.deleteMetadataClassFromProject(projectId, metadataClass.getId());
         } else {
@@ -307,16 +318,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         Assert.notNull(folderId,
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_METADATA_FILTER, "folderId", folderId));
         folderManager.load(folderId);
-        Collection<MetadataClassDescription> metadataFields =
-                metadataEntityDao.getMetadataFields(folderId);
-        Set<String> presentClasses = metadataFields.stream()
-                .map(c -> c.getMetadataClass().getName())
-                .collect(Collectors.toSet());
-        metadataFields.stream()
-                .map(MetadataClassDescription::getFields)
-                .flatMap(Collection::stream)
-                .forEach(field -> field.setReference(presentClasses.contains(field.getType())));
-        return metadataFields;
+        return metadataEntityDao.getMetadataFields(folderId);
     }
 
     public Set<MetadataEntity> getExistingEntities(Set<String> externalIds, Long folderId, String className) {
@@ -358,7 +360,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         parsedData.getEntities().values().forEach(e -> {
             if (existing.containsKey(e.getExternalId())) {
                 MetadataEntity current = existing.get(e.getExternalId());
-                if (org.apache.commons.lang3.StringUtils.isNotBlank(e.getName())) {
+                if (StringUtils.isNotBlank(e.getName())) {
                     current.setName(e.getName());
                 }
                 current.getData().putAll(e.getData());

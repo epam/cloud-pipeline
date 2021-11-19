@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     private String loadTasksByRunIdQuery;
     private String loadTaskForInstanceQuery;
     private String loadTaskStatusQuery;
-    private String deleteLogsByPipelineQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createRunLog(RunLog runLog) {
@@ -81,11 +80,6 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     public List<PipelineTask> loadTaskByInstance(Long runId, String instance) {
         return getJdbcTemplate().query(loadTaskForInstanceQuery,
                 PipelineLogParameters.getTaskRowMapper(false), runId, instance);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteLogsForPipeline(Long id) {
-        getJdbcTemplate().update(deleteLogsByPipelineQuery, id);
     }
 
     enum PipelineLogParameters {
@@ -195,8 +189,4 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
         this.loadTaskStatusQuery = loadTaskStatusQuery;
     }
 
-    @Required
-    public void setDeleteLogsByPipelineQuery(String deleteLogsByPipelineQuery) {
-        this.deleteLogsByPipelineQuery = deleteLogsByPipelineQuery;
-    }
 }

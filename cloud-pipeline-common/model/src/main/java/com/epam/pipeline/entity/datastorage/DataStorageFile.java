@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ public class DataStorageFile extends AbstractDataStorageItem {
     private String changed;
     private String version;
     private Boolean deleteMarker;
+    private Boolean isHidden = false;
     private Map<String, AbstractDataStorageItem> versions;
 
     public DataStorageFile() {
@@ -49,6 +50,7 @@ public class DataStorageFile extends AbstractDataStorageItem {
         file.setLabels(other.getLabels());
         file.setVersion(other.getVersion());
         file.setDeleteMarker(other.getDeleteMarker());
+        file.setIsHidden(other.getIsHidden());
         return file;
     }
 

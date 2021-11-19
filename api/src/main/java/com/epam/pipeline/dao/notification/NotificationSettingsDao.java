@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.notification;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Required;
@@ -33,8 +34,6 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
 

@@ -25,15 +25,13 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Build environment variables for kubernetes node from {@link SystemParams} and {@link PipelineConfiguration}
- * */
+ */
 public final class EnvVarsBuilder {
 
     private static final String DASH = "-";
@@ -41,62 +39,48 @@ public final class EnvVarsBuilder {
 
     private static final String PARAM_TYPE_POSTFIX = "_PARAM_TYPE";
 
-    private EnvVarsBuilder() {}
+    private EnvVarsBuilder() {
+    }
 
     public static List<EnvVar> buildEnvVars(PipelineRun run, PipelineConfiguration configuration,
-                                     Map<SystemParams, String> sysParams, Map<String, String> externalProperties) {
-        Set<EnvVar> fullEnvVars = new HashSet<>();
+                                            Map<SystemParams, String> sysParams,
+                                            Map<String, String> externalProperties) {
+        Map<String, EnvVar> fullEnvVars = new HashMap<>();
         Map<String, String> envVarsMap = new HashMap<>();
 
-        sysParams
-            .entrySet()
-            .stream()
-            .map(sysParam -> {
-                String name = sysParam.getKey().getEnvName();
-                String value = sysParam.getValue();
-                if (!sysParam.getKey().isSecure()) {
+        MapUtils.emptyIfNull(sysParams)
+                .forEach((key, value) -> {
+                    String name = key.getEnvName();
+                    if (!key.isSecure()) {
+                        envVarsMap.put(name, value);
+                    }
+                    fullEnvVars.put(name, new EnvVar(name, value, null));
+                });
+
+        MapUtils.emptyIfNull(externalProperties)
+                .forEach((key, value) -> {
+                    String name = getBashName(key);
                     envVarsMap.put(name, value);
-                }
-                return new EnvVar(name, value, null);
-            })
-            .forEach(fullEnvVars::add);
+                    fullEnvVars.put(name, new EnvVar(name, value, null));
+                });
 
-        configuration
-            .getParameters()
-            .entrySet()
-            .stream()
-            .map(parameter -> {
-                String name = parameter.getKey();
-                String value = parameter.getValue().getValue();
-                String type = parameter.getValue().getType();
-                return matchParameterToEnvVars(name, value, type, envVarsMap);
-            })
-            .flatMap(Arrays::stream)
-            .forEach(fullEnvVars::add);
+        MapUtils.emptyIfNull(configuration.getParameters())
+                .entrySet()
+                .stream()
+                .map(parameter -> {
+                    String name = parameter.getKey();
+                    String value = parameter.getValue().getValue();
+                    String type = parameter.getValue().getType();
+                    return matchParameterToEnvVars(name, value, type, envVarsMap);
+                })
+                .flatMap(Arrays::stream)
+                .forEach(e -> fullEnvVars.put(e.getName(), e));
 
-        configuration
-            .getEnvironmentParams()
-            .entrySet()
-            .stream()
-            .map(parameter -> {
-                String name = parameter.getKey();
-                String value = parameter.getValue();
-                envVarsMap.put(name, value);
-                return new EnvVar(name, value, null);
-            })
-            .forEach(fullEnvVars::add);
-
-        if (!MapUtils.isEmpty(externalProperties)) {
-            externalProperties
-                    .entrySet()
-                    .stream()
-                    .map(property -> {
-                        String name = getBashName(property.getKey());
-                        envVarsMap.put(name, property.getValue());
-                        return new EnvVar(name, property.getValue(), null);
-                    })
-                    .forEach(fullEnvVars::add);
-        }
+        MapUtils.emptyIfNull(configuration.getEnvironmentParams())
+                .forEach((name, value) -> {
+                    envVarsMap.put(name, value);
+                    fullEnvVars.put(name, new EnvVar(name, value, null));
+                });
 
         run.setEnvVars(MapUtils.emptyIfNull(envVarsMap)
                 .entrySet()
@@ -104,7 +88,7 @@ public final class EnvVarsBuilder {
                 .filter(e -> StringUtils.isNotBlank(e.getKey()))
                 .filter(e -> SystemParams.SECURED_PREFIXES.stream().noneMatch(prefix -> e.getKey().startsWith(prefix)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2)));
-        return new ArrayList<>(fullEnvVars);
+        return new ArrayList<>(fullEnvVars.values());
     }
 
     private static EnvVar[] matchParameterToEnvVars(String name, String value, String type,

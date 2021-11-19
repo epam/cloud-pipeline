@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@ package com.epam.pipeline.security.acl;
 
 public final class AclExpressions {
 
-    private static final String OR = " OR ";
+    public static final String OR = " OR ";
+    public static final String AND = " AND ";
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
+
+    public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
 
     public static final String PIPELINE_ID_READ =
             "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ')";
@@ -53,17 +56,29 @@ public final class AclExpressions {
     public static final String RUN_ID_SSH =
             "hasRole('ADMIN') OR @runPermissionManager.isRunSshAllowed(#runId)";
 
+    public static final String STORAGE_SHARED = "@grantPermissionManager.checkStorageShared(#id)";
+
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_WRITE =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'WRITE')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_OWNER =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
+
+    public static final String STORAGE_ID_PERMISSIONS =
+            "(" 
+                + "hasRole('ADMIN') "
+                    + "OR (" 
+                        + "@grantPermissionManager.storagePermission(#id, 'READ') "
+                        + "AND @grantPermissionManager.storagePermissions(#id, #permissions) "
+                    + ") "
+            + ") "
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";
@@ -72,12 +87,18 @@ public final class AclExpressions {
         "hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
             + " AND hasPermission(#registryId, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'WRITE'))";
 
-    public static final String METADATA_OWNER =
-            "hasRole('ADMIN') OR @grantPermissionManager.hasMetadataOwnerPermission(#metadataVO.entity.entityId, "
-                    + "#metadataVO.entity.entityClass)";
+    public static final String METADATA_OWNER = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.metadataOwnerPermission(#entityVO)";
 
-    public static final String METADATA_ENTRY_OWNER = "hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasMetadataOwnerPermission(#entityVO.entityId, #entityVO.entityClass)";
+    public static final String METADATA_UPDATE = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.editMetadataPermission(#metadataVO)";
+
+    public static final String METADATA_UPDATE_KEY = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.editMetadataPermission(#entityVO, #key)";
+
+    public static final String METADATA_FILTER = ADMIN_ONLY + OR +
+            "@metadataPermissionManager.metadataPermission(" +
+            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')";
 
     public static final String ACL_ENTITY_OWNER =
             "hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#id, #aclClass)";
@@ -92,12 +113,38 @@ public final class AclExpressions {
             "(@grantPermissionManager.issuePermission(#issueId, 'READ'))";
 
     public static final String ENTITY_READ = ADMIN_ONLY + OR +
-            "(@grantPermissionManager.metadataPermission(#entityVO.entityId, #entityVO.entityClass, 'READ'))";
+            "(@metadataPermissionManager.metadataPermission(#entityVO.entityId, #entityVO.entityClass, 'READ'))";
 
-    public static final String ISSUE_CREATE = ADMIN_ONLY + " OR (@grantPermissionManager.metadataPermission(" +
+    public static final String ISSUE_CREATE = ADMIN_ONLY + " OR (@metadataPermissionManager.metadataPermission(" +
             "#issueVO.entity.entityId, #issueVO.entity.entityClass, 'READ'))";
 
-    public static final String DTS_REGISTRY_PERMISSIONS = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
+    public static final String ADMIN_OR_GENERAL_USER = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
+
+    public static final String NODE_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(#name, 'READ')";
+
+    public static final String NODE_READ_FILTER = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(filterObject, 'READ')";
+    
+    public static final String NODE_STOP = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')";
+
+    public static final String TOOL_READ = ADMIN_ONLY + OR +
+            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";
+
+    public static final String TOOL_WRITE = ADMIN_ONLY + OR +
+            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')";
+
+    public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
+            " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
+
+    public static final String DTS_REGISTRY_PERMISSIONS = ADMIN_ONLY + OR + "hasRole('ROLE_DTS_MANAGER')";
+
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST =
+        ADMIN_ONLY + OR + "hasPermission(filterObject, 'READ')";
+
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT =
+        ADMIN_ONLY + OR + "hasPermission(returnObject, 'READ')";
 
     private AclExpressions() {
         // no op

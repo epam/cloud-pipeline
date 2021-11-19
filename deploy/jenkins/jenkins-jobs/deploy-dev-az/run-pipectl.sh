@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ if ! kubectl version &> /dev/null || ! kubectl get po 2>/dev/null | grep -q cp-a
 fi
 
 # Install awscli if not available
-curl -s https://bootstrap.pypa.io/get-pip.py | python - && \
+curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install awscli
 
 # Grab required files from the S3
@@ -48,6 +48,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+#Export docker registry where all containers are stored
+export CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV}
+
 # Grab pipectl binary
 wget -q "$PIPECTL_DIST_URL" -O "${DEPLOY_DIR}/pipectl"
 if [ $? -ne 0 ]; then
@@ -61,6 +64,7 @@ chmod +x "${DEPLOY_DIR}/pipectl"
 # $CP_AZURE_KUBE_MASTER_DOCKER_PATH and $CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH
 # This allows to overcome disk I/O issues with a single drive
 ${DEPLOY_DIR}/pipectl install \
+                      -env CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV} \
                       -env CP_CLUSTER_SSH_KEY="${DOLLAR}{AZURE_SSH_KEY_S3_LOCAL}" \
                       -env CP_CLUSTER_SSH_PUB="${DOLLAR}{AZURE_SSH_PUB_S3_LOCAL}" \
                       -env CP_CLOUD_CREDENTIALS_FILE="${DOLLAR}{AZURE_JSON_S3_LOCAL}" \
@@ -84,6 +88,7 @@ ${DEPLOY_DIR}/pipectl install \
                       -env CP_KUBE_MASTER_ETCD_HOST_PATH="${CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH}" \
                       -env CP_KUBE_MIN_DNS_REPLICAS=3 \
                       -env CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES="${CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES}" \
+                      -env CP_PREF_CLUSTER_ALLOWED_MASTER_PRICE_TYPES="${CP_PREF_CLUSTER_ALLOWED_MASTER_PRICE_TYPES}" \
                       -env CP_PREF_CLUSTER_SPOT="${CP_PREF_CLUSTER_SPOT}" \
                       -m \
                       -demo  ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA

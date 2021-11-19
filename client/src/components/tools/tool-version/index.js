@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react/index';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../models/tools/LoadTool';
 import {
@@ -24,11 +24,15 @@ import {
   Icon,
   Row,
   Tabs,
-  Card,
+  Card
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
+import Owner from '../../special/owner';
 import roleModel from '../../../utils/roleModel';
+import ToolLink from '../elements/ToolLink';
+import PlatformIcon from '../platform-icon';
 import styles from './ToolVersion.css';
+import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 
 @inject('preferences', 'dockerRegistries')
 @inject((stores, {params}) => {
@@ -36,12 +40,12 @@ import styles from './ToolVersion.css';
     ...stores,
     toolId: params.id,
     version: params.version,
-    tool: new LoadTool(params.id)
+    tool: new LoadTool(params.id),
+    settings: new LoadToolVersionSettings(params.id, params.version)
   };
 })
 @observer
 export default class ToolVersion extends React.Component {
-
   @computed
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
@@ -76,9 +80,22 @@ export default class ToolVersion extends React.Component {
       );
     }
 
+    let platform;
+    if (this.props.settings.loaded) {
+      const currentVersion = (this.props.settings.value || [])
+        .find(v => v.version === this.props.version);
+      platform = currentVersion ? currentVersion.platform : undefined;
+    }
+
+    const isWindowsPlatform = /^windows$/i.test(platform);
+
     let activeKey = 'scaninfo';
     if (this.props.routes) {
       activeKey = this.props.routes[this.props.routes.length - 1].tabKey;
+    }
+
+    if (isWindowsPlatform && ['scaninfo', 'packages'].indexOf(activeKey) >= 0) {
+      activeKey = 'settings';
     }
 
     return (
@@ -92,7 +109,14 @@ export default class ToolVersion extends React.Component {
               size="small"
               style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
               <Icon type="arrow-left" />
-            </Button> {this.props.tool.value.image}:{this.props.version}
+            </Button>
+            <ToolLink link={this.props.tool.value.link} style={{marginLeft: 5}} />
+            <span style={{marginLeft: 5}}>{this.props.tool.value.image}:{this.props.version}</span>
+            <PlatformIcon
+              platform={platform}
+              style={{marginLeft: 5}}
+            />
+            <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
           </Row>
         </Row>
         <Tabs
@@ -100,11 +124,20 @@ export default class ToolVersion extends React.Component {
           onChange={this.navigateTo}
           size="small">
           {
-            this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
-            <Tabs.TabPane key="scaninfo" tab="VULNERABILITIES REPORT" />
+            this.props.settings.loaded &&
+            !isWindowsPlatform &&
+            this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && (
+              <Tabs.TabPane key="scaninfo" tab="VULNERABILITIES REPORT" />
+            )
           }
           <Tabs.TabPane key="settings" tab="SETTINGS" />
-          <Tabs.TabPane key="packages" tab="PACKAGES" />
+          {
+            this.props.settings.loaded &&
+            !isWindowsPlatform && (
+              <Tabs.TabPane key="packages" tab="PACKAGES" />
+            )
+          }
+          <Tabs.TabPane key="history" tab="IMAGE HISTORY" />
         </Tabs>
         <div style={{flex: 1, overflow: 'auto'}}>
           {this.props.children}

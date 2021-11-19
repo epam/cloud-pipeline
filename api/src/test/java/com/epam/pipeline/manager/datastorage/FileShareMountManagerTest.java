@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,14 @@ public class FileShareMountManagerTest extends AbstractSpringTest {
         shareMountManager.save(fileShareMount);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void saveThrowIfLustreMountRootIsInvalid() {
+        final FileShareMount fileShareMount = new FileShareMount();
+        fileShareMount.setRegionId(0L);
+        fileShareMount.setMountType(MountType.LUSTRE);
+        fileShareMount.setMountRoot("host");
+        shareMountManager.save(fileShareMount);
+    }
 
     private FileShareMount azureShareMount() {
         FileShareMount fileShareMount = new FileShareMount();

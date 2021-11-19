@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public class PipelineStart {
     private String version;
     private Long timeout;
     private String instanceType;
+    private String instanceImage;
     private Integer hddSize;
     private String dockerImage;
     private String cmdTemplate;
@@ -50,6 +51,8 @@ public class PipelineStart {
     private ExecutionEnvironment executionEnvironment;
     private String prettyUrl;
     private boolean nonPause;
+    private String runAs;
+    private List<PipelineStartNotificationRequest> notifications;
 
     @JsonDeserialize(using = PipelineConfValuesMapDeserializer.class)
     private Map<String, PipeConfValueVO> params;

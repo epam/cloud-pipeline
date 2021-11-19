@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.entity.datastorage.aws;
 
+import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.List;
  */
 @Getter
 @Setter
+@NoArgsConstructor
 public class S3bucketDataStorage extends AbstractDataStorage {
 
     /**
@@ -42,6 +45,10 @@ public class S3bucketDataStorage extends AbstractDataStorage {
      */
     private List<String> allowedCidrs;
 
+    private String tempCredentialsRole;
+    private String kmsKeyArn;
+    private boolean useAssumedCredentials;
+
     public S3bucketDataStorage(final Long id, final String name, final String path) {
         this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
     }
@@ -49,6 +56,11 @@ public class S3bucketDataStorage extends AbstractDataStorage {
     public S3bucketDataStorage(final Long id, final String name, final String path,
             final StoragePolicy policy, String mountPoint) {
         super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.S3, policy, mountPoint);
+    }
+
+    public S3bucketDataStorage(final DataStorageVO vo) {
+        super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
+                DataStorageType.S3, vo.getStoragePolicy(), vo.getMountPoint());
     }
 
     @Override
@@ -63,7 +75,7 @@ public class S3bucketDataStorage extends AbstractDataStorage {
 
     @Override
     public String getPathMask() {
-        return  String.format("s3://%s", getPath());
+        return  "s3://" + getPath();
     }
 
     @Override
