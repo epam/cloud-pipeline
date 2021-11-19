@@ -139,8 +139,8 @@ public class RoleDaoTest extends AbstractJdbcTest {
         final Role notBlockedRole = roleDao.createRole(TEST_ROLE_UPDATED);
         notBlockedRole.setBlocked(false);
 
-        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true));
-        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true, null));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false, null));
 
         final Collection<Role> loadedRoles = roleDao.loadAllRoles(false);
         assertFalse(loadedRoles.stream().anyMatch(role -> role.getName().equals(TEST_USER1)));
@@ -171,14 +171,14 @@ public class RoleDaoTest extends AbstractJdbcTest {
         notBlockedRole.setName(TEST_ROLE_UPDATED);
         notBlockedRole.setBlocked(false);
 
-        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true));
-        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true, null));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false, null));
 
         roleDao.createRole(blockedRole.getName());
         roleDao.createRole(notBlockedRole.getName());
 
         final String roleAdminName = DefaultRoles.ROLE_ADMIN.getName();
-        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(roleAdminName, true));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(roleAdminName, true, null));
 
         final Collection<Role> loadedRoles = roleDao.loadAllRoles(true);
         assertFalse(loadedRoles.stream().anyMatch(role -> role.getName().equals(TEST_USER1)));

@@ -710,6 +710,19 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
             "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
+            "system.user.monitor.delay.hours", 24, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
+            "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USER_MONITOR_IDLE_DAYS = new IntPreference(
+            "system.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
+    /**
+     * Indicates difference between current timestamp and user's previous last login. If this threshold exceeded
+     * update action shall be performed for user.
+     */
+    public static final IntPreference SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD = new IntPreference(
+            "system.user.jwt.last.login.threshold.hours", 1, SYSTEM_GROUP, pass);
+
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
