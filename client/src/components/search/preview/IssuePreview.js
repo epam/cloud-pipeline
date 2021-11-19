@@ -209,7 +209,7 @@ export default class IssuePreview extends React.Component {
       <div key={`${comment.id}_issue_comment`} className={styles.contentPreview}>
         <table>
           <tbody>
-            <tr className={'cp-search-first-row'}>
+            <tr className={'cp-search-comment-header'}>
               <td>
                 {this.renderAuthorName(comment.author)} commented {this.renderDate(comment.createdDate)}:
               </td>

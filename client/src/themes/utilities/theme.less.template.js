@@ -1119,9 +1119,6 @@ export default `
   background-image: @aws-icon;
   background-color: transparent;
 }
-@THEME .cp-search-container .provider.aws {
-  background-image: @aws-icon-light;
-}
 @THEME .provider.gcp {
   background-image: @gcp-icon;
   background-color: transparent;
@@ -1169,52 +1166,6 @@ export default `
 @THEME .cp-storage-region {
   background-color: @library-storage-region-background-color;
   color: @library-storage-region-color;
-}
-
-@THEME @fn: @theme-transition-function;
-@ms: @theme-transition-duration;
-
-.cp-theme-transition-background {
-  transition: background-color @fn @ms;
-}
-@THEME .cp-theme-transition-color {
-  transition: color @fn @ms;
-}
-@THEME .cp-theme-transition {
-  transition: color @fn @ms, background-color @fn @ms;
-}
-@THEME .ant-layout-sider,
-@THEME .ant-layout,
-@THEME .ant-input,
-@THEME .cp-panel,
-@THEME .cp-panel-card,
-@THEME .cp-panel-card-actions-background,
-@THEME .cp-navigation-panel,
-@THEME .cp-navigation-panel .cp-navigation-menu-item {
-  .cp-theme-transition();
-}
-
-@THEME @fn: @theme-transition-function;
-@ms: @theme-transition-duration;
-
-.cp-theme-transition-background {
-  transition: background-color @fn @ms;
-}
-@THEME .cp-theme-transition-color {
-  transition: color @fn @ms;
-}
-@THEME .cp-theme-transition {
-  transition: color @fn @ms, background-color @fn @ms;
-}
-@THEME .ant-layout-sider,
-@THEME .ant-layout,
-@THEME .ant-input,
-@THEME .cp-panel,
-@THEME .cp-panel-card,
-@THEME .cp-panel-card-actions-background,
-@THEME .cp-navigation-panel,
-@THEME .cp-navigation-panel .cp-navigation-menu-item {
-  .cp-theme-transition();
 }
 
 @THEME .ant-alert {
@@ -1518,7 +1469,8 @@ export default `
 @THEME .cp-search-results-table-divider.active {
   border-left: 1px solid @primary-color;
 }
-@THEME .cp-search-result-item {
+@THEME .cp-search-result-item,
+@THEME a.cp-search-result-item {
   color: @application-color;
 }
 @THEME .cp-search-result-item-main {
@@ -1531,12 +1483,14 @@ export default `
   display: grid;
   transition: background 0.2s ease;
 }
+@THEME a.cp-search-result-item:not(.disabled):hover,
 @THEME .cp-search-result-item:not(.disabled):hover .cp-search-result-item-main {
   color: @primary-color;
 }
 @THEME .cp-search-result-item-sub {
   color: @application-color-faded;
 }
+@THEME a.cp-search-result-item.disabled,
 @THEME .cp-search-result-item.disabled,
 @THEME .cp-search-result-item.disabled .cp-search-result-item-main,
 @THEME .cp-search-result-item.disabled .cp-search-result-item-sub {
@@ -1572,10 +1526,10 @@ export default `
   background-color: @card-background-color;
 }
 @THEME .cp-search-preview-wrapper {
-  background: @input-placeholder-color;
+  background: @modal-mask-background;
 }
 @THEME .cp-search-preview {
-  background-color: @search-preview-background-color;
+  background-color: @panel-background-color;
   border: 1px solid @panel-border-color;
 }
 @THEME .cp-search-preview-button {
@@ -1587,14 +1541,8 @@ export default `
 @THEME .cp-search-preview-error {
   color: @color-red;
 }
-@THEME .cp-search-preview-error-light-mode {
-  color: @color-pink;
-}
-@THEME .cp-search-first-row {
-  color: @search-first-row-color;
-}
-@THEME .cp-search-header-description {
-  color: @panel-border-color;
+@THEME .cp-search-comment-header {
+  color: @application-color-faded;
 }
 @THEME .cp-search-header-image {
   background-color: transparent;
@@ -1608,61 +1556,43 @@ export default `
 @THEME .cp-search-content-preview-run,
 @THEME .cp-search-content-preview-run i,
 @THEME .cp-search-content-preview-run-task {
-  color:  @application-color;
-}
-@THEME .cp-search-preview-iframe {
-  background-color:  @search-preview-text-color;
+  color: @application-color;
 }
 @THEME .cp-search-description-tag {
-  background-color: @code-background-color;
+  background-color: darken(@card-background-color, 5%);
   color: @application-color;
 }
 @THEME .cp-search-attribute-name {
-  background-color: @search-preview-attributes-name;
+  background-color: @tag-key-background-color;
+  border-bottom: 1px solid @tag-key-value-divider-color;
 }
 @THEME .cp-search-attribute-value {
-  background-color: @search-preview-attributes-value;
-}
-@THEME .cp-search-attribute-value:hover {
-  background-color: @search-preview-attributes-value-hovered;
-  color: @application-color;
-}
-@THEME .cp-search-even-table-row {
-  background-color: @application-background-color;
+  background-color: @tag-value-background-color;
 }
 @THEME .cp-search-highlight {
-  background-color: @search-highlight-background-color;
-  color:  @search-header-light-color;
+  background-color: @card-background-color;
 }
 @THEME .cp-search-highlight-text {
   background-color: @search-highlight-text-background-color;
   color: @search-highlight-text-color;
 }
 @THEME .cp-search-csv-table {
-  border: 1px solid @search-table-border-color; 
-  background-color: @search-table-background-color;
+  border: 1px solid @card-border-color;
+  background-color: @card-background-color;
   color: @application-color;
 }
 @THEME .cp-search-csv-table-cell {
-  border-color: @search-table-border-color;
+  border: 1px solid @card-border-color;
   color: @application-color;
 }
-@THEME .cp-search-run-table-icon {
-  color: @search-header-light-color;
-}
-@THEME .cp-search-preview-separator {
-  background-color: @search-header-light-color;
-}
-@THEME .cp-search-md-preview {
-  color: @application-color;
-}
+@THEME .cp-search-md-preview,
 @THEME .cp-search-md-preview h1,
 @THEME .cp-search-md-preview h2,
 @THEME .cp-search-md-preview h3,
 @THEME .cp-search-md-preview h4,
 @THEME .cp-search-md-preview h5,
 @THEME .cp-search-md-preview h6 {
-  color: @search-header-light-color;
+  color: @application-color;
 }
 @THEME .cp-search-md-preview code {
   color: @color-pink;
@@ -1704,20 +1634,21 @@ export default `
   cursor: default;
 }
 @THEME .cp-search-type-button {
-  background-color: @search-type-button-background-color;
-  color: @search-type-button-color;
+  background-color: fade(@card-background-color, 50%);
+  color: @application-color;
   border: 2px solid transparent;
 }
 @THEME .cp-search-type-button.selected {
-  background-color: @search-type-button-selected;
-  border: 2px solid @search-type-button-color;
+  background-color: @card-background-color;
+  color: @application-color;
+  border: 2px solid @application-color;
 }
 @THEME .cp-search-type-button:hover {
-  background-color: @search-type-button-hover;
+  background-color: @card-background-color;
 }
 @THEME .cp-search-type-button.disabled {
   background-color: transparent;
-  color: @search-type-button-disabled;
+  color: @application-color-disabled;
   cursor: not-allowed;
 }
 
