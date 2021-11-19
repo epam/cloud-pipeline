@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m11.19s</div>
+<div class="counter">3m58.09s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">88%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,16 +61,86 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
 </li>
 <li>
-<a href="#tab2">Standard error</a>
+<a href="#tab2">Standard output</a>
+</li>
+<li>
+<a href="#tab3">Standard error</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="provideAdminRightsToTheUser - EPMCMBIBPC-3017"></a>
+<h3 class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1637331547992.122.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1637331547992.122.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;navigation__navigation-menu-item&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.mixins.Navigation.impersonateAs(Navigation.java:83)
+	at com.epam.pipeline.autotests.mixins.Authorization.loginAs(Authorization.java:63)
+	at com.epam.pipeline.autotests.RoleBasedAccessControlTest.loginWithToken(RoleBasedAccessControlTest.java:376)
+	at com.epam.pipeline.autotests.RoleBasedAccessControlTest.provideAdminRightsToTheUser(RoleBasedAccessControlTest.java:200)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;navigation__navigation-menu-item&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '2a1d75988b4d', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 5dc42e36c7834e85d17034a51e042fd1
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 20 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -82,22 +152,22 @@
 </thead>
 <tr>
 <td class="success">addTheUser - EPMCMBIBPC-3019</td>
-<td>10.150s</td>
+<td>10.403s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">allowToImpersonateAdministratorAsGeneralUser - 2144</td>
-<td>21.274s</td>
+<td>21.486s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">authenticationInPlatform - EPMCMBIBPC-3014</td>
-<td>1.079s</td>
+<td>1.093s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">blockUnblockUser - EPMCMBIBPC-3016</td>
-<td>1m12.92s</td>
+<td>1m11.50s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -107,78 +177,78 @@
 </tr>
 <tr>
 <td class="success">failedAuthentication - EPMCMBIBPC-3015</td>
-<td>12.121s</td>
+<td>11.825s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">generateListOfUsers - EPMCMBIBPC-3168</td>
-<td>9.236s</td>
+<td>9.098s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
-<td>33.301s</td>
-<td class="success">passed</td>
+<td class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
+<td>1m44.38s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">removeAdminRightsFromTheUser - EPMCMBIBPC-3018</td>
-<td>21.713s</td>
-<td class="success">passed</td>
+<td class="skipped">removeAdminRightsFromTheUser</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">removeTheUser - EPMCMBIBPC-3020</td>
-<td>9.403s</td>
+<td>8.300s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 12438 from [12438]
-Returns latest run with runId 12438 from [12438]
+<pre>Returns latest run with runId 12581 from [12581]
+Returns latest run with runId 12581 from [12581]
 </pre>
 </span>
 </div>
-<div id="tab2" class="tab">
+<div id="tab3" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Nov 18, 2021 3:35:47 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 801 -&gt; ChromeDriver: chrome on LINUX (e2ca66bfebc51f28007199150cce5224)
-Nov 18, 2021 3:35:47 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Nov 19, 2021 2:16:49 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 791 -&gt; ChromeDriver: chrome on LINUX (9cafe06c951388385cbf55cb4c3d3f83)
+Nov 19, 2021 2:16:49 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Nov 18, 2021 3:35:47 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 88 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 4346
+Nov 19, 2021 2:16:49 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 94 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 9316
 Only local connections are allowed.
-Nov 18, 2021 3:35:47 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Nov 19, 2021 2:16:50 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Nov 18, 2021 3:35:48 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Nov 19, 2021 2:16:50 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Nov 18, 2021 3:35:48 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Nov 19, 2021 2:16:50 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Nov 18, 2021 3:35:48 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Nov 19, 2021 2:16:50 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Nov 18, 2021 3:35:48 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 801: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (104706904ae8228d7fa2917855df0aee)
-Nov 18, 2021 3:35:50 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 801 -&gt; ChromeDriver: chrome on LINUX (104706904ae8228d7fa2917855df0aee)
-Nov 18, 2021 3:35:50 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+Nov 19, 2021 2:16:50 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 791: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (c9abac5bccee6ef890620c01e84429c2)
+Nov 19, 2021 2:16:52 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 791 -&gt; ChromeDriver: chrome on LINUX (c9abac5bccee6ef890620c01e84429c2)
+Nov 19, 2021 2:16:52 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Nov 18, 2021 3:35:50 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 76 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 26510
+Nov 19, 2021 2:16:52 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 77 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 11306
 Only local connections are allowed.
-Nov 18, 2021 3:35:51 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Nov 19, 2021 2:16:53 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Nov 18, 2021 3:35:51 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Nov 19, 2021 2:16:53 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Nov 18, 2021 3:35:51 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Nov 19, 2021 2:16:53 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Nov 18, 2021 3:35:51 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Nov 19, 2021 2:16:53 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Nov 18, 2021 3:35:51 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 801: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (60de27a96bceb90577b11e4bad23ca9b)
+Nov 19, 2021 2:16:53 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 791: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (5dc42e36c7834e85d17034a51e042fd1)
 </pre>
 </span>
 </div>
@@ -190,7 +260,7 @@ INFO: Create webdriver in current thread 801: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 18, 2021 7:00:26 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 19, 2021 5:18:05 PM</p>
 </div>
 </div>
 </body>
