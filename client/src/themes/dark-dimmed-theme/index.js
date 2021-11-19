@@ -56,7 +56,7 @@ export default {
     '@element-selected-color': '@application-color',
     '@element-selected-background-color': 'lighten(@panel-background-color, 5%)',
     '@input-background': '@panel-background-color',
-    '@input-background-disabled': 'darken(@input-background, 10%)',
+    '@input-background-disabled': 'lighten(@input-background, 5%)',
     '@input-addon': 'lighten(@input-background, 5%)',
     '@input-border': '@border-color',
     '@input-color': '@application-color',
