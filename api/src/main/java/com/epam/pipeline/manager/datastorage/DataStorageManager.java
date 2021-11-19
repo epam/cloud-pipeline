@@ -473,6 +473,9 @@ public class DataStorageManager implements SecuredEntityManager {
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         final AbstractDataStorage dataStorage = load(id);
 
+        Assert.isTrue(Objects.isNull(dataStorage.getSourceStorageId()) || !proceedOnCloud,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_MIRROR_DELETION));
+
         validateStorageIsNotUsedAsDefault(id, roleManager.loadRolesByDefaultStorage(id));
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
 

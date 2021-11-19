@@ -272,6 +272,7 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE =
             "error.datastorage.new.linking.masks.illegal.state";
     public static final String ERROR_DATASTORAGE_MIRROR_ILLEGAL_TYPE = "error.datastorage.new.mirror.type.mismatch";
+    public static final String ERROR_DATASTORAGE_MIRROR_DELETION = "error.datastorage.mirror.deletion";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
