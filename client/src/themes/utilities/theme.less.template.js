@@ -1723,6 +1723,48 @@ export default `
 @THEME .cp-library-metadata-additional-actions {
   background-color: inherit;
 }
+@THEME .cp-library-attributes-storage-size {
+  color: @application-color;
+}
+@THEME .cp-library-metadata-key-row,
+@THEME .cp-library-metadata-read-only-key-row,
+@THEME .cp-library-metadata-key-row-edit {
+  background-color: @element-selected-background-color;
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-disabled-input {
+  background-color: @input-background-disabled;
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-disabled-input:hover {
+  border-color: @border-color;
+}
+@THEME .cp-library-metadata-disabled-input:focus {
+  box-shadow: 0 0 0 @input-shadow-color;
+  border-color: @input-border;
+  outline: @input-background;
+}
+@THEME .cp-library-metadata-panel-label {
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-special {
+  color: @primary-color;
+  background-color: @primary-hover-color;
+}
+@THEME .cp-library-metadata-special.read-only {
+  color: @application-color-faded;
+  background-color: @element-selected-background-color;
+}
+@THEME .cp-library-metadata-key-row td.key:hover,
+@THEME .cp-library-metadata-value-row td:hover {
+  border: 1px dashed @panel-border-color;
+}
+@THEME .cp-library-metadata-divider {
+  background-color: @card-border-color;
+}
+@THEME .cp-library-metadata-header {
+  border-top: 1px solid @panel-border-color;
+}
 
 @THEME .cp-node-tag {
   border-color: @application-color-disabled;

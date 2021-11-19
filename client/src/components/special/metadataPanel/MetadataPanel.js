@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 // todo: move MetadataStyles file
+import classNames from 'classnames';
 import MetadataStyles from '../metadata/Metadata.css';
 import {Button, Icon, Input, message, Modal, Row} from 'antd';
 import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEntityDeleteKey';
@@ -418,7 +419,10 @@ export default class MetadataPanel extends React.Component {
       return (
         <thead className={MetadataStyles.metadataHeader}>
           <tr style={{}}>
-            <td colSpan={6} style={{padding: 5, borderTop: '1px solid #ccc'}}>
+            <td
+              colSpan={6}
+              style={{padding: 5}}
+              className={'cp-library-metadata-header'}>
               <Row type="flex" justify="space-between" align="middle">
                 <div />
                 <div>
@@ -435,8 +439,13 @@ export default class MetadataPanel extends React.Component {
 
   renderDivider = (key, span) => {
     return (
-      <tr key={key} className={MetadataStyles.divider}>
-        <td colSpan={span || 3}><div /></td>
+      <tr key={key}>
+        <td colSpan={span || 3}>
+          <div className={classNames(
+            MetadataStyles.divider,
+            'cp-library-metadata-divider'
+          )} />
+        </td>
       </tr>
     );
   };
@@ -444,6 +453,8 @@ export default class MetadataPanel extends React.Component {
   renderMetadataItem = (metadataItem) => {
     let valueElement = [];
     for (let key in metadataItem) {
+      const isReadOnlyItem = this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0;
+      const isReadOnlyItemOrArray = isReadOnlyItem || metadataItem[key].type.startsWith('Array');
       if (key !== 'rowKey' && metadataItem[key]) {
         let value = metadataItem[key].value;
         if (metadataItem[key].type.startsWith('Array')) {
@@ -469,7 +480,9 @@ export default class MetadataPanel extends React.Component {
         valueElement.push(this.renderDivider(`${key}_divider`, 6));
         if (this.state.editableKey === key && (this.props.readOnlyKeys || []).indexOf(key) === -1) {
           valueElement.push((
-            <tr key={`${key}_key`} className={MetadataStyles.keyRowEdit}>
+            <tr
+              key={`${key}_key`}
+              className={'cp-library-metadata-key-row-edit'}>
               <td colSpan={6}>
                 <Input {...inputOptions('key', key, metadataItem[key].value)} />
               </td>
@@ -479,11 +492,12 @@ export default class MetadataPanel extends React.Component {
           valueElement.push((
             <tr
               key={`${key}_key`}
-              className={
-                this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
-                  ? MetadataStyles.readOnlyKeyRow
-                  : MetadataStyles.keyRow
-              }
+              className={classNames({
+                [MetadataStyles.readOnlyKeyRow]: isReadOnlyItem,
+                [MetadataStyles.keyRow]: !isReadOnlyItem,
+                'cp-library-metadata-read-only-key-row': isReadOnlyItem,
+                'cp-library-metadata-key-row': !isReadOnlyItem
+              })}
             >
               <td
                 id={`key-column-${key}`}
@@ -534,13 +548,11 @@ export default class MetadataPanel extends React.Component {
           valueElement.push((
             <tr
               key={`${key}_value`}
-              className={
-                this.props.readOnly ||
-                (this.props.readOnlyKeys || []).indexOf(key) >= 0 ||
-                metadataItem[key].type.startsWith('Array')
-                  ? MetadataStyles.readOnlyValueRow
-                  : MetadataStyles.valueRow
-              }
+              className={classNames({
+                [MetadataStyles.readOnlyValueRow]: isReadOnlyItemOrArray,
+                [MetadataStyles.valueRow]: !isReadOnlyItemOrArray,
+                'cp-library-metadata-value-row': !isReadOnlyItemOrArray
+              })}
             >
               <td
                 id={`value-column-${key}`}
@@ -559,7 +571,10 @@ export default class MetadataPanel extends React.Component {
   renderEmptyPlaceholder = () => {
     if (!this.props.currentItem) {
       return (
-        <tr style={{height: 40, color: '#777'}}>
+        <tr
+          style={{height: 40}}
+          className={'cp-library-metadata-panel-label'}
+        >
           <td colSpan={3} style={{textAlign: 'center'}}>
             No item selected
           </td>
@@ -567,7 +582,10 @@ export default class MetadataPanel extends React.Component {
       );
     }
     return (
-      <tr style={{height: 40, color: '#777'}}>
+      <tr
+        style={{height: 40}}
+        className={'cp-library-metadata-panel-label'}
+      >
         <td colSpan={3} style={{textAlign: 'center'}}>
           No attributes set
         </td>
