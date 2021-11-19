@@ -202,7 +202,7 @@ class ProviderFilter extends React.Component {
         className={styles.providerSelect}
         dropdownClassName={styles.dropdown}
         filterOption={
-          (input, option) => option.filter.some(f => f.indexOf(input.toUpperCase()) >= 0)
+          (input, option) => (option.filter || []).some(f => f.indexOf(input.toUpperCase()) >= 0)
         }
         notFoundContent="Not found"
         value={value}

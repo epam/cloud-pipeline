@@ -432,7 +432,7 @@ export class DataStorageEditDialog extends React.Component {
                 }
                 {
                   !this.isNfsMount &&
-                  <Row>
+                  <Row className={styles.row}>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
                       <Form.Item className={styles.dataStorageFormItem}>
@@ -448,7 +448,7 @@ export class DataStorageEditDialog extends React.Component {
                 }
                 {
                   !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Row>
+                  <Row className={styles.row}>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
                       <Form.Item className={styles.dataStorageFormItem}>
@@ -511,7 +511,7 @@ export class DataStorageEditDialog extends React.Component {
                     (!this.props.dataStorage && !this.props.addExistingStorageFlag) ||
                     (this.props.dataStorage)
                   ) &&
-                  <Row>
+                  <Row className={styles.row}>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
                       <Form.Item className={styles.dataStorageFormItem}>

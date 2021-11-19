@@ -115,7 +115,6 @@ function RenderUserName ({user, myUserName}) {
 class RunnerFilter extends React.Component {
   state = {
     filter: undefined,
-    focused: false,
     searchCriteria: undefined,
     searching: false,
     filteredUsers: [],
@@ -332,7 +331,6 @@ class RunnerFilter extends React.Component {
         filteredUsers: []
       });
     }
-    this.setState({focused: true});
   }
 
   onBlur = () => {
@@ -341,21 +339,17 @@ class RunnerFilter extends React.Component {
       const {onChange} = this.props;
       onChange && onChange(filter);
     }
-    this.setState({focused: false, searchCriteria: undefined});
+    this.setState({searchCriteria: undefined});
   };
 
   render () {
     const {
-      focused,
       filteredCenters,
       filteredUsers,
       searchCriteria
     } = this.state;
     const showBillingCenters = (filteredCenters || this.centers).length > 0;
     const showUsers = filteredUsers.length > 0;
-    const open = focused &&
-      showBillingCenters &&
-      showUsers;
     return (
       <Select
         mode="multiple"
@@ -375,32 +369,43 @@ class RunnerFilter extends React.Component {
         onFocus={this.onFocus}
         onBlur={this.onBlur}
         filterOption={false}
-        open={open}
       >
-        <Select.OptGroup label="Billing centers">
-          {
-            (filteredCenters || this.centers).map((center) => (
-              <Select.Option
-                key={`${RunnerType.group}_${center}`}
-                value={`${RunnerType.group}_${center}`}
-              >
-                {center}
-              </Select.Option>
-            ))
-          }
-        </Select.OptGroup>
-        <Select.OptGroup label="Users">
-          {
-            filteredUsers.map((user) => (
-              <Select.Option
-                key={`${RunnerType.user}_${user.name}`}
-                value={`${RunnerType.user}_${user.name}`}
-              >
-                <RenderUserName myUserName={this.myUserName} user={user} />
-              </Select.Option>
-            ))
-          }
-        </Select.OptGroup>
+        {
+          showBillingCenters
+            ? (
+              <Select.OptGroup label="Billing centers">
+                {
+                  (filteredCenters || this.centers).map((center) => (
+                    <Select.Option
+                      key={`${RunnerType.group}_${center}`}
+                      value={`${RunnerType.group}_${center}`}
+                    >
+                      {center}
+                    </Select.Option>
+                  ))
+                }
+              </Select.OptGroup>
+            )
+            : null
+        }
+        {
+          showUsers
+            ? (
+              <Select.OptGroup label="Users">
+                {
+                  filteredUsers.map((user) => (
+                    <Select.Option
+                      key={`${RunnerType.user}_${user.name}`}
+                      value={`${RunnerType.user}_${user.name}`}
+                    >
+                      <RenderUserName myUserName={this.myUserName} user={user} />
+                    </Select.Option>
+                  ))
+                }
+              </Select.OptGroup>
+            )
+            : null
+        }
       </Select>
     );
   }

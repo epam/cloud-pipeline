@@ -55,8 +55,8 @@ export default class UserName extends React.Component {
       const attributesString = getAttributesValues().join(', ');
       return (
         <Row type="flex" style={{flexDirection: 'column'}}>
-          <Row>{(user.name || '').toLowerCase()}</Row>
-          <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
+          <div>{(user.name || '').toLowerCase()}</div>
+          <div><span style={{fontSize: 'smaller'}}>{attributesString}</span></div>
         </Row>
       );
     } else {

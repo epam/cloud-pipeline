@@ -57,6 +57,7 @@ function ChartContainer (
     chart,
     containerSize,
     data,
+    pending,
     title,
     disableTooltips,
     ...other
@@ -90,6 +91,7 @@ function ChartContainer (
         <Chart
           title={title}
           data={data}
+          pending={pending}
           width={chartWidth}
           height={chartHeight}
           disableTooltips={disableTooltips}
@@ -652,6 +654,7 @@ class ClusterNodeMonitor extends React.Component {
           <ChartContainer
             title="CPU Usage"
             data={chartsData.cpuUsage}
+            pending={chartsData.pending}
             chart={CPUUsageChart}
             disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
@@ -659,6 +662,7 @@ class ClusterNodeMonitor extends React.Component {
           <ChartContainer
             title="Memory Usage"
             data={chartsData.memoryUsage}
+            pending={chartsData.pending}
             chart={MemoryUsageChart}
             disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
@@ -666,6 +670,7 @@ class ClusterNodeMonitor extends React.Component {
           <ChartContainer
             title="Network Usage"
             data={chartsData.networkUsage}
+            pending={chartsData.pending}
             chart={NetworkUsageChart}
             disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
@@ -673,6 +678,7 @@ class ClusterNodeMonitor extends React.Component {
           <ChartContainer
             title="File System"
             data={chartsData.fileSystemUsage}
+            pending={chartsData.pending}
             chart={FileSystemUsageChart}
             rangeChangeEnabled={false}
             disableTooltips={this.state.exportWindowVisible}

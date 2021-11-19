@@ -326,9 +326,9 @@ class Folder extends localization.LocalizedReactComponent {
         }
         if (this.state.showDescription && (item.description || item.hasMetadata)) {
           nameComponent = (
-            <Row>
-              <Row style={{marginTop: 2}}>{nameComponent}</Row>
-              <Row
+            <div>
+              <div style={{marginTop: 2}}>{nameComponent}</div>
+              <div
                 style={{
                   marginTop: 5
                 }}>
@@ -345,8 +345,8 @@ class Folder extends localization.LocalizedReactComponent {
                 {
                   this.renderMetadata(item.objectMetadata)
                 }
-              </Row>
-            </Row>
+              </div>
+            </div>
           );
         }
         return nameComponent;
@@ -1417,12 +1417,12 @@ class Folder extends localization.LocalizedReactComponent {
               id="create-pipeline-button"
               className="create-pipeline-button"
               key={`${pipelineKey}_`}>
-              <Row>
+              <div>
                 DEFAULT
-              </Row>
-              <Row style={{fontSize: 'smaller'}}>
+              </div>
+              <div style={{fontSize: 'smaller'}}>
                 Create {this.localizedString('pipeline')} without template
-              </Row>
+              </div>
             </Menu.Item>,
             <Menu.Divider key="divider" />,
             ...templates.map(t => {
@@ -1431,12 +1431,12 @@ class Folder extends localization.LocalizedReactComponent {
                   id={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
                   className={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
                   key={`${pipelineKey}_${t.id}`}>
-                  <Row>
+                  <div>
                     {t.id.toUpperCase()}
-                  </Row>
-                  <Row style={{fontSize: 'smaller'}}>
+                  </div>
+                  <div style={{fontSize: 'smaller'}}>
                     {t.description}
-                  </Row>
+                  </div>
                 </Menu.Item>
               );
             })
@@ -1537,12 +1537,12 @@ class Folder extends localization.LocalizedReactComponent {
                 id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
                 className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
                 key={`${folderKey}_${t.id}`}>
-                <Row>
+                <div>
                   {t.id.toUpperCase()}
-                </Row>
-                <Row style={{fontSize: 'smaller'}}>
+                </div>
+                <div style={{fontSize: 'smaller'}}>
                   {t.description}
-                </Row>
+                </div>
               </Menu.Item>
             );
           });
@@ -1573,12 +1573,12 @@ class Folder extends localization.LocalizedReactComponent {
             className="create-versioned-storage-button"
             key={versionedStorageKey}
           >
-            <Row style={{textTransform: 'uppercase'}}>
+            <div style={{textTransform: 'uppercase'}}>
               versioned storage
-            </Row>
-            <Row style={{fontSize: 'smaller'}}>
+            </div>
+            <div style={{fontSize: 'smaller'}}>
               storage with revision control
-            </Row>
+            </div>
           </Menu.Item>
         );
       }

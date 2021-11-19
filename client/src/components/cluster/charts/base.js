@@ -30,6 +30,7 @@ class Chart extends React.Component {
     className: PropTypes.string,
     data: PropTypes.object,
     disableTooltips: PropTypes.bool,
+    pending: PropTypes.bool,
     title: PropTypes.string,
     width: PropTypes.number.isRequired,
     height: PropTypes.number.isRequired,
@@ -108,7 +109,7 @@ class Chart extends React.Component {
 
   renderTitle = (height) => {
     const {
-      data,
+      pending = false,
       title
     } = this.props;
     if (!title) {
@@ -119,7 +120,7 @@ class Chart extends React.Component {
         className={styles.title}
         style={{height}}
       >
-        <LoadingOutlined style={{opacity: data && data.pending ? 1 : 0, marginRight: 5}} />
+        <LoadingOutlined style={{opacity: pending ? 1 : 0, marginRight: 5}} />
         {title}
       </div>
     );

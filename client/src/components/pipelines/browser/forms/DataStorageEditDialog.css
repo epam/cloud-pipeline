@@ -17,3 +17,7 @@
 .data-storage-form-item {
   margin-bottom: 5px;
 }
+
+.row {
+  width: 100%
+}

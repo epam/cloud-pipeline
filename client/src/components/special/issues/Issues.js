@@ -98,27 +98,27 @@ export default class Issues extends localization.LocalizedReactComponent {
         const descriptions = [];
         if (issue.author && issue.createdDate) {
           descriptions.push(
-            <Row
+            <div
               key="opened by"
               className={styles.openedByRow}>
               Opened {moment.utc(issue.createdDate).fromNow()} by <b>{issue.author}</b>
-            </Row>
+            </div>
           );
         } else if (issue.author) {
           descriptions.push(
-            <Row
+            <div
               key="opened by"
               className={styles.openedByRow}>
               Opened by {issue.author}
-            </Row>
+            </div>
           );
         } else if (issue.createdDate) {
           descriptions.push(
-            <Row
+            <div
               key="opened by"
               className={styles.openedByRow}>
               Opened {moment.utc(issue.createdDate).fromNow()}
-            </Row>
+            </div>
           );
         }
         return (

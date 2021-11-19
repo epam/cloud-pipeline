@@ -160,14 +160,14 @@ export default class ClusterNodeGeneralInfo extends Component {
 
       return (
         <div style={{overflowY: 'auto'}}>
-          <Row key="main info">
+          <Row key="main info" className={styles.infoRow}>
             <Col>
               <span
                 className={styles.mainInfoPart}><b>Created:</b> {displayDate(node.creationTimestamp)}</span>
             </Col>
           </Row>
-          <br/>
-          <Row key="system info">
+          <br />
+          <Row key="system info" className={styles.infoRow}>
             <Col span={11}>
               {systemInfoTable}
             </Col>
@@ -176,8 +176,8 @@ export default class ClusterNodeGeneralInfo extends Component {
               {labelsTable}
             </Col>
           </Row>
-          <br/>
-          <Row key="allocatable and capacity table">
+          <br />
+          <Row key="allocatable and capacity table" className={styles.infoRow}>
             <Col span={11}>
               {allocatableAndCapacityTable}
             </Col>
