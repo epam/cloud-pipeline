@@ -421,8 +421,7 @@ export default class MetadataPanel extends React.Component {
           <tr style={{}}>
             <td
               colSpan={6}
-              style={{padding: 5}}
-              className={'cp-library-metadata-header'}>
+              style={{padding: 5}}>
               <Row type="flex" justify="space-between" align="middle">
                 <div />
                 <div>

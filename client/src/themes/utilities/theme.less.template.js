@@ -1762,9 +1762,6 @@ export default `
 @THEME .cp-library-metadata-divider {
   background-color: @card-border-color;
 }
-@THEME .cp-library-metadata-header {
-  border-top: 1px solid @panel-border-color;
-}
 
 @THEME .cp-node-tag {
   border-color: @application-color-disabled;
