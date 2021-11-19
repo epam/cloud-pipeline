@@ -118,8 +118,9 @@
 .highlight {
   padding: 2px;
 }
+
 .highlight-text {
-  padding: 0px 2px;
+  padding: 0 2px;
 }
 
 .csv-table {
@@ -340,9 +341,4 @@
 
 .share-url-action:hover {
   color: #0e77ca;
-}
-
-.render-separator {
-  height: 1px;
-  width: 100%;
 }

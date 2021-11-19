@@ -23,10 +23,16 @@ import styles from './preview.css';
 export default function renderSeparator (key = undefined) {
   return (
     <Row key={key} style={{width: '100%', padding: '5px 10px'}}>
-      <div className={classNames(
-        styles.renderSeparator,
-        'cp-search-preview-separator'
-      )}>{'\u00A0'}</div>
+      <div
+        className={
+          classNames(
+            'cp-divider',
+            'horizontal'
+          )
+        }
+      >
+        {'\u00A0'}
+      </div>
     </Row>
   );
 }

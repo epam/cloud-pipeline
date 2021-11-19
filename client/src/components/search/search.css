@@ -95,7 +95,7 @@
 .type-button {
   flex-shrink: 0;
   padding: 0 10px;
-  min-width: 80px;
+  min-width: 100px;
   height: 80px;
   border-radius: 10px;
   margin: 0 10px;
