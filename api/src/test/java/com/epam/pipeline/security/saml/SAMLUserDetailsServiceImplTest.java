@@ -301,7 +301,7 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     private void blockOneGroupForCurrentUser() {
         user.setUserName(USER_NAME);
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
-        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true);
+        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true, null);
         Mockito.when(userManager.loadGroupBlockingStatus(groups))
                 .thenReturn(Collections.singletonList(blockedGroupStatus));
     }
@@ -315,7 +315,7 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     private void setValidGroupsStatusForUser() {
         user.setUserName(USER_NAME);
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
-        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false);
+        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false, null);
         Mockito.when(userManager.loadGroupBlockingStatus(groups))
                 .thenReturn(Collections.singletonList(validGroupStatus));
     }

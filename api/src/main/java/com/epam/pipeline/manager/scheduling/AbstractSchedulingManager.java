@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.scheduling;
 
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
@@ -80,9 +81,28 @@ public abstract class AbstractSchedulingManager {
     protected void scheduleFixedDelaySecured(final Runnable task,
                                              final IntPreference delayPreference,
                                              final String taskName) {
+        scheduleFixedDelaySecured(task, delayPreference, TimeUnit.MILLISECONDS, taskName);
+    }
+
+    /**
+     * Schedule a task with a fixed delay, that is being fetched from an AbstractSystemPreference.
+     *
+     * A task will be executed in a security context of a default admin.
+     *
+     * @param task            a task to schedule.
+     * @param delayPreference a preference containing execution rate.
+     * @param delayUnit       an execution rate time unit.
+     * @param taskName        a name of the task.
+     */
+    protected void scheduleFixedDelaySecured(final Runnable task,
+                                             final IntPreference delayPreference,
+                                             final TimeUnit delayUnit,
+                                             final String taskName) {
         final DelegatingSecurityContextRunnable secureRunnable = new DelegatingSecurityContextRunnable(task,
                 authManager.createSchedulerSecurityContext());
-        final Integer rate = Optional.ofNullable(preferenceManager.getPreference(delayPreference)).orElse(0);
+        final long rate = Optional.ofNullable(preferenceManager.getPreference(delayPreference))
+                .map(delayUnit::toMillis)
+                .orElse(0L);
 
         log.info("Scheduled {} at {}", taskName, rate);
         scheduledFuture.set(scheduler.scheduleWithFixedDelay(secureRunnable, rate));
