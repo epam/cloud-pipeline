@@ -98,6 +98,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         final UserContext userContext = Optional.ofNullable(userManager.loadUserByName(userName))
             .map(loadedUser -> processRegisteredUser(userName, groups, attributes, loadedUser))
             .orElseGet(() -> processNewUser(userName, groups, attributes));
+        userManager.updateLastLoginDate(userContext.toPipelineUser());
         accessService.validateUserGroupsBlockStatus(userContext.toPipelineUser());
         if (hasBlockedStatusAttribute(credential)) {
             Optional.ofNullable(userContext.getUserId())
