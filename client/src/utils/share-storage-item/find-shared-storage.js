@@ -32,7 +32,10 @@ function removeTrailingSlash (path) {
   return path;
 }
 
-export default function findSharedStorage (preferences, sharedStorage, sharedFolder) {
+export default function findSharedStorage (preferences, sharedStorage, sharedFolder, skip = false) {
+  if (skip) {
+    return Promise.resolve(undefined);
+  }
   if (!preferences) {
     return Promise.reject(
       new Error('Shared storages system directory not specified (no preferences)')

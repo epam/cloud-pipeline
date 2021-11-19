@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.assertions.ProjectAssertions.assertThat;
@@ -142,6 +143,19 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
     public void shouldCreateNewS3Storage() {
         dataStorageDao.createDataStorage(s3Bucket);
         validateCreatedStorage(s3Bucket);
+    }
+
+    @Test
+    public void shouldCreateNewMirroringS3Storage() {
+        final S3bucketDataStorage sourceDataStorage = new S3bucketDataStorage(null, "sourceStorage", "sourcePath");
+        sourceDataStorage.setOwner(TEST_OWNER);
+        dataStorageDao.createDataStorage(sourceDataStorage);
+        validateCreatedStorage(sourceDataStorage);
+
+        s3Bucket.setLinkingMasks(Collections.singleton(UPDATED_VALUE));
+        s3Bucket.setSourceStorageId(sourceDataStorage.getId());
+        dataStorageDao.createDataStorage(s3Bucket);
+        validateS3Storage(dataStorageDao.loadDataStorage(s3Bucket.getId()), s3Bucket);
     }
 
     @Test
@@ -378,7 +392,9 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
 
         assertThat(bucket)
                 .hasRegionId(expected.getRegionId())
-                .hasAllowedCidrs(expected.getAllowedCidrs());
+                .hasAllowedCidrs(expected.getAllowedCidrs())
+                .hasSourceStorageId(expected.getSourceStorageId())
+                .hasLinkingMasks(expected.getLinkingMasks());
     }
 
     private void validateCommonStorage(AbstractDataStorage actual, AbstractDataStorage expected) {

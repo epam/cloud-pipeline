@@ -147,7 +147,8 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         public static MapSqlParameterSource getParameters(final Long root, final DataStorageTag tag) {
             return getParameters(root, tag.getObject(), tag.getKey())
                     .addValue(TAG_VALUE.name(), tag.getValue())
-                    .addValue(CREATED_DATE.name(), tag.getCreatedDate());
+                    .addValue(CREATED_DATE.name(), DateUtils.convertUTCLocalDateTimeToSystemLocalDateTime(
+                            tag.getCreatedDate()));
         }
 
         public static MapSqlParameterSource getParameters(final Long root,

@@ -19,6 +19,7 @@ package com.epam.pipeline.aspect.events;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSObserverEventType;
 import com.epam.pipeline.manager.datastorage.StorageEventsService;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -63,8 +64,8 @@ public class StorageEventCollectingAspect {
     public void generateFolderMovingEvents(final JoinPoint joinPoint, final NFSDataStorage dataStorage,
                                            final String oldFolderPath, final String newFolderPath) {
         storageEventsService.addEvent(dataStorage,
-                                      oldFolderPath + FOLDER_EVENT_WILDCARD,
-                                      newFolderPath + FOLDER_EVENT_WILDCARD,
+                ProviderUtils.withoutTrailingDelimiter(oldFolderPath) + FOLDER_EVENT_WILDCARD,
+                ProviderUtils.withoutTrailingDelimiter(newFolderPath) + FOLDER_EVENT_WILDCARD,
                                       NFSObserverEventType.FOLDER_MOVED);
     }
 
@@ -72,6 +73,7 @@ public class StorageEventCollectingAspect {
             + "args(dataStorage, path, ..)")
     public void generateFolderRemovalEvents(final JoinPoint joinPoint,
                                             final NFSDataStorage dataStorage, final String path) {
-        storageEventsService.addEvent(dataStorage, path + FOLDER_EVENT_WILDCARD, NFSObserverEventType.DELETED);
+        storageEventsService.addEvent(dataStorage, ProviderUtils.withoutTrailingDelimiter(path) +
+                FOLDER_EVENT_WILDCARD, NFSObserverEventType.DELETED);
     }
 }

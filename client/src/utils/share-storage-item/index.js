@@ -23,6 +23,14 @@ import getSharedFolderInfo from './get-shared-folder-info';
 export {getSharedFolderInfo as getSharedStorageItemInfo};
 
 /**
+ * @typedef {Object} PermissionsOptions
+ * @param {number} [mask=1]
+ * @param {SharedStoragePermission[]} [permissions]
+ * @param {boolean} [replace=true] - if we should replace current shared storage
+ * @param {boolean} [createNewStorage=false] - if we should not check storage existence
+ */
+
+/**
  * Shares storage folder.
  * Creates (if not exists) a new storage with a path of `sharedStorage.path / sharedFolder`,
  * sets permissions (removes current permissions if `permissionsOptions.replace` = true)
@@ -30,10 +38,8 @@ export {getSharedFolderInfo as getSharedStorageItemInfo};
  * @param {PreferencesLoad} preferences
  * @param {Object} sharedStorage
  * @param {string} sharedFolder
- * @param {Object} [permissionsOptions]
- * @param {number} [permissionsOptions.mask=1]
- * @param {SharedStoragePermission[]} [permissionsOptions.permissions]
- * @param {boolean} [permissionsOptions.replace=true] - if we should replace current shared storage
+ * @param {string[]} sharedItems - files ("file-name.ext") and folders ("folder-name/**") to share.
+ * @param {PermissionsOptions} [permissionsOptions]
  * permissions with a new one
  * @returns {Promise<string>}
  */
@@ -41,24 +47,26 @@ export function shareStorageItem (
   preferences,
   sharedStorage,
   sharedFolder,
+  sharedItems = [],
   permissionsOptions = {}
 ) {
+  const {
+    mask = 1,
+    permissions = [],
+    replace = true,
+    createNewStorage = false
+  } = permissionsOptions;
   return new Promise((resolve, reject) => {
-    findSharedStorage(preferences, sharedStorage, sharedFolder)
+    findSharedStorage(preferences, sharedStorage, sharedFolder, createNewStorage)
       .then(storage => {
         const {id: storageId} = storage || {};
         if (storageId) {
           return Promise.resolve(storageId);
         }
-        return createSharedStorage(preferences, sharedStorage, sharedFolder);
+        return createSharedStorage(preferences, sharedStorage, sharedFolder, sharedItems);
       })
       .then(storageId => {
         if (storageId) {
-          const {
-            mask = 1,
-            permissions = [],
-            replace = true
-          } = permissionsOptions;
           return grantSharedStoragePermissions(storageId, mask, permissions, replace);
         } else {
           throw new Error('Storage was not created');

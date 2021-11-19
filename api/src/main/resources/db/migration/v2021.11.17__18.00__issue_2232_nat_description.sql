@@ -1,11 +1,10 @@
 /*
  * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +13,4 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.nat;
-
-import lombok.Data;
-
-@Data
-public class NatRoutingRuleDescription {
-
-    private final String externalName;
-    private final String externalIp;
-    private final Integer port;
-    private final String description;
-}
+ALTER TABLE pipeline.nat_routing_rule_queue ADD description text NULL;

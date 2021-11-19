@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -194,6 +196,11 @@ public class DaoHelper extends NamedParameterJdbcDaoSupport {
             entities.forEach(storage -> foldersAggregator.accept(storage, folders));
             return entities;
         };
+    }
+
+    public static LocalDateTime parseTimestamp(final ResultSet rs, final String parameter) throws SQLException {
+        final Timestamp timestamp = rs.getTimestamp(parameter);
+        return !rs.wasNull() ? timestamp.toLocalDateTime() : null;
     }
 
     @Required
