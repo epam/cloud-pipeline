@@ -15,7 +15,7 @@
 FROM openjdk:8u312-jdk-slim
 
 ARG CP_API_DIST_URL=""
-ENV CP_RELEASE_NOTES_HOME="/opt/release-notes"
+ENV CP_RELEASE_NOTES_HOME="/opt/release-notes-agent"
 
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \

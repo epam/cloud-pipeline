@@ -28,8 +28,8 @@ public class EmailTemplateNotificationServiceTest {
     private static final String NEW_MINOR_VERSION = "55.55.55.56.a";
     private static final String NEW_MAJOR_VERSION = "56.55.55.55.a";
     private static final String RESOLVER_PREFIX = "mail/";
-    private static final String EMAIL_TO_ADMIN_TEMPLATE_NAME = "email-release-notification-to-admin.html";
-    private static final String EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME = "email-release-notification-to-subscribers.html";
+    private static final String EMAIL_TO_ADMIN_TEMPLATE_NAME = "email-release-notification-major-change.html";
+    private static final String EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME = "email-release-notification-minor-change.html";
     private static final String EMAIL_TO_ADMIN_TITLE = "email to admin";
     private static final String EMAIL_TO_SUBSCRIBERS_TITLE = "email to subscribers";
     private static final String ONE = "1";

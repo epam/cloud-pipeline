@@ -33,7 +33,7 @@ public class ThymeleafTemplateConfig {
 
     private final String fileResolverPrefix;
 
-    public ThymeleafTemplateConfig(@Value("${release.notes.agent.path.to.system.folder.with.templates}")
+    public ThymeleafTemplateConfig(@Value("${release.notes.agent.templates.dir}")
                                    final String fileResolverPrefix) {
         this.fileResolverPrefix = fileResolverPrefix;
     }
