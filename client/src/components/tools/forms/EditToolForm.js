@@ -116,7 +116,8 @@ export default class EditToolForm extends React.Component {
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
     executionEnvironmentDisabled: PropTypes.bool,
-    allowCommitVersion: PropTypes.bool
+    allowCommitVersion: PropTypes.bool,
+    dockerOSVersion: PropTypes.string
   };
 
   static defaultProps = {
@@ -1311,6 +1312,8 @@ export default class EditToolForm extends React.Component {
                   disabled={this.state.pending || this.props.readOnly}
                   values={this.state.runCapabilities}
                   onChange={this.onRunCapabilitiesSelect}
+                  dockerImageOS={this.props.dockerOSVersion}
+                  provider={this.getCloudProvider()}
                 />
               </Form.Item>
               <ConfigureClusterDialog

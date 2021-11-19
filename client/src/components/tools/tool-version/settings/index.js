@@ -27,6 +27,7 @@ import {
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import EditToolForm from '../../forms/EditToolForm';
+import LoadToolAttributes from '../../../../models/tools/LoadToolInfo';
 
 @inject('preferences')
 @inject((stores, {params}) => {
@@ -35,7 +36,8 @@ import EditToolForm from '../../forms/EditToolForm';
     version: params.version,
     tool: new LoadTool(params.id),
     settings: new LoadToolVersionSettings(params.id, params.version),
-    preferences: stores.preferences
+    preferences: stores.preferences,
+    versions: new LoadToolAttributes(params.id)
   };
 })
 
@@ -46,6 +48,34 @@ export default class ToolSetttings extends React.Component {
   };
 
   @observable versionSettingsForm;
+
+  @computed
+  get toolVersionOS () {
+    const {versions, version} = this.props;
+    if (versions.loaded) {
+      const {value = {}} = versions;
+      const {versions: versionsInfo = []} = value;
+      const versionInfo = versionsInfo
+        .find(o => o.version === version);
+      if (
+        versionInfo &&
+        versionInfo.scanResult.toolOSVersion &&
+        versionInfo.scanResult.toolOSVersion.distribution
+      ) {
+        const {
+          distribution,
+          version: distributionVersion = ''
+        } = versionInfo.scanResult.toolOSVersion;
+        return [
+          distribution,
+          distributionVersion
+        ]
+          .filter(Boolean)
+          .join(' ');
+      }
+    }
+    return undefined;
+  }
 
   operationWrapper = (fn) => (...opts) => {
     this.setState({
@@ -140,7 +170,9 @@ export default class ToolSetttings extends React.Component {
         }
         defaultPriceTypeIsSpot={this.props.preferences.useSpot}
         configuration={this.settings}
-        onSubmit={this.operationWrapper(this.updateTool)} />
+        onSubmit={this.operationWrapper(this.updateTool)}
+        dockerOSVersion={this.toolVersionOS}
+      />
     );
   }
 }

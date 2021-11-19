@@ -11,6 +11,7 @@ import {
   CP_CAP_MODULES,
   CP_DISABLE_HYPER_THREADING
 } from './parameters';
+import fetchToolOS from './fetch-tool-os';
 
 export const RUN_CAPABILITIES = {
   dinD: 'DinD',
@@ -30,7 +31,7 @@ export const RUN_CAPABILITIES_PARAMETERS = {
   [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING
 };
 
-const OS_SPECIFIC_CAPABILITIES = {
+const PLATFORM_SPECIFIC_CAPABILITIES = {
   default: [
     RUN_CAPABILITIES.dinD,
     RUN_CAPABILITIES.singularity,
@@ -42,28 +43,57 @@ const OS_SPECIFIC_CAPABILITIES = {
   windows: []
 };
 
-function getPlatformSpecificCapabilities (platform, preferences) {
-  const capabilities = platform && OS_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)
-    ? OS_SPECIFIC_CAPABILITIES[platform]
-    : OS_SPECIFIC_CAPABILITIES.default;
+const CAPABILITIES_OS_FILTERS = {
+  [RUN_CAPABILITIES.systemD]: [/^centos.*$/]
+};
+
+const CAPABILITIES_CLOUD_FILTERS = {
+};
+
+function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
+  const {
+    platform,
+    os,
+    provider
+  } = platformInfo;
+  const capabilities = platform && PLATFORM_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)
+    ? PLATFORM_SPECIFIC_CAPABILITIES[platform]
+    : PLATFORM_SPECIFIC_CAPABILITIES.default;
   const custom = preferences ? preferences.launchCapabilities : [];
   const filterCustomCapability = capability => (capability.platforms || []).length === 0 ||
     platform === undefined ||
+    !capability.platforms ||
+    capability.platforms.length === 0 ||
     capability.platforms.indexOf(platform) >= 0;
+  const filterByOS = capability => os === undefined ||
+    !capability.os ||
+    capability.os.length === 0 ||
+    capability.os.some(osRegExp => osRegExp.test(os));
+  const filterByCloudProvider = capability => provider === undefined ||
+    !capability.cloud ||
+    capability.cloud.length === 0 ||
+    capability.cloud.some(p => p.toLowerCase() === provider.toLowerCase());
   return capabilities.map(o => ({
     value: o,
-    name: o
+    name: o,
+    os: CAPABILITIES_OS_FILTERS[o] || [/.*/],
+    cloud: CAPABILITIES_CLOUD_FILTERS[o]
   }))
-    .concat((custom || []).filter(filterCustomCapability));
+    .concat((custom || []).filter(filterCustomCapability))
+    .filter(filterByOS)
+    .filter(filterByCloudProvider);
 }
 
-@inject('preferences')
+@inject('preferences', 'dockerRegistries')
 @observer
 class RunCapabilities extends React.Component {
   static propTypes = {
     disabled: PropTypes.bool,
     values: PropTypes.arrayOf(PropTypes.string),
-    onChange: PropTypes.func
+    onChange: PropTypes.func,
+    dockerImage: PropTypes.string,
+    dockerImageOS: PropTypes.string,
+    provider: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   };
 
   static defaultProps = {
@@ -71,15 +101,77 @@ class RunCapabilities extends React.Component {
     onChange: null
   };
 
-  onSelectionChanged = (values) => {
-    const {onChange} = this.props;
+  state = {
+    os: undefined
+  };
 
-    onChange && onChange(values || []);
+  componentDidMount () {
+    this.fetchDockerImageOS();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.dockerImage !== this.props.dockerImage ||
+      prevProps.dockerImageOS !== this.props.dockerImageOS
+    ) {
+      this.fetchDockerImageOS();
+    } else if (prevProps.platform !== this.props.platform) {
+      this.correctCapabilitiesSelection();
+    }
+  }
+
+  fetchDockerImageOS () {
+    const {
+      dockerImageOS,
+      dockerImage,
+      dockerRegistries
+    } = this.props;
+    if (dockerImageOS) {
+      this.setState({
+        os: dockerImageOS
+      }, this.correctCapabilitiesSelection);
+    } else if (dockerImage) {
+      fetchToolOS(dockerImage, dockerRegistries)
+        .then(os => this.setState({os}, this.correctCapabilitiesSelection));
+    } else {
+      this.setState({
+        os: undefined
+      }, this.correctCapabilitiesSelection);
+    }
+  }
+
+  correctCapabilitiesSelection = () => {
+    this.onSelectionChanged(this.props.values);
+  }
+
+  onSelectionChanged = (values = []) => {
+    const {
+      platform,
+      provider,
+      preferences,
+      onChange
+    } = this.props;
+    const {os} = this.state;
+    const capabilities = getPlatformSpecificCapabilities(
+      preferences,
+      {platform, os, provider}
+    );
+    const filtered = values.filter(v => capabilities.find(o => o.value === v));
+    onChange && onChange(filtered);
   };
 
   render () {
-    const {disabled, values, preferences} = this.props;
-    const capabilities = getPlatformSpecificCapabilities(undefined, preferences);
+    const {
+      disabled,
+      values,
+      provider,
+      preferences
+    } = this.props;
+    const {os} = this.state;
+    const capabilities = getPlatformSpecificCapabilities(
+      preferences,
+      {os, provider}
+    );
     const filteredValues = (values || [])
       .filter(value => capabilities.find(o => o.value === value));
     return (
@@ -168,7 +260,7 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
   if (!parameters) {
     parameters = {};
   }
-  const platformSpecificCapabilities = getPlatformSpecificCapabilities(platform, preferences);
+  const platformSpecificCapabilities = getPlatformSpecificCapabilities(preferences, {platform});
   capabilities
     .map(capability => platformSpecificCapabilities.find(psc => psc.value === capability))
     .filter(Boolean)
@@ -211,7 +303,7 @@ export function applyCustomCapabilitiesParameters (parameters, preferences) {
 }
 
 export function hasPlatformSpecificCapabilities (platform, preferences) {
-  return getPlatformSpecificCapabilities(platform, preferences).length > 0;
+  return getPlatformSpecificCapabilities(preferences, {platform}).length > 0;
 }
 
 export function checkRunCapabilitiesModified (capabilities1, capabilities2, preferences) {
