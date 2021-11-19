@@ -692,8 +692,18 @@ public class NatGatewayManager {
             if (!newPort.isPresent()) {
                 return false;
             }
+            final Integer targetPort = newPort.get();
             final Optional<ServicePort> portAddingResult =
-                kubernetesManager.addPortToExistingService(serviceName, port, newPort.get());
+                Optional.of(kubernetesManager.createServiceIfNotExists(serviceName, port, targetPort, true))
+                    .map(Service::getSpec)
+                    .map(ServiceSpec::getPorts)
+                    .map(Collection::stream)
+                    .orElse(Stream.empty())
+                    .filter(servicePort ->
+                                kubernetesManager.getServicePortName(serviceName, port).equals(servicePort.getName()))
+                    .findAny()
+                    .map(Optional::of)
+                    .orElse(kubernetesManager.addPortToExistingService(serviceName, port, targetPort));
             portAddingResult.ifPresent(servicePort -> {
                 updateStatusForRoutingRule(serviceName, port, NatRouteStatus.SERVICE_CONFIGURED);
                 activePorts.put(servicePort.getPort(), servicePort);

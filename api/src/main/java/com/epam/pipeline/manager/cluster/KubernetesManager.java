@@ -921,7 +921,7 @@ public class KubernetesManager {
                 return;
             }
             final String serviceName = resolveNodeServiceName(instance.getNodeIP());
-            createServiceIfNotExists(serviceName, port, port);
+            createServiceIfNotExists(serviceName, port, port, false);
             createEndpointsIfNotExists(serviceName, instance.getNodeIP(), port);
         }
     }
@@ -938,22 +938,26 @@ public class KubernetesManager {
         return "ip-" + ip.replace(".", "-");
     }
 
-    private Service createServiceIfNotExists(final String name, final int port, final int targetPort) {
+    public Service createServiceIfNotExists(final String name, final int port, final int targetPort,
+                                            final boolean setPortName) {
         try (KubernetesClient client = getKubernetesClient()) {
             final Optional<Service> service = findServiceByName(client, name);
             if (service.isPresent()) {
                 LOGGER.debug("Service with name '{}' already exists", name);
                 return service.get();
             }
-            return createService(client, name, port, targetPort);
+            return createService(client, name, port, targetPort, setPortName);
         }
     }
 
     private Service createService(final KubernetesClient client, final String name, final int port, 
-                                  final int targetPort) {
+                                  final int targetPort, final boolean setPortName) {
         final ServicePort servicePort = new ServicePort();
         servicePort.setPort(port);
         servicePort.setTargetPort(new IntOrString(targetPort));
+        if(setPortName) {
+            servicePort.setName(getServicePortName(name, port));
+        }
         return createService(client, name, Collections.emptyMap(), Collections.singletonList(servicePort));
     }
 
