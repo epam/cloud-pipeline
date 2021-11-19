@@ -182,8 +182,7 @@ public class NatGatewayManager {
     }
 
     private void processExternalPort(final Service service, final Map<String, String> labels, final Integer port) {
-        final Map<Integer, ServicePort> activePorts = service.getSpec().getPorts().stream()
-            .collect(Collectors.toMap(ServicePort::getPort, Function.identity()));
+        final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
         final String targetStatus = labels.get(getTargetStatusLabelName(port));
         final String currentStatus = labels.get(getCurrentStatusLabelName(port));
         if (!targetStatus.equals(currentStatus)) {
@@ -193,6 +192,11 @@ public class NatGatewayManager {
                 processScheduledTermination(service, activePorts, port);
             }
         }
+    }
+
+    private Map<Integer, ServicePort> getServiceActivePorts(final Service service) {
+        return service.getSpec().getPorts().stream()
+            .collect(Collectors.toMap(ServicePort::getPort, Function.identity()));
     }
 
     private Map<String, String> getServiceLabels(final Service service) {
@@ -396,6 +400,19 @@ public class NatGatewayManager {
                                           route.getRouteId(), correspondingServiceName));
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
+        if (NatRouteStatus.ACTIVE.equals(route.getStatus())) {
+            final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
+            if (!activePorts.containsKey(externalPort)) {
+                final boolean portCreationResult = kubernetesManager.generateFreeTargetPort()
+                    .map(newPort -> kubernetesManager.addPortToExistingService(
+                        service.getMetadata().getName(), externalPort, newPort))
+                    .map(Optional::isPresent)
+                    .orElse(false);
+                if (!portCreationResult) {
+                    return false;
+                }
+            }
+        }
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
         final NatRouteStatus targetStatusInKube =
             NatRouteStatus.valueOf(extractStringFromLabels(service, targetStatusLabelName));
@@ -701,18 +718,8 @@ public class NatGatewayManager {
             if (!newPort.isPresent()) {
                 return false;
             }
-            final Integer targetPort = newPort.get();
             final Optional<ServicePort> portAddingResult =
-                Optional.of(kubernetesManager.createServiceIfNotExists(serviceName, port, targetPort, true))
-                    .map(Service::getSpec)
-                    .map(ServiceSpec::getPorts)
-                    .map(Collection::stream)
-                    .orElse(Stream.empty())
-                    .filter(servicePort ->
-                                kubernetesManager.getServicePortName(serviceName, port).equals(servicePort.getName()))
-                    .findAny()
-                    .map(Optional::of)
-                    .orElse(kubernetesManager.addPortToExistingService(serviceName, port, targetPort));
+                kubernetesManager.addPortToExistingService(serviceName, port, newPort.get());
             portAddingResult.ifPresent(servicePort -> {
                 updateStatusForRoutingRule(serviceName, port, NatRouteStatus.SERVICE_CONFIGURED);
                 activePorts.put(servicePort.getPort(), servicePort);
