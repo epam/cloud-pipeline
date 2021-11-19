@@ -495,6 +495,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             values={this.state.runCapabilities}
             onChange={this.onRunCapabilitiesSelect}
             platform={this.toolPlatform}
+            dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
+            provider={this.currentCloudRegionProvider}
           />
         </FormItem>
       );

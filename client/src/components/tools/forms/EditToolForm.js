@@ -117,7 +117,8 @@ export default class EditToolForm extends React.Component {
     onSubmit: PropTypes.func,
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
-    executionEnvironmentDisabled: PropTypes.bool
+    executionEnvironmentDisabled: PropTypes.bool,
+    dockerOSVersion: PropTypes.string
   };
 
   static defaultProps = {
@@ -1341,6 +1342,8 @@ export default class EditToolForm extends React.Component {
                       values={this.state.runCapabilities}
                       onChange={this.onRunCapabilitiesSelect}
                       platform={this.props.platform}
+                      dockerImageOS={this.props.dockerOSVersion}
+                      provider={this.getCloudProvider()}
                     />
                   </Form.Item>
                 )
