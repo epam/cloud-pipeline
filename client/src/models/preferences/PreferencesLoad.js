@@ -182,6 +182,40 @@ class PreferencesLoad extends Remote {
           }
           return [];
         };
+        const parseOSValue = o => {
+          if (!o) {
+            return [];
+          }
+          if (Array.isArray(o)) {
+            return o.slice();
+          }
+          if (typeof o === 'string') {
+            return o.split(',').map(o => o.trim());
+          }
+          return [];
+        };
+        const parseOS = o => parseOSValue(o)
+          .map(mask => mask.trim())
+          .filter(mask => mask.length)
+          .map(mask => {
+            if (/^all$/i.test(mask)) {
+              return /.*/;
+            }
+            const regExpValue = mask
+              .trim()
+              .replace(/\./g, '\\.')
+              .replace(/\*/g, '.*');
+            return new RegExp(`^${regExpValue}$`, 'i');
+          });
+        const parseCloudProviders = o => {
+          if (o && /^all$/i.test(o.trim())) {
+            return [];
+          }
+          return (o || '')
+            .split(',')
+            .map(o => o.trim().toLowerCase())
+            .filter(o => o.length);
+        };
         return Object
           .entries(capabilities || {})
           .map(([key, entry]) => ({
@@ -189,6 +223,8 @@ class PreferencesLoad extends Remote {
             name: key,
             description: entry?.description,
             platforms: parsePlatforms(entry?.platforms),
+            cloud: parseCloudProviders(entry?.cloud),
+            os: parseOS(entry?.os),
             custom: true,
             params: entry?.params || {}
           }));
