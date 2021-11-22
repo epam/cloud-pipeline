@@ -425,6 +425,9 @@ export default `
   border-right: 1px solid @card-border-color;
   border-bottom: 1px solid @card-border-color;
 }
+@THEME .ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
+  padding: 0;
+}
 @THEME .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   border-bottom: 0;
 }
@@ -666,8 +669,12 @@ export default `
 @THEME .ant-table-tbody > tr > td {
   border-color: @table-border-color;
 }
+@THEME .cp-table-element {
+  color: @application-color;
+}
 @THEME .ant-table-tbody > tr:hover > td,
-@THEME .cp-table-element-hover {
+@THEME .cp-table-element-hover,
+@THEME .cp-table-element:hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
 }
@@ -676,7 +683,8 @@ export default `
   background-color: @table-element-selected-background-color;
   color: @table-element-selected-color;
 }
-@THEME .cp-table-element-disabled {
+@THEME .cp-table-element-disabled,
+@THEME .cp-table-element[disabled] {
   cursor: default;
   background-color: @card-background-color;
   color: @application-color-disabled;
@@ -761,7 +769,8 @@ export default `
 @THEME .ant-select-dropdown,
 @THEME .ant-dropdown-menu,
 @THEME .rc-menu,
-@THEME .rc-dropdown-menu {
+@THEME .rc-dropdown-menu,
+@THEME .ant-mention-dropdown {
   background-color: @panel-background-color;
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
@@ -782,9 +791,20 @@ export default `
   color: @input-placeholder-color;
   background-color: transparent;
 }
-@THEME .ant-select-dropdown-menu-item {
+@THEME .ant-select-dropdown-menu-item,
+@THEME .ant-mention-dropdown-item {
   color: @application-color;
   background-color: @panel-background-color;
+}
+@THEME .ant-mention-dropdown-item-hover,
+@THEME .ant-mention-dropdown-item.focus,
+@THEME .ant-mention-dropdown-item-active {
+  color: @element-hover-color;
+  background-color: @element-hover-background-color;
+}
+@THEME .ant-mention-dropdown-item-disabled,
+@THEME .ant-mention-dropdown-item-disabled:hover {
+  color: @application-color-disabled;
 }
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
@@ -1185,6 +1205,39 @@ export default `
 }
 @THEME .ant-slider:hover .ant-slider-handle {
   border-color: @primary-hover-color;
+}
+@THEME .cp-notification {
+  background-color: @card-background-color;
+  color: @application-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
+  border-color: @card-border-color;
+}
+@THEME .ant-mention-wrapper .ant-mention-editor {
+  background-color: @input-background;
+  border-color: @input-border;
+  color: @input-color;
+}
+@THEME .ant-mention-wrapper .public-DraftEditorPlaceholder-root .public-DraftEditorPlaceholder-inner {
+  color: @input-placeholder-color;
+}
+@THEME .cp-mention .ant-mention-editor,
+@THEME .cp-mention .ant-mention-wrapper,
+@THEME .cp-mention.ant-mention-active .ant-mention-editor,
+@THEME .cp-mention.ant-mention-active .ant-mention-wrapper {
+  box-shadow: none;
+  border: none;
+}
+@THEME .ant-mention-dropdown {
+  background-color: red;
+}
+@THEME .cp-overlay {
+  background-color: @modal-mask-background;
+}
+@THEME .cp-close-button {
+  color: @application-color-faded;
+}
+@THEME .cp-close-button:hover {
+  color: @application-color;
 }
 
 @THEME .cp-panel {
@@ -2109,15 +2162,39 @@ export default `
   border: 1px solid @card-border-color;
   border-radius: 4px;
 }
+@THEME .markdown pre {
+  color: @application-color;
+  background-color: @code-background-color;
+  border: 1px solid @card-border-color;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 5px 0;
+}
 @THEME .code-highlight code,
 @THEME .markdown code {
   color: @color-pink;
   background-color: @color-pink-light;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
+@THEME .markdown pre > code {
+  display: block;
+  background-color: transparent;
+  color: inherit;
+  box-shadow: none;
+}
 @THEME .markdown code {
   padding: 1px 4px;
   border-radius: 4px;
+}
+@THEME .markdown h1,
+@THEME .markdown h2,
+@THEME .markdown h3 {
+  margin: 5px 0;
+}
+@THEME .markdown h4,
+@THEME .markdown h5,
+@THEME .markdown h6 {
+  margin: 2px 0;
 }
 @THEME .hljs {
   color: @application-color;
@@ -2369,6 +2446,16 @@ export default `
 }
 @THEME .cp-pipeline-graph-properties-panel {
 
+}
+@THEME .cp-issue-markdown-link {
+  color: @primary-color;
+  background-color: @card-background-color;
+  box-shadow: inset 0 -1px 0 @card-hovered-shadow-color;
+  transition: none;
+}
+@THEME .cp-issue-markdown-link:hover {
+  color: @primary-text-color;
+  background-color: @primary-color;
 }
 
 `;

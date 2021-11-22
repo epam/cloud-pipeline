@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
 import classNames from 'classnames';
+import Papa from 'papaparse';
 import VersionFile from '../../../models/pipelines/VersionFile';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -27,32 +28,7 @@ import HTMLRenderer from './HTMLRenderer';
 import {PreviewIcons} from './previewIcons';
 import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
-import Papa from 'papaparse';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
-
-const MarkdownRenderer = new Remarkable('commonmark', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import Markdown from '../../special/markdown';
 
 const previewLoad = (params) => {
   if (params.item && params.item.parentId && params.item.pipelineVersion && params.item.path) {
@@ -281,12 +257,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
-            <div
-              dangerouslySetInnerHTML={{
-                __html: MarkdownRenderer.render(this.filePreview.preview)
-              }} />
-          </div>
+          <Markdown md={this.filePreview.preview} />
         </div>
       );
     }

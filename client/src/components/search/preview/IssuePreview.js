@@ -28,16 +28,13 @@ import IssueLoad from '../../../models/issues/IssueLoad';
 import moment from 'moment-timezone';
 import displayDate from '../../../utils/displayDate';
 import roleModel from '../../../utils/roleModel';
+import Markdown from '../../special/markdown';
 
 @roleModel.authenticationInfo
 @inject((stores, params) => {
-  const {issuesRenderer} = stores;
   const issueInfo = new IssueLoad(params.item.id);
-
   issueInfo.fetch();
-
   return {
-    issuesRenderer,
     issueInfo
   };
 })
@@ -147,10 +144,12 @@ export default class IssuePreview extends React.Component {
   };
 
   commentTextPreview = (text, style = {}) => {
-    return <div
-      className={classNames(styles.mdPreview, 'cp-search-md-preview')}
+    return <Markdown
+      className="cp-search-md-preview"
+      md={text}
+      cloudPipelineLinks
       style={style}
-      dangerouslySetInnerHTML={{__html: this.props.issuesRenderer.render(text)}} />;
+    />;
   };
 
   renderIssue = () => {

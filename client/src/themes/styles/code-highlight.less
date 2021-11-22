@@ -23,6 +23,15 @@
   border-radius: 4px;
 }
 
+.markdown pre {
+  color: @application-color;
+  background-color: @code-background-color;
+  border: 1px solid @card-border-color;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 5px 0;
+}
+
 .code-highlight code,
 .markdown code {
   color: @color-pink;
@@ -30,9 +39,28 @@
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
+.markdown pre > code {
+  display: block;
+  background-color: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
 .markdown code {
   padding: 1px 4px;
   border-radius: 4px;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 5px 0;
+}
+
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin: 2px 0;
 }
 
 .hljs {
@@ -348,4 +376,16 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
 
 .cp-pipeline-graph-properties-panel {
 
+}
+
+.cp-issue-markdown-link {
+  color: @primary-color;
+  background-color: @card-background-color;
+  box-shadow: inset 0 -1px 0 @card-hovered-shadow-color;
+  transition: none;
+}
+
+.cp-issue-markdown-link:hover {
+  color: @primary-text-color;
+  background-color: @primary-color;
 }

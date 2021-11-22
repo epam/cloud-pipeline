@@ -30,32 +30,8 @@ import {SearchItemTypes} from '../../../models/search';
 import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import Papa from 'papaparse';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
+import Markdown from '../../special/markdown';
 import VSIPreview from './vsi-preview';
-
-const MarkdownRenderer = new Remarkable('commonmark', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
@@ -294,10 +270,7 @@ export default class S3FilePreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
-            <div
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.filePreview.preview)}} />
-          </div>
+          <Markdown md={this.filePreview.preview} />
         </div>
       );
     }
