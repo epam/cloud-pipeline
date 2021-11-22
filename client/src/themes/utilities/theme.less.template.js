@@ -443,6 +443,11 @@ export default `
   background-color: @btn-primary-active;
   border-color: @btn-primary-active;
 }
+@THEME .ant-btn-background-ghost.ant-btn-primary {
+  color: @primary-color;
+  background-color: transparent;
+  border-color: @primary-color;
+}
 @THEME .ant-btn-danger {
   color: @btn-danger-color;
   background-color: @btn-danger-background-color;
@@ -979,6 +984,9 @@ export default `
 @THEME .ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected:hover::after {
   color: @primary-color;
 }
+@THEME .ant-form-item {
+  color: @application-color;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
@@ -1117,6 +1125,10 @@ export default `
 
 @THEME .provider.aws {
   background-image: @aws-icon;
+}
+@THEME .ant-tooltip-inner .provider.aws,
+@THEME .cp-library-breadcrumbs-editable-field .provider.aws {
+  background-image: @aws-icon-light;
 }
 @THEME .provider.gcp {
   background-image: @gcp-icon;
@@ -1260,6 +1272,9 @@ export default `
   background-color: @application-background-color;
   color: @application-color;
 }
+@THEME .cp-tool-add-endpoint {
+  background-color: @input-background-disabled;
+}
 
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
@@ -1306,6 +1321,14 @@ export default `
   background-color: @primary-active-color;
   color: @primary-text-color;
   outline: none;
+}
+@THEME .cp-runs-advanced-filter-input {
+  background-color: @input-background;
+  border: 1px solid @input-border;
+}
+@THEME .cp-runs-advanced-filter-input-error {
+  background-color: @input-background;
+  border: 1px solid @color-red;
 }
 
 @THEME .cp-billing-menu {
@@ -1761,6 +1784,20 @@ export default `
 }
 @THEME .cp-library-metadata-divider {
   background-color: @card-border-color;
+}
+@THEME .cp-library-breadcrumbs-editable-field:hover {
+  border: 1px solid @panel-border-color;
+  background-color: @element-selected-background-color !important;
+}
+@THEME .cp-library-breadcrumbs-editable-field-icon {
+  color: @application-color-faded;
+}
+@THEME .cp-library-breadcrumbs-editable-field:hover .cp-library-breadcrumbs-editable-field-icon {
+  color: @application-color;
+}
+@THEME .cp-library-path-components-container:hover {
+  transition: background-color 0.5s ease;
+  background-color: @element-selected-background-color;
 }
 
 @THEME .cp-node-tag {

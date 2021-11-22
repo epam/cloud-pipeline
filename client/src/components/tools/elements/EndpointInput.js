@@ -30,6 +30,7 @@ import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
 
 import '../../../staticStyles/EndpointInput.css';
+import classNames from 'classnames';
 
 @observer
 export default class EndpointInput extends React.Component {
@@ -353,9 +354,9 @@ export default class EndpointInput extends React.Component {
     );
     return (
       <div
+        className={classNames({'cp-tool-add-endpoint': this.props.even})}
         style={{
           width: '100%',
-          backgroundColor: this.props.even ? '#fafafa' : undefined,
           padding: 5
         }}>
         <Row type="flex" align="top">

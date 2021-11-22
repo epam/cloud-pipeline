@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Row, Breadcrumb, Input} from 'antd';
+import classNames from 'classnames';
 import styles from './DataStorageNavigation.css';
 
 @observer
@@ -121,7 +122,10 @@ export default class DataStorageNavigation extends React.Component {
   render () {
     return (
       <Row
-        className={styles.pathComponentsContainer}
+        className={classNames(
+          styles.pathComponentsContainer,
+          'cp-library-path-components-container'
+        )}
         onClick={this.setEditableMode(true)}>
         {!this.state.editable &&
           <Breadcrumb style={{padding: 5}}>

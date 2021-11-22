@@ -14,12 +14,32 @@
  * limitations under the License.
  */
 
-.path-components-container {
-  cursor: text;
-  margin-bottom: 10px;
-  width: 100%;
+ .editable-mode {
+  padding-left: 5px;
+  padding-right: 0px;
+  height: 31px;
+  border: 1px solid transparent;
+  cursor: default;
+  display: inline;
 }
 
-.breadcrumb-item {
-  padding: 5px 0;
+.editable-mode-hovered:hover {
+  border-radius: 2px;
+  cursor: text;
+}
+
+.editable-mode-options {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editable-field-icon {
+  padding-left: 5px;
+  display: initial;
+}
+
+.editable-field-icon.not-displayed {
+  display: none;
 }
