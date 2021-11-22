@@ -34,6 +34,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -236,8 +238,8 @@ public class LogManager {
     }
 
     private SearchResponse executeRequest(final SearchRequest searchRequest) {
-        try {
-            return elasticHelper.buildClient().search(searchRequest);
+        try (RestClient client = elasticHelper.buildLowLevelClient()) {
+            return new RestHighLevelClient(client).search(searchRequest);
         } catch (IOException e) {
             throw new PipelineException(e);
         }
