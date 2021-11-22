@@ -141,12 +141,10 @@
 }
 
 .hint-icon-container {
-  color: white;
   font-size: 30px;
   width: 100%;
   height: 100%;
   border-radius: 20px;
-  background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid transparent;
   -webkit-box-align: center;
   -ms-flex-align: center;
@@ -156,11 +154,6 @@
   justify-content: center;
   display: flex;
   cursor: pointer;
-}
-
-.hint-icon-container:hover {
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .hints {
@@ -202,7 +195,6 @@
 .search-result-item {
   cursor: pointer;
   margin-bottom: 5px;
-  background-color: rgba(255, 255, 255, 0.5);
   width: 100%;
   padding: 10px;
   border-radius: 3px;
@@ -213,10 +205,6 @@
   -ms-transition: background-color 100ms;
   -o-transition: background-color 100ms;
   transition: background-color 100ms;
-}
-
-.search-result-item.hovered {
-  background-color: rgba(255, 255, 255, 0.75);
 }
 
 .search-result-item .title {
@@ -242,12 +230,10 @@
 }
 
 .searching-in-progress-container i {
-  color: white;
   font-size: x-large;
 }
 
 .searching-in-progress-container span {
-  color: #eee;
   font-size: large;
 }
 
@@ -283,6 +269,7 @@
   top: 50vh;
   margin-top: -20px;
   height: 38px;
+  line-height: 38px;
   left: 72vw;
   margin-left: 10px;
   -webkit-transition: margin 250ms, top 250ms, right 250ms;
@@ -290,11 +277,9 @@
   -ms-transition: margin 250ms, top 250ms, right 250ms;
   -o-transition: margin 250ms, top 250ms, right 250ms;
   transition: margin 250ms, top 250ms, right 250ms;
-  color: #eee;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.1);
   cursor: pointer;
   font-size: 18px;
   padding: 0 10px;
@@ -304,11 +289,6 @@
 .advanced .icon {
   font-size: 25px;
   margin-right: 5px;
-}
-
-.advanced:hover {
-  color: white;
-  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .advanced.results-available {

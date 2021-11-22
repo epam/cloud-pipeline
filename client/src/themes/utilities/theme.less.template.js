@@ -2018,6 +2018,16 @@ export default `
   color: @application-color-disabled;
   cursor: not-allowed;
 }
+@THEME .cp-fast-search-result-item {
+  background-color: @card-background-color;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-fast-search-result-item:hover,
+@THEME .cp-fast-search-result-item.cp-table-element-hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
 
 @THEME .cp-versioned-storage-breadcrumb {
   cursor: pointer;

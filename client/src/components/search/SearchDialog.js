@@ -336,14 +336,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   renderSearchResultItem = (resultItem, index) => {
-    const classNames = [styles.searchResultItem];
     let additionalStyle = getStyle({
-      ie: {backgroundColor: 'rgba(255, 255, 255, 0.75)'}
+      ie: {opacity: 0.75}
     });
     if (index === this.state.hoveredIndex) {
-      classNames.push(styles.hovered);
       additionalStyle = getStyle({
-        ie: {backgroundColor: 'white'}
+        ie: {opacity: 1}
       });
     }
     const renderName = () => {
@@ -366,7 +364,16 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         id={`search-result-item-${index}`}
         key={index}
         style={additionalStyle}
-        className={`${classNames.join(' ')}`}
+        className={
+          classNames(
+            styles.searchResultItem,
+            'cp-fast-search-result-item',
+            'cp-table-element',
+            {
+              'cp-table-element-hover': index === this.state.hoveredIndex
+            }
+          )
+        }
         onMouseOver={this.onHover(index)}
         onMouseEnter={this.onHover(index)}
         onMouseLeave={this.onUnHover(index)}
@@ -563,71 +570,91 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     if (preferences.loaded && !preferences.searchEnabled) {
       return null;
     }
-    const searchFormClassNames = [styles.searchForm];
-    const searchResultsClassNames = [styles.searchResults];
-    const advancedSearchClassNames = [styles.advanced];
-    if (this.state.searchResults.length) {
-      searchFormClassNames.push(styles.resultsAvailable);
-      searchResultsClassNames.push(styles.resultsAvailable);
-    }
-    if (this.state.previewAvailable) {
-      searchFormClassNames.push(styles.previewAvailable);
-    }
-    const typesFormClassNames = [styles.typesForm];
-    if (this.state.searchResults.length) {
-      typesFormClassNames.push(styles.resultsAvailable);
-    }
-    const hintContainerClassNames = [styles.hintContainer];
-    if (this.state.searchResults.length) {
-      hintContainerClassNames.push(styles.resultsAvailable);
-    }
-    if (this.state.previewAvailable) {
-      hintContainerClassNames.push(styles.previewAvailable);
-    }
-    if (this.state.searchResults.length) {
-      advancedSearchClassNames.push(styles.resultsAvailable);
-    }
-    if (this.state.previewAvailable) {
-      advancedSearchClassNames.push(styles.previewAvailable);
-    }
     let hintsTooltipPlacement;
     if (this.state.previewAvailable && this.state.searchResults.length) {
       hintsTooltipPlacement = 'bottomRight';
     } else if (this.state.searchResults.length) {
       hintsTooltipPlacement = 'bottom';
     }
-    const previewClassNames = [styles.preview, 'cp-search-preview'];
-    if (!this.state.previewAvailable) {
-      previewClassNames.push(styles.notAvailable);
-    }
     return (
-      <div className={`${styles.searchContainer} ${this.state.visible ? styles.visible : ''}`}>
+      <div
+        className={
+          classNames(
+            styles.searchContainer,
+            {
+              [styles.visible]: this.state.visible
+            }
+          )
+        }
+      >
         <div
-          className={`${styles.searchBackground} ${this.state.visible ? styles.visible : ''}`}
+          className={
+            classNames(
+              styles.searchBackground,
+              {
+                [styles.visible]: this.state.visible
+              }
+            )
+          }
           style={
             this.state.visible
               ? getStyle({ie: {opacity: 0.75}})
               : {}
           }
-          onClick={this.closeDialog}>
+          onClick={this.closeDialog}
+        >
           {'\u00A0'}
         </div>
         <div
-          className={`${previewClassNames.join(' ')}`}
-          onClick={this.state.previewAvailable ? undefined : this.closeDialog}>
+          className={classNames(
+            styles.preview,
+            'cp-search-preview',
+            {
+              [styles.notAvailable]: !this.state.previewAvailable
+            }
+          )}
+          onClick={this.state.previewAvailable ? undefined : this.closeDialog}
+        >
           {this.renderPreview()}
         </div>
-        <div className={`${hintContainerClassNames.join(' ')}`}>
+        <div
+          className={
+            classNames(
+              styles.hintContainer,
+              {
+                [styles.resultsAvailable]: this.state.searchResults.length,
+                [styles.previewAvailable]: this.state.previewAvailable
+              }
+            )
+          }
+        >
           <Tooltip
             overlayClassName="search-hints-overlay"
             placement={hintsTooltipPlacement}
             title={this.renderHints()}>
-            <div className={styles.hintIconContainer}>
+            <div
+              className={
+                classNames(
+                  styles.hintIconContainer,
+                  'cp-search-type-button'
+                )
+              }
+            >
               <Icon type="question" />
             </div>
           </Tooltip>
         </div>
-        <div className={`${typesFormClassNames.join(' ')}`} onClick={this.closeDialog}>
+        <div
+          className={
+            classNames(
+              styles.typesForm,
+              {
+                [styles.resultsAvailable]: this.state.searchResults.length
+              }
+            )
+          }
+          onClick={this.closeDialog}
+        >
           <div style={{display: 'flex', overflowX: 'auto'}}>
             {
               this.searchTypesArray.map((type, index) => {
@@ -661,7 +688,19 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             }
           </div>
         </div>
-        <Row type="flex" className={`${searchFormClassNames.join(' ')}`} align="middle">
+        <Row
+          type="flex"
+          className={
+            classNames(
+              styles.searchForm,
+              {
+                [styles.resultsAvailable]: this.state.searchResults.length,
+                [styles.previewAvailable]: this.state.previewAvailable
+              }
+            )
+          }
+          align="middle"
+        >
           <Input.Search
             className={styles.searchInput}
             placeholder={this.props.preferences.loaded
@@ -681,7 +720,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             (
               <Row
                 type="flex"
-                className={styles.searchingInProgressContainer}
+                className={
+                  classNames(
+                    styles.searchingInProgressContainer,
+                    'cp-text-not-important'
+                  )
+                }
                 align="middle"
                 justify="center"
               >
@@ -692,7 +736,14 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           <div
             onScroll={this.loadMore}
             id="search-results"
-            className={`${searchResultsClassNames.join(' ')}`}
+            className={
+              classNames(
+                styles.searchResults,
+                {
+                  [styles.resultsAvailable]: this.state.searchResults.length
+                }
+              )
+            }
             onClick={this.closeDialog}>
             {
               this.state.searchResults.map(this.renderSearchResultItem)
@@ -703,7 +754,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             (
               <Row
                 type="flex"
-                className={styles.searchingInProgressContainer}
+                className={
+                  classNames(
+                    styles.searchingInProgressContainer,
+                    'cp-text-not-important'
+                  )
+                }
                 align="middle"
                 justify="center"
               >
@@ -713,7 +769,16 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           }
         </Row>
         <div
-          className={advancedSearchClassNames.join(' ')}
+          className={
+            classNames(
+              styles.advanced,
+              {
+                [styles.resultsAvailable]: this.state.searchResults.length,
+                [styles.previewAvailable]: this.state.previewAvailable
+              },
+              'cp-search-type-button'
+            )
+          }
           onClick={this.navigateToAdvancedFilter}
         >
           <Icon className={styles.icon} type="filter" />

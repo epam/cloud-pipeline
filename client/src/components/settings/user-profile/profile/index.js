@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
@@ -107,7 +108,17 @@ class ProfileSettings extends React.Component {
             }
           </tbody>
         </table>
-        <div className={styles.divider}>{'\u00A0'}</div>
+        <div
+          className={
+            classNames(
+              'cp-divider',
+              'horizontal',
+              styles.divider
+            )
+          }
+        >
+          {'\u00A0'}
+        </div>
         <table className={styles.attributes}>
           <tbody>
             {
@@ -160,7 +171,17 @@ class ProfileSettings extends React.Component {
             }
           </tbody>
         </table>
-        <div className={styles.divider}>{'\u00A0'}</div>
+        <div
+          className={
+            classNames(
+              'cp-divider',
+              'horizontal',
+              styles.divider
+            )
+          }
+        >
+          {'\u00A0'}
+        </div>
         <Metadata
           readOnly={!userInfo.admin && !preferences.loaded}
           title="Attributes:"
