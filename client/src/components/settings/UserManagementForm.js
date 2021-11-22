@@ -51,6 +51,12 @@ import roleModel from '../../utils/roleModel';
 
 const PAGE_SIZE = 20;
 
+const USERS_FILTERS = {
+  all: 'all',
+  blocked: 'blocked',
+  notBlocked: 'notBlocked'
+};
+
 @roleModel.authenticationInfo
 @inject('dataStorages', 'users', 'userMetadataKeys')
 @inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({
@@ -89,7 +95,8 @@ export default class UserManagementForm extends React.Component {
     createGroupDefaultDataStorage: null,
     operationInProgress: false,
     userDataToExport: [],
-    metadataKeys: []
+    metadataKeys: [],
+    filterUsers: USERS_FILTERS.all
   };
 
   get isAdmin () {
@@ -348,6 +355,31 @@ export default class UserManagementForm extends React.Component {
           value={this.state.userSearchText}
           onPressEnter={this.fetchUsers}
           onChange={this.onUserSearchChanged} />
+        <Select
+          value={this.state.filterUsers}
+          style={{width: 175, marginLeft: 5}}
+          onChange={this.onChangeUsersFilters}
+          size="small"
+        >
+          <Select.Option
+            key={USERS_FILTERS.all}
+            value={USERS_FILTERS.all}
+          >
+            Show all users
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.notBlocked}
+            value={USERS_FILTERS.notBlocked}
+          >
+            Show not blocked users
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.blocked}
+            value={USERS_FILTERS.blocked}
+          >
+            Show blocked users
+          </Select.Option>
+        </Select>
         {
           this.isAdmin && (
             <Button
@@ -510,18 +542,22 @@ export default class UserManagementForm extends React.Component {
         }
         : undefined
     ].filter(Boolean);
+    const {filterUsers} = this.state;
+    const showBlocked = filterUsers === USERS_FILTERS.blocked;
+    const filteredUsers = this.users
+      .filter(user => filterUsers === USERS_FILTERS.all || showBlocked === user.blocked);
     return (
       <Table
         className={styles.table}
         rowKey="id"
         loading={this.usersPending}
         columns={columns}
-        dataSource={this.users}
+        dataSource={filteredUsers}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
         onRowClick={(user) => this.openEditUserRolesDialog(user)}
         pagination={{
-          total: this.users.length,
+          total: filteredUsers.length,
           PAGE_SIZE,
           current: this.state.usersTableCurrentPage
         }}
@@ -828,6 +864,13 @@ export default class UserManagementForm extends React.Component {
       createGroupDefaultDataStorage: defaultStorageId
     });
   };
+
+  onChangeUsersFilters = (e) => {
+    this.setState({
+      filterUsers: e,
+      usersTableCurrentPage: 1
+    });
+  }
 
   render () {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
