@@ -29,47 +29,49 @@
   background-color: inherit;
 }
 
-.cp-library-attributes-storage-size {
+.cp-metadata-item-row {
+  color: @application-color-faded;
+}
+
+.cp-metadata-item-row.key {
+  background-color: @element-selected-background-color;
+}
+
+.cp-metadata-item-content-preview {
+  background-color: @card-background-color;
   color: @application-color;
 }
 
-.cp-library-metadata-key-row,
-.cp-library-metadata-read-only-key-row,
-.cp-library-metadata-key-row-edit {
-  background-color: @element-selected-background-color;
-  color: @application-color-faded;
-}
-.cp-library-metadata-disabled-input {
-  background-color: @input-background-disabled;
-  color: @application-color-faded;
-}
-.cp-library-metadata-disabled-input:hover {
-  border-color: @border-color;
-}
-.cp-library-metadata-disabled-input:focus {
-  box-shadow: 0 0 0 @input-shadow-color;
-  border-color: @input-border;
-  outline: @input-background;
-}
-.cp-library-metadata-panel-label {
-  color: @application-color-faded;
-}
-
-.cp-library-metadata-special {
-  color: @primary-color;
-  background-color: @primary-hover-color;
-}
-
-.cp-library-metadata-special.read-only {
+.cp-metadata-item-row.read-only {
   color: @application-color-faded;
   background-color: @element-selected-background-color;
 }
 
-.cp-library-metadata-key-row td.key:hover,
-.cp-library-metadata-value-row td:hover {
+.cp-metadata-item-row td {
+  padding: 2px 5px;
+  border: 1px solid transparent;
+}
+
+.cp-metadata-item-row.key td.cp-metadata-item-key:hover,
+.cp-metadata-item-row.value td:hover {
+  cursor: text;
   border: 1px dashed @panel-border-color;
 }
 
-.cp-library-metadata-divider {
-  background-color: @card-border-color;
+.cp-metadata-fs-notification:nth-child(4n+3),
+.cp-metadata-fs-notification:nth-child(4n) {
+  background-color: @even-element-background;
+}
+
+.cp-metadata-item-json-table {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+  border-collapse: collapse;
+}
+
+.cp-metadata-item-json-table th,
+.cp-metadata-item-json-table td {
+  padding: 2px 4px;
+  border: 1px solid @card-border-color;
 }

@@ -188,7 +188,8 @@ h5 {
 .ant-input,
 .ant-input-number,
 .ant-input-number-input,
-.ant-input-number-handler-wrap {
+.ant-input-number-handler-wrap,
+.cp-limit-mounts-input {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
@@ -226,7 +227,8 @@ h5 {
 .ant-input-disabled,
 .ant-input-number-disabled,
 .ant-input-number-disabled .ant-input-number-handler-wrap,
-.ant-input-number-input[disabled] {
+.ant-input-number-input[disabled],
+.cp-limit-mounts-input.disabled {
   background-color: @input-background-disabled;
   color: @application-color-disabled;
 }
@@ -253,7 +255,8 @@ h5 {
 
 .ant-input:hover:not(.ant-input-disabled),
 .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
-.ant-input-number:hover:not(.ant-input-number-disabled) {
+.ant-input-number:hover:not(.ant-input-number-disabled),
+.cp-limit-mounts-input:hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
@@ -947,7 +950,8 @@ tr.ant-table-expanded-row:hover {
   background-color: @element-selected-background-color;
 }
 
-.ant-select-selection--multiple .ant-select-selection__choice {
+.ant-select-selection--multiple .ant-select-selection__choice,
+.cp-limit-mounts-input .cp-limit-mounts-input-tag {
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;

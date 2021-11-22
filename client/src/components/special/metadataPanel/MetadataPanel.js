@@ -442,7 +442,8 @@ export default class MetadataPanel extends React.Component {
         <td colSpan={span || 3}>
           <div className={classNames(
             MetadataStyles.divider,
-            'cp-library-metadata-divider'
+            'cp-divider',
+            'horizontal'
           )} />
         </td>
       </tr>
@@ -481,7 +482,13 @@ export default class MetadataPanel extends React.Component {
           valueElement.push((
             <tr
               key={`${key}_key`}
-              className={'cp-library-metadata-key-row-edit'}>
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'key'
+                )
+              }
+            >
               <td colSpan={6}>
                 <Input {...inputOptions('key', key, metadataItem[key].value)} />
               </td>
@@ -491,12 +498,15 @@ export default class MetadataPanel extends React.Component {
           valueElement.push((
             <tr
               key={`${key}_key`}
-              className={classNames({
-                [MetadataStyles.readOnlyKeyRow]: isReadOnlyItem,
-                [MetadataStyles.keyRow]: !isReadOnlyItem,
-                'cp-library-metadata-read-only-key-row': isReadOnlyItem,
-                'cp-library-metadata-key-row': !isReadOnlyItem
-              })}
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'key',
+                  {
+                    'read-only': isReadOnlyItem
+                  }
+                )
+              }
             >
               <td
                 id={`key-column-${key}`}
@@ -505,7 +515,6 @@ export default class MetadataPanel extends React.Component {
                     ? 6
                     : 5
                 }
-                className={MetadataStyles.key}
                 style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
                 onClick={this.onMetadataEditStarted('key', key, value)}>
                 {this.props.columnNamesFn(key)}
@@ -533,7 +542,15 @@ export default class MetadataPanel extends React.Component {
           (this.props.readOnlyKeys || []).indexOf(key) === -1
         ) {
           valueElement.push((
-            <tr key={`${key}_value`} className={MetadataStyles.valueRowEdit}>
+            <tr
+              key={`${key}_value`}
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'value'
+                )
+              }
+            >
               <td colSpan={6}>
                 <Input
                   {...inputOptions('value', key, metadataItem[key].value)}
@@ -547,11 +564,12 @@ export default class MetadataPanel extends React.Component {
           valueElement.push((
             <tr
               key={`${key}_value`}
-              className={classNames({
-                [MetadataStyles.readOnlyValueRow]: isReadOnlyItemOrArray,
-                [MetadataStyles.valueRow]: !isReadOnlyItemOrArray,
-                'cp-library-metadata-value-row': !isReadOnlyItemOrArray
-              })}
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'value'
+                )
+              }
             >
               <td
                 id={`value-column-${key}`}
@@ -572,7 +590,7 @@ export default class MetadataPanel extends React.Component {
       return (
         <tr
           style={{height: 40}}
-          className={'cp-library-metadata-panel-label'}
+          className="cp-text-not-important"
         >
           <td colSpan={3} style={{textAlign: 'center'}}>
             No item selected
@@ -583,7 +601,7 @@ export default class MetadataPanel extends React.Component {
     return (
       <tr
         style={{height: 40}}
-        className={'cp-library-metadata-panel-label'}
+        className="cp-text-not-important"
       >
         <td colSpan={3} style={{textAlign: 'center'}}>
           No attributes set

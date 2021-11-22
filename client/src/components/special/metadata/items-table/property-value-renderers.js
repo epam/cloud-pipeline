@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Popover} from 'antd';
+import classNames from 'classnames';
 
 export default function ({className, value}) {
   const Renderer = getRenderer(value);
@@ -93,10 +94,9 @@ export function ObjectRenderer ({className, value}) {
       }
     >
       <a
-        className={className}
+        className={classNames(className, 'cp-text')}
         style={{
           fontStyle: 'italic',
-          color: '#666',
           cursor: 'pointer',
           textDecoration: 'underline'
         }}
