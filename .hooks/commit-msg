@@ -13,7 +13,7 @@ if [ -z "$matched" ] ; then
     if [ -n "$matched_undefined" ] ; then
       echo "[warning] You are committing without a issue number" >&1
     else
-      echo "[error] Your message is not formatted correctly. The commit message must contain 'Issue #' or 'issue #'" >&2
+      echo "[error] Your message is not formatted correctly. The commit message must contain 'Issue #<issue number>' or 'issue #<issue number>'" >&2
       exit 1
     fi
 fi
