@@ -15,10 +15,10 @@
 
 package com.epam.pipeline.controller.datastorage;
 
-import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
