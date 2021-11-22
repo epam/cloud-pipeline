@@ -25,6 +25,8 @@
 @primary-active-color: @primary-color;
 @primary-text-color: @application-background-color;
 
+@primary-color-semi-transparent: fade(@primary-color, 20%);
+
 @color-green: #118a4e;
 @color-red: #ed4b30;
 @color-yellow: #f08732;
@@ -32,9 +34,15 @@
 @color-violet: #c730ea;
 @color-sensitive: #ff5c33;
 @color-aqua: #008080;
-@color-pink: #f46a8c;
+@color-aqua-light: #7dccc0;
+@color-pink: #d14;
 @color-pink-dusty: #313030;
+@color-pink-light: #fef0ef;
 @color-blue-dimmed: #458;
+@color-grey: #777;
+
+@color-white-dimmed-5: rgba(255, 255, 255, 0.05);
+@color-white-dimmed-10: rgba(255, 255, 255, 0.1);
 
 @color-white-dimmed-5: rgba(255, 255, 255, 0.05);
 @color-white-dimmed-10: rgba(255, 255, 255, 0.1);
@@ -97,7 +105,7 @@
 
 @modal-mask-background: rgba(0, 0, 0, 0.6);
 
-@even-element-background: @color-white-dimmed-5;
+@even-element-background: lighten(@card-background-color, 5%);
 
 @alert-success-background: darken(@status-good-color, 15%);
 @alert-success-border: @status-good-color;
@@ -146,29 +154,8 @@
 
 @code-background-color: lighten(@card-background-color, 5%);
 
-@search-preview-background-color: @panel-background-color;
-@search-first-row-color: darken(@border-color, 30%);
-@search-header-light-color: @application-color;
-@search-preview-text-color: @application-color;
-@search-preview-attributes-name: lighten(@tag-key-background-color, 5%);
-@search-preview-attributes-value: @tag-value-background-color;
-@search-preview-attributes-value-hovered: darken(@tag-key-background-color, 5%);
-
-@search-highlight-color: @application-color;
-@search-highlight-background-color: @code-background-color;
-@search-highlight-text-color: @panel-border-color;
-@search-highlight-text-background-color: @color-yellow;
-
-@search-table-background-color: @card-background-color;
-@search-table-border-color: @application-color;
-@search-md-preview-code-shadow: @color-white-dimmed-10;
-@search-md-preview-text-color: @application-color;
-
-@search-type-button-color: @application-color-faded;
-@search-type-button-background-color: lighten(@application-background-color, 3%);
-@search-type-button-selected: lighten(@search-type-button-background-color, 5%);
-@search-type-button-hover: lighten(@search-type-button-background-color, 8%);
-@search-type-button-disabled: lighten(@application-background-color, 12%);
+@search-highlight-text-color: @application-color;
+@search-highlight-text-background-color: @navigation-panel-color-impersonated;
 
 @library-storage-region-background-color: @color-white-dimmed-10;
 @library-storage-region-color: @application-color;

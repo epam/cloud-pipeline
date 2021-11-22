@@ -27,34 +27,10 @@ import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {metadataLoad, renderAttributes} from './renderAttributes';
 import {PreviewIcons} from './previewIcons';
-import styles from './preview.css';
-import Remarkable from 'remarkable';
 import {ScanStatuses} from '../../tools/utils';
 import VersionScanResult from '../../tools/elements/VersionScanResult';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
-
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import Markdown from '../../special/markdown';
+import styles from './preview.css';
 
 @inject('metadataCache', 'preferences')
 @inject((stores, params) => {
@@ -131,10 +107,7 @@ export default class ToolPreview extends React.Component {
     if (this.props.tool && this.props.tool.loaded && this.props.tool.value.description) {
       return (
         <div className={styles.contentPreview}>
-          <div className={classNames(styles.mdPreview, 'cp-search-md-preview')}>
-            <div
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.props.tool.value.description)}} />
-          </div>
+          <Markdown md={this.props.tool.value.description} />
         </div>
       );
     }

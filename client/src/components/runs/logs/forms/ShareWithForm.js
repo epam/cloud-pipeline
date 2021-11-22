@@ -310,7 +310,7 @@ export default class ShareWithForm extends React.Component {
       if (!this.state.selectedPermission || this.state.selectedPermission.name !== item.name) {
         return styles.row;
       } else {
-        return styles.selectedRow;
+        return 'cp-table-element-selected';
       }
     };
     const selectPermission = (item) => {

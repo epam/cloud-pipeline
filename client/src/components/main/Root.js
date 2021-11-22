@@ -47,8 +47,6 @@ import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
 import UsersInfo from '../../models/user/UsersInfo';
 import AppLocalization from '../../utils/localization';
-import IssuesRenderer from '../../components/special/issues/utilities/IssueRenderer';
-import NotificationRenderer from '../special/notifications/utilities/NotificationRenderer';
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
@@ -70,13 +68,6 @@ const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
-const issuesRenderer = new IssuesRenderer(
-  pipelinesLibrary,
-  dockerRegistries,
-  preferences,
-  hiddenObjects
-);
-const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
 const fireCloudMethods = new FireCloudMethods(googleApi);
@@ -152,8 +143,6 @@ const Root = () =>
       dataStorageAvailable,
       dtsList,
       dockerRegistries,
-      issuesRenderer,
-      notificationsRenderer,
       myIssues,
       users,
       usersInfo,

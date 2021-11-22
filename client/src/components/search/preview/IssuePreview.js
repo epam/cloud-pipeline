@@ -28,16 +28,13 @@ import IssueLoad from '../../../models/issues/IssueLoad';
 import moment from 'moment-timezone';
 import displayDate from '../../../utils/displayDate';
 import roleModel from '../../../utils/roleModel';
+import Markdown from '../../special/markdown';
 
 @roleModel.authenticationInfo
 @inject((stores, params) => {
-  const {issuesRenderer} = stores;
   const issueInfo = new IssueLoad(params.item.id);
-
   issueInfo.fetch();
-
   return {
-    issuesRenderer,
     issueInfo
   };
 })
@@ -147,10 +144,13 @@ export default class IssuePreview extends React.Component {
   };
 
   commentTextPreview = (text, style = {}) => {
-    return <div
-      className={classNames(styles.mdPreview, 'cp-search-md-preview')}
-      style={style}
-      dangerouslySetInnerHTML={{__html: this.props.issuesRenderer.render(text)}} />;
+    return (
+      <Markdown
+        md={text}
+        cloudPipelineLinks
+        style={style}
+      />
+    );
   };
 
   renderIssue = () => {
@@ -209,7 +209,7 @@ export default class IssuePreview extends React.Component {
       <div key={`${comment.id}_issue_comment`} className={styles.contentPreview}>
         <table>
           <tbody>
-            <tr className={'cp-search-first-row'}>
+            <tr className={'cp-search-comment-header'}>
               <td>
                 {this.renderAuthorName(comment.author)} commented {this.renderDate(comment.createdDate)}:
               </td>

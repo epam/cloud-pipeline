@@ -44,7 +44,6 @@
 
 .tab-header-row {
   margin: 5px 0;
-  border-bottom: 1px solid #dfdfdf;
   line-height: 36px;
   display: flex;
   align-items: center;
@@ -63,10 +62,6 @@
   right: 0;
 }
 
-.close:hover {
-  color: black;
-}
-
 .tab-heading {
   font-weight: bold;
   display: flex;
@@ -80,10 +75,6 @@
   cursor: pointer;
   border-radius: 5px;
   transition: all 0.2s ease;
-}
-
-.tab-heading-btn:hover {
-  background: #e6f7ff;
 }
 
 .tool-selection-container {
@@ -108,8 +99,4 @@
   height: 34px;
   line-height: 34px;
   transition: all 0.2s ease;
-}
-
-.tool-item:hover {
-  background-color: #eef8ff;
 }

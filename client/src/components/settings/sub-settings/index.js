@@ -16,8 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Table} from 'antd';
+import {message, Table} from 'antd';
 import styles from './sub-settings.css';
 
 class SubSettings extends React.PureComponent {
@@ -26,34 +27,100 @@ class SubSettings extends React.PureComponent {
   };
 
   componentDidMount () {
-    this.selectDefaultSection();
+    this.updateFromProps();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    this.selectDefaultSection();
+    if (prevProps.activeSectionKey !== this.props.activeSectionKey) {
+      this.updateFromProps();
+    } else {
+      this.selectDefaultSection();
+    }
   }
 
+  updateFromProps = () => {
+    const {
+      activeSectionKey
+    } = this.props;
+    this.setState({
+      section: activeSectionKey
+    }, this.selectDefaultSection);
+  };
+
   selectDefaultSection = () => {
-    const {sections = []} = this.props;
+    const {
+      sections = []
+    } = this.props;
     const {section} = this.state;
     const keys = sections.map(o => o.key);
     if (!keys.includes(section) && keys.length) {
       this.setState({
         section: keys[0]
-      });
+      }, this.reportSectionSelection);
+    }
+  };
+
+  reportSectionSelection = () => {
+    const {section} = this.state;
+    const {onSectionChange} = this.props;
+    if (onSectionChange) {
+      onSectionChange(section);
     }
   };
 
   onSelectSection = (section) => {
-    this.setState({
-      section
+    const {
+      section: current
+    } = this.state;
+    const {
+      canNavigate,
+      sections = []
+    } = this.props;
+    const currentSection = sections.find(o => o.key === section);
+    if (
+      section === current ||
+      (currentSection && currentSection.disabled)
+    ) {
+      return;
+    }
+    const onNavigate = () => {
+      this.setState({
+        section
+      }, this.reportSectionSelection);
+    };
+    const canNavigatePromise = () => new Promise((resolve) => {
+      if (canNavigate === undefined || canNavigate === null) {
+        resolve(true);
+      } else if (typeof canNavigate === 'function') {
+        const promise = canNavigate(section);
+        if (promise && promise.then) {
+          promise
+            .catch(e => {
+              message.error(e.message, 5);
+              return Promise.resolve(false);
+            })
+            .then(result => resolve(!!result));
+        } else {
+          resolve(!!promise);
+        }
+      } else {
+        resolve(true);
+      }
     });
+    canNavigatePromise()
+      .then(navigate => navigate ? onNavigate() : undefined);
   };
 
   renderSectionsList () {
-    const columns = [{key: 'title', dataIndex: 'title'}];
+    const columns = [{
+      key: 'title',
+      dataIndex: 'title'
+    }];
     const {sections = []} = this.props;
     const {section} = this.state;
+    if (sections.length === 0) {
+      return null;
+    }
     return (
       <Table
         className={classNames(styles.list, 'cp-divider', 'right')}
@@ -64,9 +131,12 @@ class SubSettings extends React.PureComponent {
         columns={columns}
         rowClassName={
           (item) => classNames(
-            `section-${item.key}`,
+            `section-${(item.key.toString() || '').replace(/\s/g, '-').toLowerCase()}`,
             'cp-settings-sidebar-element',
-            {'cp-table-element-selected': item.key === section}
+            {
+              'cp-table-element-selected': item.key === section,
+              'cp-table-element-disabled': item.disabled
+            }
           )
         }
         onRowClick={(item) => this.onSelectSection(item.key)}
@@ -77,24 +147,50 @@ class SubSettings extends React.PureComponent {
   renderSectionContent () {
     const {section} = this.state;
     if (!section) {
+      return undefined;
+    }
+    const {
+      sections = [],
+      children
+    } = this.props;
+    const currentSection = sections.find(o => o.key === section);
+    if (!currentSection) {
       return null;
     }
-    const {sections = []} = this.props;
-    const currentSection = sections.find(o => o.key === section);
-    if (!currentSection || typeof currentSection.render !== 'function') {
-      return null;
+    let content = children;
+    if (typeof currentSection.render === 'function') {
+      content = currentSection.render();
+    } else if (typeof children === 'function') {
+      content = children(currentSection);
     }
     return (
       <div
         className={styles.content}
       >
-        {currentSection.render()}
+        {content}
       </div>
     );
   }
-
   render () {
-    const {className} = this.props;
+    const {
+      className,
+      sections = [],
+      emptyDataPlaceholder
+    } = this.props;
+    if (sections.length === 0) {
+      return (
+        <div
+          className={
+            classNames(
+              className,
+              styles.container
+            )
+          }
+        >
+          {emptyDataPlaceholder}
+        </div>
+      );
+    }
     return (
       <div
         className={
@@ -113,11 +209,17 @@ class SubSettings extends React.PureComponent {
 
 SubSettings.propTypes = {
   className: PropTypes.string,
+  activeSectionKey: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  onSectionChange: PropTypes.func,
   sections: PropTypes.arrayOf(PropTypes.shape({
-    key: PropTypes.string,
+    key: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     title: PropTypes.string,
-    render: PropTypes.func
-  }))
+    render: PropTypes.func,
+    disabled: PropTypes.bool
+  })),
+  canNavigate: PropTypes.func,
+  children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  emptyDataPlaceholder: PropTypes.node
 };
 
-export default SubSettings;
+export default observer(SubSettings);

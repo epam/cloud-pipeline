@@ -142,7 +142,6 @@
 .deleted-pipeline {
   font-weight: normal;
   vertical-align: middle;
-  color: #8d0d0d;
 }
 
 .graph-container-full-height {
@@ -202,9 +201,7 @@
 .instance-header-item {
   margin-right: 2px;
   padding: 2px;
-  border: 1px solid #eee;
   border-radius: 3px;
-  background-color: #fafafa;
 }
 
 .nested-runs {
@@ -228,7 +225,6 @@
   margin-right: 5px;
   display: inline-block;
   text-decoration: none;
-  color: rgba(0, 0, 0, 0.75);
   padding: 0 2px;
 }
 
@@ -255,11 +251,6 @@
 
 .nested-run > span.details:last-child::after {
   content: none;
-}
-
-.nested-run:hover {
-  background-color: #f0f0f0;
-  color: rgba(0, 0, 0, 0.75);
 }
 
 .nested-run:hover .run-id {

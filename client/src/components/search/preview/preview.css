@@ -118,8 +118,9 @@
 .highlight {
   padding: 2px;
 }
+
 .highlight-text {
-  padding: 0px 2px;
+  padding: 0 2px;
 }
 
 .csv-table {
@@ -160,61 +161,6 @@
 .content-preview .task i,
 .content-preview .task code {
   margin-right: 5px;
-}
-
-.md-preview {
-  font-size: 10pt;
-}
-
-.md-preview code {
-  padding: 2px 4px;
-  font-size: 90%;
-  border-radius: 4px;
-}
-
-.md-preview p {
-  margin: 5px 0;
-}
-
-.md-preview p a {
-  margin: 0 2px;
-}
-
-.md-preview pre {
-  display: block;
-  padding: 10px;
-  margin: 10px 0;
-  line-height: 1.5;
-  word-break: break-all;
-  word-wrap: break-word;
-  border-radius: 4px;
-}
-
-.md-preview pre > code {
-  padding: 0;
-  font-size: inherit;
-  color: inherit;
-  white-space: pre-wrap;
-  background-color: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.md-preview ul,
-.md-preview ol {
-  margin-top: 0;
-  margin-bottom: 10px;
-  display: block;
-  list-style: disc inside;
-}
-
-.md-preview li {
-  display: list-item;
-  margin: 5px;
-}
-
-.md-preview img {
-  max-width: 100%;
 }
 
 .tool-version-scan-results {
@@ -340,9 +286,4 @@
 
 .share-url-action:hover {
   color: #0e77ca;
-}
-
-.render-separator {
-  height: 1px;
-  width: 100%;
 }

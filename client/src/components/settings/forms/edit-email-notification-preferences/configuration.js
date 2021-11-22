@@ -65,9 +65,8 @@ const SystemDiskConsumeThresholdPreference = {
       <b>Specifies disk threshold (in %)</b> above which the notification will be sent<br />
       and the corresponding run will be marked by the
       <span
+        className="cp-tag critical"
         style={{
-          color: '#ae1726',
-          border: '1px solid #ae1726',
           padding: '2px 5px',
           borderRadius: 5,
           margin: 3,
@@ -92,9 +91,8 @@ const SystemMemoryConsumeThresholdPreference = {
       <b>Specifies memory threshold (in %)</b> above which the notification will be sent<br />
       and the corresponding run will be marked by the
       <span
+        className="cp-tag critical"
         style={{
-          color: '#ae1726',
-          border: '1px solid #ae1726',
           padding: '2px 5px',
           borderRadius: 5,
           margin: 3,
@@ -120,9 +118,8 @@ const SystemMaxIdleTimeoutMinutesPreference = {
       After this period, the System starts to verify CPU utilization of the running node<br />
       and mark the run by the
       <span
+        className="cp-tag warning"
         style={{
-          color: '#f79e2c',
-          border: '1px solid #f79e2c',
           padding: '2px 5px',
           borderRadius: 5,
           margin: 3,

@@ -47,6 +47,14 @@
   margin: 2px;
 }
 
+.cp-panel .cp-panel-card.cp-launch-vs-tool {
+  margin: 2px 0;
+}
+
+.cp-panel .cp-panel-card.cp-hot-node-pool {
+  margin: 10px 0;
+}
+
 .cp-panel .cp-panel-card.cp-card-service {
   border: 1px solid @card-service-border-color;
   background-color: @card-service-background-color;
@@ -104,4 +112,29 @@
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions:hover .cp-panel-card-actions-background,
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
   background-color: @card-service-actions-active-background;
+}
+
+.cp-panel .cp-panel-card.cp-card-no-hover:hover,
+.cp-panel .cp-panel-card.cp-card-service.cp-card-no-hover:hover {
+  box-shadow: none;
+}
+
+.cp-content-panel {
+  background-color: @card-background-color;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+
+.cp-content-panel-header {
+  background-color: @card-header-background;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+
+.cp-resizable-panel-anchor {
+  background-color: @card-header-background;
+}
+
+.cp-card-border {
+  border: 1px solid @card-border-color;
 }

@@ -17,72 +17,61 @@
 import React from 'react';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import classNames from 'classnames';
 import {
   Alert,
   Button,
   Icon,
   Input,
   Modal,
-  message,
-  Table
+  message
 } from 'antd';
 import SystemDictionaryForm from './forms/SystemDictionaryForm';
 import roleModel from '../../utils/roleModel';
 import SystemDictionariesUpdate from '../../models/systemDictionaries/SystemDictionariesUpdate';
 import SystemDictionariesDelete from '../../models/systemDictionaries/SystemDictionariesDelete';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel';
-
+import SubSettings from './sub-settings';
 import styles from './SystemDictionaries.css';
 
 function nameSorter (a, b) {
-  const aName = (a.name || '').toLowerCase();
-  const bName = (b.name || '').toLowerCase();
+  const aName = (a.key || '').toLowerCase();
+  const bName = (b.key || '').toLowerCase();
   if (aName === bName) {
     return 0;
   }
   return aName < bName ? -1 : 1;
 }
 
+const NEW_DICTIONARY_KEY = 'new';
+
+function getDictionaryKey (isNew, key) {
+  return isNew ? NEW_DICTIONARY_KEY : `dictionary-${key}`;
+}
+
+@inject('systemDictionaries')
+@roleModel.authenticationInfo
+@observer
 class SystemDictionaries extends React.Component {
   state = {
     newDictionary: false,
     modified: false,
     pending: false,
     changesCanBeSkipped: false,
-    navigating: false,
-    filter: undefined
+    filter: undefined,
+    currentDictionaryKey: undefined
   };
 
   componentDidMount () {
-    const {route, router} = this.props;
-    this.navigateToDefault();
+    const {route, router, systemDictionaries} = this.props;
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
     }
-  };
-
-  componentDidUpdate () {
-    this.navigateToDefault();
+    systemDictionaries.fetch();
   };
 
   componentWillUnmount () {
     this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
   }
-
-  navigateToDefault = () => {
-    const {pending, navigating} = this.state;
-    if (pending || navigating) {
-      return;
-    }
-    const {currentDictionary} = this.props;
-    if (this.dictionaries.length > 0 && currentDictionary && !this.currentDictionary) {
-      this.selectDictionary(this.dictionariesNames[0]);
-    } else if (!currentDictionary && this.dictionariesNames.length > 0) {
-      this.selectDictionary(this.dictionariesNames[0]);
-    }
-  };
 
   @computed
   get dictionaries () {
@@ -93,21 +82,35 @@ class SystemDictionaries extends React.Component {
     return systemDictionaries.value || [];
   }
 
-  @computed
-  get currentDictionary () {
-    if (this.state.newDictionary) {
-      return {values: []};
+  get sections () {
+    const dataSource = [];
+    const {newDictionary, filter} = this.state;
+    if (newDictionary) {
+      dataSource.push({isNew: true});
     }
-    const {currentDictionary} = this.props;
-    return this.dictionaries.find(dict => dict.key === currentDictionary);
+    const lowerCasedFilter = (filter || '').toLowerCase();
+    dataSource.push(
+      ...this.dictionaries
+        .filter((dict) => !filter ||
+          (dict.values || [])
+            .find(v => (v.value || '').toLowerCase().indexOf(lowerCasedFilter) >= 0)
+        )
+        .sort(nameSorter)
+    );
+    return dataSource
+      .map(dictionary => ({
+        key: getDictionaryKey(dictionary.isNew, dictionary.key),
+        title: dictionary.isNew ? 'New dictionary' : dictionary.key,
+        disabled: newDictionary && !dictionary.isNew,
+        dictionary
+      }));
   }
 
-  @computed
-  get dictionariesNames () {
-    const names = this.dictionaries.map(dict => dict.key);
-    names.sort();
-    return names;
-  }
+  onChangeSection = (section) => {
+    this.setState({
+      currentDictionaryKey: section
+    });
+  };
 
   checkModifiedBeforeLeave = (nextLocation) => {
     const {router} = this.props;
@@ -118,7 +121,7 @@ class SystemDictionaries extends React.Component {
         0
       );
     };
-    const makeTransition = nextLocation => {
+    const makeTransition = () => {
       this.setState({changesCanBeSkipped: true},
         () => {
           router.push(nextLocation);
@@ -127,47 +130,54 @@ class SystemDictionaries extends React.Component {
       );
     };
     if (modified && !changesCanBeSkipped) {
-      Modal.confirm({
-        title: 'You have unsaved changes. Continue?',
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          makeTransition(nextLocation);
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
+      this.confirmChangeDictionary()
+        .then(confirmed => confirmed ? makeTransition() : undefined);
       return false;
     }
   };
 
-  addNewDictionary = () => {
-    this.setState({
-      newDictionary: true
+  confirmChangeDictionary = () => {
+    const {modified} = this.state;
+    return new Promise((resolve) => {
+      if (modified) {
+        Modal.confirm({
+          title: 'You have unsaved changes. Continue?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            resolve(true);
+          },
+          onCancel () {
+            resolve(false);
+          },
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      } else {
+        resolve(true);
+      }
     });
   };
 
-  selectDictionary = (name) => {
-    if (this.state.newDictionary) {
-      return;
-    }
-    const {router} = this.props;
-    router && router.push(`settings/dictionaries/${encodeURIComponent(name)}`);
+  addNewDictionary = () => {
+    this.setState({
+      newDictionary: true,
+      currentDictionaryKey: getDictionaryKey(true)
+    });
   };
 
   onDictionaryChanged = (name, items, changed) => {
     this.setState({modified: changed});
   };
 
-  onDictionarySave = (id, name, items) => {
-    const {currentDictionary} = this.props;
+  onDictionarySave = (dictionary, name, items) => {
     const hide = message.loading('Saving dictionary...', 0);
-    const {systemDictionaries, router} = this.props;
+    const {systemDictionaries} = this.props;
     this.setState({pending: true}, async () => {
       const request = new SystemDictionariesUpdate();
       await request.send({
-        id: id,
+        id: dictionary.id,
         key: name,
         values: items
       });
@@ -182,27 +192,23 @@ class SystemDictionaries extends React.Component {
           pending: false,
           modified: false,
           newDictionary: false,
-          navigating: true
-        }, () => {
-          if (currentDictionary !== name) {
-            router.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
-            this.setState({navigating: false});
-          }
+          currentDictionaryKey: getDictionaryKey(false, name)
         });
       }
     });
   };
 
-  onDictionaryDelete = (name) => {
-    if (this.state.newDictionary) {
+  onDictionaryDelete = (dictionary) => {
+    if (this.state.newDictionary || !dictionary || dictionary.isNew) {
       this.setState({
-        newDictionary: false
+        newDictionary: false,
+        currentDictionaryKey: undefined
       });
     } else {
       const hide = message.loading('Removing dictionary...', 0);
-      const {systemDictionaries, router} = this.props;
+      const {systemDictionaries} = this.props;
       this.setState({pending: true}, async () => {
-        const request = new SystemDictionariesDelete(name);
+        const request = new SystemDictionariesDelete(dictionary.key);
         await request.send();
         if (request.error) {
           hide();
@@ -214,10 +220,7 @@ class SystemDictionaries extends React.Component {
           this.setState({
             pending: false,
             modified: false,
-            navigating: true
-          }, () => {
-            router.push('/settings/dictionaries');
-            this.setState({navigating: false});
+            currentDictionaryKey: undefined
           });
         }
       });
@@ -226,54 +229,6 @@ class SystemDictionaries extends React.Component {
 
   onFilter = (e) => {
     this.setState({filter: e.target.value});
-  };
-
-  renderDictionariesTable = () => {
-    const {currentDictionary} = this.props;
-    const columns = [
-      {
-        dataIndex: 'name',
-        key: 'name',
-        render: (name) => name || 'Other'
-      }
-    ];
-    const dataSource = [];
-    const {newDictionary, filter} = this.state;
-    if (newDictionary) {
-      dataSource.push({name: 'New dictionary', isNew: true});
-    }
-    const lowerCasedFilter = (filter || '').toLowerCase();
-    dataSource.push(
-      ...this.dictionaries
-        .filter((dict) => !filter ||
-          (dict.values || [])
-            .find(v => (v.value || '').toLowerCase().indexOf(lowerCasedFilter) >= 0)
-        )
-        .map((dict) => ({name: dict.key}))
-        .sort(nameSorter)
-    );
-    const getRowClassName = (group) => {
-      return classNames(
-        'cp-settings-sidebar-element',
-        {
-          'cp-table-element-selected': (newDictionary && group.isNew) ||
-            group.name === currentDictionary,
-          'cp-table-element-disabled': newDictionary && !group.isNew
-        }
-      );
-    };
-    return (
-      <Table
-        className={styles.table}
-        dataSource={dataSource}
-        columns={columns}
-        showHeader={false}
-        pagination={false}
-        rowKey="name"
-        rowClassName={getRowClassName}
-        onRowClick={group => this.selectDictionary(group.name)}
-        size="medium" />
-    );
   };
 
   render () {
@@ -313,61 +268,39 @@ class SystemDictionaries extends React.Component {
             <span>Add dictionary</span>
           </Button>
         </div>
-        <div
-          style={{flex: 1, minHeight: 0}}
+        <SubSettings
+          sections={this.sections}
+          activeSectionKey={this.state.currentDictionaryKey}
+          onSectionChange={this.onChangeSection}
+          canNavigate={this.confirmChangeDictionary}
+          emptyDataPlaceholder={(
+            <span
+              className="cp-text-not-important"
+              style={{flex: 1, textAlign: 'center'}}
+            >
+              Nothing found
+            </span>
+          )}
         >
-          <SplitPanel
-            contentInfo={[
-              {
-                key: 'dictionaries',
-                size: {
-                  pxDefault: 300
-                }
-              }
-            ]}
-          >
-            <div key="dictionaries" style={{padding: 5}}>
-              {this.renderDictionariesTable()}
-            </div>
-            <div
-              key="preferences"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                padding: 5,
-                maxHeight: '100%'
-              }}>
+          {
+            section => (
               <SystemDictionaryForm
                 filter={this.state.filter}
                 disabled={this.state.pending}
-                onDelete={this.onDictionaryDelete}
-                onSave={this.onDictionarySave}
+                onDelete={() => this.onDictionaryDelete(section.dictionary)}
+                onSave={(name, values) => this.onDictionarySave(section.dictionary, name, values)}
                 onChange={this.onDictionaryChanged}
-                id={this.currentDictionary ? this.currentDictionary.id : undefined}
-                name={this.currentDictionary ? this.currentDictionary.key : undefined}
-                items={
-                  this.currentDictionary
-                    ? (this.currentDictionary.values || []).map(o => o)
-                    : []
-                }
-                dictionaries={this.dictionaries.map(d => d)}
+                id={section.dictionary.id}
+                name={section.dictionary.key}
+                items={(section.dictionary.values || []).map(o => o)}
+                dictionaries={this.dictionaries.slice()}
               />
-            </div>
-          </SplitPanel>
-        </div>
+            )
+          }
+        </SubSettings>
       </div>
     );
   }
 }
 
-export default inject(({systemDictionaries}, {params = {}}) => {
-  const {currentDictionary} = params;
-  return {
-    currentDictionary,
-    systemDictionaries
-  };
-})(
-  roleModel.authenticationInfo(
-    observer(SystemDictionaries)
-  )
-);
+export default SystemDictionaries;

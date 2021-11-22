@@ -203,7 +203,7 @@ class SystemDictionaryForm extends React.Component {
   };
 
   onSave = () => {
-    const {id, onSave} = this.props;
+    const {onSave} = this.props;
     if (onSave && this.valid && this.modified) {
       const {name, items} = this.state;
       const itemsProcessed = (items || [])
@@ -212,7 +212,6 @@ class SystemDictionaryForm extends React.Component {
           return rest;
         });
       onSave(
-        id,
         name,
         itemsProcessed
       );
@@ -289,7 +288,7 @@ class SystemDictionaryForm extends React.Component {
             wordWrap: 'break-word'
           },
           onOk () {
-            onDelete(name);
+            onDelete();
           }
         });
       }

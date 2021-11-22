@@ -1919,12 +1919,12 @@ class AWSRegionForm extends React.Component {
               <Col
                 xs={this.formItemLayout.labelCol.xs.span}
                 sm={this.formItemLayout.labelCol.sm.span}
+                className="cp-settings-form-item-label"
                 style={{
                   textAlign: 'right',
                   paddingRight: 8,
                   paddingTop: 8,
-                  lineHeight: '32px',
-                  color: 'rgba(0, 0, 0, 0.85)'
+                  lineHeight: '32px'
                 }}>
                 Permissions:
               </Col>
@@ -2303,12 +2303,11 @@ class CloudRegionFileShareMountFormItem extends React.Component {
           classNames(
             styles.fileShareMountRow,
             'cp-divider',
-            'bottom'
+            'bottom',
+            {'cp-even-row': this.props.index % 2 === 0}
           )
         }
-        style={Object.assign(
-          {padding: 3},
-          this.props.index % 2 === 0 ? {} : {backgroundColor: '#fafafa'})}>
+        style={{padding: 3}}>
         <Row type="flex" align="top">
           <span style={{width: 50}}>Host:</span>
           <Input

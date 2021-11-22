@@ -18,4 +18,4 @@ import * as formatters from './formatters';
 
 export {default as AxisDataType} from './axis-data-format';
 export {formatters};
-export {default as PlotColors} from './plot-colors';
+export {default as getThemedPlotColors} from './plot-colors';

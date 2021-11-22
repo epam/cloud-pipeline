@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
 import {Icon, Input, InputNumber, Select, Popover} from 'antd';
@@ -233,7 +234,7 @@ class PreferenceControl extends React.Component {
         </div>
         {
           error && (
-            <div className={styles.error}>
+            <div className={classNames(styles.error, 'cp-error')}>
               {error}
             </div>
           )

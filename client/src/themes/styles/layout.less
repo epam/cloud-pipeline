@@ -43,11 +43,30 @@ a:active {
   color: @btn-disabled-color;
 }
 
+.cp-text,
+a.cp-text,
+a.cp-text:visited {
+  color: @application-color;
+}
+
 a:hover,
 a:focus,
 .cp-link:hover,
 .cp-link:focus {
   color: @primary-hover-color;
+}
+
+a.cp-text:hover,
+a.cp-text:focus,
+a.cp-text:active {
+  color: @application-color-accent;
+}
+
+a.cp-danger:hover,
+a.cp-danger:focus,
+.cp-link.cp-danger:hover,
+.cp-link.cp-danger:focus {
+  color: lighten(@color-red, 5%);
 }
 
 .cp-divider.top,
@@ -71,20 +90,43 @@ a:focus,
 .cp-divider.horizontal {
   width: 100%;
   height: 1px;
+  background-color: transparent;
 }
 
 .cp-divider.vertical {
   width: 1px;
   height: 100%;
+  background-color: transparent;
 }
 
 .cp-primary {
   color: @primary-color;
 }
 
+.cp-disabled {
+  color: @application-color-disabled;
+}
+
+.cp-accent {
+  color: @application-color-accent;
+}
+
+.cp-warning {
+  color: @color-yellow;
+}
+
+.cp-success {
+  color: @color-green;
+}
+
 .cp-error,
 .cp-danger {
   color: @color-red;
+}
+
+.cp-error.border,
+.cp-danger.border {
+  border-color: currentColor;
 }
 
 .cp-sensitive {
@@ -94,6 +136,32 @@ a:focus,
 .cp-sensitive-tag {
   background-color: @color-sensitive;
   color: @btn-color;
+}
+
+.cp-sensitive-tag.bordered {
+  background-color: transparent;
+  color: @color-sensitive;
+  border-color: currentColor;
+}
+
+.cp-tag {
+  background-color: transparent;
+  border: 1px solid @card-border-color;
+  color: @application-color;
+}
+
+.cp-tag.disabled {
+  color: @application-color-disabled;
+}
+
+.cp-tag.warning {
+  border-color: currentColor;
+  color: @color-yellow;
+}
+
+.cp-tag.critical {
+  border-color: currentColor;
+  color: @color-red;
 }
 
 .cp-versioned-storage {
@@ -117,13 +185,50 @@ h5 {
   color: @application-color;
 }
 
-.ant-input {
+.ant-input,
+.ant-input-number,
+.ant-input-number-input,
+.ant-input-number-handler-wrap,
+.cp-limit-mounts-input {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
 }
 
-.ant-input-disabled {
+.ant-input-number-handler:active {
+  color: @primary-text-color;
+  background-color: @primary-color;
+}
+
+.ant-input-number-handler-wrap .ant-input-number-handler-down {
+  border-color: @input-border;
+}
+
+.ant-input-number-handler-wrap .ant-input-number-handler,
+.ant-input-number-handler-up-inner,
+.ant-input-number-handler-down-inner {
+  color: @input-color;
+}
+
+.ant-input-number-handler:hover .ant-input-number-handler-up-inner,
+.ant-input-number-handler:hover .ant-input-number-handler-down-inner {
+  color: @input-border-hover-color;
+}
+
+.ant-input-number-handler-down-disabled .ant-input-number-handler-down-inner,
+.ant-input-number-handler-up-disabled .ant-input-number-handler-down-inner,
+.ant-input-number-disabled .ant-input-number-handler-down-inner,
+.ant-input-number-handler-down-disabled .ant-input-number-handler-up-inner,
+.ant-input-number-handler-up-disabled .ant-input-number-handler-up-inner,
+.ant-input-number-disabled .ant-input-number-handler-up-inner {
+  color: @application-color-disabled !important;
+}
+
+.ant-input-disabled,
+.ant-input-number-disabled,
+.ant-input-number-disabled .ant-input-number-handler-wrap,
+.ant-input-number-input[disabled],
+.cp-limit-mounts-input.disabled {
   background-color: @input-background-disabled;
   color: @application-color-disabled;
 }
@@ -135,7 +240,8 @@ h5 {
   color: @input-color;
 }
 
-.ant-input::placeholder {
+.ant-input::placeholder,
+.ant-time-picker-input::placeholder {
   color: @input-placeholder-color;
 }
 
@@ -148,35 +254,53 @@ h5 {
 }
 
 .ant-input:hover:not(.ant-input-disabled),
-.ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled) {
+.ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
+.ant-input-number:hover:not(.ant-input-number-disabled),
+.cp-limit-mounts-input:hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
 
 .ant-input-affix-wrapper:focus .ant-input:not(.ant-input-disabled),
 .ant-input:focus:not(.ant-input-disabled),
-.ant-input:active:not(.ant-input-disabled) {
+.ant-input:active:not(.ant-input-disabled),
+.ant-input-number:focus:not(.ant-input-number-disabled),
+.ant-input-number.ant-input-number-focused:not(.ant-input-number-disabled),
+.ant-input-number:active:not(.ant-input-number-disabled) {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
 
-.ant-input.cp-error {
+.cp-error .ant-input,
+.ant-input.cp-error,
+.ant-select.cp-error .ant-select-selection {
   border-color: @color-red;
   color: @color-red;
+  box-shadow: none;
 }
 
-.ant-input.cp-error:hover:not(.ant-input-disabled) {
+.cp-error .ant-input:hover:not(.ant-input-disabled),
+.ant-input.cp-error:hover:not(.ant-input-disabled),
+.ant-select.cp-error:not(.ant-select-disabled) .ant-select-selection:hover {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 
+.cp-error .ant-input:focus:not(.ant-input-disabled),
+.cp-error .ant-input:active:not(.ant-input-disabled),
 .ant-input.cp-error:focus:not(.ant-input-disabled),
-.ant-input.cp-error:active:not(.ant-input-disabled) {
+.ant-input.cp-error:active:not(.ant-input-disabled),
+.ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:focus,
+.ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:active {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 
 .cp-text-not-important {
+  color: @application-color-faded;
+}
+
+.cp-text-not-important-after:after {
   color: @application-color-faded;
 }
 
@@ -190,7 +314,8 @@ h5 {
 }
 
 .ant-confirm-body,
-.ant-confirm-body .ant-confirm-title {
+.ant-confirm-body .ant-confirm-title,
+.ant-confirm-body .ant-confirm-content {
   color: @application-color;
 }
 
@@ -309,6 +434,21 @@ h5 {
   border-bottom: 1px solid @card-border-color;
 }
 
+.ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
+  padding: 0;
+}
+
+.cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
+  border-bottom: 0;
+}
+
+.cp-tabs-content {
+  background-color: @card-background-color;
+  border-left: 1px solid @card-border-color;
+  border-right: 1px solid @card-border-color;
+  border-bottom: 1px solid @card-border-color;
+}
+
 .ant-checkbox-wrapper + span {
   color: @application-color;
 }
@@ -367,6 +507,15 @@ h5 {
   background-color: @application-background-color;
   height: 100%;
   width: 100%;
+}
+
+.ant-modal-content .cp-split-panel,
+.ant-modal-content .cp-split-panel-panel {
+  background-color: @card-background-color;
+}
+
+.ant-modal-content .cp-split-panel-resizer {
+  background-color: @panel-background-color;
 }
 
 .cp-button {
@@ -554,7 +703,7 @@ tr.ant-table-expanded-row:hover {
   background: @card-background-color;
 }
 
-.ant-table-small .ant-table-thead > tr > th {
+.ant-table-thead > tr > th {
   color: @table-head-color;
   background-color: @card-background-color;
   border-color: @table-border-color;
@@ -582,8 +731,13 @@ tr.ant-table-expanded-row:hover {
   border-color: @table-border-color;
 }
 
+.cp-table-element {
+  color: @application-color;
+}
+
 .ant-table-tbody > tr:hover > td,
-.cp-table-element-hover {
+.cp-table-element-hover,
+.cp-table-element:hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
 }
@@ -594,7 +748,12 @@ tr.ant-table-expanded-row:hover {
   color: @table-element-selected-color;
 }
 
-.cp-table-element-disabled {
+.cp-table-element-selected.cp-table-element-selected-no-bold {
+  font-weight: normal;
+}
+
+.cp-table-element-disabled,
+.cp-table-element[disabled] {
   cursor: default;
   background-color: @card-background-color;
   color: @application-color-disabled;
@@ -610,8 +769,17 @@ tr.ant-table-expanded-row:hover {
   background-color: inherit;
 }
 
+.ant-checkbox-disabled .ant-checkbox-inner {
+  border-color: @border-color !important;
+}
+
+.ant-checkbox-disabled .ant-checkbox-inner,
+.ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: @input-background-disabled;
+}
+
 .ant-checkbox-wrapper:hover .ant-checkbox-inner,
-.ant-checkbox:hover .ant-checkbox-inner,
+.ant-checkbox:not(.ant-checkbox-disabled):hover .ant-checkbox-inner,
 .ant-checkbox-input:focus + .ant-checkbox-inner {
   border-color: @primary-color;
 }
@@ -625,6 +793,10 @@ tr.ant-table-expanded-row:hover {
 .ant-checkbox-checked .ant-checkbox-inner::after,
 .ant-checkbox-inner::after {
   border-color: @card-background-color;
+}
+
+.ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: @application-color-disabled;
 }
 
 .ant-checkbox-checked::after {
@@ -656,10 +828,20 @@ tr.ant-table-expanded-row:hover {
   color: @input-color;
 }
 
+.ant-select.ant-select-disabled {
+  color: @application-color-disabled;
+}
+
 .ant-select-selection {
   color: @input-color;
   background-color: @input-background;
   border-color: @input-border;
+}
+
+.ant-select.ant-select-disabled .ant-select-selection {
+  color: @application-color-disabled;
+  background-color: @input-background-disabled;
+  border-color: currentColor;
 }
 
 .ant-select-selection:hover {
@@ -674,8 +856,10 @@ tr.ant-table-expanded-row:hover {
 }
 
 .ant-select-dropdown,
+.ant-dropdown-menu,
 .rc-menu,
-.rc-dropdown-menu {
+.rc-dropdown-menu,
+.ant-mention-dropdown {
   background-color: @panel-background-color;
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
@@ -700,17 +884,32 @@ tr.ant-table-expanded-row:hover {
   background-color: transparent;
 }
 
-.ant-select-dropdown-menu-item {
+.ant-select-dropdown-menu-item,
+.ant-mention-dropdown-item {
   color: @application-color;
   background-color: @panel-background-color;
 }
 
-.rc-dropdown-menu > .rc-dropdown-menu-item {
+.ant-mention-dropdown-item-hover,
+.ant-mention-dropdown-item.focus,
+.ant-mention-dropdown-item-active {
+  color: @element-hover-color;
+  background-color: @element-hover-background-color;
+}
+
+.ant-mention-dropdown-item-disabled,
+.ant-mention-dropdown-item-disabled:hover {
+  color: @application-color-disabled;
+}
+
+.rc-dropdown-menu > .rc-dropdown-menu-item,
+.ant-dropdown-menu > .ant-dropdown-menu-item {
   color: @application-color;
 }
 
 .ant-select-dropdown-menu-item.cp-danger,
-.rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger {
+.rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger,
+.ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger {
   color: @color-red;
 }
 
@@ -720,7 +919,10 @@ tr.ant-table-expanded-row:hover {
 .rc-menu-submenu-active > .rc-menu-submenu-title,
 .rc-dropdown-menu > .rc-dropdown-menu-item:hover,
 .rc-dropdown-menu > .rc-dropdown-menu-item-active,
-.rc-dropdown-menu > .rc-dropdown-menu-item-selected {
+.rc-dropdown-menu > .rc-dropdown-menu-item-selected,
+.ant-dropdown-menu > .ant-dropdown-menu-item:hover,
+.ant-dropdown-menu > .ant-dropdown-menu-item-active,
+.ant-dropdown-menu > .ant-dropdown-menu-item-selected {
   color: @element-hover-color;
   background-color: @element-hover-background-color;
 }
@@ -731,7 +933,10 @@ tr.ant-table-expanded-row:hover {
 .rc-menu-submenu-active.cp-danger > .rc-menu-submenu-title,
 .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger:hover,
 .rc-dropdown-menu > .rc-dropdown-menu-item-active.cp-danger,
-.rc-dropdown-menu > .rc-dropdown-menu-item-selected.cp-danger {
+.rc-dropdown-menu > .rc-dropdown-menu-item-selected.cp-danger,
+.ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger:hover,
+.ant-dropdown-menu > .ant-dropdown-menu-item-active.cp-danger,
+.ant-dropdown-menu > .ant-dropdown-menu-item-selected.cp-danger {
   color: @btn-color;
   background-color: @btn-danger-active-color;
 }
@@ -740,7 +945,8 @@ tr.ant-table-expanded-row:hover {
 .rc-menu-submenu-title.rc-menu-item-disabled,
 .rc-menu-item.rc-menu-submenu-disabled,
 .rc-menu-submenu-title.rc-menu-submenu-disabled,
-.rc-dropdown-menu-item-disabled {
+.rc-dropdown-menu-item-disabled,
+.ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
 }
 
@@ -750,7 +956,8 @@ tr.ant-table-expanded-row:hover {
   background-color: @element-selected-background-color;
 }
 
-.ant-select-selection--multiple .ant-select-selection__choice {
+.ant-select-selection--multiple .ant-select-selection__choice,
+.cp-limit-mounts-input .cp-limit-mounts-input-tag {
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
@@ -1042,8 +1249,17 @@ a[role="button"].ant-calendar-year-panel-month-select {
   border-color: @border-color;
 }
 
+.cp-error .ant-time-picker-input {
+  color: @color-red;
+  border-color: @color-red;
+}
+
 .ant-time-picker-icon::after {
   color: @application-color;
+}
+
+.cp-error .ant-time-picker-icon::after {
+  color: @color-red;
 }
 
 .ant-time-picker-panel-inner {
@@ -1058,6 +1274,15 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-time-picker-input:focus {
   border-color: @primary-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
+}
+
+.cp-error .ant-time-picker-input:hover {
+  border-color: @color-red;
+}
+
+.cp-error .ant-time-picker-input:focus {
+  border-color: @color-red;
+  box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 
 .ant-time-picker-panel-input-wrap {
@@ -1098,6 +1323,49 @@ li.ant-time-picker-panel-select-option-selected {
   color: @primary-color;
 }
 
+.ant-collapse {
+  background-color: darken(@card-background-color, 3%);
+  color: @application-color;
+  border-color: @card-border-color;
+}
+
+.ant-collapse.ant-collapse-borderless {
+  background-color: transparent;
+}
+
+.ant-collapse-content {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+
+.ant-collapse > .ant-collapse-item {
+  border-color: @card-border-color;
+}
+
+.ant-collapse > .ant-collapse-item > .ant-collapse-header,
+.ant-collapse > .ant-collapse-item > .ant-collapse-header .arrow {
+  color: @application-color;
+}
+
+.ant-collapse > .ant-collapse-item:not(.ant-collapse-item-disabled) > .ant-collapse-header:active {
+  background-color: @card-background-color;
+}
+
+.ant-collapse .ant-collapse-item-disabled > .ant-collapse-header,
+.ant-collapse .ant-collapse-item-disabled > .ant-collapse-header > .arrow {
+  color: @application-color-disabled;
+  background-color: @card-background-color;
+}
+
+.ant-collapse-borderless > .ant-collapse-item > .ant-collapse-header:hover {
+  background-color: darken(@card-background-color, 5%);
+}
+
+.ant-collapse-borderless > .ant-collapse-item > .ant-collapse-content {
+  border-color: @card-border-color;
+}
+
 .ant-form-item {
   color: @application-color;
 }
@@ -1107,4 +1375,99 @@ li.ant-time-picker-panel-select-option-selected {
 }
 .ReactTable.-striped .rt-tr.-odd {
   background-color: @even-element-background;
+}
+
+.ant-form-item-label label {
+  color: @application-color-accent;
+}
+
+.ant-form-item-required::before {
+  color: @color-red;
+}
+
+.ant-slider-rail {
+  background-color: @card-header-background;
+}
+
+.ant-progress-circle-trail {
+  stroke: @card-header-background;
+}
+
+.ant-slider-disabled .ant-slider-track {
+  background-color: @application-color-disabled !important;
+}
+
+.ant-slider-disabled .ant-slider-handle,
+.ant-slider-disabled .ant-slider-dot {
+  border-color: @application-color-disabled !important;
+}
+
+.ant-slider:hover .ant-slider-rail {
+  background-color: @card-header-background;
+}
+
+.ant-slider-track {
+  background-color: @primary-color;
+}
+
+.ant-progress-circle-path {
+  stroke: @primary-color !important;
+}
+
+.ant-progress-status-success .ant-progress-circle-path {
+  stroke: @color-green !important;
+}
+
+.ant-slider:hover .ant-slider-track {
+  background-color: @primary-hover-color;
+}
+
+.ant-slider-handle {
+  border-color: @primary-color;
+  background-color: @card-background-color;
+}
+
+.ant-slider:hover .ant-slider-handle {
+  border-color: @primary-hover-color;
+}
+
+.cp-notification {
+  background-color: @card-background-color;
+  color: @application-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
+  border-color: @card-border-color;
+}
+
+.ant-mention-wrapper .ant-mention-editor {
+  background-color: @input-background;
+  border-color: @input-border;
+  color: @input-color;
+}
+
+.ant-mention-wrapper .public-DraftEditorPlaceholder-root .public-DraftEditorPlaceholder-inner {
+  color: @input-placeholder-color;
+}
+
+.cp-mention .ant-mention-editor,
+.cp-mention .ant-mention-wrapper,
+.cp-mention.ant-mention-active .ant-mention-editor,
+.cp-mention.ant-mention-active .ant-mention-wrapper {
+  box-shadow: none;
+  border: none;
+}
+
+.ant-mention-dropdown {
+  background-color: red;
+}
+
+.cp-overlay {
+  background-color: @modal-mask-background;
+}
+
+.cp-close-button {
+  color: @application-color-faded;
+}
+
+.cp-close-button:hover {
+  color: @application-color;
 }

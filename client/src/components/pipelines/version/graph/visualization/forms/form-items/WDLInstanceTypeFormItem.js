@@ -184,7 +184,12 @@ export class WDLInstanceTypeFormItem extends React.Component {
         }
         {
           !this.state.valid &&
-          <Row style={{color: 'red', fontSize: 'small'}}>Instance type is required</Row>
+          <Row
+            className="cp-error"
+            style={{fontSize: 'small'}}
+          >
+            Instance type is required
+          </Row>
         }
       </div>
     );

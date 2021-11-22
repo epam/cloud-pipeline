@@ -16,9 +16,8 @@
 
 import React from 'react';
 import {Icon} from 'antd';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {colors} from './colors';
 import Export from '../export';
 import {costTickFormatter, dateRangeRenderer} from '../utilities';
 import {discounts} from '../discounts';
@@ -41,7 +40,8 @@ function BillingTable (
     storages,
     computeDiscounts,
     storagesDiscounts,
-    showQuota = true
+    showQuota = true,
+    reportThemes
   }
 ) {
   const summary = discounts.joinSummaryDiscounts(
@@ -101,7 +101,9 @@ function BillingTable (
       styles.warningContainer,
       {
         [styles.negative]: percent > 0,
-        [styles.positive]: percent < 0
+        'cp-danger': percent > 0,
+        [styles.positive]: percent < 0,
+        'cp-success': percent < 0
       }
     );
     return (
@@ -182,12 +184,12 @@ function BillingTable (
               </tr>
             )
           }
-          {renderInfo('Current', colors.current, currentInfo, true)}
-          {renderInfo('Previous', colors.previous, previousInfo)}
+          {renderInfo('Current', reportThemes.current, currentInfo, true)}
+          {renderInfo('Previous', reportThemes.previous, previousInfo)}
         </tbody>
       </table>
     </Export.ImageConsumer>
   );
 }
 
-export default observer(BillingTable);
+export default inject('reportThemes')(observer(BillingTable));

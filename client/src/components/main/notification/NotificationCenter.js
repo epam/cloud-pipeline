@@ -21,9 +21,9 @@ import {computed} from 'mobx';
 import SystemNotification from './SystemNotification';
 import {message, Modal, Button, Row, Icon} from 'antd';
 import moment from 'moment-timezone';
-import NotificationView from '../../special/notifications/controls/NotificationView';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import styles from './SystemNotification.css';
+import Markdown from '../../special/markdown';
 
 @inject(({notifications}) => ({
   notifications
@@ -196,19 +196,19 @@ export default class NotificationCenter extends React.Component {
       case 'INFO':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-setting-info"
             type="info-circle-o" />
         );
       case 'WARNING':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-setting-warning"
             type="exclamation-circle-o" />
         );
       case 'CRITICAL':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-setting-critical"
             type="close-circle-o" />
         );
       default: return undefined;
@@ -259,8 +259,8 @@ export default class NotificationCenter extends React.Component {
           visible={!!blockingNotification}>
           {
             blockingNotification ? (
-              <NotificationView
-                text={blockingNotification.body}
+              <Markdown
+                md={blockingNotification.body}
               />
             ) : null
           }

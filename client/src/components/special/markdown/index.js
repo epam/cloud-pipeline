@@ -17,51 +17,122 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
+import {computed} from 'mobx';
+import {
+  processLinks,
+  prepareCloudPipelineLinks,
+  getCloudPipelineAbsoluteURL,
+  injectCloudPipelineLinksHelpers,
+  fetchCloudPipelineLinks,
+  getCloudPipelineLinks
+} from './utilities';
+import getMarkdownRenderer, {renderHtml} from './renderer';
 
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
+export {
+  injectCloudPipelineLinksHelpers,
+  fetchCloudPipelineLinks,
+  getCloudPipelineLinks,
+  getCloudPipelineAbsoluteURL,
+  renderHtml,
+  getMarkdownRenderer,
+  processLinks
+};
+
+@injectCloudPipelineLinksHelpers
+class Markdown extends React.Component {
+  constructor (props) {
+    super(props);
+    this.renderer = getMarkdownRenderer({
+      links: () => this.links,
+      renderPipelineLinkIcon: () => this.renderPipelineLinkIcon,
+      renderPipelineLinks: () => this.renderPipelineLinks,
+      getLink: (url) => this.getLink(url)
+    });
+  }
+
+  @computed
+  get links () {
+    const {
+      dockerRegistries,
+      pipelinesLibrary,
+      hiddenObjectsTreeFilter,
+      hiddenToolsTreeFilter
+    } = this.props;
+    return getCloudPipelineLinks({
+      dockerRegistries,
+      pipelinesLibrary,
+      hiddenObjectsTreeFilter,
+      hiddenToolsTreeFilter
+    });
+  };
+
+  get renderPipelineLinks () {
+    const {cloudPipelineLinks} = this.props;
+    return !!cloudPipelineLinks;
+  }
+
+  get renderPipelineLinkIcon () {
+    const {cloudPipelineLinks} = this.props;
+    return cloudPipelineLinks &&
+      (
+        typeof cloudPipelineLinks !== 'object' ||
+        (
+          cloudPipelineLinks.icon === undefined ||
+          cloudPipelineLinks.icon
+        )
+      );
+  }
+
+  getLink (url) {
+    return getCloudPipelineAbsoluteURL(url, this.props);
+  }
+
+  render () {
+    const {
+      className,
+      id,
+      md,
+      style,
+      target,
+      onClick
+    } = this.props;
+    if (!md) {
+      return null;
     }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
+    let html = this.renderer.render(
+      this.renderPipelineLinks
+        ? prepareCloudPipelineLinks(md)
+        : md
+    );
+    if (target) {
+      html = processLinks(html, target);
+    }
+    return (
+      <div
+        id={id}
+        className={classNames(className, 'markdown')}
+        dangerouslySetInnerHTML={{__html: html}}
+        style={style}
+        onClick={onClick}
+      />
+    );
   }
-});
-
-function Markdown ({className, id, md, style}) {
-  if (!md) {
-    return null;
-  }
-  const html = MarkdownRenderer.render(md);
-  return (
-    <div
-      id={id}
-      className={classNames(className, 'text-highlight')}
-      dangerouslySetInnerHTML={{__html: html}}
-      style={style}
-    />
-  );
 }
 
 Markdown.propTypes = {
   className: PropTypes.string,
   id: PropTypes.string,
   md: PropTypes.string,
-  style: PropTypes.object
+  style: PropTypes.object,
+  target: PropTypes.string,
+  cloudPipelineLinks: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.shape({
+      absoluteUri: PropTypes.bool,
+      icon: PropTypes.bool
+    })
+  ]),
+  onClick: PropTypes.func
 };
 
 export default Markdown;

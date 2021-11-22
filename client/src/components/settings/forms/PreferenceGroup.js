@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Button, Checkbox, Form, Icon, Input, Row} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
@@ -278,27 +279,33 @@ class PreferenceInput extends React.Component {
     if (!this.props.value) {
       return null;
     }
-    let className = `${styles.preferenceRow}`;
-    if (this.props.isEven) {
-      className = `${className} ${styles.evenRow}`;
-    }
-    if (this.props.isLast) {
-      className = `${className} ${styles.lastRow}`;
-    }
     return (
       <div
-        className={className}
+        className={
+          classNames(
+            styles.preferenceRow,
+            {
+              'cp-even-row': this.props.isEven
+            }
+          )
+        }
         style={{width: '100%'}}>
         <Row type="flex" align="middle">
           <Icon
+            className={
+              classNames(
+                {
+                  'cp-text-not-important': !this.state.visible
+                }
+              )
+            }
             type={this.state.visible ? 'eye' : 'eye-o'}
             onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
             style={{
               cursor: 'pointer',
               fontSize: 'large',
               marginRight: 5,
-              marginBottom: 2,
-              color: this.state.visible ? 'inherit' : '#ccc'
+              marginBottom: 2
             }} />
           <span>
             {highlightText(this.props.value.name, this.props.search)}

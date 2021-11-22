@@ -31,19 +31,6 @@
   margin-top: 2px;
 }
 
-.key-row td,
-.value-row td,
-.read-only-key-row td,
-.read-only-value-row td {
-  padding: 2px 5px;
-  border: 1px solid transparent;
-}
-
-.key-row td.key:hover,
-.value-row td:hover {
-  cursor: text;
-}
-
 .divider {
   height: 1px;
   margin: 2px 0;

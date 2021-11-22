@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   NotificationPreferences,
   PreferencesSectionTitle
@@ -76,7 +77,7 @@ class NotificationPreferencesControl extends React.Component {
       return null;
     }
     return (
-      <div className={styles.container}>
+      <div className={classNames(styles.container, 'cp-divider', 'bottom')}>
         {
           title && (
             <div className={styles.title}>
