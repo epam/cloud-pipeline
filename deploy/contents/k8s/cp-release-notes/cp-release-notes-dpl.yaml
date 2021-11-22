@@ -6,8 +6,9 @@ metadata:
 spec:
   schedule: ${CP_RELEASE_NOTES_SCHEDULE}
   startingDeadlineSeconds: 300
-  successfulJobsHistoryLimit: 5
-  failedJobsHistoryLimit: 5
+  successfulJobsHistoryLimit: 1
+  # set to 0 since https://github.com/kubernetes/kubernetes/issues/53331 is in place
+  failedJobsHistoryLimit: 0
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
