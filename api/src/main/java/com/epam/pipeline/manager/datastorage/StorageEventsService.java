@@ -83,6 +83,11 @@ public class StorageEventsService {
         }
     }
 
+    public void addReindexEvent(final String id) {
+        final AbstractDataStorage storage = storageManager.loadByNameOrId(id);
+        addEvent(storage, StringUtils.EMPTY, null, NFSObserverEventType.REINDEX);
+    }
+
     public void addEvent(final AbstractDataStorage dataStorage, final String pathFrom, final String pathTo,
                          final NFSObserverEventType eventType) {
         events.add(fileToEvent(dataStorage, pathFrom, pathTo, eventType));

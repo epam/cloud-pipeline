@@ -70,6 +70,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -94,6 +99,9 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private final Integer eventsFileChunkSize;
     private final S3FileManager eventBucketFileManager;
     private final StorageFileMapper fileMapper;
+    private final ExecutorService executorService;
+    private final Set<Long> activeIndexTasks = ConcurrentHashMap.newKeySet();
+
 
     public NFSObserverEventSynchronizer(final @Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                                         final @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
@@ -104,6 +112,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                             String eventsBucketUriStr,
                                         final @Value("${sync.nfs-file.observer.sync.files.chunk}")
                                             Integer eventsFileChunkSize,
+                                        final @Value("{sync.nfs-file.observer.sync.pool.size:4}")
+                                            Integer poolSize,
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
@@ -117,6 +127,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         this.eventsBucketFolderPath = getEventsBucketFolder(eventsBucketURI);
         this.eventBucketFileManager = getS3FileManager(eventsBucketURI);
         this.fileMapper = new StorageFileMapper();
+        this.executorService = Executors.newFixedThreadPool(poolSize);
     }
 
     @Override
@@ -193,7 +204,14 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                       final AbstractDataStorage dataStorage,
                                       final Collection<NFSObserverEvent> events) {
         log.debug("Processing {} events for datastorage [id={}]", events.size(), dataStorage.getId());
-        final List<NFSObserverEvent> allEvents = flattenEvents(dataStorage, events);
+        final Map<Boolean, List<NFSObserverEvent>> groupedEvents = flattenEvents(dataStorage, events).stream()
+                .collect(Collectors.partitioningBy(e -> NFSObserverEventType.REINDEX.equals(e.getEventType())));
+        List<NFSObserverEvent> refreshEvents = groupedEvents.get(true);
+        if (CollectionUtils.isNotEmpty(refreshEvents)) {
+            reindexStorage(dataStorage);
+            return;
+        }
+        List<NFSObserverEvent> allEvents = groupedEvents.get(false);
         StreamUtils.chunked(allEvents.stream(), eventsFileChunkSize)
                 .forEach(eventChunk -> {
                     log.debug("Processing chunk with {} events for datastorage [id={}]",
@@ -216,6 +234,27 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                         .forEach(requestContainer::add);
                 });
         log.debug("Finished processing events for datastorage [id={}]", dataStorage.getId());
+    }
+
+    private void reindexStorage(final AbstractDataStorage dataStorage) {
+        log.debug("Full reindex is requested for storage {}", dataStorage.getId());
+        if (activeIndexTasks.contains(dataStorage.getId())) {
+            log.debug("Indexing process is already in progress for storage {}. " +
+                    "New request will be skipped", dataStorage.getId());
+        } else {
+            CompletableFuture.runAsync(() -> {
+                log.debug("Starting reindexing of storage {}", dataStorage.getId());
+                activeIndexTasks.add(dataStorage.getId());
+                createIndexAndDocuments(dataStorage);
+                activeIndexTasks.remove(dataStorage.getId());
+            }, executorService)
+                    .exceptionally(e -> {
+                        log.error("An error occurred during storage {} indexing: {}",
+                                dataStorage.getId(), e.getMessage());
+                        activeIndexTasks.remove(dataStorage.getId());
+                        return null;
+                    });
+        }
     }
 
     private List<NFSObserverEvent> flattenEvents(final AbstractDataStorage dataStorage,
