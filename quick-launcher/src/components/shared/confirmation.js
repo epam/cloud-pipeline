@@ -1,6 +1,7 @@
 import React, {useCallback, useState} from 'react';
 import ReactDOM from 'react-dom';
 import Modal from "./modal";
+import Markdown from './markdown';
 import './confirmation.css';
 
 const container = document.getElementById('modals');
@@ -55,8 +56,9 @@ function ConfirmationModal(
 
 export default function confirmation(options = {}) {
   const {
-    title = 'Warning',
+    title,
     message: body,
+    md,
     ok = 'Proceed',
     cancel = 'Cancel'
   } = options;
@@ -64,7 +66,7 @@ export default function confirmation(options = {}) {
     ReactDOM.render(
       <ConfirmationModal
         title={title}
-        body={body}
+        body={md ? (<Markdown>{md}</Markdown>) : body}
         onOk={() => resolve(true)}
         onCancel={() => resolve(false)}
         ok={ok}

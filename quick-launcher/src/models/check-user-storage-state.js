@@ -48,10 +48,16 @@ export default function checkUserStorage(settings, user) {
       .catch(e => {
         console.warn(`Error checking default storage state: ${e.message}`);
         if (e instanceof CheckUserStorageStateError) {
-          return confirmation({
-            title: e.title,
-            message: e.body
-          });
+          if (settings?.defaultUserStorageReadOnlyWarning) {
+            return confirmation({
+              md: settings?.defaultUserStorageReadOnlyWarning
+            });
+          } else {
+            return confirmation({
+              title: e.title,
+              message: e.body
+            });
+          }
         } else {
           return Promise.reject(e);
         }

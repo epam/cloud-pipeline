@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import showdown from 'showdown';
+import './markdown.css';
 
 const converter = new showdown.Converter();
 
@@ -27,7 +28,7 @@ function Markdown(
   return (
     <div
       ref={forwardedRef}
-      className={className}
+      className={[className, 'markdown'].filter(Boolean).join(' ')}
       dangerouslySetInnerHTML={{
         __html: converter.makeHtml(source)
       }}

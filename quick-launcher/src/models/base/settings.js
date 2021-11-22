@@ -128,7 +128,8 @@ const defaultSettings = {
     shareWithGroups: undefined,
     originalUserNameParameter: undefined
   },
-  checkDefaultUserStorageStatus: true
+  checkDefaultUserStorageStatus: false,
+  defaultUserStorageReadOnlyWarning: undefined
 };
 
 function parseUrl(url, verbose = false) {

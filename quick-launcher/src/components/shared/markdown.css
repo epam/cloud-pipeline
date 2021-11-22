@@ -1,0 +1,9 @@
+.markdown a {
+  color: #ccc;
+}
+
+.markdown a:hover,
+.markdown a:active,
+.markdown a:focus {
+  color: white;
+}
