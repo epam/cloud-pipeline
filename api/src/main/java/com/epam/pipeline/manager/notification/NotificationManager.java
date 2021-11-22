@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationGroup;
@@ -506,12 +508,20 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
     }
 
-    private List<Long> mapRecipientsToUserIds(List<NFSQuotaNotificationRecipient> recipients) {
-        return recipients.stream()
+    private List<Long> mapRecipientsToUserIds(final List<NFSQuotaNotificationRecipient> recipients) {
+        final Stream<PipelineUser> plainUsersStream = recipients.stream()
+            .filter(NFSQuotaNotificationRecipient::isPrincipal)
             .map(NFSQuotaNotificationRecipient::getName)
-            .map(userManager::loadUserByName)
+            .map(userManager::loadUserByName);
+        final Stream<PipelineUser> usersFromGroupsStream = recipients.stream()
+            .filter(recipient -> !recipient.isPrincipal())
+            .map(NFSQuotaNotificationRecipient::getName)
+            .map(userManager::loadUsersByGroup)
+            .flatMap(Collection::stream);
+        return Stream.concat(plainUsersStream, usersFromGroupsStream)
             .filter(Objects::nonNull)
             .map(PipelineUser::getId)
+            .distinct()
             .collect(Collectors.toList());
     }
 
