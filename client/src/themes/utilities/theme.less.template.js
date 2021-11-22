@@ -1926,25 +1926,6 @@ export default `
   border: 1px solid @card-border-color;
   color: @application-color;
 }
-@THEME .cp-search-md-preview,
-@THEME .cp-search-md-preview h1,
-@THEME .cp-search-md-preview h2,
-@THEME .cp-search-md-preview h3,
-@THEME .cp-search-md-preview h4,
-@THEME .cp-search-md-preview h5,
-@THEME .cp-search-md-preview h6 {
-  color: @application-color;
-}
-@THEME .cp-search-md-preview code {
-  color: @color-pink;
-  background-color: @color-pink-dusty;
-  box-shadow: inset 0 -1px 0 @search-md-preview-code-shadow;
-}
-@THEME .cp-search-md-preview pre {
-  color: @search-md-preview-text-color;
-  background-color: @tag-key-background-color;
-  border: 1px solid @panel-border-color;
-}
 @THEME .cp-search-faceted-button {
   color: @application-color;
   background-color: @panel-background-color;
