@@ -2191,6 +2191,7 @@ export default `
   border-radius: 4px;
   padding: 10px;
   margin: 5px 0;
+  white-space: pre-line;
 }
 @THEME .code-highlight code,
 @THEME .markdown code {
