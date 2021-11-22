@@ -144,12 +144,13 @@ export default class IssuePreview extends React.Component {
   };
 
   commentTextPreview = (text, style = {}) => {
-    return <Markdown
-      className="cp-search-md-preview"
-      md={text}
-      cloudPipelineLinks
-      style={style}
-    />;
+    return (
+      <Markdown
+        md={text}
+        cloudPipelineLinks
+        style={style}
+      />
+    );
   };
 
   renderIssue = () => {

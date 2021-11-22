@@ -151,8 +151,6 @@ export default {
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
     '@search-highlight-text-background-color': '@color-yellow',
-    '@search-md-preview-code-shadow': '@application-color-faded',
-    '@search-md-preview-text-color': '@application-background-color',
     '@library-storage-region-background-color': '@application-color-faded',
     '@library-storage-region-color': '@primary-text-color'
   }

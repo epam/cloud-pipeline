@@ -135,8 +135,6 @@ export default {
     '@code-background-color': 'lighten(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
     '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
-    '@search-md-preview-code-shadow': '@color-white-dimmed-10',
-    '@search-md-preview-text-color': '@application-color',
     '@library-storage-region-background-color': '@color-white-dimmed-10',
     '@library-storage-region-color': '@application-color'
   }
