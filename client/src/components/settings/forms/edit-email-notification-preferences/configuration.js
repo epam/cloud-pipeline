@@ -218,6 +218,21 @@ const SystemNotificationsExcludeInstanceTypesPreference = {
   )
 };
 
+const SystemNotificationsExcludeParamsPreference = {
+  preference: 'system.notifications.exclude.params',
+  type: 'excludeParamsControl',
+  name: 'Exclude by parameters',
+  hint: (
+    <div>
+      <b>Runs with parameters which matches any of the rules won't trigger the IDLE notification.</b>
+      <br />
+      Each parameter has a corresponding value and a comparison operator.
+      <br />
+      If any of the rules can be applied to the Run - IDLE notifications will be skipped.
+    </div>
+  )
+};
+
 const Preferences = [
   SystemDiskConsumeThresholdPreference,
   SystemMemoryConsumeThresholdPreference,
@@ -228,7 +243,8 @@ const Preferences = [
   SystemMaxLongPausedTimeoutMinutesPreference,
   SystemLongPausedActionTimeoutMinutesPreference,
   SystemLongPausedActionPreference,
-  SystemNotificationsExcludeInstanceTypesPreference
+  SystemNotificationsExcludeInstanceTypesPreference,
+  SystemNotificationsExcludeParamsPreference
 ];
 
 const NotificationPreferences = {
@@ -241,7 +257,8 @@ const NotificationPreferences = {
     SystemIdleActionTimeoutMinutesPreference.preference,
     SystemIdleCPUThresholdPreference.preference,
     SystemIdleActionPreference.preference,
-    SystemNotificationsExcludeInstanceTypesPreference.preference
+    SystemNotificationsExcludeInstanceTypesPreference.preference,
+    SystemNotificationsExcludeParamsPreference.preference
   ],
   [IdleRunPausedType]: [
     SystemMaxIdleTimeoutMinutesPreference.preference,

@@ -812,6 +812,24 @@ export default class Tool extends localization.LocalizedReactComponent {
     return this.toolVersionScanResults.filter(i => i.status === ScanStatuses.pending).length > 0;
   }
 
+  get toolVersionOS () {
+    const scanInfo = this.toolVersionScanResults
+      .find(o => o.name === this.defaultTag);
+    if (scanInfo && scanInfo.toolOSVersion && scanInfo.toolOSVersion.distribution) {
+      const {
+        distribution,
+        version = ''
+      } = scanInfo.toolOSVersion;
+      return [
+        distribution,
+        version
+      ]
+        .filter(Boolean)
+        .join(' ');
+    }
+    return undefined;
+  }
+
   renderDigestAliases = (aliases) => {
     const renderAlias = alias => {
       return (
@@ -1124,7 +1142,9 @@ export default class Tool extends localization.LocalizedReactComponent {
           toolId={this.props.toolId}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           executionEnvironmentDisabled={!this.defaultTag}
-          onSubmit={this.updateTool} />
+          onSubmit={this.updateTool}
+          dockerOSVersion={this.toolVersionOS}
+        />
       </div>
     );
   };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
@@ -70,6 +71,9 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * List of the tools with its versions to which datastorage should only be mounted
      * */
     private List<ToolFingerprint> toolsToMount;
+
+    private Set<String> linkingMasks;
+    private Long sourceStorageId;
 
     public AbstractDataStorage(final Long id, final String name,
             final String path, final DataStorageType type) {

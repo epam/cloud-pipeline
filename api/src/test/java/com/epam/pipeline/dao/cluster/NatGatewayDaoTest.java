@@ -40,6 +40,7 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
     private static final String INTERNAL_SERVICE_NAME = "nowhere.com";
     private static final String INTERNAL_IP = "10.1.1.1";
     private static final Integer INTERNAL_PORT = 2;
+    private static final String DESCRIPTION = "test";
 
     @Autowired
     private NatGatewayDao natGatewayDao;
@@ -48,7 +49,7 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCRUD() {
         final NatRoutingRuleDescription newRoutingRule = new NatRoutingRuleDescription(
-            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT);
+            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION);
         final List<NatRoutingRuleDescription> newRules = Collections.singletonList(newRoutingRule);
         final List<NatRoute> routingRulesCreated = natGatewayDao.registerRoutingRules(
             newRules, NatRouteStatus.CREATION_SCHEDULED);
@@ -83,6 +84,7 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
         Assert.assertEquals(request.getExternalName(), routingRuleCreated.getExternalName());
         Assert.assertEquals(request.getExternalIp(), routingRuleCreated.getExternalIp());
         Assert.assertEquals(request.getPort(), routingRuleCreated.getExternalPort());
+        Assert.assertEquals(request.getDescription(), routingRuleCreated.getDescription());
         Assert.assertEquals(status, routingRuleCreated.getStatus());
     }
 

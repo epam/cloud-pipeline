@@ -369,7 +369,8 @@ class NFSMountWatcher:
 
     def try_to_remove_path_from_observer(self, mnt_dest):
         try:
-            self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
+            if len(self._target_path_mapping.items()) > 1:
+                self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
             return True
         except OSError as e:
             logging.error(
@@ -681,7 +682,8 @@ class NFSMountWatcher:
 
     def release_resources(self):
         self._event_observer.stop()
-        self._event_observer.unschedule_all()
+        if len(self._target_path_mapping.items()) > 1:
+            self._event_observer.unschedule_all()
         self._event_handler.dump_to_storage()
 
     def start(self):

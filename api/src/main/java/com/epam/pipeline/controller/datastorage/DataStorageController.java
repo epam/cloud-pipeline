@@ -180,6 +180,20 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.loadByPathOrId(identifier));
     }
 
+    @RequestMapping(value = "/datastorage/findAllByPath", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns a list of datastorage, specified by one of path prefixes.",
+            notes = "Returns a list of datastorage, specified by one of path prefixes.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID)
+                                                                          final String identifier) {
+        return Result.success(dataStorageApiService.loadAllByPath(identifier));
+    }
+
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(

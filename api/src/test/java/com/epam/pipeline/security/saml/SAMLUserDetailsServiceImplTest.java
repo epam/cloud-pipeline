@@ -316,7 +316,7 @@ public class SAMLUserDetailsServiceImplTest {
         ReflectionTestUtils.setField(spyAccessService, "userManager", mockUserManager);
         user.setUserName(USER_NAME);
         when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
-        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true);
+        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true, null);
         doReturn(Collections.singletonList(blockedGroupStatus)).when(mockUserManager).loadGroupBlockingStatus(groups);
     }
 
@@ -329,7 +329,7 @@ public class SAMLUserDetailsServiceImplTest {
     private void setValidGroupsStatusForUser() {
         user.setUserName(USER_NAME);
         when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
-        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false);
+        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false, null);
         when(mockUserManager.loadGroupBlockingStatus(groups)).thenReturn(Collections.singletonList(validGroupStatus));
     }
 

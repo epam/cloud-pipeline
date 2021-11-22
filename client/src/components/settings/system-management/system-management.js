@@ -22,7 +22,7 @@ import NATGetaway from './nat-getaway-configuration/nat-getaway-configuration';
 import styles from './system-management.css';
 
 const SYSTEM_LOGS_TITLE = 'LOGS';
-const NAT_GATEWAY_TITLE = 'NAT GETAWAY';
+const NAT_GATEWAY_TITLE = 'NAT GATEWAY';
 
 export default class SystemManagement extends React.Component {
   state = {

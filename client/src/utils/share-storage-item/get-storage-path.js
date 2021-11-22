@@ -15,7 +15,7 @@
  */
 
 export default function getStoragePath (sharedStorage, sharedFolder) {
-  if (!sharedStorage || !sharedFolder) {
+  if (!sharedStorage) {
     return undefined;
   }
   const {
@@ -23,6 +23,9 @@ export default function getStoragePath (sharedStorage, sharedFolder) {
   } = sharedStorage;
   if (!path) {
     return undefined;
+  }
+  if (!sharedFolder) {
+    return path;
   }
   if (path.endsWith('/')) {
     return `${path.slice(0, -1)}/${sharedFolder}`;

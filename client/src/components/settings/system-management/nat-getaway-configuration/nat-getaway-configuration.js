@@ -206,12 +206,13 @@ export default class NATGetaway extends React.Component {
   }
 
   addNewDataToTable = async (formData) => {
-    const {serverName, ip, ports = []} = formData;
+    const {serverName, ip, ports = [], description} = formData;
     const formattedData = ports.map(port => ({
       externalName: serverName,
       externalIp: ip,
       externalPort: port,
-      isNew: true
+      isNew: true,
+      description
     }));
     const {addedRoutes = []} = this.state;
     this.setState({
@@ -255,7 +256,8 @@ export default class NATGetaway extends React.Component {
           .map(route => ({
             externalName: route.externalName,
             externalIp: route.externalIp,
-            port: route.externalPort
+            port: route.externalPort,
+            description: route.description
           }));
         if (routesToRemove.length) {
           const deleteRequest = new DeleteRules();
@@ -351,6 +353,19 @@ export default class NATGetaway extends React.Component {
                   className={classNames(styles.internalColumn, styles.column)}
                 />))
               }
+            </ColumnGroup>
+            <ColumnGroup>
+              <Column
+                key="comment"
+                title="Comment"
+                className={styles.commentColumn}
+                dataIndex="description"
+                render={description => (
+                  <Tooltip title={description}>
+                    {description}
+                  </Tooltip>
+                )}
+              />
               <Column
                 key="remover"
                 className={styles.actionsColumn}
@@ -404,6 +419,7 @@ export default class NATGetaway extends React.Component {
           visible={this.state.addRouteModalIsOpen}
           onAdd={this.addNewDataToTable}
           onCancel={this.closeAddRouteModal}
+          routes={this.sortedContent}
         />
       </div>
     );

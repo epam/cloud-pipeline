@@ -113,6 +113,14 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldAbleToRequestDavMountWhenPermissionIsGranted() {
+        initAclEntity(s3bucket, new AclPermission(AclPermission.WRITE.getMask() | AclPermission.READ.getMask()));
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldNotAbleToRequestDavMountWhenOnlyReadIsGranted() {
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
@@ -121,7 +129,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldAbleToCallOffRequestDavMountWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.READ);
+        initAclEntity(s3bucket, new AclPermission(AclPermission.WRITE.getMask() | AclPermission.READ.getMask()));
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
     }
@@ -130,6 +138,14 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotBeAbleToCallOffRequestDavMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket, AclPermission.NO_READ);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldNotBeAbleToCallOffRequestDavMountWhenOnlyReadIsGranted() {
+        initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
     }

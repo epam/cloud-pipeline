@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -42,6 +44,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -63,6 +66,8 @@ public class UserAccessService {
     private SamlUserRegisterStrategy autoCreateUsers;
     @Value("${saml.user.allow.anonymous: false}")
     private boolean allowAnonymous;
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     public UserContext parseUser(final String userName,
                                  final List<String> groups,
@@ -81,6 +86,9 @@ public class UserAccessService {
         if (pipelineUser == null) {
             log.info("Failed to find user by name {}. Access is still allowed.", jwtUser.getUsername());
             return jwtUser;
+        }
+        if (needToUpdateUserLastLogin(pipelineUser)) {
+            userManager.updateLastLoginDate(pipelineUser);
         }
         if (!jwtUser.getUserId().equals(pipelineUser.getId())) {
             throw new TokenVerificationException(String.format(
@@ -131,6 +139,7 @@ public class UserAccessService {
         if (loadedUser.getFirstLoginDate() == null) {
             userManager.updateUserFirstLoginDate(loadedUser.getId(), DateUtils.nowUTC());
         }
+        userManager.updateLastLoginDate(loadedUser);
         if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
             final PipelineUser updatedUser =
                     userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
@@ -192,5 +201,15 @@ public class UserAccessService {
         userContext.setGroups(groups);
         userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ANONYMOUS_USER.getRole()));
         return userContext;
+    }
+
+    private boolean needToUpdateUserLastLogin(final PipelineUser user) {
+        if (Objects.isNull(user.getLastLoginDate())) {
+            return true;
+        }
+
+        final Integer threshold = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD);
+        return DateUtils.hoursBetweenDates(user.getLastLoginDate(), DateUtils.nowUTC()) >= threshold;
     }
 }
