@@ -7,15 +7,15 @@ import java.time.YearMonth;
 
 @Value
 @Builder
-public class UserGeneralReportYearMonthBilling {
+public class GeneralReportYearMonthBilling {
     YearMonth yearMonth;
     Long runsNumber;
     Long runsDuration;
     Long runsCost;
     Long storagesCost;
 
-    public static UserGeneralReportYearMonthBilling empty(final YearMonth ym) {
-        return UserGeneralReportYearMonthBilling.builder()
+    public static GeneralReportYearMonthBilling empty(final YearMonth ym) {
+        return GeneralReportYearMonthBilling.builder()
                 .yearMonth(ym)
                 .runsNumber(0L)
                 .runsDuration(0L)

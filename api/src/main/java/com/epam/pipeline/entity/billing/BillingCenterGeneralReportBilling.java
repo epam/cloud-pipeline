@@ -8,10 +8,10 @@ import java.util.Map;
 import java.util.Optional;
 
 @Value
-@Builder(toBuilder = true)
-public class UserGeneralReportBilling {
-    String user;
-    String billingCenter;
+@Builder
+public class BillingCenterGeneralReportBilling {
+
+    String name;
     Long runsNumber;
     Long runsDuration;
     Long runsCost;

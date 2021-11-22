@@ -1,6 +1,6 @@
 package com.epam.pipeline.manager.billing;
 
-import com.epam.pipeline.entity.billing.UserGeneralReportBilling;
+import com.epam.pipeline.entity.billing.BillingCenterGeneralReportBilling;
 import com.epam.pipeline.entity.billing.GeneralReportYearMonthBilling;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.opencsv.CSVWriter;
@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public class UserGeneralReportWriter implements Closeable {
+public class BillingCenterGeneralReportWriter implements Closeable {
 
     private static final char SEPARATOR = ',';
     private static final int NUMERIC_SCALE = 2;
@@ -31,7 +31,6 @@ public class UserGeneralReportWriter implements Closeable {
     private static final long COST_DIVISOR = BigDecimal.ONE.setScale(4, RoundingMode.CEILING)
             .unscaledValue()
             .longValue();
-    private static final String BILLING_CENTER_COLUMN = "Billing center";
     private static final String SUM_OF_RUNS_COLUMN = "Runs number";
     private static final String SUM_OF_HOURS_COLUMN = "Runs duration (hours)";
     private static final String SUM_OF_RUNS_COSTS_COLUMN = "Runs costs ($)";
@@ -44,11 +43,11 @@ public class UserGeneralReportWriter implements Closeable {
     private final LocalDate from;
     private final LocalDate to;
 
-    public UserGeneralReportWriter(final Writer writer,
-                                   final BillingHelper billingHelper,
-                                   final PreferenceManager preferenceManager,
-                                   final LocalDate from,
-                                   final LocalDate to) {
+    public BillingCenterGeneralReportWriter(final Writer writer,
+                                            final BillingHelper billingHelper,
+                                            final PreferenceManager preferenceManager,
+                                            final LocalDate from,
+                                            final LocalDate to) {
         this.writer = new CSVWriter(writer, SEPARATOR);
         this.billingHelper = billingHelper;
         this.preferenceManager = preferenceManager;
@@ -61,7 +60,6 @@ public class UserGeneralReportWriter implements Closeable {
         writer.writeNext(new String[]{"Compute discounts:", "-"});
         writer.writeNext(new String[]{"Storage discounts:", "-"});
         final List<String> datesRow = new ArrayList<>();
-        datesRow.add(StringUtils.EMPTY);
         datesRow.add(StringUtils.EMPTY);
         yms().forEach(ym -> {
             datesRow.add(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT, Locale.US).format(ym));
@@ -76,7 +74,6 @@ public class UserGeneralReportWriter implements Closeable {
         writer.writeNext(datesRow.toArray(new String[0]));
         final List<String> columnsRow = new ArrayList<>();
         columnsRow.add(StringUtils.EMPTY);
-        columnsRow.add(BILLING_CENTER_COLUMN);
         yms().forEach(ym -> {
             columnsRow.add(SUM_OF_RUNS_COLUMN);
             columnsRow.add(SUM_OF_HOURS_COLUMN);
@@ -90,10 +87,9 @@ public class UserGeneralReportWriter implements Closeable {
         writer.writeNext(columnsRow.toArray(new String[0]));
     }
 
-    public void write(final UserGeneralReportBilling billing) {
+    public void write(final BillingCenterGeneralReportBilling billing) {
         final List<String> row = new ArrayList<>();
-        row.add(billing.getUser());
-        row.add(billing.getBillingCenter());
+        row.add(billing.getName());
         yms().forEach(ym -> {
             final GeneralReportYearMonthBilling ymBilling = billing.getBilling(ym)
                     .orElseGet(() -> GeneralReportYearMonthBilling.empty(ym));
