@@ -26,6 +26,8 @@ import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRulesRequest;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -78,15 +80,17 @@ public class NatGatewayManager {
     private final NatGatewayDao natGatewayDao;
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
     private final String tinyproxyServiceName;
     private final String dnsProxyConfigMapName;
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
     private final String hostsKey;
 
-    public NatGatewayManager(@Autowired final NatGatewayDao natGatewayDao,
-                             @Autowired final KubernetesManager kubernetesManager,
-                             @Autowired final MessageHelper messageHelper,
+    public NatGatewayManager(final NatGatewayDao natGatewayDao,
+                             final KubernetesManager kubernetesManager,
+                             final MessageHelper messageHelper,
+                             final PreferenceManager preferenceManager,
                              @Value("${nat.gateway.cp.core.service.name:cp-tinyproxy}")
                              final String tinyproxyServiceName,
                              @Value("${nat.gateway.cm.dns.proxy.name:cp-dnsmasq-hosts}")
@@ -99,6 +103,7 @@ public class NatGatewayManager {
         this.natGatewayDao = natGatewayDao;
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
         this.tinyproxyServiceName = tinyproxyServiceName;
         this.dnsProxyConfigMapName = dnsProxyConfigMapName;
         this.globalConfigMapName = globalConfigMapName;
@@ -110,6 +115,10 @@ public class NatGatewayManager {
     @SchedulerLock(name = "NatGatewayManager_updateStatus", lockAtMostForString = "PT5M")
     @Scheduled(fixedDelayString = "${nat.gateway.auto.config.poll:60000}")
     public void updateStatus() {
+        if (preferenceManager.getPreference(SystemPreferences.SYSTEM_DISABLE_NAT_SYNC)) {
+            log.debug("NAT routes synchronization is disabled.");
+            return;
+        }
         moveQueuedRoutesToKube();
         processRoutesInKube();
     }
