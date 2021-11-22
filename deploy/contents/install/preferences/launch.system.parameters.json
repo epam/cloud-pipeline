@@ -384,7 +384,7 @@
         "passToWorkers": true
     },
     {
-        "name": "CP_CAP_DESKTOP_DCV",
+        "name": "CP_CAP_DCV",
         "type": "boolean",
         "description": "Enables NICE DCV Desktop environment.",
         "defaultValue": "true",

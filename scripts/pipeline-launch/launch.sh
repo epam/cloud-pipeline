@@ -984,7 +984,7 @@ if check_cp_cap "CP_CAP_KUBE"; then
 fi
 
 # We need to make sure that the Systemd is enabled if we use DCV
-if check_cp_cap "CP_CAP_DESKTOP_DCV"; then
+if check_cp_cap "CP_CAP_DCV"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
 
@@ -1782,7 +1782,7 @@ fi
 echo "Setup NICE DCV environment"
 echo "-"
 
-if [ "$CP_CAP_DESKTOP_DCV" == "true" ]; then
+if [ "$CP_CAP_DCV" == "true" ]; then
       nice_dcv_setup
 else
     echo "Nice DCV support is not requested"
