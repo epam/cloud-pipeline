@@ -1184,11 +1184,25 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
-        public String getPreference(String preference) {
+        public String[] getPreference(String preference) {
             searchPreference(preference);
+            String[] prefValue = new String[2];
             List<String> list = context().$(byClassName("CodeMirror-code"))
                     .findAll(byClassName("CodeMirror-line")).texts();
-            return (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+            prefValue[0] = (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+            prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
+                    .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
+            return prefValue;
+        }
+
+        public String[] getLinePreference(String preference) {
+            searchPreference(preference);
+            String[] prefValue = new String[2];
+            prefValue[0] = context().$(byClassName("preference-group__preference-row"))
+                    .$(byClassName("ant-input-sm")).attr("value");
+            prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
+                    .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
+            return prefValue;
         }
 
         public PreferencesAO setCheckboxPreference(String preference, boolean checkboxIsEnable, boolean eyeIsChecked) {
