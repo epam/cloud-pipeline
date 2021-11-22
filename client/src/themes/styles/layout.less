@@ -124,6 +124,11 @@ a.cp-danger:focus,
   color: @color-red;
 }
 
+.cp-error.border,
+.cp-danger.border {
+  border-color: currentColor;
+}
+
 .cp-sensitive {
   color: @color-sensitive;
 }
@@ -233,7 +238,8 @@ h5 {
   color: @input-color;
 }
 
-.ant-input::placeholder {
+.ant-input::placeholder,
+.ant-time-picker-input::placeholder {
   color: @input-placeholder-color;
 }
 
@@ -267,6 +273,7 @@ h5 {
 .ant-select.cp-error .ant-select-selection {
   border-color: @color-red;
   color: @color-red;
+  box-shadow: none;
 }
 
 .cp-error .ant-input:hover:not(.ant-input-disabled),
@@ -287,6 +294,10 @@ h5 {
 }
 
 .cp-text-not-important {
+  color: @application-color-faded;
+}
+
+.cp-text-not-important-after:after {
   color: @application-color-faded;
 }
 
@@ -726,6 +737,10 @@ tr.ant-table-expanded-row:hover {
   font-weight: bold;
   background-color: @table-element-selected-background-color;
   color: @table-element-selected-color;
+}
+
+.cp-table-element-selected.cp-table-element-selected-no-bold {
+  font-weight: normal;
 }
 
 .cp-table-element-disabled,
@@ -1224,8 +1239,17 @@ a[role="button"].ant-calendar-year-panel-month-select {
   border-color: @border-color;
 }
 
+.cp-error .ant-time-picker-input {
+  color: @color-red;
+  border-color: @color-red;
+}
+
 .ant-time-picker-icon::after {
   color: @application-color;
+}
+
+.cp-error .ant-time-picker-icon::after {
+  color: @color-red;
 }
 
 .ant-time-picker-panel-inner {
@@ -1240,6 +1264,15 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-time-picker-input:focus {
   border-color: @primary-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
+}
+
+.cp-error .ant-time-picker-input:hover {
+  border-color: @color-red;
+}
+
+.cp-error .ant-time-picker-input:focus {
+  border-color: @color-red;
+  box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 
 .ant-time-picker-panel-input-wrap {
@@ -1339,6 +1372,10 @@ li.ant-time-picker-panel-select-option-selected {
   background-color: @card-header-background;
 }
 
+.ant-progress-circle-trail {
+  stroke: @card-header-background;
+}
+
 .ant-slider-disabled .ant-slider-track {
   background-color: @application-color-disabled !important;
 }
@@ -1354,6 +1391,14 @@ li.ant-time-picker-panel-select-option-selected {
 
 .ant-slider-track {
   background-color: @primary-color;
+}
+
+.ant-progress-circle-path {
+  stroke: @primary-color !important;
+}
+
+.ant-progress-status-success .ant-progress-circle-path {
+  stroke: @color-green !important;
 }
 
 .ant-slider:hover .ant-slider-track {

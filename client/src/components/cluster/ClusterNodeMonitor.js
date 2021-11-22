@@ -56,7 +56,7 @@ const Range = {
 
 function Divider () {
   return (
-    <div className={styles.divider}>
+    <div className={classNames(styles.divider, 'cp-divider', 'vertical')}>
       {'\u00A0'}
     </div>
   );
