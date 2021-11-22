@@ -979,7 +979,12 @@ export default `
 @THEME .ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected:hover::after {
   color: @primary-color;
 }
-
+@THEME .ReactTable.-striped .rt-tr.-even {
+  background-color: @card-background-color;
+}
+@THEME .ReactTable.-striped .rt-tr.-odd {
+  background-color: @even-element-background;
+}
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
   background-color: @panel-background-color;
@@ -1722,6 +1727,7 @@ export default `
 }
 @THEME .cp-library-metadata-additional-actions {
   background-color: inherit;
+  border-color: @input-border;
 }
 @THEME .cp-library-attributes-storage-size {
   color: @application-color;
@@ -1749,7 +1755,7 @@ export default `
 }
 @THEME .cp-library-metadata-special {
   color: @primary-color;
-  background-color: @primary-hover-color;
+  background-color: fadeout(@primary-hover-color, 90%);
 }
 @THEME .cp-library-metadata-special.read-only {
   color: @application-color-faded;
@@ -1762,7 +1768,69 @@ export default `
 @THEME .cp-library-metadata-divider {
   background-color: @card-border-color;
 }
-
+@THEME .cp-library-metadata-limit-mounts-container {
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-limit-mounts-do-not-mount-row {
+  background-color: @application-background-color;
+}
+@THEME .cp-library-metadata-limit-mounts-input {
+  background-color: @input-background;
+  border: 1px solid @input-border;
+}
+@THEME .cp-library-metadata-limit-mounts-input:focus,
+@THEME .cp-library-metadata-limit-mounts-input:hover {
+  border-color: @primary-active-color;
+}
+@THEME .cp-library-metadata-limit-mounts-input-disabled {
+  background-color: @input-background-disabled;
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-table {
+border: 1px solid @input-border;
+}
+@THEME .cp-library-metadata-table-cell {
+  border-right: 1px solid fadeout(@application-color, 90%);
+}
+@THEME .cp-library-metadata-table-cell-selected {
+  background-color: fadeout(@primary-hover-color, 70%);
+  color: @application-color;
+}
+@THEME .cp-library-metadata-panel-placeholder {
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-icon-red {
+  color: @color-red;
+}
+@THEME .cp-library-metadata-icon-blue {
+  color: @primary-color;
+}
+@THEME .cp-library-metadata-icon-grey {
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-spread-top-cell {
+  border-top-color: @primary-color;
+}
+@THEME .cp-library-metadata-spread-bottom-cell {
+  border-bottom-color: @primary-color;
+}
+@THEME .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-selected,
+@THEME .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-hovered,
+@THEME .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-selected {
+  border-right: 1px solid @primary-color;
+}
+@THEME .cp-library-metadata-spread-left-cell {
+  border-left-color: @primary-color;
+}
+@THEME .cp-library-metadata-spread-selected {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+@THEME .cp-library-metadata-spread-cell-hovered {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+@THEME .cp-library-metadata-spread-cell-selected {
+  background-color: fadeout(@primary-hover-color, 90%);
+}
 @THEME .cp-node-tag {
   border-color: @application-color-disabled;
   color: @application-color;
