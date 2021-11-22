@@ -645,6 +645,9 @@ public class SystemPreferences {
             null, new TypeReference<Map<String, NotificationFilter>>() {},
             SYSTEM_GROUP, isNullOrValidJson(new TypeReference<Map<String, NotificationFilter>>() {}));
 
+    public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
+            "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
+
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
         "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,
