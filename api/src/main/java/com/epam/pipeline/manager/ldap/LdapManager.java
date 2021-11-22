@@ -44,39 +44,53 @@ public class LdapManager {
      * Searches for entities in the configured LDAP servers by the given request.
      */
     public LdapSearchResponse search(final LdapSearchRequest request) {
+        return search(request, null);
+    }
+
+    public LdapSearchResponse searchBlockedUser(final LdapSearchRequest request) {
+        final String filter = String.format(preferenceManager.getPreference(SystemPreferences.LDAP_BLOCKED_USER_FILTER),
+                StringUtils.trimToEmpty(request.getQuery()));
+        return search(request, filter);
+    }
+
+    private LdapSearchResponse search(final LdapSearchRequest request, final String filter) {
         Assert.notNull(request.getType(), messageHelper.getMessage(MessageConstants.ERROR_LDAP_SEARCH_TYPE_MISSING));
         try {
             final int size = responseSize();
-            return truncated(search(request, size), size);
+            return truncated(search(request, size, filter), size);
         } catch (TimeLimitExceededException e) {
             log.warn(String.format("Time limit was exceeded during LDAP search request %s", request), e);
             return timedOut();
         }
     }
 
-    private List<LdapEntity> search(final LdapSearchRequest request, final int size) {
-        return search(queryFor(request, size), mapperFor(request));
+    private List<LdapEntity> search(final LdapSearchRequest request, final int size, final String filter) {
+        return search(queryFor(request, size, filter), mapperFor(request));
     }
 
     private List<LdapEntity> search(final LdapQuery query, final AttributesMapper<LdapEntity> mapper) {
         return ldapTemplate.search(query, mapper);
     }
 
-    private LdapQuery queryFor(final LdapSearchRequest request, final int size) {
+    private LdapQuery queryFor(final LdapSearchRequest request, final int size, final String filter) {
         return LdapQueryBuilder.query()
                 .base(basePath())
                 .searchScope(SearchScope.SUBTREE)
                 .countLimit(size)
                 .timeLimit(responseTimeout())
                 .attributes(attributes())
-                .filter(filterFor(request));
+                .filter(filterFor(request, filter));
     }
 
-    private String filterFor(final LdapSearchRequest request) {
-        return String.format(filterFor(request.getType()), StringUtils.trimToEmpty(request.getQuery()));
+    private String filterFor(final LdapSearchRequest request, final String filter) {
+        return StringUtils.isBlank(filter) ? defaultFilter(request) : filter;
     }
 
-    public String filterFor(final LdapEntityType type) {
+    private String defaultFilter(final LdapSearchRequest request) {
+        return String.format(defaultFilter(request.getType()), StringUtils.trimToEmpty(request.getQuery()));
+    }
+
+    public String defaultFilter(final LdapEntityType type) {
         switch (type) {
             case USER:
                 return userFilter();

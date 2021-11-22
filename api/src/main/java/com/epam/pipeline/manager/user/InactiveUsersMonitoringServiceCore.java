@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.manager.user;
 
+import com.epam.pipeline.entity.ldap.LdapSearchRequest;
+import com.epam.pipeline.entity.ldap.LdapSearchResponse;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -46,6 +49,7 @@ public class InactiveUsersMonitoringServiceCore {
     private final UserManager userManager;
     private final NotificationManager notificationManager;
     private final PreferenceManager preferenceManager;
+    private final LdapManager ldapManager;
 
     @SchedulerLock(name = "InactiveUsersMonitoringService_monitor", lockAtMostForString = "PT10M")
     public void monitor() {
@@ -76,8 +80,20 @@ public class InactiveUsersMonitoringServiceCore {
                 .filter(user -> shouldNotify(user, now, userBlockedDays, userIdleDays, blockedGroups))
                 .collect(Collectors.toList());
 
-        notificationManager.notifyInactiveUsers(inactiveUsers);
+        final List<PipelineUser> ldapBlockedUsers = allUsers.stream()
+                .filter(pipelineUser -> !pipelineUser.isBlocked())
+                .filter(this::ldapBlocked)
+                .peek(user -> userManager.updateUserBlockingStatus(user.getId(), true))
+                .collect(Collectors.toList());
+
+        notificationManager.notifyInactiveUsers(inactiveUsers, ldapBlockedUsers);
         log.debug("Finished inactive users monitoring");
+    }
+
+    private boolean ldapBlocked(final PipelineUser user) {
+        final LdapSearchResponse ldapSearchResponse = ldapManager
+                .searchBlockedUser(LdapSearchRequest.forUser(user.getUserName()));
+        return Objects.nonNull(ldapSearchResponse) && CollectionUtils.isNotEmpty(ldapSearchResponse.getEntities());
     }
 
     private boolean shouldNotify(final PipelineUser user, final LocalDateTime now, final Integer userBlockedDays,

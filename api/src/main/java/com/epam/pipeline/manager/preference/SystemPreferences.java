@@ -874,12 +874,15 @@ public class SystemPreferences {
             "ldap.base.path", "", LDAP_GROUP, pass);
     public static final StringPreference LDAP_USER_FILTER = new StringPreference(
             "ldap.user.filter", "(&(objectClass=person)(cn=*%s*))", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_BLOCKED_USER_FILTER = new StringPreference(
+            "ldap.blocked.user.filter",
+            "(&(objectClass=person)(cn=*%s*)(&(lockoutTime=*)(!(lockoutTime=0))))", LDAP_GROUP, pass);
     public static final StringPreference LDAP_GROUP_FILTER = new StringPreference(
             "ldap.group.filter", "(&(objectClass=group)(cn=*%s*))", LDAP_GROUP, pass);
     public static final StringPreference LDAP_NAME_ATTRIBUTE = new StringPreference(
             "ldap.entity.attribute.name", "cn", LDAP_GROUP, pass);
     public static final StringPreference LDAP_ENTITY_ATTRIBUTES = new StringPreference(
-            "ldap.entity.attributes", "cn,distinguishedName,mail", LDAP_GROUP, pass);
+            "ldap.entity.attributes", "cn,distinguishedName,mail,lockoutTime", LDAP_GROUP, pass);
     public static final IntPreference LDAP_RESPONSE_SIZE = new IntPreference(
             "ldap.response.size", 10, LDAP_GROUP, isGreaterThan(0));
     public static final IntPreference LDAP_RESPONSE_TIMEOUT = new IntPreference(
