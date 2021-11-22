@@ -1216,7 +1216,7 @@ public class DataStorageManager implements SecuredEntityManager {
                 SystemPreferences.DATA_STORAGE_DAV_MOUNT_MAX_STORAGES.getKey());
         final List<EntityVO> davMountedStorages = ListUtils.emptyIfNull(
                 metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
-        Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
+        Assert.state(davMountedStorages.size() < davMountedStoragesMaxValue,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
     }
 
