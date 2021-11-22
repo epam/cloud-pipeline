@@ -420,6 +420,10 @@ h5 {
   border-bottom: 1px solid @card-border-color;
 }
 
+.ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
+  padding: 0;
+}
+
 .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   border-bottom: 0;
 }
@@ -707,8 +711,13 @@ tr.ant-table-expanded-row:hover {
   border-color: @table-border-color;
 }
 
+.cp-table-element {
+  color: @application-color;
+}
+
 .ant-table-tbody > tr:hover > td,
-.cp-table-element-hover {
+.cp-table-element-hover,
+.cp-table-element:hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
 }
@@ -719,7 +728,8 @@ tr.ant-table-expanded-row:hover {
   color: @table-element-selected-color;
 }
 
-.cp-table-element-disabled {
+.cp-table-element-disabled,
+.cp-table-element[disabled] {
   cursor: default;
   background-color: @card-background-color;
   color: @application-color-disabled;
@@ -824,7 +834,8 @@ tr.ant-table-expanded-row:hover {
 .ant-select-dropdown,
 .ant-dropdown-menu,
 .rc-menu,
-.rc-dropdown-menu {
+.rc-dropdown-menu,
+.ant-mention-dropdown {
   background-color: @panel-background-color;
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
@@ -849,9 +860,22 @@ tr.ant-table-expanded-row:hover {
   background-color: transparent;
 }
 
-.ant-select-dropdown-menu-item {
+.ant-select-dropdown-menu-item,
+.ant-mention-dropdown-item {
   color: @application-color;
   background-color: @panel-background-color;
+}
+
+.ant-mention-dropdown-item-hover,
+.ant-mention-dropdown-item.focus,
+.ant-mention-dropdown-item-active {
+  color: @element-hover-color;
+  background-color: @element-hover-background-color;
+}
+
+.ant-mention-dropdown-item-disabled,
+.ant-mention-dropdown-item-disabled:hover {
+  color: @application-color-disabled;
 }
 
 .rc-dropdown-menu > .rc-dropdown-menu-item,
@@ -1343,4 +1367,45 @@ li.ant-time-picker-panel-select-option-selected {
 
 .ant-slider:hover .ant-slider-handle {
   border-color: @primary-hover-color;
+}
+
+.cp-notification {
+  background-color: @card-background-color;
+  color: @application-color;
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
+  border-color: @card-border-color;
+}
+
+.ant-mention-wrapper .ant-mention-editor {
+  background-color: @input-background;
+  border-color: @input-border;
+  color: @input-color;
+}
+
+.ant-mention-wrapper .public-DraftEditorPlaceholder-root .public-DraftEditorPlaceholder-inner {
+  color: @input-placeholder-color;
+}
+
+.cp-mention .ant-mention-editor,
+.cp-mention .ant-mention-wrapper,
+.cp-mention.ant-mention-active .ant-mention-editor,
+.cp-mention.ant-mention-active .ant-mention-wrapper {
+  box-shadow: none;
+  border: none;
+}
+
+.ant-mention-dropdown {
+  background-color: red;
+}
+
+.cp-overlay {
+  background-color: @modal-mask-background;
+}
+
+.cp-close-button {
+  color: @application-color-faded;
+}
+
+.cp-close-button:hover {
+  color: @application-color;
 }

@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import {Alert, Card, Col, Icon, Row} from 'antd';
 import displayDate from '../../../../utils/displayDate';
-import NotificationView from '../../../special/notifications/controls/NotificationView';
+import Markdown from '../../../special/markdown';
 import styles from './Panel.css';
 
 @inject('notifications')
@@ -75,8 +75,9 @@ export default class NotificationsPanel extends React.Component {
             {notification.title}
           </Row>
           <Row type="flex">
-            <NotificationView
-              text={notification.body}
+            <Markdown
+              md={notification.body}
+              style={{margin: '10px 0', fontSize: 'smaller'}}
             />
           </Row>
           <Row
