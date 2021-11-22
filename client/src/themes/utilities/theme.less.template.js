@@ -181,6 +181,10 @@ export default `
 @THEME .cp-danger {
   color: @color-red;
 }
+@THEME .cp-error.border,
+@THEME .cp-danger.border {
+  border-color: currentColor;
+}
 @THEME .cp-sensitive {
   color: @color-sensitive;
 }
@@ -271,7 +275,8 @@ export default `
   border-color: @input-border;
   color: @input-color;
 }
-@THEME .ant-input::placeholder {
+@THEME .ant-input::placeholder,
+@THEME .ant-time-picker-input::placeholder {
   color: @input-placeholder-color;
 }
 @THEME .ant-input-affix-wrapper .ant-input-suffix {
@@ -300,6 +305,7 @@ export default `
 @THEME .ant-select.cp-error .ant-select-selection {
   border-color: @color-red;
   color: @color-red;
+  box-shadow: none;
 }
 @THEME .cp-error .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:hover:not(.ant-input-disabled),
@@ -317,6 +323,9 @@ export default `
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 @THEME .cp-text-not-important {
+  color: @application-color-faded;
+}
+@THEME .cp-text-not-important-after:after {
   color: @application-color-faded;
 }
 @THEME .ant-modal-mask {
@@ -682,6 +691,9 @@ export default `
   font-weight: bold;
   background-color: @table-element-selected-background-color;
   color: @table-element-selected-color;
+}
+@THEME .cp-table-element-selected.cp-table-element-selected-no-bold {
+  font-weight: normal;
 }
 @THEME .cp-table-element-disabled,
 @THEME .cp-table-element[disabled] {
@@ -1094,8 +1106,15 @@ export default `
   background-color: @panel-background-color;
   border-color: @border-color;
 }
+@THEME .cp-error .ant-time-picker-input {
+  color: @color-red;
+  border-color: @color-red;
+}
 @THEME .ant-time-picker-icon::after {
   color: @application-color;
+}
+@THEME .cp-error .ant-time-picker-icon::after {
+  color: @color-red;
 }
 @THEME .ant-time-picker-panel-inner {
   background-color: @panel-background-color;
@@ -1107,6 +1126,13 @@ export default `
 @THEME .ant-time-picker-input:focus {
   border-color: @primary-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
+}
+@THEME .cp-error .ant-time-picker-input:hover {
+  border-color: @color-red;
+}
+@THEME .cp-error .ant-time-picker-input:focus {
+  border-color: @color-red;
+  box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 @THEME .ant-time-picker-panel-input-wrap {
   border-bottom-color: @calendar-border-color;
@@ -1183,6 +1209,9 @@ export default `
 @THEME .ant-slider-rail {
   background-color: @card-header-background;
 }
+@THEME .ant-progress-circle-trail {
+  stroke: @card-header-background;
+}
 @THEME .ant-slider-disabled .ant-slider-track {
   background-color: @application-color-disabled !important;
 }
@@ -1195,6 +1224,12 @@ export default `
 }
 @THEME .ant-slider-track {
   background-color: @primary-color;
+}
+@THEME .ant-progress-circle-path {
+  stroke: @primary-color !important;
+}
+@THEME .ant-progress-status-success .ant-progress-circle-path {
+  stroke: @color-green !important;
 }
 @THEME .ant-slider:hover .ant-slider-track {
   background-color: @primary-hover-color;
@@ -1264,6 +1299,12 @@ export default `
   border: 1px solid @card-border-color;
   background-color: @card-background-color;
   margin: 2px;
+}
+@THEME .cp-panel .cp-panel-card.cp-launch-vs-tool {
+  margin: 2px 0;
+}
+@THEME .cp-panel .cp-panel-card.cp-hot-node-pool {
+  margin: 10px 0;
 }
 @THEME .cp-panel .cp-panel-card.cp-card-service {
   border: 1px solid @card-service-border-color;
@@ -1989,7 +2030,7 @@ export default `
 }
 @THEME .cp-versioned-storage-table-header {
   border-color: @card-border-color;
-  background-color: @card-header-background;
+  background-color: @card-background-color;
   color: @application-color;
 }
 
