@@ -722,19 +722,6 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.getDataSizes(paths));
     }
 
-    @GetMapping(value = "/datastorage/path/usage")
-    @ResponseBody
-    @ApiOperation(
-            value = "Returns storage usage statistics.",
-            notes = "Returns storage usage statistics.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<StorageUsage> getStorageUsage(@RequestParam final String id,
-                                                @RequestParam(required = false) final String path) {
-        return Result.success(dataStorageApiService.getStorageUsage(id, path));
-    }
 
     @PostMapping(value = "/datastorage/sharedStorage")
     @ResponseBody

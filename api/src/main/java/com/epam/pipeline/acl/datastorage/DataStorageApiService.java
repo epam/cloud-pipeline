@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
+import com.epam.pipeline.manager.datastorage.StorageEventsService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -77,6 +78,7 @@ public class DataStorageApiService {
     private final MessageHelper messageHelper;
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
+    private final Optional<StorageEventsService> eventsService;
 
     @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(filterObject, 'READ')")
     @AclMaskList
@@ -366,5 +368,10 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND + AclExpressions.STORAGE_ID_WRITE)
     public void callOffDataStorageDavMount(final Long id) {
         dataStorageManager.callOffDataStorageDavMount(id);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermissionByName(#id, 'WRITE')")
+    public void updateStorageUsage(final String id) {
+        eventsService.ifPresent(s -> s.addReindexEvent(id));
     }
 }

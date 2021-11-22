@@ -122,7 +122,7 @@ public class DataLeakagePolicyAspect {
     }
 
     private boolean isRequestContextSensitive() {
-        final RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
+        final RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes == null) {
             return false;
         }
