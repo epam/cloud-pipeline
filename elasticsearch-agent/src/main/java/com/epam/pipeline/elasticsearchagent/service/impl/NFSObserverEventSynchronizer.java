@@ -168,6 +168,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         } catch (Exception e) {
             log.warn("Some errors occurred during NFS observer events sync from [{}]: {}",
                      eventsProducer, e.getMessage());
+            log.error("Error:", e);
         }
     }
 

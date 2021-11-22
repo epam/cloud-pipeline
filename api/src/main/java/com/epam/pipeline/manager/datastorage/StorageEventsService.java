@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSObserverEvent;
 import com.epam.pipeline.entity.datastorage.nfs.NFSObserverEventType;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -85,7 +86,7 @@ public class StorageEventsService {
 
     public void addReindexEvent(final String id) {
         final AbstractDataStorage storage = storageManager.loadByNameOrId(id);
-        addEvent(storage, StringUtils.EMPTY, null, NFSObserverEventType.REINDEX);
+        addEvent(storage, StringUtils.EMPTY, ProviderUtils.DELIMITER, NFSObserverEventType.REINDEX);
     }
 
     public void addEvent(final AbstractDataStorage dataStorage, final String pathFrom, final String pathTo,
