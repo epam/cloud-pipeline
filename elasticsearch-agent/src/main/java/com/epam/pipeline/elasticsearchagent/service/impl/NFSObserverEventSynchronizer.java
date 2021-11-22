@@ -112,7 +112,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                             String eventsBucketUriStr,
                                         final @Value("${sync.nfs-file.observer.sync.files.chunk}")
                                             Integer eventsFileChunkSize,
-                                        final @Value("{sync.nfs-file.observer.sync.pool.size:4}")
+                                        final @Value("${sync.nfs-file.observer.sync.pool.size:4}")
                                             Integer poolSize,
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
