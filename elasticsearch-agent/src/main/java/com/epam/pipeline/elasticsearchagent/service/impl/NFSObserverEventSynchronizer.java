@@ -134,6 +134,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         log.info("Started NFS events synchronization");
         final Map<String, AbstractDataStorage> storagePathMapping = getCloudPipelineAPIClient().loadAllDataStorages()
             .stream()
+            .filter(storage -> Objects.isNull(storage.getSourceStorageId()))
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
         final AbstractDataStorage eventsStorage = storagePathMapping.get(eventsBucketName);
         storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS);
@@ -167,6 +168,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         } catch (Exception e) {
             log.warn("Some errors occurred during NFS observer events sync from [{}]: {}",
                      eventsProducer, e.getMessage());
+            log.error("Error:", e);
         }
     }
 
