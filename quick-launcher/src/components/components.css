@@ -24,6 +24,7 @@
 .content.error .description {
   font-size: 10pt;
   color: #aaa;
+  max-width: 50vw;
 }
 
 .content.error .description .raw {

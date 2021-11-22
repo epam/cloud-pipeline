@@ -127,7 +127,8 @@ const defaultSettings = {
     token: undefined,
     shareWithGroups: undefined,
     originalUserNameParameter: undefined
-  }
+  },
+  checkDefaultUserStorageStatus: true
 };
 
 function parseUrl(url, verbose = false) {

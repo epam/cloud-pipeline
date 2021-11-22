@@ -19,6 +19,7 @@ import joinLaunchOptions from './join-launch-options';
 import parseGatewaySpec from './parse-gateway-spec';
 import {findUserRun} from './find-user-run';
 import applicationAvailable from "./folder-applications/application-available";
+import checkUserStorage from "./check-user-storage-state";
 
 function pollRun(run, resolve, reject, initialPoll = false, appSettings) {
   const {id, status, initialized, serviceUrl} = run || {};
@@ -209,160 +210,164 @@ function launchTool(application, user, options) {
                       }
                       getAppOwnerInfo()
                         .then(owner => {
-                          parseGatewaySpec(appSettings, options, owner, user)
-                            .then(gatewaySpec => {
-                              if (!applicationAvailable(gatewaySpec, user, appSettings)) {
-                                handleReject(new Error(`Access denied`));
-                                return;
-                              }
-                              const joinedLaunchOptions = joinLaunchOptions(
-                                appSettings,
-                                options,
-                                gatewaySpec
-                              );
-                              console.log('joined launch options:', joinedLaunchOptions);
-                              const payload = Object.assign({}, settings);
-                              if (settings.useParentNodeId && node && node.runId) {
-                                payload.parentNodeId = node.runId;
-                              }
-                              if (!payload.parameters) {
-                                payload.parameters = {};
-                              }
-                              if (prettyUrlParsed) {
-                                payload.prettyUrl = prettyUrlParsed;
-                                payload.parameters.RUN_PRETTY_URL = {
-                                  type: 'string',
-                                  value: `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}`
-                                };
-                                console.log(`Pretty url: ${payload.prettyUrl}`);
-                              }
-                              console.log(`Limit mounts: "${appSettings.limitMounts}"`);
-                              const attachMounts = (initial) => {
-                                const result = new Set((initial || []).map(s => +s).filter(i => !Number.isNaN(i)));
-                                if (user?.storages) {
-                                  console.log('Limit Mounts: attaching user storages:', user?.storages);
-                                  (user?.storages || []).forEach(storage => result.add(storage));
-                                }
-                                if (gatewaySpec?.limitMounts) {
-                                  console.log('Limit Mounts: attaching mounts from gateway spec:', gatewaySpec?.limitMounts);
-                                  (gatewaySpec?.limitMounts || []).forEach(storage => result.add(storage));
-                                }
-                                if (options?.__mounts__) {
-                                  console.log('Limit Mounts: attaching storages:', options?.__mounts__);
-                                  (options?.__mounts__ || []).forEach(storage => result.add(storage));
-                                }
-                                if (options?.sensitiveMounts) {
-                                  console.log('Limit Mounts: attaching sensitive storages:', options?.sensitiveMounts);
-                                  (options?.sensitiveMounts || []).forEach(storage => result.add(storage));
-                                }
-                                return Array.from(result).join(',');
-                              };
-                              if (/^default$/i.test(appSettings.limitMounts)) {
-                                if (owner) {
-                                  if (!owner.defaultStorageId) {
-                                    handleReject(new Error(`Default data storage is not set for user ${owner?.userName}`));
+                          checkUserStorage(appSettings, user)
+                            .then(() => {
+                              parseGatewaySpec(appSettings, options, owner, user)
+                                .then(gatewaySpec => {
+                                  if (!applicationAvailable(gatewaySpec, user, appSettings)) {
+                                    handleReject(new Error(`Access denied`));
                                     return;
-                                  } else {
+                                  }
+                                  const joinedLaunchOptions = joinLaunchOptions(
+                                    appSettings,
+                                    options,
+                                    gatewaySpec
+                                  );
+                                  console.log('joined launch options:', joinedLaunchOptions);
+                                  const payload = Object.assign({}, settings);
+                                  if (settings.useParentNodeId && node && node.runId) {
+                                    payload.parentNodeId = node.runId;
+                                  }
+                                  if (!payload.parameters) {
+                                    payload.parameters = {};
+                                  }
+                                  if (prettyUrlParsed) {
+                                    payload.prettyUrl = prettyUrlParsed;
+                                    payload.parameters.RUN_PRETTY_URL = {
+                                      type: 'string',
+                                      value: `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}`
+                                    };
+                                    console.log(`Pretty url: ${payload.prettyUrl}`);
+                                  }
+                                  console.log(`Limit mounts: "${appSettings.limitMounts}"`);
+                                  const attachMounts = (initial) => {
+                                    const result = new Set((initial || []).map(s => +s).filter(i => !Number.isNaN(i)));
+                                    if (user?.storages) {
+                                      console.log('Limit Mounts: attaching user storages:', user?.storages);
+                                      (user?.storages || []).forEach(storage => result.add(storage));
+                                    }
+                                    if (gatewaySpec?.limitMounts) {
+                                      console.log('Limit Mounts: attaching mounts from gateway spec:', gatewaySpec?.limitMounts);
+                                      (gatewaySpec?.limitMounts || []).forEach(storage => result.add(storage));
+                                    }
+                                    if (options?.__mounts__) {
+                                      console.log('Limit Mounts: attaching storages:', options?.__mounts__);
+                                      (options?.__mounts__ || []).forEach(storage => result.add(storage));
+                                    }
+                                    if (options?.sensitiveMounts) {
+                                      console.log('Limit Mounts: attaching sensitive storages:', options?.sensitiveMounts);
+                                      (options?.sensitiveMounts || []).forEach(storage => result.add(storage));
+                                    }
+                                    return Array.from(result).join(',');
+                                  };
+                                  if (/^default$/i.test(appSettings.limitMounts)) {
+                                    if (owner) {
+                                      if (!owner.defaultStorageId) {
+                                        handleReject(new Error(`Default data storage is not set for user ${owner?.userName}`));
+                                        return;
+                                      } else {
+                                        payload.parameters.CP_CAP_LIMIT_MOUNTS = {
+                                          type: 'string',
+                                          value: attachMounts([owner?.defaultStorageId])
+                                        };
+                                        payload.parameters.DEFAULT_STORAGE_USER = {
+                                          type: 'string',
+                                          value: owner?.userName
+                                        };
+                                      }
+                                    } else if (!user?.defaultStorageId) {
+                                      handleReject(new Error(`Default data storage is not set for user ${user?.userName}`));
+                                      return;
+                                    } else {
+                                      payload.parameters.CP_CAP_LIMIT_MOUNTS = {
+                                        type: 'string',
+                                        value: attachMounts([user?.defaultStorageId])
+                                      };
+                                      payload.parameters.DEFAULT_STORAGE_USER = {
+                                        type: 'string',
+                                        value: user?.userName
+                                      };
+                                    }
+                                  } else if (/^all$/i.test(appSettings.limitMounts)) {
+                                    payload.parameters.CP_CAP_LIMIT_MOUNTS = undefined;
+                                  } else if (appSettings.limitMounts) {
+                                    console.log('CP_CAP_LIMIT_MOUNTS:', appSettings.limitMounts);
+                                    const {
+                                      result: parsed,
+                                      replacements = []
+                                    } = parseLimitMounts(
+                                      appSettings.limitMounts,
+                                      owner,
+                                      user,
+                                      joinedLaunchOptions.limitMountsPlaceholders
+                                    );
+                                    console.log('CP_CAP_LIMIT_MOUNTS parsed:', parsed);
+                                    console.log('CP_CAP_LIMIT_MOUNTS placeholder substitutions:', replacements);
+                                    if (Object.keys(replacements).length > 0) {
+                                      Object.entries(replacements)
+                                        .forEach(([key, value]) => {
+                                          payload.parameters[key] = {
+                                            type: 'string',
+                                            value
+                                          };
+                                        });
+                                    }
                                     payload.parameters.CP_CAP_LIMIT_MOUNTS = {
                                       type: 'string',
-                                      value: attachMounts([owner?.defaultStorageId])
-                                    };
-                                    payload.parameters.DEFAULT_STORAGE_USER = {
-                                      type: 'string',
-                                      value: owner?.userName
+                                      value: attachMounts((parsed || '').split(','))
                                     };
                                   }
-                                } else if (!user?.defaultStorageId) {
-                                  handleReject(new Error(`Default data storage is not set for user ${user?.userName}`));
-                                  return;
-                                } else {
-                                  payload.parameters.CP_CAP_LIMIT_MOUNTS = {
-                                    type: 'string',
-                                    value: attachMounts([user?.defaultStorageId])
-                                  };
-                                  payload.parameters.DEFAULT_STORAGE_USER = {
-                                    type: 'string',
-                                    value: user?.userName
-                                  };
-                                }
-                              } else if (/^all$/i.test(appSettings.limitMounts)) {
-                                payload.parameters.CP_CAP_LIMIT_MOUNTS = undefined;
-                              } else if (appSettings.limitMounts) {
-                                console.log('CP_CAP_LIMIT_MOUNTS:', appSettings.limitMounts);
-                                const {
-                                  result: parsed,
-                                  replacements = []
-                                } = parseLimitMounts(
-                                  appSettings.limitMounts,
-                                  owner,
-                                  user,
-                                  joinedLaunchOptions.limitMountsPlaceholders
-                                );
-                                console.log('CP_CAP_LIMIT_MOUNTS parsed:', parsed);
-                                console.log('CP_CAP_LIMIT_MOUNTS placeholder substitutions:', replacements);
-                                if (Object.keys(replacements).length > 0) {
-                                  Object.entries(replacements)
-                                    .forEach(([key, value]) => {
-                                      payload.parameters[key] = {
-                                        type: 'string',
-                                        value
-                                      };
-                                    });
-                                }
-                                payload.parameters.CP_CAP_LIMIT_MOUNTS = {
-                                  type: 'string',
-                                  value: attachMounts((parsed || '').split(','))
-                                };
-                              }
-                              const params = generateParameters(appSettings?.parameters, options);
-                              if (Object.keys(params).length > 0) {
-                                console.log('Parameters to attach:', params);
-                              }
-                              payload.parameters = attachParameters(
-                                payload.parameters,
-                                params
-                              );
-                              payload.parameters = attachParameters(
-                                payload.parameters,
-                                options.__parameters__ || {}
-                              )
-                              if (
-                                appSettings?.isAnonymous &&
-                                appSettings?.originalUserName &&
-                                appSettings?.anonymousAccess?.originalUserNameParameter
-                              ) {
-                                console.log(
-                                  `Setting parameter "${appSettings?.anonymousAccess?.originalUserNameParameter}"="${appSettings?.originalUserName}"`
-                                )
-                                payload.parameters[appSettings?.anonymousAccess?.originalUserNameParameter] = {
-                                  value: appSettings?.originalUserName,
-                                  type: 'string'
-                                };
-                              }
-                              if (joinedLaunchOptions.instance_size) {
-                                console.log(`${joinedLaunchOptions.instance_size} instance will be used`);
-                                payload.instance_size = joinedLaunchOptions.instance_size;
-                              }
-                              launchToolRequest(
-                                application.id,
-                                `${application.image}:${version || 'latest'}`,
-                                payload
-                              )
-                                .then(launchedRun => {
-                                  if (launchedRun) {
-                                    console.log(`Run #${launchedRun.id} launched`);
-                                    launches.set(runIdKey, launchedRun.id);
-                                    shareRun(launchedRun.id)
-                                      .then()
-                                      .catch((e) => {
-                                        console.log('Error sharing run with users/groups:', e.message);
-                                      })
-                                      .then(() => {
-                                        pollRun(launchedRun, resolve, handleReject, true, appSettings);
-                                      });
-                                  } else {
-                                    handleReject(new Error('Error launching tool: unknown run id (empty response from /run)'));
+                                  const params = generateParameters(appSettings?.parameters, options);
+                                  if (Object.keys(params).length > 0) {
+                                    console.log('Parameters to attach:', params);
                                   }
+                                  payload.parameters = attachParameters(
+                                    payload.parameters,
+                                    params
+                                  );
+                                  payload.parameters = attachParameters(
+                                    payload.parameters,
+                                    options.__parameters__ || {}
+                                  )
+                                  if (
+                                    appSettings?.isAnonymous &&
+                                    appSettings?.originalUserName &&
+                                    appSettings?.anonymousAccess?.originalUserNameParameter
+                                  ) {
+                                    console.log(
+                                      `Setting parameter "${appSettings?.anonymousAccess?.originalUserNameParameter}"="${appSettings?.originalUserName}"`
+                                    )
+                                    payload.parameters[appSettings?.anonymousAccess?.originalUserNameParameter] = {
+                                      value: appSettings?.originalUserName,
+                                      type: 'string'
+                                    };
+                                  }
+                                  if (joinedLaunchOptions.instance_size) {
+                                    console.log(`${joinedLaunchOptions.instance_size} instance will be used`);
+                                    payload.instance_size = joinedLaunchOptions.instance_size;
+                                  }
+                                  launchToolRequest(
+                                    application.id,
+                                    `${application.image}:${version || 'latest'}`,
+                                    payload
+                                  )
+                                    .then(launchedRun => {
+                                      if (launchedRun) {
+                                        console.log(`Run #${launchedRun.id} launched`);
+                                        launches.set(runIdKey, launchedRun.id);
+                                        shareRun(launchedRun.id)
+                                          .then()
+                                          .catch((e) => {
+                                            console.log('Error sharing run with users/groups:', e.message);
+                                          })
+                                          .then(() => {
+                                            pollRun(launchedRun, resolve, handleReject, true, appSettings);
+                                          });
+                                      } else {
+                                        handleReject(new Error('Error launching tool: unknown run id (empty response from /run)'));
+                                      }
+                                    })
+                                    .catch(handleReject);
                                 })
                                 .catch(handleReject);
                             })
