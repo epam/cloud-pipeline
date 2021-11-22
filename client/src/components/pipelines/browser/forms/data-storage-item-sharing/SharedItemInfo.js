@@ -38,6 +38,7 @@ import styles from './SharedItemInfo.css';
 import roleModel from '../../../../../utils/roleModel';
 
 const MAX_SIDS_TO_PREVIEW = 10;
+const CHECK_PREVIOUS_PERMISSIONS = false;
 
 const SidInfo = ({sid, style}) => {
   if (sid.principal) {
@@ -89,7 +90,7 @@ class SharedItemInfo extends React.Component {
   }
 
   updateFromProps () {
-    if (this.props.storage && this.props.path) {
+    if (this.props.storage) {
       this.setState({pending: true, initialized: false}, async () => {
         const newState = {
           editPermissionsMode: true,
@@ -101,11 +102,13 @@ class SharedItemInfo extends React.Component {
         };
         try {
           await this.props.preferences.fetchIfNeededOrWait();
-          const info = await getSharedStorageItemInfo(
-            this.props.preferences,
-            this.props.storage,
-            this.props.path
-          );
+          const info = CHECK_PREVIOUS_PERMISSIONS
+            ? await getSharedStorageItemInfo(
+              this.props.preferences,
+              this.props.storage,
+              this.props.path
+            )
+            : undefined;
           if (info) {
             const {
               url,
@@ -173,8 +176,15 @@ class SharedItemInfo extends React.Component {
   get itemName () {
     const {
       path,
+      shareItems = [],
       storage
     } = this.props;
+    if (shareItems.length === 1) {
+      return shareItems[0].name;
+    }
+    if (shareItems.length > 1) {
+      return `${shareItems.length}`;
+    }
     if (path) {
       const {
         delimiter = '/'
@@ -182,6 +192,19 @@ class SharedItemInfo extends React.Component {
       return path.split(delimiter).pop();
     }
     return '';
+  }
+
+  get itemType () {
+    const {
+      shareItems = []
+    } = this.props;
+    if (shareItems.length === 1) {
+      return (shareItems[0].type || 'item').toLowerCase();
+    }
+    if (shareItems.length > 1) {
+      return 'items';
+    }
+    return 'folder';
   }
 
   copyUrlToClipboard = (event) => {
@@ -212,7 +235,8 @@ class SharedItemInfo extends React.Component {
     const {
       storage,
       path,
-      preferences
+      preferences,
+      shareItems = []
     } = this.props;
     this.setState({
       pending: true
@@ -225,9 +249,11 @@ class SharedItemInfo extends React.Component {
         preferences,
         storage,
         path,
+        shareItems.map(o => /^folder$/i.test(o.type) ? `${o.name}/**` : o.name),
         {
           mask,
-          permissions: (sids).slice()
+          permissions: (sids).slice(),
+          createNewStorage: !CHECK_PREVIOUS_PERMISSIONS
         }
       );
       newState.mask = mask;
@@ -247,8 +273,8 @@ class SharedItemInfo extends React.Component {
   }
 
   renderShareInfo = () => {
-    const {path, storage} = this.props;
-    if (!path || !storage) {
+    const {storage} = this.props;
+    if (!storage) {
       return null;
     }
     const {
@@ -319,7 +345,7 @@ class SharedItemInfo extends React.Component {
         {
           sharedLink && (
             <span className={styles.mainText}>
-              {`Link ${this.itemName ? `to ${this.itemName}` : ''} shared folder`}
+              {`Link ${this.itemName ? `to ${this.itemName}` : ''} shared ${this.itemType}`}
             </span>
           )
         }
@@ -438,12 +464,12 @@ class SharedItemInfo extends React.Component {
     } = this.state;
     const selectUsersTitle = (
       <span>
-        Select users / groups to share <b>{this.itemName}</b> folder
+        Select users / groups to share <b>{this.itemName}</b> {this.itemType}
       </span>
     );
     const defaultTitle = (
       <span>
-        Share <b>{this.itemName}</b> folder
+        Share <b>{this.itemName}</b> {this.itemType}
       </span>
     );
     return (
@@ -481,6 +507,7 @@ class SharedItemInfo extends React.Component {
 SharedItemInfo.PropTypes = {
   storage: PropTypes.object,
   path: PropTypes.string,
+  shareItems: PropTypes.array,
   close: PropTypes.func,
   visible: PropTypes.bool
 };

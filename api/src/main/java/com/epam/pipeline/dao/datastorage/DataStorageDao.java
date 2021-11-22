@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.datastorage;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
@@ -31,6 +32,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,11 +51,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -209,18 +213,23 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         return storage;
     }
 
-    public AbstractDataStorage loadDataStorageByNameOrPath(String name, String path) {
-        String usePath = path == null ? name : path;
-        MapSqlParameterSource params = new MapSqlParameterSource();
+    public AbstractDataStorage loadDataStorageByNameOrPath(final String name, final String path) {
+        final List<AbstractDataStorage> items = loadDataStorageByNameOrPath(name, path, false);
+        return !items.isEmpty() ? items.get(0) : null;
+    }
+
+    public List<AbstractDataStorage> loadDataStorageByNameOrPath(final String name, final String path,
+                                                                 final boolean withMirrors) {
+        final String usePath = path == null ? name : path;
+        final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(DataStorageParameters.DATASTORAGE_NAME.name(), name);
         params.addValue(DataStorageParameters.PATH.name(), usePath);
-        List<AbstractDataStorage> items = getNamedParameterJdbcTemplate()
-                .query(loadDataStorageByNameQuery, params, DataStorageParameters.getRowMapper());
-        AbstractDataStorage storage = !items.isEmpty() ? items.get(0) : null;
-        if (storage != null) {
-            storage.setToolsToMount(loadToolsToMountForStorage(storage.getId()));
-        }
-        return storage;
+        return getNamedParameterJdbcTemplate()
+            .query(loadDataStorageByNameQuery, params, DataStorageParameters.getRowMapper())
+            .stream()
+            .filter(storage -> withMirrors || storage.getSourceStorageId() == null)
+            .peek(storage -> storage.setToolsToMount(loadToolsToMountForStorage(storage.getId())))
+            .collect(Collectors.toList());
     }
 
     public AbstractDataStorage loadDataStorageByNameAndParentId(String name, Long folderId) {
@@ -446,7 +455,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         ALL_TOOL_VERSIONS,
         TOOL_VERSION_ID,
         TOOL_VERSION,
-        MOUNT_STATUS;
+        MOUNT_STATUS,
+
+        // storage linking
+        SOURCE_DATASTORAGE_ID,
+        MASKING_RULES;
 
         static MapSqlParameterSource getParameters(final AbstractDataStorage dataStorage,
                                                    final boolean setStorageMountStatus) {
@@ -484,6 +497,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(REGION_ID.name(), ((GSBucketStorage)dataStorage).getRegionId());
             } else if (dataStorage instanceof NFSDataStorage && setStorageMountStatus) {
                 params.addValue(MOUNT_STATUS.name(), ((NFSDataStorage) dataStorage).getMountStatus().name());
+            }
+
+            if (dataStorage.getSourceStorageId() != null) {
+                params.addValue(SOURCE_DATASTORAGE_ID.name(), dataStorage.getSourceStorageId());
+                params.addValue(MASKING_RULES.name(),
+                                JsonMapper.convertDataToJsonStringForQuery(dataStorage.getLinkingMasks()));
             }
 
             addPolicyParameters(dataStorage, params);
@@ -546,6 +565,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 fileShareMountId = null;
             }
 
+            final Long sourceStorageId = rs.getObject(SOURCE_DATASTORAGE_ID.name(), Long.class);
+            final Set<String> linkingMasks = sourceStorageId == null
+                                             ? Collections.emptySet()
+                                             : JsonMapper.parseData(rs.getString(MASKING_RULES.name()),
+                                                                    new TypeReference<Set<String>>() {});
+
             AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(
                     rs.getLong(DATASTORAGE_ID.name()),
                     rs.getString(DATASTORAGE_NAME.name()),
@@ -560,7 +585,9 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     rs.getString(S3_KMS_KEY_ARN.name()),
                     rs.getString(S3_TEMP_CREDS_ROLE.name()),
                     rs.getBoolean(S3_USE_ASSUMED_CREDS.name()),
-                    rs.getString(MOUNT_STATUS.name()));
+                    rs.getString(MOUNT_STATUS.name()),
+                    linkingMasks,
+                    sourceStorageId);
 
             dataStorage.setShared(rs.getBoolean(SHARED.name()));
             dataStorage.setDescription(rs.getString(DESCRIPTION.name()));

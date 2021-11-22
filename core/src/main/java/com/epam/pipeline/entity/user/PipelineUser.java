@@ -114,6 +114,11 @@ public class PipelineUser implements StorageContainer {
     @ElementCollection
     private List<RunnerSid> allowedRunners;
 
+    private LocalDateTime lastLoginDate;
+
+    @Transient
+    private LocalDateTime blockDate;
+
     public PipelineUser() {
         this.admin = false;
         this.blocked = false;

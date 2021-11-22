@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -245,7 +244,9 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         USER_DEFAULT_STORAGE_PATH,
         USER_BLOCKED,
         REGISTRATION_DATE,
-        FIRST_LOGIN_DATE;
+        FIRST_LOGIN_DATE,
+        USER_BLOCK_DATE,
+        LAST_LOGIN_DATE;
 
         private static MapSqlParameterSource getParameterSource(Long userId, Long roleId) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -265,6 +266,8 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             params.addValue(USER_BLOCKED.name(), user.isBlocked());
             params.addValue(REGISTRATION_DATE.name(), user.getRegistrationDate());
             params.addValue(FIRST_LOGIN_DATE.name(), user.getFirstLoginDate());
+            params.addValue(USER_BLOCK_DATE.name(), user.getBlockDate());
+            params.addValue(LAST_LOGIN_DATE.name(), user.getLastLoginDate());
             return params;
         }
 
@@ -332,10 +335,11 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             if (!rs.wasNull()) {
                 user.setAttributes(data);
             }
-            Timestamp firstLoginDate = rs.getTimestamp(FIRST_LOGIN_DATE.name());
-            if (!rs.wasNull()) {
-                user.setFirstLoginDate(firstLoginDate.toLocalDateTime());
-            }
+
+            user.setFirstLoginDate(DaoHelper.parseTimestamp(rs, FIRST_LOGIN_DATE.name()));
+            user.setBlockDate(DaoHelper.parseTimestamp(rs, USER_BLOCK_DATE.name()));
+            user.setLastLoginDate(DaoHelper.parseTimestamp(rs, LAST_LOGIN_DATE.name()));
+
             long defaultStorageId = rs.getLong(USER_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
                 user.setDefaultStorageId(defaultStorageId);

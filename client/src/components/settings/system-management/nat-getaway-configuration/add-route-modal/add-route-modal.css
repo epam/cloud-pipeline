@@ -54,4 +54,5 @@
 .add-button-container {
   display: flex;
   justify-content: flex-end;
+  margin-bottom: 5px;
 }

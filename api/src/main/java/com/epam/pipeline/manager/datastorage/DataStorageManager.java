@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -107,6 +108,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +134,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
+    private static final String SHARED_STORAGE_SUFFIX = "share";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -249,6 +252,12 @@ public class DataStorageManager implements SecuredEntityManager {
         return pathLoader.loadDataStorageByPathOrId(identifier);
     }
 
+    public List<AbstractDataStorage> loadAllByPath(final String identifier) {
+        Assert.isTrue(StringUtils.isNotBlank(identifier),
+                      messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
+        return dataStorageDao.loadDataStorageByNameOrPath(identifier, identifier, true);
+    }
+
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         AbstractDataStorage dataStorage = null;
         if (NumberUtils.isDigits(identifier)) {
@@ -340,6 +349,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                                final boolean replaceStoragePath,
                                                                final boolean skipPolicy)
             throws DataStorageException {
+        dataStorageVO.setName(createStorageNameIfRequired(dataStorageVO));
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
@@ -352,20 +362,22 @@ public class DataStorageManager implements SecuredEntityManager {
         assertDataStorageMountPoint(dataStorageVO);
         assertToolsToMount(dataStorageVO);
 
-        dataStorageVO.setName(dataStorageVO.getName().trim());
 
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
-        checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath());
+        checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
+                                    dataStorageVO.getSourceStorageId() != null);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
-
+        validateMirroringParameters(dataStorageVO);
+        
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
-                storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
+                storageProviderManager.getStorageProvider(dataStorage)
+                    .getDefaultMountOptions(getLinkOrStorage(dataStorage)));
         }
 
         if (proceedOnCloud) {
@@ -460,6 +472,9 @@ public class DataStorageManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         final AbstractDataStorage dataStorage = load(id);
+
+        Assert.isTrue(Objects.isNull(dataStorage.getSourceStorageId()) || !proceedOnCloud,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_MIRROR_DELETION));
 
         validateStorageIsNotUsedAsDefault(id, roleManager.loadRolesByDefaultStorage(id));
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
@@ -633,7 +648,8 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public boolean checkExistence(AbstractDataStorage dataStorage) {
-        checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath());
+        checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath(),
+                                    dataStorage.getSourceStorageId() != null);
         return storageProviderManager.checkStorage(dataStorage);
     }
 
@@ -1029,11 +1045,12 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorage;
     }
 
-    private void checkDatastorageDoesntExist(String name, String path) {
-        String usePath = StringUtils.isEmpty(path) ? name : path;
-        Assert.isNull(dataStorageDao.loadDataStorageByNameOrPath(name, usePath),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST,
-                        name, usePath));
+    private void checkDatastorageDoesntExist(final String name, final String path, final boolean isMirror) {
+        final String usePath = StringUtils.isEmpty(path) ? name : path;
+        final List<AbstractDataStorage> matchingStorage =
+            dataStorageDao.loadDataStorageByNameOrPath(name, isMirror ? null : usePath, true);
+        Assert.isTrue(CollectionUtils.isEmpty(matchingStorage),
+                      messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST, name, path));
     }
 
     private void verifyStoragePolicy(StoragePolicy policy) {
@@ -1201,5 +1218,73 @@ public class DataStorageManager implements SecuredEntityManager {
                 metadataManager.searchMetadataByClassAndKeyValue(AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null));
         Assert.state(davMountedStorages.size() <= davMountedStoragesMaxValue,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED));
+    }
+
+    /**
+     * This method compares linking masks of new storage and its source one.
+     * If any masks are assigned to the source entity - new masks must be the subset of them,
+     * otherwise, they might be used to bypass the source storage restrictions.
+     *
+     * @param newStorageVO new storage VO
+     */
+    private void validateMirroringParameters(final DataStorageVO newStorageVO) {
+        final Long sourceStorageId = newStorageVO.getSourceStorageId();
+        if (sourceStorageId == null) {
+            return;
+        }
+        final AbstractDataStorage sourceStorage = dataStorageDao.loadDataStorage(sourceStorageId);
+        if (sourceStorage != null) {
+            final Set<String> sourceStorageMasks = sourceStorage.getLinkingMasks();
+            if (CollectionUtils.isNotEmpty(sourceStorageMasks)) {
+                final Set<String> newStorageMasks = newStorageVO.getLinkingMasks();
+                if (CollectionUtils.isEmpty(newStorageMasks)) {
+                    newStorageVO.setLinkingMasks(sourceStorageMasks);
+                } else if (!sourceStorageMasks.containsAll(newStorageMasks)) {
+                    throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE));
+                }
+            }
+        } else {
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND,
+                                                                        sourceStorageId));
+        }
+        final DataStorageType newStorageType = newStorageVO.getType();
+        final DataStorageType sourceStorageType = sourceStorage.getType();
+        if (newStorageType == null) {
+            newStorageVO.setType(sourceStorageType);
+        } else {
+            Assert.isTrue(newStorageType.equals(sourceStorageType),
+                          messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_MIRROR_ILLEGAL_TYPE,
+                                                   newStorageType, sourceStorageType));
+        }
+    }
+
+    private AbstractDataStorage getLinkOrStorage(final AbstractDataStorage storage) {
+        return Optional.of(storage)
+            .map(AbstractDataStorage::getSourceStorageId)
+            .map(dataStorageDao::loadDataStorage)
+            .orElse(storage);
+    }
+
+    private String createStorageNameIfRequired(final DataStorageVO dataStorageVO) {
+        final String nameSpecified = dataStorageVO.getName();
+        final String path = dataStorageVO.getPath();
+        if (dataStorageVO.getSourceStorageId() == null || dataStorageVO.getName() != null || path == null) {
+            return Optional.ofNullable(nameSpecified).map(String::trim).orElse(null);
+        } else {
+            final String sharedPathNamePrefix = PipelineStringUtils.convertToAlphanumericWithDashes(path.trim());
+            final Long latestMirrorNumber = dataStorageDao.loadDataStorageByNameOrPath(path, path, true).stream()
+                .map(AbstractDataStorage::getName)
+                .filter(existingName -> existingName.startsWith(sharedPathNamePrefix))
+                .map(existingName -> existingName.split(PipelineStringUtils.DASH))
+                .map(parts -> parts[parts.length - 1])
+                .map(StringUtils::trim)
+                .filter(NumberUtils::isDigits)
+                .map(Long::valueOf)
+                .max(Comparator.naturalOrder())
+                .orElse(0L);
+            return String.join(PipelineStringUtils.DASH,
+                               sharedPathNamePrefix, SHARED_STORAGE_SUFFIX, Long.toString(latestMirrorNumber + 1));
+        }
     }
 }

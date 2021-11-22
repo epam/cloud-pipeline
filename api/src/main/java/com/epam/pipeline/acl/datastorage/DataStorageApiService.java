@@ -124,6 +124,13 @@ public class DataStorageApiService {
         return dataStorageManager.loadByPathOrId(identifier);
     }
 
+    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject, 'READ') OR "
+                + "@grantPermissionManager.storagePermission(filterObject, 'WRITE'))")
+    @AclMaskList
+    public List<AbstractDataStorage> loadAllByPath(final String identifier) {
+        return dataStorageManager.loadAllByPath(identifier);
+    }
+
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageListing getDataStorageItems(final Long id, final String path,
                                                   Boolean showVersion, Integer pageSize, String marker) {
@@ -351,12 +358,12 @@ public class DataStorageApiService {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND + AclExpressions.STORAGE_ID_WRITE)
     public void requestDataStorageDavMount(final Long id, final Long time) {
         dataStorageManager.requestDataStorageDavMount(id, time);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND + AclExpressions.STORAGE_ID_WRITE)
     public void callOffDataStorageDavMount(final Long id) {
         dataStorageManager.callOffDataStorageDavMount(id);
     }

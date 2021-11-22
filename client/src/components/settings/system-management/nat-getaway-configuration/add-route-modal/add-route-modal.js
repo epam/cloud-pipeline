@@ -15,11 +15,16 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Modal, Input, Button, Form, message, Spin} from 'antd';
 import classNames from 'classnames';
 
 import {ResolveIp} from '../../../../../models/nat';
-import {validateIP, validatePort, validateServerName} from '../helpers';
+import {
+  validateIP,
+  validatePort,
+  validateServerName
+} from '../helpers';
 import styles from './add-route-modal.css';
 
 const FormItem = Form.Item;
@@ -30,10 +35,18 @@ export default class AddRouteForm extends React.Component {
     return AddRouteForm.portUID;
   };
 
+  static propTypes = {
+    visible: PropTypes.bool,
+    onAdd: PropTypes.func,
+    onCancel: PropTypes.func,
+    routes: PropTypes.array
+  };
+
   state = {
     ports: {'port': undefined},
     ip: undefined,
     serverName: undefined,
+    description: undefined,
     errors: {},
     pending: false,
     ipManualInput: false,
@@ -84,10 +97,15 @@ export default class AddRouteForm extends React.Component {
       serverName,
       ip
     } = this.state;
+    const {
+      routes = []
+    } = this.props;
+    const currentIpRoutes = routes.filter(route => route.externalIp === ip);
     const portValues = Object
       .values(ports)
       .filter(o => !Number.isNaN(Number(o)))
-      .map(o => Number(o));
+      .map(o => Number(o))
+      .concat(currentIpRoutes.map(o => Number(o.externalPort)));
     const errors = {
       serverName: validateServerName(serverName),
       ip: validateIP(ip),
@@ -144,6 +162,7 @@ export default class AddRouteForm extends React.Component {
       ports: {[identifier]: undefined},
       ip: undefined,
       serverName: undefined,
+      description: undefined,
       errors: {},
       ipManualInput: false,
       ipResolveForServer: undefined
@@ -170,11 +189,13 @@ export default class AddRouteForm extends React.Component {
       const {
         ports = {},
         serverName,
+        description,
         ip
       } = this.state;
       this.props.onAdd({
         ip,
         serverName,
+        description,
         ports: Object.values(ports)
       });
       this.resetForm();
@@ -244,7 +265,7 @@ export default class AddRouteForm extends React.Component {
 
   render () {
     const {onCancel, visible} = this.props;
-    const {serverName, ip, pending} = this.state;
+    const {serverName, ip, description, pending} = this.state;
     const FormItemError = ({identifier}) => (
       <div
         className={
@@ -356,6 +377,19 @@ export default class AddRouteForm extends React.Component {
                 >
                   Add port
                 </Button>
+              </div>
+              <div className={styles.formItemContainer}>
+                <span className={styles.title}>Comment:</span>
+                <FormItem
+                  className={styles.formItem}
+                  validateStatus={this.getValidationStatus('description')}
+                >
+                  <Input
+                    placeholder="Comment"
+                    value={description}
+                    onChange={this.handleChange('description')}
+                  />
+                </FormItem>
               </div>
             </Form>
           </Spin>

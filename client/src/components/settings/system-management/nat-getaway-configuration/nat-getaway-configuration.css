@@ -26,7 +26,9 @@
 .table thead tr:first-child,
 .table thead tr:first-child th:first-child,
 .table thead tr th.external-column:nth-child(3),
-.table tbody tr td.external-column:nth-child(3) {
+.table tbody tr td.external-column:nth-child(3),
+.table thead tr th.internal-column:nth-child(6),
+.table tbody tr td.internal-column:nth-child(6) {
   border-right: 2px solid #e9e9e9;
 }
 
@@ -43,12 +45,6 @@
 .table tbody tr td.internal-column.column,
 .table tbody tr td.actions-column {
   padding: 4px;
-  height: 35px;
-}
-
-.table tbody tr td.actions-column {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .table-content-actions {
@@ -132,4 +128,11 @@
 @keyframes blinker {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+.comment-column {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
