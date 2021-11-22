@@ -28,7 +28,6 @@ import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.matchText;
-import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
@@ -51,15 +50,14 @@ public class ToolsParametersTest
     private final String group = C.DEFAULT_GROUP;
     private final String invalidEndpoint = "8700";
     private final String launchCapabilities = "launch.capabilities";
-    private String prefInitialValue = "";
     private final String custCapability1 = "testCapability1";
     private final String custCapability2 = "testCapability2";
     private final String capabilityParam = "CP_CAP_CUSTOM_%s";
     private final String logMessage = "Running '%s' commands:";
+    private String prefInitialValue;
 
     @BeforeClass
     public void getPreferencesValue() {
-        open(C.ROOT_ADDRESS);
         fallbackToToolDefaultState(registry, group, tool);
         prefInitialValue = navigationMenu()
                 .settings()
@@ -75,7 +73,6 @@ public class ToolsParametersTest
 
     @AfterClass(alwaysRun = true)
     public void fallBackToDefaultToolSettings() {
-        open(C.ROOT_ADDRESS);
         logoutIfNeeded();
         loginAs(admin);
         fallbackToToolDefaultState(registry, group, tool);

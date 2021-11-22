@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 import static com.codeborne.selenide.Condition.appear;
@@ -254,13 +253,14 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             sleep(1, SECONDS);
             editor.click();
             final List<String> lines = $(className("CodeMirror")).findAll(className("CodeMirror-line")).texts();
-            final String code = lines.stream().collect(Collectors.joining());
+            final String code = String.join("", lines);
             final String edited = action.apply(code);
-            if (!code.equals(edited)) {
-                clear();
-                fillWith(edited);
-                deleteExtraBrackets($(byClassName("CodeMirror-line")), 100);
+            if (code.equals(edited)) {
+                return this;
             }
+            clear()
+                    .fillWith(edited)
+                    .deleteExtraBrackets(100);
             return this;
         }
 
