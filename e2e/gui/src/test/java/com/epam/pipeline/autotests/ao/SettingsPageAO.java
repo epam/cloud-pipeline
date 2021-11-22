@@ -50,6 +50,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconCl
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
+import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -1169,18 +1170,39 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new LaunchAO(parentAO);
         }
 
-        public PreferencesAO setPreference(String preference, String value, boolean eyeIsChecked) {
-            searchPreference(preference);
-            final By pref = getByField(preference);
-            click(pref)
-                    .clear(pref)
-                    .setValue(pref, value);
+        private void setEyeOption(boolean eyeIsChecked) {
             final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
                     .find(byClassName("anticon"));
             if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
                     (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
                 eye.click();
             }
+        }
+
+        public PreferencesAO setPreference(String preference, String value, boolean eyeIsChecked) {
+            searchPreference(preference);
+            final By pref = getByField(preference);
+            click(pref)
+                    .clear(pref)
+                    .setValue(pref, value);
+            setEyeOption(eyeIsChecked);
+            return this;
+        }
+
+        public String getPreference(String preference) {
+            searchPreference(preference);
+            List<String> list = context().$(byClassName("CodeMirror-code"))
+                    .findAll(byClassName("CodeMirror-line")).texts();
+            return (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+        }
+
+        public PreferencesAO clearAndSetJsonToPreference(String preference, String value, boolean eyeIsChecked) {
+            SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
+            searchPreference(preference);
+            clearTextField(pref);
+            clickAndSendKeysWithSlashes(pref, value);
+            deleteExtraBrackets(pref, 100);
+            setEyeOption(eyeIsChecked);
             return this;
         }
 
@@ -1192,12 +1214,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     (!checkBox.has(cssClass("ant-checkbox-checked")) && checkboxIsEnable)) {
                 checkBox.click();
             }
-            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
-                    .find(byClassName("anticon"));
-            if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
-                    (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
-                eye.click();
-            }
+            setEyeOption(eyeIsChecked);
             return this;
         }
 
