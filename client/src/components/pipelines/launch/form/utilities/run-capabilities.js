@@ -9,7 +9,10 @@ import {
   CP_CAP_SINGULARITY,
   CP_CAP_DESKTOP_NM,
   CP_CAP_MODULES,
-  CP_DISABLE_HYPER_THREADING
+  CP_DISABLE_HYPER_THREADING,
+  CP_CAP_DCV,
+  CP_CAP_DCV_WEB,
+  CP_CAP_DCV_DESKTOP
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
 
@@ -19,7 +22,8 @@ export const RUN_CAPABILITIES = {
   systemD: 'SystemD',
   noMachine: 'NoMachine',
   module: 'Module',
-  disableHyperThreading: 'Disable Hyper-Threading'
+  disableHyperThreading: 'Disable Hyper-Threading',
+  dcv: 'Nice DCV'
 };
 
 export const RUN_CAPABILITIES_PARAMETERS = {
@@ -28,7 +32,12 @@ export const RUN_CAPABILITIES_PARAMETERS = {
   [RUN_CAPABILITIES.systemD]: CP_CAP_SYSTEMD_CONTAINER,
   [RUN_CAPABILITIES.noMachine]: CP_CAP_DESKTOP_NM,
   [RUN_CAPABILITIES.module]: CP_CAP_MODULES,
-  [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING
+  [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING,
+  [RUN_CAPABILITIES.dcv]: CP_CAP_DCV
+};
+
+const CAPABILITIES_DEPENDENCIES = {
+  [RUN_CAPABILITIES.dcv]: [CP_CAP_DCV_DESKTOP, CP_CAP_DCV_WEB, CP_CAP_SYSTEMD_CONTAINER]
 };
 
 const PLATFORM_SPECIFIC_CAPABILITIES = {
@@ -36,6 +45,7 @@ const PLATFORM_SPECIFIC_CAPABILITIES = {
     RUN_CAPABILITIES.dinD,
     RUN_CAPABILITIES.singularity,
     RUN_CAPABILITIES.systemD,
+    RUN_CAPABILITIES.dcv,
     RUN_CAPABILITIES.noMachine,
     RUN_CAPABILITIES.module,
     RUN_CAPABILITIES.disableHyperThreading
@@ -44,10 +54,12 @@ const PLATFORM_SPECIFIC_CAPABILITIES = {
 };
 
 const CAPABILITIES_OS_FILTERS = {
-  [RUN_CAPABILITIES.systemD]: [/^centos.*$/]
+  [RUN_CAPABILITIES.systemD]: [/^centos.*$/],
+  [RUN_CAPABILITIES.dcv]: [/^centos.*$/]
 };
 
 const CAPABILITIES_CLOUD_FILTERS = {
+  [RUN_CAPABILITIES.dcv]: ['aws']
 };
 
 function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
@@ -262,6 +274,12 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
   if (!parameters) {
     parameters = {};
   }
+  const enable = (parameter) => {
+    parameters[parameter] = {
+      type: 'boolean',
+      value: true
+    };
+  };
   const platformSpecificCapabilities = getPlatformSpecificCapabilities(preferences, {platform});
   capabilities
     .map(capability => platformSpecificCapabilities.find(psc => psc.value === capability))
@@ -270,10 +288,11 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
       const parameterName = capability.custom
         ? capability.value
         : RUN_CAPABILITIES_PARAMETERS[capability.value];
-      parameters[parameterName] = {
-        type: 'boolean',
-        value: true
-      };
+      enable(parameterName);
+      const dependencies = capability.custom
+        ? []
+        : (CAPABILITIES_DEPENDENCIES[capability.value] || []);
+      dependencies.forEach(dependency => enable(dependency));
     });
   return parameters;
 }
