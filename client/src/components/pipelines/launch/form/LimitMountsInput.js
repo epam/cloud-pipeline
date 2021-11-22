@@ -19,9 +19,10 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AvailableStoragesBrowser, {filterNFSStorages}
-  from '../dialogs/AvailableStoragesBrowser';
+from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
+import classNames from 'classnames';
 
 @inject('dataStorageAvailable', 'preferences')
 @observer
@@ -218,9 +219,12 @@ export class LimitMountsInput extends React.Component {
         onFocus={this.openLimitMountsDialog}
         tabIndex={0}
         className={
-          !this.props.disabled
-            ? styles.limitMountsInput
-            : `${styles.limitMountsInput} ${styles.disabled}`
+          classNames({
+            'cp-library-metadata-limit-mounts-input': !this.props.disabled,
+            'cp-library-metadata-limit-mounts-input-disabled': this.props.disabled,
+            [styles.limitMountsInput]: !this.props.disabled,
+            [`${styles.limitMountsInput} ${styles.disabled}`]: this.props.disabled
+          })
         }
       >
         {this.renderContent()}

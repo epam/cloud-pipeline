@@ -27,8 +27,8 @@
 
 .cp-library-metadata-additional-actions {
   background-color: inherit;
+  border-color: @input-border;
 }
-
 .cp-library-attributes-storage-size {
   color: @application-color;
 }
@@ -57,7 +57,7 @@
 
 .cp-library-metadata-special {
   color: @primary-color;
-  background-color: @primary-hover-color;
+  background-color: fadeout(@primary-hover-color, 90%);
 }
 
 .cp-library-metadata-special.read-only {
@@ -90,4 +90,69 @@
 .cp-library-path-components-container:hover {
   transition: background-color 0.5s ease;
   background-color: @element-selected-background-color;
+}
+
+.cp-library-metadata-limit-mounts-container {
+  color: @application-color-faded;
+}
+.cp-library-metadata-limit-mounts-do-not-mount-row {
+  background-color: @application-background-color;
+}
+.cp-library-metadata-limit-mounts-input {
+  background-color: @input-background;
+  border: 1px solid @input-border;
+}
+.cp-library-metadata-limit-mounts-input:focus,
+.cp-library-metadata-limit-mounts-input:hover {
+  border-color: @primary-active-color;
+}
+.cp-library-metadata-limit-mounts-input-disabled {
+  background-color: @input-background-disabled;
+  color: @application-color-faded;
+}
+
+.cp-library-metadata-table {
+border: 1px solid @input-border;
+}
+.cp-library-metadata-table-cell {
+  border-right: 1px solid fadeout(@application-color, 90%);
+}
+.cp-library-metadata-table-cell-selected {
+  background-color: fadeout(@primary-hover-color, 70%);
+  color: @application-color;
+}
+.cp-library-metadata-panel-placeholder {
+  color: @application-color-faded;
+}
+.cp-library-metadata-icon-red {
+  color: @color-red;
+}
+.cp-library-metadata-icon-blue {
+  color: @primary-color;
+}
+.cp-library-metadata-icon-grey {
+  color: @application-color-faded;
+}
+.cp-library-metadata-spread-top-cell {
+  border-top-color: @primary-color;
+}
+.cp-library-metadata-spread-bottom-cell {
+  border-bottom-color: @primary-color;
+}
+.cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-selected,
+.cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-hovered,
+.cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-selected {
+  border-right: 1px solid @primary-color;
+}
+.cp-library-metadata-spread-left-cell {
+  border-left-color: @primary-color;
+}
+.cp-library-metadata-spread-selected {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+.cp-library-metadata-spread-cell-hovered {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+.cp-library-metadata-spread-cell-selected {
+  background-color: fadeout(@primary-hover-color, 90%);
 }

@@ -338,10 +338,6 @@ tr.table-row-selected {
   padding: 7px 5px;
 }
 
-.metadata-column-cell.selected {
-  background-color: #d2eafb;
-}
-
 .metadata-additional-actions {
   background-color: white;
 }
@@ -396,7 +392,7 @@ tr.table-row-selected {
 
 .metadata-item-value {
   padding: 0 3px;
-  background-color: #fefefe;
+  /* background-color: #fefefe; */
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
