@@ -649,19 +649,26 @@ export default class Metadata extends localization.LocalizedReactComponent {
     return [
       <tr
         key={`${key}_key`}
-        className={classNames(
-          styles.readOnlyKeyRow,
-          'cp-library-metadata-read-only-key-row'
-        )}>
+        className={
+          classNames(
+            'cp-metadata-item-row',
+            'key',
+            'read-only'
+          )
+        }
+      >
         <td
           id={`key-column-${key}`}
           colSpan={6}
-          className={styles.key}
-          style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
+          className={classNames('cp-metadata-item-key', 'cp-ellipsis-text')}
+        >
           <Icon type={icon} /> {title}
         </td>
       </tr>,
-      <tr key={`${key}_value`} className={styles.readOnlyValueRow}>
+      <tr
+        key={`${key}_value`}
+        className="cp-metadata-item-row"
+      >
         <td
           id={`value-column-${key}`}
           colSpan={6}>
@@ -687,9 +694,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
           key={`${key}_key`}
           className={
             classNames(
-              styles.keyRow,
-              'cp-library-metadata-key-row',
-              'cp-library-metadata-special',
+              'cp-metadata-item-row',
+              'special',
               {'read-only': readOnly}
             )
           }
@@ -930,10 +936,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
       keyElement = (
         <tr
           key={`${metadataItem.key}_key`}
-          className={classNames(
-            styles.keyRowEdit,
-            'cp-library-metadata-key-row-edit'
-          )}>
+          className={
+            classNames(
+              'cp-metadata-item-row',
+              'key'
+            )
+          }
+        >
           <td colSpan={6}>
             <Input {...inputOptions('key')} />
           </td>
@@ -943,12 +952,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
       keyElement = (
         <tr
           key={`${metadataItem.key}_key`}
-          className={classNames({
-            [styles.readOnlyKeyRow]: readOnly,
-            [styles.keyRow]: !readOnly,
-            'cp-library-metadata-read-only-key-row': readOnly,
-            'cp-library-metadata-key-row': !readOnly
-          })}
+          className={
+            classNames(
+              'cp-metadata-item-row',
+              'key',
+              {
+                'read-only': readOnly
+              })
+          }
         >
           <td
             id={`key-column-${metadataItem.key}`}
@@ -957,8 +968,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
                 ? 6
                 : 5
             }
-            className={styles.key}
-            style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
+            className={classNames('cp-metadata-item-key', 'cp-ellipsis-text')}
             onClick={
               readOnly
                 ? undefined
@@ -1044,12 +1054,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
       valueElement = (
         <tr
           key={`${metadataItem.key}_value`}
-          className={classNames(
-            readOnly
-              ? styles.readOnlyValueRow
-              : styles.valueRow,
-            {'cp-library-metadata-value-row': !readOnly}
-          )}
+          className={
+            classNames(
+              'cp-metadata-item-row',
+              'value'
+            )
+          }
         >
           <td
             id={`value-column-${metadataItem.key}`}
@@ -1074,7 +1084,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
         <td colSpan={span || 3}>
           <div className={classNames(
             styles.divider,
-            'cp-library-metadata-divider'
+            'cp-divider',
+            'horizontal'
           )}
           />
         </td>
@@ -1342,7 +1353,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
   renderEmptyPlaceholder = () => {
     return (
       <tr
-        className={'cp-library-metadata-panel-label'}
+        className="cp-text-not-important"
         style={{height: 40}}
       >
         <td colSpan={3} style={{textAlign: 'center'}}>
@@ -1357,7 +1368,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       <Row
         type="flex"
         key="preview body"
-        className={'cp-library-metadata-panel-label'}
+        className="cp-text-not-important"
         style={{height: 40, margin: '0 auto'}}>
         No preview available
       </Row>
@@ -1400,7 +1411,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           type="flex"
           justify="space-between"
           key="preview heading"
-          className={'cp-library-metadata-panel-label'}
+          className="cp-text-not-important"
           style={{marginTop: 5, marginBottom: 5}}
         >
           <Col colSpan={2}>
@@ -1421,7 +1432,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         <Row
           type="flex"
           key="preview body"
-          className={'cp-library-metadata-panel-label'}
+          className="cp-text-not-important"
           style={{height: 40, margin: '0 auto'}}>
           No content
         </Row>
@@ -1434,7 +1445,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           id="file-preview-container"
           type="flex"
           key="preview body"
-          className={'cp-library-metadata-panel-label'}
+          className="cp-text-not-important"
           style={{flex: 1}}
         >
           <Input
@@ -1445,10 +1456,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
             type="textarea"
             className={classNames(
               styles.disabledTextarea,
-              'cp-library-metadata-disabled-input'
+              'cp-metadata-item-content-preview'
             )}
             value={preview}
             readOnly
+            disabled
           />
         </Row>
       );
@@ -1475,7 +1487,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           <Row
             type="flex"
             key="preview footer"
-            className={'cp-library-metadata-panel-label'}
+            className="cp-text-not-important"
             style={{marginTop: 5, marginBottom: 5}}
           >
             {/* eslint-disable-next-line */}
@@ -1490,7 +1502,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           <Row
             type="flex"
             key="preview footer"
-            className={'cp-library-metadata-panel-label'}
+            className="cp-text-not-important"
             style={{marginTop: 5, marginBottom: 5}}
           >
             {/* eslint-disable-next-line */}

@@ -79,7 +79,7 @@ class StorageSize extends React.PureComponent {
           className={
             classNames(
               styles.storageSize,
-              'cp-library-attributes-storage-size',
+              'cp-text',
               className
             )
           }

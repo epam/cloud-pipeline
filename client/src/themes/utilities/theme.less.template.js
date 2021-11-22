@@ -233,7 +233,8 @@ export default `
 @THEME .ant-input,
 @THEME .ant-input-number,
 @THEME .ant-input-number-input,
-@THEME .ant-input-number-handler-wrap {
+@THEME .ant-input-number-handler-wrap,
+@THEME .cp-limit-mounts-input {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
@@ -265,7 +266,8 @@ export default `
 @THEME .ant-input-disabled,
 @THEME .ant-input-number-disabled,
 @THEME .ant-input-number-disabled .ant-input-number-handler-wrap,
-@THEME .ant-input-number-input[disabled] {
+@THEME .ant-input-number-input[disabled],
+@THEME .cp-limit-mounts-input.disabled {
   background-color: @input-background-disabled;
   color: @application-color-disabled;
 }
@@ -287,7 +289,8 @@ export default `
 }
 @THEME .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
-@THEME .ant-input-number:hover:not(.ant-input-number-disabled) {
+@THEME .ant-input-number:hover:not(.ant-input-number-disabled),
+@THEME .cp-limit-mounts-input:hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
@@ -866,7 +869,8 @@ export default `
   color: @element-selected-color;
   background-color: @element-selected-background-color;
 }
-@THEME .ant-select-selection--multiple .ant-select-selection__choice {
+@THEME .ant-select-selection--multiple .ant-select-selection__choice,
+@THEME .cp-limit-mounts-input .cp-limit-mounts-input-tag {
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
@@ -2044,44 +2048,43 @@ export default `
 @THEME .cp-library-metadata-additional-actions {
   background-color: inherit;
 }
-@THEME .cp-library-attributes-storage-size {
+@THEME .cp-metadata-item-row {
+  color: @application-color-faded;
+}
+@THEME .cp-metadata-item-row.key {
+  background-color: @element-selected-background-color;
+}
+@THEME .cp-metadata-item-content-preview {
+  background-color: @card-background-color;
   color: @application-color;
 }
-@THEME .cp-library-metadata-key-row,
-@THEME .cp-library-metadata-read-only-key-row,
-@THEME .cp-library-metadata-key-row-edit {
-  background-color: @element-selected-background-color;
-  color: @application-color-faded;
-}
-@THEME .cp-library-metadata-disabled-input {
-  background-color: @input-background-disabled;
-  color: @application-color-faded;
-}
-@THEME .cp-library-metadata-disabled-input:hover {
-  border-color: @border-color;
-}
-@THEME .cp-library-metadata-disabled-input:focus {
-  box-shadow: 0 0 0 @input-shadow-color;
-  border-color: @input-border;
-  outline: @input-background;
-}
-@THEME .cp-library-metadata-panel-label {
-  color: @application-color-faded;
-}
-@THEME .cp-library-metadata-special {
-  color: @primary-color;
-  background-color: @primary-hover-color;
-}
-@THEME .cp-library-metadata-special.read-only {
+@THEME .cp-metadata-item-row.read-only {
   color: @application-color-faded;
   background-color: @element-selected-background-color;
 }
-@THEME .cp-library-metadata-key-row td.key:hover,
-@THEME .cp-library-metadata-value-row td:hover {
+@THEME .cp-metadata-item-row td {
+  padding: 2px 5px;
+  border: 1px solid transparent;
+}
+@THEME .cp-metadata-item-row.key td.cp-metadata-item-key:hover,
+@THEME .cp-metadata-item-row.value td:hover {
+  cursor: text;
   border: 1px dashed @panel-border-color;
 }
-@THEME .cp-library-metadata-divider {
-  background-color: @card-border-color;
+@THEME .cp-metadata-fs-notification:nth-child(4n+3),
+@THEME .cp-metadata-fs-notification:nth-child(4n) {
+  background-color: @even-element-background;
+}
+@THEME .cp-metadata-item-json-table {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+  border-collapse: collapse;
+}
+@THEME .cp-metadata-item-json-table th,
+@THEME .cp-metadata-item-json-table td {
+  padding: 2px 4px;
+  border: 1px solid @card-border-color;
 }
 
 @THEME .cp-node-tag {
@@ -2475,6 +2478,8 @@ export default `
   background-color: @card-background-color;
   box-shadow: inset 0 -1px 0 @card-hovered-shadow-color;
   transition: none;
+  border-radius: 5px;
+  padding: 2px 4px;
 }
 @THEME .cp-issue-markdown-link:hover {
   color: @primary-text-color;

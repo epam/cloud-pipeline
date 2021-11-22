@@ -16,8 +16,6 @@
 
 .container {
   cursor: pointer;
-  color: #108ee9;
-  background-color: rgba(16, 142, 233, 0.05);
 }
 
 .container:not(.enabled):not(.read-only):hover {
@@ -26,14 +24,11 @@
 
 .container.enabled,
 .container.read-only {
-  color: #777;
-  background-color: #f9f9f9;
   cursor: default;
 }
 
 .container.enabled .disable-button {
   margin-left: 5px;
-  color: red;
   cursor: pointer;
 }
 
