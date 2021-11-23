@@ -32,10 +32,10 @@ public class UserGeneralReportWriter implements Closeable {
             .unscaledValue()
             .longValue();
     private static final String BILLING_CENTER_COLUMN = "Billing center";
-    private static final String SUM_OF_RUNS_COLUMN = "Runs number";
-    private static final String SUM_OF_HOURS_COLUMN = "Runs duration (hours)";
-    private static final String SUM_OF_RUNS_COSTS_COLUMN = "Runs costs ($)";
-    private static final String SUM_OF_STORAGE_COSTS_COLUMN = "Storage costs ($)";
+    private static final String RUNS_COUNT_COLUMN = "Runs (count)";
+    private static final String RUNS_DURATIONS_COLUMN = "Runs durations (hours)";
+    private static final String RUNS_COSTS_COLUMN = "Runs costs ($)";
+    private static final String STORAGES_COSTS_COLUMN = "Storage costs ($)";
     private static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
 
     private final CSVWriter writer;
@@ -78,15 +78,15 @@ public class UserGeneralReportWriter implements Closeable {
         columnsRow.add(StringUtils.EMPTY);
         columnsRow.add(BILLING_CENTER_COLUMN);
         yms().forEach(ym -> {
-            columnsRow.add(SUM_OF_RUNS_COLUMN);
-            columnsRow.add(SUM_OF_HOURS_COLUMN);
-            columnsRow.add(SUM_OF_RUNS_COSTS_COLUMN);
-            columnsRow.add(SUM_OF_STORAGE_COSTS_COLUMN);
+            columnsRow.add(RUNS_COUNT_COLUMN);
+            columnsRow.add(RUNS_DURATIONS_COLUMN);
+            columnsRow.add(RUNS_COSTS_COLUMN);
+            columnsRow.add(STORAGES_COSTS_COLUMN);
         });
-        columnsRow.add(SUM_OF_RUNS_COLUMN);
-        columnsRow.add(SUM_OF_HOURS_COLUMN);
-        columnsRow.add(SUM_OF_RUNS_COSTS_COLUMN);
-        columnsRow.add(SUM_OF_STORAGE_COSTS_COLUMN);
+        columnsRow.add(RUNS_COUNT_COLUMN);
+        columnsRow.add(RUNS_DURATIONS_COLUMN);
+        columnsRow.add(RUNS_COSTS_COLUMN);
+        columnsRow.add(STORAGES_COSTS_COLUMN);
         writer.writeNext(columnsRow.toArray(new String[0]));
     }
 
