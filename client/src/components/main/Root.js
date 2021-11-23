@@ -105,7 +105,7 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
 
-const themes = new CloudPipelineThemes(preferences, authenticatedUserInfo);
+const themes = new CloudPipelineThemes();
 
 const Root = () =>
   <Provider

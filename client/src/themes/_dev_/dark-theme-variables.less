@@ -70,8 +70,8 @@
 @panel-border-color: rgb(41, 46, 54);
 @panel-transparent-color: transparent;
 
-@card-background-color: rgb(23, 27, 33);
-@card-border-color: rgb(41, 46, 54);
+@card-background-color: @panel-background-color;
+@card-border-color: @panel-border-color;
 @card-hovered-shadow-color: @card-border-color;
 @card-actions-active-background: @card-background-color;
 @card-header-background: @card-border-color;
@@ -84,7 +84,7 @@
 
 @navigation-panel-color: @application-background-color;
 @navigation-panel-color-impersonated: #943813;
-@navigation-panel-highlighted-color: @panel-background-color;
+@navigation-panel-highlighted-color: lighten(@navigation-panel-color, 5%);
 @navigation-panel-highlighted-color-impersonated: darken(@navigation-panel-color-impersonated, 10%);
 @navigation-item-color: @application-color;
 @navigation-item-runs-color: @color-green;

@@ -45,10 +45,8 @@ class CloudPipelineThemes {
     return undefined;
   }
 
-  constructor (preferences, userInfo) {
+  constructor () {
     this.listeners = [];
-    this.preferences = preferences;
-    this.userInfo = userInfo;
     (this.initialize)();
     if (window.matchMedia) {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
@@ -108,13 +106,10 @@ class CloudPipelineThemes {
 
   async initialize () {
     try {
-      await Promise.all([
-        this.preferences.fetchIfNeededOrWait(),
-        this.userInfo.fetchIfNeededOrWait(),
-        this.readUserPreference()
-      ]);
       this.themes = await getThemes();
+      console.log(this.themes);
       this.themes.forEach(injectTheme);
+      this.readUserPreference();
     } catch (e) {
       console.warn(`Error applying themes: ${e.message}`);
     } finally {
@@ -123,15 +118,19 @@ class CloudPipelineThemes {
     }
   }
 
-  async readUserPreference () {
+  readUserPreference () {
     try {
-      await this.userInfo.fetchIfNeededOrWait();
-      // todo: read from user attributes
-      const safeReadPreference = (key, defaultValue) => {
+      const safeReadPreference = (key, defaultValue, checkThemeIdentifier = true) => {
         try {
           const storageValue = JSON.parse(localStorage.getItem(key));
-          console.log(key, defaultValue);
-          if (storageValue === undefined || storageValue === null) {
+          if (
+            storageValue === undefined ||
+            storageValue === null ||
+            (
+              checkThemeIdentifier &&
+              !this.themes.find(o => o.identifier === storageValue)
+            )
+          ) {
             return defaultValue;
           }
           return storageValue;
@@ -139,7 +138,7 @@ class CloudPipelineThemes {
           return defaultValue;
         }
       };
-      this.synchronizeWithSystem = safeReadPreference(_TEMPORARY_SYNC_WITH_SYSTEM_KEY, true);
+      this.synchronizeWithSystem = safeReadPreference(_TEMPORARY_SYNC_WITH_SYSTEM_KEY, true, false);
       this.singleTheme = safeReadPreference(
         _TEMPORARY_SINGLE_THEME_KEY,
         DefaultLightThemeIdentifier
@@ -158,10 +157,8 @@ class CloudPipelineThemes {
     }
   }
 
-  async save () {
+  save () {
     try {
-      await this.userInfo.fetchIfNeededOrWait();
-      // todo: write to user attributes
       const safeWriteToPreference = (key, value) => {
         try {
           localStorage.setItem(key, JSON.stringify(value));
