@@ -25,7 +25,12 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.concurrent.TimeUnit;
 
 public interface RestApiClient {
@@ -68,16 +73,40 @@ public interface RestApiClient {
      */
     default <T> T createApi(final Class<T> clazz, final String baseUrl, final Interceptor interceptor,
                             final int connectTimeout, final int readTimeout) {
-        return new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(JacksonConverterFactory
-                        .create(new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
-                .client(new OkHttpClient.Builder()
-                        .connectTimeout(connectTimeout, TimeUnit.SECONDS)
-                        .readTimeout(readTimeout, TimeUnit.SECONDS)
-                        .addInterceptor(interceptor)
-                        .build())
-                .build()
-                .create(clazz);
+        try {
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            return new Retrofit.Builder()
+                    .baseUrl(baseUrl)
+                    .addConverterFactory(JacksonConverterFactory
+                            .create(new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
+                    .client(new OkHttpClient.Builder()
+                            .sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0])
+                            .connectTimeout(connectTimeout, TimeUnit.SECONDS)
+                            .readTimeout(readTimeout, TimeUnit.SECONDS)
+                            .addInterceptor(interceptor)
+                            .build())
+                    .build()
+                    .create(clazz);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 }
