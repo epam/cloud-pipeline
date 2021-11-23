@@ -150,12 +150,12 @@ public class RunBillingExporter implements BillingExporter {
                 .map(bucket -> getRunBilling((String) bucket.getKey(), bucket.getAggregations()));
     }
 
-    private RunBilling getRunBilling(final String runId, final Aggregations aggregations) {
+    private RunBilling getRunBilling(final String id, final Aggregations aggregations) {
         final Optional<Long> cost = billingHelper.getCostSum(aggregations);
         final Optional<Long> duration = billingHelper.getRunUsageSum(aggregations);
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return RunBilling.builder()
-                .runId(NumberUtils.toLong(runId))
+                .runId(NumberUtils.toLong(id))
                 .owner(billingHelper.asString(topHitFields.get(BillingHelper.OWNER_FIELD)))
                 .billingCenter(billingHelper.asString(topHitFields.get(BillingHelper.BILLING_CENTER_FIELD)))
                 .pipeline(billingHelper.asString(topHitFields.get(BillingHelper.PIPELINE_FIELD)))

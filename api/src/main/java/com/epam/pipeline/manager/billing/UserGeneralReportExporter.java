@@ -52,7 +52,7 @@ public class UserGeneralReportExporter implements BillingExporter {
 
     private static final String DOC_TYPE = "doc_type";
     private static final String SYNTHETIC_TOTAL_USER = "Grand total";
-    private static final String MISSING_USER = "default";
+    private static final String MISSING_USER = "unknown";
 
     @Getter
     private final BillingExportType type = BillingExportType.USER_GENERAL_REPORT;
@@ -104,19 +104,17 @@ public class UserGeneralReportExporter implements BillingExporter {
                 .map(Collection::stream)
                 .orElse(Stream.empty())
                 .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()))
-                .map(this::withBillingCenter);
-        final Stream<UserGeneralReportBilling> totalBillings = Stream.of(getBilling(
-                SYNTHETIC_TOTAL_USER, response.getAggregations()));
+                .map(this::withDetails);
+        final Stream<UserGeneralReportBilling> totalBillings = Stream.of(getBilling(SYNTHETIC_TOTAL_USER,
+                response.getAggregations()));
         return Stream.concat(billings, totalBillings);
     }
 
-    private UserGeneralReportBilling withBillingCenter(final UserGeneralReportBilling billing) {
-        return billing.toBuilder().billingCenter(getBillingCenter(billing.getUser())).build();
-    }
-
-    private String getBillingCenter(final String user) {
-        return userBillingDetailsLoader.loadInformation(user, true)
-                .get(BillingGrouping.BILLING_CENTER.getCorrespondingField());
+    private UserGeneralReportBilling withDetails(final UserGeneralReportBilling billing) {
+        final Map<String, String> details = userBillingDetailsLoader.loadInformation(billing.getUser(), true);
+        return billing.toBuilder()
+                .billingCenter(details.get(BillingGrouping.BILLING_CENTER.getCorrespondingField()))
+                .build();
     }
 
     private UserGeneralReportBilling getBilling(final String name, final Aggregations aggregations) {
@@ -144,7 +142,7 @@ public class UserGeneralReportExporter implements BillingExporter {
 
     private GeneralReportYearMonthBilling getYearMonthBilling(final String ym, final Aggregations aggregations) {
         return GeneralReportYearMonthBilling.builder()
-                .yearMonth(YearMonth.parse(ym, DateTimeFormatter.ofPattern("yyyy-MM")))
+                .yearMonth(YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)))
                 .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                 .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                 .runsCost(billingHelper.getFilteredRunCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))

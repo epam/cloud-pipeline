@@ -16,7 +16,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
@@ -96,6 +95,7 @@ public class BillingHelper {
     public static final String STARTED_FIELD = "started_date";
     public static final String FINISHED_FIELD = "finished_date";
     public static final String RUN = "run";
+    public static final String STORAGE = "storage";
     public static final String RUNS = "runs";
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
@@ -104,10 +104,12 @@ public class BillingHelper {
     public static final String STORAGE_COST_AGG = "cost_storages";
     public static final String HISTOGRAM_AGGREGATION_FORMAT = "yyyy-MM";
     public static final String RUN_COUNT_AGG = "count_runs";
+    public static final String PROVIDER_FIELD = "provider";
 
     private final AuthManager authManager;
     private final String billingIndicesMonthlyPattern;
     private final String billingRunIndicesMonthlyPattern;
+    private final String billingStorageIndicesMonthlyPattern;
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
@@ -127,6 +129,10 @@ public class BillingHelper {
         this.billingRunIndicesMonthlyPattern = String.join("-",
                 commonPrefix,
                 ES_WILDCARD + RUN + ES_WILDCARD,
+                ES_MONTHLY_DATE_REGEXP);
+        this.billingStorageIndicesMonthlyPattern = String.join("-",
+                commonPrefix,
+                ES_WILDCARD + STORAGE + ES_WILDCARD,
                 ES_MONTHLY_DATE_REGEXP);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
@@ -170,6 +176,10 @@ public class BillingHelper {
 
     public String[] runIndicesByDate(final LocalDate from, final LocalDate to) {
         return indicesByDate(from, to, billingRunIndicesMonthlyPattern);
+    }
+
+    public String[] storageIndicesByDate(final LocalDate from, final LocalDate to) {
+        return indicesByDate(from, to, billingStorageIndicesMonthlyPattern);
     }
 
     private String[] indicesByDate(final LocalDate from, final LocalDate to, final String indexPattern) {
@@ -260,6 +270,10 @@ public class BillingHelper {
 
     public Optional<Long> getRunCostSum(final Aggregations aggregations) {
         return getLongValue(aggregations, RUN_COST_AGG);
+    }
+
+    public Optional<Long> getStorageUsageAvg(final Aggregations aggregations) {
+        return getLongValue(aggregations, STORAGE_USAGE_AGG);
     }
 
     public Optional<Long> getStorageCostSum(final Aggregations aggregations) {

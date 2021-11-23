@@ -52,7 +52,7 @@ public class BillingCenterGeneralReportExporter implements BillingExporter {
 
     private static final String DOC_TYPE = "doc_type";
     private static final String SYNTHETIC_TOTAL_BILLING_CENTER = "Grand total";
-    private static final String MISSING_BILLING_CENTER = "default";
+    private static final String MISSING_BILLING_CENTER = "unknown";
 
     @Getter
     private final BillingExportType type = BillingExportType.BILLING_CENTER_GENERAL_REPORT;
@@ -133,7 +133,7 @@ public class BillingCenterGeneralReportExporter implements BillingExporter {
 
     private GeneralReportYearMonthBilling getYearMonthBilling(final String ym, final Aggregations aggregations) {
         return GeneralReportYearMonthBilling.builder()
-                .yearMonth(YearMonth.parse(ym, DateTimeFormatter.ofPattern("yyyy-MM")))
+                .yearMonth(YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)))
                 .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                 .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                 .runsCost(billingHelper.getFilteredRunCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
