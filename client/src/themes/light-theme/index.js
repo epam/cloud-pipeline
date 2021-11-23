@@ -151,6 +151,7 @@ export default {
     '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@color-yellow'
+    '@search-highlight-text-background-color': '@color-yellow',
+    '@background-image': 'none'
   }
 };

@@ -239,6 +239,8 @@ export default `
 @THEME .ant-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
 }
 @THEME h1,
 @THEME h2,
