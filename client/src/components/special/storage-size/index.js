@@ -17,10 +17,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {message} from 'antd';
+import {inject, observer} from 'mobx-react';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
+import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStoragePathUsageUpdate';
 import displaySize from '../../../utils/displaySize';
 import styles from './storage-size.css';
 
+const REFRESH_REQUESTED_MESSAGE =
+  'Storage size refresh has been requested. Please wait a couple of minutes.';
+
+@inject('preferences')
+@observer
 class StorageSize extends React.PureComponent {
   state = {
     size: undefined
@@ -70,6 +78,29 @@ class StorageSize extends React.PureComponent {
     }
   }
 
+  refreshSize = async () => {
+    const {
+      storage,
+      storageId,
+      preferences
+    } = this.props;
+    let id = storageId;
+    if (id === undefined && typeof storage === 'object') {
+      id = storage.id;
+    }
+    if (id !== undefined) {
+      try {
+        const request = new DataStoragePathUsageUpdate(id);
+        await request.fetch();
+        await preferences.fetchIfNeededOrWait();
+        const disclaimer = preferences.storageSizeRequestDisclaimer || REFRESH_REQUESTED_MESSAGE;
+        message.info(disclaimer, 7);
+      } catch (e) {
+        message.error(e.message, 5);
+      }
+    }
+  };
+
   render () {
     const {size} = this.state;
     const {className, style} = this.props;
@@ -84,11 +115,36 @@ class StorageSize extends React.PureComponent {
           }
           style={style}
         >
-          Storage size: {displaySize(size, size > 1024)}
+          <span>
+            Storage size: {displaySize(size, size > 1024)}
+          </span>
+          <a
+            className={styles.refreshButton}
+            onClick={this.refreshSize}
+          >
+            Refresh
+          </a>
         </div>
       );
     }
-    return null;
+    return (
+      <div
+        className={
+          classNames(
+            styles.storageSize,
+            className
+          )
+        }
+        style={style}
+      >
+        <a
+          className={styles.refreshButton}
+          onClick={this.refreshSize}
+        >
+          Request storage size update
+        </a>
+      </div>
+    );
   }
 }
 

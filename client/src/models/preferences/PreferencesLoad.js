@@ -211,6 +211,11 @@ class PreferencesLoad extends Remote {
     return 0;
   }
 
+  @computed
+  get storageSizeRequestDisclaimer () {
+    return this.getPreferenceValue('ui.storage.refresh.request');
+  }
+
   get requestFileSystemAccessTooltip () {
     const value = this.getPreferenceValue('ui.pipe.file.browser.request');
     if (value) {

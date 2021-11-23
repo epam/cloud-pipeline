@@ -14,15 +14,19 @@
  *  limitations under the License.
  */
 
-.storage-size {
-  padding: 4px 6px;
-  color: #333;
-}
+import RemotePost from '../basic/RemotePost';
 
-.storage-size span + .refresh-button {
-  margin-left: 5px;
-}
-
-.storage-size .refresh-button:hover {
-  text-decoration: underline;
+export default class DataStoragePathUsageUpdate extends RemotePost {
+  constructor (storage) {
+    super();
+    this.constructor.fetchOptions = {
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8'
+      },
+      mode: 'cors',
+      credentials: 'include',
+      method: 'PUT'
+    };
+    this.url = `/datastorage/path/usage?id=${storage}`;
+  }
 }
