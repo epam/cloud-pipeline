@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool ADD allow_commit BOOLEAN DEFAULT TRUE NOT NULL;

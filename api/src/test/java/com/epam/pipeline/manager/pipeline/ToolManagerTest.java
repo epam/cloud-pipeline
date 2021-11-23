@@ -274,6 +274,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         tool.setCpu(CHANGED_TEST_CPU);
         tool.setLabels(LABELS);
         tool.setEndpoints(ENDPOINTS);
+        tool.setAllowCommit(false);
 
         toolManager.updateTool(tool);
         Tool loaded = toolManager.loadTool(tool.getRegistry(), tool.getImage());
@@ -284,7 +285,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         Assert.assertEquals(CHANGED_TEST_RAM, loaded.getRam());
         Assert.assertEquals(LABELS, loaded.getLabels());
         Assert.assertEquals(ENDPOINTS, loaded.getEndpoints());
-
+        Assert.assertFalse(loaded.isAllowCommit());
     }
 
     @Test

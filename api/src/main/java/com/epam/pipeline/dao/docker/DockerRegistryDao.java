@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,6 +156,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         TOOL_OWNER,
         TOOL_ICON_ID,
         TOOL_ALLOW_SENSITIVE,
+        TOOL_ALLOW_COMMIT,
         GROUP_ID,
         GROUP_NAME,
         GROUP_DESCRIPTION,
@@ -255,6 +256,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             tool.setShortDescription(rs.getString(TOOL_SHORT_DESCRIPTION.name()));
             tool.setPlatform(rs.getString(TOOL_PLATFORM.name()));
             tool.setAllowSensitive(rs.getBoolean(TOOL_ALLOW_SENSITIVE.name()));
+            tool.setAllowCommit(rs.getBoolean(TOOL_ALLOW_COMMIT.name()));
             long toolLink = rs.getLong(TOOL_LINK.name());
             if (!rs.wasNull()) {
                 tool.setLink(toolLink);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@
                       COALESCE(tlv.platform, tv.platform) AS tool_platform,
                       COALESCE(tl.owner, t.owner) as tool_owner,
                       COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                      COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                       COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
@@ -145,6 +146,7 @@
                       COALESCE(tlv.platform, tv.platform) AS tool_platform,
                       COALESCE(tl.owner, t.owner) as tool_owner,
                       COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                      COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                       COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
@@ -185,6 +187,7 @@
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                         COALESCE(tlv.platform, tv.platform) AS tool_platform,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -231,6 +234,7 @@
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                         COALESCE(tlv.platform, tv.platform) AS tool_platform,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -270,6 +274,7 @@
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                         COALESCE(tlv.platform, tv.platform) AS tool_platform,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -309,6 +314,7 @@
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                         COALESCE(tlv.platform, tv.platform) AS tool_platform,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -353,6 +359,7 @@
                       COALESCE(tlv.platform, tv.platform) AS tool_platform,
                       COALESCE(tl.owner, t.owner) as tool_owner,
                       COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                       COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
@@ -393,6 +400,7 @@
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                         COALESCE(tlv.platform, tv.platform) AS tool_platform,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
