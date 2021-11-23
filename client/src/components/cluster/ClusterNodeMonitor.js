@@ -554,11 +554,7 @@ class ClusterNodeMonitor extends React.Component {
           <Divider />
           <Dropdown
             overlay={(
-              <Menu
-                onClick={this.setRange}
-                style={{cursor: 'pointer'}}
-                selectedKeys={[]}
-              >
+              <Menu onClick={this.setRange}>
                 <Menu.Item
                   key={Range.full}
                   disabled={!this.wholeRangeEnabled}
@@ -613,11 +609,7 @@ class ClusterNodeMonitor extends React.Component {
             !this.retentionPeriodExceeded && (
               <Dropdown
                 overlay={(
-                  <Menu
-                    onClick={this.onExportClicked}
-                    style={{cursor: 'pointer'}}
-                    selectedKeys={[]}
-                  >
+                  <Menu onClick={this.onExportClicked}>
                     <Menu.Item key="XLS" value="XLS">
                       Excel
                     </Menu.Item>

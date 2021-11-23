@@ -207,11 +207,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
         this.runPipelineConfiguration(key);
       };
       const configurationsMenu = (
-        <Menu
-          onClick={onSelectConfiguration}
-          style={{cursor: 'pointer'}}
-          selectedKeys={[]}
-        >
+        <Menu onClick={onSelectConfiguration}>
           {
             configurations.map(c => {
               return (

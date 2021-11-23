@@ -49,7 +49,7 @@
 
 .period-filters {
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
   flex-wrap: wrap;
   min-height: 30px;
   margin: 0;

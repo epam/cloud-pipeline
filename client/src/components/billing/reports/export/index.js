@@ -64,11 +64,7 @@ class ExportReports extends React.Component {
       return null;
     }
     return (
-      <Menu
-        onClick={({key: format}) => this.onExport(format)}
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
+      <Menu onClick={({key: format}) => this.onExport(format)}>
         {
           formats.map((format) => (
             <Menu.Item key={format}>{ExportFormatName[format]}</Menu.Item>

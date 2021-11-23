@@ -1564,7 +1564,7 @@ class DataStorage extends React.Component {
                     <Menu
                       selectedKeys={[]}
                       onClick={onCreateActionSelect}
-                      style={{width: 200, cursor: 'pointer'}}>
+                      style={{width: 200}}>
                       <Menu.Item
                         id="create-folder-button"
                         className="create-folder-button"

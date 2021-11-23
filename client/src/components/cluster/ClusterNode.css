@@ -46,6 +46,7 @@
 .tabs-menu {
   border-bottom: none;
   text-transform: uppercase;
+  font-size: 13px;
 }
 
 .tabs-menu li a {

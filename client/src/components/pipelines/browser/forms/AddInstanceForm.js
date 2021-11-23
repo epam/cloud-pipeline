@@ -442,11 +442,7 @@ export default class AddInstanceForm extends React.Component {
       this.setState({customFields});
     };
     const parameterTypeMenu = (
-      <Menu
-        onClick={onSelect}
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
+      <Menu onClick={onSelect}>
         <Menu.Item key="string">String parameter</Menu.Item>
         {
           this.ownEntityTypes().map(e => {

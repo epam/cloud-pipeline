@@ -2669,7 +2669,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect} className={styles.parametersMenu}>
+      <Menu selectedKeys={[]} onClick={onSelect}>
         <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
         <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
         <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
@@ -4320,7 +4320,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       };
       const dropDownMenu = (
-        <Menu onClick={onDropDownSelect} selectedKeys={[]} style={{cursor: 'pointer'}}>
+        <Menu onClick={onDropDownSelect} selectedKeys={[]}>
           <Menu.Item key={RUN_SELECTED_KEY}>Run selected</Menu.Item>
           <Menu.Item key={RUN_CLUSTER_KEY}>Run cluster</Menu.Item>
         </Menu>
@@ -4807,7 +4807,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         };
         const dropdownRenderer = () => (
-          <Menu onClick={onDropDownClick} selectedKeys={[]} style={{cursor: 'pointer'}}>
+          <Menu onClick={onDropDownClick} selectedKeys={[]}>
             <Menu.Item key={KEYS.selectMetadata}>
               Select metadata entries and launch
             </Menu.Item>
