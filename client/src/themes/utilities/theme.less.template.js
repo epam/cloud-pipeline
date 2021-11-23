@@ -2141,6 +2141,7 @@ export default `
 }
 @THEME .cp-library-metadata-additional-actions {
   background-color: inherit;
+  border-color: @input-border;
 }
 @THEME .cp-metadata-item-row {
   color: @application-color-faded;
