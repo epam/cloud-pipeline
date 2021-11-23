@@ -27,15 +27,18 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.DISABLE;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_SYSTEM_ACCESS;
+import static com.epam.pipeline.autotests.ao.Primitive.INFORMATION_ICON;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
@@ -44,6 +47,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
 
+    private static final String UI_PIPE_FILE_BROWSER_JSON = "/uiPipeFileBrowserRequest.json";
     private final String storageWebdavAccessDuration = "storage.webdav.access.duration.seconds";
     private final String uiPipeFileBrowserRequest = "ui.pipe.file.browser.request";
     private final String storageDavMountMaxStorages = "storage.dav.mount.max.storages";
@@ -51,36 +55,18 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     private final String storage2 = format("davMountLimitStorage%s", Utils.randomSuffix());
     private final String storage3 = format("davMountLimitStorage%s", Utils.randomSuffix());
     private final String endpoint = format("%s%s", C.WEBDAV_ADDRESS, user.login.toUpperCase());
-    private final int durationSeconds = 60;
-    final String userRoleGroup = C.ROLE_USER;
-    private String[] webdavAccessDurationInitial;
-    private String[] uiPipeFileBrowserRequestInitial;
-    private String[] davMountMaxStoragesInitial;
+    private final String errorMessage = "Max value for dav mounted storages is reached!" +
+            " Can't request this storage to be mounted, increase quotas!";
+    private final String requestInfo = "Description of the Request Filesystem access feature";
+    private final String doneRequestInfo = "Help tips - how to use the Filesystem access";
+    private final int durationSeconds = 40;
+    private final String userRoleGroup = C.ROLE_USER;
 
     @BeforeClass
-    public void setPreferences() {
-        library()
-                .createStorage(storage1)
-                .createStorage(storage2)
-                .createStorage(storage3);
-        webdavAccessDurationInitial = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getLinePreference(storageWebdavAccessDuration);
-        davMountMaxStoragesInitial = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getLinePreference(storageDavMountMaxStorages);
-        uiPipeFileBrowserRequestInitial = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getPreference(uiPipeFileBrowserRequest);
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .setPreference(storageWebdavAccessDuration, String.valueOf(durationSeconds), true)
-                .setPreference(storageDavMountMaxStorages, "2", true)
-                .saveIfNeeded();
+    public void createStorages() {
+        Stream.of(storage1, storage2, storage3)
+                .forEach(stor -> library()
+                    .createStorage(stor));
     }
 
     @BeforeMethod
@@ -91,31 +77,22 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
-        logoutIfNeeded();
-        loginAs(admin);
-        Utils.removeStorages(this, storage1);
-    }
-
-    @AfterClass(alwaysRun = true)
-    public void fallBackPreferences() {
-        logoutIfNeeded();
-        loginAs(admin);
-        navigationMenu()
-            .settings()
-            .switchToPreferences()
-            .setPreference(storageWebdavAccessDuration,
-                    webdavAccessDurationInitial[0],
-                    parseBoolean(webdavAccessDurationInitial[1]))
-            .setPreference(storageDavMountMaxStorages,
-                    davMountMaxStoragesInitial[0],
-                    parseBoolean(davMountMaxStoragesInitial[1]))
-            .saveIfNeeded();
+        Utils.removeStorages(this, storage1, storage2, storage3);
     }
 
     @Test
     @TestCase(value = {"2233_1"})
     public void checkWebdavAccessDurationPreference() {
+        final String[] webdavAccessDurationInitial = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getLinePreference(storageWebdavAccessDuration);
         try {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setPreference(storageWebdavAccessDuration, String.valueOf(durationSeconds), true)
+                    .saveIfNeeded();
             library()
                 .selectStorage(storage1)
                 .clickEditStorageButton()
@@ -152,6 +129,15 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                                         .assertIndexContains(storage1, false),
                                 endpoint));
         } finally {
+            logout();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setPreference(storageWebdavAccessDuration,
+                            webdavAccessDurationInitial[0],
+                            parseBoolean(webdavAccessDurationInitial[1]))
+                    .saveIfNeeded();
             library()
                 .selectStorage(storage1)
                 .showMetadata()
@@ -168,53 +154,45 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     @Test
     @TestCase(value = {"2233_2"})
     public void checkMaxNumberOfStoragesWithWebdavAccess() {
+        final String[] davMountMaxStoragesInitial = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getLinePreference(storageDavMountMaxStorages);
         try {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setPreference(storageDavMountMaxStorages, "2", true)
+                    .saveIfNeeded();
+            Stream.of(storage1, storage2)
+                .forEach(stor -> {
+                            library()
+                                    .selectStorage(stor)
+                                    .showMetadata()
+                                    .click(FILE_SYSTEM_ACCESS)
+                                    .sleep(5, SECONDS);
+                        });
             library()
-                    .selectStorage(storage1)
-                    .clickEditStorageButton()
-                    .clickOnPermissionsTab()
-                    .addNewGroup(userRoleGroup)
-                    .selectByName(userRoleGroup)
-                    .showPermissions()
-                    .set(READ,ALLOW)
-                    .set(WRITE,ALLOW)
-                    .closeAll();
-            logout();
-            loginAs(user);
-            library()
-                    .selectStorage(storage1)
+                    .selectStorage(storage3)
                     .showMetadata()
-                    .ensure(FILE_SYSTEM_ACCESS, enabled)
                     .click(FILE_SYSTEM_ACCESS)
-                    .ensure(FILE_SYSTEM_ACCESS, text("File system access enabled till"))
-                    .ensure(DISABLE, enabled)
-                    .sleep(10, SECONDS)
-                    .inAnotherTab(webdavpage ->
-                            checkWebDavPage(() -> new ToolPageAO(endpoint)
-                                            .assertPageTitleIs(format("Index of /webdav/%s", user.login.toUpperCase()))
-                                            .assertIndexContains(storage1, true),
-                                    endpoint));
-            sleep(durationSeconds, SECONDS);
-            library()
-                    .selectStorage(storage1)
-                    .showMetadata()
-                    .ensure(FILE_SYSTEM_ACCESS, enabled)
-                    .inAnotherTab(webdavpage ->
-                            checkWebDavPage(() -> new ToolPageAO(endpoint)
-                                            .assertPageTitleIs(format("Index of /webdav/%s", user.login.toUpperCase()))
-                                            .assertIndexContains(storage1, false),
-                                    endpoint));
+                    .messageShouldAppear(errorMessage);
         } finally {
-            library()
-                    .selectStorage(storage1)
-                    .showMetadata()
-                    .disableFileSystemAccessIfNeeded();
-            library()
-                    .selectStorage(storage1)
-                    .clickEditStorageButton()
-                    .clickOnPermissionsTab()
-                    .deleteIfPresent(userRoleGroup)
-                    .closeAll();
+            logout();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setPreference(storageDavMountMaxStorages,
+                            davMountMaxStoragesInitial[0],
+                            parseBoolean(davMountMaxStoragesInitial[1]))
+                    .saveIfNeeded();
+            Stream.of(storage1, storage2)
+                    .forEach(stor ->
+                            library()
+                                    .selectStorage(stor)
+                                    .showMetadata()
+                                    .disableFileSystemAccessIfNeeded());
         }
     }
 
@@ -259,6 +237,8 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                                             .assertIndexContains(storage1, false),
                                     endpoint));
         } finally {
+            logout();
+            loginAs(admin);
             library()
                     .selectStorage(storage1)
                     .showMetadata()
@@ -292,15 +272,36 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     @Test
     @TestCase(value = {"2233_5"})
     public void checkHelpTooltip() {
-        uiPipeFileBrowserRequestInitial = navigationMenu()
+        final String[] uiPipeFileBrowserRequestInitial = navigationMenu()
                 .settings()
                 .switchToPreferences()
                 .getPreference(uiPipeFileBrowserRequest);
         try {
-
-
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .clearAndSetJsonToPreference(uiPipeFileBrowserRequest,
+                            readResourceFully(UI_PIPE_FILE_BROWSER_JSON), true)
+                    .saveIfNeeded();
+            library()
+                    .selectStorage(storage1)
+                    .showMetadata()
+                    .hover(INFORMATION_ICON)
+                    .messageShouldAppear(requestInfo)
+                    .click(FILE_SYSTEM_ACCESS)
+                    .hover(INFORMATION_ICON)
+                    .messageShouldAppear(doneRequestInfo)
+                    .click(DISABLE);
         } finally {
-
+            logoutIfNeeded();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .clearAndSetJsonToPreference(uiPipeFileBrowserRequest,
+                            uiPipeFileBrowserRequestInitial[0],
+                            parseBoolean(uiPipeFileBrowserRequestInitial[1]))
+                    .saveIfNeeded();
         }
     }
 
@@ -308,6 +309,4 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
         open(ipHyperlink);
         webdavpage.get();
     }
-
-
 }

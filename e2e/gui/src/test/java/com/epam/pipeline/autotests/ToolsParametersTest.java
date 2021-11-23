@@ -36,6 +36,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -54,7 +55,7 @@ public class ToolsParametersTest
     private final String custCapability2 = "testCapability2";
     private final String capabilityParam = "CP_CAP_CUSTOM_%s";
     private final String logMessage = "Running '%s' commands:";
-    private String prefInitialValue;
+    private String[] prefInitialValue;
 
     @BeforeClass
     public void getPreferencesValue() {
@@ -79,7 +80,7 @@ public class ToolsParametersTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities, prefInitialValue, true)
+                .clearAndSetJsonToPreference(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
                 .saveIfNeeded();
     }
 

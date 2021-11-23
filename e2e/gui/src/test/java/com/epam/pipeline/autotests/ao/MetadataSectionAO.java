@@ -44,7 +44,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             entry(ENLARGE, $(PipelineSelectors.buttonByIconClass("anticon-arrows-alt"))),
             entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea")),
             entry(FILE_SYSTEM_ACCESS, $(byId("value-column-dav-mount")).$(byXpath(".//span"))),
-            entry(DISABLE, $(byClassName("equest-dav-access__disable-button")))
+            entry(DISABLE, $(byClassName("equest-dav-access__disable-button"))),
+            entry(INFORMATION_ICON, $(byClassName("anticon-info-circle")))
     );
 
     private final String keyElementId = "key-column-%s";
