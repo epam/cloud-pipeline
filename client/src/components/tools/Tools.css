@@ -569,9 +569,6 @@
 
 .summary {
   min-height: 40px;
-  border: 1px solid #ccc;
-  background-color: #fafafa;
-  box-shadow: 0 0 3px #ddd;
   padding: 5px;
   display: flex;
   flex-direction: row;
@@ -581,7 +578,6 @@
 .summary-item {
   flex: 1;
   padding: 5px;
-  border: 1px solid #eee;
   font-size: larger;
   white-space: nowrap;
   margin: 2px;

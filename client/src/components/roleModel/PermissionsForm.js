@@ -29,6 +29,8 @@ import {
   Row,
   Table
 } from 'antd';
+import classNames from 'classnames';
+
 import GrantGet from '../../models/grant/GrantGet';
 import GrantPermission from '../../models/grant/GrantPermission';
 import GrantRemove from '../../models/grant/GrantRemove';
@@ -667,7 +669,7 @@ export default class PermissionsForm extends React.Component {
       if (!this.state.selectedPermission || this.state.selectedPermission.sid.name !== item.sid.name) {
         return styles.row;
       } else {
-        return styles.selectedRow;
+        return classNames(styles.selectedRow, 'cp-edit-permissions-selected-row');
       }
     };
     const selectPermission = (item) => {

@@ -1526,6 +1526,29 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
+}
+
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -1617,7 +1640,18 @@ export default `
 @THEME .cp-scan-result.bar {
   background-color: currentColor;
 }
-
+@THEME .cp-exec-env-summary {
+  border: 1px solid @input-border;
+  background-color: @input-background-disabled;
+  box-shadow: 0 0 3px @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-exec-env-summary-item {
+  border: 1px solid @card-header-background;
+}
+@THEME .cp-edit-permissions-selected-row {
+  background-color: @element-selected-background-color;
+}
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
 }
@@ -1715,7 +1749,9 @@ export default `
 @THEME .cp-wdl-task[data-taskstatus=failure] text {
   fill: @run-icon-red;
 }
-
+@THEME .cp-stop-run-modal-confirm-icon {
+  color: @run-icon-yellow;
+}
 @THEME .cp-billing-menu {
   width: fit-content;
   margin-left: 0;
