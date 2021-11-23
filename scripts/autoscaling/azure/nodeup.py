@@ -39,6 +39,7 @@ UUID_LENGHT = 16
 
 DISABLE_ACCESS = 'disable_external_access'
 NETWORKS_PARAM = "cluster.networks.config"
+NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
@@ -112,6 +113,17 @@ def pipe_log(message, status=TaskStatus.RUNNING):
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
 
+def get_preference(preference_name):
+    pipe_api = PipelineAPI(api_url, None)
+    try:
+        preference = pipe_api.get_preference(preference_name)
+        if 'value' in preference:
+            return preference['value']
+        else:
+            return None
+    except:
+        pipe_log('An error occured while getting preference {}, empty value is going to be used'.format(preference_name))
+        return None
 
 def load_cloud_config():
     global __CLOUD_METADATA__
@@ -1034,16 +1046,24 @@ def main():
 
     pipe_log_init(run_id)
 
+    wait_time_sec = get_preference(NODE_WAIT_TIME_SEC)
+    if wait_time_sec and wait_time_sec.isdigit():
+        num_rep = int(wait_time_sec) / time_rep
+
     cloud_region = get_cloud_region(region_id)
     pipe_log('Started initialization of new calculation node in cloud region {}:\n'
              '- RunID: {}\n'
              '- Type: {}\n'
              '- Disk: {}\n'
-             '- Image: {}\n'.format(cloud_region,
+             '- Image: {}\n'
+             '- Repeat attempts: {}\n'
+             '- Repeat timeout: {}\n-'.format(cloud_region,
                                     run_id,
                                     ins_type,
                                     ins_hdd,
-                                    ins_img))
+                                    ins_img,
+                                    str(num_rep),
+                                    str(time_rep)))
 
     try:
         api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())

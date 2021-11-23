@@ -43,6 +43,7 @@ RUNNING = 16
 PENDING = 0
 
 NETWORKS_PARAM = "cluster.networks.config"
+NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 BOTO3_RETRY_COUNT = 6
@@ -127,6 +128,17 @@ def pipe_log(message, status=TaskStatus.RUNNING):
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
 
+def get_preference(preference_name):
+    pipe_api = PipelineAPI(api_url, None)
+    try:
+        preference = pipe_api.get_preference(preference_name)
+        if 'value' in preference:
+            return preference['value']
+        else:
+            return None
+    except:
+        pipe_log('An error occured while getting preference {}, empty value is going to be used'.format(preference_name))
+        return None
 
 def load_cloud_config():
     global __CLOUD_METADATA__
@@ -1181,6 +1193,10 @@ def main():
 
     pipe_log_init(run_id)
 
+    wait_time_sec = get_preference(NODE_WAIT_TIME_SEC)
+    if wait_time_sec and wait_time_sec.isdigit():
+        num_rep = int(wait_time_sec) / time_rep
+
     aws_region = get_aws_region(region_id)
     boto3.setup_default_session(region_name=aws_region)
     pipe_log('Started initialization of new calculation node in AWS region {}:\n'
@@ -1189,13 +1205,17 @@ def main():
              '- Disk: {}\n'
              '- Image: {}\n'
              '- IsSpot: {}\n'
-             '- BidPrice: {}\n-'.format(aws_region,
-                                        run_id,
-                                        ins_type,
-                                        ins_hdd,
-                                        ins_img,
-                                        str(is_spot),
-                                        str(bid_price)))
+             '- BidPrice: {}\n'
+             '- Repeat attempts: {}\n'
+             '- Repeat timeout: {}\n-'.format(aws_region,
+                                    run_id,
+                                    ins_type,
+                                    ins_hdd,
+                                    ins_img,
+                                    str(is_spot),
+                                    str(bid_price),
+                                    str(num_rep),
+                                    str(time_rep)))
 
     try:
         # Hacking max max_attempts to get rid of
