@@ -26,6 +26,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.LocalDateTime;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -42,6 +43,7 @@ import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
+import static java.time.format.DateTimeFormatter.ofPattern;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
@@ -59,7 +61,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
             " Can't request this storage to be mounted, increase quotas!";
     private final String requestInfo = "Description of the Request Filesystem access feature";
     private final String doneRequestInfo = "Help tips - how to use the Filesystem access";
-    private final int durationSeconds = 40;
+    private final int durationSeconds = 60;
     private final String userRoleGroup = C.ROLE_USER;
 
     @BeforeClass
@@ -110,7 +112,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                 .showMetadata()
                 .ensure(FILE_SYSTEM_ACCESS, enabled)
                 .click(FILE_SYSTEM_ACCESS)
-                .ensure(FILE_SYSTEM_ACCESS, text("File system access enabled till"))
+                .ensure(FILE_SYSTEM_ACCESS, text(accessEnabledMessage()))
                 .ensure(DISABLE, enabled)
                 .sleep(10, SECONDS)
                 .inAnotherTab(webdavpage ->
@@ -308,5 +310,11 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     private void checkWebDavPage(final Supplier<?> webdavpage, final String ipHyperlink) {
         open(ipHyperlink);
         webdavpage.get();
+    }
+
+    private String accessEnabledMessage() {
+        return format("File system access enabled till %s.",
+                LocalDateTime.now().plusSeconds(durationSeconds)
+                        .format(ofPattern("dd MMM yyyy, HH:mm")));
     }
 }
