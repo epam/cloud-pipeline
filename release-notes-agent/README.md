@@ -23,21 +23,24 @@ The **Release Notes Agent** provides `send-release-notes` command which performs
 8. Sends an email with issues that were included in the latest release to subscribers.
 9. Updates the current version in version file.
 
-There are requirements on the git commits and Jira issues so that Release Notes Agent can detect 
-issues were included in the latest release:
-
-- Commit messages should contain the `Issue #<issue number>` or `issue #<issue number>`. 
-  See [Git Hooks](#git-hooks) for details.
-- Jira's issues should be marked by a Jira custom field contains the current Cloud Pipeline version.
-  The custom field id `jira.version.custom.field.id` is specified in the `application.properties` file.
-  Besides, a Jira issue can be marked a GitHub issue number for duplication exclusion (`jira.github.custom.field.id` in `application.properties`).
-
 Email templates can be customized and specify in the `application.properties` file:
 - `release.notes.agent.major.version.changed.subscriber.emails` template for notifying of a major version change 
 - `release.notes.agent.minor.version.changed.subscriber.emails` template for notifying of a minor version change 
 - `release.notes.agent.templates.dir` template directory
 
-## Configuration
+## Requirements for developers
+
+There are requirements on the git commits and Jira issues so that Release Notes Agent can detect
+issues were included in the latest release:
+
+- Commit messages should contain the `Issue #<issue number>` or `issue #<issue number>`.
+  > **_Note_**: This commit policy should be followed by every project contributor.
+  See [Git Hooks](#git-hooks) for details.
+- Jira's issues should be marked by a Jira custom field contains the current Cloud Pipeline version.
+  The custom field id `jira.version.custom.field.id` is specified in the `application.properties` file.
+  Besides, a Jira issue can be marked a GitHub issue number for duplication exclusion (`jira.github.custom.field.id` in `application.properties`).
+
+## Release Notes Agent configuration
 
 ### Application properties
 
