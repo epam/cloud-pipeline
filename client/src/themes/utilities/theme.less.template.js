@@ -1649,6 +1649,9 @@ export default `
 @THEME .cp-exec-env-summary-item {
   border: 1px solid @card-header-background;
 }
+@THEME .cp-edit-permissions-selected-row {
+  background-color: @element-selected-background-color;
+}
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
 }
