@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.ldap.LdapEntity;
 import com.epam.pipeline.entity.ldap.LdapEntityType;
 import com.epam.pipeline.entity.ldap.LdapSearchRequest;
 import com.epam.pipeline.entity.ldap.LdapSearchResponse;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.ldap.LdapManager;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -166,6 +168,24 @@ public class InactiveUsersMonitoringServiceCoreTest {
 
         assertThat(resultUsers).hasSize(1);
         assertThat(resultUsers.get(0)).isEqualTo(blockedUser);
+    }
+
+    @Test
+    public void shouldNotBlockAndNotifyLdapBlockedAdmin() {
+        final PipelineUser blockedAdmin = activeUser(USER_NAME_1, ID_1);
+        blockedAdmin.setRoles(Collections.singletonList(DefaultRoles.ROLE_ADMIN.getRole()));
+
+        doReturn(Collections.singletonList(blockedAdmin)).when(userManager).loadAllUsers();
+
+        monitoringService.monitor();
+
+        notInvoked(userManager).updateUserBlockingStatus(ID_1, true);
+        notInvoked(ldapManager).searchBlockedUser(any());
+        final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
+        verify(notificationManager).notifyInactiveUsers(any(), captor.capture());
+        final List<PipelineUser> resultUsers = captor.getValue();
+
+        assertThat(resultUsers).hasSize(0);
     }
 
     private static PipelineUser activeUser(final String userName, final Long id) {

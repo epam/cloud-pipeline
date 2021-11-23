@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.entity.ldap.LdapSearchRequest;
 import com.epam.pipeline.entity.ldap.LdapSearchResponse;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
@@ -82,6 +84,7 @@ public class InactiveUsersMonitoringServiceCore {
 
         final List<PipelineUser> ldapBlockedUsers = allUsers.stream()
                 .filter(pipelineUser -> !pipelineUser.isBlocked())
+                .filter(pipelineUser -> !userIsAdmin(pipelineUser))
                 .filter(this::ldapBlocked)
                 .peek(user -> userManager.updateUserBlockingStatus(user.getId(), true))
                 .collect(Collectors.toList());
@@ -94,6 +97,12 @@ public class InactiveUsersMonitoringServiceCore {
         final LdapSearchResponse ldapSearchResponse = ldapManager
                 .searchBlockedUser(LdapSearchRequest.forUser(user.getUserName()));
         return Objects.nonNull(ldapSearchResponse) && CollectionUtils.isNotEmpty(ldapSearchResponse.getEntities());
+    }
+
+    private boolean userIsAdmin(final PipelineUser pipelineUser) {
+        return pipelineUser.isAdmin() || ListUtils.emptyIfNull(pipelineUser.getRoles()).stream()
+                .map(Role::getName)
+                .anyMatch(role -> DefaultRoles.ROLE_ADMIN.getName().equals(role));
     }
 
     private boolean shouldNotify(final PipelineUser user, final LocalDateTime now, final Integer userBlockedDays,
