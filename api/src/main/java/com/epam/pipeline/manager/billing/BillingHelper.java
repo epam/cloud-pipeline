@@ -18,13 +18,12 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.support.IncludeExclude;
 import org.elasticsearch.search.aggregations.metrics.NumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.aggregations.metrics.cardinality.CardinalityAggregationBuilder;
@@ -218,7 +217,7 @@ public class BillingHelper {
         return AggregationBuilders.terms(RUN_ID_FIELD)
                 .field(RUN_ID_FIELD)
                 .includeExclude(new IncludeExclude(partition, numberOfPartitions))
-                .order(Terms.Order.aggregation(COST_FIELD, false))
+                .order(BucketOrder.aggregation(COST_FIELD, false))
                 .size(Integer.MAX_VALUE)
                 .minDocCount(1);
     }
@@ -228,7 +227,7 @@ public class BillingHelper {
                 .field(BILLING_DATE_FIELD)
                 .dateHistogramInterval(DateHistogramInterval.MONTH)
                 .format(HISTOGRAM_AGGREGATION_FORMAT)
-                .order(Histogram.Order.KEY_ASC)
+                .order(BucketOrder.key(true))
                 .minDocCount(1L);
     }
 

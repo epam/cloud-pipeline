@@ -32,6 +32,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -40,11 +41,14 @@ import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.xcontent.ContextParser;
+import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
@@ -55,13 +59,13 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
@@ -148,8 +152,7 @@ public class BillingManager {
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         verifyRequest(request);
-        try (RestClient lowLevelEsClient = elasticHelper.buildLowLevelClient()) {
-            final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(lowLevelEsClient);
+        try (RestHighLevelClient elasticsearchClient = elasticHelper.buildClient()) {
             final LocalDate from = request.getFrom();
             final LocalDate to = request.getTo();
             final BillingGrouping grouping = request.getGrouping();
@@ -158,7 +161,8 @@ public class BillingManager {
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
             } else {
-                return getBillingStats(lowLevelEsClient, from, to, filters, grouping, request.isLoadDetails());
+                return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to, filters, grouping,
+                        request.isLoadDetails());
             }
         } catch (IOException e) {
             throw new SearchException(e.getMessage(), e);
@@ -265,7 +269,7 @@ public class BillingManager {
         if (grouping != null) {
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
                 .field(grouping.getCorrespondingField())
-                .order(Terms.Order.aggregation(BillingHelper.COST_FIELD, false))
+                .order(BucketOrder.aggregation(BillingHelper.COST_FIELD, false))
                 .size(Integer.MAX_VALUE);
             fieldAgg.subAggregation(billingHelper.aggregateCostSum());
             if (grouping.runUsageDetailsRequired()) {
@@ -312,11 +316,13 @@ public class BillingManager {
         final Map<String, String> parameters = new HashMap<>();
         parameters.put(BillingHelper.ES_FILTER_PATH, buildResponseFilterForGrouping(groupingName));
         parameters.put(RestSearchAction.TYPED_KEYS_PARAM, Boolean.TRUE.toString());
-        final Response response =
-            lowLevelClient.performRequest(HttpPost.METHOD_NAME, searchEndpoint, parameters, httpEntity);
+        final Request lowLevelRequest = new Request(HttpPost.METHOD_NAME, searchEndpoint);
+        MapUtils.emptyIfNull(parameters).forEach(lowLevelRequest::addParameter);
+        lowLevelRequest.setEntity(httpEntity);
+        final Response response = lowLevelClient.performRequest(lowLevelRequest);
         final XContentParser parser = JsonXContent.jsonXContent
             .createParser(new NamedXContentRegistry(requiredGroupingAggregationsEntries),
-                          EntityUtils.toString(response.getEntity()));
+                    DeprecationHandler.THROW_UNSUPPORTED_OPERATION, EntityUtils.toString(response.getEntity()));
         return SearchResponse.fromXContent(parser);
     }
 

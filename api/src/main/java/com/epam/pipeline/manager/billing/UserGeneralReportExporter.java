@@ -67,8 +67,7 @@ public class UserGeneralReportExporter implements BillingExporter {
              BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
              UserGeneralReportWriter writer = new UserGeneralReportWriter(bufferedWriter, billingHelper,
                      preferenceManager, request.getFrom(), request.getTo());
-             RestClient elasticSearchLowLevelClient = elasticHelper.buildLowLevelClient()) {
-            final RestHighLevelClient elasticSearchClient = new RestHighLevelClient(elasticSearchLowLevelClient);
+             RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
             writer.writeHeader();
             billings(request, elasticSearchClient).forEach(writer::write);
         } catch (IOException e) {

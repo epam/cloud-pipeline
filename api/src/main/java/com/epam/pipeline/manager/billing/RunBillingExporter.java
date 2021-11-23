@@ -52,8 +52,7 @@ public class RunBillingExporter implements BillingExporter {
         try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
              BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
              RunBillingWriter writer = new RunBillingWriter(bufferedWriter, billingHelper, preferenceManager);
-             RestClient elasticSearchLowLevelClient = elasticHelper.buildLowLevelClient()) {
-            final RestHighLevelClient elasticSearchClient = new RestHighLevelClient(elasticSearchLowLevelClient);
+             RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
             writer.writeHeader();
             runBillings(elasticSearchClient, request).forEach(writer::write);
         } catch (IOException e) {
