@@ -63,6 +63,11 @@ def main():
 
     utils.pipe_log_init(run_id)
 
+    wait_time_sec = utils.get_autoscale_preference(utils.NODE_WAIT_TIME_SEC)
+    if wait_time_sec and wait_time_sec.isdigit():
+        num_rep = int(wait_time_sec) / time_rep
+
+
     cloud_provider = autoscaling.create_cloud_provider(cloud, region_id)
     utils.pipe_log('Started initialization of new calculation node in AWS region {}:\n'
                    '- RunID: {}\n'
@@ -70,13 +75,17 @@ def main():
                    '- Disk: {}\n'
                    '- Image: {}\n'
                    '- IsSpot: {}\n'
-                   '- BidPrice: {}\n-'.format(region_id,
+                   '- BidPrice: {}\n'
+                   '- Repeat attempts: {}\n'
+                   '- Repeat timeout: {}\n-'.format(region_id,
                                               run_id,
                                               ins_type,
                                               ins_hdd,
                                               ins_img,
                                               str(is_spot),
-                                              str(bid_price)))
+                                              str(bid_price),
+                                              str(num_rep),
+                                              str(time_rep)))
 
     kube_provider = kubeprovider.KubeProvider()
 

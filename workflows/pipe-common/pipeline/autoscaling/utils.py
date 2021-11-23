@@ -20,6 +20,7 @@ import math
 from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
 
 NETWORKS_PARAM = "cluster.networks.config"
+NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
 MIN_SWAP_DEVICE_SIZE = 5
 
@@ -85,6 +86,17 @@ def pipe_log_warn(message):
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
 
+def get_autoscale_preference(preference_name):
+    pipe_api = PipelineAPI(api_url, None)
+    try:
+        preference = pipe_api.get_preference(preference_name)
+        if 'value' in preference:
+            return preference['value']
+        else:
+            return None
+    except:
+        pipe_log('An error occured while getting preference {}, empty value is going to be used'.format(preference_name))
+        return None
 
 def load_cloud_config():
     global __CLOUD_METADATA__
