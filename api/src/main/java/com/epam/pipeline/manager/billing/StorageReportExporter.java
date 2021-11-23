@@ -16,7 +16,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -28,7 +27,10 @@ import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.avg.AvgBucketPipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedWriter;
@@ -41,6 +43,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -173,7 +176,8 @@ public class StorageReportExporter implements BillingExporter {
                                 .subAggregation(aggregateBillingsByMonth())
                                 .subAggregation(aggregateCostSumBucket())
                                 .subAggregation(aggregateStorageUsageAverageBucket())
-                                .subAggregation(billingHelper.aggregateLastByDateDoc())));
+                                .subAggregation(billingHelper.aggregateLastByDateDoc())
+                                .subAggregation(aggregateCostSortBucket())));
     }
 
     private DateHistogramAggregationBuilder aggregateBillingsByMonth() {
@@ -198,5 +202,11 @@ public class StorageReportExporter implements BillingExporter {
         return PipelineAggregatorBuilders
                 .avgBucket(BillingHelper.STORAGE_USAGE_AGG,
                         String.join(BillingHelper.ES_DOC_AGGS_SEPARATOR, BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.STORAGE_USAGE_AGG));
+    }
+
+    private BucketSortPipelineAggregationBuilder aggregateCostSortBucket() {
+        return PipelineAggregatorBuilders.bucketSort(BillingHelper.SORT_AGG,
+                Collections.singletonList(new FieldSortBuilder(BillingHelper.COST_FIELD)
+                        .order(SortOrder.DESC)));
     }
 }

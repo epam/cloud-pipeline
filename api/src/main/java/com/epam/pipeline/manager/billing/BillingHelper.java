@@ -104,6 +104,7 @@ public class BillingHelper {
     public static final String HISTOGRAM_AGGREGATION_FORMAT = "yyyy-MM";
     public static final String RUN_COUNT_AGG = "count_runs";
     public static final String PROVIDER_FIELD = "provider";
+    public static final String SORT_AGG = "sort";
 
     private final AuthManager authManager;
     private final String billingIndicesMonthlyPattern;
