@@ -85,9 +85,11 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
+import com.google.common.primitives.SignedBytes;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,6 +105,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -786,7 +789,7 @@ public class S3Helper {
 
             for (String name : listing.getCommonPrefixes()) {
                 if (maskingEnabled) {
-                    if (StringUtils.compare(name, latestMarker) > 0) {
+                    if (compareStrings(name, latestMarker) > 0) {
                         listing.setTruncated(false);
                         break;
                     }
@@ -804,7 +807,7 @@ public class S3Helper {
                 if (file != null) {
                     if (maskingEnabled) {
                         final String fileName = requestPath + file.getName();
-                        if (StringUtils.compare(fileName, latestMarker) > 0) {
+                        if (compareStrings(fileName, latestMarker) > 0) {
                             listing.setTruncated(false);
                             break;
                         }
@@ -875,7 +878,7 @@ public class S3Helper {
             versionListing = client.listVersions(request);
             for (String commonPrefix : versionListing.getCommonPrefixes()) {
                 if (maskingEnabled) {
-                    if (StringUtils.compare(commonPrefix, latestMarker) > 0) {
+                    if (compareStrings(commonPrefix, latestMarker) > 0) {
                         versionListing.setTruncated(false);
                         break;
                     }
@@ -903,7 +906,7 @@ public class S3Helper {
                 final String fileName = file.getName();
                 if (maskingEnabled) {
                     final String fileNameWithFolderPrefix = requestPath + fileName;
-                    if (StringUtils.compare(fileNameWithFolderPrefix, latestMarker) > 0) {
+                    if (compareStrings(fileNameWithFolderPrefix, latestMarker) > 0) {
                         versionListing.setTruncated(false);
                         break;
                     }
@@ -1200,14 +1203,13 @@ public class S3Helper {
     private String resolveStartAndLastTokens(final String currentFirstToken, final Set<String> resolvedMasks,
                                              final Consumer<String> firstTokenConsumer) {
         if (currentFirstToken != null) {
-            resolvedMasks.removeIf(mask -> StringUtils.compare(getMaskWithoutGlob(mask),
-                                                               currentFirstToken) <= 0);
+            resolvedMasks.removeIf(mask -> compareStrings(getMaskWithoutGlob(mask), currentFirstToken) <= 0);
             if (CollectionUtils.isEmpty(resolvedMasks)) {
                 return null;
             }
         }
         final List<String> resolvedMaskList = new ArrayList<>(resolvedMasks);
-        Collections.sort(resolvedMaskList);
+        resolvedMaskList.sort(this::compareStrings);
         firstTokenConsumer.accept(getFirstTokenFromMasks(resolvedMaskList));
         return getLastTokenFromMasks(resolvedMaskList);
     }
@@ -1239,5 +1241,10 @@ public class S3Helper {
         return lastContentChar == ' '
                ? tokenWoLastChar + suffix
                : tokenWoLastChar + (char) (lastContentChar - 1) + suffix;
+    }
+
+    private int compareStrings(final String s1, final String s2) {
+        return SignedBytes.lexicographicalComparator()
+                .compare(s1.getBytes(Charsets.UTF_8), s2.getBytes(Charsets.UTF_8));
     }
 }
