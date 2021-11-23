@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -59,7 +60,10 @@ public class InactiveUsersMonitoringServiceCoreTest {
 
     @Before
     public void setup() {
-        doReturn(THRESHOLD_DAYS).when(preferenceManager).getPreference(any());
+        doReturn(THRESHOLD_DAYS).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_USER_MONITOR_BLOCKED_DAYS);
+        doReturn(THRESHOLD_DAYS).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_USER_MONITOR_IDLE_DAYS);
+        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_USER_MONITOR_ENABLED);
     }
 
     @Test
@@ -157,6 +161,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         final PipelineUser activeUser = activeUser(USER_NAME_2, ID_2);
 
         doReturn(Arrays.asList(blockedUser, activeUser)).when(userManager).loadAllUsers();
+        doReturn(blockedUser).when(userManager).updateUserBlockingStatus(ID_1, true);
         doReturn(ldapResponse(USER_NAME_1)).when(ldapManager).searchBlockedUser(LdapSearchRequest.forUser(USER_NAME_1));
 
         monitoringService.monitor();
