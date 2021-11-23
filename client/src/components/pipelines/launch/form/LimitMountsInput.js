@@ -17,12 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {computed} from 'mobx';
 import AvailableStoragesBrowser, {filterNFSStorages}
-  from '../dialogs/AvailableStoragesBrowser';
+from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
-import classNames from "classnames";
 
 @inject('dataStorageAvailable', 'preferences')
 @observer

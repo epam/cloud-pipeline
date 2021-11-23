@@ -45,8 +45,6 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
-    '@color-white-dimmed-5': 'rgba(255, 255, 255, 0.05)',
-    '@color-white-dimmed-10': 'rgba(255, 255, 255, 0.1)',
     '@border-color': 'lighten(@application-background-color, 15%)',
     '@spinner': '@application-color',
     '@status-good-color': '@color-green',
@@ -91,6 +89,11 @@ export default {
     '@tag-value-background-color': 'lighten(@card-background-color, 5%)',
     '@nfs-icon-color': '@color-green',
     '@aws-icon': "@static_resource('icons/providers/aws-light.svg')",
+    '@aws-icon-contrast': "@static_resource('icons/providers/aws-light.svg')",
+    '@gcp-icon': "@static_resource('icons/providers/gcp.svg')",
+    '@gcp-icon-contrast': "@static_resource('icons/providers/gcp.svg')",
+    '@azure-icon': "@static_resource('icons/providers/azure.svg')",
+    '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
     '@modal-mask-background': 'rgba(0, 0, 0, 0.6)',
     '@even-element-background': 'lighten(@card-background-color, 5%)',
     '@alert-success-background': 'darken(@status-good-color, 15%)',
@@ -134,8 +137,6 @@ export default {
     '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
     '@code-background-color': 'lighten(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
-    '@library-storage-region-background-color': '@color-white-dimmed-10',
-    '@library-storage-region-color': '@application-color'
+    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated'
   }
 };

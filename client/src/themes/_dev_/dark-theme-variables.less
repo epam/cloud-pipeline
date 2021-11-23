@@ -41,9 +41,6 @@
 @color-blue-dimmed: #458;
 @color-grey: #777;
 
-@color-white-dimmed-5: rgba(255, 255, 255, 0.05);
-@color-white-dimmed-10: rgba(255, 255, 255, 0.1);
-
 @border-color: lighten(@application-background-color, 15%);
 
 @spinner: @application-color;
@@ -99,6 +96,11 @@
 @nfs-icon-color: @color-green;
 @icons-root: '/icons';
 @aws-icon: url('@{icons-root}/providers/aws-light.svg');
+@aws-icon-contrast: url('@{icons-root}/providers/aws-light.svg');
+@gcp-icon: url('@{icons-root}/providers/gcp.svg');
+@gcp-icon-contrast: url('@{icons-root}/providers/gcp.svg');
+@azure-icon: url('@{icons-root}/providers/azure.svg');
+@azure-icon-contrast: url('@{icons-root}/providers/azure.svg');
 
 @modal-mask-background: rgba(0, 0, 0, 0.6);
 
@@ -154,5 +156,3 @@
 @search-highlight-text-color: @application-color;
 @search-highlight-text-background-color: @navigation-panel-color-impersonated;
 
-@library-storage-region-background-color: @color-white-dimmed-10;
-@library-storage-region-color: @application-color;

@@ -45,8 +45,6 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
-    '@color-black-dimmed-25': 'rgba(0, 0, 0, 0.25)',
-    '@color-white-dimmed-10': 'rgba(255, 255, 255, 0.1)',
     '@border-color': '#d9d9d9',
     '@spinner': '@primary-color',
     '@status-good-color': '@color-green',
@@ -91,8 +89,11 @@ export default {
     '@tag-value-background-color': '#fefefe',
     '@nfs-icon-color': '#116118',
     '@aws-icon': "@static_resource('icons/providers/aws.svg')",
+    '@aws-icon-contrast': "@static_resource('icons/providers/aws-light.svg')",
     '@gcp-icon': "@static_resource('icons/providers/gcp.svg')",
+    '@gcp-icon-contrast': "@static_resource('icons/providers/gcp.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
+    '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
     '@eu-region-icon': "@static_resource('icons/regions/eu.svg')",
     '@us-region-icon': "@static_resource('icons/regions/us.svg')",
     '@sa-region-icon': "@static_resource('icons/regions/sa.svg')",
@@ -150,8 +151,6 @@ export default {
     '@date-picker-day-border-color': 'fadeout(@calendar-border-color, 20%)',
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@color-yellow',
-    '@library-storage-region-background-color': '@application-color-faded',
-    '@library-storage-region-color': '@primary-text-color'
+    '@search-highlight-text-background-color': '@color-yellow'
   }
 };

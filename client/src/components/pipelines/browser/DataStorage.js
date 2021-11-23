@@ -1931,8 +1931,7 @@ export default class DataStorage extends React.Component {
                   {this.props.info.value.name}
                   <AWSRegionTag
                     className={classNames(
-                      styles.storageRegion,
-                      'cp-storage-region'
+                      styles.storageRegion
                     )}
                     displayName
                     flagStyle={{fontSize: 'smaller'}}

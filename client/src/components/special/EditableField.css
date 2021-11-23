@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,32 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import {Row} from 'antd';
-import classNames from 'classnames';
+.editable-mode {
+  padding-left: 5px;
+  padding-right: 0;
+  height: 31px;
+  border: 1px solid transparent;
+  cursor: default;
+  display: inline;
+}
 
-export default function renderSeparator (key = undefined) {
-  return (
-    <Row key={key} style={{width: '100%', padding: '5px 10px'}}>
-      <div
-        className={
-          classNames(
-            'cp-divider',
-            'horizontal'
-          )
-        }
-      >
-        {'\u00A0'}
-      </div>
-    </Row>
-  );
+.editable-mode-hovered:hover {
+  border-radius: 2px;
+  cursor: text;
+}
+
+.editable-mode-options {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editable-field-icon {
+  padding-left: 5px;
+  display: initial;
+}
+
+.editable-field-icon.not-displayed {
+  display: none;
 }

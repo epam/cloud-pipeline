@@ -585,6 +585,11 @@ export default `
   background-color: @btn-primary-active;
   border-color: @btn-primary-active;
 }
+@THEME .ant-btn-background-ghost.ant-btn-primary {
+  color: @primary-color;
+  background-color: transparent;
+  border-color: @primary-color;
+}
 @THEME .ant-btn-danger {
   color: @btn-danger-color;
   background-color: @btn-danger-background-color;
@@ -1221,6 +1226,12 @@ export default `
 @THEME .ant-form-item {
   color: @application-color;
 }
+@THEME .ReactTable.-striped .rt-tr.-even {
+  background-color: @card-background-color;
+}
+@THEME .ReactTable.-striped .rt-tr.-odd {
+  background-color: @even-element-background;
+}
 @THEME .ant-form-item-label label {
   color: @application-color-accent;
 }
@@ -1461,6 +1472,15 @@ export default `
   background-image: @aws-icon;
   background-color: transparent;
 }
+@THEME .ant-tooltip-inner .provider.aws {
+  background-image: @aws-icon-contrast;
+}
+@THEME .ant-tooltip-inner .provider.gcp {
+  background-image: @gcp-icon-contrast;
+}
+@THEME .ant-tooltip-inner .provider.azure {
+  background-image: @azure-icon-contrast;
+}
 @THEME .provider.gcp {
   background-image: @gcp-icon;
   background-color: transparent;
@@ -1504,10 +1524,6 @@ export default `
 }
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
-}
-@THEME .cp-storage-region {
-  background-color: @library-storage-region-background-color;
-  color: @library-storage-region-color;
 }
 
 @THEME .ant-alert {
@@ -1580,6 +1596,9 @@ export default `
   background-color: @application-background-color;
   color: @application-color;
 }
+@THEME .cp-tool-add-endpoint {
+  background-color: @input-background-disabled;
+}
 @THEME .cp-scan-result.critical {
   color: @color-red;
 }
@@ -1644,6 +1663,14 @@ export default `
   background-color: @primary-active-color;
   color: @primary-text-color;
   outline: none;
+}
+@THEME .cp-runs-advanced-filter-input {
+  background-color: @input-background;
+  border: 1px solid @input-border;
+}
+@THEME .cp-runs-advanced-filter-input-error {
+  background-color: @input-background;
+  border: 1px solid @color-red;
 }
 @THEME .cp-run-instance-tag {
   background-color: @card-header-background;
@@ -2112,6 +2139,56 @@ export default `
 @THEME .cp-metadata-item-json-table td {
   padding: 2px 4px;
   border: 1px solid @card-border-color;
+}
+@THEME .cp-library-breadcrumbs-editable-field:hover {
+  border: 1px solid @panel-border-color;
+  background-color: @element-selected-background-color !important;
+}
+@THEME .cp-library-breadcrumbs-editable-field-icon {
+  color: @application-color-faded;
+}
+@THEME .cp-library-breadcrumbs-editable-field:hover .cp-library-breadcrumbs-editable-field-icon {
+  color: @application-color;
+}
+@THEME .cp-library-path-components-container:hover {
+  transition: background-color 0.5s ease;
+  background-color: @element-selected-background-color;
+}
+@THEME .cp-library-metadata-table {
+  border: 1px solid @input-border;
+}
+@THEME .cp-library-metadata-table-cell {
+  border-right: 1px solid fadeout(@application-color, 90%);
+}
+@THEME .cp-library-metadata-table-cell-selected {
+  background-color: fadeout(@primary-hover-color, 70%);
+  color: @application-color;
+}
+@THEME .cp-library-metadata-panel-placeholder {
+  color: @application-color-faded;
+}
+@THEME .cp-library-metadata-spread-top-cell {
+  border-top-color: @primary-color;
+}
+@THEME .cp-library-metadata-spread-bottom-cell {
+  border-bottom-color: @primary-color;
+}
+@THEME .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-selected,
+@THEME .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-hovered,
+@THEME .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-selected {
+  border-right: 1px solid @primary-color;
+}
+@THEME .cp-library-metadata-spread-left-cell {
+  border-left-color: @primary-color;
+}
+@THEME .cp-library-metadata-spread-selected {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+@THEME .cp-library-metadata-spread-cell-hovered {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+@THEME .cp-library-metadata-spread-cell-selected {
+  background-color: fadeout(@primary-hover-color, 90%);
 }
 
 @THEME .cp-node-tag {

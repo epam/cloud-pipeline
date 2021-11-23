@@ -41,9 +41,6 @@
 @color-blue-dimmed: #458;
 @color-grey: #777;
 
-@color-black-dimmed-25: rgba(0, 0, 0, 0.25);
-@color-white-dimmed-10: rgba(255, 255, 255, 0.1);
-
 @border-color: #d9d9d9;
 
 @spinner: @primary-color;
@@ -100,8 +97,11 @@
 
 @icons-root: '/icons';
 @aws-icon: url('@{icons-root}/providers/aws.svg');
+@aws-icon-contrast: url('@{icons-root}/providers/aws-light.svg');
 @gcp-icon: url('@{icons-root}/providers/gcp.svg');
+@gcp-icon-contrast: url('@{icons-root}/providers/gcp.svg');
 @azure-icon: url('@{icons-root}/providers/azure.svg');
+@azure-icon-contrast: url('@{icons-root}/providers/azure.svg');
 
 @eu-region-icon: url('@{icons-root}/regions/eu.svg');
 @us-region-icon: url('@{icons-root}/regions/us.svg');
@@ -172,6 +172,3 @@
 
 @search-highlight-text-color: @application-color;
 @search-highlight-text-background-color: @color-yellow;
-
-@library-storage-region-background-color: @application-color-faded;
-@library-storage-region-color: @primary-text-color;

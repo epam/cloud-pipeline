@@ -27,6 +27,12 @@ th.metadata-column-value {
   max-width: 100px;
 }
 
+.cell {
+  background-color: initial;
+  position: relative;
+  border: 1px solid transparent;
+}
+
 .metadata-column-value {
   overflow-x: hidden;
   white-space: nowrap;
@@ -362,7 +368,6 @@ tr.table-row-selected {
 
 .metadata-table {
   border-radius: 0 0 5px 5px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .metadata-table div {
@@ -392,7 +397,6 @@ tr.table-row-selected {
 .metadata-additional-actions {
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 5px 5px 0 0;
-  border-bottom: none;
   padding: 5px;
   min-height: 37px;
 }
@@ -515,10 +519,9 @@ tr.table-row-selected {
   margin: 10px 0;
 }
 
-.noData {
+.no-data {
   margin: auto;
   padding: 5px;
-  color: rgba(0, 0, 0, 0.5);
 }
 
 @media screen and (max-width: 1280px) {
