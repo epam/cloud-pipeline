@@ -1644,7 +1644,18 @@ export default `
 @THEME .cp-scan-result.bar {
   background-color: currentColor;
 }
-
+@THEME .cp-exec-env-summary {
+  border: 1px solid @input-border;
+  background-color: @input-background-disabled;
+  box-shadow: 0 0 3px @card-border-color;
+  color: @application-color;
+}
+@THEME .cp-exec-env-summary-item {
+  border: 1px solid @card-header-background;
+}
+@THEME .cp-edit-permissions-selected-row {
+  background-color: @element-selected-background-color;
+}
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
 }
@@ -1742,7 +1753,9 @@ export default `
 @THEME .cp-wdl-task[data-taskstatus=failure] text {
   fill: @run-icon-red;
 }
-
+@THEME .cp-stop-run-modal-confirm-icon {
+  color: @run-icon-yellow;
+}
 @THEME .cp-billing-menu {
   width: fit-content;
   margin-left: 0;
