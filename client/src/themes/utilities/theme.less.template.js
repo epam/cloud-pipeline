@@ -1110,6 +1110,10 @@ export default `
 @THEME .ant-popover-inner-content {
   color: @application-color;
 }
+@THEME .ant-popover-title {
+  border-bottom: 1px solid @border-color;
+  color: @application-color;
+}
 @THEME .ant-calendar .ant-calendar-ok-btn {
   color: @btn-color;
   background-color: @primary-color;
@@ -2225,6 +2229,10 @@ export default `
 }
 @THEME .cp-library-metadata-spread-cell-selected {
   background-color: fadeout(@primary-hover-color, 90%);
+}
+@THEME .cp-metadata-dropdown-row {
+  border-bottom: 1px solid @input-addon;
+  background-color: @panel-background-color;
 }
 
 @THEME .cp-node-tag {
