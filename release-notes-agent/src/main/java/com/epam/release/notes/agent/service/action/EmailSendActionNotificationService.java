@@ -41,7 +41,7 @@ public class EmailSendActionNotificationService implements ActionNotificationSer
 
     public EmailSendActionNotificationService(final JavaMailSender javaMailSender,
                                               final TemplateNotificationService templateNotificationService,
-                                              @Value("${spring.mail.username}") final String serviceEmail) {
+                                              @Value("${spring.mail.from}") final String serviceEmail) {
         this.javaMailSender = javaMailSender;
         this.templateNotificationService = templateNotificationService;
         this.serviceEmail = serviceEmail;
