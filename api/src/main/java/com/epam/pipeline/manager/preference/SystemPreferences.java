@@ -351,6 +351,8 @@ public class SystemPreferences {
                                                                                 10, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODEUP_RETRY_COUNT = new IntPreference("cluster.nodeup.retry.count",
                                                                                 5, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODEUP_WAIT_SEC = new IntPreference("cluster.nodeup.wait.sec",
+                                                                                900, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_SPOT_MAX_ATTEMPTS = new IntPreference("cluster.spot.max.attempts", 2,
                                                                                     CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLOUD_DEFAULT_PROVIDER = new StringPreference(
