@@ -122,7 +122,7 @@ class StorageSize extends React.PureComponent {
             className={styles.refreshButton}
             onClick={this.refreshSize}
           >
-            Refresh
+            Re-index
           </a>
         </div>
       );
@@ -141,7 +141,7 @@ class StorageSize extends React.PureComponent {
           className={styles.refreshButton}
           onClick={this.refreshSize}
         >
-          Request storage size update
+          Request storage re-index
         </a>
       </div>
     );
