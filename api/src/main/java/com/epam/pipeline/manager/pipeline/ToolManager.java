@@ -394,6 +394,19 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     /**
+     * Checks whether commit operation is allowed for the given tool
+     *
+     * @param registry registry identifier
+     * @param image    Tool's image
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void validateCommitOperationAllowed(final String registry, final String image) {
+        final Tool tool = loadTool(registry, image);
+        Assert.isTrue(tool.isAllowCommit(),
+                      messageHelper.getMessage(MessageConstants.ERROR_COMMIT_OPERATION_IS_FORBIDDEN, image));
+    }
+
+    /**
      * Deletes a Tool from the database and from Docker Registry
      * @param registry registry identifier
      * @param image Tool's image

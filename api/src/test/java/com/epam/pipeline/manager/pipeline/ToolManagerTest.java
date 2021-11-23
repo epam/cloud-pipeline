@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -800,6 +800,25 @@ public class ToolManagerTest extends AbstractManagerTest {
             () -> toolManager.updateToolVulnerabilities(Collections.emptyList(), symlink.getId(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateWhiteListWithToolVersionStatus(symlink.getId(), LATEST_TAG, true));
+    }
+
+    @Test
+    @Transactional
+    public void testCommitOperationValidation() {
+        final Tool tool = generateTool(TEST_GROUP_ID1);
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+
+        toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage());
+        toolManager.validateCommitOperationAllowed(null, tool.getImage());
+
+        tool.setAllowCommit(false);
+        toolManager.updateTool(tool);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage()));
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.validateCommitOperationAllowed(null, tool.getImage()));
     }
 
     private List<String> generateLabels(String... labels) {
