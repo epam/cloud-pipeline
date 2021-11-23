@@ -61,6 +61,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
             " Can't request this storage to be mounted, increase quotas!";
     private final String requestInfo = "Description of the Request Filesystem access feature";
     private final String doneRequestInfo = "Help tips - how to use the Filesystem access";
+    private final String uiPipeFileBrowserJson = readResourceFully(UI_PIPE_FILE_BROWSER_JSON);
     private final int durationSeconds = 60;
     private final String userRoleGroup = C.ROLE_USER;
 
@@ -279,12 +280,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                 .switchToPreferences()
                 .getPreference(uiPipeFileBrowserRequest);
         try {
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .clearAndSetJsonToPreference(uiPipeFileBrowserRequest,
-                            readResourceFully(UI_PIPE_FILE_BROWSER_JSON), true)
-                    .saveIfNeeded();
+            setUiPipeFileBrowserRequest(uiPipeFileBrowserJson);
             library()
                     .selectStorage(storage1)
                     .showMetadata()
@@ -292,8 +288,22 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                     .messageShouldAppear(requestInfo)
                     .click(FILE_SYSTEM_ACCESS)
                     .hover(INFORMATION_ICON)
-                    .messageShouldAppear(doneRequestInfo)
-                    .click(DISABLE);
+                    .messageShouldAppear(doneRequestInfo);
+            setUiPipeFileBrowserRequest(format("%s }", uiPipeFileBrowserJson
+                    .substring(0, uiPipeFileBrowserJson.indexOf(",\n"))));
+            library()
+                    .selectStorage(storage1)
+                    .showMetadata()
+                    .ensureNotVisible(INFORMATION_ICON)
+                    .click(DISABLE)
+                    .ensureVisible(INFORMATION_ICON)
+                    .hover(INFORMATION_ICON)
+                    .messageShouldAppear(requestInfo);
+            setUiPipeFileBrowserRequest("");
+            library()
+                    .selectStorage(storage1)
+                    .showMetadata()
+                    .ensureNotVisible(INFORMATION_ICON);
         } finally {
             logoutIfNeeded();
             loginAs(admin);
@@ -316,5 +326,14 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
         return format("File system access enabled till %s.",
                 LocalDateTime.now().plusSeconds(durationSeconds)
                         .format(ofPattern("dd MMM yyyy, HH:mm")));
+    }
+
+    private void setUiPipeFileBrowserRequest(String json) {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .clearAndSetJsonToPreference(uiPipeFileBrowserRequest,
+                        json, true)
+                .saveIfNeeded();
     }
 }
