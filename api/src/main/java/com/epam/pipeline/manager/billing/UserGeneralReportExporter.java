@@ -16,7 +16,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -30,10 +29,8 @@ import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucke
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -55,29 +52,33 @@ public class UserGeneralReportExporter implements BillingExporter {
     private static final String MISSING_USER = "unknown";
 
     @Getter
-    private final BillingExportType type = BillingExportType.USER_GENERAL_REPORT;
+    private final BillingExportType type = BillingExportType.USER;
     private final BillingHelper billingHelper;
     private final GlobalSearchElasticHelper elasticHelper;
     private final PreferenceManager preferenceManager;
     private final UserBillingDetailsLoader userBillingDetailsLoader;
 
     @Override
-    public void export(final BillingExportRequest request, final OutputStream out) {
-        try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
-             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
-             UserGeneralReportWriter writer = new UserGeneralReportWriter(bufferedWriter, billingHelper,
-                     preferenceManager, request.getFrom(), request.getTo());
-             RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
-            writer.writeHeader();
-            billings(request, elasticSearchClient).forEach(writer::write);
+    public void export(final BillingExportRequest request, final Writer writer) {
+        final UserGeneralReportWriter billingWriter = new UserGeneralReportWriter(writer,
+                billingHelper, preferenceManager, request.getFrom(), request.getTo());
+        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
+            billingWriter.writeHeader();
+            billings(elasticSearchClient, request).forEach(billingWriter::write);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
+        } finally {
+            try {
+                billingWriter.flush();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
-    private Stream<UserGeneralReportBilling> billings(final BillingExportRequest request,
-                                                      final RestHighLevelClient elasticSearchClient) {
+    private Stream<UserGeneralReportBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                                      final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());

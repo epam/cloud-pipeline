@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class StorageReportWriter implements Closeable {
+public class StorageReportWriter implements BillingWriter {
 
     private static final char SEPARATOR = ',';
     private static final int NUMERIC_SCALE = 2;
@@ -133,7 +133,7 @@ public class StorageReportWriter implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
-        writer.close();
+    public void flush() throws IOException {
+        writer.flush();
     }
 }

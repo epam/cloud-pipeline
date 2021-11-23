@@ -11,5 +11,5 @@ public class BillingExportRequest {
     LocalDate from;
     LocalDate to;
     Map<String, List<String>> filters;
-    BillingExportType type;
+    List<BillingExportType> types;
 }

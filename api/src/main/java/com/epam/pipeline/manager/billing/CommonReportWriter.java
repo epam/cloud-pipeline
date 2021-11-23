@@ -19,7 +19,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class CommonReportWriter<B extends ReportBilling<M>, M> implements Closeable {
+public class CommonReportWriter<B extends ReportBilling<M>, M> implements BillingWriter {
 
     private static final char SEPARATOR = ',';
     private static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
@@ -98,7 +98,7 @@ public class CommonReportWriter<B extends ReportBilling<M>, M> implements Closea
     }
 
     @Override
-    public void close() throws IOException {
-        writer.close();
+    public void flush() throws IOException {
+        writer.flush();
     }
 }

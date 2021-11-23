@@ -30,10 +30,8 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -51,29 +49,33 @@ import java.util.stream.Stream;
 public class PipelineReportExporter implements BillingExporter {
 
     @Getter
-    private final BillingExportType type = BillingExportType.PIPELINE_REPORT;
+    private final BillingExportType type = BillingExportType.PIPELINE;
     private final BillingHelper billingHelper;
     private final GlobalSearchElasticHelper elasticHelper;
     private final PreferenceManager preferenceManager;
     private final PipelineBillingDetailsLoader pipelineBillingDetailsLoader;
 
     @Override
-    public void export(final BillingExportRequest request, final OutputStream out) {
-        try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
-             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
-             PipelineReportWriter writer = new PipelineReportWriter(bufferedWriter, billingHelper,
-                     preferenceManager, request.getFrom(), request.getTo());
-             RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
-            writer.writeHeader();
-            billings(request, elasticSearchClient).forEach(writer::write);
+    public void export(final BillingExportRequest request, final Writer writer) {
+        final PipelineReportWriter billingWriter = new PipelineReportWriter(writer,
+                billingHelper, preferenceManager, request.getFrom(), request.getTo());
+        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
+            billingWriter.writeHeader();
+            billings(elasticSearchClient, request).forEach(billingWriter::write);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
+        } finally {
+            try {
+                billingWriter.flush();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
-    private Stream<PipelineReportBilling> billings(final BillingExportRequest request,
-                                                   final RestHighLevelClient elasticSearchClient) {
+    private Stream<PipelineReportBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                                   final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());

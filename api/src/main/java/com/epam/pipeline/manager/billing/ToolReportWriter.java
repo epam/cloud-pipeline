@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class ToolReportWriter implements Closeable {
+public class ToolReportWriter implements BillingWriter {
 
     private static final int NUMERIC_SCALE = 2;
     private static final long DURATION_DIVISOR = TimeUnit.MINUTES.convert(NumberUtils.LONG_ONE, TimeUnit.HOURS);
@@ -63,15 +63,15 @@ public class ToolReportWriter implements Closeable {
         writer.write(billing);
     }
 
-    @Override
-    public void close() throws IOException {
-        writer.close();
-    }
-
     private BigDecimal divided(final Long divider, final Long divisor) {
         return Optional.ofNullable(divider)
                 .map(BigDecimal::valueOf)
                 .orElse(BigDecimal.ZERO)
                 .divide(BigDecimal.valueOf(divisor), NUMERIC_SCALE, RoundingMode.CEILING);
+    }
+
+    @Override
+    public void flush() throws IOException {
+        writer.flush();
     }
 }

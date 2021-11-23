@@ -14,7 +14,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
@@ -22,10 +21,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -48,26 +45,30 @@ public class RunBillingExporter implements BillingExporter {
     private final PreferenceManager preferenceManager;
 
     @Override
-    public void export(final BillingExportRequest request, final OutputStream out) {
-        try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
-             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
-             RunBillingWriter writer = new RunBillingWriter(bufferedWriter, billingHelper, preferenceManager);
-             RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
-            writer.writeHeader();
-            runBillings(elasticSearchClient, request).forEach(writer::write);
+    public void export(final BillingExportRequest request, final Writer writer) {
+        final RunBillingWriter billingWriter = new RunBillingWriter(writer, billingHelper, preferenceManager);
+        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
+            billingWriter.writeHeader();
+            billings(elasticSearchClient, request).forEach(billingWriter::write);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
+        } finally {
+            try {
+                billingWriter.flush();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
-    public Stream<RunBilling> runBillings(final RestHighLevelClient elasticSearchClient,
-                                          final BillingExportRequest request) {
+    public Stream<RunBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                       final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
         final int numberOfPartitions = getEstimatedNumberOfRunBillingPartitions(elasticSearchClient, from, to, filters);
-        return runBillings(elasticSearchClient, from, to, filters, numberOfPartitions);
+        return billings(elasticSearchClient, from, to, filters, numberOfPartitions);
     }
 
     private int getEstimatedNumberOfRunBillingPartitions(final RestHighLevelClient elasticSearchClient,
@@ -109,15 +110,15 @@ public class RunBillingExporter implements BillingExporter {
                 .orElse(BillingHelper.FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE);
     }
 
-    private Stream<RunBilling> runBillings(final RestHighLevelClient elasticSearchClient,
-                                           final LocalDate from,
-                                           final LocalDate to,
-                                           final Map<String, List<String>> filters,
-                                           final int numberOfPartitions) {
+    private Stream<RunBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                        final LocalDate from,
+                                        final LocalDate to,
+                                        final Map<String, List<String>> filters,
+                                        final int numberOfPartitions) {
         return IntStream.range(0, numberOfPartitions)
                 .mapToObj(partition -> getRunBillingsRequest(from, to, filters, partition, numberOfPartitions))
                 .map(billingHelper.searchWith(elasticSearchClient))
-                .flatMap(this::runBillings);
+                .flatMap(this::billings);
     }
 
     private SearchRequest getRunBillingsRequest(final LocalDate from,
@@ -137,7 +138,7 @@ public class RunBillingExporter implements BillingExporter {
                                 .subAggregation(billingHelper.aggregateLastByDateDoc())));
     }
 
-    private Stream<RunBilling> runBillings(final SearchResponse response) {
+    private Stream<RunBilling> billings(final SearchResponse response) {
         return Optional.ofNullable(response.getAggregations())
                 .map(it -> it.get(BillingHelper.RUN_ID_FIELD))
                 .filter(ParsedStringTerms.class::isInstance)

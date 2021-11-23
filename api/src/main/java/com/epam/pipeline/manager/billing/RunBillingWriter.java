@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigDecimal;
@@ -17,7 +16,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class RunBillingWriter implements Closeable {
+public class RunBillingWriter implements BillingWriter {
 
     private static final char SEPARATOR = ',';
     private static final int NUMERIC_SCALE = 2;
@@ -76,7 +75,7 @@ public class RunBillingWriter implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
-        writer.close();
+    public void flush() throws IOException {
+        writer.flush();
     }
 }

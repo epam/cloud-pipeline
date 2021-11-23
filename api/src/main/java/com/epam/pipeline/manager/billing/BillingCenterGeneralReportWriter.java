@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public class BillingCenterGeneralReportWriter implements Closeable {
+public class BillingCenterGeneralReportWriter implements BillingWriter {
 
     private static final char SEPARATOR = ',';
     private static final int NUMERIC_SCALE = 2;
@@ -118,7 +118,7 @@ public class BillingCenterGeneralReportWriter implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
-        writer.close();
+    public void flush() throws IOException {
+        writer.flush();
     }
 }
