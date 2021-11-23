@@ -208,7 +208,7 @@ class PreferencesLoad extends Remote {
     if (value && !Number.isNaN(Number(value))) {
       return Number(value);
     }
-    return 0;
+    return 86400; // 24 hours
   }
 
   @computed
