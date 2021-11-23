@@ -1523,7 +1523,7 @@ export default class Metadata extends React.Component {
           columns={this.tableColumns}
           data={this.state.currentMetadata}
           getTableProps={() => ({
-            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'},
+            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse', borderRadius: 5},
             onMouseOut: this.clearHovering
           })}
           getTrGroupProps={() => ({style: {borderBottom: 'none'}})}

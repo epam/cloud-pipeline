@@ -397,6 +397,7 @@ tr.table-row-selected {
 .metadata-additional-actions {
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 5px 5px 0 0;
+  border-bottom: none;
   padding: 5px;
   min-height: 37px;
 }
