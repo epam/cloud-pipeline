@@ -1114,6 +1114,9 @@ export default `
   border-bottom: 1px solid @border-color;
   color: @application-color;
 }
+@THEME .ant-row.cp-metadata-dropdown-row {
+  color: @application-color;
+}
 @THEME .ant-calendar .ant-calendar-ok-btn {
   color: @btn-color;
   background-color: @primary-color;
@@ -2232,7 +2235,7 @@ export default `
 }
 @THEME .cp-metadata-dropdown-row {
   border-bottom: 1px solid @input-addon;
-  background-color: @panel-background-color;
+  background-color: @card-background-color;
 }
 
 @THEME .cp-node-tag {
