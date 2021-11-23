@@ -216,6 +216,23 @@ export default `
 @THEME .cp-versioned-storage {
   color: @primary-color;
 }
+@THEME .cp-icon-button {
+  cursor: pointer;
+  color: @application-color;
+  pointer-events: all;
+  transition: all 100ms ease;
+}
+@THEME .cp-icon-button:not(.cp-disabled):hover {
+  color: @application-color-accent;
+  transform: scale(1.15);
+}
+@THEME .cp-icon-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
+}
+@THEME .cp-icon-button:hover {
+  color: @application-color-accent;
+}
 @THEME .ant-layout-sider {
   background-color: @navigation-panel-color;
 }
@@ -2178,7 +2195,9 @@ export default `
 @THEME .cp-settings-nat-table thead tr:first-child,
 @THEME .cp-settings-nat-table thead tr:first-child th:first-child,
 @THEME .cp-settings-nat-table thead tr th.external-column:nth-child(3),
-@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(3) {
+@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(3),
+@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(6),
+@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(6) {
   border-right: 2px solid @card-border-color;
 }
 @THEME .cp-settings-nat-table thead tr:first-child th {

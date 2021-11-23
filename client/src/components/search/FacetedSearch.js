@@ -671,7 +671,8 @@ class FacetedSearch extends React.Component {
               type="close"
               className={classNames(
                 styles.removeSortingBtn,
-                {[styles.removeSortingBtnDisabled]: pending}
+                'cp-icon-button',
+                {'cp-disabled': pending}
               )}
               onClick={(event) => this.removeSortingByField(sort.field, event)}
             />

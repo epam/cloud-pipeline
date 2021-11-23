@@ -168,6 +168,27 @@ a.cp-danger:focus,
   color: @primary-color;
 }
 
+.cp-icon-button {
+  cursor: pointer;
+  color: @application-color;
+  pointer-events: all;
+  transition: all 100ms ease;
+}
+
+.cp-icon-button:not(.cp-disabled):hover {
+  color: @application-color-accent;
+  transform: scale(1.15);
+}
+
+.cp-icon-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
+}
+
+.cp-icon-button:hover {
+  color: @application-color-accent;
+}
+
 .ant-layout-sider {
   background-color: @navigation-panel-color;
 }

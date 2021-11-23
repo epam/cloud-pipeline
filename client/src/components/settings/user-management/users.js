@@ -26,7 +26,9 @@ import {
   Card,
   Icon,
   Button,
-  message, Alert
+  message,
+  Alert,
+  Select
 } from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
@@ -52,6 +54,12 @@ function usersFilter (criteria) {
   };
 }
 
+const USERS_FILTERS = {
+  all: 'all',
+  blocked: 'blocked',
+  notBlocked: 'notBlocked'
+};
+
 @roleModel.authenticationInfo
 @inject('dataStorages', 'users', 'userMetadataKeys')
 @inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({
@@ -72,7 +80,8 @@ export default class UsersManagement extends React.Component {
     groupsSearchText: undefined,
     operationInProgress: false,
     userDataToExport: [],
-    metadataKeys: []
+    metadataKeys: [],
+    filterUsers: USERS_FILTERS.all
   };
 
   get isAdmin () {
@@ -182,10 +191,13 @@ export default class UsersManagement extends React.Component {
 
   get filteredUsers () {
     const {
-      userSearchText
+      userSearchText,
+      filterUsers
     } = this.state;
+    const showBlocked = filterUsers === USERS_FILTERS.blocked;
     return this.users
-      .filter(usersFilter(userSearchText));
+      .filter(usersFilter(userSearchText))
+      .filter(user => filterUsers === USERS_FILTERS.all || showBlocked === user.blocked);
   }
 
   onUserSearchChanged = (e) => {
@@ -206,6 +218,13 @@ export default class UsersManagement extends React.Component {
 
   closeEditUserRolesDialog = () => {
     this.setState({editableUser: undefined}, this.reload);
+  };
+
+  onChangeUsersFilters = (e) => {
+    this.setState({
+      filterUsers: e,
+      usersTableCurrentPage: 1
+    });
   };
 
   renderUsersTableControls = () => {
@@ -234,6 +253,30 @@ export default class UsersManagement extends React.Component {
           value={this.state.userSearchText}
           onChange={this.onUserSearchChanged}
         />
+        <Select
+          value={this.state.filterUsers}
+          style={{width: 175, marginLeft: 5}}
+          onChange={this.onChangeUsersFilters}
+        >
+          <Select.Option
+            key={USERS_FILTERS.all}
+            value={USERS_FILTERS.all}
+          >
+            Show all users
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.notBlocked}
+            value={USERS_FILTERS.notBlocked}
+          >
+            Show not blocked users
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.blocked}
+            value={USERS_FILTERS.blocked}
+          >
+            Show blocked users
+          </Select.Option>
+        </Select>
         {
           this.isAdmin && (
             <Button

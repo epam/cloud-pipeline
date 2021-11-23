@@ -44,7 +44,6 @@ function UserManagementForm (
       <Alert type="error" message="Access is denied" />
     );
   }
-  console.log('isReader:', isReader);
   return (
     <Provider roles={roles}>
       <SubSettings

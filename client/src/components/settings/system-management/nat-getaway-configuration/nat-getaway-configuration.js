@@ -377,7 +377,7 @@ export default class NATGetaway extends React.Component {
                   title={col.prettyName || col.name}
                   dataIndex={col.name}
                   key={col.name}
-                  className={styles.column}
+                  className={classNames('internal-column', styles.column)}
                 />))
               }
             </ColumnGroup>
@@ -385,7 +385,7 @@ export default class NATGetaway extends React.Component {
               <Column
                 key="comment"
                 title="Comment"
-                className={styles.commentColumn}
+                className={classNames('nat-column', styles.commentColumn)}
                 dataIndex="description"
                 render={description => (
                   <Tooltip title={description}>
@@ -395,7 +395,7 @@ export default class NATGetaway extends React.Component {
               />
               <Column
                 key="remover"
-                className={styles.actionsColumn}
+                className={classNames('nat-column', styles.actionsColumn)}
                 render={(record) => !this.routeIsRemoved(record) ? (
                   <Button
                     type="danger"
