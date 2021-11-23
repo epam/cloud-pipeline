@@ -41,8 +41,7 @@ export default function checkUserStorage(settings, user) {
         if (/^(MOUNT_DISABLED|READ_ONLY)$/i.test(mountStatus)) {
           throw new CheckUserStorageStateError();
         } else {
-          throw new CheckUserStorageStateError();
-          // resolve();
+          return Promise.resolve(true);
         }
       })
       .catch(e => {
