@@ -30,6 +30,7 @@ from src.utilities.user_token_operations import UserTokenOperations
 
 from src.api.pipeline import Pipeline
 
+ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
 
 
@@ -53,13 +54,14 @@ class PipelineRunOperations(object):
             status_notifications_subject=None, status_notifications_body=None,
             run_as_user=None):
 
-        if run_as_user:
-            user = User.whoami()
-            user_groups = user.get('groups', [])
-            user_roles = [role.get('name') for role in user.get('roles', [])]
-            # Preserving old style impersonation for admin users. Specified user token is generated and used
-            # for impersonation rather than run as capability which is used for non-admin users.
-            if 'ROLE_ADMIN' in (user_groups + user_roles):
+        user = User.whoami()
+        user_groups = user.get('groups', [])
+        user_roles = [role.get('name') for role in user.get('roles', [])]
+        all_user_roles = set((user_groups + user_roles))
+
+        # Preserving old style impersonation for admin users. Specified user token is generated and used
+        # for impersonation rather than run as capability which is used for non-admin users.
+        if run_as_user and ROLE_ADMIN in all_user_roles:
                 UserTokenOperations().set_user_token(run_as_user)
                 run_as_user = None
 
@@ -69,6 +71,7 @@ class PipelineRunOperations(object):
         # This approach is used because we do not know parameters list beforehand
 
         run_params_dict = dict([(k.strip('-'), v) for k, v in zip(run_params[::2], run_params[1::2])])
+        cls._validate_run_params(run_params_dict, all_user_roles)
 
         if instance_count == 0:
             instance_count = None
@@ -430,3 +433,19 @@ class PipelineRunOperations(object):
             except RuntimeError:
                 pass
         return pipeline_name
+
+    @classmethod
+    def _validate_run_params(cls, run_params_dict, all_user_roles):
+        if ROLE_ADMIN in all_user_roles:
+            return
+        default_system_parameters_dict = {param.name: param for param in Pipeline.get_default_run_parameters()}
+        for name, value in run_params_dict.iteritems():
+            if name in default_system_parameters_dict:
+                default_system_parameter = default_system_parameters_dict[name]
+                if default_system_parameter.value != value:
+                    allowed_roles = default_system_parameter.roles
+                    if allowed_roles:
+                        if len(allowed_roles.intersection(all_user_roles)) == 0:
+                            click.echo('An error has occurred while starting a job: "{}" parameter'
+                                       ' is not permitted for overriding'.format(name), err=True)
+                            sys.exit(1)

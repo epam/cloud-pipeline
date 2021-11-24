@@ -19,6 +19,7 @@ from ..model.pipeline_model import PipelineModel
 from ..model.version_model import VersionModel
 from ..model.pipeline_run_parameters_model import PipelineRunParametersModel
 from ..model.pipeline_run_model import PipelineRunModel, PriceType
+from ..model.pipeline_run_parameter_model import PipelineRunParameterModel
 from ..model.datastorage_rule_model import DataStorageRuleModel
 from ..model.instance_price import InstancePrice
 from ..api.pipeline_run import PipelineRun
@@ -258,6 +259,16 @@ class Pipeline(API):
             api_url += '&config={}'.format(config_name)
         response_data = api.call(api_url, json.dumps(data))
         return InstancePrice.load(response_data['payload'])
+
+    @classmethod
+    def get_default_run_parameters(cls):
+        api = cls.instance()
+        response_data = api.call('/run/defaultParameters', None)
+        result = []
+        if 'payload' in response_data:
+            for parameter_json in response_data['payload']:
+                result.append(PipelineRunParameterModel.load_from_default_system_parameter(parameter_json))
+        return result
 
     @classmethod
     def __add_parent_node_params(cls, params, parent_node):
