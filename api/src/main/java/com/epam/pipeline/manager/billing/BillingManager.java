@@ -21,7 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
-import com.epam.pipeline.controller.vo.billing.BillingExportType;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -79,12 +78,8 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjuster;
@@ -105,16 +100,12 @@ import java.util.stream.Stream;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class BillingManager {
 
-    private static final BillingExportType FALLBACK_BILLING_EXPORT_TYPE = BillingExportType.RUN;
-    private static final List<BillingExportType> FALLBACK_BILLING_EXPORT_TYPES = Collections.singletonList(
-            FALLBACK_BILLING_EXPORT_TYPE);
-
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
 
     private final BillingHelper billingHelper;
-    private final Map<BillingExportType, BillingExporter> billingExporters;
+    private final BillingExportManager billingExportManager;
     private final MessageHelper messageHelper;
     private final MetadataManager metadataManager;
     private final GlobalSearchElasticHelper elasticHelper;
@@ -124,7 +115,7 @@ public class BillingManager {
 
     @Autowired
     public BillingManager(final BillingHelper billingHelper,
-                          final List<BillingExporter> billingExporters,
+                          final BillingExportManager billingExportManager,
                           final MessageHelper messageHelper,
                           final MetadataManager metadataManager,
                           final GlobalSearchElasticHelper globalSearchElasticHelper,
@@ -132,7 +123,7 @@ public class BillingManager {
                           final @Value("${billing.center.key}") String billingCenterKey,
                           final List<EntityBillingDetailsLoader> billingDetailsLoaders) {
         this.billingHelper = billingHelper;
-        this.billingExporters = CommonUtils.groupByKey(billingExporters, BillingExporter::getType);
+        this.billingExportManager = billingExportManager;
         this.messageHelper = messageHelper;
         this.metadataManager = metadataManager;
         this.elasticHelper = globalSearchElasticHelper;
@@ -182,44 +173,7 @@ public class BillingManager {
     }
 
     public ResultWriter export(final BillingExportRequest request) {
-        final List<BillingExportType> exportTypes = getBillingExportTypes(request);
-        final List<BillingExporter> exporters = exportTypes.stream()
-                .map(this::getBillingExporter)
-                .collect(Collectors.toList());
-        Assert.isTrue(CollectionUtils.isNotEmpty(exporters),
-                messageHelper.getMessage(MessageConstants.ERROR_BILLING_EXPORT_TYPES_MISSING));
-        return ResultWriter.unchecked(exporters.stream()
-                        .map(BillingExporter::getType)
-                        .map(Enum::name)
-                        .map(String::toLowerCase)
-                        .collect(Collectors.joining(".", "billing.", ".csv")),
-                out -> export(request, out, exporters));
-    }
-
-    private void export(final BillingExportRequest request,
-                        final OutputStream out,
-                        final List<BillingExporter> exporters) {
-        try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
-             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter)) {
-            exporters.forEach(exporter -> exporter.export(request, bufferedWriter));
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new SearchException(e.getMessage(), e);
-        }
-    }
-
-    private List<BillingExportType> getBillingExportTypes(final BillingExportRequest request) {
-        return Optional.ofNullable(request)
-                .map(BillingExportRequest::getTypes)
-                .orElse(FALLBACK_BILLING_EXPORT_TYPES);
-    }
-
-    private BillingExporter getBillingExporter(final BillingExportType exportType) {
-        return Optional.ofNullable(exportType).map(Optional::of)
-                .orElse(Optional.of(FALLBACK_BILLING_EXPORT_TYPE))
-                .map(billingExporters::get)
-                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                        MessageConstants.ERROR_BILLING_EXPORT_TYPE_NOT_SUPPORTED, exportType)));
+        return billingExportManager.export(request);
     }
 
     public List<String> getAllBillingCenters() {

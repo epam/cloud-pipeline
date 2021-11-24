@@ -1,13 +1,9 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
-import com.epam.pipeline.controller.vo.billing.BillingExportType;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.InstanceBilling;
 import com.epam.pipeline.entity.billing.InstanceBillingMetrics;
-import com.epam.pipeline.exception.search.SearchException;
-import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -29,8 +25,6 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.Writer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -45,34 +39,13 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class InstanceBillingExporter implements BillingExporter {
+public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
 
-    @Getter
-    private final BillingExportType type = BillingExportType.INSTANCE;
     private final BillingHelper billingHelper;
-    private final GlobalSearchElasticHelper elasticHelper;
 
     @Override
-    public void export(final BillingExportRequest request, final Writer writer) {
-        final InstanceBillingWriter billingWriter = new InstanceBillingWriter(writer,
-                request.getFrom(), request.getTo());
-        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
-            billingWriter.writeHeader();
-            billings(elasticSearchClient, request).forEach(billingWriter::write);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new SearchException(e.getMessage(), e);
-        } finally {
-            try {
-                billingWriter.flush();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private Stream<InstanceBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                             final BillingExportRequest request) {
+    public Stream<InstanceBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                            final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());

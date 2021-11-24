@@ -1,14 +1,10 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
-import com.epam.pipeline.controller.vo.billing.BillingExportType;
-import com.epam.pipeline.entity.billing.BillingCenterGeneralBilling;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.GeneralBillingMetrics;
+import com.epam.pipeline.entity.billing.UserGeneralBilling;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import com.epam.pipeline.exception.search.SearchException;
-import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -29,8 +25,6 @@ import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucke
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.Writer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -44,70 +38,58 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BillingCenterBillingExporter implements BillingExporter {
+public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
 
     private static final String DOC_TYPE = "doc_type";
-    private static final String SYNTHETIC_TOTAL_BILLING_CENTER = "Grand total";
-    private static final String MISSING_BILLING_CENTER = "unknown";
+    private static final String SYNTHETIC_TOTAL_USER = "Grand total";
+    private static final String MISSING_USER = "unknown";
 
-    @Getter
-    private final BillingExportType type = BillingExportType.BILLING_CENTER;
     private final BillingHelper billingHelper;
-    private final GlobalSearchElasticHelper elasticHelper;
+    private final UserBillingDetailsLoader userBillingDetailsLoader;
 
     @Override
-    public void export(final BillingExportRequest request, final Writer writer) {
-        final BillingCenterBillingWriter billingWriter = new BillingCenterBillingWriter(writer,
-                request.getFrom(), request.getTo());
-        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
-            billingWriter.writeHeader();
-            billings(elasticSearchClient, request).forEach(billingWriter::write);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new SearchException(e.getMessage(), e);
-        } finally {
-            try {
-                billingWriter.flush();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private Stream<BillingCenterGeneralBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                                         final BillingExportRequest request) {
+    public Stream<UserGeneralBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                               final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
         return billings(elasticSearchClient, from, to, filters);
     }
 
-    private Stream<BillingCenterGeneralBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                                         final LocalDate from,
-                                                         final LocalDate to,
-                                                         final Map<String, List<String>> filters) {
+    private Stream<UserGeneralBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                                final LocalDate from,
+                                                final LocalDate to,
+                                                final Map<String, List<String>> filters) {
         return Optional.of(getRequest(from, to, filters))
                 .map(billingHelper.searchWith(elasticSearchClient))
                 .map(this::billings)
                 .orElseGet(Stream::empty);
     }
 
-    private Stream<BillingCenterGeneralBilling> billings(final SearchResponse response) {
-        final Stream<BillingCenterGeneralBilling> billings = Optional.ofNullable(response.getAggregations())
-                .map(it -> it.get(BillingGrouping.BILLING_CENTER.getCorrespondingField()))
+    private Stream<UserGeneralBilling> billings(final SearchResponse response) {
+        final Stream<UserGeneralBilling> billings = Optional.ofNullable(response.getAggregations())
+                .map(it -> it.get(BillingGrouping.USER.getCorrespondingField()))
                 .filter(ParsedStringTerms.class::isInstance)
                 .map(ParsedStringTerms.class::cast)
                 .map(ParsedTerms::getBuckets)
                 .map(Collection::stream)
                 .orElse(Stream.empty())
-                .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()));
-        final Stream<BillingCenterGeneralBilling> totalBillings = Stream.of(getBilling(
-                SYNTHETIC_TOTAL_BILLING_CENTER, response.getAggregations()));
+                .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()))
+                .map(this::withDetails);
+        final Stream<UserGeneralBilling> totalBillings = Stream.of(getBilling(SYNTHETIC_TOTAL_USER,
+                response.getAggregations()));
         return Stream.concat(billings, totalBillings);
     }
 
-    private BillingCenterGeneralBilling getBilling(final String name, final Aggregations aggregations) {
-        return BillingCenterGeneralBilling.builder()
+    private UserGeneralBilling withDetails(final UserGeneralBilling billing) {
+        final Map<String, String> details = userBillingDetailsLoader.loadInformation(billing.getName(), true);
+        return billing.toBuilder()
+                .billingCenter(details.get(BillingGrouping.BILLING_CENTER.getCorrespondingField()))
+                .build();
+    }
+
+    private UserGeneralBilling getBilling(final String name, final Aggregations aggregations) {
+        return UserGeneralBilling.builder()
                 .name(name)
                 .totalMetrics(GeneralBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
@@ -151,9 +133,9 @@ public class BillingCenterBillingExporter implements BillingExporter {
                 .source(new SearchSourceBuilder()
                         .size(0)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
-                        .aggregation(billingHelper.aggregateBy(BillingGrouping.BILLING_CENTER.getCorrespondingField())
+                        .aggregation(billingHelper.aggregateBy(BillingGrouping.USER.getCorrespondingField())
                                 .size(Integer.MAX_VALUE)
-                                .missing(MISSING_BILLING_CENTER)
+                                .missing(MISSING_USER)
                                 .subAggregation(aggregateBillingsByMonth())
                                 .subAggregation(aggregateRunCountSumBucket())
                                 .subAggregation(aggregateRunUsageSumBucket())

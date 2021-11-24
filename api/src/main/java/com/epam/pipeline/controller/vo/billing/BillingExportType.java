@@ -7,5 +7,6 @@ public enum BillingExportType {
     INSTANCE,
     PIPELINE,
     TOOL,
-    STORAGE
+    STORAGE,
+    BLANK
 }
