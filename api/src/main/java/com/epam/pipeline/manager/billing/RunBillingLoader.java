@@ -12,15 +12,12 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -73,7 +70,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                 .indicesOptions(IndicesOptions.strictExpandOpen())
                 .indices(billingHelper.runIndicesByDate(from, to))
                 .source(new SearchSourceBuilder()
-                        .size(0)
+                        .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
                         .aggregation(billingHelper.aggregateCardinalityByRunId()));
     }
@@ -104,7 +101,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                 .indicesOptions(IndicesOptions.strictExpandOpen())
                 .indices(billingHelper.runIndicesByDate(from, to))
                 .source(new SearchSourceBuilder()
-                        .size(0)
+                        .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
                         .aggregation(billingHelper.aggregatePartitionByRunId(partition, numberOfPartitions)
                                 .subAggregation(billingHelper.aggregateCostSum())
@@ -113,15 +110,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
     }
 
     private Stream<RunBilling> billings(final SearchResponse response) {
-        return Optional.ofNullable(response.getAggregations())
-                .map(it -> it.get(BillingHelper.RUN_ID_FIELD))
-                .filter(ParsedStringTerms.class::isInstance)
-                .map(ParsedStringTerms.class::cast)
-                .map(ParsedTerms::getBuckets)
-                .map(Collection::stream)
-                .orElse(Stream.empty())
-                .filter(bucket -> bucket.getKey() instanceof String)
-                .map(bucket -> getRunBilling((String) bucket.getKey(), bucket.getAggregations()));
+        return billingHelper.termBuckets(response.getAggregations(), BillingHelper.RUN_ID_FIELD)
+                .map(bucket -> getRunBilling(bucket.getKeyAsString(), bucket.getAggregations()));
     }
 
     private RunBilling getRunBilling(final String id, final Aggregations aggregations) {
@@ -138,8 +128,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                 .instanceType(BillingUtils.asString(topHitFields.get(BillingHelper.INSTANCE_TYPE_FIELD)))
                 .started(BillingUtils.asDateTime(topHitFields.get(BillingHelper.STARTED_FIELD)))
                 .finished(BillingUtils.asDateTime(topHitFields.get(BillingHelper.FINISHED_FIELD)))
-                .duration(duration.orElse(0L))
-                .cost(cost.orElse(0L))
+                .duration(duration.orElse(NumberUtils.LONG_ZERO))
+                .cost(cost.orElse(NumberUtils.LONG_ZERO))
                 .build();
     }
 }

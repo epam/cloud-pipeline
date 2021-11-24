@@ -1,6 +1,6 @@
 package com.epam.pipeline.manager.billing;
 
-import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
@@ -8,23 +8,30 @@ import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.NumericMetricsAggregation;
+import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.aggregations.metrics.cardinality.CardinalityAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
@@ -32,18 +39,20 @@ import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCountAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
+import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.avg.AvgBucketPipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +65,10 @@ import java.util.stream.Stream;
 @Service
 public class BillingHelper {
 
+    public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
+    public static final String SYNTHETIC_TOTAL_BILLING = "Grand total";
+    public static final String MISSING_VALUE = "unknown";
+    public static final String DOC_TYPE = "doc_type";
     public static final String COST_FIELD = "cost";
     public static final String ACCUMULATED_COST = "accumulatedCost";
     public static final String RUN_USAGE_AGG = "usage_runs";
@@ -96,7 +109,6 @@ public class BillingHelper {
     public static final String RUN = "run";
     public static final String STORAGE = "storage";
     public static final String RUNS = "runs";
-    public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
     public static final String RUN_COST_AGG = "cost_runs";
     public static final String STORAGE_COST_AGG = "cost_storages";
     public static final String HISTOGRAM_AGGREGATION_FORMAT = "yyyy-MM";
@@ -207,6 +219,19 @@ public class BillingHelper {
                 .to(to, true);
     }
 
+    private TermsQueryBuilder queryRunTerms() {
+        return queryDocTypeTerms(SearchDocumentType.PIPELINE_RUN.name());
+    }
+
+    private TermsQueryBuilder queryStorageTerms() {
+        return queryDocTypeTerms(SearchDocumentType.S3_STORAGE.name(), SearchDocumentType.AZ_BLOB_STORAGE.name(),
+                SearchDocumentType.NFS_STORAGE.name(), SearchDocumentType.GS_STORAGE.name());
+    }
+
+    private TermsQueryBuilder queryDocTypeTerms(final String... docTypes) {
+        return QueryBuilders.termsQuery(DOC_TYPE, docTypes);
+    }
+
     public TermsAggregationBuilder aggregateBy(final String field) {
         return AggregationBuilders.terms(field)
                 .field(field);
@@ -218,7 +243,7 @@ public class BillingHelper {
                 .includeExclude(new IncludeExclude(partition, numberOfPartitions))
                 .order(BucketOrder.aggregation(COST_FIELD, false))
                 .size(Integer.MAX_VALUE)
-                .minDocCount(1);
+                .minDocCount(NumberUtils.LONG_ONE);
     }
 
     public DateHistogramAggregationBuilder aggregateByMonth() {
@@ -227,7 +252,7 @@ public class BillingHelper {
                 .dateHistogramInterval(DateHistogramInterval.MONTH)
                 .format(HISTOGRAM_AGGREGATION_FORMAT)
                 .order(BucketOrder.key(true))
-                .minDocCount(1L);
+                .minDocCount(NumberUtils.LONG_ONE);
     }
 
     public CardinalityAggregationBuilder aggregateCardinalityByRunId() {
@@ -262,6 +287,58 @@ public class BillingHelper {
         return lastByDateDocAggregation;
     }
 
+    public FilterAggregationBuilder aggregateFilteredRuns() {
+        return AggregationBuilders.filter(BillingHelper.RUN_COST_AGG, queryRunTerms());
+    }
+
+    public FilterAggregationBuilder aggregateFilteredStorages() {
+        return AggregationBuilders.filter(BillingHelper.STORAGE_COST_AGG, queryStorageTerms());
+    }
+
+    public AvgAggregationBuilder aggregateStorageUsageAvg() {
+        return AggregationBuilders.avg(BillingHelper.STORAGE_USAGE_AGG)
+                .field(BillingHelper.STORAGE_USAGE_FIELD);
+    }
+
+    public BucketSortPipelineAggregationBuilder aggregateCostSortBucket() {
+        return PipelineAggregatorBuilders.bucketSort(BillingHelper.SORT_AGG, Collections.singletonList(
+                new FieldSortBuilder(BillingHelper.COST_FIELD).order(SortOrder.DESC)));
+    }
+
+    public SumBucketPipelineAggregationBuilder aggregateRunCountSumBucket() {
+        return PipelineAggregatorBuilders.sumBucket(BillingHelper.RUN_COUNT_AGG,
+                bucketsPath(BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.RUN_COUNT_AGG));
+    }
+
+    public SumBucketPipelineAggregationBuilder aggregateRunUsageSumBucket() {
+        return PipelineAggregatorBuilders.sumBucket(BillingHelper.RUN_USAGE_AGG,
+                bucketsPath(BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.RUN_USAGE_AGG));
+    }
+
+    public SumBucketPipelineAggregationBuilder aggregateRunCostSumBucket() {
+        return PipelineAggregatorBuilders.sumBucket(BillingHelper.RUN_COST_AGG,
+                bucketsPath(BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.RUN_COST_AGG, BillingHelper.COST_FIELD));
+    }
+
+    public SumBucketPipelineAggregationBuilder aggregateStorageCostSumBucket() {
+        return PipelineAggregatorBuilders.sumBucket(BillingHelper.STORAGE_COST_AGG,
+                bucketsPath(BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.STORAGE_COST_AGG, BillingHelper.COST_FIELD));
+    }
+
+    public SumBucketPipelineAggregationBuilder aggregateCostSumBucket() {
+        return PipelineAggregatorBuilders.sumBucket(BillingHelper.COST_FIELD,
+                bucketsPath(BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.COST_FIELD));
+    }
+
+    public AvgBucketPipelineAggregationBuilder aggregateStorageUsageAverageBucket() {
+        return PipelineAggregatorBuilders.avgBucket(BillingHelper.STORAGE_USAGE_AGG,
+                bucketsPath(BillingHelper.HISTOGRAM_AGGREGATION_NAME, BillingHelper.STORAGE_USAGE_AGG));
+    }
+
+    private String bucketsPath(final String... paths) {
+        return String.join(BillingHelper.ES_DOC_AGGS_SEPARATOR, paths);
+    }
+
     public Optional<Long> getRunUsageSum(final Aggregations aggregations) {
         return getLongValue(aggregations, RUN_USAGE_AGG);
     }
@@ -283,10 +360,7 @@ public class BillingHelper {
     }
 
     public Optional<Long> getLongValue(final Aggregations aggregations, final String aggregation) {
-        return Optional.ofNullable(aggregations)
-                .map(it -> it.get(aggregation))
-                .filter(NumericMetricsAggregation.SingleValue.class::isInstance)
-                .map(NumericMetricsAggregation.SingleValue.class::cast)
+        return getAggregation(aggregations, aggregation, NumericMetricsAggregation.SingleValue.class)
                 .map(NumericMetricsAggregation.SingleValue::value)
                 .filter(it -> !it.isInfinite())
                 .map(Double::longValue);
@@ -301,37 +375,25 @@ public class BillingHelper {
     }
 
     private Optional<Long> getFilteredCostSum(final Aggregations aggregations, final String aggregation) {
-        return Optional.ofNullable(aggregations)
-                .map(it -> it.get(aggregation))
-                .filter(ParsedFilter.class::isInstance)
-                .map(ParsedFilter.class::cast)
+        return getAggregation(aggregations, aggregation, ParsedFilter.class)
                 .map(ParsedFilter::getAggregations)
                 .flatMap(this::getCostSum);
     }
 
     public Optional<Long> getRunCount(final Aggregations aggregations) {
-        return Optional.ofNullable(aggregations)
-                .map(it -> it.get(RUN_COUNT_AGG))
-                .filter(NumericMetricsAggregation.SingleValue.class::isInstance)
-                .map(NumericMetricsAggregation.SingleValue.class::cast)
+        return getAggregation(aggregations, RUN_COUNT_AGG, NumericMetricsAggregation.SingleValue.class)
                 .map(NumericMetricsAggregation.SingleValue::value)
                 .map(Double::longValue);
     }
 
     public Optional<Integer> getCardinalityByRunId(final Aggregations aggregations) {
-        return Optional.ofNullable(aggregations)
-                .map(it -> it.get(CARDINALITY_AGG))
-                .filter(Cardinality.class::isInstance)
-                .map(Cardinality.class::cast)
+        return getAggregation(aggregations, CARDINALITY_AGG, Cardinality.class)
                 .map(Cardinality::getValue)
                 .map(Long::intValue);
     }
 
     public Map<String, Object> getLastByDateDocFields(final Aggregations aggregations) {
-        return Optional.ofNullable(aggregations)
-                .map(it -> it.get(LAST_BY_DATE_DOC_AGG))
-                .filter(TopHits.class::isInstance)
-                .map(TopHits.class::cast)
+        return getAggregation(aggregations, LAST_BY_DATE_DOC_AGG, TopHits.class)
                 .map(TopHits::getHits)
                 .map(SearchHits::getHits)
                 .map(Arrays::asList)
@@ -342,11 +404,36 @@ public class BillingHelper {
                 .orElseGet(Collections::emptyMap);
     }
 
+    public Stream<? extends Terms.Bucket> termBuckets(final Aggregations aggregations,
+                                                      final String aggregation) {
+        return getAggregation(aggregations, aggregation, Terms.class)
+                .map(Terms::getBuckets)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty);
+    }
+
+    public Stream<? extends Histogram.Bucket> histogramBuckets(final Aggregations aggregations,
+                                                               final String aggregation) {
+        return getAggregation(aggregations, aggregation, Histogram.class)
+                .map(Histogram::getBuckets)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty);
+    }
+
+    private <A> Optional<A> getAggregation(final Aggregations aggregations,
+                                           final String aggregation,
+                                           final Class<A> aggregationClass) {
+        return Optional.ofNullable(aggregations)
+                .map(it -> it.get(aggregation))
+                .filter(aggregationClass::isInstance)
+                .map(aggregationClass::cast);
+    }
+
     public Function<SearchRequest, SearchResponse> searchWith(final RestHighLevelClient elasticSearchClient) {
         return request -> {
             try {
                 log.debug("Billing request: {}", request);
-                return elasticSearchClient.search(request);
+                return elasticSearchClient.search(request, RequestOptions.DEFAULT);
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
                 throw new SearchException(e.getMessage(), e);
