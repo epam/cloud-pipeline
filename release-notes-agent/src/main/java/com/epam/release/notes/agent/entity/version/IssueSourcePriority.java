@@ -13,14 +13,8 @@
  * limitations under the License.
  */
 
-package com.epam.release.notes.agent.service.jira;
+package com.epam.release.notes.agent.entity.version;
 
-import com.epam.release.notes.agent.entity.jira.JiraIssue;
-
-import java.util.List;
-
-public interface JiraIssueService {
-
-    List<JiraIssue> fetchIssues(String version);
-
+public enum IssueSourcePriority {
+    NONE, GITHUB, JIRA
 }

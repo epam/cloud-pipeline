@@ -43,7 +43,7 @@ public class JiraIssueServiceImpl implements JiraIssueService {
     }
 
     @Override
-    public List<JiraIssue> fetchIssue(final String version) {
+    public List<JiraIssue> fetchIssues(final String version) {
         final JiraRequest jiraRequest = JiraRequest.builder()
                 .jql(format("cf[%s]~%s", jiraVersionCustomFieldId, version))
                 .build();

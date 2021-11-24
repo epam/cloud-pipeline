@@ -41,8 +41,7 @@ public class GitHubServiceImplTest {
     private static final int FIFTEEN = 0xf;
     private static final int FOURTEEN = 40;
     private static final String[] ISSUE_TEGS = {"issue #777", "Issue #888", "(issue #999)", "(Issue #7)"};
-    private static final String ISSUE_REGEX = "(?i)\\(?issue #.+";
-    private static final String ISSUE_NUMBER_REGEX = ".+#(\\d+).*";
+    private static final String ISSUE_NUMBER_REGEX = "(?i)\\(?issue[ \\-_]*#(\\d+).*";
     private static final String EMPTY_VALUE = "";
 
     private List<List<Commit>> randomCommitSource;
@@ -70,7 +69,7 @@ public class GitHubServiceImplTest {
         Mockito.when(gitHubApiClient.getIssue(Mockito.anyLong()))
                 .thenAnswer(invocation -> GitHubIssue.builder().number(invocation.getArgument(0)).build());
 
-        gitHubService = new GitHubServiceImpl(gitHubApiClient, ISSUE_REGEX, ISSUE_NUMBER_REGEX);
+        gitHubService = new GitHubServiceImpl(gitHubApiClient, ISSUE_NUMBER_REGEX);
     }
 
     @Test

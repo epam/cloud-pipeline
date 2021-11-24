@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,14 +30,11 @@ public class GitHubServiceImpl implements GitHubService {
 
     private static final int START_PAGE = 1;
 
-    private final String issueRegex;
     private final String issueNumberRegex;
     private final GitHubApiClient client;
 
     public GitHubServiceImpl(final GitHubApiClient client,
-                             @Value("${github.issue.regex:(?i)\\(?issue #.+}") final String issueRegex,
                              @Value("${github.issue.number.regex:.+#(\\d+).*}") final String issueNumberRegex) {
-        this.issueRegex = issueRegex;
         this.issueNumberRegex = issueNumberRegex;
         this.client = client;
     }
@@ -70,8 +68,8 @@ public class GitHubServiceImpl implements GitHubService {
     @Override
     public List<GitHubIssue> fetchIssues(final String shaCommitFrom, final String shaCommitTo) {
         return fetchCommits(shaCommitFrom, shaCommitTo).stream()
-                .filter(GitHubUtils.isIssueRelatedCommit(issueRegex))
                 .map(GitHubUtils.mapCommitToIssueNumber(issueNumberRegex))
+                .filter(Objects::nonNull)
                 .distinct()
                 .map(this::fetchIssue)
                 .collect(Collectors.toList());

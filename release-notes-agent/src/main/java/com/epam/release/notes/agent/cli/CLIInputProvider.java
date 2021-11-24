@@ -23,6 +23,7 @@ import java.util.List;
 
 public class CLIInputProvider implements InputProvider {
 
+    public static final String DELIMITER = " ";
     private final List<String> words;
 
     private boolean done;
@@ -43,7 +44,7 @@ public class CLIInputProvider implements InputProvider {
 
                 @Override
                 public String rawText() {
-                    return StringUtils.collectionToDelimitedString(words, " ");
+                    return StringUtils.collectionToDelimitedString(words, DELIMITER);
                 }
             };
         } else {

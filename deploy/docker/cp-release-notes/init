@@ -38,9 +38,9 @@ validate_properties "CP_NOTIFIER_SMTP_FROM"
 validate_properties "CP_NOTIFIER_SMTP_USER" "true"
 validate_properties "CP_NOTIFIER_SMTP_PASS" "true"
 
-RELEASE_NOTES_LOG=$CP_RELEASE_NOTES_HOME/logs/release-notes.log
+RELEASE_NOTES_LOG=$CP_RELEASE_NOTES_HOME/logs/release-notes-agent.log
 mkdir -p $(dirname $RELEASE_NOTES_LOG)
 touch $RELEASE_NOTES_LOG
 
 cd $CP_RELEASE_NOTES_HOME
-java -jar release-notes-agent.jar send-release-notes &>> $RELEASE_NOTES_LOG
+java $CP_RELEASE_NOTES_JAVA_OPTS -jar release-notes-agent.jar send-release-notes &>> $RELEASE_NOTES_LOG

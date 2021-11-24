@@ -18,7 +18,6 @@ package com.epam.release.notes.agent.service.github;
 import com.epam.release.notes.agent.entity.github.Commit;
 
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,21 +26,10 @@ import java.util.regex.Pattern;
  */
 public final class GitHubUtils {
 
-    private static final String ZERO = "0";
-    private static final int GROUP_OF_ISSUE_NUMBER_REGEX = 1;
-
     private GitHubUtils() {
     }
 
-    /**
-     * Returns a predicate that matches to issue-related commits.
-     *
-     * @param issueRegex the regex that detects an issue-related commit
-     * @return the predicate that matches to issue-related commits
-     */
-    public static Predicate<Commit> isIssueRelatedCommit(final String issueRegex) {
-        return commit -> commit.getCommitMessage().matches(issueRegex);
-    }
+    private static final int GROUP_OF_ISSUE_NUMBER_REGEX = 1;
 
     /**
      * Returns a function that extracts an issue number from the issue-related commit.
@@ -55,7 +43,7 @@ public final class GitHubUtils {
             if (matcher.find()) {
                 return matcher.group(GROUP_OF_ISSUE_NUMBER_REGEX);
             }
-            return ZERO;
+            return null;
         };
     }
 }

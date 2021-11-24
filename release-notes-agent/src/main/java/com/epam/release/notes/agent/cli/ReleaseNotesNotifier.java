@@ -17,6 +17,7 @@ package com.epam.release.notes.agent.cli;
 import com.epam.release.notes.agent.entity.action.Action;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
+import com.epam.release.notes.agent.entity.version.IssueSourcePriority;
 import com.epam.release.notes.agent.entity.version.Version;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
 import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
@@ -25,15 +26,12 @@ import com.epam.release.notes.agent.service.github.GitHubService;
 import com.epam.release.notes.agent.service.jira.JiraIssueService;
 import com.epam.release.notes.agent.service.version.ApplicationVersionService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -45,20 +43,24 @@ public class ReleaseNotesNotifier {
     private final GitHubService gitHubService;
     private final JiraIssueService jiraIssueService;
     private final ActionServiceProvider actionServiceProvider;
+    private final IssueSourcePriority sourcePriority;
 
     public ReleaseNotesNotifier(final ApplicationVersionService applicationVersionService,
                                 final GitHubService gitHubService,
                                 final JiraIssueService jiraIssueService,
-                                final ActionServiceProvider actionServiceProvider) {
+                                final ActionServiceProvider actionServiceProvider,
+                                @Value("${release.notes.agent.issue.source.priority:NONE}")
+                                final IssueSourcePriority sourcePriority) {
         this.applicationVersionService = applicationVersionService;
         this.gitHubService = gitHubService;
         this.jiraIssueService = jiraIssueService;
         this.actionServiceProvider = actionServiceProvider;
+        this.sourcePriority = sourcePriority;
     }
 
     @ShellMethod(
             key = "send-release-notes",
-            value = "Grab and post/publish release notes information to specified users.")
+            value = "Grabs release notes from GitHub and Jira sources, and sends information to specified users.")
     public void sendReleaseNotes() {
 
         final Version old = applicationVersionService.loadPreviousVersion();
@@ -77,15 +79,16 @@ public class ReleaseNotesNotifier {
                 "Creating release notes report. Old current: %s, new current: %s.",
                 old.getSha(), current.getSha()));
         final List<GitHubIssue> gitHubIssues = gitHubService.fetchIssues(current.getSha(), old.getSha());
-        final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssue(current.toString());
+        final List<JiraIssue> jiraIssues = jiraIssueService.fetchIssues(current.toString());
         log.debug(format("There are: %s github and %s jira issues to process.",
                 gitHubIssues.size(), jiraIssues.size()));
         final VersionStatusInfo versionStatusInfo = VersionStatusInfo.builder()
                         .oldVersion(old.toString())
                         .newVersion(current.toString())
-                        .jiraIssues(filterJiraIssues(gitHubIssues, jiraIssues))
+                        .jiraIssues(jiraIssues)
                         .gitHubIssues(gitHubIssues)
                         .versionStatus(versionStatus)
+                        .sourcePriority(sourcePriority)
                         .build();
         performAction(Collections.singletonList(Action.POST), versionStatusInfo);
         applicationVersionService.storeVersion(current);
@@ -95,20 +98,5 @@ public class ReleaseNotesNotifier {
         actions.stream()
                 .map(action -> actionServiceProvider.getActionService(action.getName()))
                 .forEach(service -> service.process(versionStatusInfo));
-    }
-
-    private List<JiraIssue> filterJiraIssues(final List<GitHubIssue> gitHubIssues, final List<JiraIssue> jiraIssues) {
-        final Set<Long> githubIssueNumbers = gitHubIssues.stream()
-                .map(GitHubIssue::getNumber)
-                .collect(Collectors.toCollection(HashSet::new));
-        return jiraIssues.stream()
-                .filter(j -> isIssueGithubDuplicate(githubIssueNumbers, j))
-                .collect(Collectors.toList());
-    }
-
-    private boolean isIssueGithubDuplicate(final Set<Long> githubIssueNumbers, final JiraIssue jiraIssue) {
-        return StringUtils.isBlank(jiraIssue.getGithubId())
-                || !StringUtils.isNumeric(jiraIssue.getGithubId())
-                || !githubIssueNumbers.contains(Long.parseLong(jiraIssue.getGithubId()));
     }
 }

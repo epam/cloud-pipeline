@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM openjdk:8u312-jdk-slim
+FROM openjdk:8
 
 ARG CP_API_DIST_URL=""
 ENV CP_RELEASE_NOTES_HOME="/opt/release-notes-agent"

@@ -17,4 +17,5 @@ public class VersionStatusInfo {
     List<JiraIssue> jiraIssues;
     List<GitHubIssue> gitHubIssues;
     VersionStatus versionStatus;
+    IssueSourcePriority sourcePriority;
 }

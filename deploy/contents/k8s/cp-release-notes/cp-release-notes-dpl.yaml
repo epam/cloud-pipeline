@@ -8,10 +8,11 @@ spec:
   startingDeadlineSeconds: 300
   successfulJobsHistoryLimit: 1
   # set to 0 since https://github.com/kubernetes/kubernetes/issues/53331 is in place
-  failedJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 1
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
+      backoffLimit: 0
       template:
         metadata:
           namespace: default

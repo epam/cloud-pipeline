@@ -3,6 +3,7 @@ package com.epam.release.notes.agent.service.action.mail;
 import com.epam.release.notes.agent.entity.github.GitHubIssue;
 import com.epam.release.notes.agent.entity.jira.JiraIssue;
 import com.epam.release.notes.agent.entity.mail.EmailContent;
+import com.epam.release.notes.agent.entity.version.IssueSourcePriority;
 import com.epam.release.notes.agent.entity.version.VersionStatus;
 import com.epam.release.notes.agent.entity.version.VersionStatusInfo;
 import org.junit.jupiter.api.Assertions;
@@ -35,10 +36,10 @@ public class EmailTemplateNotificationServiceTest {
     private static final String NEW_MINOR_VERSION = "55.55.55.56.a";
     private static final String NEW_MAJOR_VERSION = "56.55.55.55.a";
     private static final String RESOLVER_PREFIX = "mail/";
-    private static final String EMAIL_TO_ADMIN_TEMPLATE_NAME = "/email-release-notification-major-change.html";
-    private static final String EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME = "/email-release-notification-minor-change.html";
-    private static final String EMAIL_TO_ADMIN_TITLE = "email to admin";
-    private static final String EMAIL_TO_SUBSCRIBERS_TITLE = "email to subscribers";
+    private static final String MAJOR_CHANGE_EMAIL_TEMPLATE_NAME = "/email-release-notification-major-change.html";
+    private static final String MINOR_CHANGE_EMAIL_TEMPLATE_NAME = "/email-release-notification-minor-change.html";
+    private static final String MAJOR_CHANGE_EMAIL_TITLE = "email to admin";
+    private static final String MINOR_CHANGE_EMAIL_TITLE = "email to subscribers";
     private static final String ONE = "1";
     private static final String TWO = "2";
     private static final String SMTH = "smth";
@@ -57,8 +58,8 @@ public class EmailTemplateNotificationServiceTest {
         final TemplateEngine actualTemplateEngine = constructTemplateEngine(srcPath, new FileTemplateResolver());
         expectedTemplateEngine = constructTemplateEngine(RESOLVER_PREFIX, new ClassLoaderTemplateResolver());
         actualEmailTemplateNotificationService = new EmailTemplateNotificationService(actualTemplateEngine,
-                EMAIL_TO_ADMIN_TEMPLATE_NAME, EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME,
-                EMAIL_TO_ADMIN_TITLE, EMAIL_TO_SUBSCRIBERS_TITLE, ADMIN_MAILS, SUBSCRIBERS_MAILS);
+                MAJOR_CHANGE_EMAIL_TEMPLATE_NAME, MINOR_CHANGE_EMAIL_TEMPLATE_NAME,
+                MAJOR_CHANGE_EMAIL_TITLE, MINOR_CHANGE_EMAIL_TITLE, ADMIN_MAILS, SUBSCRIBERS_MAILS);
     }
 
     @ParameterizedTest
@@ -73,6 +74,7 @@ public class EmailTemplateNotificationServiceTest {
                 .jiraIssues(jiraIssues)
                 .gitHubIssues(gitHubIssues)
                 .versionStatus(versionStatus)
+                .sourcePriority(IssueSourcePriority.NONE)
                 .build();
         final EmailContent emailContent = actualEmailTemplateNotificationService.populate(versionStatusInfo);
         assertEquals(expectedEmailBody, emailContent.getBody());
@@ -89,6 +91,7 @@ public class EmailTemplateNotificationServiceTest {
                 .jiraIssues(Collections.emptyList())
                 .gitHubIssues(Collections.emptyList())
                 .versionStatus(VersionStatus.NOT_CHANGED)
+                .sourcePriority(IssueSourcePriority.GITHUB)
                 .build();
         final Throwable thrown = Assertions.assertThrows(IllegalStateException.class,
             () -> actualEmailTemplateNotificationService.populate(versionStatusInfo));
@@ -109,33 +112,33 @@ public class EmailTemplateNotificationServiceTest {
                         Collections.emptyList(),
                         Collections.emptyList(),
                         VersionStatus.MINOR_CHANGED,
-                        expectedTemplateEngine.process(EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME, getContext(
+                        expectedTemplateEngine.process(MINOR_CHANGE_EMAIL_TEMPLATE_NAME, getContext(
                                 NEW_MINOR_VERSION, Collections.emptyList(), Collections.emptyList())),
-                        EMAIL_TO_SUBSCRIBERS_TITLE),
+                        MINOR_CHANGE_EMAIL_TITLE),
                 Arguments.of(
                         OLD_VERSION,
                         NEW_MINOR_VERSION,
                         null, null,
                         VersionStatus.MINOR_CHANGED,
-                        expectedTemplateEngine.process(EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME, getContext(
+                        expectedTemplateEngine.process(MINOR_CHANGE_EMAIL_TEMPLATE_NAME, getContext(
                                 NEW_MINOR_VERSION, null, null)),
-                        EMAIL_TO_SUBSCRIBERS_TITLE),
+                        MINOR_CHANGE_EMAIL_TITLE),
                 Arguments.of(OLD_VERSION,
                         NEW_MAJOR_VERSION,
                         Collections.emptyList(),
                         Collections.emptyList(),
                         VersionStatus.MAJOR_CHANGED,
-                        expectedTemplateEngine.process(EMAIL_TO_ADMIN_TEMPLATE_NAME, getContext(
+                        expectedTemplateEngine.process(MAJOR_CHANGE_EMAIL_TEMPLATE_NAME, getContext(
                                 NEW_MAJOR_VERSION, Collections.emptyList(), Collections.emptyList())),
-                        EMAIL_TO_ADMIN_TITLE),
+                        MAJOR_CHANGE_EMAIL_TITLE),
                 Arguments.of(OLD_VERSION,
                         NEW_MINOR_VERSION,
                         jiraIssues,
                         gitHubIssues,
                         VersionStatus.MINOR_CHANGED,
-                        expectedTemplateEngine.process(EMAIL_TO_SUBSCRIBERS_TEMPLATE_NAME, getContext(
+                        expectedTemplateEngine.process(MINOR_CHANGE_EMAIL_TEMPLATE_NAME, getContext(
                                 NEW_MINOR_VERSION, jiraIssues, gitHubIssues)),
-                        EMAIL_TO_SUBSCRIBERS_TITLE)
+                        MINOR_CHANGE_EMAIL_TITLE)
         );
     }
 
