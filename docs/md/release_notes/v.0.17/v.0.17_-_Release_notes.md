@@ -23,6 +23,7 @@
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [Disable Hyper-Threading](#disable-hyper-threading)
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
+- [Resolve variables for a rerun](#resolve-variables-for-a-rerun)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -618,34 +619,82 @@ For more details and examples see [here](../../manual/14_CLI/14.10._SSH_tunnel.m
 
 In the current version, several enhancements were implemented for the Metadata objects displaying and working with:
 
-- controls placement was reorganized:
-    - several controls (for adding a new instance, upload and delete metadata, transfer to the cloud and showing attributes) were moved to **Additional parameters** control (gear icon):  
+### Controls placement reorganization
+
+- Several controls (for adding a new instance, upload and delete metadata, transfer to the cloud and showing attributes) were moved to **Additional parameters** control (gear icon):  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_04.png)  
     See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#additional-options).
-    - **Bulk operation panel** is hidden/disabled until at least one instance is selected in a table, e.g.:  
+- **Bulk operation panel** is hidden/disabled until at least one instance is selected in a table, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_05.png)  
     To manage selected items, click the **V** button next to the "**Show only selected items**" control to open the corresponding menu:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_06.png)  
     See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#bulk-operation-panel).
-- the ability is implemented to show separately only selected metadata instances. All unselected items will be hidden. For that: select items of interest (they can be at different pages too) and click the "**Show only selected items**" button at the **Bulk operation** panel, e.g.:  
+
+### Ability to show only selected instances
+
+The ability is implemented to show separately only selected metadata instances. All unselected items will be hidden. For that: select items of interest (they can be at different pages too) and click the "**Show only selected items**" button at the **Bulk operation** panel, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_07.png)  
     For shown selected items, all functionality as for the general table is available except filtering.
-- search over the metadata was improved:  
-    - users can search over any attribute values (not only over `ID` as previously)
-    - the metadata search field supports multiple terms search - in this case, multiple terms for the search should be specified space separated, e.g. `sample1 sample2`
-    - the metadata search field supports a `key:value` search, where `key` is an attribute name (column header) and `value` is a term that shall be searched in that attribute values, e.g. `ID:D703`  
+
+### Improvements in the search over the metadata
+
+- users can search over any attribute values (not only over `ID` as previously)
+- the metadata search field supports multiple terms search - in this case, multiple terms for the search should be specified space separated, e.g. `sample1 sample2`
+- the metadata search field supports a `key:value` search, where `key` is an attribute name (column header) and `value` is a term that shall be searched in that attribute values, e.g. `ID:D703`  
     See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#search-field).
-- the ability is implemented to filter instances of an entity in a table. Now, user can click a special control in a header of the desired column and set one or several filters for the column values - to restrict the output table, e.g.:  
+
+### Ability to filter instances
+
+The ability is implemented to filter instances of an entity in a table. Now, user can click a special control in a header of the desired column and set one or several filters for the column values - to restrict the output table, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_08.png)  
     See details [here](../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table.md#filter-instances).
-- for all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
+
+### Displaying of the creation date info
+
+For all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_01.png)
-- in some cases, it could be convenient not to specify entity ID during import. Therefore Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
+
+### Sorting by several columns
+
+Ability to sort a list of entities by several columns is implemented. For that, a list is being sorted by one column, then user should click the second column he(she) wants to sort by, then the third, etc.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_09.png)  
+    See details [here](../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table.md#metadata-table-sorting).
+
+### Autofill
+
+An autofill feature for metadata cells was implemented. It allows to fill metadata instances with data that are based on data in other instances in the same column/row, e.g.:
+
+- click the right-bottom corner of the cell you wish to copy and move the mouse holding the left button - vertically or horizontally, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_10.png)
+- once you will release the mouse button - selected cells will be autofilled by the value of the cell that you've dragged:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_11.png)  
+    See details [here](../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items.md#field-values-autofill).
+
+### Entity ID autogeneration
+
+In some cases, it could be convenient not to specify entity ID during import. Therefore Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_02.png)  
     See after the creation:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+### Preselect instances for a rerun
+
+Additionally, if metadata instances were used for the run via the expansion expressions in the parameters - then for the rerun of such run, the ability to choose was implemented - to use the same resolved expressions values from the initial run or preselect another metadata instance(s) for a coming rerun, e.g.:  
+
+- imagine, that some run was launched from the detached configuration. Moreover, one configuration parameter uses the expansion expression:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_12.png)
+- for the run, some instance was selected
+- after the run is completed, user tries to rerun this run. The **Launch** form will appear. By default, parameters are substituted fully the same as they were in the initial run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_13.png)  
+    If click the **Launch** button in this case - during the rerun, all parameter(s) will use their resolved values from the initial run (previous behavior).
+- but now, the ability to preselect another metadata instance for the re-launch is implemented. For that, user can click "**v**" button near the launch button and in the appeared list click "**Select metadata entries and launch**" item:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_14.png)  
+    In this case, the pop-up will appear to select a metadata instance for which the rerun will be launched. And during the rerun, all parameter(s) that use expansion expression(s) will be resolved according to a new selected metadata instance(s):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_15.png)
+
+See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#preselect-metadata-instances-for-a-rerun).
 
 ## Custom node images
 
@@ -802,6 +851,21 @@ This feature doesn't require additional actions from the user side. Only `$ANALY
 
 Additionally, a new system parameter was added - **`CP_EXEC_TIMEOUT`**. This parameter allows to define a timeout period after which the job shall be stopped. The essence of the parameter is the same as the configured value in the "**Timeout**" field. If both values are specified - for a job, `CP_EXEC_TIMEOUT` value will be used:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_Timeout_01.png)
+
+## Resolve variables for a rerun
+
+Previously, if the user launched some job containing environment variables in its parameters and then, after the job was completed, user tried to rerun that job - all environment variables from the job parameters had been resolving again during the new run.  
+But for some cases, it might be needed to use in the rerun all the same values of environment variables that were in the initial run.  
+In the current version, the ability to choose was implemented - for the rerun, to resolve such variables in a new run or use their initial values.
+
+For that, when user tries to rerun some completed run that used environment variables in its parameters - at the **Launch** form, the checkbox "**Use resolved values**" appears in the **_Parameters_** section, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResolveVariablesRerun_1.png)  
+    By default, this checkbox is disabled. In this case, all environment variables are shown as is and will be resolved only during the new (re-launched) run - with the values corresponding to this new run.
+
+If this checkbox is ticked, all environment variables will be resolved with the values of the initial run. Correspondingly, parameters that use environment variables will not be changed during the new launch, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResolveVariablesRerun_2.png)
+
+See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#resolve-variables-for-a-rerun).
 
 ## AWS: seamless authentication
 
