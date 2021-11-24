@@ -77,7 +77,7 @@ fi
 
 # Copy backup script to the target pod
 TARGET_POD="${TARGET_PODS_NAMES[0]}"
-/kubectl cp "$SOURCE_BKP_SCRIPT" "$TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
+/kubectl cp "$SOURCE_BKP_SCRIPT" "$TARGET_POD:$TARGET_BKP_SCRIPT_NAME" $CP_BKP_SERVICE_KUBECTL_ARGS
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot copy the backup script from $SOURCE_BKP_SCRIPT to $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
     exit 1
@@ -85,7 +85,7 @@ fi
 
 # Do the backup
 rm -rf $CP_BKP_SERVICE_WD/cp-bkp-*
-bash -c "/kubectl exec -i $TARGET_POD -- bash $TARGET_BKP_SCRIPT_NAME"
+bash -c "/kubectl exec -i $TARGET_POD $CP_BKP_SERVICE_KUBECTL_ARGS -- bash $TARGET_BKP_SCRIPT_NAME"
 if [ $? -ne 0 ]; then
     echo "[ERROR] An error occured while executing the backup script at $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
     exit 1
