@@ -404,6 +404,8 @@ public class ToolManager implements SecuredEntityManager {
         final Tool tool = loadTool(registry, image);
         Assert.isTrue(tool.isAllowCommit(),
                       messageHelper.getMessage(MessageConstants.ERROR_COMMIT_OPERATION_IS_FORBIDDEN, image));
+        Assert.isTrue(findToolVersion(tool).map(ToolVersion::isAllowCommit).orElse(true),
+                      messageHelper.getMessage(MessageConstants.ERROR_COMMIT_OPERATION_IS_FORBIDDEN, image));
     }
 
     /**

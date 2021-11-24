@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -49,6 +50,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,6 +119,9 @@ public class ToolManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @SpyBean
+    private ToolVersionManager toolVersionManager;
 
     private DockerRegistry firstRegistry;
     private DockerRegistry secondRegistry;
@@ -805,20 +810,41 @@ public class ToolManagerTest extends AbstractManagerTest {
     @Test
     @Transactional
     public void testCommitOperationValidation() {
+        mockToolVersionSearch(ToolVersion.builder().allowCommit(true).build());
         final Tool tool = generateTool(TEST_GROUP_ID1);
         tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
-
-        toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage());
-        toolManager.validateCommitOperationAllowed(null, tool.getImage());
+        toolCommitValidationIsPassed(tool);
 
         tool.setAllowCommit(false);
         toolManager.updateTool(tool);
+        toolValidationIsExceptional(tool);
 
+        tool.setAllowCommit(true);
+        toolManager.updateTool(tool);
+
+        mockToolVersionSearch(null);
+        toolCommitValidationIsPassed(tool);
+
+        mockToolVersionSearch(ToolVersion.builder().allowCommit(false).build());
+        toolValidationIsExceptional(tool);
+    }
+
+    private void mockToolVersionSearch(final ToolVersion mockedVersion) {
+        Mockito.doReturn(Optional.ofNullable(mockedVersion))
+            .when(toolVersionManager).findToolVersion(Mockito.anyLong(), Mockito.anyString());
+    }
+
+    private void toolValidationIsExceptional(final Tool tool) {
         assertThrows(IllegalArgumentException.class,
-            () -> toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage()));
+                     () -> toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage()));
         assertThrows(IllegalArgumentException.class,
-            () -> toolManager.validateCommitOperationAllowed(null, tool.getImage()));
+                     () -> toolManager.validateCommitOperationAllowed(null, tool.getImage()));
+    }
+
+    private void toolCommitValidationIsPassed(final Tool tool) {
+        toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage());
+        toolManager.validateCommitOperationAllowed(null, tool.getImage());
     }
 
     private List<String> generateLabels(String... labels) {
