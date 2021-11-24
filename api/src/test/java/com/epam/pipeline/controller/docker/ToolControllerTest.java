@@ -466,12 +466,12 @@ public class ToolControllerTest extends AbstractControllerTest {
         final String content = getObjectMapper().writeValueAsString(settings);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(VERSION, TEST_STRING);
-        doReturn(toolVersion).when(mockToolApiService).createToolVersionSettings(ID, TEST_STRING, settings);
+        doReturn(toolVersion).when(mockToolApiService).createToolVersionSettings(ID, TEST_STRING, true, settings);
 
         final MvcResult mvcResult = performRequest(post(String.format(SETTINGS_TOOL_URL, ID))
                 .content(content).params(params));
 
-        verify(mockToolApiService).createToolVersionSettings(ID, TEST_STRING, settings);
+        verify(mockToolApiService).createToolVersionSettings(ID, TEST_STRING, true, settings);
         assertResponse(mvcResult, toolVersion, DockerCreatorUtils.TOOL_VERSION_INSTANCE_TYPE);
     }
 

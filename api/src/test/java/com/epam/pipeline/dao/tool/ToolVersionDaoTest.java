@@ -154,7 +154,7 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
         toolVersionDao.createToolVersion(toolVersion1);
 
         ToolVersion actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId);
+        validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId, true);
 
         ToolVersion toolVersionWithSameVersion = ToolVersion
                 .builder()
@@ -165,11 +165,12 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
                 .platform(TEST_PLATFORM)
                 .toolId(tool.getId())
                 .id(toolVersion1.getId())
+                .allowCommit(false)
                 .build();
 
         toolVersionDao.updateToolVersion(toolVersionWithSameVersion);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId);
+        validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId, false);
 
         toolVersionDao.deleteToolVersion(toolId, TEST_VERSION);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
@@ -184,9 +185,9 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
         toolVersionDao.createToolVersion(toolVersion2);
 
         ToolVersion actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId);
+        validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId, true);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION_2, TEST_LAST_MODIFIED_DATE, toolId);
+        validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION_2, TEST_LAST_MODIFIED_DATE, toolId, true);
 
         final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
                 Arrays.asList(TEST_VERSION, TEST_VERSION_2));
@@ -359,14 +360,15 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
     }
 
     private static void validateToolVersion(ToolVersion actual, String digest, Long size, String version,
-                                            Date modificationDate, Long toolId) {
+                                            Date modificationDate, Long toolId, boolean allowCommit) {
         assertThat(actual)
                 .isNotNull()
                 .hasFieldOrPropertyWithValue("digest", digest)
                 .hasFieldOrPropertyWithValue("size", size)
                 .hasFieldOrPropertyWithValue("version", version)
                 .hasFieldOrPropertyWithValue("modificationDate", modificationDate)
-                .hasFieldOrPropertyWithValue("toolId", toolId);
+                .hasFieldOrPropertyWithValue("toolId", toolId)
+                .hasFieldOrPropertyWithValue("allowCommit", allowCommit);
     }
 
     private static void validateToolVersionSettings(ToolVersion actual, ConfigurationEntry settings,

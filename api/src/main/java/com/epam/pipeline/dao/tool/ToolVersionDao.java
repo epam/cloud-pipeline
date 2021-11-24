@@ -129,7 +129,8 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
         SIZE,
         MODIFIED_DATE,
         PLATFORM,
-        SETTINGS;
+        SETTINGS,
+        ALLOW_COMMIT;
 
         private static MapSqlParameterSource getParameters(ToolVersion toolVersion) {
             return getInitialParameters(toolVersion)
@@ -172,6 +173,7 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
                     .version(rs.getString(ToolVersionParameters.VERSION.name()))
                     .size(rs.getLong(ToolVersionParameters.SIZE.name()))
                     .platform(rs.getString(ToolVersionParameters.PLATFORM.name()))
+                    .allowCommit(rs.getBoolean(ToolVersionParameters.ALLOW_COMMIT.name()))
                     .build();
         }
 
@@ -180,7 +182,8 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
                     .addValue(ToolVersionParameters.ID.name(), toolVersion.getId())
                     .addValue(ToolVersionParameters.TOOL_ID.name(), toolVersion.getToolId())
                     .addValue(ToolVersionParameters.VERSION.name(), toolVersion.getVersion())
-                    .addValue(ToolVersionParameters.PLATFORM.name(), toolVersion.getPlatform());
+                    .addValue(ToolVersionParameters.PLATFORM.name(), toolVersion.getPlatform())
+                    .addValue(ToolVersionParameters.ALLOW_COMMIT.name(), toolVersion.isAllowCommit());
         }
 
         private static List<ConfigurationEntry> parseData(String data) {
