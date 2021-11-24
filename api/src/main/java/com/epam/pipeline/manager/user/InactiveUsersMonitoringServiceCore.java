@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.entity.ldap.LdapSearchRequest;
 import com.epam.pipeline.entity.ldap.LdapSearchResponse;
+import com.epam.pipeline.entity.ldap.LdapSearchResponseType;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -125,9 +126,22 @@ public class InactiveUsersMonitoringServiceCore {
     }
 
     private boolean ldapBlocked(final PipelineUser user) {
-        final LdapSearchResponse ldapSearchResponse = ldapManager
-                .searchBlockedUser(LdapSearchRequest.forUser(user.getUserName()));
-        return Objects.nonNull(ldapSearchResponse) && CollectionUtils.isNotEmpty(ldapSearchResponse.getEntities());
+        final LdapSearchResponse ldapSearchResponse = findLdapBlockedUser(user.getUserName());
+        if (Objects.isNull(ldapSearchResponse)
+                || LdapSearchResponseType.TIMED_OUT.equals(ldapSearchResponse.getType())) {
+            log.debug("LDAP response was not received for user '{}'", user.getUserName());
+            return false;
+        }
+        return CollectionUtils.isNotEmpty(ldapSearchResponse.getEntities());
+    }
+
+    private LdapSearchResponse findLdapBlockedUser(final String userName) {
+        try {
+            return ldapManager.searchBlockedUser(LdapSearchRequest.forUser(userName));
+        } catch(Exception e) {
+            log.warn("LDAP request failed.", e);
+            return null;
+        }
     }
 
     private boolean userIsAdmin(final PipelineUser pipelineUser) {
