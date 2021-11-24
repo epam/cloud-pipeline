@@ -3,10 +3,9 @@ package com.epam.pipeline.manager.billing;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportType;
 import com.epam.pipeline.entity.billing.BillingGrouping;
-import com.epam.pipeline.entity.billing.ToolReportBilling;
-import com.epam.pipeline.entity.billing.ToolReportBillingMetrics;
+import com.epam.pipeline.entity.billing.InstanceBilling;
+import com.epam.pipeline.entity.billing.InstanceBillingMetrics;
 import com.epam.pipeline.exception.search.SearchException;
-import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,19 +45,17 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ToolReportExporter implements BillingExporter {
+public class InstanceBillingExporter implements BillingExporter {
 
     @Getter
-    private final BillingExportType type = BillingExportType.TOOL;
+    private final BillingExportType type = BillingExportType.INSTANCE;
     private final BillingHelper billingHelper;
     private final GlobalSearchElasticHelper elasticHelper;
-    private final PreferenceManager preferenceManager;
-    private final ToolBillingDetailsLoader toolBillingDetailsLoader;
 
     @Override
     public void export(final BillingExportRequest request, final Writer writer) {
-        final ToolReportWriter billingWriter = new ToolReportWriter(writer,
-                billingHelper, preferenceManager, request.getFrom(), request.getTo());
+        final InstanceBillingWriter billingWriter = new InstanceBillingWriter(writer,
+                request.getFrom(), request.getTo());
         try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
             billingWriter.writeHeader();
             billings(elasticSearchClient, request).forEach(billingWriter::write);
@@ -74,47 +71,39 @@ public class ToolReportExporter implements BillingExporter {
         }
     }
 
-    private Stream<ToolReportBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                               final BillingExportRequest request) {
+    private Stream<InstanceBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                             final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
         return billings(elasticSearchClient, from, to, filters);
     }
 
-    private Stream<ToolReportBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                               final LocalDate from,
-                                               final LocalDate to,
-                                               final Map<String, List<String>> filters) {
+    private Stream<InstanceBilling> billings(final RestHighLevelClient elasticSearchClient,
+                                             final LocalDate from,
+                                             final LocalDate to,
+                                             final Map<String, List<String>> filters) {
         return Optional.of(getRequest(from, to, filters))
                 .map(billingHelper.searchWith(elasticSearchClient))
                 .map(this::billings)
                 .orElseGet(Stream::empty);
     }
 
-    private Stream<ToolReportBilling> billings(final SearchResponse response) {
+    private Stream<InstanceBilling> billings(final SearchResponse response) {
         return Optional.ofNullable(response.getAggregations())
-                .map(it -> it.get(BillingGrouping.TOOL.getCorrespondingField()))
+                .map(it -> it.get(BillingGrouping.RUN_INSTANCE_TYPE.getCorrespondingField()))
                 .filter(ParsedStringTerms.class::isInstance)
                 .map(ParsedStringTerms.class::cast)
                 .map(ParsedTerms::getBuckets)
                 .map(Collection::stream)
                 .orElse(Stream.empty())
-                .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()))
-                .map(this::withDetails);
+                .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()));
     }
 
-    private ToolReportBilling withDetails(final ToolReportBilling billing) {
-        final Map<String, String> details = toolBillingDetailsLoader.loadDetails(billing.getName());
-        return billing.toBuilder()
-                .owner(details.get(EntityBillingDetailsLoader.OWNER))
-                .build();
-    }
-
-    private ToolReportBilling getBilling(final String name, final Aggregations aggregations) {
-        return ToolReportBilling.builder()
+    private InstanceBilling getBilling(final String name, final Aggregations aggregations) {
+        return InstanceBilling.builder()
                 .name(name)
-                .totalMetrics(ToolReportBillingMetrics.builder()
+                .totalMetrics(InstanceBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
@@ -123,7 +112,7 @@ public class ToolReportExporter implements BillingExporter {
                 .build();
     }
 
-    private Map<YearMonth, ToolReportBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<YearMonth, InstanceBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
         return Optional.ofNullable(aggregations)
                 .map(it -> it.get(BillingHelper.HISTOGRAM_AGGREGATION_NAME))
                 .filter(ParsedDateHistogram.class::isInstance)
@@ -135,10 +124,10 @@ public class ToolReportExporter implements BillingExporter {
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<YearMonth, ToolReportBillingMetrics> getPeriodMetrics(final String ym,
-                                                                           final Aggregations aggregations) {
+    private Pair<YearMonth, InstanceBillingMetrics> getPeriodMetrics(final String ym,
+                                                                     final Aggregations aggregations) {
         return Pair.of(YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)),
-                ToolReportBillingMetrics.builder()
+                InstanceBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
@@ -154,7 +143,7 @@ public class ToolReportExporter implements BillingExporter {
                 .source(new SearchSourceBuilder()
                         .size(0)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
-                        .aggregation(billingHelper.aggregateBy(BillingGrouping.TOOL.getCorrespondingField())
+                        .aggregation(billingHelper.aggregateBy(BillingGrouping.RUN_INSTANCE_TYPE.getCorrespondingField())
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(aggregateBillingsByMonth())
                                 .subAggregation(aggregateRunCountSumBucket())

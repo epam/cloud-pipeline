@@ -96,8 +96,6 @@ public class BillingHelper {
     public static final String RUN = "run";
     public static final String STORAGE = "storage";
     public static final String RUNS = "runs";
-    public static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
     public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
     public static final String RUN_COST_AGG = "cost_runs";
     public static final String STORAGE_COST_AGG = "cost_storages";
@@ -342,21 +340,6 @@ public class BillingHelper {
                 .findFirst()
                 .map(SearchHit::getSourceAsMap)
                 .orElseGet(Collections::emptyMap);
-    }
-
-    public String asString(final Object value) {
-        return Optional.ofNullable(value).map(Object::toString).orElse(null);
-    }
-
-    public String asString(final LocalDateTime value) {
-        return Optional.ofNullable(value).map(DATE_TIME_FORMATTER::format).orElse(null);
-    }
-
-    public LocalDateTime asDateTime(final Object value) {
-        return Optional.ofNullable(value)
-                .map(Object::toString)
-                .map(it -> DATE_TIME_FORMATTER.parse(it, LocalDateTime::from))
-                .orElse(null);
     }
 
     public Function<SearchRequest, SearchResponse> searchWith(final RestHighLevelClient elasticSearchClient) {

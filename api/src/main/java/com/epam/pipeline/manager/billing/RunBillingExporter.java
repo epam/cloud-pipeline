@@ -46,7 +46,7 @@ public class RunBillingExporter implements BillingExporter {
 
     @Override
     public void export(final BillingExportRequest request, final Writer writer) {
-        final RunBillingWriter billingWriter = new RunBillingWriter(writer, billingHelper, preferenceManager);
+        final RunBillingWriter billingWriter = new RunBillingWriter(writer, preferenceManager);
         try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
             billingWriter.writeHeader();
             billings(elasticSearchClient, request).forEach(billingWriter::write);
@@ -156,14 +156,14 @@ public class RunBillingExporter implements BillingExporter {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return RunBilling.builder()
                 .runId(NumberUtils.toLong(id))
-                .owner(billingHelper.asString(topHitFields.get(BillingHelper.OWNER_FIELD)))
-                .billingCenter(billingHelper.asString(topHitFields.get(BillingHelper.BILLING_CENTER_FIELD)))
-                .pipeline(billingHelper.asString(topHitFields.get(BillingHelper.PIPELINE_FIELD)))
-                .tool(billingHelper.asString(topHitFields.get(BillingHelper.TOOL_FIELD)))
-                .computeType(billingHelper.asString(topHitFields.get(BillingHelper.COMPUTE_TYPE_FIELD)))
-                .instanceType(billingHelper.asString(topHitFields.get(BillingHelper.INSTANCE_TYPE_FIELD)))
-                .started(billingHelper.asDateTime(topHitFields.get(BillingHelper.STARTED_FIELD)))
-                .finished(billingHelper.asDateTime(topHitFields.get(BillingHelper.FINISHED_FIELD)))
+                .owner(BillingUtils.asString(topHitFields.get(BillingHelper.OWNER_FIELD)))
+                .billingCenter(BillingUtils.asString(topHitFields.get(BillingHelper.BILLING_CENTER_FIELD)))
+                .pipeline(BillingUtils.asString(topHitFields.get(BillingHelper.PIPELINE_FIELD)))
+                .tool(BillingUtils.asString(topHitFields.get(BillingHelper.TOOL_FIELD)))
+                .computeType(BillingUtils.asString(topHitFields.get(BillingHelper.COMPUTE_TYPE_FIELD)))
+                .instanceType(BillingUtils.asString(topHitFields.get(BillingHelper.INSTANCE_TYPE_FIELD)))
+                .started(BillingUtils.asDateTime(topHitFields.get(BillingHelper.STARTED_FIELD)))
+                .finished(BillingUtils.asDateTime(topHitFields.get(BillingHelper.FINISHED_FIELD)))
                 .duration(duration.orElse(0L))
                 .cost(cost.orElse(0L))
                 .build();

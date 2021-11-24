@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
-public class StorageReportBilling {
+public class StorageBilling implements ReportBilling<StorageBillingMetrics> {
     Long id;
     String name;
     String owner;
@@ -20,12 +20,11 @@ public class StorageReportBilling {
     String region;
     String provider;
     LocalDateTime created;
-    Long cost;
-    Long averageVolume;
-    Long currentVolume;
-    Map<YearMonth, StorageReportYearMonthBilling> billings;
+    StorageBillingMetrics totalMetrics;
+    Map<YearMonth, StorageBillingMetrics> periodMetrics;
 
-    public Optional<StorageReportYearMonthBilling> getBilling(final YearMonth ym) {
-        return Optional.ofNullable(billings.get(ym));
+    @Override
+    public StorageBillingMetrics getPeriodMetrics(final YearMonth ym) {
+        return Optional.ofNullable(periodMetrics.get(ym)).orElseGet(StorageBillingMetrics::empty);
     }
 }

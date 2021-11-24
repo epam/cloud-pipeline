@@ -5,13 +5,13 @@ import lombok.Value;
 
 @Value
 @Builder
-public class PipelineReportBillingMetrics {
+public class InstanceBillingMetrics {
     Long runsNumber;
     Long runsDuration;
     Long runsCost;
 
-    public static PipelineReportBillingMetrics empty() {
-        return PipelineReportBillingMetrics.builder()
+    public static InstanceBillingMetrics empty() {
+        return InstanceBillingMetrics.builder()
                 .runsNumber(0L)
                 .runsDuration(0L)
                 .runsCost(0L)

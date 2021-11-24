@@ -1,11 +1,9 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.billing.ReportBilling;
-import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.opencsv.CSVWriter;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.time.LocalDate;
@@ -19,7 +17,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class CommonReportWriter<B extends ReportBilling<M>, M> implements BillingWriter {
+public class PeriodBillingWriter<B extends ReportBilling<M>, M> implements BillingWriter<B> {
 
     private static final char SEPARATOR = ',';
     private static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
@@ -30,24 +28,18 @@ public class CommonReportWriter<B extends ReportBilling<M>, M> implements Billin
     private final List<Function<B, String>> detailExtractors;
     private final List<Function<M, String>> periodExtractors;
     private final CSVWriter writer;
-    private final BillingHelper billingHelper;
-    private final PreferenceManager preferenceManager;
     private final LocalDate from;
     private final LocalDate to;
 
-    public CommonReportWriter(final Writer writer,
-                              final BillingHelper billingHelper,
-                              final PreferenceManager preferenceManager,
-                              final LocalDate from,
-                              final LocalDate to,
-                              final String name,
-                              final List<String> detailColumns,
-                              final List<String> periodColumns,
-                              final List<Function<B, String>> detailExtractors,
-                              final List<Function<M, String>> periodExtractors) {
+    public PeriodBillingWriter(final Writer writer,
+                               final LocalDate from,
+                               final LocalDate to,
+                               final String name,
+                               final List<String> detailColumns,
+                               final List<String> periodColumns,
+                               final List<Function<B, String>> detailExtractors,
+                               final List<Function<M, String>> periodExtractors) {
         this.writer = new CSVWriter(writer, SEPARATOR);
-        this.billingHelper = billingHelper;
-        this.preferenceManager = preferenceManager;
         this.from = from;
         this.to = to;
         this.name = name;
@@ -57,6 +49,7 @@ public class CommonReportWriter<B extends ReportBilling<M>, M> implements Billin
         this.periodExtractors = periodExtractors;
     }
 
+    @Override
     public void writeHeader() {
         final List<String> datesRow = new ArrayList<>();
         datesRow.add(name);
@@ -75,6 +68,7 @@ public class CommonReportWriter<B extends ReportBilling<M>, M> implements Billin
         writer.writeNext(columnsRow.toArray(new String[0]));
     }
 
+    @Override
     public void write(final B billing) {
         final List<String> row = new ArrayList<>();
         detailExtractors.stream()
