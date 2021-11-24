@@ -28,6 +28,8 @@ spec:
               value: $CP_BKP_SERVICE_NAME
             - name: CP_BKP_SERVICE_WD
               value: ${CP_BKP_SERVICE_WD}/bkp-worker-wd
+            - name: CP_BKP_SERVICE_KUBECTL_ARGS
+              value: $CP_BKP_SERVICE_KUBECTL_ARGS
           volumeMounts:
             - mountPath: $CP_BKP_SERVICE_WD/bkp-worker-wd
               name: bkp-wd
