@@ -27,8 +27,7 @@ public class BillingCenterBillingWriter implements BillingWriter<BillingCenterGe
                 Collections.singletonList(BILLING_CENTER_COLUMN),
                 Arrays.asList(RUNS_COUNT_COLUMN, RUNS_DURATIONS_COLUMN, RUNS_COSTS_COLUMN,
                         STORAGES_COSTS_COLUMN),
-                Collections.singletonList(
-                        BillingCenterGeneralBilling::getName),
+                Collections.singletonList(BillingCenterGeneralBilling::getName),
                 Arrays.asList(
                         metrics -> BillingUtils.asString(metrics.getRunsNumber()),
                         metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),

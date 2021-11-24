@@ -3,12 +3,12 @@ package com.epam.pipeline.manager.billing;
 import com.epam.pipeline.entity.billing.InstanceBilling;
 import com.epam.pipeline.entity.billing.InstanceBillingMetrics;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 
 @RequiredArgsConstructor
 public class InstanceBillingWriter implements BillingWriter<InstanceBilling> {
@@ -25,11 +25,9 @@ public class InstanceBillingWriter implements BillingWriter<InstanceBilling> {
                                  final LocalDate from,
                                  final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
-                Arrays.asList(INSTANCE_COLUMN, StringUtils.EMPTY),
+                Collections.singletonList(INSTANCE_COLUMN),
                 Arrays.asList(RUNS_COUNT_COLUMN, RUNS_DURATION_COLUMN, RUNS_COST_COLUMN),
-                Arrays.asList(
-                        InstanceBilling::getName,
-                        billing -> StringUtils.EMPTY),
+                Collections.singletonList(InstanceBilling::getName),
                 Arrays.asList(
                         metrics -> BillingUtils.asString(metrics.getRunsNumber()),
                         metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
