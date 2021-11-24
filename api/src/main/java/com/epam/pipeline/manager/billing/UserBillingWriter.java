@@ -10,13 +10,7 @@ import java.util.Arrays;
 
 public class UserBillingWriter implements BillingWriter<UserGeneralBilling> {
 
-    private static final String BILLING_CENTER_COLUMN = "Billing center";
-    private static final String RUNS_COUNT_COLUMN = "Runs (count)";
-    private static final String RUNS_DURATIONS_COLUMN = "Runs durations (hours)";
-    private static final String RUNS_COSTS_COLUMN = "Runs costs ($)";
-    private static final String STORAGES_COSTS_COLUMN = "Storage costs ($)";
     private static final String TABLE_NAME = "Users";
-    private static final String USER_COLUMN = "User";
 
     private final PeriodBillingWriter<UserGeneralBilling, GeneralBillingMetrics> writer;
 
@@ -24,9 +18,14 @@ public class UserBillingWriter implements BillingWriter<UserGeneralBilling> {
                              final LocalDate from,
                              final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
-                Arrays.asList(USER_COLUMN, BILLING_CENTER_COLUMN),
-                Arrays.asList(RUNS_COUNT_COLUMN, RUNS_DURATIONS_COLUMN, RUNS_COSTS_COLUMN,
-                        STORAGES_COSTS_COLUMN),
+                Arrays.asList(
+                        BillingUtils.USER_COLUMN,
+                        BillingUtils.BILLING_CENTER_COLUMN),
+                Arrays.asList(
+                        BillingUtils.RUNS_COUNT_COLUMN,
+                        BillingUtils.RUNS_DURATIONS_COLUMN,
+                        BillingUtils.RUNS_COSTS_COLUMN,
+                        BillingUtils.STORAGES_COSTS_COLUMN),
                 Arrays.asList(
                         UserGeneralBilling::getName,
                         UserGeneralBilling::getBillingCenter),

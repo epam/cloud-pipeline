@@ -78,7 +78,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
     private int getPartitionSize() {
         return Optional.of(SystemPreferences.BILLING_EXPORT_AGGREGATION_PARTITION_SIZE)
                 .map(preferenceManager::getPreference)
-                .orElse(BillingHelper.FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE);
+                .orElse(BillingUtils.FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE);
     }
 
     private Stream<RunBilling> billings(final RestHighLevelClient elasticSearchClient,
@@ -110,7 +110,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
     }
 
     private Stream<RunBilling> billings(final SearchResponse response) {
-        return billingHelper.termBuckets(response.getAggregations(), BillingHelper.RUN_ID_FIELD)
+        return billingHelper.termBuckets(response.getAggregations(), BillingUtils.RUN_ID_FIELD)
                 .map(bucket -> getRunBilling(bucket.getKeyAsString(), bucket.getAggregations()));
     }
 
@@ -120,14 +120,14 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return RunBilling.builder()
                 .runId(NumberUtils.toLong(id))
-                .owner(BillingUtils.asString(topHitFields.get(BillingHelper.OWNER_FIELD)))
-                .billingCenter(BillingUtils.asString(topHitFields.get(BillingHelper.BILLING_CENTER_FIELD)))
-                .pipeline(BillingUtils.asString(topHitFields.get(BillingHelper.PIPELINE_FIELD)))
-                .tool(BillingUtils.asString(topHitFields.get(BillingHelper.TOOL_FIELD)))
-                .computeType(BillingUtils.asString(topHitFields.get(BillingHelper.COMPUTE_TYPE_FIELD)))
-                .instanceType(BillingUtils.asString(topHitFields.get(BillingHelper.INSTANCE_TYPE_FIELD)))
-                .started(BillingUtils.asDateTime(topHitFields.get(BillingHelper.STARTED_FIELD)))
-                .finished(BillingUtils.asDateTime(topHitFields.get(BillingHelper.FINISHED_FIELD)))
+                .owner(BillingUtils.asString(topHitFields.get(BillingUtils.OWNER_FIELD)))
+                .billingCenter(BillingUtils.asString(topHitFields.get(BillingUtils.BILLING_CENTER_FIELD)))
+                .pipeline(BillingUtils.asString(topHitFields.get(BillingUtils.PIPELINE_FIELD)))
+                .tool(BillingUtils.asString(topHitFields.get(BillingUtils.TOOL_FIELD)))
+                .computeType(BillingUtils.asString(topHitFields.get(BillingUtils.COMPUTE_TYPE_FIELD)))
+                .instanceType(BillingUtils.asString(topHitFields.get(BillingUtils.INSTANCE_TYPE_FIELD)))
+                .started(BillingUtils.asDateTime(topHitFields.get(BillingUtils.STARTED_FIELD)))
+                .finished(BillingUtils.asDateTime(topHitFields.get(BillingUtils.FINISHED_FIELD)))
                 .duration(duration.orElse(NumberUtils.LONG_ZERO))
                 .cost(cost.orElse(NumberUtils.LONG_ZERO))
                 .build();

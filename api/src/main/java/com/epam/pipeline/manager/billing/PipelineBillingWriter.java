@@ -13,11 +13,6 @@ import java.util.Arrays;
 public class PipelineBillingWriter implements BillingWriter<PipelineBilling> {
 
     private static final String TABLE_NAME = "Pipelines";
-    private static final String PIPELINE_COLUMN = "Pipeline";
-    private static final String OWNER_COLUMN = "Owner";
-    private static final String RUNS_COUNT_COLUMN = "Runs (count)";
-    private static final String RUNS_DURATION_COLUMN = "Duration (hours)";
-    private static final String RUNS_COST_COLUMN = "Cost ($)";
 
     private final PeriodBillingWriter<PipelineBilling, PipelineBillingMetrics> writer;
 
@@ -25,8 +20,13 @@ public class PipelineBillingWriter implements BillingWriter<PipelineBilling> {
                                  final LocalDate from,
                                  final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
-                Arrays.asList(PIPELINE_COLUMN, OWNER_COLUMN),
-                Arrays.asList(RUNS_COUNT_COLUMN, RUNS_DURATION_COLUMN, RUNS_COST_COLUMN),
+                Arrays.asList(
+                        BillingUtils.PIPELINE_COLUMN,
+                        BillingUtils.OWNER_COLUMN),
+                Arrays.asList(
+                        BillingUtils.RUNS_COUNT_COLUMN,
+                        BillingUtils.DURATION_COLUMN,
+                        BillingUtils.COST_COLUMN),
                 Arrays.asList(
                         PipelineBilling::getName,
                         PipelineBilling::getOwner),

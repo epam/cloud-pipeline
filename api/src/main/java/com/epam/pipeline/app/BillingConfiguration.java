@@ -27,12 +27,11 @@ public class BillingConfiguration {
 
     @Bean
     public BillingExporter runBillingExporter(final RunBillingLoader runBillingLoader,
-                                              final GlobalSearchElasticHelper elasticHelper,
-                                              final PreferenceManager preferenceManager) {
+                                              final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("Runs Report",
                 BillingExportType.RUN,
                 runBillingLoader,
-                (request, writer) -> new RunBillingWriter(writer, preferenceManager),
+                (request, writer) -> new RunBillingWriter(writer),
                 elasticHelper);
     }
 

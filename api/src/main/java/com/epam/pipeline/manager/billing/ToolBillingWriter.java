@@ -15,11 +15,6 @@ import java.util.Arrays;
 public class ToolBillingWriter implements BillingWriter<ToolBilling> {
 
     private static final String TABLE_NAME = "Tools";
-    private static final String TOOL_COLUMN = "Tool";
-    private static final String OWNER_COLUMN = "Owner";
-    private static final String RUNS_COUNT_COLUMN = "Runs (count)";
-    private static final String RUNS_DURATION_COLUMN = "Duration (hours)";
-    private static final String RUNS_COST_COLUMN = "Cost ($)";
 
     private final PeriodBillingWriter<ToolBilling, ToolBillingMetrics> writer;
 
@@ -27,8 +22,13 @@ public class ToolBillingWriter implements BillingWriter<ToolBilling> {
                              final LocalDate from,
                              final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
-                Arrays.asList(TOOL_COLUMN, OWNER_COLUMN),
-                Arrays.asList(RUNS_COUNT_COLUMN, RUNS_DURATION_COLUMN, RUNS_COST_COLUMN),
+                Arrays.asList(
+                        BillingUtils.TOOL_COLUMN,
+                        BillingUtils.OWNER_COLUMN),
+                Arrays.asList(
+                        BillingUtils.RUNS_COUNT_COLUMN,
+                        BillingUtils.DURATION_COLUMN,
+                        BillingUtils.COST_COLUMN),
                 Arrays.asList(
                         billing -> ToolUtils.getImageWithoutRepository(billing.getName()).orElse(StringUtils.EMPTY),
                         ToolBilling::getOwner),

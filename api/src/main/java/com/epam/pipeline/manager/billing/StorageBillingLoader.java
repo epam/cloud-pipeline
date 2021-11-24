@@ -91,20 +91,20 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return StorageBilling.builder()
                 .id(NumberUtils.toLong(id))
-                .owner(BillingUtils.asString(topHitFields.get(BillingHelper.OWNER_FIELD)))
-                .billingCenter(BillingUtils.asString(topHitFields.get(BillingHelper.BILLING_CENTER_FIELD)))
-                .type(DataStorageType.getByName(BillingUtils.asString(topHitFields.get(BillingHelper.PROVIDER_FIELD))))
+                .owner(BillingUtils.asString(topHitFields.get(BillingUtils.OWNER_FIELD)))
+                .billingCenter(BillingUtils.asString(topHitFields.get(BillingUtils.BILLING_CENTER_FIELD)))
+                .type(DataStorageType.getByName(BillingUtils.asString(topHitFields.get(BillingUtils.PROVIDER_FIELD))))
                 .totalMetrics(StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .currentVolume(Long.valueOf(BillingUtils.asString(topHitFields.get(BillingHelper.STORAGE_USAGE_FIELD))))
+                        .currentVolume(Long.valueOf(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
                         .build())
                 .periodMetrics(getPeriodMetrics(aggregations))
                 .build();
     }
 
     private Map<YearMonth, StorageBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
-        return billingHelper.histogramBuckets(aggregations, BillingHelper.HISTOGRAM_AGGREGATION_NAME)
+        return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
@@ -112,11 +112,11 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
     private Pair<YearMonth, StorageBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .currentVolume(Long.valueOf(BillingUtils.asString(topHitFields.get(BillingHelper.STORAGE_USAGE_FIELD))))
+                        .currentVolume(Long.valueOf(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
                         .build());
     }
 

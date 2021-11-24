@@ -63,7 +63,7 @@ public class BillingCenterBillingLoader implements BillingLoader<BillingCenterGe
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
                         .aggregation(billingHelper.aggregateBy(BillingGrouping.BILLING_CENTER.getCorrespondingField())
                                 .size(Integer.MAX_VALUE)
-                                .missing(BillingHelper.MISSING_VALUE)
+                                .missing(BillingUtils.MISSING_VALUE)
                                 .subAggregation(aggregateBillingsByMonth())
                                 .subAggregation(billingHelper.aggregateRunCountSumBucket())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
@@ -90,7 +90,7 @@ public class BillingCenterBillingLoader implements BillingLoader<BillingCenterGe
         return Stream.concat(
                 billingHelper.termBuckets(response.getAggregations(), BillingGrouping.BILLING_CENTER.getCorrespondingField())
                         .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations())),
-                Stream.of(getBilling(BillingHelper.SYNTHETIC_TOTAL_BILLING, response.getAggregations())));
+                Stream.of(getBilling(BillingUtils.SYNTHETIC_TOTAL_BILLING, response.getAggregations())));
     }
 
     private BillingCenterGeneralBilling getBilling(final String name, final Aggregations aggregations) {
@@ -107,14 +107,14 @@ public class BillingCenterBillingLoader implements BillingLoader<BillingCenterGe
     }
 
     private Map<YearMonth, GeneralBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
-        return billingHelper.histogramBuckets(aggregations, BillingHelper.HISTOGRAM_AGGREGATION_NAME)
+        return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
     private Pair<YearMonth, GeneralBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 GeneralBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))

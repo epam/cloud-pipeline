@@ -14,10 +14,6 @@ import java.util.Collections;
 public class InstanceBillingWriter implements BillingWriter<InstanceBilling> {
 
     private static final String TABLE_NAME = "Instances";
-    private static final String INSTANCE_COLUMN = "Instance";
-    private static final String RUNS_COUNT_COLUMN = "Runs (count)";
-    private static final String RUNS_DURATION_COLUMN = "Duration (hours)";
-    private static final String RUNS_COST_COLUMN = "Cost ($)";
 
     private final PeriodBillingWriter<InstanceBilling, InstanceBillingMetrics> writer;
 
@@ -25,8 +21,11 @@ public class InstanceBillingWriter implements BillingWriter<InstanceBilling> {
                                  final LocalDate from,
                                  final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
-                Collections.singletonList(INSTANCE_COLUMN),
-                Arrays.asList(RUNS_COUNT_COLUMN, RUNS_DURATION_COLUMN, RUNS_COST_COLUMN),
+                Collections.singletonList(BillingUtils.INSTANCE_COLUMN),
+                Arrays.asList(
+                        BillingUtils.RUNS_COUNT_COLUMN,
+                        BillingUtils.DURATION_COLUMN,
+                        BillingUtils.COST_COLUMN),
                 Collections.singletonList(InstanceBilling::getName),
                 Arrays.asList(
                         metrics -> BillingUtils.asString(metrics.getRunsNumber()),

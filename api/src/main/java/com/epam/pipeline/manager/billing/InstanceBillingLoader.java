@@ -96,14 +96,14 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
     }
 
     private Map<YearMonth, InstanceBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
-        return billingHelper.histogramBuckets(aggregations, BillingHelper.HISTOGRAM_AGGREGATION_NAME)
+        return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
     private Pair<YearMonth, InstanceBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 InstanceBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))

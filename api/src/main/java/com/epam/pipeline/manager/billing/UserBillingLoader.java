@@ -91,7 +91,7 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
                 billingHelper.termBuckets(response.getAggregations(), BillingGrouping.USER.getCorrespondingField())
                         .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()))
                         .map(this::withDetails),
-                Stream.of(getBilling(BillingHelper.SYNTHETIC_TOTAL_BILLING, response.getAggregations())));
+                Stream.of(getBilling(BillingUtils.SYNTHETIC_TOTAL_BILLING, response.getAggregations())));
     }
 
     private UserGeneralBilling getBilling(final String name, final Aggregations aggregations) {
@@ -108,14 +108,14 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
     }
 
     private Map<YearMonth, GeneralBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
-        return billingHelper.histogramBuckets(aggregations, BillingHelper.HISTOGRAM_AGGREGATION_NAME)
+        return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
     private Pair<YearMonth, GeneralBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingHelper.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 GeneralBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))

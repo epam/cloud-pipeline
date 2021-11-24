@@ -8,19 +8,14 @@ import java.io.IOException;
 import java.io.Writer;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class PeriodBillingWriter<B extends ReportBilling<M>, M> implements BillingWriter<B> {
-
-    private static final char SEPARATOR = ',';
-    private static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
 
     private final String name;
     private final List<String> detailColumns;
@@ -39,7 +34,7 @@ public class PeriodBillingWriter<B extends ReportBilling<M>, M> implements Billi
                                final List<String> periodColumns,
                                final List<Function<B, String>> detailExtractors,
                                final List<Function<M, String>> periodExtractors) {
-        this.writer = new CSVWriter(writer, SEPARATOR);
+        this.writer = new CSVWriter(writer, BillingUtils.SEPARATOR);
         this.from = from;
         this.to = to;
         this.name = name;
@@ -55,14 +50,13 @@ public class PeriodBillingWriter<B extends ReportBilling<M>, M> implements Billi
         datesRow.add(name);
         IntStream.range(0, detailColumns.size() - 1).forEach(i -> datesRow.add(StringUtils.EMPTY));
         yms().forEach(ym -> {
-            datesRow.add(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT, Locale.US).format(ym));
+            datesRow.add(BillingUtils.asString(ym));
             IntStream.range(0, periodColumns.size() - 1).forEach(i -> datesRow.add(StringUtils.EMPTY));
         });
         datesRow.add(from + " - " + to);
         IntStream.range(0, periodColumns.size() - 1).forEach(i -> datesRow.add(StringUtils.EMPTY));
         writer.writeNext(datesRow.toArray(new String[0]));
-        final List<String> columnsRow = new ArrayList<>();
-        columnsRow.addAll(detailColumns);
+        final List<String> columnsRow = new ArrayList<>(detailColumns);
         yms().forEach(ym -> columnsRow.addAll(periodColumns));
         columnsRow.addAll(periodColumns);
         writer.writeNext(columnsRow.toArray(new String[0]));
