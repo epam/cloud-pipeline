@@ -429,10 +429,9 @@ public class UserManager {
 
     @Transactional
     public void updateLastLoginDate(final PipelineUser user) {
-        if (Objects.isNull(user)) {
+        if (Objects.isNull(user) || Objects.isNull(user.getId())) {
             return;
         }
-
         final PipelineUser loadedUser = loadUserById(user.getId());
         loadedUser.setLastLoginDate(DateUtils.nowUTC());
         userDao.updateUser(loadedUser);
