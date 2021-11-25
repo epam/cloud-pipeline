@@ -21,11 +21,11 @@ from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
 from src.api.tool import Tool
-from src.api.user import User
 from src.model.pipeline_run_model import PriceType
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
 from src.utilities.cluster_manager import ClusterManager
+from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
 
 from src.api.pipeline import Pipeline
@@ -54,11 +54,7 @@ class PipelineRunOperations(object):
             status_notifications_subject=None, status_notifications_body=None,
             run_as_user=None):
 
-        user = User.whoami()
-        user_groups = user.get('groups', [])
-        user_roles = [role.get('name') for role in user.get('roles', [])]
-        all_user_roles = set((user_groups + user_roles))
-
+        all_user_roles = UserOperationsManager().get_all_user_roles()
         # Preserving old style impersonation for admin users. Specified user token is generated and used
         # for impersonation rather than run as capability which is used for non-admin users.
         if run_as_user and ROLE_ADMIN in all_user_roles:
