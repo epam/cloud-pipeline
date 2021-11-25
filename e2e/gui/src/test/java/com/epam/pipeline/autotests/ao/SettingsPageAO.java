@@ -16,9 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,13 +28,10 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -44,11 +39,8 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
-import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -108,9 +100,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return new PreferencesAO(parentAO);
     }
 
-    public SystemLogsAO switchToSystemManagement() {
-        click(LOG);
-        return new SystemLogsAO();
+    public SystemManagementAO switchToSystemManagement() {
+        click(SYSTEM_LOGS_TAB);
+        return new SystemManagementAO(parentAO);
     }
 
     public MyProfileAO switchToMyProfile() {
@@ -1564,126 +1556,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
-        }
-    }
-
-    public class SystemLogsAO implements AccessObject<SystemLogsAO> {
-
-        public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(LOG, $$(byClassName("ystem-management__item-row")).findBy(text("LOGS")))
-        );
-
-        private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
-                .should(exist)
-                .findAll(byClassName("ant-table-row"));
-
-        public SelenideElement getInfoRow(final String message, final String user, final String type) {
-            return containerLogs.stream()
-                    .filter(r -> r.has(matchText(message)) && r.has(text(type)))
-                    .findFirst()
-                    .orElseThrow(() -> {
-                        String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
-                        screenshot(screenshotName);
-                        return new NoSuchElementException(format("Supposed log info '%s' is not found.",
-                                format("%s message for %s with %s type. Screenshot: %s", message, user, type,
-                                        screenshotName)));
-                    });
-        }
-
-        public SystemLogsAO switchToSystemLogs() {
-            click(LOG);
-            if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
-                return this;
-            }
-            return this.setIncludeServiceAccountEventsOption();
-        }
-
-        public SystemLogsAO filterByUser(final String user) {
-            selectValue(combobox("User"), user);
-            return this;
-        }
-
-        public SystemLogsAO filterByMessage(final String message) {
-            setValue(inputOf(filterBy("Message")), message);
-            pressEnter();
-            return this;
-        }
-
-        public SystemLogsAO filterByService(final String service) {
-            selectValue(combobox("Service"), service);
-            click(byText("Service"));
-            return this;
-        }
-
-        public SystemLogsAO clearUserFilters() {
-            clearFiltersBy("User");
-            return this;
-        }
-
-        public SystemLogsAO pressEnter() {
-            actions().sendKeys(Keys.ENTER).perform();
-            return this;
-        }
-
-        public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
-            sleep(5, SECONDS);
-            LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
-            LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
-            screenshot(format("SystemLogsValidateTimeOrder-%s", Utils.randomSuffix()));
-            assertTrue(td1.isAfter(td2) || td1.isEqual(td2));
-        }
-
-        public SystemLogsAO validateRow(final String message, final String user, final String type) {
-            final SelenideElement infoRow = getInfoRow(message, user, type);
-            infoRow.should(exist);
-            infoRow.findAll("td").get(3).shouldHave(text(user));
-            return this;
-        }
-
-        public String getUserId(final SelenideElement element) {
-            final String message = getMessage(element);
-            final Pattern pattern = Pattern.compile("\\d+");
-            final Matcher matcher = pattern.matcher(getMessage(element));
-            if (!matcher.find()) {
-                final String screenName = format("SystemLogsGetUserId_%s", Utils.randomSuffix());
-                screenshot(screenName);
-                throw new ElementNotFound(format("Could not get user id from message: %s. Screenshot: %s.png", message,
-                        screenName), exist);
-            }
-            return matcher.group();
-        }
-
-        @Override
-        public Map<Primitive, SelenideElement> elements() {
-            return elements;
-        }
-
-        private By filterBy(final String name) {
-            return byXpath(format("(//*[contains(@class, '%s') and .//*[contains(text(), '%s')]])[last()]",
-                    "ilters__filter", name
-            ));
-        }
-
-        private String getMessage(final SelenideElement element) {
-            return element.findAll("td").get(2).getText();
-        }
-
-        public void clearFiltersBy(final String name) {
-            actions().moveToElement($(combobox(name))).build().perform();
-            if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
-                $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
-            }
-        }
-
-        public SystemLogsAO setIncludeServiceAccountEventsOption() {
-            if($(byId("show-hide-advanced")).shouldBe(enabled).has(text("Show advanced"))) {
-                click(byId("show-hide-advanced"));
-            }
-            if(!$(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
-                    .has(cssClass("ant-checkbox-checked"))) {
-                click(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"));
-            }
-            return this;
         }
     }
 

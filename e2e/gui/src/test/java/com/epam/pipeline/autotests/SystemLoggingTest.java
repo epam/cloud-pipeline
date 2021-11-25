@@ -17,8 +17,8 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
+import com.epam.pipeline.autotests.ao.SystemManagementAO.SystemLogsAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -48,7 +48,6 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
 
     private static final String TYPE = "security";
     private static final String USER_NAME = "TEST_SYSTEM_USER_NAME";
-
     private final String pipeline = "SystemLogging" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -81,7 +80,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         logout();
         loginAs(admin);
         sleep(1, MINUTES);
-        SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
+        SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs();
@@ -138,7 +137,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 sleep(10, SECONDS);
             }
             loginAs(admin);
-            SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
+            SystemLogsAO systemLogsAO = navigationMenu()
                     .settings()
                     .switchToSystemManagement()
                     .switchToSystemLogs();
@@ -182,7 +181,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .blockUser(userWithoutCompletedRuns.login.toUpperCase())
                 .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
                 .ok();
-        final SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
+        final SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
@@ -314,7 +313,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .validateRow(format("Delete user with name: %s", USER_NAME), admin.login, TYPE);
     }
 
-    private SelenideElement getInfo(final SettingsPageAO.SystemLogsAO systemLogsAO,
+    private SelenideElement getInfo(final SystemLogsAO systemLogsAO,
                                     final String message,
                                     final String action,
                                     final Account account) {
@@ -327,7 +326,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 : systemLogsAO.filterByUser(account.login.toUpperCase()).getInfoRow(message, account.login, TYPE);
     }
 
-    private void clearFiltersIfNeeded(final SettingsPageAO.SystemLogsAO systemLogsAO) {
+    private void clearFiltersIfNeeded(final SystemLogsAO systemLogsAO) {
         if (impersonateMode()) {
             return;
         }
