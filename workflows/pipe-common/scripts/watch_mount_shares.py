@@ -369,8 +369,7 @@ class NFSMountWatcher:
 
     def try_to_remove_path_from_observer(self, mnt_dest):
         try:
-            if len(self._target_path_mapping.items()) > 1:
-                self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
+            self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
             return True
         except OSError as e:
             logging.error(

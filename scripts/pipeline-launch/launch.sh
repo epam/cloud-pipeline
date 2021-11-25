@@ -1829,6 +1829,8 @@ echo "-"
 
 if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
     echo "NFS events observer is not requested"
+elif [ "$CP_SENSITIVE_RUN" == "true" ]; then
+    echo "NFS event watching are disabled for sensitive runs"
 else
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
