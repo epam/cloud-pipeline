@@ -85,7 +85,6 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           });
           if (
             !run.sensitive &&
-            run.platform !== 'windows' &&
             vsActions &&
             vsActions.available
           ) {

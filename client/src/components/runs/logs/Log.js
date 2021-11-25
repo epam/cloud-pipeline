@@ -1919,7 +1919,6 @@ class Logs extends localization.LocalizedReactComponent {
             <br />
             {
               !this.props.run.value.sensitive &&
-              this.props.run.value.platform !== 'windows' &&
               this.props.vsActions.available && (
                 <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
                   <VSActions
