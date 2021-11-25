@@ -839,6 +839,7 @@ class FacetedSearch extends React.Component {
                 }
               }]}
               resizerSize={8}
+              className={'cp-split-panel-transparent'}
             >
               <div
                 key="faceted-filter"

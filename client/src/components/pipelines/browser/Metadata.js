@@ -1635,6 +1635,7 @@ export default class Metadata extends React.Component {
 
     return (
       <ContentMetadataPanel
+        className={'cp-split-panel-transparent'}
         style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>

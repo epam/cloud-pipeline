@@ -448,6 +448,7 @@ export class SplitPanel extends React.Component {
   }
 
   render () {
+    const transparentClass = this.props.className ? this.props.className : '';
     return (
       <div
         className={
@@ -457,7 +458,8 @@ export class SplitPanel extends React.Component {
             {
               vertical: this.isVertical,
               horizontal: !this.isVertical
-            }
+            },
+            transparentClass
           )
         }
         ref={this.initializeSplitPane}
@@ -572,6 +574,7 @@ export class ContentMetadataPanel extends React.Component {
   render () {
     return (
       <SplitPanel
+        className={this.props.className}
         style={this.props.style}
         orientation={this.props.orientation}
         onPanelClose={this.props.onPanelClose}
