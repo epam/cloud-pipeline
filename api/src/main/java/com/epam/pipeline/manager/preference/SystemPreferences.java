@@ -859,6 +859,8 @@ public class SystemPreferences {
             "billing.reports.enabled.admins", true, BILLING_GROUP, pass);
     public static final IntPreference BILLING_EXPORT_AGGREGATION_PARTITION_SIZE = new IntPreference(
             "billing.export.aggregation.partition.size", 5000, BILLING_GROUP, pass);
+    public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PARTITION_SIZE = new IntPreference(
+            "billing.export.period.aggregation.partition.size", 1000, BILLING_GROUP, pass);
     public static final StringPreference BILLING_EXPORT_RUN_HEADER = new StringPreference(
             "billing.export.run.header", "Run,Owner,Billing Center,Pipeline,Tool,Type,Instance,Started,Finished,Duration (hours),Cost ($)",
             BILLING_GROUP, pass);

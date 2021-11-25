@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 public final class BillingUtils {
 
     public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
+    public static final int FALLBACK_EXPORT_PERIOD_AGGREGATION_PARTITION_SIZE = 1000;
     public static final char SEPARATOR = ',';
 
     public static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
@@ -85,7 +86,8 @@ public final class BillingUtils {
     public static final String OWNER_FIELD = "owner";
     public static final String BILLING_CENTER_FIELD = "billing_center";
     public static final String CARDINALITY_AGG = "cardinality";
-    public static final String PIPELINE_FIELD = "pipeline_name";
+    public static final String PIPELINE_ID_FIELD = "pipeline";
+    public static final String PIPELINE_NAME_FIELD = "pipeline_name";
     public static final String TOOL_FIELD = "tool";
     public static final String COMPUTE_TYPE_FIELD = "compute_type";
     public static final String INSTANCE_TYPE_FIELD = "instance_type";

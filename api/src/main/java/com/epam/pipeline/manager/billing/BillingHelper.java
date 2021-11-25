@@ -78,7 +78,6 @@ public class BillingHelper {
     private final ValueCountAggregationBuilder uniqueRunsAggregation;
     private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
-    private final CardinalityAggregationBuilder runIdCardinalityAggregation;
 
     public BillingHelper(final AuthManager authManager,
                          final @Value("${billing.index.common.prefix}") String commonPrefix) {
@@ -111,8 +110,6 @@ public class BillingHelper {
         this.lastByDateDocAggregation = AggregationBuilders.topHits(BillingUtils.LAST_BY_DATE_DOC_AGG)
                 .size(1)
                 .sort(BillingUtils.BILLING_DATE_FIELD, SortOrder.DESC);
-        this.runIdCardinalityAggregation = AggregationBuilders.cardinality(BillingUtils.CARDINALITY_AGG)
-                .field(BillingUtils.RUN_ID_FIELD);
     }
 
     public Map<String, List<String>> getFilters(final Map<String, List<String>> requestedFilters) {
@@ -188,13 +185,12 @@ public class BillingHelper {
                 .field(field);
     }
 
-    public TermsAggregationBuilder aggregatePartitionByRunId(final int partition, final int numberOfPartitions) {
-        return AggregationBuilders.terms(BillingUtils.RUN_ID_FIELD)
-                .field(BillingUtils.RUN_ID_FIELD)
-                .includeExclude(new IncludeExclude(partition, numberOfPartitions))
-                .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
-                .size(Integer.MAX_VALUE)
-                .minDocCount(NumberUtils.LONG_ONE);
+    public TermsAggregationBuilder aggregatePartitionBy(final String field,
+                                                        final int partition,
+                                                        final int numberOfPartitions) {
+        return numberOfPartitions > 1
+                ? aggregateBy(field).includeExclude(new IncludeExclude(partition, numberOfPartitions))
+                : aggregateBy(field);
     }
 
     public DateHistogramAggregationBuilder aggregateByMonth() {
@@ -206,8 +202,9 @@ public class BillingHelper {
                 .minDocCount(NumberUtils.LONG_ONE);
     }
 
-    public CardinalityAggregationBuilder aggregateCardinalityByRunId() {
-        return runIdCardinalityAggregation;
+    public CardinalityAggregationBuilder aggregateCardinalityBy(final String field) {
+        return AggregationBuilders.cardinality(BillingUtils.CARDINALITY_AGG)
+                .field(field);
     }
 
     public ValueCountAggregationBuilder aggregateUniqueRunsCount() {
@@ -347,7 +344,7 @@ public class BillingHelper {
                 .map(Double::longValue);
     }
 
-    public Optional<Integer> getCardinalityByRunId(final Aggregations aggregations) {
+    public Optional<Integer> getCardinality(final Aggregations aggregations) {
         return getAggregation(aggregations, BillingUtils.CARDINALITY_AGG, Cardinality.class)
                 .map(Cardinality::getValue)
                 .map(Long::intValue);
