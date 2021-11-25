@@ -21,13 +21,15 @@ import classNames from 'classnames';
 import {message, Table} from 'antd';
 import styles from './sub-settings.css';
 
-class SubSettings extends React.PureComponent {
+class SubSettings extends React.Component {
   state = {
-    section: undefined
+    section: undefined,
+    sub: undefined
   };
 
   componentDidMount () {
     this.updateFromProps();
+    this.rememberSubSection();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -36,6 +38,25 @@ class SubSettings extends React.PureComponent {
     } else {
       this.selectDefaultSection();
     }
+    this.rememberSubSection();
+  }
+
+  shouldComponentUpdate (nextProps, nextState, nextContext) {
+    const shallowCompareProp = (property) => nextProps[property] !== this.props[property];
+    const shallowCompareState = (property) => nextState[property] !== this.state[property];
+    const subSectionProp = nextProps.router && nextProps.router.params
+      ? nextProps.router.params.sub
+      : undefined;
+    return shallowCompareProp('activeSectionKey') ||
+      shallowCompareProp('className') ||
+      shallowCompareProp('onSectionChange') ||
+      shallowCompareProp('sections') ||
+      shallowCompareProp('canNavigate') ||
+      shallowCompareProp('children') ||
+      shallowCompareProp('emptyDataPlaceholder') ||
+      shallowCompareState('section') ||
+      shallowCompareState('sub') ||
+      subSectionProp !== this.state.sub;
   }
 
   updateFromProps = () => {
@@ -47,24 +68,59 @@ class SubSettings extends React.PureComponent {
     }, this.selectDefaultSection);
   };
 
+  rememberSubSection = () => {
+    const {
+      router
+    } = this.props;
+    this.setState({
+      sub: router && router.params ? router.params.sub : undefined
+    });
+  };
+
   selectDefaultSection = () => {
     const {
-      sections = []
+      sections = [],
+      router
     } = this.props;
     const {section} = this.state;
     const keys = sections.map(o => o.key);
     if (!keys.includes(section) && keys.length) {
+      const sectionFromRoute = router && router.params && router.params.section
+        ? sections.find(o =>
+          (o.key || '').toString().toLowerCase() === router.params.section.toLowerCase()
+        )
+        : undefined;
+      const defaultSection = sectionFromRoute || sections.find(o => o.default);
       this.setState({
-        section: keys[0]
+        section: defaultSection ? defaultSection.key : keys[0]
       }, this.reportSectionSelection);
     }
   };
 
   reportSectionSelection = () => {
     const {section} = this.state;
-    const {onSectionChange} = this.props;
+    const {
+      onSectionChange,
+      router,
+      root,
+      sections = []
+    } = this.props;
     if (onSectionChange) {
       onSectionChange(section);
+    }
+    if (router && root) {
+      const currentSection = sections.find(o => (o.key || '').toString() === section);
+      const {params = {}} = router;
+      const {
+        section: rootSection
+      } = params;
+      const navigation = currentSection && !currentSection.default ? currentSection.key : undefined;
+      if (navigation !== rootSection) {
+        const url = navigation
+          ? `/settings/${root}/${navigation}`
+          : `/settings/${root}`;
+        router.replace(url);
+      }
     }
   };
 
@@ -151,17 +207,23 @@ class SubSettings extends React.PureComponent {
     }
     const {
       sections = [],
-      children
+      children,
+      router
     } = this.props;
     const currentSection = sections.find(o => o.key === section);
     if (!currentSection) {
       return null;
     }
     let content = children;
+    const props = {
+      router,
+      section: currentSection,
+      sub: router && router.params ? router.params.sub : undefined
+    };
     if (typeof currentSection.render === 'function') {
-      content = currentSection.render();
+      content = currentSection.render(props);
     } else if (typeof children === 'function') {
-      content = children(currentSection);
+      content = children(props);
     }
     return (
       <div
@@ -214,12 +276,15 @@ SubSettings.propTypes = {
   sections: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     title: PropTypes.string,
+    route: PropTypes.string,
+    default: PropTypes.bool,
     render: PropTypes.func,
     disabled: PropTypes.bool
   })),
   canNavigate: PropTypes.func,
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  emptyDataPlaceholder: PropTypes.node
+  emptyDataPlaceholder: PropTypes.node,
+  router: PropTypes.object
 };
 
 export default observer(SubSettings);

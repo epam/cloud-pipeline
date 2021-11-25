@@ -62,6 +62,10 @@ a.cp-text:active {
   color: @application-color-accent;
 }
 
+a.underline {
+  text-decoration: underline;
+}
+
 a.cp-danger:hover,
 a.cp-danger:focus,
 .cp-link.cp-danger:hover,
@@ -164,6 +168,17 @@ a.cp-danger:focus,
   color: @color-red;
 }
 
+.cp-tag.success {
+  border-color: currentColor;
+  color: @color-green;
+}
+
+.cp-tag.cp-primary,
+.cp-tag.primary {
+  border-color: currentColor;
+  color: @primary-color;
+}
+
 .cp-versioned-storage {
   color: @primary-color;
 }
@@ -216,6 +231,12 @@ h5 {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
+}
+
+.chrome-picker input {
+  background-color: @input-background !important;
+  border-color: @input-border !important;
+  color: @input-color !important;
 }
 
 .ant-input-number-handler:active {
@@ -574,7 +595,7 @@ h5 {
 .cp-button {
   color: @application-color;
   background-color: @panel-background-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 
 .ant-btn-clicked::after {
@@ -623,7 +644,7 @@ h5 {
 .ant-btn-danger {
   color: @btn-danger-color;
   background-color: @btn-danger-background-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 
 .ant-btn-danger:focus,
@@ -671,17 +692,17 @@ h5 {
 .cp-button[disabled]:hover {
   color: @btn-disabled-color;
   background-color: @btn-disabled-background-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 
 .ant-radio-button-wrapper {
   background-color: @panel-background-color;
   color: @application-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 
 .ant-radio-button-wrapper:first-child {
-  border-left-color: @btn-border-color;
+  border-left-color: @input-border;
 }
 
 .ant-radio-button-wrapper-focused,
@@ -788,12 +809,12 @@ tr.ant-table-expanded-row:hover {
 }
 
 .ant-checkbox-inner {
-  border-color: @border-color;
+  border-color: @input-border;
   background-color: inherit;
 }
 
 .ant-checkbox-disabled .ant-checkbox-inner {
-  border-color: @border-color !important;
+  border-color: @input-border !important;
 }
 
 .ant-checkbox-disabled .ant-checkbox-inner,
@@ -804,7 +825,7 @@ tr.ant-table-expanded-row:hover {
 .ant-checkbox-wrapper:hover .ant-checkbox-inner,
 .ant-checkbox:not(.ant-checkbox-disabled):hover .ant-checkbox-inner,
 .ant-checkbox-input:focus + .ant-checkbox-inner {
-  border-color: @primary-color;
+  border-color: @input-border-hover-color;
 }
 
 .ant-checkbox-checked .ant-checkbox-inner,
@@ -845,6 +866,25 @@ tr.ant-table-expanded-row:hover {
 .ant-calendar-picker-icon::after {
   color: @input-color;
   background-color: @input-background;
+}
+
+.ant-calendar-time-picker-inner {
+  background-color: @panel-background-color;
+  color: @application-color;
+}
+
+.ant-calendar-time-picker-select {
+  border-color: @panel-border-color;
+}
+
+li.ant-calendar-time-picker-select-option-selected {
+  background-color: @element-selected-background-color;
+  color: @element-selected-color;
+}
+
+.ant-calendar-time-picker-select li:hover {
+  background-color: @element-hover-background-color;
+  color: @element-hover-color;
 }
 
 .ant-select {
@@ -1179,7 +1219,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-calendar-month-panel-month:hover,
 .ant-calendar-year-panel-year:hover,
 .ant-calendar-decade-panel-decade:hover {
-  background-color: @calendar-bg-hover-color;
+  background-color: @element-hover-background-color;
 }
 
 .ant-calendar-header a:hover {
@@ -1247,7 +1287,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-popover-title {
-  border-bottom: 1px solid @border-color;
+  border-bottom: 1px solid @panel-border-color;
   color: @application-color;
 }
 
@@ -1278,7 +1318,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-time-picker-input {
   color: @application-color;
   background-color: @panel-background-color;
-  border-color: @border-color;
+  border-color: @input-border;
 }
 
 .cp-error .ant-time-picker-input {
@@ -1318,7 +1358,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-time-picker-panel-input-wrap {
-  border-bottom-color: @calendar-border-color;
+  border-bottom-color: @card-border-color;
 }
 
 .ant-time-picker-panel-input {
@@ -1343,11 +1383,11 @@ li.ant-time-picker-panel-select-option-selected {
 }
 
 .ant-time-picker-panel-select li:hover {
-  background-color: @calendar-bg-hover-color;
+  background-color: @element-hover-background-color;
 }
 
 .ant-time-picker-panel-select {
-  border-left-color: @calendar-border-color;
+  border-left-color: @card-border-color;
 }
 
 .ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected::after,

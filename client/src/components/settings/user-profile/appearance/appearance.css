@@ -18,6 +18,20 @@
   padding: 0 5px;
 }
 
+.appearance-settings .header {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+.appearance-settings .header.with-actions {
+  justify-content: space-between;
+}
+
+.appearance-settings .manage {
+  line-height: 1;
+}
+
 .appearance-settings .header,
 .appearance-settings .block {
   padding: 5px 0;
@@ -95,133 +109,11 @@
   padding-left: 15px;
 }
 
-.theme-card {
-  cursor: pointer;
-  width: 225px;
-  height: 175px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  margin: 10px;
-}
-
-.theme-visualization {
-  flex: 1;
-}
-
 .system-card-panel {
   justify-content: space-evenly;
   padding: 10px;
 }
 
-.action-container {
-  padding: 0 10px;
-  display: flex;
-  justify-content: left;
-  align-items: center;
-  height: 34px;
-}
-
-.select-theme-mode-container {
-  display: flex;
-  align-items: center;
-}
-
-.select-theme-mode-container span {
-  margin-left: 10px;
-}
-
-.select-theme-mode-container div {
-  width: 200px;
-}
-
 .description {
   text-align: center;
-}
-
-.preview-article {
-  display: flex;
-  justify-content: stretch;
-  width: 100%;
-  min-height: 100px;
-  border-radius: 6px 6px 0 0;
-  flex: 1 1 auto;
-}
-
-.preview-aside {
-  width: 10%;
-  border-radius: 6px 0 0;
-  display: flex;
-  flex-direction: column;
-  align-content: flex-start;
-}
-
-.preview-aside > * {
-  margin: 2px 0;
-}
-
-.preview-logo {
-  width: 15px;
-  height: 15px;
-}
-
-.preview-panels-box {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-}
-
-.preview-main {
-  flex: 1 1 auto;
-  margin-right: 5px;
-  height: 80%;
-  width: 50%;
-}
-
-.preview-panel {
-  flex: 1 1 auto;
-  margin-right: 5px;
-  height: 80%;
-  width: 45%;
-}
-
-.preview-top-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.preview-btn-container {
-  display: flex;
-  margin: 6px;
-  justify-content: flex-end;
-}
-
-.preview-btn {
-  height: 10px;
-  width: 20px;
-  margin: 4px;
-  border-radius: 6px;
-}
-
-.preview-section {
-  margin: 6px;
-  padding: 2px 0;
-  display: flex;
-  align-items: center;
-}
-
-.preview-text {
-  height: 6px;
-  width: 20%;
-  margin: 6px;
-  border-radius: 6px;
-}
-
-.preview-text-short {
-  height: 6px;
-  width: 10%;
-  margin: 6px;
-  border-radius: 6px;
 }

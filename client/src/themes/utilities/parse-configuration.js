@@ -83,17 +83,27 @@ export function parseFunctions (content) {
   return parsed;
 }
 
-function parseValue (value, configuration) {
+export class ParseConfigurationError extends Error {
+  constructor (keys = []) {
+    super(`Error parsing configuration: variable loop detected: ${keys.join('>')}`);
+    this.variables = keys;
+  }
+}
+
+function parseValue (value, configuration, chain = []) {
+  if (chain.length > 1 && (new Set(chain)).size < chain.length) {
+    throw new ParseConfigurationError(chain);
+  }
   const variables = Object.keys(configuration || {})
     .map(key => ({
       regExp: new RegExp(`(\\s*${key}\\s*)($|,|\\))`),
-      value: () => parseValue(configuration[key], configuration),
+      value: () => parseValue(configuration[key], configuration, [...chain, key]),
       length: exec => exec && exec.length > 0 ? exec[1].length : 0
     }))
     .concat([
       {
         regExp: /@static_resource\((.*)\)$/i,
-        value: o => staticResource(parseValue(o, configuration)),
+        value: o => staticResource(parseValue(o, configuration, chain)),
         length: exec => exec && exec.length ? exec[0].length : 0
       }
     ]);

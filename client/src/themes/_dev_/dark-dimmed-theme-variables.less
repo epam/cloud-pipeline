@@ -41,18 +41,10 @@
 @color-blue-dimmed: #458;
 @color-grey: #777;
 
-@border-color: lighten(@application-background-color, 15%);
-
 @spinner: @application-color;
-
-@status-good-color: @color-green;
-@status-warning-color: @color-yellow;
-@status-bad-color: @color-red;
-@status-info-color: @color-blue;
 
 @panel-background-color: rgb(44, 49, 55);
 @panel-border-color: rgb(28, 30, 33);
-@panel-transparent-color: transparent;
 
 @element-hover-color: @application-color;
 @element-hover-background-color: lighten(@panel-background-color, 3%);
@@ -62,7 +54,7 @@
 @input-background: @panel-background-color;
 @input-background-disabled: lighten(@input-background, 5%);
 @input-addon: lighten(@input-background, 5%);
-@input-border: @border-color;
+@input-border: lighten(@application-background-color, 15%);
 @input-color: @application-color;
 @input-placeholder-color: fadeout(@application-color, 40%);
 @input-border-hover-color: @primary-hover-color;
@@ -106,18 +98,18 @@
 
 @even-element-background: lighten(@card-background-color, 5%);
 
-@alert-success-background: darken(@status-good-color, 15%);
-@alert-success-border: @status-good-color;
-@alert-success-icon: @status-good-color;
-@alert-warning-background: darken(@status-warning-color, 15%);
-@alert-warning-border: @status-warning-color;
-@alert-warning-icon: @status-warning-color;
-@alert-error-background: darken(@status-bad-color, 15%);
-@alert-error-border: @status-bad-color;
-@alert-error-icon: @status-bad-color;
-@alert-info-background: darken(@status-info-color, 15%);
-@alert-info-border: @status-info-color;
-@alert-info-icon: @status-info-color;
+@alert-success-background: darken(@color-green, 15%);
+@alert-success-border: @color-green;
+@alert-success-icon: @color-green;
+@alert-warning-background: darken(@color-yellow, 15%);
+@alert-warning-border: @color-yellow;
+@alert-warning-icon: @color-yellow;
+@alert-error-background: darken(@color-red, 15%);
+@alert-error-border: @color-red;
+@alert-error-icon: @color-red;
+@alert-info-background: darken(@color-blue, 15%);
+@alert-info-border: @color-blue;
+@alert-info-icon: @color-blue;
 
 @table-element-selected-background-color: @element-selected-background-color;
 @table-element-selected-color: @element-selected-color;
@@ -131,7 +123,6 @@
 @menu-border-color: @panel-border-color;
 
 @btn-color: @primary-text-color;
-@btn-border-color: @border-color;
 @btn-primary-hover: @primary-hover-color;
 @btn-primary-active: @primary-active-color;
 @btn-danger-color: @color-red;
@@ -139,17 +130,6 @@
 @btn-danger-active-color: darken(@btn-danger-color, 20%);
 @btn-disabled-color: lighten(@panel-background-color, 40%);
 @btn-disabled-background-color: lighten(@panel-background-color, 4%);
-
-@run-icon-green: @color-green;
-@run-icon-blue: @color-blue;
-@run-icon-red: @color-red;
-@run-icon-yellow: @color-yellow;
-
-@calendar-border-color: @card-border-color;
-@calendar-bg-hover-color: @element-hover-background-color;
-@cp-calendar-shadow-color: @card-hovered-shadow-color;
-@cp-calendar-border-color: @calendar-border-color;
-@date-picker-day-border-color: fadeout(@calendar-border-color, 20%);
 
 @code-background-color: lighten(@card-background-color, 5%);
 

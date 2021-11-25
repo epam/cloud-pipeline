@@ -226,7 +226,7 @@ export default class Preferences extends React.Component {
           canNavigate={this.canChangePreferenceGroup}
         >
           {
-            (group) => (
+            ({section: group}) => (
               <PreferenceGroup
                 pending={this.state.operationInProgress}
                 onSubmit={this.operationWrapper(this.updatePreferences)}
@@ -234,6 +234,7 @@ export default class Preferences extends React.Component {
                 preferences={this.getPreferencesForGroup(group.key)}
                 wrappedComponentRef={this.initializePreferenceGroupForm}
                 search={this.state.search}
+                router={this.props.router}
               />
             )
           }

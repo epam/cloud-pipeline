@@ -24,6 +24,11 @@
   border-color: @primary-color;
 }
 
+.theme-preview:not(.read-only):hover {
+  border-color: @primary-color;
+  box-shadow: 0 0 2px 2px fade(@primary-color, 20%);
+}
+
 .cp-themes-group {
   color: @application-color;
   background-color: @card-background-color;
@@ -47,6 +52,8 @@
 .theme-identifier.theme-preview .cp-theme-preview-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-panel {
@@ -78,15 +85,15 @@
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-blue {
-  color: @run-icon-blue;
+  color: @color-blue;
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-yellow {
-  color: @run-icon-yellow;
+  color: @color-yellow;
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-green {
-  color: @run-icon-green;
+  color: @color-green;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item.selected {
@@ -113,4 +120,8 @@
 
 .theme-identifier.theme-preview .cp-theme-preview-text {
   background-color: @application-color;
+}
+
+.color-presenter {
+  border-color: @application-color;
 }

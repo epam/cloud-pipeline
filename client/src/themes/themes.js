@@ -19,13 +19,16 @@ import DarkTheme from './dark-theme';
 import LightTheme from './light-theme';
 import parseConfiguration from './utilities/parse-configuration';
 import PreferenceLoad from '../models/preferences/PreferenceLoad';
+import PreferencesUpdate from '../models/preferences/PreferencesUpdate';
 
 const PredefinedThemes = [LightTheme, DarkTheme, DarkDimmedTheme];
 const DefaultTheme = PredefinedThemes.find(o => o.default) || LightTheme;
 
-function generateIdentifier (name) {
+export function generateIdentifier (name) {
   if (name) {
-    return name.replace(/[\s;.,!@#$%^&*(){}[\]\\/]/g, '-').toLowerCase();
+    return name
+      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
+      .replace(/[\s;.,!@#$%^&*(){}[\]\\/]/g, '-').toLowerCase();
   }
   return `custom-theme`;
 }
@@ -58,7 +61,7 @@ function correctCustomThemeIdentifier (predefinedThemes = []) {
   };
 }
 
-function getThemeConfiguration (theme, themes = PredefinedThemes) {
+export function getThemeConfiguration (theme, themes = PredefinedThemes) {
   if (!theme) {
     return {};
   }
@@ -73,25 +76,63 @@ function getThemeConfiguration (theme, themes = PredefinedThemes) {
     );
     const mergedConfiguration = Object.assign(
       {},
-      baseTheme ? baseTheme.configuration : {},
-      configuration
+      baseTheme ? {...(baseTheme.configuration || {})} : {},
+      {...configuration || {}}
     );
     return {
       ...theme,
-      configuration: mergedConfiguration
+      configuration: {...mergedConfiguration},
+      properties: {...configuration}
     };
   }
-  return theme;
+  return {
+    ...theme,
+    properties: {...configuration}
+  };
 }
 
 const DefaultLightThemeIdentifier = LightTheme.identifier;
 const DefaultDarkThemeIdentifier = DarkDimmedTheme.identifier;
+const DefaultThemeIdentifier = DefaultTheme.identifier;
 
-export {DefaultDarkThemeIdentifier, DefaultLightThemeIdentifier};
+const ThemesPreferenceName = 'ui.themes';
+const ThemesPreferenceGroup = 'User Interface';
+
+export {
+  DefaultDarkThemeIdentifier,
+  DefaultLightThemeIdentifier,
+  DefaultThemeIdentifier,
+  ThemesPreferenceName,
+  parseConfiguration
+};
+
+export function saveThemes (themes) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(themes || []);
+    const request = new PreferencesUpdate();
+    console.log(themes);
+    console.log(payload);
+    request
+      .send([{
+        name: ThemesPreferenceName,
+        preferenceGroup: ThemesPreferenceGroup,
+        type: 'OBJECT',
+        value: payload,
+        visible: true
+      }])
+      .then(() => {
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        resolve();
+      })
+      .catch(reject);
+  });
+}
 
 export default function getThemes () {
   return new Promise((resolve) => {
-    const request = new PreferenceLoad('ui.themes');
+    const request = new PreferenceLoad(ThemesPreferenceName);
     request
       .fetch()
       .then(() => {

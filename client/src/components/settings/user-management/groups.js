@@ -315,7 +315,6 @@ export default class GroupsManagement extends React.Component {
   }
 
   componentDidMount () {
-    console.log('here');
     this.props.roles.fetch();
   }
 }

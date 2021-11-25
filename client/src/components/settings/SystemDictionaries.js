@@ -283,7 +283,7 @@ class SystemDictionaries extends React.Component {
           )}
         >
           {
-            section => (
+            ({section}) => (
               <SystemDictionaryForm
                 filter={this.state.filter}
                 disabled={this.state.pending}

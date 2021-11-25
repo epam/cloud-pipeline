@@ -31,6 +31,7 @@
     "rc-dropdown": "^2.2.0",
     "rc-menu": "^6.0.1",
     "react": "^15.4.2",
+    "react-color": "^2.19.3",
     "react-day-picker": "^5.5.3",
     "react-dom": "^15.4.2",
     "react-grid-layout": "^0.16.6",

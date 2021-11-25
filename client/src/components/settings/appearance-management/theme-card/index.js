@@ -19,21 +19,38 @@ import PropTypes from 'prop-types';
 import {Radio, Icon} from 'antd';
 import classNames from 'classnames';
 
-import styles from './appearance.css';
+import styles from './theme-card.css';
 
-function ThemeCard (props) {
-  const {name, identifier, selected, onSelect} = props;
+function ThemeCard (
+  {
+    name,
+    tag,
+    className,
+    identifier,
+    selected,
+    onSelect,
+    radio = false,
+    readOnly
+  }
+) {
   return (
     <div
       className={
         classNames(
           styles.themeCard,
+          {
+            [styles.readOnly]: readOnly
+          },
           identifier,
           'theme-preview',
-          {selected},
+          {
+            selected,
+            'read-only': readOnly
+          },
+          className
         )
       }
-      onClick={() => onSelect(identifier)}
+      onClick={() => readOnly ? {} : onSelect(identifier)}
     >
       <article
         className={
@@ -76,12 +93,55 @@ function ThemeCard (props) {
         </div>
       </article>
       <div className={styles.actionContainer}>
-        <Radio
-          checked={selected}
-          onChange={() => onSelect(identifier)}
-        >
-          <b>{name}</b>
-        </Radio>
+        {
+          radio && !readOnly && (
+            <Radio
+              checked={selected}
+              onChange={() => onSelect(identifier)}
+            >
+              <b>{name}</b>
+              {
+                tag && (
+                  <span
+                    className={
+                      classNames(
+                        styles.tag,
+                        'cp-tag',
+                        'primary'
+                      )
+                    }
+                  >
+                    {tag}
+                  </span>
+                )
+              }
+            </Radio>
+          )
+        }
+        {
+          (!radio || readOnly) && (
+            <span>
+              <b>
+                {name}
+              </b>
+              {
+                tag && (
+                  <span
+                    className={
+                      classNames(
+                        styles.tag,
+                        'cp-tag',
+                        'primary'
+                      )
+                    }
+                  >
+                    {tag}
+                  </span>
+                )
+              }
+            </span>
+          )
+        }
       </div>
     </div>
   );
@@ -89,9 +149,11 @@ function ThemeCard (props) {
 
 ThemeCard.propTypes = {
   name: PropTypes.string,
+  className: PropTypes.string,
   identifier: PropTypes.string,
   selected: PropTypes.bool,
-  onSelect: PropTypes.func
+  onSelect: PropTypes.func,
+  radio: PropTypes.bool
 };
 
 export default ThemeCard;

@@ -15,7 +15,13 @@
  */
 
 import {computed, observable} from 'mobx';
-import getThemes, {DefaultDarkThemeIdentifier, DefaultLightThemeIdentifier} from './themes';
+import getThemes, {
+  DefaultDarkThemeIdentifier,
+  DefaultLightThemeIdentifier,
+  DefaultThemeIdentifier,
+  ThemesPreferenceName,
+  generateIdentifier, saveThemes
+} from './themes';
 import injectTheme from './utilities/inject-theme';
 import './default.theme.less';
 
@@ -105,16 +111,30 @@ class CloudPipelineThemes {
   }
 
   async initialize () {
+    await this.refresh();
+    this.readUserPreference();
+    this.applyTheme();
+    this.loaded = true;
+  }
+
+  async refresh () {
     try {
       this.themes = await getThemes();
-      console.log(this.themes);
       this.themes.forEach(injectTheme);
-      this.readUserPreference();
     } catch (e) {
-      console.warn(`Error applying themes: ${e.message}`);
-    } finally {
-      this.applyTheme();
-      this.loaded = true;
+      console.warn(`Error reading themes: ${e.message}`);
+    }
+  }
+
+  async saveThemes (themes, throwError = false) {
+    try {
+      await saveThemes(themes);
+      await this.refresh();
+    } catch (e) {
+      console.warn(e.message);
+      if (throwError) {
+        throw e;
+      }
     }
   }
 
@@ -214,4 +234,9 @@ class CloudPipelineThemes {
   }
 }
 
+export {
+  DefaultThemeIdentifier,
+  ThemesPreferenceName,
+  generateIdentifier
+};
 export default CloudPipelineThemes;

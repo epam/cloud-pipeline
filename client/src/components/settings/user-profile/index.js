@@ -17,23 +17,32 @@
 import React from 'react';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
-import AppearanceSettings from './appearance';
+import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
 
 const sections = [
   {
     key: 'profile',
     title: 'PROFILE',
+    default: true,
     render: () => (<ProfileSettings />)
   },
   {
     key: 'appearance',
     title: 'APPEARANCE',
-    render: () => (<AppearanceSettings />)
+    render: ({router, sub} = {}) => (
+      <AppearanceSettings
+        router={router}
+        management={MANAGEMENT_SECTION.toLowerCase() === (sub || '').toLowerCase()}
+      />)
   }
 ];
 
-export default function UserProfile () {
+export default function UserProfile ({router}) {
   return (
-    <SubSettings sections={sections} />
+    <SubSettings
+      sections={sections}
+      router={router}
+      root="profile"
+    />
   );
 }

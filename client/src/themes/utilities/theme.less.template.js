@@ -21,6 +21,10 @@ export default `
 @THEME .theme-preview.selected {
   border-color: @primary-color;
 }
+@THEME .theme-preview:not(.read-only):hover {
+  border-color: @primary-color;
+  box-shadow: 0 0 2px 2px fade(@primary-color, 20%);
+}
 @THEME .cp-themes-group {
   color: @application-color;
   background-color: @card-background-color;
@@ -40,6 +44,8 @@ export default `
 @THEME.theme-preview .cp-theme-preview-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
 }
 @THEME.theme-preview .cp-theme-preview-panel {
   border: 1px solid @panel-border-color;
@@ -65,13 +71,13 @@ export default `
   background-color: @panel-background-color;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-blue {
-  color: @run-icon-blue;
+  color: @color-blue;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-yellow {
-  color: @run-icon-yellow;
+  color: @color-yellow;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-green {
-  color: @run-icon-green;
+  color: @color-green;
 }
 @THEME.theme-preview .cp-theme-preview-navigation-menu-item.selected {
   background-color: @navigation-panel-highlighted-color;
@@ -93,6 +99,9 @@ export default `
 }
 @THEME.theme-preview .cp-theme-preview-text {
   background-color: @application-color;
+}
+@THEME .color-presenter {
+  border-color: @application-color;
 }
 
 @THEME body[class*="dark"] {
@@ -131,6 +140,9 @@ export default `
 @THEME a.cp-text:focus,
 @THEME a.cp-text:active {
   color: @application-color-accent;
+}
+@THEME a.underline {
+  text-decoration: underline;
 }
 @THEME a.cp-danger:hover,
 @THEME a.cp-danger:focus,
@@ -213,6 +225,15 @@ export default `
   border-color: currentColor;
   color: @color-red;
 }
+@THEME .cp-tag.success {
+  border-color: currentColor;
+  color: @color-green;
+}
+@THEME .cp-tag.cp-primary,
+@THEME .cp-tag.primary {
+  border-color: currentColor;
+  color: @primary-color;
+}
 @THEME .cp-versioned-storage {
   color: @primary-color;
 }
@@ -257,6 +278,11 @@ export default `
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
+}
+@THEME .chrome-picker input {
+  background-color: @input-background !important;
+  border-color: @input-border !important;
+  color: @input-color !important;
 }
 @THEME .ant-input-number-handler:active {
   color: @primary-text-color;
@@ -553,7 +579,7 @@ export default `
 @THEME .cp-button {
   color: @application-color;
   background-color: @panel-background-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 @THEME .ant-btn-clicked::after {
   border: 0 solid @primary-color;
@@ -595,7 +621,7 @@ export default `
 @THEME .ant-btn-danger {
   color: @btn-danger-color;
   background-color: @btn-danger-background-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 @THEME .ant-btn-danger:focus,
 @THEME .ant-btn-danger:hover {
@@ -637,15 +663,15 @@ export default `
 @THEME .cp-button[disabled]:hover {
   color: @btn-disabled-color;
   background-color: @btn-disabled-background-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 @THEME .ant-radio-button-wrapper {
   background-color: @panel-background-color;
   color: @application-color;
-  border-color: @btn-border-color;
+  border-color: @input-border;
 }
 @THEME .ant-radio-button-wrapper:first-child {
-  border-left-color: @btn-border-color;
+  border-left-color: @input-border;
 }
 @THEME .ant-radio-button-wrapper-focused,
 @THEME .ant-radio-button-wrapper:hover {
@@ -733,11 +759,11 @@ export default `
   background: inherit;
 }
 @THEME .ant-checkbox-inner {
-  border-color: @border-color;
+  border-color: @input-border;
   background-color: inherit;
 }
 @THEME .ant-checkbox-disabled .ant-checkbox-inner {
-  border-color: @border-color !important;
+  border-color: @input-border !important;
 }
 @THEME .ant-checkbox-disabled .ant-checkbox-inner,
 @THEME .ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner {
@@ -746,7 +772,7 @@ export default `
 @THEME .ant-checkbox-wrapper:hover .ant-checkbox-inner,
 @THEME .ant-checkbox:not(.ant-checkbox-disabled):hover .ant-checkbox-inner,
 @THEME .ant-checkbox-input:focus + .ant-checkbox-inner {
-  border-color: @primary-color;
+  border-color: @input-border-hover-color;
 }
 @THEME .ant-checkbox-checked .ant-checkbox-inner,
 @THEME .ant-checkbox-indeterminate .ant-checkbox-inner {
@@ -779,6 +805,21 @@ export default `
 @THEME .ant-calendar-picker-icon::after {
   color: @input-color;
   background-color: @input-background;
+}
+@THEME .ant-calendar-time-picker-inner {
+  background-color: @panel-background-color;
+  color: @application-color;
+}
+@THEME .ant-calendar-time-picker-select {
+  border-color: @panel-border-color;
+}
+@THEME li.ant-calendar-time-picker-select-option-selected {
+  background-color: @element-selected-background-color;
+  color: @element-selected-color;
+}
+@THEME .ant-calendar-time-picker-select li:hover {
+  background-color: @element-hover-background-color;
+  color: @element-hover-color;
 }
 @THEME .ant-select {
   color: @input-color;
@@ -1058,7 +1099,7 @@ export default `
 @THEME .ant-calendar-month-panel-month:hover,
 @THEME .ant-calendar-year-panel-year:hover,
 @THEME .ant-calendar-decade-panel-decade:hover {
-  background-color: @calendar-bg-hover-color;
+  background-color: @element-hover-background-color;
 }
 @THEME .ant-calendar-header a:hover {
   color: @primary-hover-color;
@@ -1113,7 +1154,7 @@ export default `
   color: @application-color;
 }
 @THEME .ant-popover-title {
-  border-bottom: 1px solid @border-color;
+  border-bottom: 1px solid @panel-border-color;
   color: @application-color;
 }
 @THEME .ant-row.cp-metadata-dropdown-row {
@@ -1139,7 +1180,7 @@ export default `
 @THEME .ant-time-picker-input {
   color: @application-color;
   background-color: @panel-background-color;
-  border-color: @border-color;
+  border-color: @input-border;
 }
 @THEME .cp-error .ant-time-picker-input {
   color: @color-red;
@@ -1170,7 +1211,7 @@ export default `
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 @THEME .ant-time-picker-panel-input-wrap {
-  border-bottom-color: @calendar-border-color;
+  border-bottom-color: @card-border-color;
 }
 @THEME .ant-time-picker-panel-input {
   background-color: @panel-background-color;
@@ -1189,10 +1230,10 @@ export default `
   background-color: @element-selected-background-color;
 }
 @THEME .ant-time-picker-panel-select li:hover {
-  background-color: @calendar-bg-hover-color;
+  background-color: @element-hover-background-color;
 }
 @THEME .ant-time-picker-panel-select {
-  border-left-color: @calendar-border-color;
+  border-left-color: @card-border-color;
 }
 @THEME .ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected::after,
 @THEME .ant-select-dropdown.ant-select-dropdown--multiple .ant-select-dropdown-menu-item-selected:hover::after {
@@ -1322,7 +1363,7 @@ export default `
   color: @application-color;
 }
 @THEME .cp-panel.cp-panel-transparent {
-  background-color: @panel-transparent-color;
+  background-color: transparent;
   border-color: transparent;
 }
 @THEME .cp-panel.cp-panel-transparent:hover {
@@ -1464,13 +1505,13 @@ export default `
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @status-good-color;
+  color: @color-green;
 }
 @THEME .cp-notification-status-warning {
-  color: @status-warning-color;
+  color: @color-yellow;
 }
 @THEME .cp-notification-status-critical {
-  color: @status-bad-color;
+  color: @color-red;
 }
 @THEME .cp-new-notification {
   border-color: @color-blue;
@@ -1642,16 +1683,16 @@ export default `
   background-color: @card-service-background-color;
 }
 @THEME .cp-runs-table-icon-green {
-  color: @run-icon-green;
+  color: @color-green;
 }
 @THEME .cp-runs-table-icon-blue {
-  color: @run-icon-blue;
+  color: @color-blue;
 }
 @THEME .cp-runs-table-icon-red {
-  color: @run-icon-red;
+  color: @color-red;
 }
 @THEME .cp-runs-table-icon-yellow {
-  color: @run-icon-yellow;
+  color: @color-yellow;
 }
 @THEME .cp-filter-popover-container {
   background-color: @card-background-color;
@@ -1667,7 +1708,7 @@ export default `
   color: @application-color-faded;
 }
 @THEME .cp-runs-day-picker .DayPicker-Day {
-  border-color: @date-picker-day-border-color;
+  border-color: fadeout(@card-border-color, 20%);
 }
 @THEME .cp-runs-day-picker .DayPicker-Day:hover {
   color: @primary-color;
@@ -1705,19 +1746,19 @@ export default `
   fill: @card-background-color;
 }
 @THEME .cp-wdl-task[data-taskstatus=running] rect {
-  fill: fade(@run-icon-blue, 20%);
-  stroke: @run-icon-blue;
+  fill: fade(@color-blue, 20%);
+  stroke: @color-blue;
 }
 @THEME .cp-wdl-task[data-taskstatus=running] text {
-  fill: @run-icon-blue;
+  fill: @color-blue;
 }
 @THEME .cp-wdl-task[data-taskstatus=success] rect {
-  fill: fade(@run-icon-green, 20%);
-  stroke: @run-icon-green;
+  fill: fade(@color-green, 20%);
+  stroke: @color-green;
   opacity: 1;
 }
 @THEME .cp-wdl-task[data-taskstatus=success] text {
-  fill: @run-icon-green;
+  fill: @color-green;
 }
 @THEME .cp-wdl-task[data-taskstatus=stopped] rect {
   fill: @card-background-color;
@@ -1728,16 +1769,17 @@ export default `
   fill: @application-color-faded;
 }
 @THEME .cp-wdl-task[data-taskstatus=failure] rect {
-  fill: fade(@run-icon-red, 20%);
-  stroke: @run-icon-red;
+  fill: fade(@color-red, 20%);
+  stroke: @color-red;
   opacity: 1;
 }
 @THEME .cp-wdl-task[data-taskstatus=failure] text {
-  fill: @run-icon-red;
+  fill: @color-red;
 }
 @THEME .cp-stop-run-modal-confirm-icon {
-  color: @run-icon-yellow;
+  color: @color-yellow;
 }
+
 @THEME .cp-billing-menu {
   width: fit-content;
   margin-left: 0;
@@ -1789,7 +1831,7 @@ export default `
 }
 @THEME .cp-billing-calendar-container {
   background-color: @panel-background-color;
-  box-shadow: 0 0 2px 2px @cp-calendar-shadow-color;
+  box-shadow: 0 0 2px 2px @card-hovered-shadow-color;
   color: @application-color;
 }
 @THEME .cp-billing-calendar-years-container {
@@ -1802,7 +1844,7 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .cp-billing-calendar-row-item {
-  border: 1px solid @cp-calendar-border-color;
+  border: 1px solid @card-border-color;
 }
 @THEME .cp-billing-calendar-row-item.selected {
   color: @primary-color;
@@ -1824,9 +1866,6 @@ export default `
 }
 @THEME .cp-billing-calendar-icon {
   color: @application-color;
-}
-@THEME .cp-billing-divider {
-  border-left: 1px solid @border-color;
 }
 @THEME .cp-billing-button-link:hover {
   color: @primary-color;
@@ -2040,7 +2079,7 @@ export default `
 @THEME .cp-search-faceted-button {
   color: @application-color;
   background-color: @panel-background-color;
-  border: 1px solid @btn-border-color;
+  border: 1px solid @input-border;
 }
 @THEME .cp-search-faceted-button:hover,
 @THEME .cp-search-faceted-button:focus {
@@ -2295,6 +2334,10 @@ export default `
 }
 @THEME .cp-settings-form-item-label {
   color: @application-color-accent;
+}
+@THEME .cp-settings-form-item-label.required::before {
+  color: @color-red;
+  content: '*';
 }
 @THEME .cp-settings-nat-table thead tr:first-child,
 @THEME .cp-settings-nat-table thead tr:first-child th:first-child,

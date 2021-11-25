@@ -72,6 +72,11 @@
   color: @application-color-accent;
 }
 
+.cp-settings-form-item-label.required::before {
+  color: @color-red;
+  content: '*';
+}
+
 .cp-settings-nat-table thead tr:first-child,
 .cp-settings-nat-table thead tr:first-child th:first-child,
 .cp-settings-nat-table thead tr th.external-column:nth-child(3),

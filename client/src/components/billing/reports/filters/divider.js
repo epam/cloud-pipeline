@@ -20,7 +20,15 @@ import styles from './divider.css';
 
 export default function Divider () {
   return (
-    <div className={classNames(styles.divider, 'cp-billing-divider')}>
+    <div
+      className={
+        classNames(
+          styles.divider,
+          'cp-divider',
+          'right'
+        )
+      }
+    >
       {'\u00A0'}
     </div>
   );

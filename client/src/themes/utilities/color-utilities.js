@@ -171,7 +171,7 @@ export function buildColor (channels) {
   return `rgba(${rgb}, ${alphaChannelValue(a)})`;
 }
 
-function parseAmount (amount) {
+export function parseAmount (amount) {
   let value = Number(amount);
   if (/^[\d]+%$/.test(amount)) {
     value = Number(amount.slice(0, -1)) / 100.0;

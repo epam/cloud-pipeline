@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer, Provider} from 'mobx-react';
+import {Provider} from 'mobx-react';
 import {Alert} from 'antd';
 import Roles from '../../models/user/Roles';
 import roleModel from '../../utils/roleModel';
@@ -23,10 +23,12 @@ import SubSettings from './sub-settings';
 import UsersManagement from './user-management/users';
 import GroupsManagement from './user-management/groups';
 
+const roles = new Roles();
+
 function UserManagementForm (
   {
     authenticatedUserInfo,
-    roles
+    router
   }
 ) {
   if (!authenticatedUserInfo.loaded && authenticatedUserInfo.pending) {
@@ -51,6 +53,7 @@ function UserManagementForm (
           {
             key: 'users',
             title: 'Users',
+            default: true,
             render: () => (
               <UsersManagement />
             )
@@ -70,13 +73,11 @@ function UserManagementForm (
             )
           }
         ]}
+        router={router}
+        root="user"
       />
     </Provider>
   );
 }
 
-export default roleModel.authenticationInfo(
-  inject(() => ({roles: new Roles()}))(
-    observer(UserManagementForm)
-  )
-);
+export default roleModel.authenticationInfo(UserManagementForm);

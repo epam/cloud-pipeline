@@ -15,15 +15,38 @@
  */
 
 import React from 'react';
-import {Select} from 'antd';
+import {Button, Select} from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-
-import ThemeCard from './theme-card';
+import roleModel from '../../../../utils/roleModel';
+import ThemeCard from '../../appearance-management/theme-card';
+import AppearanceManagement from '../../appearance-management';
 import styles from './appearance.css';
 
-function AppearanceSettings ({themes, preferences}) {
+const MANAGEMENT_SECTION = 'management';
+
+function AppearanceSettings (
+  {
+    authenticatedUserInfo,
+    themes,
+    preferences,
+    router,
+    management
+  }
+) {
   const cloudPipelineAppName = preferences.deploymentName || 'Cloud Pipeline';
+  const administrator = !!authenticatedUserInfo &&
+    !!authenticatedUserInfo.loaded &&
+    !!authenticatedUserInfo.value &&
+    authenticatedUserInfo.value.admin;
+  const manage = () => router && router.push(`/settings/profile/appearance/${MANAGEMENT_SECTION}`);
+  if (management) {
+    return (
+      <AppearanceManagement
+        router={router}
+      />
+    );
+  }
   const {
     synchronizeWithSystem,
     singleTheme,
@@ -68,6 +91,7 @@ function AppearanceSettings ({themes, preferences}) {
               identifier={theme.identifier}
               selected={theme.identifier === singleTheme}
               onSelect={onChangeSingleTheme}
+              radio
             />
           ))
         }
@@ -115,6 +139,7 @@ function AppearanceSettings ({themes, preferences}) {
               identifier={theme.identifier}
               selected={isSelected(theme.identifier)}
               onSelect={themeIsLight ? onChangeLightTheme : onChangeDarkTheme}
+              radio
             />
           ))
         }
@@ -152,10 +177,29 @@ function AppearanceSettings ({themes, preferences}) {
   );
   return (
     <div className={styles.appearanceSettings}>
-      <div className={classNames(styles.header, 'cp-divider', 'bottom')}>
+      <div
+        className={
+          classNames(
+            styles.header,
+            {[styles.withActions]: administrator},
+            'cp-divider',
+            'bottom'
+          )
+        }
+      >
         <h2 className="cp-title">
           {cloudPipelineAppName} UI Theme Preferences
         </h2>
+        {
+          administrator && (
+            <Button
+              className={styles.manage}
+              onClick={manage}
+            >
+              Manage
+            </Button>
+          )
+        }
       </div>
       <div
         className={
@@ -194,4 +238,10 @@ function AppearanceSettings ({themes, preferences}) {
   );
 }
 
-export default inject('themes', 'preferences')(observer(AppearanceSettings));
+export {MANAGEMENT_SECTION};
+
+export default roleModel.authenticationInfo(
+  inject('themes', 'preferences')(
+    observer(AppearanceSettings)
+  )
+);

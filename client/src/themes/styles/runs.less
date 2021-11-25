@@ -21,19 +21,19 @@
 }
 
 .cp-runs-table-icon-green {
-  color: @run-icon-green;
+  color: @color-green;
 }
 
 .cp-runs-table-icon-blue {
-  color: @run-icon-blue;
+  color: @color-blue;
 }
 
 .cp-runs-table-icon-red {
-  color: @run-icon-red;
+  color: @color-red;
 }
 
 .cp-runs-table-icon-yellow {
-  color: @run-icon-yellow;
+  color: @color-yellow;
 }
 
 .cp-filter-popover-container {
@@ -54,7 +54,7 @@
 }
 
 .cp-runs-day-picker .DayPicker-Day {
-  border-color: @date-picker-day-border-color;
+  border-color: fadeout(@card-border-color, 20%);
 }
 
 .cp-runs-day-picker .DayPicker-Day:hover {
@@ -102,22 +102,22 @@
 }
 
 .cp-wdl-task[data-taskstatus=running] rect {
-  fill: fade(@run-icon-blue, 20%);
-  stroke: @run-icon-blue;
+  fill: fade(@color-blue, 20%);
+  stroke: @color-blue;
 }
 
 .cp-wdl-task[data-taskstatus=running] text {
-  fill: @run-icon-blue;
+  fill: @color-blue;
 }
 
 .cp-wdl-task[data-taskstatus=success] rect {
-  fill: fade(@run-icon-green, 20%);
-  stroke: @run-icon-green;
+  fill: fade(@color-green, 20%);
+  stroke: @color-green;
   opacity: 1;
 }
 
 .cp-wdl-task[data-taskstatus=success] text {
-  fill: @run-icon-green;
+  fill: @color-green;
 }
 
 .cp-wdl-task[data-taskstatus=stopped] rect {
@@ -131,14 +131,15 @@
 }
 
 .cp-wdl-task[data-taskstatus=failure] rect {
-  fill: fade(@run-icon-red, 20%);
-  stroke: @run-icon-red;
+  fill: fade(@color-red, 20%);
+  stroke: @color-red;
   opacity: 1;
 }
 
 .cp-wdl-task[data-taskstatus=failure] text {
-  fill: @run-icon-red;
+  fill: @color-red;
 }
+
 .cp-stop-run-modal-confirm-icon {
-  color: @run-icon-yellow;
+  color: @color-yellow;
 }

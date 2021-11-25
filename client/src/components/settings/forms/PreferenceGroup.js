@@ -22,6 +22,8 @@ import classNames from 'classnames';
 import {Button, Checkbox, Form, Icon, Input, Row} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
+import {MANAGEMENT_SECTION} from '../user-profile/appearance';
+import {ThemesPreferenceName} from '../../../themes';
 import styles from './PreferenceGroup.css';
 
 const formatJson = (string, presentation = true, catchError = true) => {
@@ -41,13 +43,13 @@ const formatJson = (string, presentation = true, catchError = true) => {
 @Form.create()
 @observer
 export default class PreferenceGroup extends React.Component {
-
   static propTypes = {
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
     group: PropTypes.string,
     preferences: PropTypes.array,
-    search: PropTypes.string
+    search: PropTypes.string,
+    router: PropTypes.object
   };
 
   checkPreferenceModified = (name) => {
@@ -153,7 +155,9 @@ export default class PreferenceGroup extends React.Component {
                         search={this.props.search}
                         isEven={index % 2 === 0}
                         isLast={index === array.length - 1}
-                        disabled={this.props.pending} />
+                        disabled={this.props.pending}
+                        router={this.props.router}
+                      />
                     )}
                   </Form.Item>
                 );
@@ -204,7 +208,8 @@ class PreferenceInput extends React.Component {
     disabled: PropTypes.bool,
     isEven: PropTypes.bool,
     isLast: PropTypes.bool,
-    search: PropTypes.string
+    search: PropTypes.string,
+    router: PropTypes.object
   };
 
   state = {
@@ -243,6 +248,31 @@ class PreferenceInput extends React.Component {
   };
 
   renderInput = () => {
+    const {router} = this.props;
+    if (router && ThemesPreferenceName === this.props.value.name) {
+      return (
+        <div>
+          <span>You can manage UI themes at</span>
+          <a
+            onClick={() => router.push(`/settings/profile/appearance/${MANAGEMENT_SECTION}`)}
+            style={{
+              marginLeft: 5,
+              marginRight: 5,
+              fontWeight: 'bold'
+            }}
+          >
+            <span>
+              My Profile
+            </span>
+            <Icon type="caret-right" />
+            <span>
+              Appearance
+            </span>
+          </a>
+          <span>section</span>
+        </div>
+      );
+    }
     if (this.props.value.type === 'BOOLEAN') {
       return (
         <Checkbox

@@ -23,6 +23,7 @@ const sections = [
   {
     key: 'logs',
     title: 'LOGS',
+    default: true,
     render: () => (<SystemLogs />)
   },
   {
@@ -32,8 +33,12 @@ const sections = [
   }
 ];
 
-export default function SystemManagement () {
+export default function SystemManagement ({router}) {
   return (
-    <SubSettings sections={sections} />
+    <SubSettings
+      sections={sections}
+      router={router}
+      root="system"
+    />
   );
 }
