@@ -44,6 +44,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -81,6 +82,7 @@ public class NatGatewayManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final String tinyproxyServiceName;
+    private final String tinyproxyNatServiceName;
     private final String dnsProxyConfigMapName;
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
@@ -92,6 +94,8 @@ public class NatGatewayManager {
                              final PreferenceManager preferenceManager,
                              @Value("${nat.gateway.cp.core.service.name:cp-tinyproxy}")
                              final String tinyproxyServiceName,
+                             @Value("${nat.gateway.cp.service.suffix:-nat}")
+                             final String tinyproxyServiceSuffix,
                              @Value("${nat.gateway.cm.dns.proxy.name:cp-dnsmasq-hosts}")
                              final String dnsProxyConfigMapName,
                              @Value("${nat.gateway.cm.global.name:cp-config-global}")
@@ -104,6 +108,7 @@ public class NatGatewayManager {
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.tinyproxyServiceName = tinyproxyServiceName;
+        this.tinyproxyNatServiceName = tinyproxyServiceName + tinyproxyServiceSuffix;
         this.dnsProxyConfigMapName = dnsProxyConfigMapName;
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
@@ -176,23 +181,23 @@ public class NatGatewayManager {
 
     private void processRoutesInKube() {
         loadProxyServicesFromKube().forEach(service -> {
-            final Map<String, String> labels = getServiceLabels(service);
-            final List<Integer> allExternalPorts = getExternalPortsSpecifiedInLabels(labels);
+            final Map<String, String> annotations = getServiceAnnotations(service);
+            final List<Integer> allExternalPorts = getExternalPortsSpecifiedInAnnotations(annotations);
             if (CollectionUtils.isEmpty(allExternalPorts)) {
                 final String serviceName = getServiceName(service);
                 log.warn(messageHelper.getMessage(
                     MessageConstants.NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS, serviceName));
                 kubernetesManager.deleteServiceIfExists(serviceName);
             } else {
-                allExternalPorts.forEach(port -> processExternalPort(service, labels, port));
+                allExternalPorts.forEach(port -> processExternalPort(service, annotations, port));
             }
         });
     }
 
-    private void processExternalPort(final Service service, final Map<String, String> labels, final Integer port) {
+    private void processExternalPort(final Service service, final Map<String, String> annotations, final Integer port) {
         final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
-        final String targetStatus = labels.get(getTargetStatusLabelName(port));
-        final String currentStatus = labels.get(getCurrentStatusLabelName(port));
+        final String targetStatus = annotations.get(getTargetStatusLabelName(port));
+        final String currentStatus = annotations.get(getCurrentStatusLabelName(port));
         if (!targetStatus.equals(currentStatus)) {
             if (targetStatus.equals(NatRouteStatus.ACTIVE.name())) {
                 processScheduledStartup(service, activePorts, port);
@@ -207,16 +212,16 @@ public class NatGatewayManager {
             .collect(Collectors.toMap(ServicePort::getPort, Function.identity()));
     }
 
-    private Map<String, String> getServiceLabels(final Service service) {
-        return service.getMetadata().getLabels();
+    private Map<String, String> getServiceAnnotations(final Service service) {
+        return service.getMetadata().getAnnotations();
     }
 
     private String getServiceName(final Service service) {
         return service.getMetadata().getName();
     }
 
-    private List<Integer> getExternalPortsSpecifiedInLabels(final Map<String, String> labels) {
-        return labels.keySet().stream()
+    private List<Integer> getExternalPortsSpecifiedInAnnotations(final Map<String, String> annotations) {
+        return annotations.keySet().stream()
             .filter(key -> key.startsWith(TARGET_STATUS_LABEL_PREFIX))
             .map(key -> key.substring(TARGET_STATUS_LABEL_PREFIX.length()))
             .map(Integer::valueOf)
@@ -300,7 +305,7 @@ public class NatGatewayManager {
 
     private List<NatRoute> updateRoutesInDatabase(final NatRoutingRulesRequest request, final NatRouteStatus status,
                                                   final Predicate<NatRoute> additionalFilter) {
-        final List<NatRoutingRuleDescription> requestedRules = validateRequestIsNotEmpty(request);
+        final List<NatRoutingRuleDescription> requestedRules = validateRequest(request);
         final List<NatRoute> updatedRoutes = updateStatusForQueuedRoutes(requestedRules, status);
         final Set<NatRoutingRuleDescription> existingRules = getActiveNatRules(additionalFilter);
         final List<NatRoutingRuleDescription> newRules = requestedRules.stream()
@@ -314,7 +319,7 @@ public class NatGatewayManager {
     }
 
     private Collection<Service> loadProxyServicesFromKube() {
-        return CollectionUtils.emptyIfNull(kubernetesManager.getCloudPipelineServiceInstances(tinyproxyServiceName));
+        return CollectionUtils.emptyIfNull(kubernetesManager.getCloudPipelineServiceInstances(tinyproxyNatServiceName));
     }
 
     private List<NatRoute> updateStatusForQueuedRoutes(final List<NatRoutingRuleDescription> requestedRules,
@@ -383,16 +388,20 @@ public class NatGatewayManager {
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
-        final Map<String, String> serviceLabels = getRouteUpdateLabels(targetStatusLabelName, statusInQueue, route);
+        final Map<String, String> annotations = getRouteUpdateAnnotations(targetStatusLabelName, statusInQueue, route);
         final List<ServicePort> servicePorts =
             Collections.singletonList(buildNewServicePort(correspondingServiceName, externalPort,
                                                           freeTargetPort.map(IntOrString::new).get()));
+
+        final Map<String, String> labels =
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyNatServiceName,
+                                     KubernetesConstants.TRUE_LABEL_VALUE);
         final Map<String, String> selector =
             Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
                                      KubernetesConstants.TRUE_LABEL_VALUE);
         try {
             proxyServicesMapping.put(correspondingServiceName,
-                                     kubernetesManager.createService(correspondingServiceName, serviceLabels,
+                                     kubernetesManager.createService(correspondingServiceName, labels, annotations,
                                                                      servicePorts, selector));
             return true;
         } catch (RuntimeException e) {
@@ -423,28 +432,29 @@ public class NatGatewayManager {
         }
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
         final NatRouteStatus targetStatusInKube =
-            NatRouteStatus.valueOf(extractStringFromLabels(service, targetStatusLabelName));
+            NatRouteStatus.valueOf(extractStringFromAnnotations(service, targetStatusLabelName));
         if (!targetStatusInKube.equals(statusInQueue)) {
-            return kubernetesManager.updateLabelsOfExistingService(
-                correspondingServiceName, getRouteUpdateLabels(targetStatusLabelName, statusInQueue, route));
+            return kubernetesManager.updateAnnotationsOfExistingService(
+                correspondingServiceName, getRouteUpdateAnnotations(targetStatusLabelName, statusInQueue, route));
         }
         return true;
     }
 
-    private Map<String, String> getRouteUpdateLabels(final String targetStatusLabelName,
-                                                     final NatRouteStatus statusInQueue, final NatRoute route) {
+    private Map<String, String> getRouteUpdateAnnotations(final String targetStatusLabelName,
+                                                          final NatRouteStatus statusInQueue, final NatRoute route) {
         final Integer externalPort = route.getExternalPort();
         final Map<String, String> requiredProxyServiceLabels = new HashMap<>();
         requiredProxyServiceLabels.put(EXTERNAL_NAME_LABEL, route.getExternalName());
         requiredProxyServiceLabels.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         requiredProxyServiceLabels.put(getCurrentStatusLabelName(externalPort), statusInQueue.name());
-        requiredProxyServiceLabels.put(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
-                                       KubernetesConstants.TRUE_LABEL_VALUE);
         requiredProxyServiceLabels.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
         final NatRouteStatus targetStatus = statusInQueue.isTerminationState()
                                             ? NatRouteStatus.TERMINATED
                                             : NatRouteStatus.ACTIVE;
         requiredProxyServiceLabels.put(targetStatusLabelName, targetStatus.name());
+        Optional.ofNullable(route.getDescription())
+            .ifPresent(description ->
+                           requiredProxyServiceLabels.put(getDescriptionLabelName(externalPort), description));
         return requiredProxyServiceLabels;
     }
 
@@ -482,44 +492,49 @@ public class NatGatewayManager {
         return status.isTerminationState();
     }
 
-    private List<NatRoutingRuleDescription> validateRequestIsNotEmpty(final NatRoutingRulesRequest request) {
-        return Optional.ofNullable(request)
+    private List<NatRoutingRuleDescription> validateRequest(final NatRoutingRulesRequest request) {
+        final List<NatRoutingRuleDescription> ruleDescriptions = Optional.ofNullable(request)
             .map(NatRoutingRulesRequest::getRules)
             .filter(CollectionUtils::isNotEmpty)
             .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                 MessageConstants.NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE)));
+        ruleDescriptions.stream()
+            .map(NatRoutingRuleDescription::getDescription)
+            .filter(Objects::nonNull)
+            .forEach(description -> Assert.isTrue(
+                kubernetesManager.isValidAnnotation(description),
+                messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_DESCRIPTION, description)));
+        return ruleDescriptions;
     }
 
     private List<NatRoute> extractNatRoutesFromKubeService(final Service kubeService) {
         final ObjectMeta serviceMetadata = kubeService.getMetadata();
-        final Map<String, String> serviceLabels = serviceMetadata.getLabels();
+        final Map<String, String> annotations = kubeService.getMetadata().getAnnotations();
         final ServiceSpec serviceSpecs = kubeService.getSpec();
-        final String externalName = extractStringFromLabels(serviceLabels, EXTERNAL_NAME_LABEL);
-        final String externalIp = extractStringFromLabels(serviceLabels, EXTERNAL_IP_LABEL);
         final String internalName = serviceMetadata.getName();
         final String internalIp = serviceSpecs.getClusterIP();
 
         return CollectionUtils.emptyIfNull(serviceSpecs.getPorts())
             .stream()
-            .map(port -> buildRouteFromPort(port, serviceLabels, externalName, externalIp, internalName, internalIp))
+            .map(port -> buildRouteFromPort(internalName, internalIp, port, annotations))
             .collect(Collectors.toList());
     }
 
-    private NatRoute buildRouteFromPort(final ServicePort portInfo, final Map<String, String> serviceLabels,
-                                        final String externalName, final String externalIp, final String serviceName,
-                                        final String internalIp) {
+    private NatRoute buildRouteFromPort(final String serviceName, final String internalIp, final ServicePort portInfo,
+                                        final Map<String, String> annotations) {
         final Integer externalPort = portInfo.getPort();
         final String statusLabelName = getCurrentStatusLabelName(externalPort);
         final String lastUpdateTimeLabelName = getLastUpdateTimeLabelName(externalPort);
         return NatRoute.builder()
-            .externalName(externalName)
-            .externalIp(externalIp)
+            .externalName(extractStringFromAnnotations(annotations, EXTERNAL_NAME_LABEL))
+            .externalIp(extractStringFromAnnotations(annotations, EXTERNAL_IP_LABEL))
+            .description(annotations.get(getDescriptionLabelName(externalPort)))
             .externalPort(externalPort)
             .internalName(serviceName)
             .internalIp(internalIp)
             .internalPort(portInfo.getTargetPort().getIntVal())
-            .status(NatRouteStatus.valueOf(extractStringFromLabels(serviceLabels, statusLabelName)))
-            .lastUpdateTime(tryExtractTimeFromLabels(serviceLabels, lastUpdateTimeLabelName))
+            .status(NatRouteStatus.valueOf(extractStringFromAnnotations(annotations, statusLabelName)))
+            .lastUpdateTime(tryExtractTimeFromLabels(annotations, lastUpdateTimeLabelName))
             .build();
     }
 
@@ -562,7 +577,7 @@ public class NatGatewayManager {
         }
         final Set<String> existingDnsRecords = getExistingDnsRecords(dnsMap);
 
-        final String externalName = getServiceLabels(service).get(EXTERNAL_NAME_LABEL);
+        final String externalName = getServiceAnnotations(service).get(EXTERNAL_NAME_LABEL);
         final String clusterIP = service.getSpec().getClusterIP();
         final String correspondingDnsRecord = getCorrespondingDnsRecord(externalName, clusterIP);
         if (!existingDnsRecords.contains(correspondingDnsRecord)) {
@@ -593,7 +608,7 @@ public class NatGatewayManager {
             return false;
         }
         final Set<String> activeRules = getActivePortForwardingRules(globalConfigMap);
-        final String externalIp = getServiceLabels(service).get(EXTERNAL_IP_LABEL);
+        final String externalIp = getServiceAnnotations(service).get(EXTERNAL_IP_LABEL);
         final String correspondingPortForwardingRule = getForwardingRule(externalIp, activePorts.get(port));
         if (!activeRules.contains(correspondingPortForwardingRule)) {
             return true;
@@ -621,7 +636,7 @@ public class NatGatewayManager {
             return false;
         }
         final Set<String> existingDnsRecords = getExistingDnsRecords(dnsMap);
-        final String externalName = getServiceLabels(service).get(EXTERNAL_NAME_LABEL);
+        final String externalName = getServiceAnnotations(service).get(EXTERNAL_NAME_LABEL);
         final String clusterIP = service.getSpec().getClusterIP();
         final String requiredDnsRecord = getCorrespondingDnsRecord(externalName, clusterIP);
         if (!existingDnsRecords.contains(requiredDnsRecord)) {
@@ -694,7 +709,7 @@ public class NatGatewayManager {
             return false;
         }
         final Set<String> portForwardingRules = getActivePortForwardingRules(globalConfigMap);
-        final String externalIp = getServiceLabels(service).get(EXTERNAL_IP_LABEL);
+        final String externalIp = getServiceAnnotations(service).get(EXTERNAL_IP_LABEL);
         final String newPortForwardingRule = getForwardingRule(externalIp, activePorts.get(port));
         if (portForwardingRules.contains(newPortForwardingRule)) {
             return true;
@@ -749,22 +764,22 @@ public class NatGatewayManager {
 
     private void updateStatusForRoutingRule(final String serviceName, final Integer externalPort,
                                             final NatRouteStatus status, final String errorMessage) {
-        final Map<String, String> labels = new HashMap<>();
-        labels.put(getCurrentStatusLabelName(externalPort), status.name());
-        labels.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
+        final Map<String, String> annotations = new HashMap<>();
+        annotations.put(getCurrentStatusLabelName(externalPort), status.name());
+        annotations.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
         if (errorMessage != null) {
-            labels.put(getErrorDetailsLabelName(externalPort), errorMessage);
-            labels.put(getTargetStatusLabelName(externalPort), NatRouteStatus.TERMINATED.name());
+            annotations.put(getErrorDetailsLabelName(externalPort), errorMessage);
+            annotations.put(getTargetStatusLabelName(externalPort), NatRouteStatus.TERMINATED.name());
         }
-        kubernetesManager.updateLabelsOfExistingService(serviceName, labels);
+        kubernetesManager.updateAnnotationsOfExistingService(serviceName, annotations);
     }
 
-    private String extractStringFromLabels(final Map<String, String> serviceLabels, final String labelName) {
+    private String extractStringFromAnnotations(final Map<String, String> serviceLabels, final String labelName) {
         return Optional.ofNullable(serviceLabels.get(labelName)).orElse(UNKNOWN);
     }
 
-    private String extractStringFromLabels(final Service service, final String labelName) {
-        return Optional.ofNullable(getServiceLabels(service).get(labelName)).orElse(UNKNOWN);
+    private String extractStringFromAnnotations(final Service service, final String labelName) {
+        return Optional.ofNullable(getServiceAnnotations(service).get(labelName)).orElse(UNKNOWN);
     }
 
     public String getProxyServiceName(final String externalName) {
@@ -785,5 +800,9 @@ public class NatGatewayManager {
 
     private String getLastUpdateTimeLabelName(final Integer port) {
         return NAT_ROUTE_LABELS_PREFIX + "last-update-" + port;
+    }
+
+    private String getDescriptionLabelName(final Integer port) {
+        return NAT_ROUTE_LABELS_PREFIX + "description-" + port;
     }
 }
