@@ -435,13 +435,12 @@ class PipelineRunOperations(object):
         if ROLE_ADMIN in all_user_roles:
             return
         default_system_parameters_dict = {param.name: param for param in Pipeline.get_default_run_parameters()}
-        for name, value in run_params_dict.iteritems():
-            if name in default_system_parameters_dict:
-                default_system_parameter = default_system_parameters_dict[name]
-                if default_system_parameter.value != value:
+        for run_param_name, run_param_value in run_params_dict.iteritems():
+            if run_param_name in default_system_parameters_dict:
+                default_system_parameter = default_system_parameters_dict[run_param_name]
+                if default_system_parameter.value != run_param_value:
                     allowed_roles = default_system_parameter.roles
-                    if allowed_roles:
-                        if len(allowed_roles.intersection(all_user_roles)) == 0:
-                            click.echo('An error has occurred while starting a job: "{}" parameter'
-                                       ' is not permitted for overriding'.format(name), err=True)
-                            sys.exit(1)
+                    if allowed_roles and len(allowed_roles.intersection(all_user_roles)) == 0:
+                        click.echo('An error has occurred while starting a job: "{}" parameter'
+                                   ' is not permitted for overriding'.format(run_param_name), err=True)
+                        sys.exit(1)

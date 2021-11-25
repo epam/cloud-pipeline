@@ -20,24 +20,20 @@ class PipelineRunParameterModel(object):
         if parameter_type is None:
             self.parameter_type = 'string'
         self.required = required
-        if roles is None:
-            self.roles = set()
-        else:
-            self.roles = set(roles)
+        self.roles = set() if roles is None else set(roles)
 
     @staticmethod
-    def load_from_default_system_parameter(json):
-        name = None
-        value = None
+    def load_from_default_system_parameter(parameter_json):
+        parameter_name = None
+        parameter_value = None
         parameter_type = None
-        required = 'false'
         parameter_roles = []
-        if 'name' in json:
-            name = json['name']
-        if 'defaultValue' in json:
-            value = json['defaultValue']
-        if 'type' in json:
-            parameter_type = json['type']
-        if 'roles' in json:
-            parameter_roles = json['roles']
-        return PipelineRunParameterModel(name, value, parameter_type, required, roles=parameter_roles)
+        if 'name' in parameter_json:
+            parameter_name = parameter_json['name']
+        if 'defaultValue' in parameter_json:
+            parameter_value = parameter_json['defaultValue']
+        if 'type' in parameter_json:
+            parameter_type = parameter_json['type']
+        if 'roles' in parameter_json:
+            parameter_roles = parameter_json['roles']
+        return PipelineRunParameterModel(parameter_name, parameter_value, parameter_type, None, roles=parameter_roles)
