@@ -24,16 +24,16 @@ import {
   Icon,
   Input,
   Modal,
-  Popover,
   Row,
   Table
 } from 'antd';
+import roleModel from '../../../../utils/roleModel';
 import styles from './Browser.css';
 
+@roleModel.authenticationInfo
 @inject('runDefaultParameters')
 @observer
 export default class SystemParametersBrowser extends Component {
-
   state = {
     selectedParameters: [],
     searchString: null
@@ -74,10 +74,27 @@ export default class SystemParametersBrowser extends Component {
   };
 
   @computed
+  get authenticatedUserRolesNames () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return [];
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.map(r => r.name);
+  }
+
+  @computed
   get currentParameters () {
     if (!this.props.runDefaultParameters.loaded) {
       return [];
     }
+    const checkUserRoles = (parameter) => {
+      if (!parameter.roles || !parameter.roles.length) {
+        return true;
+      }
+      return parameter.roles.some(roleName => this.authenticatedUserRolesNames.includes(roleName));
+    };
     const needToShow = (parameter) => {
       return !(this.props.notToShow &&
         this.props.notToShow.length &&
@@ -94,6 +111,7 @@ export default class SystemParametersBrowser extends Component {
     };
     return (this.props.runDefaultParameters.value || [])
       .map(t => t)
+      .filter(checkUserRoles)
       .filter(needToShow)
       .filter(parameterMatches)
       .sort((parameterA, parameterB) => {
@@ -172,7 +190,7 @@ export default class SystemParametersBrowser extends Component {
           dataSource={this.currentParameters}
           columns={columns}
           loading={this.props.runDefaultParameters.pending}
-          showHeader={true}
+          showHeader
           onRowClick={(parameter) => this.onSelect(parameter)}
           rowKey="name"
           rowClassName={() => styles.parameterRow}

@@ -2523,6 +2523,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (error) {
       // eslint-disable-next-line
       callback('No duplicates are allowed');
+    } else if (!isSystemParameter && this.isSystemParameterRestrictedByRole({name: value})) {
+      // eslint-disable-next-line
+      callback('This parameter is not allowed for use');
     } else if (!isSystemParameter && this.isSystemParameter({name: value})) {
       // eslint-disable-next-line
       callback('Name is reserved for system parameter');
@@ -2598,6 +2601,29 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.props.runDefaultParameters.loaded) {
       return (this.props.runDefaultParameters.value || [])
         .filter(p => p.name === parameter.name).length > 0;
+    }
+    return false;
+  };
+
+  @computed
+  get authenticatedUserRolesNames () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return [];
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.map(r => r.name);
+  }
+
+  isSystemParameterRestrictedByRole = (parameter) => {
+    if (this.isSystemParameter(parameter)) {
+      const [systemParam] = (this.props.runDefaultParameters.value || [])
+        .filter(p => p.name === parameter.name);
+      if (systemParam && systemParam.roles && systemParam.roles.length > 0) {
+        return systemParam.roles
+          .some(roleName => this.authenticatedUserRolesNames.includes(roleName));
+      }
     }
     return false;
   };
