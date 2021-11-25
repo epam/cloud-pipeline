@@ -837,14 +837,14 @@ public class ToolManagerTest extends AbstractManagerTest {
 
     private void toolValidationIsExceptional(final Tool tool) {
         assertThrows(IllegalArgumentException.class,
-                     () -> toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage()));
+            () -> toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage()));
         assertThrows(IllegalArgumentException.class,
-                     () -> toolManager.validateCommitOperationAllowed(null, tool.getImage()));
+            () -> toolManager.validateCommitOperationAllowed(tool.getImage()));
     }
 
     private void toolCommitValidationIsPassed(final Tool tool) {
         toolManager.validateCommitOperationAllowed(firstRegistry.getPath(), tool.getImage());
-        toolManager.validateCommitOperationAllowed(null, tool.getImage());
+        toolManager.validateCommitOperationAllowed(tool.getImage());
     }
 
     private List<String> generateLabels(String... labels) {

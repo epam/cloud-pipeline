@@ -408,6 +408,10 @@ public class ToolManager implements SecuredEntityManager {
                       messageHelper.getMessage(MessageConstants.ERROR_COMMIT_OPERATION_IS_FORBIDDEN, image));
     }
 
+    public void validateCommitOperationAllowed(final String image) {
+        validateCommitOperationAllowed(null, image);
+    }
+
     /**
      * Deletes a Tool from the database and from Docker Registry
      * @param registry registry identifier
