@@ -83,6 +83,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         sleep(1, MINUTES);
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
+                .switchToSystemManagement()
                 .switchToSystemLogs();
         SelenideElement adminInfo;
         SelenideElement userInfo;
@@ -139,6 +140,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
             loginAs(admin);
             SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                     .settings()
+                    .switchToSystemManagement()
                     .switchToSystemLogs();
             if (impersonateMode()) {
                 systemLogsAO
@@ -182,6 +184,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .ok();
         final SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
+                .switchToSystemManagement()
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
                 .pressEnter()
@@ -209,6 +212,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .ok();
         navigationMenu()
                 .settings()
+                .switchToSystemManagement()
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
                 .filterByMessage(format("id=%s", userId))
@@ -234,6 +238,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 PipelinePermission.deny(WRITE, pipeline));
         navigationMenu()
                 .settings()
+                .switchToSystemManagement()
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
                 .filterByMessage("Granting permissions")
@@ -274,6 +279,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         loginAs(admin);
         navigationMenu()
                 .settings()
+                .switchToSystemManagement()
                 .switchToSystemLogs()
                 .filterByUser(user.login.toUpperCase())
                 .filterByService("edge")
@@ -300,6 +306,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .deleteUser(USER_NAME);
         navigationMenu()
                 .settings()
+                .switchToSystemManagement()
                 .switchToSystemLogs()
                 .sleep(2, SECONDS)
                 .filterByMessage(USER_NAME)

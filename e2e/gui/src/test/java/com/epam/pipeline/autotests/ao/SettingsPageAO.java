@@ -108,14 +108,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return new PreferencesAO(parentAO);
     }
 
-    public SystemLogsAO switchToSystemLogs() {
-        click(SYSTEM_LOGS_TAB);
-        if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
-            return new SystemLogsAO().click(LOG);
-        }
-        return new SystemLogsAO()
-                .click(LOG)
-                .setIncludeServiceAccountEventsOption();
+    public SystemLogsAO switchToSystemManagement() {
+        click(LOG);
+        return new SystemLogsAO();
     }
 
     public MyProfileAO switchToMyProfile() {
@@ -1593,6 +1588,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 format("%s message for %s with %s type. Screenshot: %s", message, user, type,
                                         screenshotName)));
                     });
+        }
+
+        public SystemLogsAO switchToSystemLogs() {
+            click(LOG);
+            if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
+                return this;
+            }
+            return this.setIncludeServiceAccountEventsOption();
         }
 
         public SystemLogsAO filterByUser(final String user) {
