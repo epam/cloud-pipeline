@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.InstanceBilling;
 import com.epam.pipeline.entity.billing.InstanceBillingMetrics;
@@ -39,14 +40,16 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
-        return billings(elasticSearchClient, from, to, filters);
+        final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
+        return billings(elasticSearchClient, from, to, filters, discount);
     }
 
     private Stream<InstanceBilling> billings(final RestHighLevelClient elasticSearchClient,
                                              final LocalDate from,
                                              final LocalDate to,
-                                             final Map<String, List<String>> filters) {
-        return Optional.of(getRequest(from, to, filters))
+                                             final Map<String, List<String>> filters,
+                                             final BillingDiscount discount) {
+        return Optional.of(getRequest(from, to, filters, discount))
                 .map(billingHelper.searchWith(elasticSearchClient))
                 .map(this::billings)
                 .orElseGet(Stream::empty);
@@ -54,7 +57,8 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
 
     private SearchRequest getRequest(final LocalDate from,
                                      final LocalDate to,
-                                     final Map<String, List<String>> filters) {
+                                     final Map<String, List<String>> filters,
+                                     final BillingDiscount discount) {
         return new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
                 .indices(billingHelper.runIndicesByDate(from, to))
@@ -63,18 +67,18 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
                         .aggregation(billingHelper.aggregateBy(BillingGrouping.RUN_INSTANCE_TYPE.getCorrespondingField())
                                 .size(Integer.MAX_VALUE)
-                                .subAggregation(aggregateBillingsByMonth())
+                                .subAggregation(aggregateBillingsByMonth(discount))
                                 .subAggregation(billingHelper.aggregateRunCountSumBucket())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSortBucket())));
     }
 
-    private DateHistogramAggregationBuilder aggregateBillingsByMonth() {
+    private DateHistogramAggregationBuilder aggregateBillingsByMonth(final BillingDiscount discount) {
         return billingHelper.aggregateByMonth()
                 .subAggregation(billingHelper.aggregateUniqueRunsCount())
                 .subAggregation(billingHelper.aggregateRunUsageSum())
-                .subAggregation(billingHelper.aggregateCostSum());
+                .subAggregation(billingHelper.aggregateCostSum(discount.getComputes()));
     }
 
     private Stream<InstanceBilling> billings(final SearchResponse response) {

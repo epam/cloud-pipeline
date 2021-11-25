@@ -17,8 +17,10 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -214,6 +216,16 @@ public class BillingHelper {
 
     public SumAggregationBuilder aggregateCostSum() {
         return costAggregation;
+    }
+
+    public AggregationBuilder aggregateCostSum(final long discount) {
+        if (discount == 0L) {
+            return aggregateCostSum();
+        }
+        return AggregationBuilders.sum(BillingUtils.COST_FIELD)
+                .field(BillingUtils.COST_FIELD)
+                .script(new Script(String.format(BillingUtils.DISCOUNT_SCRIPT_TEMPLATE,
+                        BillingUtils.asPercentToDecimalString(discount))));
     }
 
     public SumAggregationBuilder aggregateRunUsageSum() {

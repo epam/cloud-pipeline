@@ -9,7 +9,8 @@ import java.util.Optional;
 
 @Value
 @Builder
-public class InstanceBilling implements ReportBilling<InstanceBillingMetrics> {
+public class InstanceBilling implements PeriodBilling<YearMonth, InstanceBillingMetrics> {
+
     String name;
     InstanceBillingMetrics totalMetrics;
     Map<YearMonth, InstanceBillingMetrics> periodMetrics;

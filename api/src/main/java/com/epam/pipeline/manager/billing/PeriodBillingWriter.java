@@ -1,6 +1,6 @@
 package com.epam.pipeline.manager.billing;
 
-import com.epam.pipeline.entity.billing.ReportBilling;
+import com.epam.pipeline.entity.billing.PeriodBilling;
 import com.opencsv.CSVWriter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -15,7 +15,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class PeriodBillingWriter<B extends ReportBilling<M>, M> implements BillingWriter<B> {
+public class PeriodBillingWriter<B extends PeriodBilling<YearMonth, M>, M> implements BillingWriter<B> {
 
     private final String name;
     private final List<String> detailColumns;

@@ -11,7 +11,8 @@ import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
-public class StorageBilling implements ReportBilling<StorageBillingMetrics> {
+public class StorageBilling implements PeriodBilling<YearMonth, StorageBillingMetrics> {
+
     Long id;
     String name;
     String owner;

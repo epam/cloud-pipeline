@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
-public class PipelineBilling implements ReportBilling<PipelineBillingMetrics> {
+public class PipelineBilling implements PeriodBilling<YearMonth, PipelineBillingMetrics> {
 
     Long id;
     String name;

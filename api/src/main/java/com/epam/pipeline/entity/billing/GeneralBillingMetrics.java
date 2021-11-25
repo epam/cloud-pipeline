@@ -6,6 +6,7 @@ import lombok.Value;
 @Value
 @Builder
 public class GeneralBillingMetrics {
+
     Long runsNumber;
     Long runsDuration;
     Long runsCost;

@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.RunBilling;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -38,8 +39,9 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
+        final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
         final int numberOfPartitions = getEstimatedNumberOfRunBillingPartitions(elasticSearchClient, from, to, filters);
-        return billings(elasticSearchClient, from, to, filters, numberOfPartitions);
+        return billings(elasticSearchClient, from, to, filters, discount, numberOfPartitions);
     }
 
     private int getEstimatedNumberOfRunBillingPartitions(final RestHighLevelClient elasticSearchClient,
@@ -85,9 +87,10 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                         final LocalDate from,
                                         final LocalDate to,
                                         final Map<String, List<String>> filters,
+                                        final BillingDiscount discount,
                                         final int numberOfPartitions) {
         return IntStream.range(0, numberOfPartitions)
-                .mapToObj(partition -> getRunBillingsRequest(from, to, filters, partition, numberOfPartitions))
+                .mapToObj(partition -> getRunBillingsRequest(from, to, filters, discount, partition, numberOfPartitions))
                 .map(billingHelper.searchWith(elasticSearchClient))
                 .flatMap(this::billings);
     }
@@ -95,6 +98,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
     private SearchRequest getRunBillingsRequest(final LocalDate from,
                                                 final LocalDate to,
                                                 final Map<String, List<String>> filters,
+                                                final BillingDiscount discount,
                                                 final int partition,
                                                 final int numberOfPartitions) {
         return new SearchRequest()
@@ -104,7 +108,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                         .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
                         .aggregation(billingHelper.aggregatePartitionByRunId(partition, numberOfPartitions)
-                                .subAggregation(billingHelper.aggregateCostSum())
+                                .subAggregation(billingHelper.aggregateCostSum(discount.getComputes()))
                                 .subAggregation(billingHelper.aggregateRunUsageSum())
                                 .subAggregation(billingHelper.aggregateLastByDateDoc())));
     }

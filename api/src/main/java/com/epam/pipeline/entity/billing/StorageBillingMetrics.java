@@ -6,6 +6,7 @@ import lombok.Value;
 @Value
 @Builder
 public class StorageBillingMetrics {
+
     Long cost;
     Long averageVolume;
     Long currentVolume;

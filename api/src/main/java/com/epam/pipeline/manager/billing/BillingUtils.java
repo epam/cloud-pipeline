@@ -24,12 +24,9 @@ public final class BillingUtils {
             DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT, Locale.US);
     public static final int DECIMAL_SCALE = 2;
     public static final long DURATION_DIVISOR = TimeUnit.MINUTES.convert(NumberUtils.LONG_ONE, TimeUnit.HOURS);
-    public static final long COST_DIVISOR = BigDecimal.ONE.setScale(4, RoundingMode.CEILING)
-            .unscaledValue()
-            .longValue();
-    public static final long VOLUME_DIVISOR = BigDecimal.ONE.setScale(9, RoundingMode.CEILING)
-            .unscaledValue()
-            .longValue();
+    public static final Long PERCENT_TO_DECIMAL_DIVISOR = tenInPowerOf(2);
+    public static final long COST_DIVISOR = tenInPowerOf(4);
+    public static final long VOLUME_DIVISOR = tenInPowerOf(9);
 
     public static final String USER_COLUMN = "User";
     public static final String OWNER_COLUMN = "Owner";
@@ -103,6 +100,7 @@ public final class BillingUtils {
     public static final String RUN_COUNT_AGG = "count_runs";
     public static final String PROVIDER_FIELD = "provider";
     public static final String SORT_AGG = "sort";
+    public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
 
     public static String asString(final Object value) {
         return Optional.ofNullable(value).map(Object::toString).orElse(null);
@@ -138,7 +136,11 @@ public final class BillingUtils {
         return asDividedString(value, VOLUME_DIVISOR);
     }
 
-    private static String asDividedString(final Long divider, final Long divisor) {
+    public static String asPercentToDecimalString(final Long value) {
+        return asDividedString(value, PERCENT_TO_DECIMAL_DIVISOR);
+    }
+
+    public static String asDividedString(final Long divider, final Long divisor) {
         return Optional.ofNullable(divider)
                 .map(BigDecimal::valueOf)
                 .orElse(BigDecimal.ZERO)
@@ -146,4 +148,9 @@ public final class BillingUtils {
                 .toString();
     }
 
+    private static long tenInPowerOf(final int scale) {
+        return BigDecimal.ONE.setScale(scale, RoundingMode.CEILING)
+                .unscaledValue()
+                .longValue();
+    }
 }

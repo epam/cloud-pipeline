@@ -5,6 +5,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportType;
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.utils.CommonUtils;
 import com.epam.pipeline.utils.StreamUtils;
@@ -17,6 +18,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ public class BillingExportManager {
     private static final BillingExportType FALLBACK_BILLING_EXPORT_TYPE = BillingExportType.BLANK;
     private static final List<BillingExportType> FALLBACK_BILLING_EXPORT_TYPES = Collections.singletonList(
             FALLBACK_BILLING_EXPORT_TYPE);
+    public static final String SIGNED_NUMBER_FORMAT = "+#;-#";
 
     private final Map<BillingExportType, BillingExporter> exporters;
     private final MessageHelper messageHelper;
@@ -51,7 +55,36 @@ public class BillingExportManager {
     }
 
     private String getTitle(final BillingExportRequest request, final List<BillingExporter> exporters) {
-        return String.format("%s - %s - %s.csv", exporters.get(0).getName(), request.getFrom(), request.getTo());
+        final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
+        final NumberFormat discountFormat = new DecimalFormat(SIGNED_NUMBER_FORMAT);
+        final StringBuilder builder = new StringBuilder()
+                .append(exporters.get(0).getName());
+        if (discount.hasComputes() || discount.hasStorages()) {
+            builder.append(" (");
+        }
+        if (discount.hasComputes()) {
+
+            builder.append("Computes ")
+                    .append(discountFormat.format(discount.getComputes()))
+                    .append("%");
+        }
+        if (discount.hasStorages()) {
+            if (discount.hasComputes()) {
+                builder.append(" and ");
+            }
+            builder.append("Storages ")
+                    .append(discountFormat.format(discount.getStorages()))
+                    .append("%");
+        }
+        if (discount.hasComputes() || discount.hasStorages()) {
+            builder.append(")");
+        }
+        return builder.append(" - ")
+                .append(request.getFrom())
+                .append(" - ")
+                .append(request.getTo())
+                .append(".csv")
+                .toString();
     }
 
     private void export(final BillingExportRequest request,

@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
-public class UserGeneralBilling implements ReportBilling<GeneralBillingMetrics> {
+public class UserGeneralBilling implements PeriodBilling<YearMonth, GeneralBillingMetrics> {
     String name;
     String billingCenter;
     GeneralBillingMetrics totalMetrics;
