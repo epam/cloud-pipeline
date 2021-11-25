@@ -1791,7 +1791,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             required: required,
             readOnly: readOnly,
             system: system,
-            noOverride
+            noOverride,
+            initial: true
           };
         }
       }
@@ -2483,6 +2484,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (error) {
       // eslint-disable-next-line
       callback('No duplicates are allowed');
+    } else if (!isSystemParameter && this.isSystemParameterRestrictedByRole({name: value})) {
+      // eslint-disable-next-line
+      callback('This parameter is not allowed for use');
     } else if (!isSystemParameter && this.isSystemParameter({name: value})) {
       // eslint-disable-next-line
       callback('Name is reserved for system parameter');
@@ -2557,7 +2561,47 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   isSystemParameter = (parameter) => {
     if (this.props.runDefaultParameters.loaded) {
       return (this.props.runDefaultParameters.value || [])
-        .filter(p => p.name === parameter.name).length > 0;
+        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase()).length > 0;
+    }
+    return false;
+  };
+
+  @computed
+  get authenticatedUserRolesNames () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return [];
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.map(r => r.name);
+  }
+
+  @computed
+  get isAdmin () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      admin
+    } = this.props.authenticatedUserInfo.value;
+    return admin;
+  }
+
+  isSystemParameterRestrictedByRole = (parameter) => {
+    if (
+      parameter &&
+      this.isSystemParameter(parameter) &&
+      !this.isAdmin
+    ) {
+      const [systemParam] = (this.props.runDefaultParameters.value || [])
+        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase());
+      if (systemParam && systemParam.roles && systemParam.roles.length > 0) {
+        return !(
+          systemParam.roles
+            .some(roleName => this.authenticatedUserRolesNames.includes(roleName))
+        );
+      }
     }
     return false;
   };
@@ -2794,6 +2838,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const hasResolvedValue = parameter ? parameter.hasResolvedValue : false;
           let type = parameter ? parameter.type : 'string';
           let readOnly = parameter ? parameter.readOnly : false;
+          const restrictedSystemParameter = this.isSystemParameterRestrictedByRole(parameter);
+          const removeAllowed = !isSystemParametersSection ||
+            !restrictedSystemParameter;
+          if (parameter && parameter.initial) {
+            readOnly = readOnly || restrictedSystemParameter;
+          }
           const noOverride = parameter ? parameter.noOverride : false;
           const systemParameterValueIsBlocked = isSystemParametersSection &&
             getSystemParameterDisabledState(this, name);
@@ -3025,7 +3075,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 {
                   !required &&
                   !(this.props.readOnly && !this.props.canExecute) &&
-                  !(this.state.pipeline && this.props.detached)
+                  !(this.state.pipeline && this.props.detached) &&
+                  removeAllowed
                     ? (
                       <Icon
                         id="remove-parameter-button"
