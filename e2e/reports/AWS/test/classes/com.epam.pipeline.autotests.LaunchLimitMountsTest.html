@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">25m57.94s</div>
+<div class="counter">36m18.53s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">85%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,67 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="runPipelineWithLimitMounts - EPMCMBIBPC-2682"></a>
+<h3 class="failures">runPipelineWithLimitMounts - EPMCMBIBPC-2682</h3>
+<span class="code">
+<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1637950436174.179.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1637950436174.179.html
+Timeout: 1200 s.
+Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: exact text 'SSH'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.runPipelineWithLimitMounts(LaunchLimitMountsTest.java:166)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: exact text 'SSH'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,55 +133,53 @@
 </thead>
 <tr>
 <td class="success">allowToLaunchRunsWithoutMounts - 1590</td>
-<td>5m29.71s</td>
+<td>5m28.55s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>2m14.21s</td>
+<td>2m12.50s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>38.437s</td>
+<td>37.865s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>23.128s</td>
+<td>21.957s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>33.579s</td>
+<td>32.557s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>4m20.37s</td>
-<td class="success">passed</td>
+<td class="skipped">rerunPipelineWithoutLimitMounts</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>5m42.03s</td>
-<td class="success">passed</td>
+<td class="failures">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
+<td>20m30.16s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>6m36.46s</td>
+<td>6m34.95s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 13096 from [13096]
-Returns latest run with runId 13097 from [13096, 13097]
-Returns latest run with runId 13097 from [13096, 13097]
-Returns latest run with runId 13098 from [13096, 13097, 13098]
-Returns latest run with runId 13099 from [13096, 13097, 13098, 13099]
-Returns latest run with runId 13100 from [13096, 13097, 13098, 13099, 13100]
+<pre>Returns latest run with runId 13298 from [13298]
+Returns latest run with runId 13299 from [13298, 13299]
+Returns latest run with runId 13300 from [13298, 13299, 13300]
+Returns latest run with runId 13301 from [13298, 13299, 13300, 13301]
 </pre>
 </span>
 </div>
@@ -139,7 +191,7 @@ Returns latest run with runId 13100 from [13096, 13097, 13098, 13099, 13100]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 25, 2021 4:52:50 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 26, 2021 9:47:34 PM</p>
 </div>
 </div>
 </body>
