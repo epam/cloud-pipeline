@@ -26,27 +26,141 @@ function mapConfiguration (item) {
   return item;
 }
 
-const background = [
-  Variables.applicationBackgroundColor,
-  Variables.panelBackgroundColor,
+const accent = [
+  Variables.primaryColor,
+  Variables.primaryTextColor
+];
+
+const alerts = [
+  Variables.alertErrorBackground,
+  {
+    key: Variables.alertErrorBorder,
+    advanced: true
+  },
+  Variables.alertErrorIcon,
+  Variables.alertInfoBackground,
+  {
+    key: Variables.alertInfoBorder,
+    advanced: true
+  },
+  Variables.alertInfoIcon,
+  Variables.alertWarningBackground,
+  {
+    key: Variables.alertWarningBorder,
+    advanced: true
+  },
+  Variables.alertWarningIcon,
+  Variables.alertSuccessBackground,
+  {
+    key: Variables.alertSuccessBorder,
+    advanced: true
+  },
+  Variables.alertSuccessIcon
+];
+
+const buttons = [
+  Variables.btnDangerActiveColor,
+  Variables.btnDangerBackgroundColor,
+  Variables.btnDangerColor,
+  Variables.btnDisabledBackgroundColor,
+  Variables.btnDisabledColor
+];
+
+const cards = [
   Variables.cardBackgroundColor,
+  {
+    key: Variables.cardHeaderBackground,
+    advanced: true
+  },
+  Variables.cardBorderColor,
   {
     key: Variables.cardServiceBackgroundColor,
     advanced: true
+  }
+];
+
+const input = [
+  Variables.inputBackground,
+  Variables.inputColor,
+  Variables.inputBorder,
+  Variables.inputPlaceholderColor,
+  {
+    key: Variables.inputAddon,
+    advanced: true
   },
-  Variables.navigationPanelColor
+  {
+    key: Variables.inputBackgroundDisabled,
+    adnaved: true
+  }
+];
+
+const main = [
+  Variables.applicationBackgroundColor,
+  Variables.panelBackgroundColor,
+  Variables.applicationColor
+];
+
+const menus = [
+  Variables.menuBorderColor,
+  Variables.menuColor
+];
+
+const navigation = [
+  Variables.navigationPanelColor,
+  Variables.navigationItemColor,
+  Variables.navigationItemRunsColor,
+  {key: Variables.navigationPanelColorImpersonated, advanced: true},
+  {key: Variables.navigationPanelHighlightedColor, advanced: true},
+  {key: Variables.navigationPanelHighlightedColorImpersonated, advanced: true}
+];
+
+const tables = [
+  Variables.tableBorderColor,
+  Variables.tableElementHoverColor,
+  Variables.tableElementSelectedBackgroundColor,
+  {
+    key: Variables.tableElementSelectedColor,
+    advanced: true
+  }, {
+    key: Variables.tableHeadColor,
+    advanced: true
+  }
 ];
 
 const sections = {
-  background: 'Background'
+  accent: 'Accent',
+  alerts: 'Alerts',
+  buttons: 'Buttons',
+  cards: 'Cards',
+  input: 'Forms',
+  main: 'Main',
+  menu: 'Menu',
+  navigation: 'Navigation panel',
+  tables: 'Tables'
 };
 
 const sectionsConfiguration = {
-  [sections.background]: background.map(mapConfiguration)
+  [sections.accent]: accent.map(mapConfiguration),
+  [sections.alerts]: alerts.map(mapConfiguration),
+  [sections.buttons]: buttons.map(mapConfiguration),
+  [sections.cards]: cards.map(mapConfiguration),
+  [sections.input]: input.map(mapConfiguration),
+  [sections.main]: main.map(mapConfiguration),
+  [sections.menu]: menus.map(mapConfiguration),
+  [sections.navigation]: navigation.map(mapConfiguration),
+  [sections.tables]: tables.map(mapConfiguration)
 };
 
 const orderedSections = [
-  sections.background
+  sections.accent,
+  sections.alerts,
+  sections.buttons,
+  sections.cards,
+  sections.input,
+  sections.main,
+  sections.menu,
+  sections.navigation,
+  sections.tables
 ];
 
 export {
