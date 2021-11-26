@@ -380,7 +380,7 @@ export default `
   background-color: @modal-mask-background;
 }
 @THEME .ant-modal-content {
-  background-color: @card-background-color;
+  background-color: fade(@card-background-color, 200%);
   color: @application-color;
 }
 @THEME .ant-confirm-body,
@@ -524,8 +524,14 @@ export default `
   flex-direction: row;
   background-color: @application-background-color;
 }
+@THEME .cp-transparent-background {
+  background-color: transparent !important;
+}
 @THEME .cp-split-panel-panel {
   color: @application-color;
+  background-color: transparent;
+}
+@THEME .cp-split-panel-background .cp-split-panel-panel {
   background-color: @panel-background-color;
 }
 @THEME .cp-split-panel.vertical {
@@ -851,7 +857,7 @@ export default `
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 200%);
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1001,7 +1007,7 @@ export default `
   color: @primary-color;
 }
 @THEME .ant-calendar {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 200%);
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
   border-color: @panel-background-color;
   color: @application-color;
@@ -1146,7 +1152,7 @@ export default `
   border-bottom-color: @card-background-color;
 }
 @THEME .ant-popover-inner {
-  background-color: @card-background-color;
+  background-color: fade(@card-background-color, 200%);
   border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1576,6 +1582,29 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
+}
+
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -1830,7 +1859,7 @@ export default `
   background-color: @card-background-color;
 }
 @THEME .cp-billing-calendar-container {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 200%);
   box-shadow: 0 0 2px 2px @card-hovered-shadow-color;
   color: @application-color;
 }

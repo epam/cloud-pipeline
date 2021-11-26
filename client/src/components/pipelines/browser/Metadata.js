@@ -539,11 +539,12 @@ export default class Metadata extends React.Component {
       <Button
         shape="circle"
         onClick={(e) => e.stopPropagation()}
-        className={
+        className={classNames(
           this.filterApplied(key)
             ? 'cp-primary'
-            : 'cp-text-not-important'
-        }
+            : 'cp-text-not-important',
+          'cp-transparent-background'
+        )}
         style={{
           marginLeft: 5,
           border: 'none'
@@ -1635,6 +1636,7 @@ export default class Metadata extends React.Component {
 
     return (
       <ContentMetadataPanel
+        className={'cp-transparent-background'}
         style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>

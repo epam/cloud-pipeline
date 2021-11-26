@@ -839,6 +839,7 @@ class FacetedSearch extends React.Component {
                 }
               }]}
               resizerSize={8}
+              className={'cp-transparent-background'}
             >
               <div
                 key="faceted-filter"

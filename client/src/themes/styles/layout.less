@@ -353,7 +353,7 @@ h5 {
 }
 
 .ant-modal-content {
-  background-color: @card-background-color;
+  background-color: fade(@card-background-color, 200%);
   color: @application-color;
 }
 
@@ -530,10 +530,19 @@ h5 {
   background-color: @application-background-color;
 }
 
+.cp-transparent-background {
+  background-color: transparent !important;
+}
+
 .cp-split-panel-panel {
   color: @application-color;
+  background-color: transparent;
+}
+
+.cp-split-panel-background .cp-split-panel-panel {
   background-color: @panel-background-color;
 }
+
 
 .cp-split-panel.vertical {
   flex-direction: column;
@@ -923,7 +932,7 @@ li.ant-calendar-time-picker-select-option-selected {
 .rc-menu,
 .rc-dropdown-menu,
 .ant-mention-dropdown {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 200%);
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1102,7 +1111,7 @@ li.ant-calendar-time-picker-select-option-selected {
 }
 
 .ant-calendar {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 200%);
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
   border-color: @panel-background-color;
   color: @application-color;
@@ -1277,7 +1286,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-popover-inner {
-  background-color: @card-background-color;
+  background-color: fade(@card-background-color, 200%);
   border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
