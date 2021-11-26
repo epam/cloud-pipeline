@@ -57,11 +57,11 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
     }
 
     private Stream<ToolBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                             final LocalDate from,
-                                             final LocalDate to,
-                                             final Map<String, List<String>> filters,
-                                             final BillingDiscount discount,
-                                             final int pageSize) {
+                                         final LocalDate from,
+                                         final LocalDate to,
+                                         final Map<String, List<String>> filters,
+                                         final BillingDiscount discount,
+                                         final int pageSize) {
         return StreamUtils.from(billingsIterator(elasticSearchClient, from, to, filters, discount, pageSize))
                 .flatMap(this::billings);
     }

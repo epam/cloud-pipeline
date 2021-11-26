@@ -45,7 +45,7 @@ public class PeriodBillingWriter<B extends PeriodBilling<M>, M> implements Billi
         this.periodColumns = periodColumns;
         this.detailExtractors = detailExtractors;
         this.periodExtractors = periodExtractors;
-        this.numberOfPeriods =  1 + (int) ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to));
+        this.numberOfPeriods = 1 + (int) ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to));
         this.numberOfColumns = detailColumns.size() + periodColumns.size() * numberOfPeriods;
     }
 

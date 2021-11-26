@@ -154,8 +154,8 @@ public class BillingHelper {
     private BoolQueryBuilder queryByFilters(final Map<String, List<String>> filters) {
         return MapUtils.emptyIfNull(filters).entrySet().stream()
                 .reduce(QueryBuilders.boolQuery(),
-                    (query, entry) -> query.filter(QueryBuilders.termsQuery(entry.getKey(), entry.getValue())),
-                    BoolQueryBuilder::filter);
+                        (query, entry) -> query.filter(QueryBuilders.termsQuery(entry.getKey(), entry.getValue())),
+                        BoolQueryBuilder::filter);
     }
 
     private RangeQueryBuilder queryByDate(final LocalDate from, final LocalDate to) {
@@ -360,7 +360,7 @@ public class BillingHelper {
     }
 
     public Optional<NumericMetricsAggregation.SingleValue> getSingleValue(final Aggregations aggregations,
-                                                                           final String aggregation) {
+                                                                          final String aggregation) {
         return getAggregation(aggregations, aggregation, NumericMetricsAggregation.SingleValue.class);
     }
 
@@ -377,8 +377,8 @@ public class BillingHelper {
     }
 
     public <A> Optional<A> getAggregation(final Aggregations aggregations,
-                                           final String aggregation,
-                                           final Class<A> aggregationClass) {
+                                          final String aggregation,
+                                          final Class<A> aggregationClass) {
         return Optional.ofNullable(aggregations)
                 .map(it -> it.get(aggregation))
                 .filter(aggregationClass::isInstance)

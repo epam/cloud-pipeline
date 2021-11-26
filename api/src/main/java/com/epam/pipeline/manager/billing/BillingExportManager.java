@@ -33,7 +33,7 @@ public class BillingExportManager {
     private static final BillingExportType FALLBACK_BILLING_EXPORT_TYPE = BillingExportType.BLANK;
     private static final List<BillingExportType> FALLBACK_BILLING_EXPORT_TYPES = Collections.singletonList(
             FALLBACK_BILLING_EXPORT_TYPE);
-    public static final String SIGNED_NUMBER_FORMAT = "+#;-#";
+    private static final String SIGNED_NUMBER_FORMAT = "+#;-#";
 
     private final Map<BillingExportType, BillingExporter> exporters;
     private final MessageHelper messageHelper;
