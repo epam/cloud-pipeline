@@ -6,6 +6,7 @@ import com.epam.pipeline.entity.billing.InstanceBilling;
 import com.epam.pipeline.entity.billing.InstanceBillingMetrics;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -19,16 +20,14 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggre
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -45,82 +44,57 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
-        final int numberOfPartitions = getEstimatedNumberOfBillingPartitions(elasticSearchClient, from, to, filters);
         final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
-        return billings(elasticSearchClient, from, to, filters, discount, numberOfPartitions);
+        return billings(elasticSearchClient, from, to, filters, discount, getPageSize());
     }
 
-    private int getEstimatedNumberOfBillingPartitions(final RestHighLevelClient elasticSearchClient,
-                                                      final LocalDate from,
-                                                      final LocalDate to,
-                                                      final Map<String, List<String>> filters) {
-        return BigDecimal.valueOf(getEstimatedNumberOfBillings(elasticSearchClient, from, to, filters))
-                .divide(BigDecimal.valueOf(getPartitionSize()), RoundingMode.CEILING)
-                .max(BigDecimal.ONE)
-                .intValue();
-    }
-
-    private int getEstimatedNumberOfBillings(final RestHighLevelClient elasticsearchClient,
-                                             final LocalDate from,
-                                             final LocalDate to,
-                                             final Map<String, List<String>> filters) {
-        return Optional.of(getEstimatedNumberOfBillingsRequest(from, to, filters))
-                .map(billingHelper.searchWith(elasticsearchClient))
-                .map(SearchResponse::getAggregations)
-                .flatMap(billingHelper::getCardinality)
-                .orElse(NumberUtils.INTEGER_ZERO);
-    }
-
-    private SearchRequest getEstimatedNumberOfBillingsRequest(final LocalDate from,
-                                                              final LocalDate to,
-                                                              final Map<String, List<String>> filters) {
-        return new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.storageIndicesByDate(from, to))
-                .source(new SearchSourceBuilder()
-                        .size(NumberUtils.INTEGER_ZERO)
-                        .query(billingHelper.queryByDateAndFilters(from, to, filters))
-                        .aggregation(billingHelper.aggregateCardinalityBy(BillingUtils.INSTANCE_TYPE_FIELD)));
-    }
-
-    private int getPartitionSize() {
-        return Optional.of(SystemPreferences.BILLING_EXPORT_PERIOD_AGGREGATION_PARTITION_SIZE)
+    private int getPageSize() {
+        return Optional.of(SystemPreferences.BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE)
                 .map(preferenceManager::getPreference)
-                .orElse(BillingUtils.FALLBACK_EXPORT_PERIOD_AGGREGATION_PARTITION_SIZE);
+                .orElse(BillingUtils.FALLBACK_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE);
     }
 
     private Stream<InstanceBilling> billings(final RestHighLevelClient elasticSearchClient,
-                                             final LocalDate from,
-                                             final LocalDate to,
-                                             final Map<String, List<String>> filters,
-                                             final BillingDiscount discount,
-                                             final int numberOfPartitions) {
-        return IntStream.range(0, numberOfPartitions)
-                .mapToObj(partition -> getBillingsRequest(from, to, filters, discount, partition, numberOfPartitions))
-                .map(billingHelper.searchWith(elasticSearchClient))
+                                                         final LocalDate from,
+                                                         final LocalDate to,
+                                                         final Map<String, List<String>> filters,
+                                                         final BillingDiscount discount,
+                                                         final int pageSize) {
+        return StreamUtils.from(billingsIterator(elasticSearchClient, from, to, filters, discount, pageSize))
                 .flatMap(this::billings);
+    }
+
+    private Iterator<SearchResponse> billingsIterator(final RestHighLevelClient elasticSearchClient,
+                                                      final LocalDate from,
+                                                      final LocalDate to,
+                                                      final Map<String, List<String>> filters,
+                                                      final BillingDiscount discount,
+                                                      final int pageSize) {
+        return new ElasticMultiBucketsIterator(BillingUtils.INSTANCE_TYPE_FIELD, pageSize,
+                pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
+                billingHelper.searchWith(elasticSearchClient),
+                billingHelper::getTerms);
     }
 
     private SearchRequest getBillingsRequest(final LocalDate from,
                                              final LocalDate to,
                                              final Map<String, List<String>> filters,
                                              final BillingDiscount discount,
-                                             final int partition,
-                                             final int numberOfPartitions) {
+                                             final int pageOffset,
+                                             final int pageSize) {
         return new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
                 .indices(billingHelper.runIndicesByDate(from, to))
                 .source(new SearchSourceBuilder()
                         .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
-                        .aggregation(billingHelper.aggregatePartitionBy(BillingUtils.INSTANCE_TYPE_FIELD,
-                                        partition, numberOfPartitions)
+                        .aggregation(billingHelper.aggregateBy(BillingUtils.INSTANCE_TYPE_FIELD)
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(aggregateBillingsByMonth(discount))
                                 .subAggregation(billingHelper.aggregateRunCountSumBucket())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
-                                .subAggregation(billingHelper.aggregateCostSortBucket())));
+                                .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
     }
 
     private DateHistogramAggregationBuilder aggregateBillingsByMonth(final BillingDiscount discount) {

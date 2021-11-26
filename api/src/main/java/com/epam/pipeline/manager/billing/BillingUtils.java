@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 public final class BillingUtils {
 
-    public static final int FALLBACK_EXPORT_AGGREGATION_PARTITION_SIZE = 5000;
-    public static final int FALLBACK_EXPORT_PERIOD_AGGREGATION_PARTITION_SIZE = 1000;
+    public static final int FALLBACK_EXPORT_AGGREGATION_PAGE_SIZE = 5000;
+    public static final int FALLBACK_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = 1000;
     public static final char SEPARATOR = ',';
 
     public static final String YEAR_MONTH_FORMAT = "MMMM yyyy";

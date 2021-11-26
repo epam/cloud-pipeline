@@ -29,13 +29,10 @@ import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.NumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
-import org.elasticsearch.search.aggregations.metrics.cardinality.CardinalityAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
@@ -185,14 +182,6 @@ public class BillingHelper {
                 .field(field);
     }
 
-    public TermsAggregationBuilder aggregatePartitionBy(final String field,
-                                                        final int partition,
-                                                        final int numberOfPartitions) {
-        return numberOfPartitions > 1
-                ? aggregateBy(field).includeExclude(new IncludeExclude(partition, numberOfPartitions))
-                : aggregateBy(field);
-    }
-
     public DateHistogramAggregationBuilder aggregateByMonth() {
         return AggregationBuilders.dateHistogram(BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .field(BillingUtils.BILLING_DATE_FIELD)
@@ -200,11 +189,6 @@ public class BillingHelper {
                 .format(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)
                 .order(BucketOrder.key(true))
                 .minDocCount(NumberUtils.LONG_ONE);
-    }
-
-    public CardinalityAggregationBuilder aggregateCardinalityBy(final String field) {
-        return AggregationBuilders.cardinality(BillingUtils.CARDINALITY_AGG)
-                .field(field);
     }
 
     public ValueCountAggregationBuilder aggregateUniqueRunsCount() {
@@ -261,6 +245,10 @@ public class BillingHelper {
     public BucketSortPipelineAggregationBuilder aggregateCostSortBucket() {
         return PipelineAggregatorBuilders.bucketSort(BillingUtils.SORT_AGG, Collections.singletonList(
                 new FieldSortBuilder(BillingUtils.COST_FIELD).order(SortOrder.DESC)));
+    }
+
+    public BucketSortPipelineAggregationBuilder aggregateCostSortBucket(final int from, final int size) {
+        return aggregateCostSortBucket().from(from).size(size);
     }
 
     public SumBucketPipelineAggregationBuilder aggregateRunCountSumBucket() {
@@ -344,12 +332,6 @@ public class BillingHelper {
                 .map(Double::longValue);
     }
 
-    public Optional<Integer> getCardinality(final Aggregations aggregations) {
-        return getAggregation(aggregations, BillingUtils.CARDINALITY_AGG, Cardinality.class)
-                .map(Cardinality::getValue)
-                .map(Long::intValue);
-    }
-
     public Map<String, Object> getLastByDateDocFields(final Aggregations aggregations) {
         return getAggregation(aggregations, BillingUtils.LAST_BY_DATE_DOC_AGG, TopHits.class)
                 .map(TopHits::getHits)
@@ -364,7 +346,7 @@ public class BillingHelper {
 
     public Stream<? extends Terms.Bucket> termBuckets(final Aggregations aggregations,
                                                       final String aggregation) {
-        return getAggregation(aggregations, aggregation, Terms.class)
+        return getTerms(aggregations, aggregation)
                 .map(Terms::getBuckets)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty);
@@ -372,13 +354,21 @@ public class BillingHelper {
 
     public Stream<? extends Histogram.Bucket> histogramBuckets(final Aggregations aggregations,
                                                                final String aggregation) {
-        return getAggregation(aggregations, aggregation, Histogram.class)
+        return getHistogram(aggregations, aggregation)
                 .map(Histogram::getBuckets)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty);
     }
 
-    private <A> Optional<A> getAggregation(final Aggregations aggregations,
+    public Optional<Terms> getTerms(final Aggregations aggregations, final String aggregation) {
+        return getAggregation(aggregations, aggregation, Terms.class);
+    }
+
+    private Optional<Histogram> getHistogram(final Aggregations aggregations, final String aggregation) {
+        return getAggregation(aggregations, aggregation, Histogram.class);
+    }
+
+    public <A> Optional<A> getAggregation(final Aggregations aggregations,
                                            final String aggregation,
                                            final Class<A> aggregationClass) {
         return Optional.ofNullable(aggregations)
