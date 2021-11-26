@@ -524,8 +524,8 @@ export default `
   flex-direction: row;
   background-color: @application-background-color;
 }
-@THEME .cp-split-panel-transparent {
-  background-color: transparent;
+@THEME .cp-transparent-background {
+  background-color: transparent !important;
 }
 @THEME .cp-split-panel-panel {
   color: @application-color;
