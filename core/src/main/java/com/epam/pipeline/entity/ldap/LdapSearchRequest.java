@@ -1,17 +1,18 @@
 package com.epam.pipeline.entity.ldap;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
-@Value
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@Builder
 public class LdapSearchRequest {
-    private final String query;
-    private final LdapEntityType type;
-    
-    public static LdapSearchRequest forUser(final String query) {
-        return new LdapSearchRequest(query, LdapEntityType.USER);
-    }
-    
-    public static LdapSearchRequest forGroup(final String query) {
-        return new LdapSearchRequest(query, LdapEntityType.GROUP);
-    }
+    private String query;
+    private LdapEntityType type;
+    private Integer size;
+    private List<String> attributes;
+    private String nameAttribute;
 }

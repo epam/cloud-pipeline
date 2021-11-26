@@ -716,6 +716,8 @@ public class SystemPreferences {
             "system.user.monitor.delay.hours", 24, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
             "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED = new BooleanPreference(
+            "system.ldap.user.block.monitor.enable", false, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
             "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_IDLE_DAYS = new IntPreference(
@@ -876,19 +878,22 @@ public class SystemPreferences {
             "ldap.base.path", "", LDAP_GROUP, pass);
     public static final StringPreference LDAP_USER_FILTER = new StringPreference(
             "ldap.user.filter", "(&(objectClass=person)(cn=*%s*))", LDAP_GROUP, pass);
-    public static final StringPreference LDAP_BLOCKED_USER_FILTER = new StringPreference(
-            "ldap.blocked.user.filter",
-            "(&(objectClass=person)(cn=*%s*)(&(lockoutTime=*)(!(lockoutTime=0))))", LDAP_GROUP, pass);
     public static final StringPreference LDAP_GROUP_FILTER = new StringPreference(
             "ldap.group.filter", "(&(objectClass=group)(cn=*%s*))", LDAP_GROUP, pass);
     public static final StringPreference LDAP_NAME_ATTRIBUTE = new StringPreference(
             "ldap.entity.attribute.name", "cn", LDAP_GROUP, pass);
     public static final StringPreference LDAP_ENTITY_ATTRIBUTES = new StringPreference(
-            "ldap.entity.attributes", "cn,distinguishedName,mail,lockoutTime", LDAP_GROUP, pass);
+            "ldap.entity.attributes", "cn,distinguishedName,mail", LDAP_GROUP, pass);
     public static final IntPreference LDAP_RESPONSE_SIZE = new IntPreference(
             "ldap.response.size", 10, LDAP_GROUP, isGreaterThan(0));
     public static final IntPreference LDAP_RESPONSE_TIMEOUT = new IntPreference(
             "ldap.response.timeout", 60000, LDAP_GROUP, isGreaterThanOrEquals(0));
+    public static final StringPreference LDAP_BLOCKED_USER_FILTER = new StringPreference(
+            "ldap.blocked.user.filter", "", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_BLOCKED_USER_NAME_ATTRIBUTE = new StringPreference(
+            "ldap.blocked.user.name.attribute", "sAMAccountName", LDAP_GROUP, pass);
+    public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
+            "ldap.blocked.user.filter.page.size", 50, LDAP_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

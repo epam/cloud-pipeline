@@ -9,6 +9,7 @@ import com.epam.pipeline.entity.ldap.LdapSearchResponseType;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
@@ -70,7 +71,7 @@ public class LdapManagerTest {
     public void testThatSearchRetrievesCompleteEntitiesListFromLdap() {
         mockEntities(Collections.nCopies(COUNT_LIMIT / 2, ENTITY));
 
-        final LdapSearchResponse response = ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        final LdapSearchResponse response = ldapManager.search(userQuery());
         
         assertThat(response.getType(), is(LdapSearchResponseType.COMPLETED));
         assertThat(response.getEntities().size(), is(COUNT_LIMIT / 2));
@@ -80,7 +81,7 @@ public class LdapManagerTest {
     public void testThatSearchRetrievesTruncatedEntitiesListFromLdap() {
         mockEntities(Collections.nCopies(COUNT_LIMIT * 2, ENTITY));
 
-        final LdapSearchResponse response = ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        final LdapSearchResponse response = ldapManager.search(userQuery());
         
         assertThat(response.getType(), is(LdapSearchResponseType.TRUNCATED));
         assertThat(response.getEntities().size(), is(COUNT_LIMIT * 2));
@@ -90,7 +91,7 @@ public class LdapManagerTest {
     public void testThatSearchHandlesTimedOutEntitiesRequests() {
         mockEntitiesRetrievalTimeout();
         
-        final LdapSearchResponse response = ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        final LdapSearchResponse response = ldapManager.search(userQuery());
         
         assertThat(response.getType(), is(LdapSearchResponseType.TIMED_OUT));
         assertThat(response.getEntities().size(), is(0));
@@ -98,28 +99,31 @@ public class LdapManagerTest {
 
     @Test
     public void testThatSearchUsesBasePathFromPreferences() {
-        ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        ldapManager.search(userQuery());
 
         verifyQuery(query -> query.base().toString().equals(BASE_PATH));
     }
 
     @Test
     public void testThatSearchUsesUserFilterFromPreferences() {
-        ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        ldapManager.search(userQuery());
 
         verifyQuery(query -> query.filter().toString().equals(String.format(USER_FILTER, QUERY)));
     }
 
     @Test
     public void testThatSearchUsesGroupFilterFromPreferences() {
-        ldapManager.search(LdapSearchRequest.forGroup(QUERY));
+        ldapManager.search(LdapSearchRequest.builder()
+                .query(QUERY)
+                .type(LdapEntityType.GROUP)
+                .build());
 
         verifyQuery(query -> query.filter().toString().equals(String.format(GROUP_FILTER, QUERY)));
     }
 
     @Test
     public void testThatSearchUsesSearchLimitsFromPreferences() {
-        ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        ldapManager.search(userQuery());
 
         verifyQuery(query -> query.countLimit().equals(COUNT_LIMIT));
         verifyQuery(query -> query.timeLimit().equals(TIME_LIMIT));
@@ -127,9 +131,10 @@ public class LdapManagerTest {
 
     @Test
     public void testThatSearchUsesAttributesFromPreferences() {
-        ldapManager.search(LdapSearchRequest.forUser(QUERY));
+        ldapManager.search(userQuery());
 
-        verifyQuery(query -> Arrays.equals(query.attributes(), ATTRIBUTES));
+        verifyQuery(query -> CollectionUtils.isEqualCollection(
+                Arrays.asList(query.attributes()), Arrays.asList(ATTRIBUTES)));
     }
 
     private void mockEmptyPreferences() {
@@ -168,5 +173,12 @@ public class LdapManagerTest {
                 description.appendText("Query doesn't match the expected one.");
             }
         };
+    }
+
+    private LdapSearchRequest userQuery() {
+        return LdapSearchRequest.builder()
+                .query(QUERY)
+                .type(LdapEntityType.USER)
+                .build();
     }
 }

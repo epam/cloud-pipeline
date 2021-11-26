@@ -16,15 +16,12 @@
 
 package com.epam.pipeline.manager.user;
 
-import com.epam.pipeline.entity.ldap.LdapSearchRequest;
-import com.epam.pipeline.entity.ldap.LdapSearchResponse;
-import com.epam.pipeline.entity.ldap.LdapSearchResponseType;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.ldap.LdapManager;
+import com.epam.pipeline.manager.ldap.LdapBlockedUsersManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -39,6 +36,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,11 +47,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class InactiveUsersMonitoringServiceCore {
-
     private final UserManager userManager;
     private final NotificationManager notificationManager;
     private final PreferenceManager preferenceManager;
-    private final LdapManager ldapManager;
+    private final LdapBlockedUsersManager ldapBlockedUsersManager;
 
     /**
      * Finds inactive users and notifies about them. Inactive user is a user who meets at least one of the
@@ -93,10 +90,19 @@ public class InactiveUsersMonitoringServiceCore {
     }
 
     private List<PipelineUser> findAndBlockLdapBlockedUsers(final Collection<PipelineUser> allUsers) {
-        return allUsers.stream()
+        final Boolean monitoringEnabled = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+        if (Objects.isNull(monitoringEnabled) || !monitoringEnabled) {
+            log.debug("Ldap blocked users monitoring is not enabled");
+            return Collections.emptyList();
+        }
+
+        final List<PipelineUser> activeNonAdmins = allUsers.stream()
                 .filter(pipelineUser -> !pipelineUser.isBlocked())
                 .filter(pipelineUser -> !userIsAdmin(pipelineUser))
-                .filter(this::ldapBlocked)
+                .collect(Collectors.toList());
+
+        return ldapBlockedUsersManager.filterBlockedUsers(activeNonAdmins).stream()
                 .map(user -> userManager.updateUserBlockingStatus(user.getId(), true))
                 .collect(Collectors.toList());
     }
@@ -123,25 +129,6 @@ public class InactiveUsersMonitoringServiceCore {
             return null;
         }
         return result < 0 ? null : result;
-    }
-
-    private boolean ldapBlocked(final PipelineUser user) {
-        final LdapSearchResponse ldapSearchResponse = findLdapBlockedUser(user.getUserName());
-        if (Objects.isNull(ldapSearchResponse)
-                || LdapSearchResponseType.TIMED_OUT.equals(ldapSearchResponse.getType())) {
-            log.debug("LDAP response was not received for user '{}'", user.getUserName());
-            return false;
-        }
-        return CollectionUtils.isNotEmpty(ldapSearchResponse.getEntities());
-    }
-
-    private LdapSearchResponse findLdapBlockedUser(final String userName) {
-        try {
-            return ldapManager.searchBlockedUser(LdapSearchRequest.forUser(userName));
-        } catch(Exception e) {
-            log.warn("LDAP request failed.", e);
-            return null;
-        }
     }
 
     private boolean userIsAdmin(final PipelineUser pipelineUser) {
