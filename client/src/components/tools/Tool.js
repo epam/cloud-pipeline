@@ -22,10 +22,9 @@ import {
   Button,
   Card,
   Col,
-  Dropdown,
   Icon,
   Input,
-  Menu,
+  Menu as MenuHorizontal,
   message,
   Modal,
   Popover,
@@ -34,6 +33,8 @@ import {
   Tooltip,
   Upload
 } from 'antd';
+import Menu, {MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
@@ -112,7 +113,6 @@ const DEFAULT_FILE_SIZE_KB = 50;
 @withCurrentUserAttributes()
 @observer
 export default class Tool extends localization.LocalizedReactComponent {
-
   state = {
     metadata: false,
     editDescriptionMode: false,
@@ -1260,21 +1260,21 @@ export default class Tool extends localization.LocalizedReactComponent {
       this.props.router.push(`/tool/${this.props.toolId}/${key}`);
     };
     return (
-      <Menu
+      <MenuHorizontal
         className={styles.toolMenu}
         onClick={onChangeSection}
         mode="horizontal"
         selectedKeys={[this.props.section]}>
-        <Menu.Item key="description">
+        <MenuHorizontal.Item key="description">
           DESCRIPTION
-        </Menu.Item>
-        <Menu.Item key="versions">
+        </MenuHorizontal.Item>
+        <MenuHorizontal.Item key="versions">
           VERSIONS
-        </Menu.Item>
-        <Menu.Item key="settings">
+        </MenuHorizontal.Item>
+        <MenuHorizontal.Item key="settings">
           SETTINGS
-        </Menu.Item>
-      </Menu>
+        </MenuHorizontal.Item>
+      </MenuHorizontal>
     );
   };
 
@@ -1591,8 +1591,9 @@ export default class Tool extends localization.LocalizedReactComponent {
         <Menu
           selectedKeys={[]}
           onClick={onSelect}
+          style={{cursor: 'pointer'}}
         >
-          <Menu.Item id="run-default-button" key={runDefaultKey}>
+          <MenuItem id="run-default-button" key={runDefaultKey}>
             {
               tooltip && !notLoaded
                 ? (
@@ -1605,8 +1606,8 @@ export default class Tool extends localization.LocalizedReactComponent {
                 )
                 : 'Default settings'
             }
-          </Menu.Item>
-          <Menu.Item id="run-custom-button" key={runCustomKey}>
+          </MenuItem>
+          <MenuItem id="run-custom-button" key={runCustomKey}>
             {
               tooltip && !notLoaded
                 ? (
@@ -1619,7 +1620,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                 )
                 : 'Custom settings'
             }
-          </Menu.Item>
+          </MenuItem>
         </Menu>
       );
       return (
@@ -1676,28 +1677,28 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     const displayOptionsMenuItems = [];
     displayOptionsMenuItems.push(
-      <Menu.Item
+      <MenuItem
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
         key="metadata">
         <Row type="flex" justify="space-between" align="middle">
           <span>Attributes</span>
           <Icon type="check-circle" style={{display: this.state.metadata ? 'inherit' : 'none'}} />
         </Row>
-      </Menu.Item>
+      </MenuItem>
     );
     displayOptionsMenuItems.push(
-      <Menu.Item
+      <MenuItem
         id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
         key="issues">
         <Row type="flex" justify="space-between" align="middle">
           <span>{this.localizedString('Issue')}s</span>
           <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
         </Row>
-      </Menu.Item>
+      </MenuItem>
     );
     if (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={
             this.state.instanceTypesManagementPanel
               ? 'hide-instance-types-management-panel-button'
@@ -1708,15 +1709,15 @@ export default class Tool extends localization.LocalizedReactComponent {
             <span>Instance management</span>
             <Icon
               type="check-circle"
-              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}}/>
+              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     const displayOptionsMenu = (
       <Menu
         onClick={onSelectDisplayOption}
-        style={{width: 150}}
+        style={{width: 150, cursor: 'pointer'}}
         selectedKeys={[]}
       >
         {displayOptionsMenuItems}
@@ -1818,15 +1819,16 @@ export default class Tool extends localization.LocalizedReactComponent {
     const menu = (
       <Menu
         onClick={onClick}
+        style={{cursor: 'pointer'}}
         selectedKeys={[]}
       >
-        <Menu.Item key={permissionsKey}>
+        <MenuItem key={permissionsKey}>
           <Icon type="setting" /> Permissions
-        </Menu.Item>
-        <Menu.Divider />
-        <Menu.Item key={deleteKey} className="cp-danger">
+        </MenuItem>
+        <Divider />
+        <MenuItem key={deleteKey} className="cp-danger">
           <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
-        </Menu.Item>
+        </MenuItem>
       </Menu>
     );
     return (

@@ -25,11 +25,9 @@ import {
   Checkbox,
   Col,
   Collapse,
-  Dropdown,
   Form,
   Icon,
   Input,
-  Menu,
   message,
   Modal,
   Popover,
@@ -38,6 +36,8 @@ import {
   Spin
 } from 'antd';
 import styles from './LaunchPipelineForm.css';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
@@ -2626,12 +2626,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
     const parameterTypeMenu = (
       <Menu selectedKeys={[]} onClick={onSelect} className={styles.parametersMenu}>
-        <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
-        <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
-        <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
-        <Menu.Item id="add-input-parameter" key="input">Input path parameter</Menu.Item>
-        <Menu.Item id="add-output-parameter" key="output">Output path parameter</Menu.Item>
-        <Menu.Item id="add-common-parameter" key="common">Common path parameter</Menu.Item>
+        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
+        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
+        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
+        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
+        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
+        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
       </Menu>
     );
 
@@ -4213,9 +4213,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       };
       const dropDownMenu = (
-        <Menu onClick={onDropDownSelect} selectedKeys={[]}>
-          <Menu.Item key={RUN_SELECTED_KEY}>Run selected</Menu.Item>
-          <Menu.Item key={RUN_CLUSTER_KEY}>Run cluster</Menu.Item>
+        <Menu onClick={onDropDownSelect} selectedKeys={[]} style={{cursor: 'pointer'}}>
+          <MenuItem key={RUN_SELECTED_KEY}>Run selected</MenuItem>
+          <MenuItem key={RUN_CLUSTER_KEY}>Run cluster</MenuItem>
         </Menu>
       );
       return (
@@ -4656,10 +4656,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         };
         const dropdownRenderer = () => (
-          <Menu onClick={onDropDownClick} selectedKeys={[]}>
-            <Menu.Item key={KEYS.selectMetadata}>
+          <Menu onClick={onDropDownClick} selectedKeys={[]} style={{cursor: 'pointer'}}>
+            <MenuItem key={KEYS.selectMetadata}>
               Select metadata entries and launch
-            </Menu.Item>
+            </MenuItem>
           </Menu>
         );
         return (

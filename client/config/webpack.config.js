@@ -80,10 +80,26 @@ module.exports = function (webpackEnv) {
     cssOptions,
     skipPostcss = false,
     preProcessor = null,
-    preProcesorOptions = {}) => {
+    preProcesorOptions = {},
+    fixAntIcon = false
+  ) => {
     const loaders = [
       isEnvDevelopment && require.resolve('style-loader'),
       isEnvProduction && {loader: MiniCssExtractPlugin.loader},
+      /*
+        rc-dropdown module overrides ant-design one's font face ("anticon") with
+        externally loaded font.
+        we must restrict such behavior: we'll replace @font-face declaration with
+        the fake "anticon-unused" font family name.
+       */
+      fixAntIcon && {
+        loader: 'string-replace-loader',
+        options: {
+          // eslint-disable-next-line
+          search: /@font-face[\s]*(\\n)*[\s]*\{[\s]*(\\n)*[\s]*font-family[\s]*(\\n)*[\s]*:[\s]*(\\n)*[\s]*['"]*anticon['"]*/igm,//font-family/igm, //font-family[\s]*:[\s]*['"]*anticon['"]*/ig,
+          replace: '@font-face{font-family:\'anticon-unused\''
+        }
+      },
       {
         loader: require.resolve('css-loader'),
         options: cssOptions
@@ -355,13 +371,34 @@ module.exports = function (webpackEnv) {
             },
             {
               test: cssRegex,
+              use: getStyleLoaders(
+                {
+                  importLoaders: 1,
+                  sourceMap: isEnvProduction
+                    ? shouldUseSourceMap
+                    : isEnvDevelopment
+                },
+                false,
+                null,
+                {},
+                true
+              ),
+              include: /node_modules.*rc-dropdown/,
+              // Don't consider CSS imports dead code even if the
+              // containing package claims to have no side effects.
+              // Remove this when webpack adds a warning or an error for this.
+              // See https://github.com/webpack/webpack/issues/6571
+              sideEffects: true
+            },
+            {
+              test: cssRegex,
               use: getStyleLoaders({
                 importLoaders: 1,
                 sourceMap: isEnvProduction
                   ? shouldUseSourceMap
                   : isEnvDevelopment
               }),
-              include: /(node_modules|src\/staticStyles)/,
+              include: /(node_modules|src[\\/]staticStyles)/,
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.
@@ -380,7 +417,7 @@ module.exports = function (webpackEnv) {
                 localIdentName: '[name]__[local]',
                 getLocalIdent: getLocalIdent
               }),
-              exclude: /(node_modules|src\/staticStyles)/,
+              exclude: /(node_modules|src[\\/]staticStyles)/,
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.

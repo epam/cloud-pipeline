@@ -28,9 +28,9 @@ import {
   Button,
   message,
   Alert,
-  Select,
-  Menu
+  Select
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
 import UserCreate from '../../../models/user/UserCreate';
 import UserDelete from '../../../models/user/UserDelete';
@@ -41,8 +41,6 @@ import ImportUsersButton from './../components/import-users';
 import roleModel from '../../../utils/roleModel';
 import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
-
-const MenuItem = Menu.Item;
 
 const PAGE_SIZE = 20;
 
