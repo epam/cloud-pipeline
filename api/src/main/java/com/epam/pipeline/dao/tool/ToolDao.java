@@ -229,47 +229,6 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         return getNamedParameterJdbcTemplate().query(loadAllByRegistryAndImageInQuery, params, getRowMapper());
     }
 
-    enum ToolParameters {
-        ID,
-        IMAGE,
-        CPU,
-        RAM,
-        REGISTRY_ID,
-        REGISTRY,
-        TOOL_GROUP_ID,
-        SECRET_NAME,
-        LABELS,
-        ENDPOINTS,
-        DESCRIPTION,
-        SHORT_DESCRIPTION,
-        DEFAULT_COMMAND,
-        LABELS_TO_SEARCH,
-        OWNER,
-        DISK,
-        INSTANCE_TYPE,
-        LINK,
-        ICON_ID,
-        ALLOW_SENSITIVE
-    }
-
-    enum ToolIconParameters {
-        ICON_ID,
-        ICON,
-        FILE_NAME,
-        TOOL_ID;
-
-        private static MapSqlParameterSource getParameters(long toolId, long iconId, String fileName, byte[] image) {
-            MapSqlParameterSource params = new MapSqlParameterSource();
-
-            params.addValue(ICON_ID.name(), iconId);
-            params.addValue(TOOL_ID.name(), toolId);
-            params.addValue(ICON.name(), new SqlLobValue(image));
-            params.addValue(FILE_NAME.name(), fileName);
-
-            return params;
-        }
-    }
-
     private static MapSqlParameterSource getParameters(Tool tool, Connection connection) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(ToolParameters.ID.name(), tool.getId());
@@ -286,6 +245,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         params.addValue(ToolParameters.INSTANCE_TYPE.name(), tool.getInstanceType());
         params.addValue(ToolParameters.LINK.name(), tool.getLink());
         params.addValue(ToolParameters.ALLOW_SENSITIVE.name(), tool.isAllowSensitive());
+        params.addValue(ToolParameters.ALLOW_COMMIT.name(), tool.isAllowCommit());
         Array labelsSqlArray = DaoHelper.mapListToSqlArray(tool.getLabels(), connection);
         params.addValue(ToolParameters.LABELS.name(), labelsSqlArray);
 
@@ -293,22 +253,6 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         params.addValue(ToolParameters.ENDPOINTS.name(), endpointsSqlArray);
 
         return params;
-    }
-
-    private static RowMapper<Tool> getRowMapper() {
-        return (rs, rowNum) -> {
-            Tool tool = new Tool();
-            return basicInitTool(rs, tool);
-        };
-    }
-
-    private static RowMapper<ToolWithIssuesCount> getRowMapperWithIssuesCount() {
-        return (rs, rowNum) -> {
-            ToolWithIssuesCount tool = new ToolWithIssuesCount();
-            basicInitTool(rs, tool);
-            tool.setIssuesCount(rs.getLong("issues_count"));
-            return tool;
-        };
     }
 
     private static Tool basicInitTool(ResultSet rs, Tool tool) throws SQLException {
@@ -327,6 +271,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
         tool.setInstanceType(rs.getString(ToolParameters.INSTANCE_TYPE.name()));
         tool.setAllowSensitive(rs.getBoolean(ToolParameters.ALLOW_SENSITIVE.name()));
+        tool.setAllowCommit(rs.getBoolean(ToolParameters.ALLOW_COMMIT.name()));
         long link = rs.getLong(ToolParameters.LINK.name());
         if (!rs.wasNull()) {
             tool.setLink(link);
@@ -355,6 +300,64 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
             }
         }
         return tool;
+    }
+
+    private static RowMapper<Tool> getRowMapper() {
+        return (rs, rowNum) -> {
+            Tool tool = new Tool();
+            return basicInitTool(rs, tool);
+        };
+    }
+
+    private static RowMapper<ToolWithIssuesCount> getRowMapperWithIssuesCount() {
+        return (rs, rowNum) -> {
+            ToolWithIssuesCount tool = new ToolWithIssuesCount();
+            basicInitTool(rs, tool);
+            tool.setIssuesCount(rs.getLong("issues_count"));
+            return tool;
+        };
+    }
+
+    enum ToolIconParameters {
+        ICON_ID,
+        ICON,
+        FILE_NAME,
+        TOOL_ID;
+
+        private static MapSqlParameterSource getParameters(long toolId, long iconId, String fileName, byte[] image) {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+
+            params.addValue(ICON_ID.name(), iconId);
+            params.addValue(TOOL_ID.name(), toolId);
+            params.addValue(ICON.name(), new SqlLobValue(image));
+            params.addValue(FILE_NAME.name(), fileName);
+
+            return params;
+        }
+    }
+
+    enum ToolParameters {
+        ID,
+        IMAGE,
+        CPU,
+        RAM,
+        REGISTRY_ID,
+        REGISTRY,
+        TOOL_GROUP_ID,
+        SECRET_NAME,
+        LABELS,
+        ENDPOINTS,
+        DESCRIPTION,
+        SHORT_DESCRIPTION,
+        DEFAULT_COMMAND,
+        LABELS_TO_SEARCH,
+        OWNER,
+        DISK,
+        INSTANCE_TYPE,
+        LINK,
+        ICON_ID,
+        ALLOW_SENSITIVE,
+        ALLOW_COMMIT
     }
 
     @Required

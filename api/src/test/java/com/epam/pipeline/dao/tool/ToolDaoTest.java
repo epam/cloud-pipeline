@@ -389,6 +389,19 @@ public class ToolDaoTest extends AbstractSpringTest {
         result.forEach(tool -> assertThat(tool.getEndpoints(), is(ENDPOINTS)));
     }
 
+    @Test
+    @Transactional
+    public void testUpdateTool() {
+        final Tool tool = generateToolWithAllFields();
+        toolDao.createTool(tool);
+        final Long toolId = tool.getId();
+        Assert.assertTrue(toolDao.loadTool(toolId).isAllowCommit());
+
+        tool.setAllowCommit(false);
+        toolDao.updateTool(tool);
+        Assert.assertFalse(toolDao.loadTool(toolId).isAllowCommit());
+    }
+
     private Tool createTool() {
         final Tool tool = generateToolWithAllFields();
         toolDao.createTool(tool);
@@ -513,6 +526,7 @@ public class ToolDaoTest extends AbstractSpringTest {
         assertThat(tool.getDisk(), is(DISK));
         assertThat(tool.getInstanceType(), is(INSTANCE_TYPE));
         assertThat(tool.getIconId(), is(iconId));
+        assertThat(tool.isAllowCommit(), is(true));
     }
 
     private void deleteTool(final Tool tool) {
@@ -541,6 +555,7 @@ public class ToolDaoTest extends AbstractSpringTest {
         Assert.assertEquals(TEST_RAM, tool.getRam());
         Assert.assertEquals(registryId, tool.getRegistryId());
         Assert.assertEquals(toolRegistry, tool.getRegistry());
+        Assert.assertTrue(tool.isAllowCommit());
     }
 
     private IssueVO getIssueVO(String name, String text, EntityVO entity) {

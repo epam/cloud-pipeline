@@ -323,8 +323,10 @@ public class ToolController extends AbstractRestController {
             })
     public Result<ToolVersion> createToolVersionSettings(@PathVariable final Long toolId,
                                                          @RequestParam final String version,
+                                                         @RequestParam(required = false,
+                                                             defaultValue = "true") final boolean allowCommit,
                                                          @RequestBody final List<ConfigurationEntry> settings) {
-        return Result.success(toolApiService.createToolVersionSettings(toolId, version, settings));
+        return Result.success(toolApiService.createToolVersionSettings(toolId, version, allowCommit, settings));
     }
 
     @GetMapping(value = "/tool/{toolId}/settings")

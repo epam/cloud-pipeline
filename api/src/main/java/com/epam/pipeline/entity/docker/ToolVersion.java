@@ -37,4 +37,6 @@ public class ToolVersion {
     private Long size;
     private Date modificationDate;
     private List<ConfigurationEntry> settings;
+    @Builder.Default
+    private boolean allowCommit = true;
 }
