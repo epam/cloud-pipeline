@@ -60,7 +60,9 @@ public class ToolVersionManager {
         ToolVersion versionAttributes = dockerClient.getVersionAttributes(registry, imageName, version);
         versionAttributes.setToolId(toolId);
         if (toolVersion.isPresent()) {
-            versionAttributes.setId(toolVersion.get().getId());
+            final ToolVersion existingVersion = toolVersion.get();
+            versionAttributes.setId(existingVersion.getId());
+            versionAttributes.setAllowCommit(existingVersion.isAllowCommit());
             toolVersionDao.updateToolVersion(versionAttributes);
         } else {
             toolVersionDao.createToolVersion(versionAttributes);
