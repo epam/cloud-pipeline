@@ -62,6 +62,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -140,12 +141,12 @@ public class NatGatewayManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutingRulesCreation(final NatRoutingRulesRequest request) {
-        return updateRoutesInDatabase(request, NatRouteStatus.CREATION_SCHEDULED, route -> true);
+        return updateRoutesInDatabase(request, NatRouteStatus.CREATION_SCHEDULED);
     }
 
     public List<NatRoute> loadAllRoutes() {
         final Map<NatRoutingRuleDescription, NatRoute> routeMap =
-            convertRoutesToMap(loadAllActiveRoutesFromKubernetes());
+            convertRoutesToMap(loadAllActiveRoutesFromKubernetes(), true);
         natGatewayDao.loadQueuedRouteUpdates().forEach(queuedRoute -> resolveQueuedRoutes(queuedRoute, routeMap));
         return new ArrayList<>(routeMap.values());
     }
@@ -160,7 +161,7 @@ public class NatGatewayManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutingRulesRemoval(final NatRoutingRulesRequest request) {
-        return updateRoutesInDatabase(request, NatRouteStatus.TERMINATION_SCHEDULED, this::hasTerminatingState);
+        return updateRoutesInDatabase(request, NatRouteStatus.TERMINATION_SCHEDULED);
     }
 
     private Set<String> tryResolveAddress(final String hostname) {
@@ -306,12 +307,22 @@ public class NatGatewayManager {
         }
     }
 
-    private List<NatRoute> updateRoutesInDatabase(final NatRoutingRulesRequest request, final NatRouteStatus status,
-                                                  final Predicate<NatRoute> additionalFilter) {
+    private List<NatRoute> updateRoutesInDatabase(final NatRoutingRulesRequest request, final NatRouteStatus status) {
+        final Predicate<NatRoute> additionalFilter;
+        final UnaryOperator<NatRoutingRuleDescription> routeMapping;
+        if (status == NatRouteStatus.TERMINATION_SCHEDULED) {
+            additionalFilter = this::hasTerminatingState;
+            routeMapping = this::toRuleWoDescription;
+        } else {
+            additionalFilter = route -> true;
+            routeMapping = rule -> rule;
+        }
+
         final List<NatRoutingRuleDescription> requestedRules = validateRequest(request);
         final List<NatRoute> updatedRoutes = updateStatusForQueuedRoutes(requestedRules, status);
-        final Set<NatRoutingRuleDescription> existingRules = getActiveNatRules(additionalFilter);
+        final Set<NatRoutingRuleDescription> existingRules = getActiveNatRules(additionalFilter, routeMapping);
         final List<NatRoutingRuleDescription> newRules = requestedRules.stream()
+            .map(routeMapping)
             .filter(rule -> !existingRules.contains(rule))
             .collect(Collectors.toList());
         final List<NatRoute> queuedRoutes = CollectionUtils.isNotEmpty(newRules)
@@ -328,8 +339,9 @@ public class NatGatewayManager {
     private List<NatRoute> updateStatusForQueuedRoutes(final List<NatRoutingRuleDescription> requestedRules,
                                                        final NatRouteStatus requiredStatus) {
         final Map<NatRoutingRuleDescription, NatRoute> queuedRoutesMapping =
-            convertRoutesToMap(natGatewayDao.loadQueuedRouteUpdates());
+            convertRoutesToMap(natGatewayDao.loadQueuedRouteUpdates(), false);
         final List<NatRoute> updatedRoutes = requestedRules.stream()
+            .map(this::toRuleWoDescription)
             .map(queuedRoutesMapping::get)
             .filter(Objects::nonNull)
             .filter(existingRoute -> !existingRoute.getStatus().equals(requiredStatus))
@@ -339,16 +351,22 @@ public class NatGatewayManager {
         return updatedRoutes;
     }
 
-    private Set<NatRoutingRuleDescription> getActiveNatRules(final Predicate<NatRoute> additionalFilter) {
+    private Set<NatRoutingRuleDescription> getActiveNatRules(
+        final Predicate<NatRoute> additionalFilter, final UnaryOperator<NatRoutingRuleDescription> routeMapping) {
         return loadAllRoutes().stream()
             .filter(additionalFilter::evaluate)
             .map(this::mapRouteToDescription)
+            .map(routeMapping)
             .collect(Collectors.toSet());
     }
 
     private NatRoutingRuleDescription mapRouteToDescription(final NatRoute route) {
         return new NatRoutingRuleDescription(route.getExternalName(), route.getExternalIp(),
                 route.getExternalPort(), route.getDescription());
+    }
+
+    public NatRoutingRuleDescription toRuleWoDescription(final NatRoutingRuleDescription rule) {
+        return new NatRoutingRuleDescription(rule.getExternalName(), rule.getExternalIp(), rule.getPort(), null);
     }
 
     private void addQueuedRouteToKubeServices(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
@@ -486,8 +504,12 @@ public class NatGatewayManager {
         routeMap.put(correspondingRule, resolvedRoute);
     }
 
-    private Map<NatRoutingRuleDescription, NatRoute> convertRoutesToMap(final List<NatRoute> natRoutes) {
-        return natRoutes.stream().collect(Collectors.toMap(this::mapRouteToDescription, Function.identity()));
+    private Map<NatRoutingRuleDescription, NatRoute> convertRoutesToMap(final List<NatRoute> natRoutes,
+                                                                        final boolean useDescription) {
+        return natRoutes.stream().collect(Collectors.toMap(route -> useDescription
+                                                                    ? mapRouteToDescription(route)
+                                                                    : toRuleWoDescription(mapRouteToDescription(route)),
+                                                           Function.identity()));
     }
 
     private boolean hasTerminatingState(final NatRoute route) {
