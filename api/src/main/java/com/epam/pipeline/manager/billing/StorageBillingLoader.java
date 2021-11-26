@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.Temporal;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -130,16 +131,16 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                 .build();
     }
 
-    private Map<YearMonth, StorageBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<Temporal, StorageBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<YearMonth, StorageBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
+    private Pair<Temporal, StorageBillingMetrics> getPeriodMetrics(final String period, final Aggregations aggregations) {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))

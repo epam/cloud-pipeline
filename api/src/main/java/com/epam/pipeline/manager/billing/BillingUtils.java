@@ -105,7 +105,10 @@ public final class BillingUtils {
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
 
     public static String asString(final Object value) {
-        return Optional.ofNullable(value).map(Object::toString).orElse(null);
+        return value instanceof LocalDateTime ? asString((LocalDateTime) value)
+                : value instanceof YearMonth ? asString((YearMonth) value)
+                : value != null ? value.toString()
+                : null;
     }
 
     public static String asString(final LocalDateTime value) {

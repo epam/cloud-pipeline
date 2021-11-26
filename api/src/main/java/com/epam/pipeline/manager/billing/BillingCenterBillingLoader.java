@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.Temporal;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -136,15 +137,15 @@ public class BillingCenterBillingLoader implements BillingLoader<BillingCenterGe
                 .build();
     }
 
-    private Map<YearMonth, GeneralBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<Temporal, GeneralBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<YearMonth, GeneralBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
+    private Pair<Temporal, GeneralBillingMetrics> getPeriodMetrics(final String period, final Aggregations aggregations) {
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 GeneralBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))

@@ -5,13 +5,13 @@ import lombok.Builder;
 import lombok.Value;
 
 import java.time.LocalDateTime;
-import java.time.YearMonth;
+import java.time.temporal.Temporal;
 import java.util.Map;
 import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
-public class StorageBilling implements PeriodBilling<YearMonth, StorageBillingMetrics> {
+public class StorageBilling implements PeriodBilling<StorageBillingMetrics> {
 
     Long id;
     String name;
@@ -22,10 +22,10 @@ public class StorageBilling implements PeriodBilling<YearMonth, StorageBillingMe
     String provider;
     LocalDateTime created;
     StorageBillingMetrics totalMetrics;
-    Map<YearMonth, StorageBillingMetrics> periodMetrics;
+    Map<Temporal, StorageBillingMetrics> periodMetrics;
 
     @Override
-    public StorageBillingMetrics getPeriodMetrics(final YearMonth ym) {
-        return Optional.ofNullable(periodMetrics.get(ym)).orElseGet(StorageBillingMetrics::empty);
+    public StorageBillingMetrics getPeriodMetrics(final Temporal period) {
+        return Optional.ofNullable(periodMetrics.get(period)).orElseGet(StorageBillingMetrics::empty);
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.Temporal;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -123,15 +124,15 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
                 .build();
     }
 
-    private Map<YearMonth, PipelineBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<Temporal, PipelineBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
                 .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<YearMonth, PipelineBillingMetrics> getPeriodMetrics(final String ym, final Aggregations aggregations) {
+    private Pair<Temporal, PipelineBillingMetrics> getPeriodMetrics(final String period, final Aggregations aggregations) {
         return Pair.of(
-                YearMonth.parse(ym, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
+                YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 PipelineBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))

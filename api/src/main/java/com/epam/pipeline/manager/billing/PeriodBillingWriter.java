@@ -9,22 +9,25 @@ import java.io.Writer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class PeriodBillingWriter<B extends PeriodBilling<YearMonth, M>, M> implements BillingWriter<B> {
+public class PeriodBillingWriter<B extends PeriodBilling<M>, M> implements BillingWriter<B> {
 
+    private final CSVWriter writer;
+    private final LocalDate from;
+    private final LocalDate to;
     private final String name;
     private final List<String> detailColumns;
     private final List<String> periodColumns;
     private final List<Function<B, String>> detailExtractors;
     private final List<Function<M, String>> periodExtractors;
-    private final CSVWriter writer;
-    private final LocalDate from;
-    private final LocalDate to;
+    private final int numberOfPeriods;
+    private final int numberOfColumns;
 
     public PeriodBillingWriter(final Writer writer,
                                final LocalDate from,
@@ -42,47 +45,66 @@ public class PeriodBillingWriter<B extends PeriodBilling<YearMonth, M>, M> imple
         this.periodColumns = periodColumns;
         this.detailExtractors = detailExtractors;
         this.periodExtractors = periodExtractors;
+        this.numberOfPeriods =  1 + (int) ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to));
+        this.numberOfColumns = detailColumns.size() + periodColumns.size() * numberOfPeriods;
     }
 
     @Override
     public void writeHeader() {
-        final List<String> datesRow = new ArrayList<>();
-        datesRow.add(name);
-        IntStream.range(0, detailColumns.size() - 1).forEach(i -> datesRow.add(StringUtils.EMPTY));
-        yms().forEach(ym -> {
-            datesRow.add(BillingUtils.asString(ym));
-            IntStream.range(0, periodColumns.size() - 1).forEach(i -> datesRow.add(StringUtils.EMPTY));
+        writePeriodHeader();
+        writeDataHeader();
+    }
+
+    private void writePeriodHeader() {
+        final List<String> row = new ArrayList<>(numberOfColumns);
+        row.add(name);
+        addCorrespondingEmptyColumns(row, detailColumns);
+        periods().forEach(period -> {
+            row.add(BillingUtils.asString(period));
+            addCorrespondingEmptyColumns(row, periodColumns);
         });
-        datesRow.add(from + " - " + to);
-        IntStream.range(0, periodColumns.size() - 1).forEach(i -> datesRow.add(StringUtils.EMPTY));
-        writer.writeNext(datesRow.toArray(new String[0]));
-        final List<String> columnsRow = new ArrayList<>(detailColumns);
-        yms().forEach(ym -> columnsRow.addAll(periodColumns));
-        columnsRow.addAll(periodColumns);
-        writer.writeNext(columnsRow.toArray(new String[0]));
+        row.add(from + " - " + to);
+        addCorrespondingEmptyColumns(row, periodColumns);
+        writeRow(row);
+    }
+
+    private void addCorrespondingEmptyColumns(final List<String> row, final List<String> columns) {
+        row.addAll(Collections.nCopies(Math.max(columns.size() - 1, 0), StringUtils.EMPTY));
+    }
+
+    private void writeDataHeader() {
+        final List<String> row = new ArrayList<>(numberOfColumns);
+        row.addAll(detailColumns);
+        periods().forEach(period -> row.addAll(periodColumns));
+        row.addAll(periodColumns);
+        writeRow(row);
     }
 
     @Override
     public void write(final B billing) {
-        final List<String> row = new ArrayList<>();
-        detailExtractors.stream()
-                .map(extractor -> extractor.apply(billing))
-                .forEach(row::add);
-        yms().forEach(ym -> {
-            final M metrics = billing.getPeriodMetrics(ym);
-            periodExtractors.stream()
-                    .map(extractor -> extractor.apply(metrics))
-                    .forEach(row::add);
-        });
-        periodExtractors.stream()
-                .map(extractor -> extractor.apply(billing.getTotalMetrics()))
-                .forEach(row::add);
-        writer.writeNext(row.toArray(new String[0]));
+        final List<String> row = new ArrayList<>(numberOfColumns);
+        addExtractedColumns(row, billing, detailExtractors);
+        periods().forEach(period -> addExtractedColumns(row, billing.getPeriodMetrics(period), periodExtractors));
+        addExtractedColumns(row, billing.getTotalMetrics(), periodExtractors);
+        writeRow(row);
     }
 
-    private Stream<YearMonth> yms() {
+    private <T> void addExtractedColumns(final List<String> row,
+                                         final T value,
+                                         final List<Function<T, String>> extractors) {
+        for (Function<T, String> extractor : extractors) {
+            row.add(extractor.apply(value));
+        }
+    }
+
+    private Stream<Temporal> periods() {
         return Stream.iterate(YearMonth.from(from), ym -> ym.plusMonths(1L))
-                .limit(ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) + 1L);
+                .limit(numberOfPeriods)
+                .map(Temporal.class::cast);
+    }
+
+    private void writeRow(final List<String> row) {
+        writer.writeNext(row.toArray(new String[0]));
     }
 
     @Override

@@ -17,7 +17,6 @@ import com.epam.pipeline.manager.billing.ToolBillingLoader;
 import com.epam.pipeline.manager.billing.ToolBillingWriter;
 import com.epam.pipeline.manager.billing.UserBillingLoader;
 import com.epam.pipeline.manager.billing.UserBillingWriter;
-import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

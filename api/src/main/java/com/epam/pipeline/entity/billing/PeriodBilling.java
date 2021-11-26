@@ -2,8 +2,8 @@ package com.epam.pipeline.entity.billing;
 
 import java.time.temporal.Temporal;
 
-public interface PeriodBilling<P extends Temporal, M> {
+public interface PeriodBilling<M> {
 
     M getTotalMetrics();
-    M getPeriodMetrics(P yearMonth);
+    M getPeriodMetrics(Temporal period);
 }
