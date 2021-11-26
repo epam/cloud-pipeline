@@ -29,14 +29,16 @@
                         version,
                         digest,
                         size,
-                        modified_date
+                        modified_date,
+                        allow_commit
                     ) VALUES (
                         :ID,
                         :TOOL_ID,
                         :VERSION,
                         :DIGEST,
                         :SIZE,
-                        :MODIFIED_DATE
+                        :MODIFIED_DATE,
+                        :ALLOW_COMMIT
                     )
                 ]]>
             </value>
@@ -47,7 +49,8 @@
                     UPDATE pipeline.tool_version AS tv SET
                         digest = :DIGEST,
                         size = :SIZE,
-                        modified_date = :MODIFIED_DATE
+                        modified_date = :MODIFIED_DATE,
+                        allow_commit = :ALLOW_COMMIT
                     WHERE
                         tv.tool_id = :TOOL_ID AND tv.version = :VERSION
                 ]]>
@@ -82,7 +85,8 @@
                         tv.version,
                         tv.digest,
                         tv.size,
-                        tv.modified_date
+                        tv.modified_date,
+                        tv.allow_commit
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
@@ -99,7 +103,8 @@
                         tv.tool_id,
                         tv.version,
                         tv.settings,
-                        tv.size
+                        tv.size,
+                        tv.allow_commit
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
@@ -116,7 +121,8 @@
                         tv.tool_id,
                         tv.version,
                         tv.settings,
-                        tv.size
+                        tv.size,
+                        tv.allow_commit
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
@@ -133,7 +139,8 @@
                         tv.version,
                         tv.digest,
                         tv.size,
-                        tv.modified_date
+                        tv.modified_date,
+                        tv.allow_commit
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
@@ -148,11 +155,13 @@
                         id,
                         tool_id,
                         version,
+                        allow_commit,
                         settings
                     ) VALUES (
                         :ID,
                         :TOOL_ID,
                         :VERSION,
+                        :ALLOW_COMMIT,
                         to_jsonb(:SETTINGS::jsonb)
                     )
                 ]]>
@@ -162,6 +171,7 @@
             <value>
                 <![CDATA[
                     UPDATE pipeline.tool_version AS tv SET
+                        allow_commit = :ALLOW_COMMIT,
                         settings = to_jsonb(:SETTINGS::jsonb)
                     WHERE
                         tv.tool_id = :TOOL_ID AND tv.version = :VERSION

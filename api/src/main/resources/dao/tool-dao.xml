@@ -40,7 +40,8 @@
                         disk,
                         instance_type,
                         link,
-                        allow_sensitive)
+                        allow_sensitive,
+                        allow_commit)
                     VALUES (
                         :ID,
                         :IMAGE,
@@ -57,7 +58,8 @@
                         :DISK,
                         :INSTANCE_TYPE,
                         :LINK,
-                        :ALLOW_SENSITIVE)
+                        :ALLOW_SENSITIVE,
+                        :ALLOW_COMMIT)
                 ]]>
             </value>
         </property>
@@ -74,7 +76,8 @@
                         endpoints = :ENDPOINTS,
                         disk = :DISK,
                         instance_type = :INSTANCE_TYPE,
-                        allow_sensitive = :ALLOW_SENSITIVE
+                        allow_sensitive = :ALLOW_SENSITIVE,
+                        allow_commit = :ALLOW_COMMIT
                     WHERE
                         image = :IMAGE AND registry_id = :REGISTRY_ID
                 ]]>
@@ -111,6 +114,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -147,6 +151,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -178,6 +183,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -219,6 +225,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -253,6 +260,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -285,6 +293,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name,
 						count(i.issue_id) AS issues_count
@@ -320,6 +329,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -352,6 +362,7 @@
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
                         COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        COALESCE(tl.allow_commit, t.allow_commit) as allow_commit,
                         dr.path as registry,
                         dr.secret_name
                     FROM
