@@ -72,9 +72,25 @@ export default class ToolSetttings extends React.Component {
     return null;
   }
 
-  updateTool = async (tool, configuration) => {
+  @computed
+  get allowCommit () {
+    const {settings} = this.props;
+    if (settings.loaded) {
+      if ((settings.value || []).length > 0) {
+        return settings.value[0].allowCommit;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  updateTool = async (tool, configuration, allowCommit) => {
     const hide = message.loading('Updating version settings...', 0);
-    const updateRequest = new UpdateToolVersionSettings(this.props.toolId, this.props.version);
+    const updateRequest = new UpdateToolVersionSettings(
+      this.props.toolId,
+      this.props.version,
+      allowCommit
+    );
     await updateRequest.send([{
       configuration,
       name: 'default',
@@ -114,6 +130,7 @@ export default class ToolSetttings extends React.Component {
       <EditToolForm
         mode="version"
         allowSensitive={this.props.tool.value.allowSensitive}
+        allowCommitVersion={this.allowCommit}
         toolId={this.props.toolId}
         onInitialized={form => { this.versionSettingsForm = form; }}
         readOnly={

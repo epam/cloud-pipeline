@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ import {
   canPauseRun,
   canStopRun,
   runPipelineActions,
-  terminateRun
+  terminateRun,
+  checkCommitAllowedForTool
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
@@ -90,7 +91,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList')
+@inject('preferences', 'dtsList', 'dockerRegistries')
 @inject(({pipelineRun, routing, pipelines}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
@@ -132,7 +133,9 @@ class Logs extends localization.LocalizedReactComponent {
     openedPanels: [],
     shareDialogOpened: false,
     scheduleSaveInProgress: false,
-    showLaunchCommands: false
+    showLaunchCommands: false,
+    commitAllowed: false,
+    commitAllowedCheckedForDockerImage: undefined
   };
 
   componentDidMount () {
@@ -140,6 +143,7 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
+    this.checkCommitAllowed();
   }
 
   componentWillUnmount () {
@@ -158,6 +162,15 @@ class Logs extends localization.LocalizedReactComponent {
     }
 
     return (runSchedule.value || []).map(i => i);
+  }
+
+  @computed
+  get run () {
+    const {run} = this.props;
+    if (!run.loaded) {
+      return {};
+    }
+    return run.value;
   }
 
   @computed
@@ -234,6 +247,25 @@ class Logs extends localization.LocalizedReactComponent {
     } catch (e) {
       message.error('Error exporting log', 5);
     }
+  };
+
+  checkCommitAllowed = () => {
+    const {
+      run,
+      dockerRegistries
+    } = this.props;
+    const {dockerImage} = run && run.loaded && run.value
+      ? run.value
+      : {};
+    this.setState({
+      commitAllowed: false,
+      commitAllowedCheckedForDockerImage: dockerImage
+    }, () => {
+      checkCommitAllowedForTool(dockerImage, dockerRegistries)
+        .then(allowed => this.setState({
+          commitAllowed: allowed
+        }));
+    });
   };
 
   stopPipeline = () => {
@@ -1744,7 +1776,7 @@ class Logs extends localization.LocalizedReactComponent {
         FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
       }
 
-      if (!(this.props.run.value.nodeCount > 0) &&
+      if (this.state.commitAllowed && !(this.props.run.value.nodeCount > 0) &&
         !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) && podIP) {
         if (status.toLowerCase() === 'running' &&
           (commitStatus || '').toLowerCase() !== 'committing' &&
@@ -1898,6 +1930,20 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate () {
+    const {
+      commitAllowedCheckedForDockerImage
+    } = this.state;
+    const {
+      run
+    } = this.props;
+    if (
+      run &&
+      run.loaded &&
+      run.value &&
+      run.value.dockerImage !== commitAllowedCheckedForDockerImage
+    ) {
+      this.checkCommitAllowed();
+    }
     if (this.language === null && this.props.run.loaded) {
       if (this.props.run.value.pipelineId && this.props.run.value.version) {
         this.language = pipelines.getLanguage(

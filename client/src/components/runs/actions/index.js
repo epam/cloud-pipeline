@@ -14,8 +14,20 @@
  * limitations under the License.
  */
 
-export {canCommitRun, canPauseRun, canStopRun, stopRun, terminateRun} from './stopRun';
-export {submitsRun, modifyPayloadForAllowedInstanceTypes, run, RunConfirmation} from './run';
+export {
+  canCommitRun,
+  canPauseRun,
+  canStopRun,
+  stopRun,
+  terminateRun,
+  checkCommitAllowedForTool
+} from './stopRun';
+export {
+  submitsRun,
+  modifyPayloadForAllowedInstanceTypes,
+  run,
+  RunConfirmation
+} from './run';
 export {default as runPipelineActions} from './runPipelineActions';
 export {
   SubmitButton,
