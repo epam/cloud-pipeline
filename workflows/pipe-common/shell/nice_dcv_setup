@@ -32,30 +32,43 @@ function install_prerequisites {
                        gnu-free-serif-fonts desktop-backgrounds-gnome && \
     yum -y groupinstall "Xfce"
   else
-    apt update -y && DEBIAN_FRONTEND=noninteractive; apt install -y --no-install-recommends ubuntu-desktop && apt upgrade -y
+    apt update -y && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ubuntu-desktop && apt upgrade -y
   fi
   $CP_PYTHON2_PATH -m pip install flask==1.1.1 Flask-HTTPAuth==3.3.0
 }
 
 function install_dcv {
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-el7-x86_64
-    rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
-    wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/${_NICE_DCV_DISTRIBUTION}.tgz
-    tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && cd ${_NICE_DCV_DISTRIBUTION}
-    yum install -y nice-dcv-server-2021.2.11190-1.el7.x86_64.rpm \
-                   nice-dcv-web-viewer-2021.2.11190-1.el7.x86_64.rpm \
-                   nice-xdcv-2021.2.411-1.el7.x86_64.rpm
-    systemctl start dbus
+    if [[ "$CP_VER" == *"7"* ]]; then
+        _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-el7-x86_64
+            rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+            wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/${_NICE_DCV_DISTRIBUTION}.tgz
+            tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && cd ${_NICE_DCV_DISTRIBUTION}
+            yum install -y nice-dcv-server-2021.2.11190-1.el7.x86_64.rpm \
+                           nice-dcv-web-viewer-2021.2.11190-1.el7.x86_64.rpm \
+                           nice-xdcv-2021.2.411-1.el7.x86_64.rpm
+            systemctl start dbus
+    fi
   else
-    _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu1804-x86_64
-    wget https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
-    gpg --import NICE-GPG-KEY
-    wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/$_NICE_DCV_DISTRIBUTION.tgz
-    tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION
-    apt install -y ./nice-dcv-server_2021.2.11190-1_amd64.ubuntu1804.deb \
-                   ./nice-dcv-web-viewer_2021.2.11190-1_amd64.ubuntu1804.deb \
-                   ./nice-xdcv_2021.2.411-1_amd64.ubuntu1804.deb
+    if [[ "$CP_VER" == *"18.04"* ]]; then
+      _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu1804-x86_64
+      wget https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+      gpg --import NICE-GPG-KEY
+      wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/$_NICE_DCV_DISTRIBUTION.tgz
+      tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION
+      apt install -y ./nice-dcv-server_2021.2.11190-1_amd64.ubuntu1804.deb \
+                     ./nice-dcv-web-viewer_2021.2.11190-1_amd64.ubuntu1804.deb \
+                     ./nice-xdcv_2021.2.411-1_amd64.ubuntu1804.deb
+    elif [[  "$CP_VER" == *"20.04"* ]]; then
+      _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu2004-x86_64
+            wget https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+            gpg --import NICE-GPG-KEY
+            wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/$_NICE_DCV_DISTRIBUTION.tgz
+            tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION
+            apt install -y ./nice-dcv-server_2021.2.11190-1_amd64.ubuntu2004.deb \
+                           ./nice-dcv-web-viewer_2021.2.11190-1_amd64.ubuntu2004.deb \
+                           ./nice-xdcv_2021.2.411-1_amd64.ubuntu2004.deb
+    fi
     service dbus start
   fi
   cd .. && rm -rf "${_NICE_DCV_DISTRIBUTION}*"
