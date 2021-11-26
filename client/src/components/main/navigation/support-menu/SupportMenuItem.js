@@ -16,8 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
 import {Button, Icon, Popover} from 'antd';
+import Markdown from '../../../special/markdown';
 import styles from './SupportMenu.css';
 
 function replaceLineBreaks (text) {
@@ -27,10 +27,6 @@ function replaceLineBreaks (text) {
   return text
     .replace(/\\n/g, '\n')
     .replace(/\\t/g, '\t');
-}
-
-function processLinks (html) {
-  return (html || '').replace(/<a href/ig, '<a target="_blank" href');
 }
 
 function urlCheck (string) {
@@ -43,8 +39,6 @@ function urlCheck (string) {
   return url.protocol === 'http:' || url.protocol === 'https:';
 }
 
-@inject('issuesRenderer')
-@observer
 class SupportMenuItem extends React.Component {
   static propTypes = {
     className: PropTypes.string,
@@ -74,23 +68,25 @@ class SupportMenuItem extends React.Component {
     const {
       className,
       onVisibilityChanged,
-      issuesRenderer,
       visible,
       style,
       content
     } = this.props;
-    if (!issuesRenderer) {
+    if (!content) {
       return null;
     }
     const source = replaceLineBreaks(content);
     if (!source) {
       return null;
     }
-    const html = processLinks(issuesRenderer.render(source));
     return (
       <Popover
         content={
-          <div dangerouslySetInnerHTML={{__html: html}} />
+          <Markdown
+            md={source}
+            target="_blank"
+            useCloudPipelineLinks
+          />
         }
         placement="rightBottom"
         trigger="click"

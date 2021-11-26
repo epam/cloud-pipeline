@@ -31,7 +31,6 @@ import localization from '../../../utils/localization';
 @localization.localizedComponent
 @observer
 export default class ConfigureHomePage extends localization.LocalizedReactComponent {
-
   static propTypes = {
     visible: PropTypes.bool,
     onCancel: PropTypes.func,
@@ -78,6 +77,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
     return (
       <Modal
         width="33%"
+        className="cp-dashboard-configure"
         title="Configure dashboard"
         visible={this.props.visible}
         onCancel={this.props.onCancel}
@@ -92,40 +92,37 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         }>
         <table style={{borderCollapse: 'collapse', width: '100%'}}>
           <tbody>
-          {
-            this.state.panels.map((panel, index) => {
-              return (
-                <tr
-                  key={panel.key}
-                  style={
-                    index % 2 === 0
-                      ? {height: 22}
-                      : {height: 22, backgroundColor: '#f4f4f4'}
-                  }>
-                  <td style={{borderCollapse: 'separate'}}>
-                    <Checkbox
-                      disabled={
-                        panel.visible &&
-                        this.state.panels.filter(i => i.visible).length === 1
+            {
+              this.state.panels.map((panel, index) => {
+                return (
+                  <tr
+                    key={panel.key}
+                    className="cp-even-odd-element"
+                    style={{height: 22}}>
+                    <td style={{borderCollapse: 'separate'}}>
+                      <Checkbox
+                        disabled={
+                          panel.visible &&
+                          this.state.panels.filter(i => i.visible).length === 1
+                        }
+                        checked={panel.visible}
+                        onChange={this.onChangeVisibility(panel.key)}>
+                        {panel.icon}
+                        {panel.title}
+                      </Checkbox>
+                    </td>
+                    <td style={{textAlign: 'right'}}>
+                      {
+                        panel.info &&
+                        <Tooltip title={panel.info} placement="left">
+                          <Icon type="question-circle" />
+                        </Tooltip>
                       }
-                      checked={panel.visible}
-                      onChange={this.onChangeVisibility(panel.key)}>
-                      {panel.icon}
-                      {panel.title}
-                    </Checkbox>
-                  </td>
-                  <td style={{textAlign: 'right'}}>
-                  {
-                    panel.info &&
-                    <Tooltip title={panel.info} placement="left">
-                      <Icon type="question-circle" />
-                    </Tooltip>
-                  }
-                  </td>
-                </tr>
-              );
-            })
-          }
+                    </td>
+                  </tr>
+                );
+              })
+            }
           </tbody>
         </table>
         <Row type="flex" style={{marginTop: 10}}>

@@ -23,26 +23,12 @@
   height: 34px;
 }
 
-.table thead tr:first-child,
-.table thead tr:first-child th:first-child,
-.table thead tr th.external-column:nth-child(3),
-.table tbody tr td.external-column:nth-child(3),
-.table thead tr th.internal-column:nth-child(6),
-.table tbody tr td.internal-column:nth-child(6) {
-  border-right: 2px solid #e9e9e9;
-}
-
-.table thead tr:first-child th {
-  background: #e9e9e9;
-}
-
 .table tbody tr {
   height: 35px;
 }
 
 .table table thead[class*="table-thead"] tr th,
-.table tbody tr td.external-column.column,
-.table tbody tr td.internal-column.column,
+.table tbody tr td.column,
 .table tbody tr td.actions-column {
   padding: 4px;
 }
@@ -98,23 +84,6 @@
 .route-status {
   padding: 5px 10px;
   font-size: larger;
-}
-
-.active-status,
-.new {
-  color: rgb(34, 130, 191);
-}
-
-.scheduled-status {
-  color: rgb(255, 136, 24);
-}
-
-.failed-status {
-  color: rgb(240, 65, 52);
-}
-
-.unknown-status {
-  color: rgba(0, 0, 0, 0.65);
 }
 
 .removed .route-status {

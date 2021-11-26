@@ -62,6 +62,7 @@ class NetworkUsageChart extends Base {
             value={this.selectedInterface}
             style={{width: '50%'}}
             onChange={onSelectInterface}
+            getPopupContainer={node => node.parentNode}
           >
             {
               this.interfaces.map(i => (

@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import GridLayout from 'react-grid-layout';
+import classNames from 'classnames';
 import HomePagePanel from './HomePagePanel';
 import ConfigureHomePage from './ConfigureHomePage';
 import {GridStyles, Layout} from './layout';
@@ -25,12 +26,12 @@ import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter
 import PipelineRunServices from '../../../models/pipelines/PipelineRunServices';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
-import styles from './HomePage.css';
 import 'react-resizable/css/styles.css';
 import 'react-grid-layout/css/styles.css';
 import '../../../staticStyles/HomePage.css';
 import getStyle from '../../../utils/browserDependentStyle';
 import moment from 'moment-timezone';
+import styles from './HomePage.css';
 
 const PAGE_SIZE = 50;
 const UPDATE_TIMEOUT = 15000;
@@ -69,7 +70,6 @@ const UPDATE_TIMEOUT = 15000;
 })
 @observer
 export default class HomePage extends React.Component {
-
   state = {
     container: null,
     containerWidth: null,
@@ -79,6 +79,7 @@ export default class HomePage extends React.Component {
 
   initializeContainer = (container) => {
     if (container) {
+      console.log(container, container.clientWidth);
       this.setState({
         container,
         containerWidth: container.clientWidth || window.innerWidth,
@@ -137,7 +138,16 @@ export default class HomePage extends React.Component {
           align="middle"
           justify="space-between">
           <h1>{this.props.preferences.deploymentName || ''} Dashboard</h1>
-          <div className={styles.stickyHeaderBackground}>{'\u00A0'}</div>
+          <div
+            className={
+              classNames(
+                styles.stickyHeaderBackground,
+                'cp-dashboard-sticky-panel'
+              )
+            }
+          >
+            {'\u00A0'}
+          </div>
           <Button onClick={this.openConfigureModal}>
             <Icon type="setting" />Configure
           </Button>
@@ -229,16 +239,41 @@ export default class HomePage extends React.Component {
     }, 250);
   };
 
+  checkContainerSizeChanged = () => {
+    this.checkContainerSizeChangedFrame = requestAnimationFrame(() => {
+      const {
+        container,
+        containerWidth,
+        containerHeight
+      } = this.state;
+      if (
+        container &&
+        (
+          (container.clientWidth && container.clientWidth !== containerWidth) ||
+          (container.clientHeight && container.clientHeight !== containerHeight)
+        )
+      ) {
+        this.setState({
+          containerWidth: container.clientWidth,
+          containerHeight: container.clientHeight
+        });
+      }
+      this.checkContainerSizeChanged();
+    });
+  };
+
   componentDidMount () {
     this.updateInterval = setInterval(() => {
       this.refresh();
     }, UPDATE_TIMEOUT);
     window.addEventListener('resize', this.onWindowResized);
+    this.checkContainerSizeChanged();
   }
 
   componentWillUnmount () {
     clearInterval(this.updateInterval);
     localStorage.setItem('LAST_VISITED', moment.utc().format('YYYY-MM-DD HH:mm:ss'));
     window.removeEventListener('resize', this.onWindowResized);
+    cancelAnimationFrame(this.checkContainerSizeChangedFrame);
   }
 }

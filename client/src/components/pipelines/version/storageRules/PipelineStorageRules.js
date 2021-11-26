@@ -62,7 +62,11 @@ export default class PipelineStorageRules extends React.Component {
       title: '',
       render: (rule) => {
         if (roleModel.writeAllowed(this.props.pipeline.value)) {
-          return <span><a onClick={() => this.deleteRuleDialog(rule)}>Delete</a></span>
+          return (
+            <span>
+              <a className="cp-danger" onClick={() => this.deleteRuleDialog(rule)}>Delete</a>
+            </span>
+          );
         } else {
           return undefined;
         }

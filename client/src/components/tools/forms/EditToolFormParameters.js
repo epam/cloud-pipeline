@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Checkbox, Col, Dropdown, Icon, Input, Menu, Row, Select} from 'antd';
+import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
@@ -76,6 +78,10 @@ export default class EditToolFormParameters extends React.Component {
     return admin;
   }
 
+  get sectionName () {
+    return this.props.isSystemParameters ? 'systemParameters' : 'parameters';
+  }
+
   openBucketBrowser = (index) => {
     this.setState({
       bucketBrowserParameter: index
@@ -101,7 +107,11 @@ export default class EditToolFormParameters extends React.Component {
 
   addParameter = (parameter) => {
     const parameters = this.state.parameters;
-    parameters.push(parameter);
+    const id = Math.max(0, ...parameters.map(o => o.id)) + 1;
+    parameters.push({
+      ...parameter,
+      id
+    });
     const validation = this.validate(parameters);
     this.setState({
       parameters,
@@ -127,13 +137,13 @@ export default class EditToolFormParameters extends React.Component {
     };
 
     const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect}>
-        <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
-        <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
-        <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
-        <Menu.Item id="add-input-parameter" key="input">Input path parameter</Menu.Item>
-        <Menu.Item id="add-output-parameter" key="output">Output path parameter</Menu.Item>
-        <Menu.Item id="add-common-parameter" key="common">Common path parameter</Menu.Item>
+      <Menu selectedKeys={[]} onClick={onSelect} style={{cursor: 'pointer'}}>
+        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
+        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
+        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
+        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
+        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
+        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
       </Menu>
     );
 
@@ -148,14 +158,14 @@ export default class EditToolFormParameters extends React.Component {
         {
           !this.props.readOnly
             ? (
-            <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
-              <Button
-                id="add-parameter-dropdown-button"
-                disabled={this.props.readOnly}>
-                <Icon type="down" />
-              </Button>
-            </Dropdown>
-          ) : undefined
+              <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
+                <Button
+                  id="add-parameter-dropdown-button"
+                  disabled={this.props.readOnly}>
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
+            ) : undefined
         }
       </Button.Group>
     );
@@ -164,6 +174,7 @@ export default class EditToolFormParameters extends React.Component {
   renderStringParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Input
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={onChange}
@@ -177,6 +188,7 @@ export default class EditToolFormParameters extends React.Component {
   renderSelectParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Select
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={v => onChange({target: {value: v}})}
@@ -198,6 +210,7 @@ export default class EditToolFormParameters extends React.Component {
   renderBooleanParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Checkbox
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         checked={`${parameter.value}` === 'true'}
         style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
@@ -218,6 +231,7 @@ export default class EditToolFormParameters extends React.Component {
     }
     return (
       <Input
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         style={Object.assign(
           {width: '100%', marginLeft: 5, top: 0},
@@ -240,6 +254,7 @@ export default class EditToolFormParameters extends React.Component {
       return null;
     }
     const {
+      id,
       initial = false
     } = parameter;
     const readOnly = initial && this.isSystemParameterRestrictedByRole(parameter);
@@ -290,9 +305,19 @@ export default class EditToolFormParameters extends React.Component {
       valueError = this.state.validation[index].errorValue;
     }
     return (
-      <Row key={index} type="flex" style={{marginTop: 5, marginBottom: 5}} align="top">
-        <Col offset={3} span={3} style={{textAlign: 'right', display: 'flex', flexDirection: 'column'}}>
+      <Row
+        key={index}
+        id={`${this.sectionName}.params.param_${parameter.id}`}
+        type="flex"
+        style={{marginTop: 5, marginBottom: 5}}
+        align="top"
+      >
+        <Col
+          offset={3}
+          span={3}
+          style={{textAlign: 'right', display: 'flex', flexDirection: 'column'}}>
           <Input
+            id={`${this.sectionName}.params.param_${parameter.id}.name`}
             disabled={
               this.props.readOnly ||
               this.props.isSystemParameters ||
@@ -382,11 +407,15 @@ export default class EditToolFormParameters extends React.Component {
           onCancel={this.closeSystemParameterBrowser}
           onSave={(parameters) => {
             const p = this.state.parameters;
-            p.push(...parameters.map(param => ({
-              name: param.name,
-              type: param.type,
-              value: param.defaultValue
-            })));
+            const id = Math.max(0, ...p.map(o => o.id)) + 1;
+            p.push(...parameters.map(param => {
+              return {
+                id,
+                name: param.name,
+                type: param.type,
+                value: param.defaultValue
+              };
+            }));
             const validation = this.validate(p);
             this.setState({
               parameters: p,
@@ -412,7 +441,13 @@ export default class EditToolFormParameters extends React.Component {
   };
 
   reset = () => {
-    const mapParameter = p => ({name: p.name, value: p.value, type: p.type, initial: true});
+    const mapParameter = (p, index) => ({
+      id: index,
+      name: p.name,
+      value: p.value,
+      type: p.type,
+      initial: true
+    });
     this.setState({
       parameters: (this.props.value || [])
         .filter(this.filterPropsParameter.bind(this))
@@ -483,7 +518,9 @@ export default class EditToolFormParameters extends React.Component {
   }
 
   getValues = () => {
-    return this.state.parameters;
+    const mapParameter = ({id, ...param}) => ({...param});
+
+    return (this.state.parameters || []).map(mapParameter);
   };
 
   @computed
@@ -501,7 +538,8 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < propsValue.length; i++) {
       const propsValueItem = propsValue[i];
       const currentValueItem = currentValue[i];
-      if (propsValueItem.name !== currentValueItem.name || propsValueItem.value !== currentValueItem.value) {
+      if (propsValueItem.name !== currentValueItem.name ||
+        propsValueItem.value !== currentValueItem.value) {
         return true;
       }
     }

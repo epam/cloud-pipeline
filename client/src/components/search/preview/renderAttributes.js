@@ -16,6 +16,8 @@
 
 import React from 'react';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
+
 import styles from './preview.css';
 
 export function metadataLoad (params, entityClass, {metadataCache, dataStorageCache}) {
@@ -39,7 +41,7 @@ export function renderAttributes (metadataRequest, isTags = false) {
     if (metadataRequest.error) {
       return (
         <div className={styles.attributes}>
-          <span style={{color: '#ff556b'}}>{metadataRequest.error}</span>
+          <span className={'cp-search-preview-error'}>{metadataRequest.error}</span>
         </div>
       );
     }
@@ -74,8 +76,8 @@ export function renderAttributes (metadataRequest, isTags = false) {
             attributes.map((attr, index) => {
               return (
                 <div key={index} className={styles.attribute}>
-                  <div className={styles.attributeName}>{attr.key}</div>
-                  <div className={styles.attributeValue}>{attr.value}</div>
+                  <div className={classNames(styles.attributeName, 'cp-search-attribute-name')}>{attr.key}</div>
+                  <div className={classNames(styles.attributeValue, 'cp-search-attribute-value')}>{attr.value}</div>
                 </div>
               );
             })

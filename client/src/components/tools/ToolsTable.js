@@ -17,6 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Button, Col, Row, Icon} from 'antd';
 import ToolLink from './elements/ToolLink';
 import ToolImage from '../../models/tools/ToolImage';
@@ -25,7 +26,6 @@ import styles from './Tools.css';
 
 @observer
 export default class ToolsTable extends React.Component {
-
   openIssuesPanel = (tool) => {
     if (this.props.onOpenIssuesPanel) {
       this.props.onOpenIssuesPanel(tool);
@@ -74,7 +74,15 @@ export default class ToolsTable extends React.Component {
     };
     return (
       <Row
-        className={`${styles.toolRow} ${tool.endpoints && tool.endpoints.length > 0 ? styles.toolRowWithEndpoints : ''}`}
+        className={
+          classNames(
+            styles.toolRow,
+            'cp-panel-card',
+            {
+              'cp-card-service': tool.endpoints && tool.endpoints.length > 0
+            }
+          )
+        }
         onClick={() => this.props.onSelectTool && this.props.onSelectTool(tool.id)}
         type="flex"
         key={index}
@@ -91,7 +99,7 @@ export default class ToolsTable extends React.Component {
         }
         <Row type="flex" align="middle" justify="space-between" style={{flex: 1}}>
           <div className={styles.toolRowTitle} style={tool.iconId ? {paddingLeft: 0} : {}}>
-            <span className={styles.toolTitle}>
+            <div className={classNames(styles.toolTitle, 'cp-panel-card-title')}>
               <ToolLink link={tool.link} style={{margin: '0px 3px', fontSize: 'larger'}} />
               {
                 tool.endpoints && tool.endpoints.length > 0
@@ -99,8 +107,8 @@ export default class ToolsTable extends React.Component {
                   : undefined
               }
               {highlightText(tool.image, this.props.searchString)}
-            </span>
-            <span className={styles.toolDescription}>
+            </div>
+            <span className={classNames(styles.toolDescription, 'cp-panel-card-sub-text')}>
               {tool.shortDescription}
             </span>
           </div>

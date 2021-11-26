@@ -17,7 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider as MobxProvider} from 'mobx-react';
-import {Button, Dropdown, Icon, Menu} from 'antd';
+import {Button, Icon} from 'antd';
+import Menu, {MenuItem, Divider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import ExportConsumer from './export-consumer';
 import ExportImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
@@ -67,13 +69,14 @@ class ExportReports extends React.Component {
     return (
       <Menu
         onClick={({key: format}) => this.onExport(format)}
-        style={{minWidth: 125}}
+        style={{cursor: 'pointer', minWidth: 125}}
+        selectedKeys={[]}
       >
         {
           formats.map((format, index) => (
             format === ExportFormat.divider
-              ? (<Menu.Divider key={`${format}-${index}`} />)
-              : (<Menu.Item key={format}>{ExportFormatName[format]}</Menu.Item>)
+              ? (<Divider key={`${format}-${index}`} />)
+              : (<MenuItem key={format}>{ExportFormatName[format]}</MenuItem>)
           ))
         }
       </Menu>

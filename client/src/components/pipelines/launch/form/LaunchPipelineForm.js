@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {action, computed, observable} from 'mobx';
 import {
   Alert,
@@ -24,11 +25,9 @@ import {
   Checkbox,
   Col,
   Collapse,
-  Dropdown,
   Form,
   Icon,
   Input,
-  Menu,
   message,
   Modal,
   Popover,
@@ -37,6 +36,8 @@ import {
   Spin
 } from 'antd';
 import styles from './LaunchPipelineForm.css';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
@@ -1636,9 +1637,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.estimatedPrice.pending) {
       return undefined;
     }
-    const className = this.state.estimatedPrice.pending
-      ? styles.priceLoading
-      : styles.price;
+    const className = classNames(
+      styles.price,
+      {'cp-text-not-important': this.state.estimatedPrice.pending}
+    );
     if (this.state.estimatedPrice.averagePrice > 0) {
       const info = (
         <Popover
@@ -1647,7 +1649,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           trigger="hover">
           <Icon
             className={styles.hint}
-            type="info-circle" />
+            type="info-circle"
+          />
         </Popover>
       );
       const {pricePerHour} = this.state.estimatedPrice;
@@ -2669,13 +2672,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect}>
-        <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
-        <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
-        <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
-        <Menu.Item id="add-input-parameter" key="input">Input path parameter</Menu.Item>
-        <Menu.Item id="add-output-parameter" key="output">Output path parameter</Menu.Item>
-        <Menu.Item id="add-common-parameter" key="common">Common path parameter</Menu.Item>
+      <Menu selectedKeys={[]} onClick={onSelect} className={styles.parametersMenu}>
+        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
+        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
+        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
+        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
+        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
+        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
       </Menu>
     );
 
@@ -2746,7 +2749,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
                       <Button
                         id="add-parameter-dropdown-button"
-                        disabled={this.props.readOnly && !this.props.canExecute}>
+                        disabled={this.props.readOnly && !this.props.canExecute}
+                        style={{padding: '0px 8px'}}
+                      >
                         <Icon type="down" />
                       </Button>
                     </Dropdown>
@@ -3055,9 +3060,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       (!!this.state.pipeline && this.props.detached)}
                       placeholder="Name"
                       className={
-                        isSystemParametersSection
-                          ? styles.systemParameterName
-                          : styles.parameterName
+                        classNames(
+                          {
+                            [styles.parameterName]: !isSystemParametersSection,
+                            [styles.systemParameterName]: isSystemParametersSection,
+                            'cp-system-parameter-name-input': isSystemParametersSection
+                          }
+                        )
                       } />
                   )}
                 </FormItem>
@@ -3614,10 +3623,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (lines.length > 0) {
       return [
         <div key="summary" className={styles.summaryContainer}>
-          <div className={styles.summary}>
+          <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={styles.summaryItem}>
+                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
                   {l}
                 </div>
               ))
@@ -3849,10 +3858,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               md={4}
               lg={3}
               xl={2}
+              className="cp-accent"
               style={{
                 textAlign: 'right',
-                paddingRight: 10,
-                color: '#333'
+                paddingRight: 10
               }}>
               Auto pause:
             </Col>
@@ -4262,9 +4271,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       };
       const dropDownMenu = (
-        <Menu onClick={onDropDownSelect} selectedKeys={[]}>
-          <Menu.Item key={RUN_SELECTED_KEY}>Run selected</Menu.Item>
-          <Menu.Item key={RUN_CLUSTER_KEY}>Run cluster</Menu.Item>
+        <Menu onClick={onDropDownSelect} selectedKeys={[]} style={{cursor: 'pointer'}}>
+          <MenuItem key={RUN_SELECTED_KEY}>Run selected</MenuItem>
+          <MenuItem key={RUN_CLUSTER_KEY}>Run cluster</MenuItem>
         </Menu>
       );
       return (
@@ -4423,7 +4432,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           descriptions.filter(d => d && d.length).map((description, index) =>
             <span
               key={`description-${index}`}
-              className={styles.panelDescription}>
+              className={classNames(styles.panelDescription, 'cp-text-not-important')}>
               {description}
             </span>
           )
@@ -4442,22 +4451,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <tr>
                 <td style={{width: '50%'}}>
                   <div
+                    className="cp-divider horizontal"
                     style={{
-                      margin: '0 5px',
-                      verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
-                    }}>{'\u00A0'}</div>
+                      width: 'unset',
+                      margin: '0 5px'
+                    }}
+                  >
+                    {'\u00A0'}
+                  </div>
                 </td>
                 <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
                 <td style={{width: '50%'}}>
                   <div
+                    className="cp-divider horizontal"
                     style={{
-                      margin: '0 5px',
-                      verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
-                    }}>{'\u00A0'}</div>
+                      width: 'unset',
+                      margin: '0 5px'
+                    }}
+                  >
+                    {'\u00A0'}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -4492,16 +4505,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type="flex"
           align="middle"
           justify="center"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            margin: 5,
-            border: '1px dashed #ccc',
-            borderRadius: 5,
-            backgroundColor: '#fafafa',
-            marginTop: 20,
-            padding: 20
-          }}>
+          className={classNames(styles.fireCloudSignInContainer, 'cp-content-panel')}
+        >
           <Row style={{margin: 2}}>
             You must sign in with your Google account to browse FireCloud method inputs & outputs
           </Row>
@@ -4549,7 +4554,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         <Row>
                           {conn.name}
                         </Row>
-                        <Row style={{color: 'red'}}>
+                        <Row className="cp-error">
                           {error}
                         </Row>
                       </div>
@@ -4565,7 +4570,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   }}
                   span={4}
                   offset={2}>
-                  <span style={error ? {color: 'red'} : {}}>
+                  <span
+                    className={
+                      classNames(
+                        {
+                          'cp-error': error
+                        }
+                      )
+                    }
+                  >
                     {conn.name}
                   </span>
                 </Col>
@@ -4578,7 +4591,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 value={value}
                 onChange={onChange}
                 size="large"
-                style={error ? {border: '1px solid red'} : {}}
+                className={
+                  classNames({
+                    'cp-error': error
+                  })
+                }
               />
             </Col>
           </Row>
@@ -4705,10 +4722,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         };
         const dropdownRenderer = () => (
-          <Menu onClick={onDropDownClick} selectedKeys={[]}>
-            <Menu.Item key={KEYS.selectMetadata}>
+          <Menu onClick={onDropDownClick} selectedKeys={[]} style={{cursor: 'pointer'}}>
+            <MenuItem key={KEYS.selectMetadata}>
               Select metadata entries and launch
-            </Menu.Item>
+            </MenuItem>
           </Menu>
         );
         return (
@@ -4847,7 +4864,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <td key="header" className={styles.itemHeader} style={{width: 1, whiteSpace: 'nowrap'}}>
             <Icon
               type="play-circle-o"
-              style={{color: '#2282bf'}} />
+              className="cp-primary"
+            />
             Launch <b id="launch-form-pipeline-name">{pipelineName}</b> {
               pipelineVersion && <span id="launch-form-pipeline-version">{pipelineVersion}</span>}.
           </td>,
@@ -4864,7 +4882,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
-          <table style={{width: '100%'}} className={styles.layoutHeader}>
+          <table
+            style={{width: '100%'}}
+            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
+          >
             <tbody>
               <tr>
                 {renderFormTitle()}
@@ -4932,7 +4953,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       <Row type="flex" justify="end" style={{paddingRight: 30, marginBottom: 10}}>
                         <a
                           onClick={this.openConfigureClusterDialog}
-                          style={{color: '#777', textDecoration: 'underline'}}>
+                          className="cp-text underline"
+                        >
                           <Icon type="setting" />
                           {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>

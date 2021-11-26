@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import styles from './styles.css';
 
 export const ResizeAnchors = {
@@ -151,12 +152,18 @@ export class ResizablePanel extends React.Component {
   };
 
   renderAnchor = (anchor, key) => {
-    const classes = [styles.anchor, ...anchor.split('-').map(cl => styles[cl])];
     return (
       <div
         onMouseDown={this.onResizeStart(anchor)}
         key={key}
-        className={classes.join(' ')}>
+        className={
+          classNames(
+            styles.anchor,
+            'cp-resizable-panel-anchor',
+            ...anchor.split('-').map(cl => styles[cl])
+          )
+        }
+      >
         {'\u00A0'}
       </div>
     );

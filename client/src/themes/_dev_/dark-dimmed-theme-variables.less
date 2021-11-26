@@ -1,0 +1,142 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@application-background-color: rgb(40, 44, 50);
+@application-color: rgb(202, 202, 216);
+@application-color-faded: fadeout(@application-color, 20%);
+@application-color-disabled: fadeout(@application-color, 60%);
+@application-color-accent: lighten(@application-color, 10%);
+
+@primary-color:#108ee9;
+@primary-hover-color: lighten(@primary-color, 10%);
+@primary-active-color: @primary-color;
+@primary-text-color: @application-background-color;
+
+@primary-color-semi-transparent: fade(@primary-color, 20%);
+
+@color-success: #118a4e;
+@color-error: rgb(235, 99, 94);
+@color-warning: #c28b15;
+@color-info:  #108ee9;
+
+@color-green: #118a4e;
+@color-red: rgb(235, 99, 94);
+@color-yellow: #c28b15;
+@color-blue: #108ee9;
+@color-violet: #c942ff;
+@color-sensitive: #ff5c33;
+@color-aqua: #008080;
+@color-aqua-light: #7dccc0;
+@color-pink: #f25e83;
+@color-pink-dusty: #4f4f4f;
+@color-pink-light: #fef0ef;
+@color-blue-dimmed: #458;
+@color-grey: #777;
+
+@spinner: @application-color;
+
+@panel-background-color: rgb(44, 49, 55);
+@panel-border-color: rgb(28, 30, 33);
+
+@element-hover-color: @application-color;
+@element-hover-background-color: lighten(@panel-background-color, 3%);
+@element-selected-color: @application-color;
+@element-selected-background-color: lighten(@panel-background-color, 5%);
+
+@input-background: @panel-background-color;
+@input-background-disabled: lighten(@input-background, 5%);
+@input-addon: lighten(@input-background, 5%);
+@input-border: lighten(@application-background-color, 15%);
+@input-color: @application-color;
+@input-placeholder-color: fadeout(@application-color, 40%);
+@input-border-hover-color: @primary-hover-color;
+@input-shadow-color: fade(@input-border-hover-color, 10%);
+@input-search-icon-color: rgba(202, 202, 216, 0.3);
+@input-search-icon-hovered-color: @primary-hover-color;
+
+@card-background-color: lighten(@panel-background-color, 2%);
+@card-border-color: darken(@panel-background-color, 4%);
+@card-hovered-shadow-color: @card-border-color;
+@card-actions-active-background: @card-background-color;
+@card-header-background: @card-border-color;
+
+@card-service-background-color: lighten(@card-background-color, 5%);
+@card-service-border-color: @card-service-background-color;
+@card-service-hovered-shadow-color: transparent;
+@card-service-actions-active-background: @card-service-background-color;
+@card-service-header-background: @card-service-background-color;
+
+@navigation-panel-color: @application-background-color;
+@navigation-panel-color-impersonated: #914519;
+@navigation-panel-highlighted-color: darken(@navigation-panel-color, 5%);
+@navigation-panel-highlighted-color-impersonated: darken(@navigation-panel-color-impersonated, 10%);
+@navigation-item-color: @application-color;
+@navigation-item-runs-color: @color-green;
+
+@tag-key-background-color: lighten(@card-background-color, 5%);
+@tag-key-value-divider-color: @card-background-color;
+@tag-value-background-color: lighten(@card-background-color, 5%);
+
+@nfs-icon-color: @color-green;
+@icons-root: '/icons';
+@aws-icon: url('@{icons-root}/providers/aws-light.svg');
+@aws-icon-contrast: url('@{icons-root}/providers/aws-light.svg');
+@gcp-icon: url('@{icons-root}/providers/gcp-light.svg');
+@gcp-icon-contrast: url('@{icons-root}/providers/gcp-light.svg');
+@azure-icon: url('@{icons-root}/providers/azure.svg');
+@azure-icon-contrast: url('@{icons-root}/providers/azure.svg');
+
+@modal-mask-background: rgba(0, 0, 0, 0.6);
+
+@even-element-background: lighten(@card-background-color, 5%);
+
+@alert-success-background: fade(@color-success, 25%);
+@alert-success-border: fade(@color-success, 50%);
+@alert-success-icon: @color-success;
+@alert-warning-background: fade(@color-warning, 15%);
+@alert-warning-border: fade(@color-warning, 50%);
+@alert-warning-icon: @color-warning;
+@alert-error-background: fade(@color-error, 25%);
+@alert-error-border: fade(@color-error, 50%);
+@alert-error-icon: @color-error;
+@alert-info-background: fade(@color-info, 25%);
+@alert-info-border: fade(@color-info, 50%);
+@alert-info-icon: @color-info;
+
+@table-element-selected-background-color: @element-selected-background-color;
+@table-element-selected-color: @element-selected-color;
+@table-element-hover-background-color: @element-hover-background-color;
+@table-element-hover-color: @element-hover-color;
+@table-border-color: @card-border-color;
+@table-head-color: @application-color-accent;
+
+@menu-active-color: @application-color;
+
+@btn-danger-color: @color-red;
+@btn-danger-background-color: @btn-disabled-background-color;
+@btn-danger-active-color: @primary-text-color;
+@btn-danger-active-background: darken(@btn-danger-color, 20%);
+
+@btn-disabled-color: lighten(@panel-background-color, 40%);
+@btn-disabled-background-color: lighten(@panel-background-color, 4%);
+
+@code-background-color: lighten(@card-background-color, 5%);
+
+@search-highlight-text-color: @application-color;
+@search-highlight-text-background-color: @navigation-panel-color-impersonated;
+
+
+@logo-url: url('logo.png');

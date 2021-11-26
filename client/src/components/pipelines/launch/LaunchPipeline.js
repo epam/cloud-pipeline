@@ -18,11 +18,9 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
 import {Alert, Card, Modal, message} from 'antd';
-import connect from '../../../utils/connect';
+import classNames from 'classnames';
 import localization from '../../../utils/localization';
-import pipelines from '../../../models/pipelines/Pipelines';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
-import preferences from '../../../models/preferences/PreferencesLoad';
 import LoadTool from '../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../models/utils/AllowedInstanceTypes';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
@@ -41,12 +39,10 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
 
 const DTS_ENVIRONMENT = 'DTS';
 
-@connect({
-  pipelines, preferences
-})
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
+@inject('pipelines', 'preferences')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
   return {
@@ -502,7 +498,15 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return (
       <Card
         bodyStyle={{padding: 0, margin: 0}}
-        className={styles.container}>
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+      >
         <LaunchPipelineForm
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           editConfigurationMode={false}

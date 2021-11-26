@@ -19,12 +19,14 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import VersionFile from '../../../models/pipelines/VersionFile';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
+import Markdown from '../../special/markdown';
 import Papa from 'papaparse';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
@@ -197,7 +199,9 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.filePreview.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.filePreview.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.filePreview.error}
+          </span>
         </div>
       );
     }
@@ -215,13 +219,17 @@ export default class PipelineDocumentPreview extends React.Component {
         {
           this.state.pdbError &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .pdb visualization: {this.state.pdbError}</span>
+            <span className={'cp-search-preview-error'}>
+              Error loading .pdb visualization: {this.state.pdbError}
+            </span>
           </div>
         }
         {
           this.structuredTableData && this.structuredTableData.error &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .csv visualization: {this.structuredTableData.message}</span>
+            <span className={'cp-search-preview-error'}>
+              Error loading .csv visualization: {this.structuredTableData.message}
+            </span>
           </div>
         }
         <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
@@ -233,7 +241,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.structuredTableData && !this.structuredTableData.error) {
       return (
         <div className={styles.contentPreview}>
-          <table className={styles.csvTable}>
+          <table className={classNames(styles.csvTable, 'cp-search-csv-table')}>
             {
               this.structuredTableData.data.map((row, rowIndex) => {
                 return (
@@ -241,7 +249,11 @@ export default class PipelineDocumentPreview extends React.Component {
                     {
                       row.map((cell, columnIndex) => {
                         return (
-                          <td className={styles.csvCell} key={`col-${columnIndex}`}>{cell}</td>
+                          <td className={classNames(
+                            styles.csvCell, 'cp-search-csv-table-cell'
+                          )} key={`col-${columnIndex}`}>
+                            {cell}
+                          </td>
                         );
                       })
                     }
@@ -259,10 +271,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
-            <div
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.filePreview.preview)}} />
-          </div>
+          <Markdown md={this.filePreview.preview} />
         </div>
       );
     }
@@ -295,7 +304,9 @@ export default class PipelineDocumentPreview extends React.Component {
             <img
               style={{width: '100%'}}
               onError={onError}
-              src={this.props.downloadUrl.value.url} alt={this.props.item.id} />
+              src={this.props.downloadUrl.value.url}
+              alt={this.props.item.id}
+            />
           </div>
         );
       }
@@ -352,16 +363,23 @@ export default class PipelineDocumentPreview extends React.Component {
     const highlights = renderHighlights(this.props.item);
     const preview = this.renderPreview();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-search-container'
+          )
+        }
+      >
         <div className={styles.header}>
-          <Row className={styles.title}>
+          <Row className={classNames(styles.title, 'cp-search-header-title')}>
             <span>{this.fileName}</span>
           </Row>
-          <Row className={styles.description}>
+          <Row className={classNames(styles.description, 'cp-search-header-description')}>
             {this.renderDescription()}
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {preview && renderSeparator()}

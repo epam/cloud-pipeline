@@ -38,7 +38,10 @@ function InfoTooltip ({tooltip}) {
       content={(<Markdown md={tooltip} />)}
       mouseEnterDelay={1}
     >
-      <Icon type="info-circle" style={{color: '#666'}} />
+      <Icon
+        type="info-circle"
+        className="cp-text"
+      />
     </Popover>
   );
 }
@@ -144,6 +147,8 @@ function RequestDavAccess (
         classNames(
           styles.container,
           {
+            'cp-primary': !enabled && !readOnly,
+            'cp-text-not-important': enabled || readOnly,
             [styles.enabled]: enabled,
             [styles.readOnly]: readOnly
           }
@@ -160,7 +165,7 @@ function RequestDavAccess (
       {
         enabled && !readOnly && (
           <a
-            className={styles.disableButton}
+            className={classNames(styles.disableButton, 'cp-danger')}
             onClick={disableAccess}
           >
             Disable

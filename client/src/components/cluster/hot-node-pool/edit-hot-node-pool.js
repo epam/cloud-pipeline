@@ -936,7 +936,8 @@ class EditHotNodePool extends React.Component {
               className={
                 classNames(
                   styles.formRow,
-                  styles.error
+                  styles.error,
+                  'cp-error'
                 )
               }
             >
@@ -977,7 +978,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.name && touched.name && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.name}
             </div>
           )
@@ -1045,7 +1046,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.count && touched.count && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.count}
             </div>
           )
@@ -1086,7 +1087,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.minSize && touched.minSize && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.minSize}
             </div>
           )
@@ -1127,7 +1128,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.maxSize && touched.maxSize && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.maxSize}
             </div>
           )
@@ -1169,7 +1170,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.scaleDownThreshold && touched.scaleDownThreshold && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.scaleDownThreshold}
             </div>
           )
@@ -1211,7 +1212,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.scaleUpThreshold && touched.scaleUpThreshold && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.scaleUpThreshold}
             </div>
           )
@@ -1253,7 +1254,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.scaleStep && touched.scaleStep && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.scaleStep}
             </div>
           )
@@ -1289,7 +1290,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.instanceImage && touched.instanceImage && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.instanceImage}
             </div>
           )
@@ -1348,7 +1349,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.instanceType && touched.instanceType && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.instanceType}
             </div>
           )
@@ -1456,7 +1457,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.region && touched.region && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.region}
             </div>
           )
@@ -1493,7 +1494,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.disk && touched.disk && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.disk}
             </div>
           )
@@ -1559,7 +1560,7 @@ class EditHotNodePool extends React.Component {
         </div>
         {
           validation.dockerImages && touched.dockerImages && (
-            <div className={classNames(styles.formRow, styles.error)}>
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
               {validation.dockerImages}
             </div>
           )
@@ -1589,7 +1590,7 @@ class EditHotNodePool extends React.Component {
           </div>
           {
             validation.filters && touched.filters && (
-              <div className={classNames(styles.formRow, styles.error)}>
+              <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
                 {validation.filters}
               </div>
             )
@@ -1634,11 +1635,11 @@ class EditHotNodePool extends React.Component {
         )}
       >
         {this.renderNameControl()}
-        <div className={styles.sectionHeader}>
+        <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
           <h2>Schedule</h2>
         </div>
         {this.renderScheduleControls()}
-        <div className={styles.sectionHeader}>
+        <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
           <h2>Configuration</h2>
         </div>
         {this.renderAutoScaledControl()}
@@ -1654,7 +1655,7 @@ class EditHotNodePool extends React.Component {
         {this.renderInstanceImageControl(!isNew)}
         {this.renderDiskControl(!isNew)}
         {this.renderDockerImagesControl(!isNew)}
-        <div className={styles.sectionHeader}>
+        <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
           <h2>Filters</h2>
         </div>
         {this.renderFiltersControl()}

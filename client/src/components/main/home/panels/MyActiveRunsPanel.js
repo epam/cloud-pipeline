@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
   PipelineRunCommitCheck,
@@ -41,7 +42,6 @@ import styles from './Panel.css';
 @runPipelineActions
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     panelKey: PropTypes.string,
     activeRuns: PropTypes.object,
@@ -178,12 +178,9 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                 }
               })
             }
-            cardClassName={run => {
-              if (run.initialized && run.serviceUrl) {
-                return styles.runServiceCard;
-              }
-              return undefined;
-            }}
+            cardClassName={run => classNames({
+              'cp-card-service': run.initialized && run.serviceUrl
+            })}
             childRenderer={renderRunCard}>
             {this.getActiveRuns()}
           </CardsPanel>

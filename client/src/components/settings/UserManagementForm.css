@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
+.container {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.container .table {
+  flex: 1;
+  overflow: auto;
+}
+
 .table > div > div {
   filter: none !important;
 }
@@ -44,8 +56,8 @@
   margin: 2px;
   padding: 0 2px;
   border-radius: 5px;
-  border: 1px solid #ddd;
-  background-color: #fefefe;
+  border: 1px solid transparent;
+  background-color: transparent;
   font-size: x-small;
   font-weight: bold;
 }
@@ -54,6 +66,7 @@
   margin-left: 5px;
 }
 
-.ad {
-  color: #999;
+.line-break {
+  white-space: pre-wrap;
+  word-break: break-word;
 }

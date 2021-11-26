@@ -25,13 +25,14 @@ import {
   Row,
   Input,
   Select,
-  Menu,
-  Icon,
-  Dropdown
+  Icon
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import SelectMetadataItems from './SelectMetadataItems';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './AddInstanceForm.css';
+import classNames from 'classnames';
 
 @Form.create()
 @observer
@@ -304,7 +305,7 @@ export default class AddInstanceForm extends React.Component {
               ? (
                 <Input
                   placeholder="Parameter name"
-                  className={`${styles.nameInput} ${field.validation ? styles.validationError : ''}`}
+                  className={classNames(styles.nameInput, {'cp-error': field.validation})}
                   value={field.name}
                   onChange={this.onChangeParameterName(parameterFilterFn)}
                   style={{width: '100%'}}
@@ -360,7 +361,7 @@ export default class AddInstanceForm extends React.Component {
       trs.push(
         <div
           key={`parameter_${index}_validation`}
-          className={styles.validationError}
+          className={classNames(styles.validationError, 'cp-error')}
           style={{paddingRight: 5}}
         >
           {field.validation}
@@ -388,7 +389,7 @@ export default class AddInstanceForm extends React.Component {
                 <Input
                   disabled={disabled}
                   placeholder="Parameter name"
-                  className={`${styles.nameInput} ${field.validation ? styles.validationError : ''}`}
+                  className={classNames(styles.nameInput, {'cp-error': field.validation})}
                   value={field.name}
                   onChange={this.onChangeParameterName(parameterFilterFn)}
                   style={{width: '100%'}}
@@ -421,7 +422,7 @@ export default class AddInstanceForm extends React.Component {
       trs.push(
         <div
           key={`parameter_${index}_validation`}
-          className={styles.validationError}
+          className={classNames(styles.validationError, 'cp-error')}
           style={{paddingRight: 5}}
         >
           {field.validation}
@@ -450,19 +451,23 @@ export default class AddInstanceForm extends React.Component {
       this.setState({customFields});
     };
     const parameterTypeMenu = (
-      <Menu onClick={onSelect}>
-        <Menu.Item key="string">String parameter</Menu.Item>
+      <Menu
+        onClick={onSelect}
+        style={{cursor: 'pointer'}}
+        selectedKeys={[]}
+      >
+        <MenuItem key="string">String parameter</MenuItem>
         {
           this.ownEntityTypes().map(e => {
             return (
-              <Menu.Item key={e.name}>Link to '{e.name}' instance</Menu.Item>
+              <MenuItem key={e.name}>Link to '{e.name}' instance</MenuItem>
             );
           })
         }
       </Menu>
     );
     return (
-      <Row type="flex" justify="space-around" style={{marginTop: 10}}>
+      <Row type="flex" justify="space-around" style={{marginTop: 10, cursor: 'pointer'}}>
         <Button.Group>
           <Button
             disabled={this.props.pending}
@@ -473,6 +478,7 @@ export default class AddInstanceForm extends React.Component {
           <Dropdown overlay={parameterTypeMenu} placement="bottomRight" style={{minWidth: 200}}>
             <Button
               id="add-parameter-dropdown-button"
+              style={{padding: '0px 8px'}}
               disabled={this.props.pending}>
               <Icon type="down" />
             </Button>

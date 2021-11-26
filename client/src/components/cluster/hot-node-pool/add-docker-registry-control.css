@@ -22,12 +22,6 @@
   height: 32px;
 }
 
-.container.duplicate .select > div {
-  border-color: red;
-  outline: none;
-  box-shadow: none;
-}
-
 .select-option-container {
   display: flex;
   flex-direction: row;

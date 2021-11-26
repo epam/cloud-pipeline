@@ -18,10 +18,10 @@ import React from 'react';
 import classNames from 'classnames';
 import {
   Button,
-  Dropdown,
-  Icon,
-  Menu
+  Icon
 } from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import styles from './auto-fill-entities.css';
 import MetadataEntitySave from '../../../../models/folderMetadata/MetadataEntitySave';
 
@@ -520,7 +520,7 @@ function AutoFillEntitiesMarker ({visible, handleSize = 10, markerSize = 5}) {
     >
       <div
         data-auto-fill-entities="true"
-        className={styles.marker}
+        className={classNames(styles.marker, 'cp-library-metadata-table-marker')}
       >
         {'\u00A0'}
       </div>
@@ -560,12 +560,13 @@ class AutoFillEntitiesActions extends React.Component {
                   width: 200
                 }}
                 onClick={handleMenuItem}
+                selectedKeys={[]}
               >
                 {
                   actions.map((action, index) => (
-                    <Menu.Item key={`${index}`}>
+                    <MenuItem key={`${index}`}>
                       {action.title}
-                    </Menu.Item>
+                    </MenuItem>
                   ))
                 }
               </Menu>

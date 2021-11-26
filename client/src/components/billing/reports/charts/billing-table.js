@@ -16,8 +16,8 @@
 
 import React from 'react';
 import {Icon} from 'antd';
-import {observer} from 'mobx-react';
-import {colors} from './colors';
+import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import Export from '../export';
 import {costTickFormatter, dateRangeRenderer} from '../utilities';
 import {discounts} from '../discounts';
@@ -40,7 +40,8 @@ function BillingTable (
     storages,
     computeDiscounts,
     storagesDiscounts,
-    showQuota = true
+    showQuota = true,
+    reportThemes
   }
 ) {
   const summary = discounts.joinSummaryDiscounts(
@@ -96,11 +97,15 @@ function BillingTable (
     if (current && previous && !isNaN(current) && !isNaN(previous)) {
       percent = ((current - previous) / previous * 100).toFixed(2);
     }
-    const containerClassNames = [
+    const containerClassNames = classNames(
       styles.warningContainer,
-      percent > 0 ? styles.negative : false,
-      percent < 0 ? styles.positive : false
-    ].filter(Boolean).join(' ');
+      {
+        [styles.negative]: percent > 0,
+        'cp-danger': percent > 0,
+        [styles.positive]: percent < 0,
+        'cp-success': percent < 0
+      }
+    );
     return (
       <div className={containerClassNames}>
         {quotaOverrun && (<Icon type="bars" className={styles.quotaOverrunIcon} />)}
@@ -115,41 +120,49 @@ function BillingTable (
     );
   };
   const renderInfo = (title, color, info, isCurrent) => {
-    const dateClassNames = [
-      !info ? styles.pending : false,
-      styles.date
-    ].filter(Boolean);
-    const valueClassNames = [
-      !info ? styles.pending : false,
-      renderQuotaColumn && info && info.value > info.quota ? styles.bold : false,
-      isCurrent ? styles.bold : false,
-      styles.value
-    ].filter(Boolean);
-    const quotaClassNames = [
-      !info ? styles.pending : false,
-      styles.value
-    ].filter(Boolean);
+    const dateClassNames = classNames(
+      styles.date,
+      {
+        [styles.pending]: !info,
+        'cp-billing-table-pending': !info
+      }
+    );
+    const valueClassNames = classNames(
+      styles.value,
+      {
+        [styles.pending]: !info,
+        'cp-billing-table-pending': !info,
+        [styles.bold]: (renderQuotaColumn && info && info.value > info.quota) || isCurrent
+      }
+    );
+    const quotaClassNames = classNames(
+      styles.value,
+      {
+        [styles.pending]: !info,
+        'cp-billing-table-pending': !info
+      }
+    );
     return (
       <tr>
         <td className={styles.legendRow}>
           <LegendItem color={color} />
           <span>{title}</span>
         </td>
-        <td className={dateClassNames.join(' ')}>
+        <td className={dateClassNames}>
           <span>{renderDates(info ? info.dates : undefined)}</span>
         </td>
-        <td className={valueClassNames.join(' ')}>
+        <td className={valueClassNames}>
           <span>{renderValue(info ? info.value : undefined)}</span>
         </td>
         {
           renderQuotaColumn &&
           (
-            <td className={quotaClassNames.join(' ')}>
+            <td className={quotaClassNames}>
               <span>{renderValue(info ? info.quota : undefined)}</span>
             </td>
           )
         }
-        <td className={[styles.quota, styles.borderless].join(' ')}>
+        <td className={classNames(styles.quota, styles.borderless)}>
           <span>{isCurrent && renderWarning(currentInfo, previousInfo)}</span>
         </td>
       </tr>
@@ -160,23 +173,23 @@ function BillingTable (
       className={styles.container}
       order={0}
     >
-      <table className={styles.table}>
+      <table className={classNames(styles.table, 'cp-billing-table')}>
         <tbody>
           {
             renderQuotaColumn && (
               <tr>
                 <td className={styles.borderless} colSpan={2}>{'\u00A0'}</td>
                 <td>Quota</td>
-                <td className={[styles.quota, styles.borderless].join(' ')}>{'\u00A0'}</td>
+                <td className={classNames(styles.quota, styles.borderless)}>{'\u00A0'}</td>
               </tr>
             )
           }
-          {renderInfo('Current', colors.current, currentInfo, true)}
-          {renderInfo('Previous', colors.previous, previousInfo)}
+          {renderInfo('Current', reportThemes.current, currentInfo, true)}
+          {renderInfo('Previous', reportThemes.previous, previousInfo)}
         </tbody>
       </table>
     </Export.ImageConsumer>
   );
 }
 
-export default observer(BillingTable);
+export default inject('reportThemes')(observer(BillingTable));

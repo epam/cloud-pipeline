@@ -18,6 +18,7 @@ import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Card, Col, Menu, Row} from 'antd';
+import classNames from 'classnames';
 import * as styles from './AllRuns.css';
 import RunTable from './RunTable';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
@@ -370,10 +371,20 @@ class AllRuns extends Component {
     const {status} = this.props.params;
 
     return (
-      <Card className={styles.runsCard} bodyStyle={{padding: 15}}>
+      <Card
+        className={
+          classNames(
+            styles.runsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+        bodyStyle={{padding: 15}}
+      >
         <Row type="flex" align="bottom">
           <Col offset={2} span={20}>
-            <Row type="flex" justify="center" className={styles.rowMenu}>
+            <Row type="flex" justify="center">
               <Menu mode="horizontal" selectedKeys={[status]} className={styles.tabsMenu}>
                 <Menu.Item key="active">
                   <AdaptedLink

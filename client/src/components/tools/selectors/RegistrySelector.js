@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Row, Button, Dropdown} from 'antd';
+import classNames from 'classnames';
 import styles from './Selectors.css';
 import compareArrays from '../../../utils/compareArrays';
 import registryName from '../registryName';
@@ -66,7 +67,13 @@ export default class RegistrySelector extends React.Component {
         trigger={['click']}
         overlay={
           <div
-            className={[styles.navigationDropdownContainer, styles.scroll].join(' ')}
+            className={
+              classNames(
+                styles.navigationDropdownContainer,
+                styles.scroll,
+                'rc-dropdown-menu'
+              )
+            }
           >
             {
               this.props.registries.filter(r => !this.currentRegistry || r.id !== this.currentRegistry.id).map(registry => {

@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import PropTypes from 'prop-types';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
@@ -33,7 +34,6 @@ import roleModel from '../../../../../utils/roleModel';
 @inject('cancel', 'version', 'pipeline', 'save')
 @observer
 export default class PipelineCodeForm extends React.Component {
-
   static propTypes = {
     file: PropTypes.object,
     version: PropTypes.string,
@@ -126,7 +126,7 @@ export default class PipelineCodeForm extends React.Component {
     this.setState({commitMessageForm: false});
   };
 
-  toggleEditMode = async() => {
+  toggleEditMode = async () => {
     if (this.hotEditor && this.state.editMode) {
       this._modifiedCode = this.stringTableData;
     }
@@ -242,12 +242,12 @@ export default class PipelineCodeForm extends React.Component {
             root="hot"
             ref={this.initializeTableEditor}
             data={this._tableData.data}
-            colHeaders={true}
-            rowHeaders={true}
+            colHeaders
+            rowHeaders
             readOnly={!this.state.editMode}
             readOnlyCellClassName={'readonly-cell'}
-            manualColumnResize={true}
-            manualRowResize={true}
+            manualColumnResize
+            manualRowResize
             contextMenu={this.state.editMode
               ? [
                 'row_above',
@@ -273,7 +273,7 @@ export default class PipelineCodeForm extends React.Component {
           <Alert
             message={`Error parsing tabular file ${this.props.file.name}:
               ${this._tableData.message}`}
-            type="error"/>
+            type="error" />
         );
     } else {
       return (
@@ -282,17 +282,16 @@ export default class PipelineCodeForm extends React.Component {
           readOnly={!this.state.editMode}
           code={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
           onChange={this.onCodeChange}
-          supportsFullScreen={true}
+          supportsFullScreen
           language={this.state.editTabularAsText ? 'text' : undefined}
           fileName={this.props.file ? this.props.file.name : undefined}
-          delayedUpdate={true}
+          delayedUpdate
         />
       );
     }
   }
 
   render () {
-    const tableClassName = this.state.editMode ? styles.tableEditor : styles.tableEditorReadonly;
     const title = this.props.file
       ? (
         <Row type="flex" justify="space-between">
@@ -336,7 +335,17 @@ export default class PipelineCodeForm extends React.Component {
       >
         <div className={styles.spinContainer}>
           <Spin spinning={this._fileContents && this._fileContents.pending}>
-            <div className={`${styles.editorContainer} ${tableClassName}`}>
+            <div
+              className={
+                classNames(
+                  styles.editorContainer,
+                  styles.tableEditor,
+                  {
+                    'cp-pipeline-code-editor-readonly': !this.state.editMode
+                  }
+                )
+              }
+            >
               { this.fileEditor }
             </div>
           </Spin>
