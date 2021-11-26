@@ -70,8 +70,6 @@
 
 .code-editor {
   height: 100px;
-  background-color: #efefef;
-  border: 1px solid #cccccc
 }
 
 .code-editor-label {
@@ -89,14 +87,9 @@
   border: 1px dashed #777;
 }
 
-.parameter-name:disabled {
-  color: #666;
-}
-
 .system-parameter-name {
   text-align: right;
   border: none;
-  color: black;
   font-weight: bold;
 }
 
@@ -136,10 +129,6 @@
 
 .hint {
   cursor: pointer;
-}
-
-.hint:hover {
-  color: #225780;
 }
 
 .actions button {
@@ -200,15 +189,6 @@
   padding: 2px;
   border-radius: 5px;
   flex-wrap: nowrap;
-  -webkit-transition: background-color 250ms;
-  -moz-transition: background-color 250ms;
-  -ms-transition: background-color 250ms;
-  -o-transition: background-color 250ms;
-  transition: background-color 250ms;
-}
-
-.form-item-container:hover {
-  background-color: rgba(181, 209, 255, 0.15);
 }
 
 .form-item {
@@ -267,4 +247,13 @@
   white-space: nowrap;
   margin: 2px;
   text-align: center;
+}
+
+.fire-cloud-sign-in-container {
+  display: flex;
+  flex-direction: column;
+  margin: 20px 5px 5px;
+  border: 1px dashed transparent;
+  border-radius: 5px;
+  padding: 20px;
 }

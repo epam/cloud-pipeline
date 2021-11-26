@@ -1647,7 +1647,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           trigger="hover">
           <Icon
             className={styles.hint}
-            type="info-circle" />
+            type="info-circle"
+          />
         </Popover>
       );
       const {pricePerHour} = this.state.estimatedPrice;
@@ -3007,9 +3008,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       (!!this.state.pipeline && this.props.detached)}
                       placeholder="Name"
                       className={
-                        isSystemParametersSection
-                          ? styles.systemParameterName
-                          : styles.parameterName
+                        classNames(
+                          {
+                            [styles.parameterName]: !isSystemParametersSection,
+                            [styles.systemParameterName]: isSystemParametersSection,
+                            'cp-system-parameter-name-input': isSystemParametersSection
+                          }
+                        )
                       } />
                   )}
                 </FormItem>
@@ -3800,10 +3805,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               md={4}
               lg={3}
               xl={2}
+              className="cp-accent"
               style={{
                 textAlign: 'right',
-                paddingRight: 10,
-                color: '#333'
+                paddingRight: 10
               }}>
               Auto pause:
             </Col>
@@ -4393,22 +4398,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <tr>
                 <td style={{width: '50%'}}>
                   <div
+                    className="cp-divider horizontal"
                     style={{
-                      margin: '0 5px',
-                      verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
-                    }}>{'\u00A0'}</div>
+                      width: 'unset',
+                      margin: '0 5px'
+                    }}
+                  >
+                    {'\u00A0'}
+                  </div>
                 </td>
                 <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
                 <td style={{width: '50%'}}>
                   <div
+                    className="cp-divider horizontal"
                     style={{
-                      margin: '0 5px',
-                      verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
-                    }}>{'\u00A0'}</div>
+                      width: 'unset',
+                      margin: '0 5px'
+                    }}
+                  >
+                    {'\u00A0'}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -4443,16 +4452,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type="flex"
           align="middle"
           justify="center"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            margin: 5,
-            border: '1px dashed #ccc',
-            borderRadius: 5,
-            backgroundColor: '#fafafa',
-            marginTop: 20,
-            padding: 20
-          }}>
+          className={classNames(styles.fireCloudSignInContainer, 'cp-content-panel')}
+        >
           <Row style={{margin: 2}}>
             You must sign in with your Google account to browse FireCloud method inputs & outputs
           </Row>
@@ -4500,7 +4501,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         <Row>
                           {conn.name}
                         </Row>
-                        <Row style={{color: 'red'}}>
+                        <Row className="cp-error">
                           {error}
                         </Row>
                       </div>
@@ -4516,7 +4517,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   }}
                   span={4}
                   offset={2}>
-                  <span style={error ? {color: 'red'} : {}}>
+                  <span
+                    className={
+                      classNames(
+                        {
+                          'cp-error': error
+                        }
+                      )
+                    }
+                  >
                     {conn.name}
                   </span>
                 </Col>
@@ -4529,7 +4538,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 value={value}
                 onChange={onChange}
                 size="large"
-                style={error ? {border: '1px solid red'} : {}}
+                className={
+                  classNames({
+                    'cp-error': error
+                  })
+                }
               />
             </Col>
           </Row>
@@ -4798,7 +4811,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <td key="header" className={styles.itemHeader} style={{width: 1, whiteSpace: 'nowrap'}}>
             <Icon
               type="play-circle-o"
-              style={{color: '#2282bf'}} />
+              className="cp-primary"
+            />
             Launch <b id="launch-form-pipeline-name">{pipelineName}</b> {
               pipelineVersion && <span id="launch-form-pipeline-version">{pipelineVersion}</span>}.
           </td>,
@@ -4886,7 +4900,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       <Row type="flex" justify="end" style={{paddingRight: 30, marginBottom: 10}}>
                         <a
                           onClick={this.openConfigureClusterDialog}
-                          style={{color: '#777', textDecoration: 'underline'}}>
+                          className="cp-text underline"
+                        >
                           <Icon type="setting" />
                           {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>

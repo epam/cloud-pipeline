@@ -1942,7 +1942,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           }}>
           <Row>
             <Row className={styles.configurationConfirmTitle}>
-              <Icon type="question-circle" />
+              <Icon
+                type="question-circle"
+                className="cp-warning"
+              />
               {
                 this.state.folderToDelete &&
                 (!this.deletingFolderIsEmpty
@@ -1955,8 +1958,6 @@ export default class Folder extends localization.LocalizedReactComponent {
               !this.deletingFolderIsEmpty &&
               <Row style={{
                 marginLeft: '42px',
-                fontSize: '12px',
-                color: 'rgba(0,0,0,.65)',
                 marginTop: '8px'
               }}>
                 <Checkbox
