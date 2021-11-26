@@ -25,7 +25,6 @@
 .link:visited {
   flex: 1;
   margin: 7px 0 0;
-  color: #777;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -61,10 +60,6 @@
   padding: 5px 0;
 }
 
-.notification:not(:first-child) {
-  border-top: 1px solid #ccc;
-}
-
 .notification .row {
   display: flex;
   flex-direction: row;
@@ -86,18 +81,9 @@
   min-width: 70px;
 }
 
-.notification .row .labeled-group.error .label {
-  color: red;
-}
-
 .notification .row .labeled-group .value {
   min-width: 250px;
   flex: 1;
-}
-
-.notification .row .labeled-group.error .value,
-.notification .row .labeled-group.error .value > div {
-  border-color: red;
 }
 
 .notification .row .labeled-group.error .value {

@@ -273,8 +273,10 @@ class TerminateRunDialog extends React.Component {
           <Row style={{marginBottom: 10}} type="flex" align="middle">
             <Icon
               type="question-circle"
-              style={{color: '#ffbf00', fontSize: 'x-large', marginLeft: 20}} />
-            <b style={{marginLeft: 10, fontSize: 14, color: 'rgba(0, 0, 0, 0.65)'}}>Terminate {this.run.podId}?</b>
+              className="cp-stop-run-modal-confirm-icon"
+              style={{fontSize: 'x-large', marginLeft: 20}} />
+            <b
+              style={{marginLeft: 10, fontSize: 14}}>Terminate {this.run.podId}?</b>
           </Row>
           <Row type="flex" style={{marginBottom: 5, marginLeft: 55}}>
             <Alert
@@ -326,7 +328,6 @@ function terminateRunFn (run, callback) {
 
 @observer
 class StopRunConfirmation extends React.Component {
-
   static propTypes = {
     runId: PropTypes.number,
     canCommitRun: PropTypes.bool,

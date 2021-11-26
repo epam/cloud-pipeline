@@ -95,7 +95,7 @@
 .type-button {
   flex-shrink: 0;
   padding: 0 10px;
-  min-width: 80px;
+  min-width: 100px;
   height: 80px;
   border-radius: 10px;
   margin: 0 10px;
@@ -103,25 +103,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.15);
-  color: white;
   cursor: pointer;
-  border: 2px solid transparent;
-}
-
-.type-button.active {
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 2px solid white;
-}
-
-.type-button:hover {
-  background-color: rgba(0, 0, 0, 0.25);
-}
-
-.type-button.disabled {
-  background-color: transparent;
-  color: rgba(0, 0, 0, 0.2);
-  cursor: not-allowed;
 }
 
 .type-button i {
@@ -159,12 +141,10 @@
 }
 
 .hint-icon-container {
-  color: white;
   font-size: 30px;
   width: 100%;
   height: 100%;
   border-radius: 20px;
-  background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid transparent;
   -webkit-box-align: center;
   -ms-flex-align: center;
@@ -174,11 +154,6 @@
   justify-content: center;
   display: flex;
   cursor: pointer;
-}
-
-.hint-icon-container:hover {
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .hints {
@@ -220,7 +195,6 @@
 .search-result-item {
   cursor: pointer;
   margin-bottom: 5px;
-  background-color: rgba(255, 255, 255, 0.5);
   width: 100%;
   padding: 10px;
   border-radius: 3px;
@@ -231,10 +205,6 @@
   -ms-transition: background-color 100ms;
   -o-transition: background-color 100ms;
   transition: background-color 100ms;
-}
-
-.search-result-item.hovered {
-  background-color: rgba(255, 255, 255, 0.75);
 }
 
 .search-result-item .title {
@@ -260,12 +230,10 @@
 }
 
 .searching-in-progress-container i {
-  color: white;
   font-size: x-large;
 }
 
 .searching-in-progress-container span {
-  color: #eee;
   font-size: large;
 }
 
@@ -278,7 +246,7 @@
   position: absolute;
   top: 120px;
   right: 5vw;
-  width: 44vw;
+  width: calc(44vw - 30px);
   bottom: 100px;
   padding: 0;
   -webkit-transition: opacity 250ms, top 250ms, left 250ms;
@@ -288,11 +256,56 @@
   transition: opacity 250ms, top 250ms, left 250ms;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 5px;
   text-align: left;
 }
 
 .preview.not-available {
   opacity: 0;
+}
+
+.advanced {
+  position: absolute;
+  top: 50vh;
+  margin-top: -20px;
+  height: 38px;
+  line-height: 38px;
+  left: 72vw;
+  margin-left: 10px;
+  -webkit-transition: margin 250ms, top 250ms, right 250ms;
+  -moz-transition: margin 250ms, top 250ms, right 250ms;
+  -ms-transition: margin 250ms, top 250ms, right 250ms;
+  -o-transition: margin 250ms, top 250ms, right 250ms;
+  transition: margin 250ms, top 250ms, right 250ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 10px;
+  border-radius: 20px;
+}
+
+.advanced .icon {
+  font-size: 25px;
+  margin-right: 5px;
+}
+
+.advanced.results-available {
+  margin-top: 0;
+  top: 120px;
+}
+
+.advanced.results-available.preview-available {
+  left: 49vw;
+  padding: 0;
+  width: 38px;
+}
+
+.advanced.results-available.preview-available .icon {
+  margin-right: 0;
+}
+
+.advanced.results-available.preview-available .button-text {
+  display: none;
 }

@@ -1,0 +1,106 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cp-tool-header {
+  border-color: @panel-border-color;
+}
+
+.cp-tool-panel + .cp-tool-panel {
+  margin-left: 10px;
+}
+
+.cp-tool-panel .cp-tool-panel-header {
+  padding: 10px;
+  background-color: @card-header-background;
+  border: 1px solid @card-border-color;
+  border-radius: 5px 5px 0 0;
+}
+
+.cp-tool-panel .cp-tool-panel-body {
+  margin-top: -1px;
+  padding: 10px;
+  border: 1px solid @card-border-color;
+  background-color: @card-background-color;
+  border-radius: 0 0 5px 5px;
+}
+
+.cp-tool-panel .cp-tool-panel-body.no-padding {
+  padding: 0;
+}
+
+.cp-tool-no-description {
+  color: @application-color-faded;
+}
+
+.cp-tool-icon-container {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+
+.cp-tool-add-endpoint {
+  background-color: @input-background-disabled;
+}
+
+.cp-scan-result.critical {
+  color: @color-red;
+}
+
+.cp-scan-result.high {
+  color: @color-sensitive;
+}
+
+.cp-scan-result.medium {
+  color: @color-yellow;
+}
+
+.cp-scan-result.low {
+  color: @color-aqua-light;
+}
+
+.cp-scan-result.negligible {
+  color: @color-grey;
+}
+
+.cp-scan-result.bar {
+  background-color: currentColor;
+}
+
+.cp-exec-env-summary {
+  border: 1px solid @input-border;
+  background-color: @input-background-disabled;
+  box-shadow: 0 0 3px @card-border-color;
+  color: @application-color;
+}
+
+.cp-exec-env-summary-item {
+  border: 1px solid @card-header-background;
+}
+
+.cp-edit-permissions-selected-row {
+  background-color: @element-selected-background-color;
+}
+
+.cp-tool-white-listed-version > td,
+.cp-tool-white-listed-version:hover > td {
+  background-color: fade(@color-success, 15%);
+}
+
+.cp-tool-select-option-divider::before,
+.cp-divider.tool-settings {
+  background: @panel-border-color;
+}

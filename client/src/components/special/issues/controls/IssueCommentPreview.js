@@ -16,15 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
 import {Modal} from 'antd';
 import styles from './IssueComment.css';
-import 'highlight.js/styles/github.css';
+import Markdown from '../../markdown';
 
-@inject('issuesRenderer')
-@observer
 export default class IssueCommentPreview extends React.Component {
-
   static propTypes = {
     text: PropTypes.string,
     style: PropTypes.object
@@ -76,17 +72,16 @@ export default class IssueCommentPreview extends React.Component {
   };
 
   render () {
-    if (!this.props.issuesRenderer.ready) {
-      return null;
-    }
     return (
       <div style={{overflowY: 'auto'}}>
-        <div
-          onClick={this.click}
+        <Markdown
           id="description-text-container"
-          className={styles.mdPreview}
+          onClick={this.click}
+          className={styles.issuePreview}
           style={this.props.style || {}}
-          dangerouslySetInnerHTML={{__html: this.props.issuesRenderer.render(this.props.text)}} />
+          md={this.props.text}
+          cloudPipelineLinks
+        />
         <Modal
           width={this.state.previewWidth}
           height={this.state.previewHeight}

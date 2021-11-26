@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Table} from 'antd';
+import classNames from 'classnames';
 import PipelineRunFilter from '../../models/pipelines/PipelineRunFilter';
 import styles from './RunsSearch.css';
 import StatusIcon from '../special/run-status-icon';
@@ -86,7 +87,7 @@ export default class RunsSearch extends localization.LocalizedReactComponent {
       <div>
         ...
         <span className={styles.parametersTextDefault}>{before}</span>
-        <span className={styles.parametersTextHighlighted}>{highlighted}</span>
+        <span className={classNames(styles.parametersTextHighlighted, 'cp-search-highlight-text')}>{highlighted}</span>
         <span className={styles.parametersTextDefault}>{after}</span>
         ...
       </div>

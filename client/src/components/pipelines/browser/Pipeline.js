@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import {computed} from 'mobx';
 import LoadingView from '../../special/LoadingView';
@@ -30,7 +31,9 @@ import {
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import GitRepositoryControl from '../../special/git-repository-control';
-import {Alert, Button, Col, Dropdown, Icon, Menu, message, Row, Select, Table} from 'antd';
+import {Alert, Button, Col, Icon, message, Row, Select, Table} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';
@@ -106,7 +109,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       return false;
     }
     if (this.state.metadata === undefined && this.props.pipeline.loaded) {
-      return this.props.pipeline.value.hasMetadata && roleModel.readAllowed(this.props.pipeline.value);
+      return this.props.pipeline.value.hasMetadata &&
+        roleModel.readAllowed(this.props.pipeline.value);
     }
     return !!this.state.metadata;
   }
@@ -157,6 +161,20 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     }
   ];
 
+  renderTreeItemText = (text, item) => (
+    <span
+      className={
+        classNames(
+          {
+            'cp-text-not-important': item.draft
+          }
+        )
+      }
+    >
+      {text}
+    </span>
+  );
+
   listingColumns = [
     {
       key: 'selection',
@@ -192,9 +210,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       render: (text, item) => {
         return this.renderTreeItemText(
           <span>
-            Last updated: {
-            item.author && 'by '
-          }{item.author && <UserName userName={item.author} />} {displayDate(text)}
+            Last updated: {item.author && 'by '}
+            {item.author && <UserName userName={item.author} />} {displayDate(text)}
           </span>,
           item
         );
@@ -220,31 +237,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   renderTreeItemType = (item) => {
-    const style = {};
-    if (item.draft) {
-      style.color = '#999';
-    }
+    const className = classNames({
+      'cp-text-not-important': item.draft
+    });
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" style={style} />;
-      case ItemTypes.folder: return <Icon type="folder" style={style} />;
-      case ItemTypes.version: return <Icon type="tag" style={style} />;
+      case ItemTypes.pipeline: return <Icon type="fork" className={className} />;
+      case ItemTypes.folder: return <Icon type="folder" className={className} />;
+      case ItemTypes.version: return <Icon type="tag" className={className} />;
       default: return <div />;
-    }
-  };
-
-  renderTreeItemText = (text, item) => {
-    const style = {};
-    if (item.draft) {
-      style.color = '#999';
-    }
-    return <span style={style}>{text}</span>;
-  };
-
-  rowClassName = (baseClassName, item) => {
-    if (item.draft) {
-      return `${baseClassName}-draft`;
-    } else {
-      return baseClassName;
     }
   };
 
@@ -254,7 +254,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   renderTreeItemSelection = (item) => {
-    if ((this.props.listingMode || this.props.readOnly) && item.name === this.props.selectedVersion) {
+    if (
+      (this.props.listingMode || this.props.readOnly) &&
+      item.name === this.props.selectedVersion
+    ) {
       return (
         <Row type="flex" justify="end">
           <Icon type="check-circle" />
@@ -348,7 +351,11 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   navigate = (item) => {
     if (this.props.onSelectItem) {
-      if (this.props.configurationSelectionMode && this.state.configurations && this.state.configurations[item.id]) {
+      if (
+        this.props.configurationSelectionMode &&
+        this.state.configurations &&
+        this.state.configurations[item.id]
+      ) {
         this.props.onSelectItem(item, this.state.configurations[item.id].selected);
       } else {
         this.props.onSelectItem(item);
@@ -457,7 +464,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   deletePipeline = async (keepRepository) => {
     const request = new DeletePipeline(this.props.pipeline.value.id, keepRepository);
-    const hide = message.loading(`Deleting ${this.localizedString('pipeline')} ${this.props.pipeline.value.name}...`, 0);
+    const hide = message.loading(
+      `Deleting ${this.localizedString('pipeline')} ${this.props.pipeline.value.name}...`,
+      0
+    );
     await request.fetch();
     hide();
     if (request.error) {
@@ -568,29 +578,44 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
-          key="metadata">
+          key="metadata"
+          className={styles.menuItem}
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
       displayOptionsMenuItems.push(
-        <Menu.Item
+        <MenuItem
           id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-          key="issues">
+          key="issues"
+          className={styles.menuItem}
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
-            <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
+            <Icon
+              type="check-circle"
+              style={{
+                display: this.state.showIssuesPanel
+                  ? 'inherit'
+                  : 'none'
+              }}
+            />
           </Row>
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
+        <Menu
+          onClick={onSelectDisplayOption}
+          style={{width: 125}}
+          selectedKeys={[]}
+        >
           {displayOptionsMenuItems}
         </Menu>
       );
@@ -620,18 +645,24 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     };
     if (!this.props.readOnly) {
       actions.push(
-        <Menu.Item id="edit-pipeline-button" key="edit">
+        <MenuItem
+          id="edit-pipeline-button"
+          key="edit"
+          className={styles.menuItem}
+        >
           <Icon type="edit" /> Edit
-        </Menu.Item>
+        </MenuItem>
       );
     }
     if (!this.props.readOnly && roleModel.isOwner(this.props.pipeline.value)) {
       actions.push(
-        <Menu.Item
+        <MenuItem
           key="clone"
-          id="clone-pipeline-button">
+          id="clone-pipeline-button"
+          className={styles.menuItem}
+        >
           <Icon type="copy" /> Clone
-        </Menu.Item>
+        </MenuItem>
       );
     }
     return (
@@ -641,7 +672,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           <Menu
             selectedKeys={[]}
             onClick={onClick}
-            style={{width: 100}}>
+            style={{width: 100}}
+          >
             {actions}
           </Menu>
         }
@@ -717,7 +749,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
               <Breadcrumbs
                 id={parseInt(this.props.pipelineId)}
                 type={ItemTypes.pipeline}
-                readOnlyEditableField={!roleModel.writeAllowed(this.props.pipeline.value) || this.props.readOnly}
+                readOnlyEditableField={
+                  !roleModel.writeAllowed(this.props.pipeline.value) ||
+                  this.props.readOnly
+                }
                 textEditableField={this.props.pipeline.value.name}
                 onSaveEditableField={this.renamePipeline}
                 editStyleEditableField={{flex: 1}}
@@ -817,9 +852,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   componentDidUpdate (prevProps) {
     if (prevProps.pipelineId !== this.props.pipelineId) {
+      // eslint-disable-next-line
       this.setState({metadata: undefined, configurations: undefined, showIssuesPanel: false});
     }
-    if (!this.props.versions.pending && !this.props.versions.error && this.props.configurationSelectionMode) {
+    if (
+      !this.props.versions.pending &&
+      !this.props.versions.error &&
+      this.props.configurationSelectionMode
+    ) {
       if (!this.state.configurations) {
         this.loadConfigurations();
       }
@@ -827,7 +867,11 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   }
 
   componentDidMount () {
-    if (!this.props.versions.pending && !this.props.versions.error && this.props.configurationSelectionMode) {
+    if (
+      !this.props.versions.pending &&
+      !this.props.versions.error &&
+      this.props.configurationSelectionMode
+    ) {
       if (!this.state.configurations) {
         this.loadConfigurations();
       }

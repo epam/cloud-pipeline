@@ -18,16 +18,15 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../utils/connect';
 import {Link} from 'react-router';
+import classNames from 'classnames';
 import {computed, observable} from 'mobx';
 import {
   Alert,
   Button,
   Checkbox,
   Col,
-  Dropdown,
   Icon,
   Input,
-  Menu,
   message,
   Modal,
   Popover,
@@ -35,6 +34,8 @@ import {
   Spin,
   Table
 } from 'antd';
+import Dropdown from 'rc-dropdown';
+import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
@@ -43,7 +44,7 @@ import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
@@ -72,10 +73,8 @@ import moment from 'moment-timezone';
 import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
-  from '../../../models/dataStorage/DataStorageGenerateSharedLink';
+from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import {
   METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
@@ -84,6 +83,7 @@ import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../special/metadata/special/request-dav-access';
 import StorageSize from '../../special/storage-size';
+import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 
 const PAGE_SIZE = 40;
@@ -495,7 +495,7 @@ export default class DataStorage extends React.Component {
     if (clearSelection) {
       this.setState({
         renameItem: null,
-        selectedFile: null,
+        selectedFile: null
       });
     } else {
       this.setState({renameItem: null});
@@ -591,7 +591,7 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  saveEditableFile = async(path, content) => {
+  saveEditableFile = async (path, content) => {
     const currentItemContent = this.props.dataStorageCache.getContent(
       this.props.storageId,
       this.state.selectedFile.path,
@@ -606,7 +606,7 @@ export default class DataStorage extends React.Component {
       message.error(request.error, 5);
     } else {
       await this.props.storage.fetch();
-			await currentItemContent.fetch();
+      await currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
     }
@@ -809,7 +809,7 @@ export default class DataStorage extends React.Component {
         <a
           key="download"
           id={`download ${item.name}`}
-          className={styles.downloadButton}
+          className="cp-button"
           href={GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)}
           target="_blank"
           download={item.name}
@@ -1032,7 +1032,7 @@ export default class DataStorage extends React.Component {
               content={
                 <div className={styles.miewPopoverContainer}>
                   <EmbeddedMiew
-                    previewMode={true}
+                    previewMode
                     s3item={{
                       storageId: this.props.storageId,
                       path: item.path,
@@ -1312,14 +1312,14 @@ export default class DataStorage extends React.Component {
                 this.props.info.value.type !== 'NFS' &&
                 this.props.info.value.storagePolicy &&
                 this.props.info.value.storagePolicy.versioningEnabled
-                ? (
-                  <Checkbox
-                    checked={this.showVersions}
-                    onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}>
-                    Show files versions
-                  </Checkbox>
-                ) : undefined
+                  ? (
+                    <Checkbox
+                      checked={this.showVersions}
+                      onChange={this.showFilesVersionsChanged}
+                      style={{marginLeft: 10}}>
+                      Show files versions
+                    </Checkbox>
+                  ) : undefined
               }
             </div>
             <div style={{paddingRight: 8}}>
@@ -1357,19 +1357,19 @@ export default class DataStorage extends React.Component {
                     <Menu
                       selectedKeys={[]}
                       onClick={onCreateActionSelect}
-                      style={{width: 200}}>
-                      <Menu.Item
+                      style={{width: 200, cursor: 'pointer'}}>
+                      <MenuItem
                         id="create-folder-button"
                         className="create-folder-button"
                         key={folderKey}>
                         <Icon type="folder" /> Folder
-                      </Menu.Item>
-                      <Menu.Item
+                      </MenuItem>
+                      <MenuItem
                         id="create-file-button"
                         className="create-file-button"
                         key={fileKey}>
                         <Icon type="file" /> File
-                      </Menu.Item>
+                      </MenuItem>
                     </Menu>
                   }
                   key="create actions">
@@ -1478,7 +1478,11 @@ export default class DataStorage extends React.Component {
     const storageTitleClassName = this.props.info.value.locked ? styles.readonly : undefined;
 
     return (
-      <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100vh - 25px)'
+      }}>
         <Row type="flex" justify="space-between" align="middle">
           <Col className={styles.itemHeader}>
             <Breadcrumbs
@@ -1500,17 +1504,18 @@ export default class DataStorage extends React.Component {
               sensitive={this.props.info.value.sensitive}
               displayTextEditableField={
                 <span>
-                    {this.props.info.value.name}
+                  {this.props.info.value.name}
                   <AWSRegionTag
-                    className={styles.storageRegion}
-                    darkMode
+                    className={classNames(
+                      styles.storageRegion
+                    )}
                     displayName
                     flagStyle={{fontSize: 'smaller'}}
                     providerStyle={{fontSize: 'smaller'}}
                     regionId={this.props.info.value.regionId}
                     style={{marginLeft: 5, fontSize: 'medium'}}
                   />
-                  </span>
+                </span>
               }
               subject={this.props.info.value}
             />
@@ -1519,6 +1524,7 @@ export default class DataStorage extends React.Component {
             <Row
               type="flex"
               justify="end"
+              align="middle"
               className={styles.currentFolderActions}
             >
               <RestrictedImagesInfo
@@ -1564,7 +1570,7 @@ export default class DataStorage extends React.Component {
           contentContainerStyle={{overflow: 'inherit'}}>
           <div
             key={CONTENT_PANEL_KEY}
-            style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+            style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
             <Row className={styles.dataStorageInfoContainer}>
               {
                 this.props.info.value.description &&
@@ -1572,8 +1578,8 @@ export default class DataStorage extends React.Component {
               }
               {
                 this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined ?
-                  (
+                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined
+                  ? (
                     <Row>
                       <b>Short-Term Storage duration: </b>
                       {`${this.props.info.value.storagePolicy.shortTermStorageDuration} days`}
@@ -1582,8 +1588,8 @@ export default class DataStorage extends React.Component {
               }
               {
                 this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined ?
-                  (
+                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined
+                  ? (
                     <Row>
                       <b>Long-Term Storage duration: </b>
                       {`${this.props.info.value.storagePolicy.longTermStorageDuration} days`}
@@ -1730,22 +1736,20 @@ export default class DataStorage extends React.Component {
                     <Input
                       autosize
                       type="textarea"
-                      value={this._shareStorageLink.value}/>
+                      value={this._shareStorageLink.value}
+                    />
                   )
                   : <LoadingView />)
-                : <Alert message={this._shareStorageLink.error} type="error"/>)
+                : <Alert message={this._shareStorageLink.error} type="error" />)
             }
             {
-              this.dataStorageShareLinkDisclaimer &&
-              <Row type="flex" className={styles.mdPreview}>
-                <pre style={{width: '100%', fontSize: 'smaller'}}>
-                  <code
-                    id="data-sharing-disclaimer"
-                    dangerouslySetInnerHTML={{
-                      __html: hljs.highlight('bash', this.dataStorageShareLinkDisclaimer).value
-                    }} />
-                </pre>
-              </Row>
+              this.dataStorageShareLinkDisclaimer && (
+                <BashCode
+                  id="data-sharing-disclaimer"
+                  className={styles.dataSharingDisclaimer}
+                  code={this.dataStorageShareLinkDisclaimer}
+                />
+              )
             }
           </div>
         </Modal>
@@ -1824,7 +1828,8 @@ export default class DataStorage extends React.Component {
           downloadable={!this.props.info.value.sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
-          save={this.saveEditableFile} />
+          save={this.saveEditableFile}
+        />
       </div>
     );
   }

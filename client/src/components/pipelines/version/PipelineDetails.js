@@ -17,7 +17,10 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
-import {Alert, Menu, message, Row, Dropdown, Button, Icon, Col} from 'antd';
+import classNames from 'classnames';
+import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -59,7 +62,6 @@ import HiddenObjects from '../../../utils/hidden-objects';
 }))
 @observer
 export default class PipelineDetails extends localization.LocalizedReactComponent {
-
   state = {isModalVisible: false, updating: false, deleting: false};
 
   @observable _graphIsSupported = null;
@@ -84,6 +86,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         }
       );
       if (updatePipeline.error) {
+        // eslint-disable-next-line
         message.error(`Error updating ${this.localizedString('pipeline')}: ${updatePipeline.error}`);
         this.setState({updating: false});
       } else {
@@ -126,6 +129,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       const deletePipeline = new DeletePipeline(this.props.pipelineId, keepRepository);
       await deletePipeline.fetch();
       if (deletePipeline.error) {
+        // eslint-disable-next-line
         message.error(`Error deleting ${this.localizedString('pipeline')}: ${deletePipeline.error}`);
         this.setState({deleting: false});
       } else {
@@ -163,19 +167,13 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   runPipeline = () => {
-    if (this.props.currentConfiguration) {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/${this.props.currentConfiguration}`);
-    } else {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/default`);
-    }
+    const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
+    this.props.router.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
   };
 
   runPipelineConfiguration = (configuration) => {
-    if (configuration) {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/${configuration}`);
-    } else {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/default`);
-    }
+    const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
+    this.props.router.push(`${baseUrl}/${configuration || 'default'}`);
   };
 
   renderRunButton = () => {
@@ -185,11 +183,15 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         this.runPipelineConfiguration(key);
       };
       const configurationsMenu = (
-        <Menu onClick={onSelectConfiguration}>
+        <Menu
+          onClick={onSelectConfiguration}
+          style={{cursor: 'pointer'}}
+          selectedKeys={[]}
+        >
           {
             configurations.map(c => {
               return (
-                <Menu.Item key={c.name}>{c.name}</Menu.Item>
+                <MenuItem key={c.name}>{c.name}</MenuItem>
               );
             })
           }
@@ -207,7 +209,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           </Button>
           <Dropdown overlay={configurationsMenu} placement="bottomRight">
             <Button size="small" id="run-dropdown-button" type="primary">
-              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
         </Button.Group>
@@ -288,54 +290,68 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         <Row>
           {description}
         </Row>
-        <Row gutter={16} type="flex" justify="center" className={`${styles.rowMenu} ${styles[activeTab] || ''}`}>
-          <Menu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
-            <Menu.Item key="documents">
+        <Row
+          gutter={16}
+          type="flex"
+          justify="center"
+          className={
+            classNames(
+              styles.rowMenu,
+              styles[activeTab]
+            )
+          }
+        >
+          <TabMenu
+            mode="horizontal"
+            selectedKeys={[activeTab]}
+            className={styles.tabsMenu}
+          >
+            <TabMenu.Item key="documents">
               <AdaptedLink
                 to={`/${id}/${version}/documents`}
                 location={location}>
                 Documents
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="code">
+            </TabMenu.Item>
+            <TabMenu.Item key="code">
               <AdaptedLink
                 to={`/${id}/${version}/code`}
                 location={location}>
                 Code
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="configuration">
+            </TabMenu.Item>
+            <TabMenu.Item key="configuration">
               <AdaptedLink
                 to={`/${id}/${version}/configuration`}
                 location={location}>
                 Configuration
               </AdaptedLink>
-            </Menu.Item>
+            </TabMenu.Item>
             {
               displayGraph &&
-              <Menu.Item key="graph">
+              <TabMenu.Item key="graph">
                 <AdaptedLink
                   to={`/${id}/${version}/graph`}
                   location={location}>
                   Graph
                 </AdaptedLink>
-              </Menu.Item>
+              </TabMenu.Item>
             }
-            <Menu.Item key="history">
+            <TabMenu.Item key="history">
               <AdaptedLink
                 to={`/${id}/${version}/history`}
                 location={location}>
                 History
               </AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="storage">
+            </TabMenu.Item>
+            <TabMenu.Item key="storage">
               <AdaptedLink
                 to={`/${id}/${version}/storage`}
                 location={location}>
                 Storage rules
               </AdaptedLink>
-            </Menu.Item>
-          </Menu>
+            </TabMenu.Item>
+          </TabMenu>
         </Row>
         <div
           className={styles.fullHeightContainer} style={{overflow: 'auto'}}>

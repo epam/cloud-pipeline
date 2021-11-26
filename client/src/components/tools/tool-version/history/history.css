@@ -24,14 +24,6 @@
   padding: 0 5px;
 }
 
-.layer.selected {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.layer:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
 .layer .index {
   margin-right: 5px;
 }
@@ -51,7 +43,9 @@
 .code {
   padding: 20px;
   font-size: larger;
-  background-color: #fafafa;
-  border: 1px solid #ccc;
   word-break: break-word;
+}
+
+.code pre {
+  white-space: pre-line;
 }

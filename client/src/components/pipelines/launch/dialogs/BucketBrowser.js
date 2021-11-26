@@ -658,11 +658,11 @@ export default class BucketBrowser extends React.Component {
             overflowY: 'auto',
             overflowX: 'hidden'
           }}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
             width: 3,
             margin: '0 5px',
             cursor: 'col-resize',
-            backgroundColor: '#efefef',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1

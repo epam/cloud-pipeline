@@ -17,6 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Button, Col, Row, Icon} from 'antd';
 import ToolLink from './elements/ToolLink';
 import ToolImage from '../../models/tools/ToolImage';
@@ -25,7 +26,6 @@ import styles from './Tools.css';
 
 @observer
 export default class ToolsTable extends React.Component {
-
   openIssuesPanel = (tool) => {
     if (this.props.onOpenIssuesPanel) {
       this.props.onOpenIssuesPanel(tool);
@@ -42,21 +42,21 @@ export default class ToolsTable extends React.Component {
               <tr>
                 <td style={{width: '50%'}}>
                   <div
+                    className={classNames('cp-divider', 'inline')}
                     style={{
                       margin: '0 5px',
                       verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
+                      height: 1
                     }}>{'\u00A0'}</div>
                 </td>
                 <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
                 <td style={{width: '50%'}}>
                   <div
+                    className={classNames('cp-divider', 'inline')}
                     style={{
                       margin: '0 5px',
                       verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
+                      height: 1
                     }}>{'\u00A0'}</div>
                 </td>
               </tr>
@@ -70,11 +70,26 @@ export default class ToolsTable extends React.Component {
 
   renderTool = (tool, index, arr, isGlobalSearch = false) => {
     const renderLabel = (label, index) => {
-      return <span key={index} className={styles.toolLabel}>{highlightText(label, this.props.searchString)}</span>;
+      return (
+        <span
+          key={index}
+          className={classNames(styles.toolLabel, 'cp-tag')}
+        >
+          {highlightText(label, this.props.searchString)}
+        </span>
+      );
     };
     return (
       <Row
-        className={`${styles.toolRow} ${tool.endpoints && tool.endpoints.length > 0 ? styles.toolRowWithEndpoints : ''}`}
+        className={
+          classNames(
+            styles.toolRow,
+            'cp-panel-card',
+            {
+              'cp-card-service': tool.endpoints && tool.endpoints.length > 0
+            }
+          )
+        }
         onClick={() => this.props.onSelectTool && this.props.onSelectTool(tool.id)}
         type="flex"
         key={index}
@@ -91,7 +106,7 @@ export default class ToolsTable extends React.Component {
         }
         <Row type="flex" align="middle" justify="space-between" style={{flex: 1}}>
           <div className={styles.toolRowTitle} style={tool.iconId ? {paddingLeft: 0} : {}}>
-            <span className={styles.toolTitle}>
+            <div className={classNames(styles.toolTitle, 'cp-panel-card-title')}>
               <ToolLink link={tool.link} style={{margin: '0px 3px', fontSize: 'larger'}} />
               {
                 tool.endpoints && tool.endpoints.length > 0
@@ -99,8 +114,8 @@ export default class ToolsTable extends React.Component {
                   : undefined
               }
               {highlightText(tool.image, this.props.searchString)}
-            </span>
-            <span className={styles.toolDescription}>
+            </div>
+            <span className={classNames(styles.toolDescription, 'cp-panel-card-sub-text')}>
               {tool.shortDescription}
             </span>
           </div>
@@ -123,6 +138,7 @@ export default class ToolsTable extends React.Component {
                 this.openIssuesPanel(tool);
               }}
               key="issues"
+              style={{lineHeight: 1}}
               size="small">
               <Icon type="message" />{tool.issuesCount > 0 ? ` ${tool.issuesCount}` : undefined}
             </Button>

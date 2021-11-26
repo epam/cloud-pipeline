@@ -24,12 +24,12 @@ import cytoscape from 'cytoscape';
 import cydagre from 'cytoscape-dagre';
 import styles from './Graph.css';
 
+@inject('themes')
 @inject((inherit, params) => ({
   graph: new GraphData(params.pipelineId, params.version, true)
 }))
 @observer
 export default class LuigiGraph extends Graph {
-
   _graphConfig = {
     container: null,
     boxSelectionEnabled: true,
@@ -357,12 +357,29 @@ export default class LuigiGraph extends Graph {
     };
   };
 
+  onThemeChanged = () => {
+    if (this._cytoscapeGraph) {
+      this.applyStyleToGraph(this._cytoscapeGraph.zoom());
+    }
+  };
+
+  componentDidMount () {
+    const {themes} = this.props;
+    if (themes) {
+      themes.addThemeChangedListener(this.onThemeChanged);
+    }
+  }
+
   componentDidUpdate () {
     this._error = !!this.props.graph.error;
     this.buildGraphData();
   }
 
   componentWillUnmount () {
+    const {themes} = this.props;
+    if (themes) {
+      themes.removeThemeChangedListener(this.onThemeChanged);
+    }
     if (this._cytoscapeGraph) {
       this._cytoscapeGraph.off('zoom', this.onZoom);
       this._cytoscapeGraph.off('select', this.onSelect);

@@ -16,8 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer, Provider as MobxProvider} from 'mobx-react';
+import {inject, Provider as MobxProvider} from 'mobx-react';
 import {action, observable} from 'mobx';
+import classNames from 'classnames';
 import GridLayout from 'react-grid-layout';
 import {Icon} from 'antd';
 import * as GeneralReportLayout from './general-report';
@@ -47,15 +48,26 @@ class GridLayoutContainerStore {
 function LayoutPanel ({children, containerClassName, containerStyle, className, style}) {
   return (
     <div
-      className={[styles.panelContainer, containerClassName].filter(Boolean).join(' ')}
+      className={
+        classNames(
+          styles.panelContainer,
+          containerClassName
+        )
+      }
       style={containerStyle}
     >
       <div
-        className={[styles.panel, className].filter(Boolean).join(' ')}
+        className={
+          classNames(
+            styles.panel,
+            'cp-panel',
+            className
+          )
+        }
         style={style}
       >
         {children}
-        <div className={styles.panelMove}>
+        <div className={classNames(styles.panelMove, 'cp-billing-layout-panel-move')}>
           <Icon type="arrows-alt" />
         </div>
       </div>
@@ -106,10 +118,11 @@ class LayoutComponent extends React.Component {
           height: '100%',
           overflow: 'auto'
         }}
+        className="cp-billing-layout"
       >
         <GridLayout
           className="billing-layout"
-          draggableHandle={`.${styles.panelMove}`}
+          draggableHandle={`.${styles.panelMove}.cp-billing-layout-panel-move`}
           layout={panelsLayout}
           cols={gridStyles.gridCols}
           width={layoutDimensions.width - gridStyles.scrollBarSize}

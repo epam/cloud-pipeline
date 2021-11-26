@@ -30,7 +30,6 @@ import roleModel from '../../utils/roleModel';
 @roleModel.authenticationInfo
 @observer
 export default class App extends Component {
-
   state = {
     navigationCollapsed: true,
     documentTitleSet: false,
@@ -73,7 +72,10 @@ export default class App extends Component {
   onLibraryCollapsedChange = () => {
     this.info.libraryCollapsed = !this.info.libraryCollapsed;
     try {
-      localStorage.setItem('displayInfo', JSON.stringify({libraryCollapsed: this.info.libraryCollapsed}));
+      localStorage.setItem(
+        'displayInfo',
+        JSON.stringify({libraryCollapsed: this.info.libraryCollapsed})
+      );
     } catch (___) {}
   };
 
@@ -85,7 +87,10 @@ export default class App extends Component {
   };
 
   render () {
-    const {preferences, authenticatedUserInfo} = this.props;
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
     const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
       roleModel.isManager.billing(this);
     const isMiewApp = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase() === 'miew';

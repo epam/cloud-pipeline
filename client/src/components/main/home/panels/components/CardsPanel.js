@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
+import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
@@ -159,23 +160,50 @@ export default class CardsPanel extends React.Component {
         }
         return action.icon;
       };
+      const hovered = this.state.popovers.indexOf(index) >= 0;
       return (
         <div
           className={
-            `${styles.actionsContainer} ${this.state.popovers.indexOf(index) >= 0 ? styles.hovered : ''}`
-          }>
+            classNames(
+              styles.actionsContainer,
+              'cp-panel-card-actions',
+              {
+                [styles.hovered]: hovered,
+                hovered
+              }
+            )
+          }
+        >
           <div
-            type="actions-container-background"
-            className={styles.actionsContainerBackground} />
+            className={
+              classNames(
+                styles.actionsContainerBackground,
+                'cp-panel-card-actions-background'
+              )
+            }
+          />
           {
             actions.map((action, index, array) => {
+              const {
+                title,
+                icon,
+                style,
+                className,
+                overlay
+              } = action;
               return (
                 <Row
+                  key={index}
                   type="flex"
                   justify="start"
                   align="middle"
-                  key={index}
-                  className={styles.actionButton}
+                  className={
+                    classNames(
+                      styles.actionButton,
+                      'cp-card-action-button',
+                      className
+                    )
+                  }
                   onClick={e => this.onActionClicked(e, action, child)}
                   style={{
                     flex: 1.0 / array.length,
@@ -183,26 +211,29 @@ export default class CardsPanel extends React.Component {
                   }}>
                   <Row type="flex" align="middle">
                     {
-                      action.icon
-                        ? <Icon style={action.style} type={getIconType(action)} />
+                      icon
+                        ? <Icon style={style} type={getIconType(action)} />
                         : undefined
                     }
                     {
-                      action.overlay
-                        ? (
-                          <Popover
-                            onVisibleChange={onVisibleChange}
-                            content={action.overlay}>
-                            <span style={action.style}>{action.title}</span>
-                          </Popover>
-                        )
-                        : <span style={action.style}>{action.title}</span>
+                      overlay && (
+                        <Popover
+                          onVisibleChange={onVisibleChange}
+                          content={overlay}>
+                          <span style={style}>{title}</span>
+                        </Popover>
+                      )
+                    }
+                    {
+                      !overlay && (
+                        <span style={style}>
+                          {title}
+                        </span>
+                      )
                     }
                   </Row>
-                </Row>
-              );
-            })
-          }
+                </Row>);
+            })}
         </div>
       );
     }
@@ -228,15 +259,21 @@ export default class CardsPanel extends React.Component {
       favouriteEnabled = favouriteEnabled(child);
     }
     const childIsFavourite = this.childIsFavourite(child);
-    let cardClass = favouriteEnabled ? `${styles.card} ${styles.favouriteEnabled}` : styles.card;
-    if (cardClassName) {
-      cardClass = `${cardClassName} ${cardClass}`;
-    }
-    cardClass = childIsFavourite ? `${cardClass} ${styles.favouriteItem}` : `${cardClass} ${styles.notFavouriteItem}`;
     return (
       <Card
         key={child.id || index}
-        className={cardClass}
+        className={
+          classNames(
+            'cp-panel-card',
+            cardClassName,
+            styles.card,
+            {
+              [styles.favouriteEnabled]: favouriteEnabled,
+              [styles.favouriteItem]: childIsFavourite,
+              [styles.notFavouriteItem]: !childIsFavourite
+            }
+          )
+        }
         bodyStyle={{padding: 10, height: '100%'}}
         style={Object.assign({
           width: 'initial',
@@ -251,7 +288,6 @@ export default class CardsPanel extends React.Component {
           this.renderFavouriteSelector(child, childIsFavourite)
         }
         <div
-          type="card-content"
           style={favouriteEnabled ? {paddingRight: 30} : {}}
           className={styles.cardContent}>
           {this.props.childRenderer(child, this.state.search)}
@@ -269,12 +305,18 @@ export default class CardsPanel extends React.Component {
 
   render () {
     const items = this.props.search && this.props.search.searchFn
-      ? (this.props.children || []).filter(item => this.props.search.searchFn(item, this.state.search))
+      ? (this.props.children || [])
+        .filter(item => this.props.search.searchFn(item, this.state.search))
       : (this.props.children || []);
     const personalItemsFiltered = items.filter(item => !item.isGlobal);
     const globalItemsFiltered = items.filter(item => item.isGlobal);
-    let personalItems = [...personalItemsFiltered, ...globalItemsFiltered.filter(this.childIsFavourite)];
-    let globalItems = this.state.search ? globalItemsFiltered.filter(i => !this.childIsFavourite(i)) : [];
+    let personalItems = [
+      ...personalItemsFiltered,
+      ...globalItemsFiltered.filter(this.childIsFavourite)
+    ];
+    let globalItems = this.state.search
+      ? globalItemsFiltered.filter(i => !this.childIsFavourite(i))
+      : [];
     if (!this.state.search && this.props.displayOnlyFavourites) {
       personalItems = personalItems.filter(this.childIsFavourite);
       globalItems = [];

@@ -259,7 +259,14 @@ class HostedAppConfigurationDialog extends React.Component {
             Service name:
           </span>
           <Input
-            className={styles.input}
+            className={
+              classNames(
+                styles.input,
+                {
+                  'cp-error': !!serviceError
+                }
+              )
+            }
             value={service}
             onChange={this.onChangeServiceName}
           />
@@ -267,7 +274,13 @@ class HostedAppConfigurationDialog extends React.Component {
         {
           serviceError && (
             <div
-              className={classNames(styles.row, styles.error)}
+              className={
+                classNames(
+                  styles.row,
+                  styles.error,
+                  'cp-error'
+                )
+              }
             >
               {serviceError}
             </div>
@@ -295,7 +308,8 @@ class HostedAppConfigurationDialog extends React.Component {
                     styles.input,
                     styles.port,
                     {
-                      [styles.error]: portsErrors && portsErrors[index] && portsErrors[index].port
+                      [styles.error]: portsErrors && portsErrors[index] && portsErrors[index].port,
+                      'cp-error': portsErrors && portsErrors[index] && portsErrors[index].port
                     }
                   )
                 }
@@ -322,7 +336,10 @@ class HostedAppConfigurationDialog extends React.Component {
                     {
                       [styles.error]: portsErrors &&
                       portsErrors[index] &&
-                      portsErrors[index].targetPort
+                      portsErrors[index].targetPort,
+                      'cp-error': portsErrors &&
+                        portsErrors[index] &&
+                        portsErrors[index].targetPort
                     }
                   )
                 }
@@ -342,7 +359,7 @@ class HostedAppConfigurationDialog extends React.Component {
           ), portsErrors && portsErrors[index] && (
             <div
               key={`ports-${index}-error`}
-              className={classNames(styles.row, styles.error)}
+              className={classNames(styles.row, styles.error, 'cp-error')}
             >
               {
                 portsErrors[index]
@@ -382,7 +399,7 @@ class HostedAppConfigurationDialog extends React.Component {
         {
           portsGlobalError && (
             <div
-              className={classNames(styles.row, styles.error)}
+              className={classNames(styles.row, styles.error, 'cp-error')}
             >
               {portsGlobalError}
             </div>
@@ -491,7 +508,7 @@ class HostedAppConfiguration extends React.Component {
     return (
       <div>
         <a
-          className={styles.link}
+          className={classNames(styles.link, 'cp-text')}
           onClick={this.openConfigurationDialog}
         >
           {this.renderTitle()}

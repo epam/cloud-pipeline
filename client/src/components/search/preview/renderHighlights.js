@@ -15,6 +15,8 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
+
 import styles from './preview.css';
 
 export default function renderHighlights (item) {
@@ -49,9 +51,8 @@ export default function renderHighlights (item) {
       <div className={styles.highlights}>
         <table>
           <tbody>
-          {
-            highlights.map((h, index) => {
-              return (
+            {
+              highlights.map((h, index) => (
                 <tr key={index}>
                   <td style={{verticalAlign: 'top', paddingRight: 5, paddingTop: 2, whiteSpace: 'nowrap'}}>
                     Found in {h.fieldName}:
@@ -62,32 +63,30 @@ export default function renderHighlights (item) {
                         const parts = processHighlight(`...${hh}...`);
                         return (
                           <div key={`highlight-${index}-${hIndex}`} style={{margin: 2}}>
-                                <span className={styles.highlight}>
-                                  {
-                                    parts.map((p, pIndex) => {
-                                      return (
-                                        <span
-                                          key={`highlight-${index}-${hIndex}-${pIndex}`}
-                                          style={p.highlight ? {
-                                            backgroundColor: 'rgb(249, 255, 0)',
-                                            color: 'black',
-                                            padding: '0px 2px'
-                                          } : {}}>
-                                          {p.text}
-                                        </span>
-                                      );
-                                    })
-                                  }
-                                </span>
+                            <span className={classNames(styles.highlight, 'cp-search-highlight')}>
+                              {
+                                parts.map((p, pIndex) => (
+                                  <span
+                                    key={`highlight-${index}-${hIndex}-${pIndex}`}
+                                    className={classNames({
+                                      [styles.highlightText]: p.highlight,
+                                      'cp-search-highlight-text': p.highlight
+                                    })}
+                                  >
+                                    {p.text}
+                                  </span>
+                                ))
+                              }
+                            </span>
                           </div>
                         );
                       })
                     }
                   </td>
                 </tr>
-              );
-            })
-          }
+              )
+              )
+            }
           </tbody>
         </table>
       </div>
@@ -95,4 +94,3 @@ export default function renderHighlights (item) {
   }
   return null;
 };
-

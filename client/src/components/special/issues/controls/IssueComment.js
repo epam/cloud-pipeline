@@ -16,21 +16,23 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
 import {Mention, Row, Tabs, Icon} from 'antd';
+import classNames from 'classnames';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';
 import FileDropContainer from './FileDropContainer';
 import UserFind from '../../../../models/user/UserFind';
 import IssueAttachmentUpload from '../../../../models/issues/IssueAttachmentUpload';
 import IssueAttachmentLoad from '../../../../models/issues/IssueAttachmentLoad';
+import {
+  injectCloudPipelineLinksHelpers,
+  getCloudPipelineLinks,
+  fetchCloudPipelineLinks
+} from '../../markdown';
 import styles from './IssueComment.css';
 
-@inject('issuesRenderer')
-@observer
+@injectCloudPipelineLinksHelpers
 export default class IssueComment extends React.Component {
-
   static propTypes = {
     height: PropTypes.number,
     value: PropTypes.shape({
@@ -58,7 +60,6 @@ export default class IssueComment extends React.Component {
   };
   lastFetchId = 0;
 
-  @observable _links = [];
   mentionControl;
 
   initializeMentionControl = (control) => {
@@ -89,36 +90,50 @@ export default class IssueComment extends React.Component {
   };
 
   linkFindPromise = async (search, fetchId) => {
-    return new Promise((resolve) => {
-      const result = (this._links || []).filter(link => {
-        return search && search.length > 0 &&
-          (link.displayName || '').toLowerCase().indexOf((search || '').toLowerCase()) >= 0;
-      });
-      const renderIcon = (type) => {
-        switch (type) {
-          case ItemTypes.pipeline: return <Icon type="fork" />;
-          case ItemTypes.configuration: return <Icon type="setting" />;
-          case ItemTypes.storage: return <Icon type="hdd" />;
-          case 'tool': return <Icon type="tool" />;
-        }
-        return undefined;
-      };
-      const suggestions = result.map(link => {
-        return (
-          <Mention.Nav
-            value={`[${link.type}:${link.id}:${link.displayName}]`}
-            data={link}>
-            <Row align="middle">
-              {renderIcon(link.type)} {link.displayName}
-            </Row>
-          </Mention.Nav>
-        );
-      });
-      this.setState({
-        pending: false,
-        suggestions
-      });
-      resolve();
+    this.setState({
+      pending: true,
+      suggestions: []
+    }, () => {
+      fetchCloudPipelineLinks(this.props)
+        .then(() => {
+          const _links = getCloudPipelineLinks(this.props);
+          const result = (_links || []).filter(link => {
+            return search && search.length > 0 &&
+              (link.displayName || '').toLowerCase().indexOf((search || '').toLowerCase()) >= 0;
+          });
+          const renderIcon = (type) => {
+            switch (type) {
+              case ItemTypes.pipeline: return <Icon type="fork" />;
+              case ItemTypes.versionedStorage: return (
+                <Icon
+                  type="inbox"
+                  className="cp-versioned-storage"
+                />
+              );
+              case ItemTypes.configuration: return <Icon type="setting" />;
+              case ItemTypes.storage: return <Icon type="hdd" />;
+              case 'tool': return <Icon type="tool" />;
+            }
+            return undefined;
+          };
+          const suggestions = result.map(link => {
+            return (
+              <Mention.Nav
+                value={`[${link.type}:${link.id}:${link.displayName}]`}
+                data={link}>
+                <Row align="middle">
+                  {renderIcon(link.type)} {link.displayName}
+                </Row>
+              </Mention.Nav>
+            );
+          });
+          return Promise.resolve(suggestions);
+        })
+        .catch(() => Promise.resolve([]))
+        .then((suggestions = []) => this.setState({
+          pending: false,
+          suggestions
+        }));
     });
   };
 
@@ -150,7 +165,8 @@ export default class IssueComment extends React.Component {
     this.setState({
       rawText: Mention.toString(contentState)
     }, () => {
-      this.props.onChange && this.props.onChange({text: this.state.rawText, attachments: this.state.attachments});
+      this.props.onChange &&
+      this.props.onChange({text: this.state.rawText, attachments: this.state.attachments});
     });
   };
 
@@ -226,16 +242,18 @@ export default class IssueComment extends React.Component {
                   ref={this.initializeMentionControl}
                   placeholder={this.props.placeholder || 'Description'}
                   disabled={this.props.disabled}
-                  defaultValue={Mention.toContentState(this.props.value ? (this.props.value.text || '') : '')}
+                  defaultValue={
+                    Mention.toContentState(this.props.value ? (this.props.value.text || '') : '')
+                  }
                   loading={this.state.pending}
-                  className={styles.issueDescription}
+                  className={classNames(styles.issueDescription, 'cp-mention')}
                   style={{height: this.props.height || 300}}
                   suggestions={this.state.suggestions}
                   onSearchChange={this.onSearchChange}
                   onSelect={this.onSelect}
                   onChange={this.onChange}
                   notFoundContent={notFoundContent}
-                  multiLines={true}
+                  multiLines
                   prefix={['@', '#']}
                 />
               }
@@ -272,15 +290,16 @@ export default class IssueComment extends React.Component {
     this.setState({
       rawText: this.props.value ? (this.props.value.text || '') : '',
       clear: true
-    }, async () => {
-      await this.props.issuesRenderer.fetch();
-      this._links = this.props.issuesRenderer.getLinks();
     });
   }
 
   componentDidUpdate (prevProps, prevState) {
     if (prevState.clear !== this.state.clear && this.state.clear) {
-      this.setState({clear: false});
+      this.resetClear();
     }
   }
+
+  resetClear = () => {
+    this.setState({clear: false});
+  };
 }

@@ -294,6 +294,7 @@ class AddDockerRegistryControl extends React.Component {
           value={version}
           onChange={this.onChangeDockerVersion}
           style={{width: 200, marginLeft: 5}}
+          getPopupContainer={node => node.parentNode}
         >
           {
             versions.map((v) => (
@@ -399,18 +400,11 @@ class AddDockerRegistryControl extends React.Component {
         style={style}
       >
         <div
-          className={
-            classNames(
-              styles.container,
-              {
-                [styles.duplicate]: duplicate
-              }
-            )
-          }
+          className={classNames(styles.container)}
           style={containerStyle}
         >
           <Select
-            className={styles.select}
+            className={classNames({'cp-error': duplicate})}
             showSearch
             disabled={pending || disabled}
             value={docker}
@@ -420,6 +414,7 @@ class AddDockerRegistryControl extends React.Component {
             filterOption={(input, option) =>
               option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
+            getPopupContainer={node => node.parentNode}
           >
             {
               this.tools.map(group => (
@@ -470,6 +465,6 @@ AddDockerRegistryControl.propTypes = {
 
 AddDockerRegistryControl.defaultProps = {
   showDelete: true
-}
+};
 
 export default AddDockerRegistryControl;

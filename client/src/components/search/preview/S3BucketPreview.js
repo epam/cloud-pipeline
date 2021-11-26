@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -44,7 +45,7 @@ export default class S3BucketPreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string,
+      description: PropTypes.string
     })
   };
 
@@ -58,24 +59,11 @@ export default class S3BucketPreview extends React.Component {
     if (this.props.items.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.items.error}</span>
+          <span className={'cp-search-preview-error'}>{this.props.items.error}</span>
         </div>
       );
     }
     const items = (this.props.items.value.results || []).map(i => i);
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      borderRight: '1px solid #555'
-    };
-    const cellStyle = {
-      paddingRight: padding,
-      paddingLeft: padding,
-      borderRight: '1px solid #555'
-    };
-    const lastCellStyle = {
-      paddingLeft: padding
-    };
     return (
       <div className={styles.contentPreview}>
         <table>
@@ -84,7 +72,7 @@ export default class S3BucketPreview extends React.Component {
               items.map((item, index) => {
                 return (
                   <tr key={index}>
-                    <td style={firstCellStyle}>
+                    <td className={styles.firstCell}>
                       {
                         item.type.toLowerCase() === 'folder'
                           ? <Icon type="folder" />
@@ -92,8 +80,10 @@ export default class S3BucketPreview extends React.Component {
                       }
                       <span style={{paddingLeft: 5}}>{item.name}</span>
                     </td>
-                    <td style={cellStyle}>{displaySize(item.size)}</td>
-                    <td style={lastCellStyle}>{displayDate(item.changed)}</td>
+                    <td className={styles.intermediaCell}>
+                      {displaySize(item.size)}
+                    </td>
+                    <td className={styles.lastCell}>{displayDate(item.changed)}</td>
                   </tr>
                 );
               })
@@ -116,15 +106,21 @@ export default class S3BucketPreview extends React.Component {
     const description = loadedDescription || propsDescription;
     const items = this.renderItems();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-search-container'
+          )
+        }
+      >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
-            <span>{this.props.item.name}</span>
+            <span style={{padding: '0px 5px'}}>{this.props.item.name}</span>
             {
               this.props.dataStorageInfo && this.props.dataStorageInfo.loaded &&
               <AWSRegionTag
-                darkMode
                 regionId={this.props.dataStorageInfo.value.regionId}
                 displayName />
             }
@@ -134,10 +130,9 @@ export default class S3BucketPreview extends React.Component {
               this.props.dataStorageInfo.value.sensitive &&
               (
                 <span
+                  className="cp-sensitive-tag"
                   style={{
-                    backgroundColor: '#ff5c33',
                     fontWeight: 'bold',
-                    color: '#222',
                     padding: '2px 5px',
                     borderRadius: 5,
                     lineHeight: 1,
@@ -151,12 +146,12 @@ export default class S3BucketPreview extends React.Component {
           </Row>
           {
             description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {items && renderSeparator()}

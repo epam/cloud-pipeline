@@ -25,7 +25,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 5px 5px;
+  padding: 0 5px 5px 0;
   margin-bottom: 5px;
 }
 
@@ -39,22 +39,4 @@
 
 .table > div > div {
   filter: none !important;
-}
-
-.dictionaryRow {
-  cursor: pointer;
-}
-
-.dictionaryRow td {
-  padding: 6px !important;
-}
-
-.dictionaryRow.selected {
-  background-color: #ebf6fd;
-  font-weight: bold;
-}
-
-.dictionaryRow.disabled {
-  color: #999;
-  cursor: default;
 }

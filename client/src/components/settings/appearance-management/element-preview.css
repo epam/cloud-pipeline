@@ -1,0 +1,196 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  min-width: 200px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-around;
+}
+
+.container .horizontal-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
+}
+
+.alert {
+  width: 100%;
+  margin: 5px 0;
+}
+
+.button {
+  width: 100px;
+  margin: 5px 0;
+}
+
+.panel {
+  min-width: 200px;
+  padding: 10px 10px 10px 3%;
+}
+
+.input,
+.input-wrapper {
+  width: 100%;
+  margin: 5px 0;
+}
+
+.input-wrapper input {
+  width: 100%;
+}
+
+.navigation-panel-preview {
+  flex: 0 0 64px;
+  max-width: 64px;
+  min-width: 64px;
+  width: 64px;
+}
+
+.navigation-panel-preview + .navigation-panel-preview {
+  margin-left: 5px;
+}
+
+.main-layout {
+  min-width: 300px;
+  min-height: 200px;
+}
+
+.preview-container {
+  min-width: 180px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-panel {
+  margin: 10px;
+}
+
+.main-panel .element-name {
+  margin: 10px;
+}
+
+.main-content {
+  margin-top: 40px;
+}
+
+.text-preview {
+  display: inline-block;
+}
+
+.text-preview span:not(:last-child)::after {
+  content: ', ';
+}
+
+.card {
+  margin: 10px;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.card-content .content {
+  flex: 1;
+}
+
+.card-actions {
+  min-width: 100px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.card-actions .card-actions-background {
+  top: -10px;
+  left: 15px;
+  right: -10px;
+  bottom: -10px;
+  filter: blur(7px);
+  position: absolute;
+}
+
+.card-actions .card-actions-buttons {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding-right: 10px;
+}
+
+.job {
+  margin: 5px auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.job > span {
+  margin-left: 5px;
+}
+
+.divider {
+  margin: 5px 0;
+}
+
+.tags {
+  font-size: smaller;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.tags .tag {
+  margin: 2px 5px 0 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+
+.icons-container {
+  min-width: 100px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.key-value {
+  display: inline-flex;
+  flex-direction: column;
+  margin: 0 5px 5px 0;
+}
+
+.key-value > * {
+  padding: 2px 4px;
+}
