@@ -74,11 +74,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   white-space: normal;
 }
 
-.tree-item-name-draft {
-  cursor: pointer;
-  color: #999;
-}
-
 .tree-item-type {
   width: 20px;
   cursor: pointer;
@@ -89,12 +84,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   cursor: pointer;
 }
 
-.tree-item-type-draft {
-  width: 20px;
-  cursor: pointer;
-  color: #999;
-}
-
 .tree-item-actions {
   cursor: pointer;
   min-width: min-content;
@@ -103,11 +92,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 .folder-tree-item-actions {
   cursor: pointer;
   width: 200px;
-}
-
-.tree-item-actions-draft {
-  cursor: pointer;
-  color: #999;
 }
 
 .tree-item-actions > div > button,
@@ -166,20 +150,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 
 .version-row {
   cursor: pointer;
-}
-
-.version-row-selected {
-  background-color: #ecf6fd;
-}
-
-.version-row-draft {
-  cursor: pointer;
-  color: #999;
-}
-
-.version-row-draft-selected {
-  color: #999;
-  background-color: #ecf6fd;
 }
 
 .git-repository-popover {
@@ -499,18 +469,16 @@ tr.table-row-selected {
 }
 
 .configuration-confirm-title {
-  color: rgba(0, 0, 0, .65);
   font-weight: bold;
   font-size: 14px;
 }
 
-.configuration-confirm-title  > i {
+.configuration-confirm-title > i {
   font-size: 24px;
   font-weight: normal;
   margin-right: 16px;
   padding: 0 1px;
   float: left;
-  color: #ffbf00;
 }
 
 .storage-region {

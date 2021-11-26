@@ -255,9 +255,18 @@ export default class Navigation extends React.Component {
       .filter(item => this.getNavigationItemVisible(item))
       .map((navigationItem, index) => {
         if (navigationItem.isDivider) {
-          return <div
-            key={`divider_${index}`}
-            style={{height: 1, width: '100%', backgroundColor: '#fff', opacity: 0.5}} />;
+          return (
+            <div
+              className={
+                classNames(
+                  'cp-divider',
+                  'horizontal',
+                  'cp-navigation-divider'
+                )
+              }
+              key={`divider_${index}`}
+            />
+          );
         }
         if (navigationItem.key === 'billing' && !this.props.billingEnabled) {
           return null;

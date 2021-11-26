@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import {computed} from 'mobx';
 import LoadingView from '../../special/LoadingView';
@@ -160,13 +161,19 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     }
   ];
 
-  renderTreeItemText = (text, item) => {
-    const style = {};
-    if (item.draft) {
-      style.color = '#999';
-    }
-    return <span style={style}>{text}</span>;
-  };
+  renderTreeItemText = (text, item) => (
+    <span
+      className={
+        classNames(
+          {
+            'cp-text-not-important': item.draft
+          }
+        )
+      }
+    >
+      {text}
+    </span>
+  );
 
   listingColumns = [
     {
@@ -230,23 +237,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   renderTreeItemType = (item) => {
-    const style = {};
-    if (item.draft) {
-      style.color = '#999';
-    }
+    const className = classNames({
+      'cp-text-not-important': item.draft
+    });
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" style={style} />;
-      case ItemTypes.folder: return <Icon type="folder" style={style} />;
-      case ItemTypes.version: return <Icon type="tag" style={style} />;
+      case ItemTypes.pipeline: return <Icon type="fork" className={className} />;
+      case ItemTypes.folder: return <Icon type="folder" className={className} />;
+      case ItemTypes.version: return <Icon type="tag" className={className} />;
       default: return <div />;
-    }
-  };
-
-  rowClassName = (baseClassName, item) => {
-    if (item.draft) {
-      return `${baseClassName}-draft`;
-    } else {
-      return baseClassName;
     }
   };
 

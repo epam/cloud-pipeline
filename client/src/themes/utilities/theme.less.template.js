@@ -350,13 +350,15 @@ export default `
 }
 @THEME .cp-error .ant-input,
 @THEME .ant-input.cp-error,
-@THEME .ant-select.cp-error .ant-select-selection {
+@THEME .ant-select.cp-error .ant-select-selection,
+@THEME .ant-input-number.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
 }
 @THEME .cp-error .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:hover:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error:hover:not(.ant-input-disabled),
 @THEME .ant-select.cp-error:not(.ant-select-disabled) .ant-select-selection:hover {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
@@ -365,6 +367,9 @@ export default `
 @THEME .cp-error .ant-input:active:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:focus:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:active:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error:focus:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error:active:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error.ant-input-number-focused:not(.ant-input-number-disabled),
 @THEME .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:focus,
 @THEME .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:active {
   border-color: @color-red;
@@ -678,6 +683,9 @@ export default `
 }
 @THEME .ant-radio-button-wrapper:first-child {
   border-left-color: @input-border;
+}
+@THEME .ant-radio-button-wrapper:not(:first-child)::before {
+  background-color: @input-border;
 }
 @THEME .ant-radio-button-wrapper-focused,
 @THEME .ant-radio-button-wrapper:hover {
@@ -1488,6 +1496,13 @@ export default `
   font-size: larger;
   text-decoration: none;
 }
+@THEME .cp-navigation-panel .cp-divider.cp-navigation-divider {
+  background-color: @navigation-item-color;
+  opacity: 0.5;
+  margin: 0 4px;
+  width: calc(100% - 8px);
+  border: none;
+}
 @THEME .cp-navigation-panel .cp-navigation-menu-item.selected {
   background-color: @navigation-panel-highlighted-color;
 }
@@ -1792,6 +1807,14 @@ export default `
 }
 @THEME .cp-stop-run-modal-confirm-icon {
   color: @color-yellow;
+}
+@THEME .cp-maintenance-rule-deleted {
+  background-color: fade(@color-red, 10%);
+}
+@THEME .ant-input.cp-system-parameter-name-input {
+  color: @application-color-accent;
+  border: none;
+  background-color: transparent;
 }
 
 @THEME .cp-billing-menu {
