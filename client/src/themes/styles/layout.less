@@ -317,7 +317,8 @@ h5 {
 
 .cp-error .ant-input,
 .ant-input.cp-error,
-.ant-select.cp-error .ant-select-selection {
+.ant-select.cp-error .ant-select-selection,
+.ant-input-number.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
@@ -325,6 +326,7 @@ h5 {
 
 .cp-error .ant-input:hover:not(.ant-input-disabled),
 .ant-input.cp-error:hover:not(.ant-input-disabled),
+.ant-input-number.cp-error:hover:not(.ant-input-disabled),
 .ant-select.cp-error:not(.ant-select-disabled) .ant-select-selection:hover {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
@@ -334,6 +336,9 @@ h5 {
 .cp-error .ant-input:active:not(.ant-input-disabled),
 .ant-input.cp-error:focus:not(.ant-input-disabled),
 .ant-input.cp-error:active:not(.ant-input-disabled),
+.ant-input-number.cp-error:focus:not(.ant-input-disabled),
+.ant-input-number.cp-error:active:not(.ant-input-disabled),
+.ant-input-number.cp-error.ant-input-number-focused:not(.ant-input-number-disabled),
 .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:focus,
 .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:active {
   border-color: @color-red;
@@ -712,6 +717,10 @@ h5 {
 
 .ant-radio-button-wrapper:first-child {
   border-left-color: @input-border;
+}
+
+.ant-radio-button-wrapper:not(:first-child)::before {
+  background-color: @input-border;
 }
 
 .ant-radio-button-wrapper-focused,

@@ -58,7 +58,7 @@ export default class RunScheduleDialog extends React.Component {
     disabled: PropTypes.bool,
     onSubmit: PropTypes.func,
     onClose: PropTypes.func,
-    title: PropTypes.node,
+    title: PropTypes.node
   };
 
   static defaultProps = {
@@ -304,7 +304,7 @@ export default class RunScheduleDialog extends React.Component {
         <Select
           disabled={removed}
           mode="multiple"
-          className={classNames({[styles.selectHasError]: !!validationError})}
+          className={classNames({'cp-error': !!validationError})}
           onDeselect={onDayOfWeekDeselect}
           onSelect={onDayOfWeekSelect}
           value={schedule.dayOfWeek || '1'}
@@ -370,7 +370,15 @@ export default class RunScheduleDialog extends React.Component {
 
     if (validationError && validationError.message) {
       return (
-        <Row className={styles.errorRow} justify="center">
+        <Row
+          className={
+            classNames(
+              styles.errorRow,
+              'cp-error'
+            )
+          }
+          justify="center"
+        >
           {validationError.message}
         </Row>
       );
@@ -387,11 +395,15 @@ export default class RunScheduleDialog extends React.Component {
         key={i}
         type="flex"
         justify="space-between"
-        className={classNames(
-          styles.ruleRow, {
-            [styles.ruleRowRemoved]: rule.removed
-          }
-        )}
+        className={
+          classNames(
+            styles.ruleRow,
+            {
+              'cp-even-odd-element': !rule.removed,
+              'cp-maintenance-rule-deleted': rule.removed
+            }
+          )
+        }
       >
         <Row type="flex" className={classNames({
           [styles.scheduling]: sameTimezone,
