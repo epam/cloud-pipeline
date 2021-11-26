@@ -181,6 +181,20 @@ export default class Tool extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get defaultVersionAllowCommit () {
+    let allowCommit;
+    if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
+      if ((this.defaultVersionSettings.value || []).length > 0) {
+        allowCommit = this.defaultVersionSettings.value[0].allowCommit;
+      }
+    }
+    if (allowCommit === undefined) {
+      return true;
+    }
+    return allowCommit;
+  }
+
+  @computed
   get registries () {
     if (this.props.docker.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.docker.value)
@@ -224,7 +238,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     await this.props.versions.fetch();
   };
 
-  updateTool = async (values, configuration) => {
+  updateTool = async (values, configuration, allowCommit) => {
     const hide = message.loading('Updating settings...', 0);
     const request = new ToolUpdate();
     const tool = {
@@ -238,7 +252,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     await request.send(tool);
     let updateToolVersionParametersRequest;
     if (this.defaultTag && configuration) {
-      updateToolVersionParametersRequest = new UpdateToolVersionSettings(this.props.tool.value.id, this.defaultTag);
+      updateToolVersionParametersRequest = new UpdateToolVersionSettings(
+        this.props.tool.value.id,
+        this.defaultTag,
+        allowCommit
+      );
       await updateToolVersionParametersRequest.send([{
         configuration,
         name: 'default',
@@ -1100,6 +1118,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           onInitialized={this.onToolSettingsFormInitialized}
           readOnly={!roleModel.writeAllowed(this.props.tool.value) || this.link}
           configuration={this.defaultVersionSettingsConfiguration}
+          allowCommitVersion={this.defaultVersionAllowCommit}
           tool={this.props.tool.value}
           toolId={this.props.toolId}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}

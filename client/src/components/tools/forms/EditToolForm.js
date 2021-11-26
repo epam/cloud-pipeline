@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,8 @@ export default class EditToolForm extends React.Component {
     onSubmit: PropTypes.func,
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
-    executionEnvironmentDisabled: PropTypes.bool
+    executionEnvironmentDisabled: PropTypes.bool,
+    allowCommitVersion: PropTypes.bool
   };
 
   static defaultProps = {
@@ -324,13 +325,17 @@ export default class EditToolForm extends React.Component {
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
-            await this.props.onSubmit({
-              endpoints: this.endpointControl ? values.endpoints : [],
-              labels: this.state.labels,
-              cpu: '1000mi',
-              ram: '1Gi',
-              allowSensitive: values.allowSensitive
-            }, configuration);
+            await this.props.onSubmit(
+              {
+                endpoints: this.endpointControl ? values.endpoints : [],
+                labels: this.state.labels,
+                cpu: '1000mi',
+                ram: '1Gi',
+                allowSensitive: values.allowSensitive
+              },
+              configuration,
+              values.allowCommit
+            );
           }
           this.setState({pending: false});
         });
@@ -346,6 +351,7 @@ export default class EditToolForm extends React.Component {
       case 'instance_size': return this.getInstanceTypeInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
+      case 'allowCommit': return this.getAllowCommitInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -393,6 +399,8 @@ export default class EditToolForm extends React.Component {
       ? `${this.props.configuration.cloudRegionId}`
       : regionNotConfiguredValue;
   };
+
+  getAllowCommitInitialValue = () => this.props.allowCommitVersion;
 
   getAllowSensitiveInitialValue = () => {
     if (this.props.mode === 'version') {
@@ -763,6 +771,7 @@ export default class EditToolForm extends React.Component {
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
       configurationFormFieldChanged('allowSensitive') ||
+      configurationFormFieldChanged('allowCommit') ||
       commandChanged() ||
       !compareArrays(toolEndpointArray, toolEndpointArrayFormValue) ||
       !compareArrays(toolLabelsArray, this.state.labels) ||
@@ -1187,6 +1196,20 @@ export default class EditToolForm extends React.Component {
                     </Form.Item>
                   </Row>
                 </div>
+              </Form.Item>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Allow commit of the tool"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                {getFieldDecorator('allowCommit', {
+                  initialValue: this.getAllowCommitInitialValue(),
+                  valuePropName: 'checked'
+                })(
+                  <Checkbox
+                    disabled={this.state.pending || this.props.readOnly}
+                  />
+                )}
               </Form.Item>
               <Form.Item {...this.formItemLayout} label="Allow sensitive storages" style={{marginTop: 10, marginBottom: 10}}>
                 {getFieldDecorator('allowSensitive',
