@@ -251,11 +251,6 @@ public class BillingHelper {
         return aggregateCostSortBucket().from(from).size(size);
     }
 
-    public SumBucketPipelineAggregationBuilder aggregateRunCountSumBucket() {
-        return PipelineAggregatorBuilders.sumBucket(BillingUtils.RUN_COUNT_AGG,
-                bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.RUN_COUNT_AGG));
-    }
-
     public SumBucketPipelineAggregationBuilder aggregateRunUsageSumBucket() {
         return PipelineAggregatorBuilders.sumBucket(BillingUtils.RUN_USAGE_AGG,
                 bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.RUN_USAGE_AGG));
@@ -306,7 +301,7 @@ public class BillingHelper {
     }
 
     public Optional<Long> getLongValue(final Aggregations aggregations, final String aggregation) {
-        return getAggregation(aggregations, aggregation, NumericMetricsAggregation.SingleValue.class)
+        return getSingleValue(aggregations, aggregation)
                 .map(NumericMetricsAggregation.SingleValue::value)
                 .filter(it -> !it.isInfinite())
                 .map(Double::longValue);
@@ -321,19 +316,19 @@ public class BillingHelper {
     }
 
     private Optional<Long> getFilteredCostSum(final Aggregations aggregations, final String aggregation) {
-        return getAggregation(aggregations, aggregation, ParsedFilter.class)
+        return getFilter(aggregations, aggregation)
                 .map(ParsedFilter::getAggregations)
                 .flatMap(this::getCostSum);
     }
 
     public Optional<Long> getRunCount(final Aggregations aggregations) {
-        return getAggregation(aggregations, BillingUtils.RUN_COUNT_AGG, NumericMetricsAggregation.SingleValue.class)
+        return getSingleValue(aggregations, BillingUtils.RUN_COUNT_AGG)
                 .map(NumericMetricsAggregation.SingleValue::value)
                 .map(Double::longValue);
     }
 
     public Map<String, Object> getLastByDateDocFields(final Aggregations aggregations) {
-        return getAggregation(aggregations, BillingUtils.LAST_BY_DATE_DOC_AGG, TopHits.class)
+        return getTopHits(aggregations, BillingUtils.LAST_BY_DATE_DOC_AGG)
                 .map(TopHits::getHits)
                 .map(SearchHits::getHits)
                 .map(Arrays::asList)
@@ -360,11 +355,24 @@ public class BillingHelper {
                 .orElseGet(Stream::empty);
     }
 
+    public Optional<ParsedFilter> getFilter(final Aggregations aggregations, final String aggregation) {
+        return getAggregation(aggregations, aggregation, ParsedFilter.class);
+    }
+
+    public Optional<NumericMetricsAggregation.SingleValue> getSingleValue(final Aggregations aggregations,
+                                                                           final String aggregation) {
+        return getAggregation(aggregations, aggregation, NumericMetricsAggregation.SingleValue.class);
+    }
+
+    public Optional<TopHits> getTopHits(final Aggregations aggregations, final String aggregation) {
+        return getAggregation(aggregations, aggregation, TopHits.class);
+    }
+
     public Optional<Terms> getTerms(final Aggregations aggregations, final String aggregation) {
         return getAggregation(aggregations, aggregation, Terms.class);
     }
 
-    private Optional<Histogram> getHistogram(final Aggregations aggregations, final String aggregation) {
+    public Optional<Histogram> getHistogram(final Aggregations aggregations, final String aggregation) {
         return getAggregation(aggregations, aggregation, Histogram.class);
     }
 

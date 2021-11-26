@@ -91,7 +91,7 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
                         .aggregation(billingHelper.aggregateBy(BillingUtils.INSTANCE_TYPE_FIELD)
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(aggregateBillingsByMonth(discount))
-                                .subAggregation(billingHelper.aggregateRunCountSumBucket())
+                                .subAggregation(billingHelper.aggregateUniqueRunsCount())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));

@@ -92,7 +92,7 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
                         .aggregation(billingHelper.aggregateBy(BillingUtils.PIPELINE_ID_FIELD)
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(aggregateBillingsByMonth(discount))
-                                .subAggregation(billingHelper.aggregateRunCountSumBucket())
+                                .subAggregation(billingHelper.aggregateUniqueRunsCount())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
