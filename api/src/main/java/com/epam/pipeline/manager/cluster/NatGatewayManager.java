@@ -76,6 +76,9 @@ public class NatGatewayManager {
     private static final String UNKNOWN = "UNKNOWN";
     private static final String NEW_LINE = "\n";
     private static final String PORT_FORWARDING_RULE_ATTRIBUTE_DESCRIPTOR = ":";
+    private static final String EXTERNAL_NAME = "externalName";
+    private static final String PORT = "port";
+    private static final String EXTERNAL_IP = "externalIp";
 
     private final NatGatewayDao natGatewayDao;
     private final KubernetesManager kubernetesManager;
@@ -498,13 +501,23 @@ public class NatGatewayManager {
             .filter(CollectionUtils::isNotEmpty)
             .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                 MessageConstants.NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE)));
-        ruleDescriptions.stream()
-            .map(NatRoutingRuleDescription::getDescription)
-            .filter(Objects::nonNull)
-            .forEach(description -> Assert.isTrue(
+        ruleDescriptions.forEach(this::validateRuleFields);
+        return ruleDescriptions;
+    }
+
+    private void validateRuleFields(final NatRoutingRuleDescription rule) {
+        validateMandatoryRuleField(EXTERNAL_NAME, rule.getExternalName());
+        validateMandatoryRuleField(PORT, Optional.ofNullable(rule.getPort()).map(Object::toString).orElse(null));
+        validateMandatoryRuleField(EXTERNAL_IP, rule.getExternalIp());
+        Optional.ofNullable(rule.getDescription())
+            .ifPresent(description -> Assert.isTrue(
                 kubernetesManager.isValidAnnotation(description),
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_DESCRIPTION, description)));
-        return ruleDescriptions;
+    }
+
+    private void validateMandatoryRuleField(final String fieldName, final String value) {
+        Assert.isTrue(kubernetesManager.isValidAnnotation(value),
+                      messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_MANDATORY_FIELD, fieldName));
     }
 
     private List<NatRoute> extractNatRoutesFromKubeService(final Service kubeService) {
