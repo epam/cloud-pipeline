@@ -36,9 +36,13 @@ issues were included in the latest release:
 - Commit messages should contain the `Issue #<issue number>` or `issue #<issue number>`.
   > **_Note_**: This commit policy should be followed by every project contributor.
   See [Git Hooks](#git-hooks) for details.
-- Jira's issues should be marked by a Jira custom field contains the current Cloud Pipeline version.
+- Jira's issues should be marked by a Jira custom field contains the related Cloud Pipeline version.
   The custom field id `jira.version.custom.field.id` is specified in the `application.properties` file.
   Besides, a Jira issue can be marked a GitHub issue number for duplication exclusion (`jira.github.custom.field.id` in `application.properties`).
+  There is also `release.notes.agent.issue.source.priority` with possible values: NONE, GITHUB, JIRA. 
+  - If NONE is specified duplication filtering will not be performed, both Jira and GitHub specific issue will appear in the report.
+  - If GITHUB is specified, issues will be searched for duplication between two lists of issues and only GitHub issues that have duplicates in Jira issues list will appear in the report.
+  - If JIRA is specified, issues will be searched for duplication between two lists of issues and only Jira issues that have duplicates in GitHub issues list will appear in the report.
 
 ## Release Notes Agent configuration
 
@@ -70,6 +74,9 @@ jira.version.custom.field.id - Jira custom release version field id
 ```
 ```
 jira.github.custom.field.id - Jira custom GitHub issue number field id
+```
+```
+release.notes.agent.issue.source.priority - (NONE, JIRA, GITHUB) Default is NONE. Property that defines which type of issue has a priority to be shown if there is a duplicate.
 ```
 ```
 release.notes.agent.major.version.changed.subscriber.emails - List of subscribers (admins) for notifying major version change
