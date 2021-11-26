@@ -20,7 +20,8 @@ export {
   canStopRun,
   stopRun,
   terminateRun,
-  runIsCommittable
+  runIsCommittable,
+  checkCommitAllowedForTool
 } from './stopRun';
 export {
   submitsRun,
