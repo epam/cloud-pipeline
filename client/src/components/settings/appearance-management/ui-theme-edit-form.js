@@ -28,6 +28,7 @@ import ColorVariable from './color-variable';
 import {ParseConfigurationError} from '../../../themes/utilities/parse-configuration';
 import getBaseThemes from './utilities/get-base-themes';
 import {sections, sectionsConfiguration} from './utilities/variable-sections';
+import {ElementPreview} from './element-preview';
 import styles from './ui-theme-edit-form.css';
 
 const Title = ({className, title, required}) => (
@@ -434,31 +435,39 @@ class UIThemeEditForm extends React.PureComponent {
               expandable={expandedState}
               toggleExpanded={this.expandCollapseSection}
             >
-              {
-                sectionsConfiguration[section]
-                  .map(({key: variable, advanced = false}) => (
-                    <FormItem
-                      key={variable}
-                      title={VariableNames[variable] || variable}
-                      flex
-                      control
-                      titleClassName={styles.extended}
-                      hidden={advanced && !expandedState[section]}
-                      property={variable}
-                      validation={validation}
-                    >
-                      <ColorVariable
-                        disabled={readOnly}
-                        value={themeProperties[variable] || mergedProperties[variable]}
-                        modified={!!themeProperties[variable]}
-                        parsedValues={parsedValues}
-                        parsedValue={parsedValues[variable]}
-                        variables={ColorVariables}
-                        onChange={this.onChangeConfigurationVariable(variable)}
-                      />
-                    </FormItem>
-                  ))
-              }
+              <div style={{display: 'flex', justifyContent: 'space-evenly', alignItems: 'center'}}>
+                <div>
+                  {
+                    sectionsConfiguration[section]
+                      .map(({key: variable, advanced = false}) => (
+                        <FormItem
+                          key={variable}
+                          title={VariableNames[variable] || variable}
+                          flex
+                          control
+                          titleClassName={styles.extended}
+                          hidden={advanced && !expandedState[section]}
+                          property={variable}
+                          validation={validation}
+                        >
+                          <ColorVariable
+                            disabled={readOnly}
+                            value={themeProperties[variable] || mergedProperties[variable]}
+                            modified={!!themeProperties[variable]}
+                            parsedValues={parsedValues}
+                            parsedValue={parsedValues[variable]}
+                            variables={ColorVariables}
+                            onChange={this.onChangeConfigurationVariable(variable)}
+                          />
+                        </FormItem>
+                      ))
+                  }
+                </div>
+                <ElementPreview
+                  section={section}
+                  colors={parsedValues}
+                  config={sectionsConfiguration[section]} />
+              </div>
             </Section>
           ))
         }
