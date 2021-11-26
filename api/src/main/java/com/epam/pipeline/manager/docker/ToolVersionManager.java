@@ -116,9 +116,10 @@ public class ToolVersionManager {
      * @param toolId tool ID
      * @param version tool version (tag)
      * @param settings list of tool version settings
+     * @param allowCommit flag showing if a commit operation is allowed for the given version
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public ToolVersion createToolVersionSettings(final Long toolId, final String version,
+    public ToolVersion createToolVersionSettings(final Long toolId, final String version, final boolean allowCommit,
                                                  final List<ConfigurationEntry> settings) {
         validateToolExistsAndCanBeModified(toolId);
         Optional<ToolVersion> toolVersion = toolVersionDao.loadToolVersion(toolId, version);
@@ -126,6 +127,7 @@ public class ToolVersionManager {
         if (toolVersion.isPresent()) {
             toolVersionWithSettings = toolVersion.get();
             toolVersionWithSettings.setSettings(settings);
+            toolVersionWithSettings.setAllowCommit(allowCommit);
             toolVersionDao.updateToolVersionWithSettings(toolVersionWithSettings);
         } else {
             toolVersionWithSettings = ToolVersion
@@ -133,6 +135,7 @@ public class ToolVersionManager {
                     .toolId(toolId)
                     .version(version)
                     .settings(settings)
+                    .allowCommit(allowCommit)
                     .build();
             toolVersionDao.createToolVersionWithSettings(toolVersionWithSettings);
         }

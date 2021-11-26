@@ -762,6 +762,8 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun updateCommitRunStatus(Long id, CommitStatus commitStatus) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
+        toolManager.validateCommitOperationAllowed(pipelineRun.getActualDockerImage());
+
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
         pipelineRun.setCommitStatus(commitStatus);

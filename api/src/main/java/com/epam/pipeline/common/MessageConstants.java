@@ -128,6 +128,7 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
     public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
     public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
+    public static final String ERROR_COMMIT_OPERATION_IS_FORBIDDEN = "error.run.commit.is.forbidden";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
