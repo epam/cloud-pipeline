@@ -24,6 +24,7 @@ import AppearanceManagement from '../../appearance-management';
 import styles from './appearance.css';
 
 const MANAGEMENT_SECTION = 'management';
+const MANAGEMENT_ENABLED = false;
 
 function AppearanceSettings (
   {
@@ -40,7 +41,7 @@ function AppearanceSettings (
     !!authenticatedUserInfo.value &&
     authenticatedUserInfo.value.admin;
   const manage = () => router && router.push(`/settings/profile/appearance/${MANAGEMENT_SECTION}`);
-  if (management) {
+  if (management && MANAGEMENT_ENABLED) {
     return (
       <AppearanceManagement
         router={router}
@@ -191,7 +192,7 @@ function AppearanceSettings (
           {cloudPipelineAppName} UI Theme Preferences
         </h2>
         {
-          administrator && (
+          administrator && MANAGEMENT_ENABLED && (
             <Button
               className={styles.manage}
               onClick={manage}

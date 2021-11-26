@@ -30,7 +30,10 @@ const _TEMPORARY_LIGHT_THEME_KEY = 'CP-THEMES-SYSTEM-LIGHT';
 const _TEMPORARY_DARK_THEME_KEY = 'CP-THEMES-SYSTEM-DARK';
 const _TEMPORARY_SINGLE_THEME_KEY = 'CP-THEMES-SINGLE';
 
-const DEBUG = true;
+const DEBUG = process.env.DEVELOPMENT;
+if (DEBUG) {
+  console.log('UI Themes mode: DEBUG. You can press "[" and "]" keys to switch between themes');
+}
 
 class CloudPipelineThemes {
   @observable themes = [];

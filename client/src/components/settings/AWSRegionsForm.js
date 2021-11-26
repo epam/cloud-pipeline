@@ -592,6 +592,7 @@ export default class AWSRegionsForm extends React.Component {
             }
           ]}
           style={{flex: 1, minHeight: 0}}
+          className={'cp-transparent-background'}
         >
           <div key="regions">
             {this.renderAwsRegionsTable()}

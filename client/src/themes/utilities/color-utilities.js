@@ -213,7 +213,7 @@ export function fade (color, amount) {
   const fadeColor = buildColor(
     {
       ...parsedColor,
-      a: parsedColor.a * parsedAmount
+      a: parsedAmount
     }
   );
   return fadeColor || 'inherit';

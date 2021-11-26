@@ -380,7 +380,7 @@ export default `
   background-color: @modal-mask-background;
 }
 @THEME .ant-modal-content {
-  background-color: @card-background-color;
+  background-color: fade(@card-background-color, 100%);
   color: @application-color;
 }
 @THEME .ant-confirm-body,
@@ -522,10 +522,16 @@ export default `
   height: 100%;
   display: flex;
   flex-direction: row;
-  background-color: @application-background-color;
+  background-color: transparent;
+}
+@THEME .cp-transparent-background {
+  background-color: transparent !important;
 }
 @THEME .cp-split-panel-panel {
   color: @application-color;
+  background-color: transparent;
+}
+@THEME .cp-split-panel-background .cp-split-panel-panel {
   background-color: @panel-background-color;
 }
 @THEME .cp-split-panel.vertical {
@@ -851,7 +857,7 @@ export default `
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 100%);
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1005,7 +1011,7 @@ export default `
   color: @primary-color;
 }
 @THEME .ant-calendar {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 100%);
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
   border-color: @panel-background-color;
   color: @application-color;
@@ -1150,7 +1156,7 @@ export default `
   border-bottom-color: @card-background-color;
 }
 @THEME .ant-popover-inner {
-  background-color: @card-background-color;
+  background-color: fade(@card-background-color, 100%);
   border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1285,6 +1291,10 @@ export default `
 }
 @THEME .ReactTable.-striped .rt-tr.-odd {
   background-color: @even-element-background;
+}
+@THEME .ReactTable.-highlight .rt-tbody .rt-tr:not(.-padRow):hover {
+  background-color: @element-selected-background-color;
+  color: @element-selected-color;
 }
 @THEME .ant-form-item-label label {
   color: @application-color-accent;
@@ -1834,7 +1844,7 @@ export default `
   background-color: @card-background-color;
 }
 @THEME .cp-billing-calendar-container {
-  background-color: @panel-background-color;
+  background-color: fade(@panel-background-color, 100%);
   box-shadow: 0 0 2px 2px @card-hovered-shadow-color;
   color: @application-color;
 }
@@ -2165,8 +2175,8 @@ export default `
   background-color: @tag-value-background-color;
 }
 @THEME .cp-library-metadata-additional-actions {
-  background-color: inherit;
-  border-color: @input-border;
+  background-color: @card-background-color;
+  border-color: @table-border-color;
 }
 @THEME .cp-metadata-item-row {
   color: @application-color-faded;
@@ -2221,7 +2231,8 @@ export default `
   background-color: @element-selected-background-color;
 }
 @THEME .cp-library-metadata-table {
-  border: 1px solid @input-border;
+  border: 1px solid @table-border-color;
+  background-color: @card-background-color;
 }
 @THEME .cp-library-metadata-table-cell {
   border-right: 1px solid fadeout(@application-color, 90%);
