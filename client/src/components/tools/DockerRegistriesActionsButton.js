@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Menu, Icon, message, Button, Dropdown} from 'antd';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
@@ -77,8 +78,18 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _createRegistry = async (registryData) => {
-    const {path, description, userName, password, certificate, pipelineAuth, externalUrl, securityScanEnabled} = registryData;
-    const hide = message.loading(`Adding registry ${registryName({path, description, externalUrl})}...`, 0);
+    const {
+      path,
+      description,
+      userName,
+      password,
+      certificate,
+      pipelineAuth,
+      externalUrl,
+      securityScanEnabled
+    } = registryData;
+    const name = registryName({path, description, externalUrl});
+    const hide = message.loading(`Adding registry ${name}...`, 0);
     const request = new AddRegistry();
     await request.send({
       path,
@@ -113,7 +124,15 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _editRegistry = async (registryData) => {
-    const {description, userName, password, certificate, pipelineAuth, externalUrl, securityScanEnabled} = registryData;
+    const {
+      description,
+      userName,
+      password,
+      certificate,
+      pipelineAuth,
+      externalUrl,
+      securityScanEnabled
+    } = registryData;
     const hide = message.loading(`Updating registry ${registryName(this.props.registry)}...`, 0);
     const request = new UpdateRegistry();
     await request.send({
@@ -126,8 +145,13 @@ export default class DockerRegistriesActionsButton extends React.Component {
       hide();
       message.error(request.error);
     } else {
-      if ((userName && userName.length) || (password && password.length) || (certificate && certificate.length) ||
-        (pipelineAuth && pipelineAuth.length) || externalUrl !== undefined) {
+      if (
+        (userName && userName.length) ||
+        (password && password.length) ||
+        (certificate && certificate.length) ||
+        (pipelineAuth && pipelineAuth.length) ||
+        externalUrl !== undefined
+      ) {
         const updateCredentials = new UpdateCredentials();
         await updateCredentials.send({
           id: this.props.registry.id,
@@ -321,14 +345,18 @@ export default class DockerRegistriesActionsButton extends React.Component {
     const canEditGroup = roleModel.writeAllowed(this.props.group);
     if (roleModel.writeAllowed(this.props.docker)) {
       registryActions.push(
-        <Menu.Item key="add-registry">
+        <Menu.Item
+          key="add-registry"
+        >
           <Icon type="plus" /> Create
         </Menu.Item>
       );
     }
     if (this.props.registry && roleModel.writeAllowed(this.props.registry)) {
       registryActions.push(
-        <Menu.Item key="edit-registry">
+        <Menu.Item
+          key="edit-registry"
+        >
           <Icon type="edit" /> Edit
         </Menu.Item>
       );
@@ -339,7 +367,9 @@ export default class DockerRegistriesActionsButton extends React.Component {
       this.props.registry.privateGroupAllowed &&
       !this.props.hasPersonalGroup) {
       groupActions.push(
-        <Menu.Item key="add-private-group">
+        <Menu.Item
+          key="add-private-group"
+        >
           <Icon type="plus" /> Create personal
         </Menu.Item>
       );
@@ -348,7 +378,9 @@ export default class DockerRegistriesActionsButton extends React.Component {
       roleModel.isManager.toolGroup(this) &&
       roleModel.writeAllowed(this.props.registry)) {
       groupActions.push(
-        <Menu.Item key="add-group">
+        <Menu.Item
+          key="add-group"
+        >
           <Icon type="plus" /> Create
         </Menu.Item>
       );
@@ -361,13 +393,18 @@ export default class DockerRegistriesActionsButton extends React.Component {
         );
       }
       groupActions.push(
-        <Menu.Item key="edit-group">
+        <Menu.Item
+          key="edit-group"
+        >
           <Icon type="edit" /> Edit
         </Menu.Item>
       );
       if (roleModel.isManager.toolGroup(this)) {
         groupActions.push(
-          <Menu.Item key="delete-group" style={{color: 'red'}}>
+          <Menu.Item
+            key="delete-group"
+            className="cp-danger"
+          >
             <Icon type="delete" /> Delete
           </Menu.Item>
         );
@@ -376,7 +413,9 @@ export default class DockerRegistriesActionsButton extends React.Component {
     const toolActions = [];
     if (canEditGroup) {
       toolActions.push(
-        <Menu.Item key="enable-tool">
+        <Menu.Item
+          key="enable-tool"
+        >
           <Icon type="plus" /> Enable tool
         </Menu.Item>
       );
@@ -384,14 +423,22 @@ export default class DockerRegistriesActionsButton extends React.Component {
     const subMenus = [];
     if (registryActions.length > 0) {
       subMenus.push(
-        <Menu.SubMenu key="registry" title="Registry" className={styles.actionsSubMenu}>
+        <Menu.SubMenu
+          key="registry"
+          title="Registry"
+          className={styles.actionsSubMenu}
+        >
           {registryActions}
         </Menu.SubMenu>
       );
     }
     if (groupActions.length > 0) {
       subMenus.push(
-        <Menu.SubMenu key="group" title="Group" className={styles.actionsSubMenu}>
+        <Menu.SubMenu
+          key="group"
+          title="Group"
+          className={styles.actionsSubMenu}
+        >
           {groupActions}
         </Menu.SubMenu>
       );
@@ -404,14 +451,21 @@ export default class DockerRegistriesActionsButton extends React.Component {
         subMenus.push(<Menu.Divider key="divider" />);
       }
       subMenus.push(
-        <Menu.Item key="configure-registry">
+        <Menu.Item
+          key="configure-registry"
+        >
           <Icon type="question-circle-o" /> How to configure
         </Menu.Item>
       );
     }
     if (subMenus.length > 0) {
       return (
-        <Menu className={styles.actionsMenu} selectedKeys={[]} onClick={this._onMenuSelect}>
+        <Menu
+          className={styles.actionsMenu}
+          selectedKeys={[]}
+          onClick={this._onMenuSelect}
+          getPopupContainer={node => node.parentNode}
+        >
           {subMenus}
         </Menu>
       );
@@ -453,7 +507,11 @@ export default class DockerRegistriesActionsButton extends React.Component {
               onCancel={this._closeCreateToolGroupForm}
               pending={this.state.registryOperationInProgress}/>
             <EnableToolForm
-              imagePrefix={this.props.registry && this.props.group ? `${this.props.registry.path}/${this.props.group.name}/` : null}
+              imagePrefix={
+                this.props.registry && this.props.group
+                  ? `${this.props.registry.path}/${this.props.group.name}/`
+                  : null
+              }
               onCancel={this._closeEnableToolForm}
               onSubmit={this._registryOperationWrapper(this._enableTool)}
               visible={this.state.enableToolFormVisible}

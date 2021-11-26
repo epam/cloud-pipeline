@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {computed, observable} from 'mobx';
 import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
@@ -84,6 +85,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   navigationBlockedListener;
   navigationBlocker;
+  allowedNavigation;
 
   state = {
     configurationsListCollapsed: false,
@@ -405,7 +407,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             overriddenConfiguration: null
           }, () => {
             if (this.selectedConfigurationName !== configuration.name) {
-              this.props.router.push(`/configuration/${this.props.configurationId}/${configuration.name}`);
+              this.allowedNavigation =
+                `/configuration/${this.props.configurationId}/${configuration.name}`;
+              this.props.router.push(this.allowedNavigation);
             }
           });
           return true;
@@ -960,8 +964,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return (
       <Row>
         <Tabs
-          className={styles.tabs}
-          hideAdd={true}
+          className={classNames(styles.tabs, 'cp-tabs-no-content')}
+          hideAdd
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
@@ -1032,7 +1036,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         </Row>
         <Row style={{position: 'relative', display: 'flex', flexDirection: 'column', flex: 1}}>
           {this.renderTabs()}
-          <Row style={{position: 'relative', flex: 1, overflowY: 'auto'}}>
+          <Row
+            className="cp-tabs-content"
+            style={{position: 'relative', flex: 1, overflowY: 'auto'}}
+          >
             <LaunchPipelineForm
               defaultPriceTypeIsLoading={this.props.preferences.pending}
               defaultPriceTypeIsSpot={defaultPriceTypeIsSpot}
@@ -1101,7 +1108,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           this.navigationBlocker = null;
         }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker) {
+      if (this.configurationModified && !this.navigationBlocker &&
+        location.pathname !== this.allowedNavigation) {
         const cancel = () => {
           if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
             this.props.history.replace(locationBefore);

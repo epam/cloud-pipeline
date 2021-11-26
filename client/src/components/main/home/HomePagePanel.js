@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import styles from './HomePage.css';
 import {Row, Icon, Tooltip} from 'antd';
 import {
@@ -52,7 +53,6 @@ const PanelComponent = {
 
 @localization.localizedComponent
 export default class HomePagePanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onInitialize: PropTypes.func,
     panelKey: PropTypes.string,
@@ -134,7 +134,10 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
   render () {
     const Panel = PanelComponent[this.props.panelKey];
     return (
-      <div key={this.props.panelKey} className={styles.panel}>
+      <div
+        key={this.props.panelKey}
+        className={classNames(styles.panel, 'cp-panel')}
+      >
         {this.renderHeader()}
         <div className={styles.panelContent}>
           {

@@ -28,6 +28,7 @@
     "pipeline-builder": "0.3.10-dev.313",
     "prop-types": "^15.5.8",
     "react": "^15.4.2",
+    "react-color": "^2.19.3",
     "react-day-picker": "^5.5.3",
     "react-dom": "^15.4.2",
     "react-grid-layout": "^0.16.6",
@@ -130,6 +131,8 @@
     "lint": "eslint src",
     "lint:fix": "npm run lint -- --fix",
     "stylelint": "stylelint src/**/*.css",
-    "stylelint:fix": "npm run stylelint -- --fix"
+    "stylelint:fix": "npm run stylelint -- --fix",
+    "gui-themes-prepare": "node scripts/gui-themes/build.js",
+    "gui-themes-update": "node scripts/gui-themes/start.js"
   }
 }

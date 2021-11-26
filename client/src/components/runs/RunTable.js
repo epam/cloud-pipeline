@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
@@ -293,7 +294,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       this.setState({statuses});
     };
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer} style={{width: 120}}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container'
+      )} style={{width: 120}}>
         <Row>
           <div style={{maxHeight: 400, overflowY: 'auto'}}>
             {
@@ -350,9 +354,12 @@ export default class RunTable extends localization.LocalizedReactComponent {
     };
 
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container'
+      )}>
         <DayPicker
-          className={styles.datePicker}
+          className={classNames(styles.datePicker, 'cp-runs-day-picker')}
           selectedDays={this.state[parameter].value}
           onDayClick={onDateChanged} />
         <Row type="flex" justify="space-between" className={styles.filterActionsButtonsContainer}>
@@ -409,7 +416,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       });
 
       const filterDropdown = (
-        <div className={styles.filterPopoverContainer}>
+        <div className={classNames(
+          styles.filterPopoverContainer,
+          'cp-filter-popover-container'
+        )}>
           <Row>
             <Input.Search
               placeholder="Filter"
@@ -436,7 +446,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
                         </Checkbox>
                       </Row>
                     );
-                })
+                  })
               }
             </div>
           </Row>
@@ -503,7 +513,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
           (image.group || '').toLowerCase().indexOf(searchString) >= 0;
       };
       const filterDropdown = (
-        <div className={styles.filterPopoverContainer}>
+        <div className={classNames(
+          styles.filterPopoverContainer,
+          'cp-filter-popover-container'
+        )}>
           <Row>
             <Input.Search
               value={this.state[parameter].searchString}
@@ -561,7 +574,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
         this.onFilterChanged(parameter)();
       };
       const filterDropdown = (
-        <div className={styles.filterPopoverContainer} style={{width: 300}}>
+        <div className={classNames(
+          styles.filterPopoverContainer,
+          'cp-filter-popover-container'
+        )} style={{width: 300}}>
           <UserAutoComplete
             placeholder="Owners"
             value={this.state[parameter].value}
@@ -591,7 +607,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
       this.onFilterChanged(parameter)();
     };
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container'
+      )}>
         <Input
           placeholder={placeholder}
           value={this.state[parameter].value}
@@ -721,7 +740,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (roleModel.executeAllowed(record) && roleModel.isOwner(record) &&
       record.initialized && !(record.nodeCount > 0) &&
       !(record.parentRunId && record.parentRunId > 0) &&
-      record.instance && record.instance.spot !== undefined && !record.instance.spot) {
+      record.instance && record.instance.spot !== undefined &&
+      !record.instance.spot
+    ) {
       switch (record.status.toLowerCase()) {
         case 'pausing':
           return <span id={`run-${record.id}-pausing`}>PAUSING</span>;
@@ -828,13 +849,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
           <span>
             {moment.utc(item.endDate)
               .diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       } else {
         return (
           <span>
             Running for {moment.utc().diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       }
     };
@@ -924,7 +945,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       title: '',
       dataIndex: '',
       key: 'expandIcon',
-      className: styles.expandIconColumn,
+      className: styles.expandIconColumn
     };
     const runColumn = {
       title: <span>Run</span>,
@@ -938,7 +959,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const style = {
           display: 'inline-table',
-          marginLeft: run.parentRunId ? '10px' : 0,
+          marginLeft: run.parentRunId ? '10px' : 0
         };
         let instanceOrSensitiveFlag;
         if (run.instance || run.sensitive) {
@@ -957,12 +978,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 run.sensitive
                   ? (
                     <span
-                      style={
-                        Object.assign(
-                          {color: '#ff5c33'},
-                          run.instance ? {marginLeft: 5} : {}
-                        )
-                      }
+                      className="cp-sensitive"
+                      style={run.instance ? {marginLeft: 5} : {}}
                     >
                       sensitive
                     </span>
@@ -986,14 +1003,20 @@ export default class RunTable extends localization.LocalizedReactComponent {
                       {
                         urls.map((url, index) =>
                           <li key={index} style={{margin: 4}}>
-                            <a href={url.url} target="_blank">{url.name || url.url}</a>
+                            <a
+                              href={url.url}
+                              target="_blank"
+                            >
+                              {url.name || url.url}
+                            </a>
                           </li>
                         )
                       }
                     </ul>
                   </div>
                 }
-                trigger="hover">
+                trigger={['hover']}
+              >
                 {clusterIcon} <Icon type="export" /> {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
@@ -1253,6 +1276,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
   render () {
     const source = this.props.dataSource && this.props.dataSource.map(this.prepareSourceItem);
     const style = this.props.className ? {className: this.props.className} : {};
+    const serviceClass = 'cp-runs-table-service-url-run';
     return (
       <Table
         className={`${styles.table} runs-table`}
@@ -1269,7 +1293,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
             record.status === 'RESUMING'
           ) &&
           record.initialized
-            ? styles.serviceUrlRun : styles.run
+            ? serviceClass : styles.run
         } run-${record.id}`}
         dataSource={source}
         onChange={this.props.handleTableChange}
@@ -1279,7 +1303,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         size="small"
         indentSize={10}
         locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
-    />);
+      />);
   }
 
   componentDidMount () {

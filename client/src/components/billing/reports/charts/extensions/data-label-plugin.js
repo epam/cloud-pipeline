@@ -21,7 +21,12 @@ const plugin = {
   id,
   noDataIgnoreOption,
   afterDraw: function (chart, e, configuration) {
-    const {error, label} = configuration;
+    const {
+      error,
+      label,
+      color = 'rgba(0, 0, 0, 0.65)',
+      errorColor = 'rgba(255, 0, 0, 0.6)'
+    } = configuration;
     if (!this.hasData(chart.data) || error || label) {
       const ctx = chart.chart.ctx;
       const width = chart.chart.width;
@@ -31,7 +36,7 @@ const plugin = {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = 1;
-      ctx.fillStyle = error ? 'rgba(255, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.6)';
+      ctx.fillStyle = error ? errorColor : color;
       ctx.font = '9pt sans-serif';
       ctx.fillText(error || label || 'No data to display', width / 2, height / 2);
       ctx.restore();

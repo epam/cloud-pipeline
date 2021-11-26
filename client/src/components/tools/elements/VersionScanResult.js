@@ -18,11 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Popover} from 'antd';
+import classNames from 'classnames';
 import styles from './VersionScanResult.css';
 
 @observer
 export default class VersionScanResult extends React.Component {
-
   static propTypes = {
     result: PropTypes.shape({
       critical: PropTypes.number,
@@ -107,9 +107,22 @@ export default class VersionScanResult extends React.Component {
         return null;
       }
       return (
-        <div key={name} className={`${styles.containerItem} ${styles[name]}`} style={{
-          flex: value / total
-        }}>{'\u00A0'}</div>
+        <div
+          key={name}
+          className={
+            classNames(
+              styles.containerItem,
+              'cp-scan-result',
+              'bar',
+              name
+            )
+          }
+          style={{
+            flex: value / total
+          }}
+        >
+          {'\u00A0'}
+        </div>
       );
     };
     const capitalizedString = (string) => {
@@ -118,14 +131,6 @@ export default class VersionScanResult extends React.Component {
       }
       return `${string[0].toUpperCase()}${string.substring(1)}`;
     };
-    const classNames = [];
-    if (this.props.className) {
-      classNames.push(this.props.className);
-    }
-    classNames.push(styles.container);
-    if (this.props.whiteListed) {
-      classNames.push(styles.whiteList);
-    }
     return (
       <Popover
         placement={this.props.placement}
@@ -153,11 +158,19 @@ export default class VersionScanResult extends React.Component {
               }
             </tbody>
           </table>
-      }>
+        }>
         <div
           onMouseEnter={this.openDetails}
           onMouseLeave={this.closeDetails}
-          className={classNames.join(' ')}>
+          className={
+            classNames(
+              this.props.className,
+              styles.container,
+              {
+                [styles.whiteList]: this.props.whiteListed
+              }
+            )
+          }>
           {
             data.map(renderInfo)
           }

@@ -17,6 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   Button,
   Row,
@@ -89,7 +90,7 @@ export default class DropdownWithMultiselect extends React.Component {
     const DragHandle = SortableHandle(() => <span><Icon type="bars" /></span>);
     const SortableItem = SortableElement(({value}) => {
       return (
-        <Row className={styles.row}>
+        <Row className={classNames(styles.row, 'cp-metadata-dropdown-row')}>
           <DragHandle />
           <Checkbox
             disabled={this.state.selectedColumns.length <= 1 && this.itemIsSelected(value)}
@@ -139,6 +140,7 @@ export default class DropdownWithMultiselect extends React.Component {
         placement="bottomRight"
         content={this.renderColumnsMenu()}>
         <Button
+          id="metadata-manage-columns-button"
           className={className}
           style={Object.assign({lineHeight: 1}, style || {})}
           onClick={this.openMenu}

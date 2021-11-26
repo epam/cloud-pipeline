@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   Select,
   Icon,
@@ -128,7 +129,7 @@ export default class AutoCompleteForParameter extends React.Component {
         {
           !this.props.showWithButton &&
           <span
-            className={styles.pathParameterAutoComplete}
+            className={classNames(styles.pathParameterAutoComplete, 'cp-input-group-addon')}
             onClick={() =>
               !(this.props.readOnly) && this.props.onButtonClick &&
               this.props.onButtonClick(this.props.parameterKey, this.state.value)}

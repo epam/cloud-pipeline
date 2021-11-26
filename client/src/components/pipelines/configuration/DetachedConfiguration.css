@@ -22,11 +22,6 @@
   font-style: italic;
 }
 
-.configuration-row-selected {
-  background-color: #dfeefa;
-  cursor: pointer;
-}
-
 .configuration-row-actions {
   text-align: right;
 }

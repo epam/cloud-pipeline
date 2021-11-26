@@ -356,7 +356,12 @@ class FSNotificationsDialog extends React.Component {
           className={
             classNames(
               styles.usersRolesSelect,
-              {[styles.error]: emptyRecipients}
+              'cp-divider',
+              'bottom',
+              {
+                [styles.error]: emptyRecipients,
+                'cp-error': emptyRecipients
+              }
             )
           }
         >
@@ -366,9 +371,8 @@ class FSNotificationsDialog extends React.Component {
           <UsersRolesSelect
             className={
               classNames(
-                styles.selector,
                 {
-                  [styles.error]: emptyRecipients
+                  'cp-error': emptyRecipients
                 }
               )
             }
@@ -390,6 +394,7 @@ class FSNotificationsDialog extends React.Component {
           className={
             classNames(
               styles.usersRolesSelectError,
+              'cp-error',
               {
                 [styles.visible]: emptyRecipients
               }
@@ -407,8 +412,9 @@ class FSNotificationsDialog extends React.Component {
                   className={
                     classNames(
                       styles.notification,
+                      'cp-metadata-fs-notification',
                       {
-                        [styles.error]: !!notification.error
+                        'cp-error': !!notification.error
                       }
                     )
                   }
@@ -418,7 +424,7 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.label,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.value
+                          'cp-error': !!notification.error && !!notification.error.value
                         }
                       )
                     }
@@ -431,7 +437,7 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.input,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.value
+                          'cp-error': !!notification.error && !!notification.error.value
                         }
                       )
                     }
@@ -445,7 +451,7 @@ class FSNotificationsDialog extends React.Component {
                         classNames(
                           styles.select,
                           {
-                            [styles.error]: !!notification.error && !!notification.error.type
+                            'cp-error': !!notification.error && !!notification.error.type
                           }
                         )
                       }
@@ -470,7 +476,7 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.label,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.actions
+                          'cp-error': !!notification.error && !!notification.error.actions
                         }
                       )
                     }
@@ -483,7 +489,7 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.select,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.actions
+                          'cp-error': !!notification.error && !!notification.error.actions
                         }
                       )
                     }
@@ -522,6 +528,7 @@ class FSNotificationsDialog extends React.Component {
                     classNames(
                       styles.notification,
                       styles.notificationError,
+                      'cp-error',
                       {
                         [styles.visible]: !!notification.error
                       }

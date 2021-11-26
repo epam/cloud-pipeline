@@ -87,13 +87,16 @@ export default function (callbacks) {
           actions.push({
             title: 'STOP',
             icon: 'close-circle-o',
-            style: {color: 'red'},
+            className: 'cp-danger',
             action: callbacks ? callbacks.stop : undefined
           });
         }
         break;
       case 'PAUSED':
-        if (run.initialized && run.instance && run.instance.spot !== undefined && !run.instance.spot) {
+        if (
+          run.initialized && run.instance && run.instance.spot !== undefined &&
+          !run.instance.spot
+        ) {
           actions.push({
             title: 'RESUME',
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
@@ -108,7 +111,7 @@ export default function (callbacks) {
         actions.push({
           title: 'TERMINATE',
           icon: 'close-circle-o',
-          style: {color: 'red'},
+          className: 'cp-danger',
           action: callbacks ? callbacks.terminate : undefined
         });
         break;
@@ -188,18 +191,18 @@ export default function (callbacks) {
         const overlay = (
           <table>
             <tbody>
-            {
-              inputParameters.length > 0
-                ? <tr><td colSpan={2}><b>Input:</b></td></tr>
-                : undefined
-            }
-            {inputParameters.map(renderRunParameter)}
-            {
-              outputParameters.length > 0
-                ? <tr><td colSpan={2}><b>Output:</b></td></tr>
-                : undefined
-            }
-            {outputParameters.map(renderRunParameter)}
+              {
+                inputParameters.length > 0
+                  ? <tr><td colSpan={2}><b>Input:</b></td></tr>
+                  : undefined
+              }
+              {inputParameters.map(renderRunParameter)}
+              {
+                outputParameters.length > 0
+                  ? <tr><td colSpan={2}><b>Output:</b></td></tr>
+                  : undefined
+              }
+              {outputParameters.map(renderRunParameter)}
             </tbody>
           </table>
         );

@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Button, Icon, Popover} from 'antd';
+import Markdown from '../../special/markdown';
 
 function replaceLineBreaks (text) {
   if (!text) {
@@ -28,7 +29,7 @@ function replaceLineBreaks (text) {
     .replace(/\\t/g, '\t');
 }
 
-@inject('preferences', 'issuesRenderer')
+@inject('preferences')
 @observer
 class SupportMenuItem extends React.Component {
   static propTypes = {
@@ -42,12 +43,11 @@ class SupportMenuItem extends React.Component {
     const {
       className,
       onVisibilityChanged,
-      issuesRenderer,
       visible,
       preferences,
       style
     } = this.props;
-    if (!preferences || !preferences.loaded || !issuesRenderer) {
+    if (!preferences || !preferences.loaded) {
       return null;
     }
     const source = replaceLineBreaks(preferences.getPreferenceValue('ui.support.template'));
@@ -57,7 +57,11 @@ class SupportMenuItem extends React.Component {
     return (
       <Popover
         content={
-          <div dangerouslySetInnerHTML={{__html: issuesRenderer.render(source)}} />
+          <Markdown
+            md={source}
+            target="_blank"
+            useCloudPipelineLinks
+          />
         }
         placement="rightBottom"
         trigger="click"

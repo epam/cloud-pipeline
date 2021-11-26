@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -33,7 +34,6 @@ import styles from './preview.css';
 })
 @observer
 export default class DockerRegistryPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -85,7 +85,9 @@ export default class DockerRegistryPreview extends React.Component {
     if (this.props.dockerRegistries.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.dockerRegistries.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.dockerRegistries.error}
+          </span>
         </div>
       );
     }
@@ -131,14 +133,21 @@ export default class DockerRegistryPreview extends React.Component {
     const groups = this.renderGroups();
 
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-search-container'
+          )
+        }
+      >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {groups && renderSeparator()}

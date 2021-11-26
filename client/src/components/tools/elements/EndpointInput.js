@@ -16,12 +16,17 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Col, Input, Row} from 'antd';
+import {
+  Button,
+  Checkbox,
+  Col,
+  Input,
+  Row
+} from 'antd';
+import classNames from 'classnames';
 import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
-
 import '../../../staticStyles/EndpointInput.css';
 
 @observer
@@ -66,7 +71,8 @@ export default class EndpointInput extends React.Component {
           port = json.nginx.port;
           additional = json.nginx.additional;
         }
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     const validation = {
       port: this.validatePort(port),
@@ -79,18 +85,17 @@ export default class EndpointInput extends React.Component {
     return !validation.port && !validation.name && !validation.additional;
   };
 
-  @computed
   get name () {
     if (this.state.value) {
       try {
         const json = JSON.parse(this.state.value || '');
         return json.name;
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return undefined;
   }
 
-  @computed
   get port () {
     if (this.state.value) {
       try {
@@ -98,34 +103,34 @@ export default class EndpointInput extends React.Component {
         if (json.nginx && json.nginx.port !== undefined) {
           return json.nginx.port;
         }
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return undefined;
   }
 
-  @computed
   get isDefault () {
     if (this.state.value) {
       try {
         const json = JSON.parse(this.state.value || '');
         return `${json.isDefault}` === 'true';
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return false;
   }
 
-  @computed
   get sslBackend () {
     if (this.state.value) {
       try {
         const json = JSON.parse(this.state.value || '');
         return `${json.sslBackend}` === 'true';
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return false;
   }
 
-  @computed
   get additional () {
     if (this.state.value) {
       try {
@@ -133,7 +138,8 @@ export default class EndpointInput extends React.Component {
         if (json.nginx) {
           return json.nginx.additional;
         }
-      } catch (__) {}
+      } catch (__) {
+      }
     }
     return undefined;
   }
@@ -166,7 +172,8 @@ export default class EndpointInput extends React.Component {
     let result = '';
     try {
       result = JSON.stringify(value);
-    } catch (___) {}
+    } catch (___) {
+    }
     return result;
   };
 
@@ -231,9 +238,9 @@ export default class EndpointInput extends React.Component {
   render () {
     return (
       <div
+        className={classNames({'cp-tool-add-endpoint': this.props.even})}
         style={{
           width: '100%',
-          backgroundColor: this.props.even ? '#fafafa' : undefined,
           padding: 5
         }}>
         <Row type="flex" align="top">
@@ -244,21 +251,28 @@ export default class EndpointInput extends React.Component {
                 disabled={this.props.disabled}
                 value={this.port}
                 onChange={this.onChangePort}
+                className={
+                  classNames(
+                    {
+                      'cp-error': this.state.validation.port
+                    }
+                  )
+                }
                 style={{
-                  width: 200,
-                  margin: '0px 5px',
-                  border: this.state.validation.port ? '1px solid red' : undefined
+                  width: 100,
+                  margin: '0px 5px'
                 }}
-                size="small" />
+                size="small"
+              />
             </Row>
             {
               this.state.validation.port &&
               <Row
                 type="flex"
+                className="cp-error"
                 style={{
                   margin: 0,
                   padding: 0,
-                  color: 'red',
                   fontSize: 'x-small',
                   lineHeight: 'normal'
                 }}>
@@ -275,21 +289,28 @@ export default class EndpointInput extends React.Component {
                 disabled={this.props.disabled}
                 value={this.name}
                 onChange={this.onChangeName}
+                className={
+                  classNames(
+                    {
+                      'cp-error': this.state.validation.name
+                    }
+                  )
+                }
                 style={{
                   flex: 1,
-                  marginLeft: 5,
-                  border: this.state.validation.name ? '1px solid red' : undefined
+                  marginLeft: 5
                 }}
-                size="small" />
+                size="small"
+              />
             </Row>
             {
               this.state.validation.name &&
               <Row
                 type="flex"
+                className="cp-error"
                 style={{
                   margin: 0,
                   padding: 0,
-                  color: 'red',
                   fontSize: 'x-small',
                   lineHeight: 'normal'
                 }}>
@@ -346,10 +367,10 @@ export default class EndpointInput extends React.Component {
           this.state.validation.additional &&
           <Row
             type="flex"
+            className="cp-error"
             style={{
               margin: 0,
               padding: 0,
-              color: 'red',
               fontSize: 'x-small',
               lineHeight: 'normal'
             }}>
@@ -376,4 +397,4 @@ export default class EndpointInput extends React.Component {
       value: this.props.value
     }, this.validate);
   }
-}
+};

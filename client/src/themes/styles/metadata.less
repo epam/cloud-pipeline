@@ -1,0 +1,148 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cp-library-metadata-item-key {
+  background-color: @tag-key-background-color;
+  border-bottom: 1px solid @tag-key-value-divider-color;
+}
+
+.cp-library-metadata-item-value {
+  background-color: @tag-value-background-color;
+}
+
+.cp-library-metadata-additional-actions {
+  background-color: inherit;
+  border-color: @input-border;
+}
+
+.cp-metadata-item-row {
+  color: @application-color-faded;
+}
+
+.cp-metadata-item-row.key {
+  background-color: @element-selected-background-color;
+}
+
+.cp-metadata-item-content-preview {
+  background-color: @card-background-color;
+  color: @application-color;
+}
+
+.cp-metadata-item-row.read-only {
+  color: @application-color-faded;
+  background-color: @element-selected-background-color;
+}
+
+.cp-metadata-item-row td {
+  padding: 2px 5px;
+  border: 1px solid transparent;
+}
+
+.cp-metadata-item-row.key td.cp-metadata-item-key:hover,
+.cp-metadata-item-row.value td:hover {
+  cursor: text;
+  border: 1px dashed @panel-border-color;
+}
+
+.cp-metadata-fs-notification:nth-child(4n+3),
+.cp-metadata-fs-notification:nth-child(4n) {
+  background-color: @even-element-background;
+}
+
+.cp-metadata-item-json-table {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+  border-collapse: collapse;
+}
+
+.cp-metadata-item-json-table th,
+.cp-metadata-item-json-table td {
+  padding: 2px 4px;
+  border: 1px solid @card-border-color;
+}
+
+.cp-library-breadcrumbs-editable-field:hover {
+  border: 1px solid @panel-border-color;
+  background-color: @element-selected-background-color !important;
+}
+
+.cp-library-breadcrumbs-editable-field-icon {
+  color: @application-color-faded;
+}
+
+.cp-library-breadcrumbs-editable-field:hover .cp-library-breadcrumbs-editable-field-icon {
+  color: @application-color;
+}
+
+.cp-library-path-components-container:hover {
+  transition: background-color 0.5s ease;
+  background-color: @element-selected-background-color;
+}
+
+.cp-library-metadata-table {
+  border: 1px solid @input-border;
+}
+
+.cp-library-metadata-table-cell {
+  border-right: 1px solid fadeout(@application-color, 90%);
+}
+
+.cp-library-metadata-table-cell-selected {
+  background-color: fadeout(@primary-hover-color, 70%);
+  color: @application-color;
+}
+
+.cp-library-metadata-panel-placeholder {
+  color: @application-color-faded;
+}
+
+.cp-library-metadata-spread-top-cell {
+  border-top-color: @primary-color;
+}
+
+.cp-library-metadata-spread-bottom-cell {
+  border-bottom-color: @primary-color;
+}
+
+.cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-selected,
+.cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-hovered,
+.cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-selected {
+  border-right: 1px solid @primary-color;
+}
+
+.cp-library-metadata-spread-left-cell {
+  border-left-color: @primary-color;
+}
+
+.cp-library-metadata-spread-selected {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+
+.cp-library-metadata-spread-cell-hovered {
+  background-color: fadeout(@primary-hover-color, 60%);
+}
+
+.cp-library-metadata-spread-cell-selected {
+  background-color: fadeout(@primary-hover-color, 90%);
+}
+
+.cp-metadata-dropdown-row {
+  border-bottom: 1px solid @input-addon;
+  background-color: @card-background-color;
+}

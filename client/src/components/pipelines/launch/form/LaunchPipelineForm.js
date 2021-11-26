@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {action, computed, observable} from 'mobx';
 import {
   Alert,
@@ -1634,9 +1635,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.estimatedPrice.pending) {
       return undefined;
     }
-    const className = this.state.estimatedPrice.pending
-      ? styles.priceLoading
-      : styles.price;
+    const className = classNames(
+      styles.price,
+      {'cp-text-not-important': this.state.estimatedPrice.pending}
+    );
     if (this.state.estimatedPrice.averagePrice > 0) {
       const info = (
         <Popover
@@ -2623,7 +2625,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect}>
+      <Menu selectedKeys={[]} onClick={onSelect} className={styles.parametersMenu}>
         <Menu.Item id="add-string-parameter" key="string">String parameter</Menu.Item>
         <Menu.Item id="add-boolean-parameter" key="boolean">Boolean parameter</Menu.Item>
         <Menu.Item id="add-path-parameter" key="path">Path parameter</Menu.Item>
@@ -2700,7 +2702,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
                       <Button
                         id="add-parameter-dropdown-button"
-                        disabled={this.props.readOnly && !this.props.canExecute}>
+                        disabled={this.props.readOnly && !this.props.canExecute}
+                        style={{padding: '0px 8px'}}
+                      >
                         <Icon type="down" />
                       </Button>
                     </Dropdown>
@@ -3561,10 +3565,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (lines.length > 0) {
       return [
         <div key="summary" className={styles.summaryContainer}>
-          <div className={styles.summary}>
+          <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={styles.summaryItem}>
+                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
                   {l}
                 </div>
               ))
@@ -4370,7 +4374,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           descriptions.filter(d => d && d.length).map((description, index) =>
             <span
               key={`description-${index}`}
-              className={styles.panelDescription}>
+              className={classNames(styles.panelDescription, 'cp-text-not-important')}>
               {description}
             </span>
           )
@@ -4811,7 +4815,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
-          <table style={{width: '100%'}} className={styles.layoutHeader}>
+          <table
+            style={{width: '100%'}}
+            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
+          >
             <tbody>
               <tr>
                 {renderFormTitle()}

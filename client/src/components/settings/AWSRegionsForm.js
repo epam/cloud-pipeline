@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
 import {
@@ -278,17 +279,23 @@ export default class AWSRegionsForm extends React.Component {
         pagination={false}
         rowKey="id"
         rowClassName={
-          (region) =>
-            (!this.state.newRegion && region.id === this.state.currentRegionId) ||
+          (region) => {
+            const selected = (!this.state.newRegion && region.id === this.state.currentRegionId) ||
             (
               !this.state.newRegion &&
               !this.state.currentRegionId &&
               region.isProvider &&
               region.name === this.state.currentProvider
             ) ||
-            (region.isNew && this.state.newRegion)
-              ? `${styles.regionRow} ${styles.selected}`
-              : styles.regionRow
+            (region.isNew && this.state.newRegion);
+            return classNames(
+              styles.regionRow,
+              'cp-settings-sidebar-element',
+              {
+                'cp-table-element-selected': selected
+              }
+            );
+          }
         }
         onRowClick={region => !this.state.newRegion && this.selectRegion(region)}
         size="medium" />
@@ -471,7 +478,10 @@ export default class AWSRegionsForm extends React.Component {
   renderAddNewRegionButton = () => {
     if (this.cloudProviders.length > 1) {
       const menu = (
-        <Menu onClick={({key}) => this.onAddNewRegionClicked(key)}>
+        <Menu
+          onClick={({key}) => this.onAddNewRegionClicked(key)}
+          selectedKeys={[]}
+        >
           {
             this.cloudProviders.map(c => {
               return (
@@ -1311,6 +1321,7 @@ class AWSRegionForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
+              type="danger"
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
               size="small">
@@ -1893,12 +1904,12 @@ class AWSRegionForm extends React.Component {
               <Col
                 xs={this.formItemLayout.labelCol.xs.span}
                 sm={this.formItemLayout.labelCol.sm.span}
+                className="cp-settings-form-item-label"
                 style={{
                   textAlign: 'right',
                   paddingRight: 8,
                   paddingTop: 8,
-                  lineHeight: '32px',
-                  color: 'rgba(0, 0, 0, 0.85)'
+                  lineHeight: '32px'
                 }}>
                 Permissions:
               </Col>
@@ -2273,10 +2284,15 @@ class CloudRegionFileShareMountFormItem extends React.Component {
   render () {
     return (
       <Row
-        className={styles.fileShareMountRow}
-        style={Object.assign(
-          {padding: 3},
-          this.props.index % 2 === 0 ? {} : {backgroundColor: '#fafafa'})}>
+        className={
+          classNames(
+            styles.fileShareMountRow,
+            'cp-divider',
+            'bottom',
+            {'cp-even-row': this.props.index % 2 === 0}
+          )
+        }
+        style={{padding: 3}}>
         <Row type="flex" align="top">
           <span style={{width: 50}}>Host:</span>
           <Input

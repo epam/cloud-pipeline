@@ -271,6 +271,7 @@ export default class AddRouteForm extends React.Component {
         className={
           classNames(
             styles.formItemValidation,
+            'cp-error',
             {
               [styles.invalid]: !!this.getValidationMessage(identifier)
             }

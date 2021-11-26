@@ -15,11 +15,24 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
 import FileSaver from 'file-saver';
-import {Alert, Card, Col, Collapse, Icon, Menu, message, Modal, Popover, Row, Spin} from 'antd';
+import {
+  Alert,
+  Card,
+  Col,
+  Collapse,
+  Icon,
+  Menu,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Spin
+} from 'antd';
 import SplitPane from 'react-split-pane';
 import {
   PipelineRunCommitCheck,
@@ -120,10 +133,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @observer
 class Logs extends localization.LocalizedReactComponent {
-
   @observable language = null;
   @observable _pipelineLanguage = null;
-
   state = {
     timings: false,
     commitRun: false,
@@ -504,6 +515,10 @@ class Logs extends localization.LocalizedReactComponent {
     return environment;
   };
 
+  buttonsWrapper = (button) => button
+    ? (<div style={{lineHeight: '29px', height: '29px'}}>{button}</div>)
+    : undefined;
+
   renderInstanceHeader = (instance, run) => {
     if (this.state.openedPanels.indexOf('instance') >= 0) {
       return 'Instance';
@@ -576,7 +591,13 @@ class Logs extends localization.LocalizedReactComponent {
                 <span
                   key={d.key}
                   style={d.additionalStyle}
-                  className={styles.instanceHeaderItem}>
+                  className={
+                    classNames(
+                      styles.instanceHeaderItem,
+                      'cp-run-instance-tag'
+                    )
+                  }
+                >
                   {d.value}
                 </span>
               );
@@ -887,11 +908,11 @@ class Logs extends localization.LocalizedReactComponent {
             onChange={resizeGraph}
             pane1Style={{display: 'flex', flexDirection: 'column'}}
             pane2Style={{display: 'flex', flexDirection: 'column'}}
+            resizerClassName="cp-split-panel-resizer"
             resizerStyle={{
-              width: 10,
-              margin: '0 -4px',
+              width: 8,
+              margin: 0,
               cursor: 'col-resize',
-              backgroundColor: 'transparent',
               boxSizing: 'border-box',
               backgroundClip: 'padding',
               zIndex: 1
@@ -940,7 +961,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   renderContentPlainMode () {
-    const {runId}=this.props.params;
+    const {runId} = this.props.params;
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
     let Tasks;
 
@@ -969,11 +990,11 @@ class Logs extends localization.LocalizedReactComponent {
           defaultSize={300}
           pane1Style={{display: 'flex', flexDirection: 'column'}}
           pane2Style={{display: 'flex', flexDirection: 'column'}}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
-            width: 10,
-            margin: '0 -4px',
+            width: 8,
+            margin: 0,
             cursor: 'col-resize',
-            backgroundColor: 'transparent',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1
@@ -1246,7 +1267,12 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Link
           key={index}
-          className={styles.nestedRun}
+          className={
+            classNames(
+              styles.nestedRun,
+              'cp-run-nested-run-link'
+            )
+          }
           to={`/run/${run.id}`}
         >
           <StatusIcon run={run} small />
@@ -1336,6 +1362,7 @@ class Logs extends localization.LocalizedReactComponent {
       const podIP = this.props.run.value.podIP;
       const podStatus = this.props.run.value.podStatus;
       const sensitive = this.props.run.value.sensitive;
+      const isRemovedPipeline = !!version && !pipelineId;
       const kubeServiceEnabled = this.props.run.value.kubeServiceEnabled;
       let kubeServiceInfo;
       if (
@@ -1345,7 +1372,6 @@ class Logs extends localization.LocalizedReactComponent {
       ) {
         kubeServiceInfo = this.props.runKubeServices.value;
       }
-      const isRemovedPipeline = !!version && !pipelineId;
       let endpoints;
       let share;
       let kubeServices;
@@ -1353,12 +1379,25 @@ class Logs extends localization.LocalizedReactComponent {
         const urls = parseRunServiceUrl(this.props.run.value.serviceUrl);
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
-            <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ': 'Endpoint: '}</th>
+            <th style={{verticalAlign: 'middle'}}>
+              {
+                urls.length > 1
+                  ? 'Endpoints: '
+                  : 'Endpoint: '
+              }
+            </th>
             <td>
               <ul>
                 {
                   urls.map((url, index) =>
-                    <li key={index}><a href={url.url} target="_blank">{url.name || url.url}</a></li>
+                    <li key={index}>
+                      <a
+                        href={url.url}
+                        target="_blank"
+                      >
+                        {url.name || url.url}
+                      </a>
+                    </li>
                   )
                 }
               </ul>
@@ -1460,7 +1499,14 @@ class Logs extends localization.LocalizedReactComponent {
           );
         } else {
           pipelineLink = (
-            <span className={styles.deletedPipeline}>
+            <span
+              className={
+                classNames(
+                  styles.deletedPipeline,
+                  'cp-danger'
+                )
+              }
+            >
               {pipeline.name} ({pipeline.version})
               <Popover
                 content={(
@@ -1563,7 +1609,12 @@ class Logs extends localization.LocalizedReactComponent {
               {
                 sensitive ? (
                   <tr>
-                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                    <th
+                      className="cp-sensitive"
+                      colSpan={2}
+                    >
+                      SENSITIVE
+                    </th>
                   </tr>
                 ) : undefined
               }
@@ -1571,11 +1622,11 @@ class Logs extends localization.LocalizedReactComponent {
               {kubeServices}
               {share}
               <tr>
-                <th>Owner: </th><td><UserName userName={owner}/></td>
+                <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
               {
-                configName ?
-                  (
+                configName
+                  ? (
                     <tr>
                       <th>Configuration:</th>
                       <td>{configName}</td>
@@ -1677,7 +1728,7 @@ class Logs extends localization.LocalizedReactComponent {
           ) {
             ActionButton = (
               <a
-                style={{color: 'red'}}
+                className="cp-danger"
                 onClick={() => this.terminatePipeline()}
               >
                 TERMINATE
@@ -1699,7 +1750,7 @@ class Logs extends localization.LocalizedReactComponent {
             ) &&
             canStopRun(this.props.run.value)
           ) {
-            ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
+            ActionButton = <a className="cp-danger" onClick={() => this.stopPipeline()}>STOP</a>;
           }
           break;
         case 'stopped':
@@ -1738,10 +1789,24 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (this.sshEnabled) {
-        SSHButton = (<a href={this.props.runSSH.value} target="_blank">SSH</a>);
+        SSHButton = (
+          <a
+            href={this.props.runSSH.value}
+            target="_blank"
+          >
+            SSH
+          </a>
+        );
       }
       if (this.fsBrowserEnabled) {
-        FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
+        FSBrowserButton = (
+          <a
+            href={this.props.runFSBrowser.value}
+            target="_blank"
+          >
+            BROWSE
+          </a>
+        );
       }
 
       if (!(this.props.run.value.nodeCount > 0) &&
@@ -1753,13 +1818,23 @@ class Logs extends localization.LocalizedReactComponent {
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
-            case 'committing': previousStatus = <span><Icon type="loading" /> COMMITTING...</span>; break;
+            case 'committing':
+              previousStatus = (
+                <span>
+                  <Icon type="loading" /> COMMITTING...
+                </span>
+              );
+              break;
             case 'failure': previousStatus = <span>COMMIT FAILURE ({commitDate})</span>; break;
             case 'success': previousStatus = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
           if (previousStatus) {
-            CommitStatusButton = (<Row>{previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a></Row>);
+            CommitStatusButton = (
+              <Row>
+                {previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a>
+              </Row>
+            );
           } else {
             CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
@@ -1811,7 +1886,14 @@ class Logs extends localization.LocalizedReactComponent {
 
     return (
       <Card
-        className={styles.logCard}
+        className={
+          classNames(
+            styles.logCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{
           padding: 10,
           display: 'flex',
@@ -1839,7 +1921,11 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}{ActionButton}{SSHButton}{FSBrowserButton}{ExportLogsButton}
+              {this.buttonsWrapper(PauseResumeButton)}
+              {this.buttonsWrapper(ActionButton)}
+              {this.buttonsWrapper(SSHButton)}
+              {this.buttonsWrapper(FSBrowserButton)}
+              {this.buttonsWrapper(ExportLogsButton)}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
@@ -1884,7 +1970,8 @@ class Logs extends localization.LocalizedReactComponent {
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
         />
-      </Card>);
+      </Card>
+    );
   }
 
   componentWillReceiveProps (nextProps) {

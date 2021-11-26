@@ -19,14 +19,43 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import moment from 'moment-timezone';
-import {PlotColors} from './utilities';
+import {getThemedPlotColors} from './utilities';
 
 const MARGIN = 5;
 
+@inject('themes')
+@observer
 class TooltipRenderer extends React.PureComponent {
   state = {
     sizes: {}
   };
+
+  @computed
+  get color () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-color'] || '#666';
+    }
+    return '#666';
+  }
+
+  @computed
+  get backgroundColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@card-background-color'] || 'white';
+    }
+    return 'white';
+  }
+
+  @computed
+  get borderColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@card-border-color'] || '#ccc';
+    }
+    return '#ccc';
+  }
 
   componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.tooltipString !== this.props.tooltipString) {
@@ -41,7 +70,7 @@ class TooltipRenderer extends React.PureComponent {
       return [
         {
           title: 'Date',
-          color: '#666',
+          color: this.color,
           value: moment.unix(xPoint).format('D MMM, YYYY HH:mm')
         },
         ...tooltips
@@ -148,12 +177,12 @@ class TooltipRenderer extends React.PureComponent {
         <path
           d={tooltipBorderPoints}
           stroke={'none'}
-          fill={'white'}
+          fill={this.backgroundColor}
           opacity={0.85}
         />
         <path
           d={tooltipBorderPoints}
-          stroke={'#ccc'}
+          stroke={this.borderColor}
           fill={'none'}
           strokeWidth={1}
         />
@@ -184,7 +213,7 @@ class TooltipRenderer extends React.PureComponent {
           x2={x}
           y1={top}
           y2={bottom}
-          stroke={'#666'}
+          stroke={this.borderColor}
           strokeWidth={1}
         />
         {this.renderTooltip(x, xPoint)}
@@ -211,10 +240,15 @@ TooltipRenderer.defaultProps = {
   fontSize: 12
 };
 
-@inject('data', 'plot', 'timeline')
+@inject('data', 'plot', 'timeline', 'themes')
 @observer
 class Tooltip extends React.PureComponent {
   @observable hoveredItem;
+
+  @computed
+  get plotColors () {
+    return getThemedPlotColors(this);
+  }
 
   componentDidMount () {
     window.addEventListener('mousemove', this.mouseMove);
@@ -289,7 +323,7 @@ class Tooltip extends React.PureComponent {
     const {chartArea, dataGroup, height, plots, width} = plot.props;
     const defaultFormatter = o => o ? o.toFixed(2) : '';
     const tooltips = plots
-      .map((p, i) => ({...p, color: PlotColors[i % PlotColors.length]}))
+      .map((p, i) => ({...p, color: this.plotColors[i % this.plotColors.length]}))
       .filter(p => (p.group || 'default') === (dataGroup || 'default') || p.isPercent)
       .map(p => ({
         title: p.title || p.name,

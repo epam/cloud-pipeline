@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
 import renderHighlights from './renderHighlights';
@@ -92,7 +93,9 @@ export default class FolderPreview extends React.Component {
     if (this.props.folder.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.folder.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.folder.error}
+          </span>
         </div>
       );
     }
@@ -101,14 +104,16 @@ export default class FolderPreview extends React.Component {
       let nameStyle;
       if (SHOW_DESCRIPTIONS) {
         nameStyle = {
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          padding: '0px 5px'
         };
       }
 
       if (item.type === SearchItemTypes.s3Bucket || item.type === SearchItemTypes.gsStorage || item.type === SearchItemTypes.azStorage) {
         nameComponent = (
           <span>
-            <span style={nameStyle}>{item.name}</span><AWSRegionTag darkMode regionId={item.regionId} />
+            <span style={nameStyle}>{item.name}</span>
+            <AWSRegionTag regionId={item.regionId} />
           </span>
         );
       } else {
@@ -170,10 +175,6 @@ export default class FolderPreview extends React.Component {
       ...(this.props.folder.value.configurations || []).map(mapChild),
       ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: 'appstore-o'}] : [])
     ];
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding
-    };
     const rowStyle = {
       // borderBottom: '1px solid #555'
     };
@@ -187,7 +188,7 @@ export default class FolderPreview extends React.Component {
                 : items || []).map((item, index) => {
                   return (
                     <tr key={index} style={rowStyle}>
-                      <td style={firstCellStyle}>
+                      <td className={styles.firstCell}>
                         {
                           PreviewIcons[item.type]
                             ? <Icon
@@ -221,14 +222,21 @@ export default class FolderPreview extends React.Component {
     const items = this.renderItems();
 
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-search-container'
+          )
+        }
+      >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {attributes && renderSeparator()}

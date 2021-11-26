@@ -46,10 +46,3 @@
   background-position: center;
   background-size: 100% auto;
 }
-
-.provider.dark,
-.flag.dark {
-  margin-right: 3px;
-  background-color: white;
-  box-shadow: 0 0 0 1px white;
-}

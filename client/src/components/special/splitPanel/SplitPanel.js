@@ -19,11 +19,11 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Row, Icon} from 'antd';
+import classNames from 'classnames';
 import localization from '../../../utils/localization';
 
 const RESIZER_SIZE = 6;
 const MINIMUM_CONTENT_SIZE = 50;
-const CONTENT_PADDING = 0;
 const MAX_SIZE_ITERATIONS = 10;
 
 export const CONTENT_PANEL_KEY = 'content';
@@ -40,6 +40,7 @@ export class SplitPanel extends React.Component {
     onPanelResize: PropTypes.func,
     onPanelResizeDelay: PropTypes.number,
     resizerSize: PropTypes.number,
+    resizerStyle: PropTypes.object,
     contentPadding: PropTypes.number,
     orientation: PropTypes.oneOf(['horizontal', 'vertical']),
     style: PropTypes.object,
@@ -105,7 +106,7 @@ export class SplitPanel extends React.Component {
     };
     const style = {
       cursor: this.isVertical ? 'row-resize' : 'col-resize',
-      padding: this.isVertical ? '2px 0px' : '0px 2px',
+      padding: 0,
       width: this.isVertical ? undefined : this.resizerSize,
       height: this.isVertical ? this.resizerSize : undefined
     };
@@ -116,11 +117,9 @@ export class SplitPanel extends React.Component {
         key={this.getResizerIndentifier(resizerIndex)}
         style={style}>
         <div
-          style={{
-            backgroundColor: '#eee',
-            height: '100%',
-            width: '100%'
-          }}>
+          className="cp-split-panel-resizer"
+          style={this.props.resizerStyle}
+        >
           {'\u00A0'}
         </div>
       </div>
@@ -198,7 +197,7 @@ export class SplitPanel extends React.Component {
     }
     return (
       <div
-        className={info ? info.containerClassName : undefined}
+        className={classNames(info ? info.containerClassName : undefined, 'cp-split-panel-panel')}
         key={`child_${childIndex}`}
         style={style}>
         {
@@ -207,10 +206,8 @@ export class SplitPanel extends React.Component {
             type="flex"
             justify="space-between"
             align="middle"
+            className="cp-split-panel-header"
             style={{
-              backgroundColor: '#efefef',
-              borderBottom: '1px solid #ddd',
-              borderTop: '1px solid #ddd',
               padding: '0px 5px'
             }}>
             <span>{info.title || ''}</span>
@@ -437,7 +434,7 @@ export class SplitPanel extends React.Component {
 
   @computed
   get contentPadding () {
-    return this.props.contentPadding || CONTENT_PADDING;
+    return this.props.contentPadding;
   }
 
   @computed
@@ -453,15 +450,19 @@ export class SplitPanel extends React.Component {
   render () {
     return (
       <div
-        className="split-panel"
+        className={
+          classNames(
+            'split-panel',
+            'cp-split-panel',
+            {
+              vertical: this.isVertical,
+              horizontal: !this.isVertical
+            }
+          )
+        }
         ref={this.initializeSplitPane}
-        style={Object.assign(
-          {
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: this.isVertical ? 'column' : 'row'
-          }, this.props.style || {})}>
+        style={this.props.style}
+      >
         {
           this.totalSize ? this.renderSplitPaneContent() : undefined
         }

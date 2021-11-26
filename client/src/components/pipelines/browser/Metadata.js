@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -58,7 +59,7 @@ import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityU
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import MetadataEntityDeleteFromProject
-  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
 import FolderProject from '../../../models/folders/FolderProject';
@@ -538,13 +539,14 @@ export default class Metadata extends React.Component {
       <Button
         shape="circle"
         onClick={(e) => e.stopPropagation()}
+        className={
+          this.filterApplied(key)
+            ? 'cp-primary'
+            : 'cp-text-not-important'
+        }
         style={{
           marginLeft: 5,
-          border: 'none',
-          color: (
-            this.filterApplied(key)
-              ? '#108ee9' : 'grey'
-          )
+          border: 'none'
         }}
       >
         <Icon type="filter" />
@@ -1499,35 +1501,29 @@ export default class Metadata extends React.Component {
       const left = hovered ||
         autoFillEntities.isLeftSideCell(selectionArea, column, row) ||
         autoFillEntities.isLeftSideCell(spreadingArea, column, row);
-
-      let backgroundColor = 'initial';
-      if (spreadSelected) {
-        backgroundColor = 'rgba(16, 142, 233, 0.2)';
-      } else if (selected || hovered) {
-        backgroundColor = 'rgba(16, 142, 233, 0.1)';
-      }
-
-      return {
-        border: '1px solid transparent',
-        position: 'relative',
-        borderTopColor: top ? '#108ee9' : 'transparent',
-        borderBottomColor: bottom ? '#108ee9' : 'transparent',
-        borderLeftColor: left ? '#108ee9' : 'transparent',
-        borderRightColor: right ? '#108ee9' : 'rgba(0, 0, 0, 0.1)',
-        backgroundColor
-      };
+      return classNames({
+        [styles.cell]: true,
+        'cp-library-metadata-spread-top-cell': top,
+        'cp-library-metadata-spread-bottom-cell': bottom,
+        'cp-library-metadata-spread-right-cell': right,
+        'cp-library-metadata-spread-left-cell': left,
+        'cp-library-metadata-spread-selected': spreadSelected,
+        'cp-library-metadata-spread-cell-hovered': hovered,
+        'cp-library-metadata-spread-cell-selected': selected
+      });
     };
+
     const renderTable = () => {
       return [
         <ReactTable
           key="table"
-          className={`${styles.metadataTable} -striped -highlight`}
+          className={`${styles.metadataTable} cp-library-metadata-table -striped -highlight`}
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
           data={this.state.currentMetadata}
           getTableProps={() => ({
-            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'},
+            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse', borderRadius: 5},
             onMouseOut: this.clearHovering
           })}
           getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
@@ -1549,7 +1545,7 @@ export default class Metadata extends React.Component {
               }
               this.clearSelection();
             },
-            style: getCellStyle(column.index, rowInfo.index)
+            className: getCellStyle(column.index, rowInfo.index)
           })}
           getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
           PadRowComponent={
@@ -1559,7 +1555,7 @@ export default class Metadata extends React.Component {
               </div>
           }
           showPagination={false}
-          NoDataComponent={() => <div className={`${styles.noData}`}>No rows found</div>} />,
+          NoDataComponent={() => <div className={classNames(styles.noData, 'cp-library-metadata-panel-placeholder')}>No rows found</div>} />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
@@ -1756,7 +1752,7 @@ export default class Metadata extends React.Component {
       menuItems.push((
         <Menu.Item
           key={Actions.addMetadata}
-          className={Actions.addMetadata}
+          className={classNames(styles.menuItem, Actions.addMetadata)}
         >
           <Icon
             type="plus"
@@ -1768,7 +1764,7 @@ export default class Metadata extends React.Component {
       menuItems.push((
         <Menu.Item
           key={Actions.upload}
-          className={Actions.upload}
+          className={classNames(styles.menuItem, Actions.upload)}
         >
           <Icon
             type="upload"
@@ -1785,7 +1781,7 @@ export default class Metadata extends React.Component {
         menuItems.push((
           <Menu.Item
             key={Actions.transfer}
-            className={Actions.transfer}
+            className={classNames(styles.menuItem, Actions.transfer)}
           >
             <Icon
               type="cloud-upload-o"
@@ -1801,8 +1797,7 @@ export default class Metadata extends React.Component {
       menuItems.push((
         <Menu.Item
           key={Actions.deleteClass}
-          className={Actions.deleteClass}
-          style={{color: 'red'}}
+          className={classNames(styles.menuItem, Actions.deleteClass, 'cp-danger')}
         >
           <Icon
             type="delete"
@@ -1817,7 +1812,7 @@ export default class Metadata extends React.Component {
       menuItems.push((
         <Menu.Item
           key={Actions.showAttributes}
-          className={Actions.showAttributes}
+          className={classNames(styles.menuItem, Actions.showAttributes)}
         >
           {
             this.state.metadata ? 'Hide attributes' : 'Show attributes'
@@ -1837,6 +1832,7 @@ export default class Metadata extends React.Component {
           trigger={['click']}
         >
           <Button
+            id="metadata-actions-button"
             size="small"
             style={{lineHeight: 1, margin: '0 0 0 5px'}}
           >
@@ -1933,7 +1929,9 @@ export default class Metadata extends React.Component {
     const cellWrapper = (props, reactElementFn) => {
       const {column, index} = props;
       const item = props.original;
-      const className = getCellClassName(item, styles.metadataColumnCell);
+      const className = classNames(
+        getCellClassName(item, styles.metadataColumnCell),
+        {'cp-library-metadata-table-cell-selected': getCellClassName(item, styles.metadataColumnCell).search('selected') > -1});
       return (
         <div
           className={className}
@@ -1967,10 +1965,9 @@ export default class Metadata extends React.Component {
         width: 30,
         style: {
           cursor: 'pointer',
-          padding: 0,
-          borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+          padding: 0
         },
-        className: styles.metadataCheckboxCell,
+        className: classNames(styles.metadataCheckboxCell, 'cp-library-metadata-table-cell'),
         Cell: (props) => cellWrapper(props, () => {
           const item = props.value;
           return (
@@ -1987,9 +1984,9 @@ export default class Metadata extends React.Component {
           index,
           style: {
             cursor: this.props.readOnly ? 'default' : 'cell',
-            padding: 0,
-            borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+            padding: 0
           },
+          className: 'cp-library-metadata-table-cell',
           Header: () => renderTitle(key),
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
@@ -2116,6 +2113,7 @@ export default class Metadata extends React.Component {
       const menuItems = [(
         <Menu.Item
           key={Actions.clearSelection}
+          className={classNames(styles.menuItem, Actions.clearSelection)}
         >
           Clear selection
         </Menu.Item>
@@ -2128,6 +2126,7 @@ export default class Metadata extends React.Component {
         menuItems.push((
           <Menu.Item
             key={Actions.copySelection}
+            className={classNames(styles.menuItem, Actions.copySelection)}
           >
             Copy
           </Menu.Item>
@@ -2136,7 +2135,7 @@ export default class Metadata extends React.Component {
         menuItems.push((
           <Menu.Item
             key={Actions.delete}
-            style={{color: 'red'}}
+            className={classNames(styles.menuItem, Actions.delete, 'cp-danger')}
           >
             Delete
           </Menu.Item>
@@ -2197,7 +2196,10 @@ export default class Metadata extends React.Component {
     };
     return (
       <Row
-        className={styles.metadataAdditionalActions}
+        className={classNames(
+          styles.metadataAdditionalActions,
+          'cp-library-metadata-additional-actions'
+        )}
         type="flex"
         justify="space-between"
         align="middle"

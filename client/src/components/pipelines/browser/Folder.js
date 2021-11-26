@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
@@ -186,15 +187,13 @@ export default class Folder extends localization.LocalizedReactComponent {
         return <Icon type={icon} />;
       case ItemTypes.version: return <Icon type="tag" />;
       case ItemTypes.storage:
-        const style = {};
-        if (item.sensitive) {
-          style.color = '#ff5c33';
-        }
-        if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          return <Icon type="inbox" style={style} />;
-        } else {
-          return <Icon type="hdd" style={style} />;
-        }
+        const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
+        return (
+          <Icon
+            type={objectStorage ? 'inbox' : 'hdd'}
+            className={classNames({'cp-sensitive': item.sensitive})}
+          />
+        );
       case ItemTypes.configuration: return <Icon type="setting" />;
       case ItemTypes.metadata: return <Icon type="appstore-o" />;
       case ItemTypes.metadataFolder: return <Icon type="appstore-o" />;
@@ -234,10 +233,16 @@ export default class Folder extends localization.LocalizedReactComponent {
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
-          <Row className={styles.metadataItemKey}>
+          <Row className={classNames(
+            styles.metadataItemKey,
+            'cp-library-metadata-item-key'
+          )}>
             {key}
           </Row>
-          <Row className={styles.metadataItemValue}>
+          <Row className={classNames(
+            styles.metadataItemValue,
+            'cp-library-metadata-item-value'
+          )}>
             {value}
           </Row>
         </div>
@@ -857,7 +862,8 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   createPipelineRequest = new CreatePipeline();
 
-  createPipeline = async ({name, description, repository, token}) => {
+  createPipeline = async (opts = {}) => {
+    const {name, description, repository, token} = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -1160,8 +1166,8 @@ export default class Folder extends localization.LocalizedReactComponent {
             }
             entity={
               this.state.issuesItem
-              ? this.state.issuesItem
-              : this.props.folder.value
+                ? this.state.issuesItem
+                : this.props.folder.value
             } />
         }
         {
@@ -1230,13 +1236,18 @@ export default class Folder extends localization.LocalizedReactComponent {
       });
     };
 
-    if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly &&
-      this.props.folderId !== undefined && !this.props.listingMode && roleModel.isManager.entities(this)) {
+    if (
+      roleModel.writeAllowed(this.props.folder.value) &&
+      !this.props.readOnly &&
+      this.props.folderId !== undefined &&
+      !this.props.listingMode &&
+      roleModel.isManager.entities(this)
+    ) {
       actions.push(
         <UploadButton
           key="upload-metadata"
           multiple={false}
-          synchronous={true}
+          synchronous
           onRefresh={async () => {
             await this.props.folder.fetch();
             if (this.props.onReloadTree) {
@@ -1248,11 +1259,16 @@ export default class Folder extends localization.LocalizedReactComponent {
       );
     }
 
-    if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly && !this.props.listingMode) {
+    if (
+      roleModel.writeAllowed(this.props.folder.value) &&
+      !this.props.readOnly &&
+      !this.props.listingMode
+    ) {
       let pipelineTemplatesMenu;
       if (!this.props.templates.pending && roleModel.isManager.pipeline(this)) {
         if (!this.props.templates.error && (this.props.templates.value || []).length > 0) {
-          const templates = (this.props.templates.value || []).filter(template => !template.defaultTemplate);
+          const templates = (this.props.templates.value || [])
+            .filter(template => !template.defaultTemplate);
           pipelineTemplatesMenu = [
             <Menu.Item
               id="create-pipeline-button"
@@ -1298,7 +1314,13 @@ export default class Folder extends localization.LocalizedReactComponent {
               }}
               key={pipelineKey}
               title={<span><Icon type="fork" /> {this.localizedString('Pipeline')}</span>}
-              className={`${styles.actionsSubMenu} create-pipeline-sub-menu-button`}>
+              className={
+                classNames(
+                  styles.actionsSubMenu,
+                  'create-pipeline-sub-menu-button'
+                )
+              }
+            >
               {pipelineTemplatesMenu}
             </Menu.SubMenu>
           );
@@ -1327,7 +1349,13 @@ export default class Folder extends localization.LocalizedReactComponent {
               });
             }}
             title={<span><Icon type="hdd" /> Storages</span>}
-            className={`${styles.actionsSubMenu} create-storage-sub-menu`}>
+            className={
+              classNames(
+                styles.actionsSubMenu,
+                'create-storage-sub-menu'
+              )
+            }
+          >
             <Menu.Item
               id="create-new-storage-button"
               className="create-new-storage-button"
@@ -1363,25 +1391,28 @@ export default class Folder extends localization.LocalizedReactComponent {
         );
       }
       let folderTemplatesMenu;
-      if (!this.props.folderTemplates.pending && roleModel.isManager.folder(this)) {
-        if (!this.props.folderTemplates.error && (this.props.folderTemplates.value || []).length > 0) {
-          folderTemplatesMenu =
-            (this.props.folderTemplates.value || []).map(t => {
-              return (
-                <Menu.Item
-                  id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                  className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                  key={`${folderKey}_${t.id}`}>
-                  <Row>
-                    {t.id.toUpperCase()}
-                  </Row>
-                  <Row style={{fontSize: 'smaller'}}>
-                    {t.description}
-                  </Row>
-                </Menu.Item>
-              );
-            });
-        }
+      if (
+        !this.props.folderTemplates.pending &&
+        roleModel.isManager.folder(this) &&
+        !this.props.folderTemplates.error &&
+        (this.props.folderTemplates.value || []).length > 0
+      ) {
+        folderTemplatesMenu =
+          (this.props.folderTemplates.value || []).map(t => {
+            return (
+              <Menu.Item
+                id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
+                className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
+                key={`${folderKey}_${t.id}`}>
+                <Row>
+                  {t.id.toUpperCase()}
+                </Row>
+                <Row style={{fontSize: 'smaller'}}>
+                  {t.description}
+                </Row>
+              </Menu.Item>
+            );
+          });
       }
       if (roleModel.isManager.folder(this)) {
         createActions.push(
@@ -1446,7 +1477,14 @@ export default class Folder extends localization.LocalizedReactComponent {
           key="descriptions">
           <Row type="flex" justify="space-between" align="middle">
             <span>Descriptions</span>
-            <Icon type="check-circle" style={{display: this.state.showDescription ? 'inherit' : 'none'}} />
+            <Icon
+              type="check-circle"
+              style={{
+                display: this.state.showDescription
+                  ? 'inherit'
+                  : 'none'
+              }}
+            />
           </Row>
         </Menu.Item>
       );
@@ -1454,8 +1492,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (this.props.folderId !== undefined && !this.props.listingMode) {
       displayOptionsMenuItems.push(
         <Menu.Item
-          id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
-          key="metadata">
+          id={
+            this.showMetadata
+              ? 'hide-metadata-button'
+              : 'show-metadata-button'
+          }
+          key="metadata"
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
@@ -1466,8 +1509,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     if ((this.showIssues || this.props.folderId !== undefined) && !this.props.listingMode) {
       displayOptionsMenuItems.push(
         <Menu.Item
-          id={this.showIssues ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-          key="issues">
+          id={
+            this.showIssues
+              ? 'hide-issues-panel-button'
+              : 'show-issues-panel-button'
+          }
+          key="issues"
+        >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
             <Icon type="check-circle" style={{display: this.showIssues ? 'inherit' : 'none'}} />
@@ -1477,7 +1525,10 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
+        <Menu
+          onClick={onSelectDisplayOption}
+          style={{width: 125}}
+        >
           {displayOptionsMenuItems}
         </Menu>
       );
@@ -1485,7 +1536,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       actions.push(
         <Dropdown
           key="display attributes"
-          overlay={displayOptionsMenu}>
+          overlay={displayOptionsMenu}
+        >
           <Button
             id="display-attributes"
             size="small">
@@ -1499,8 +1551,16 @@ export default class Folder extends localization.LocalizedReactComponent {
       const editActions = [];
       if (roleModel.readAllowed(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="edit-folder-button" key="edit">
-            <Icon type="edit" /> {roleModel.writeAllowed(this.props.folder.value) ? 'Edit folder' : 'Permissions'}
+          <Menu.Item
+            id="edit-folder-button"
+            key="edit"
+          >
+            <Icon type="edit" style={{marginRight: 5}} />
+            {
+              roleModel.writeAllowed(this.props.folder.value)
+                ? 'Edit folder'
+                : 'Permissions'
+            }
           </Menu.Item>
         );
       }
@@ -1508,7 +1568,8 @@ export default class Folder extends localization.LocalizedReactComponent {
         editActions.push(
           <Menu.Item
             key="clone"
-            id="clone-folder-button">
+            id="clone-folder-button"
+          >
             <Icon type="copy" /> Clone
           </Menu.Item>
         );
@@ -1516,26 +1577,38 @@ export default class Folder extends localization.LocalizedReactComponent {
       const folderIsReadOnly = this.props.folder.value.locked;
       if (folderIsReadOnly && roleModel.isOwner(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="unlock-button" key="unlock">
+          <Menu.Item
+            id="unlock-button"
+            key="unlock"
+          >
             <Icon type="unlock" /> Unlock
           </Menu.Item>
         );
       } else if (!folderIsReadOnly && roleModel.writeAllowed(this.props.folder.value)) {
         editActions.push(
-          <Menu.Item id="lock-button" key="lock">
+          <Menu.Item
+            id="lock-button"
+            key="lock"
+          >
             <Icon type="lock" /> Lock
           </Menu.Item>
         );
       }
-      if (!this.props.readOnly && roleModel.writeAllowed(this.props.folder.value) && roleModel.isManager.folder(this)) {
+      if (
+        !this.props.readOnly &&
+        roleModel.writeAllowed(this.props.folder.value) &&
+        roleModel.isManager.folder(this)
+      ) {
         if (editActions.length > 0) {
           editActions.push(<Menu.Divider key="divider" />);
         }
         editActions.push(
-          <Menu.Item id="delete-folder-button" key="delete">
-            <Icon
-              type="delete"
-              style={{color: 'red'}} /> Delete
+          <Menu.Item
+            id="delete-folder-button"
+            key="delete"
+            className="cp-danger"
+          >
+            <Icon type="delete" /> Delete
           </Menu.Item>
         );
       }

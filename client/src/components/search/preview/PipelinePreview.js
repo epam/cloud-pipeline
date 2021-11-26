@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -93,7 +94,11 @@ export default class PipelinePreview extends React.Component {
       if (this.props.versions.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.versions.error}</span>
+            <span
+              className="cp-search-preview-error"
+            >
+              {this.props.versions.error}
+            </span>
           </div>
         );
       }
@@ -132,7 +137,11 @@ export default class PipelinePreview extends React.Component {
       if (this.props.history.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.history.error}</span>
+            <span
+              className="cp-search-preview-error"
+            >
+              {this.props.history.error}
+            </span>
           </div>
         );
       }
@@ -160,22 +169,22 @@ export default class PipelinePreview extends React.Component {
           }
           <table className={styles.runTable}>
             <tbody>
-              <tr className={styles.run}>
-                <th className={styles.run}>RUN</th>
-                <th className={styles.run}>VERSION</th>
-                <th className={styles.run}>STARTED</th>
-                <th className={styles.run}>COMPLETED</th>
-                <th className={styles.run}>OWNER</th>
+              <tr className={classNames(styles.run, 'cp-search-content-preview-run')}>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>RUN</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>VERSION</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>STARTED</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>COMPLETED</th>
+                <th className={classNames(styles.run, 'cp-search-content-preview-run')}>OWNER</th>
               </tr>
               {
                 runs.map((run, index) => {
                   return (
                     <tr key={index}>
-                      <td className={styles.run}>{runName(run)}</td>
-                      <td className={styles.run}>{run.version}</td>
-                      <td className={styles.run}>{displayDate(run.startDate)}</td>
-                      <td className={styles.run}>{displayDate(run.endDate)}</td>
-                      <td className={styles.run}><UserName userName={run.owner} /></td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{runName(run)}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{run.version}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{displayDate(run.startDate)}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}>{displayDate(run.endDate)}</td>
+                      <td className={classNames(styles.run, 'cp-search-content-preview-run')}><UserName userName={run.owner} /></td>
                     </tr>
                   );
                 })
@@ -197,20 +206,27 @@ export default class PipelinePreview extends React.Component {
     const attributes = renderAttributes(this.props.metadata);
     const history = this.renderRunHistory();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-search-container'
+          )
+        }
+      >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {versions && renderSeparator()}

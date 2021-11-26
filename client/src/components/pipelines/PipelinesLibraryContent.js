@@ -17,25 +17,34 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Card} from 'antd';
+import classNames from 'classnames';
 import styles from './PipelinesLibrary.css';
 
 export default class PipelinesLibraryContent extends React.Component {
-
   static propTypes = {
     onReloadTree: PropTypes.func,
     location: PropTypes.string,
+    query: PropTypes.string,
     style: PropTypes.object
   };
 
   shouldComponentUpdate (nextProps) {
-    return nextProps.location !== this.props.location;
+    return nextProps.location !== this.props.location ||
+      nextProps.query !== this.props.query;
   }
 
   render () {
     return (
       <Card
         id="pipelines-library-content"
-        className={styles.libraryCard}
+        className={
+          classNames(
+            styles.libraryCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={
           Object.assign(
             {
@@ -55,7 +64,8 @@ export default class PipelinesLibraryContent extends React.Component {
             (child) => React.cloneElement(
               child, {
                 onReloadTree: this.props.onReloadTree,
-                browserLocation: this.props.location
+                browserLocation: this.props.location,
+                browserLocationQuery: this.props.query
               }
             )
           )

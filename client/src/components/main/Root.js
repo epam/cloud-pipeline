@@ -47,8 +47,6 @@ import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
 import UsersInfo from '../../models/user/UsersInfo';
 import AppLocalization from '../../utils/localization';
-import IssuesRenderer from '../../components/special/issues/utilities/IssueRenderer';
-import NotificationRenderer from '../special/notifications/utilities/NotificationRenderer';
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
@@ -60,14 +58,13 @@ import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CloudPipelineThemes from '../../themes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
-const issuesRenderer = new IssuesRenderer(pipelinesLibrary, dockerRegistries, preferences, hiddenObjects);
-const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
 const fireCloudMethods = new FireCloudMethods(googleApi);
@@ -100,6 +97,8 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
+
+const themes = new CloudPipelineThemes();
 
 const Root = () =>
   <Provider
@@ -137,8 +136,6 @@ const Root = () =>
       dataStorageAvailable,
       dtsList,
       dockerRegistries,
-      issuesRenderer,
-      notificationsRenderer,
       myIssues,
       users,
       usersInfo,
@@ -150,7 +147,8 @@ const Root = () =>
       systemDictionaries,
       userMetadataKeys,
       cloudCredentialProfiles,
-      [HiddenObjects.injectionName]: hiddenObjects
+      [HiddenObjects.injectionName]: hiddenObjects,
+      themes
     }}>
     <AppRouter />
   </Provider>;

@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import connect from '../../../utils/connect';
+import classNames from 'classnames';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -110,15 +111,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
       case ItemTypes.storage:
-        const style = {};
-        if (item.sensitive) {
-          style.color = '#ff5c33';
-        }
-        if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          return <Icon type="inbox" style={style} />;
-        } else {
-          return <Icon type="hdd" style={style} />;
-        }
+        const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
+        return (
+          <Icon
+            type={objectStorage ? 'inbox' : 'hdd'}
+            className={classNames({'cp-sensitive': item.sensitive})}
+          />
+        );
       default: return <div />;
     }
   };
@@ -182,10 +181,16 @@ export default class Folder extends localization.LocalizedReactComponent {
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
-          <Row className={styles.metadataItemKey}>
+          <Row className={classNames(
+            styles.metadataItemKey,
+            'cp-library-metadata-item-key'
+          )}>
             {key}
           </Row>
-          <Row className={styles.metadataItemValue}>
+          <Row className={classNames(
+            styles.metadataItemValue,
+            'cp-library-metadata-item-value'
+          )}>
             {value}
           </Row>
         </div>

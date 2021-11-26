@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import {Alert, Card, Col, Icon, Row} from 'antd';
 import displayDate from '../../../../utils/displayDate';
-import NotificationView from '../../../special/notifications/controls/NotificationView';
+import Markdown from '../../../special/markdown';
 import styles from './Panel.css';
 
 @inject('notifications')
@@ -45,19 +45,19 @@ export default class NotificationsPanel extends React.Component {
       case 'INFO':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-notification-status-info"
             type="info-circle-o" />
         );
       case 'WARNING':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-notification-status-warning"
             type="exclamation-circle-o" />
         );
       case 'CRITICAL':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-notification-status-critical"
             type="close-circle-o" />
         );
       default: return undefined;
@@ -75,11 +75,16 @@ export default class NotificationsPanel extends React.Component {
             {notification.title}
           </Row>
           <Row type="flex">
-            <NotificationView
-              text={notification.body}
+            <Markdown
+              md={notification.body}
+              style={{margin: '10px 0', fontSize: 'smaller'}}
             />
           </Row>
-          <Row type="flex" style={{fontSize: 'x-small', color: '#666'}}>
+          <Row
+            type="flex"
+            style={{fontSize: 'x-small'}}
+            className="cp-text-not-important"
+          >
             {displayDate(notification.createdDate)}
           </Row>
         </Col>
@@ -106,7 +111,11 @@ export default class NotificationsPanel extends React.Component {
         {
           this.notifications.map((notification, index) => {
             return (
-              <Card key={index} bodyStyle={{padding: 2}}>
+              <Card
+                key={index}
+                bodyStyle={{padding: 2}}
+                className="cp-panel-card"
+              >
                 {this.renderNotification(notification)}
               </Card>
             );

@@ -15,7 +15,6 @@
  */
 
 .filters {
-  background-color: #fafafa;
   flex: 0 1 auto;
 }
 
@@ -25,7 +24,6 @@
   align-items: center;
   padding: 0 5px;
   margin: 5px 0;
-  border-right: 1px solid #ddd;
 }
 
 .filters .filter:last-child {

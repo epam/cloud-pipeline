@@ -15,10 +15,9 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import Chart from './base';
 import Export from '../export';
-import {generateColors} from './colors';
 import {
   ChartClickPlugin,
   PieChartDataLabelPlugin
@@ -54,7 +53,8 @@ function PieChart (
     style,
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
-    onImageDataReceived
+    onImageDataReceived,
+    reportThemes
   }
 ) {
   if (!request) {
@@ -80,8 +80,8 @@ function PieChart (
   const error = request.error;
   const groups = filteredData.map(d => d.name);
   const currentData = getValues(filteredData, dataSample);
-  const dataColors = generateColors(groups.length, true, false);
-  const dataHoverColors = generateColors(groups.length, true, true);
+  const dataColors = reportThemes.generateColors(groups.length, true, false);
+  const dataHoverColors = reportThemes.generateColors(groups.length, true, true);
   const chartData = {
     labels: groups,
     datasets: [
@@ -90,8 +90,8 @@ function PieChart (
         borderWidth: 2,
         backgroundColor: dataColors,
         hoverBackgroundColor: dataHoverColors,
-        borderColor: '#fff',
-        hoverBorderColor: '#fff'
+        borderColor: reportThemes.backgroundColor,
+        hoverBorderColor: reportThemes.backgroundColor
       }
     ]
   };
@@ -100,11 +100,15 @@ function PieChart (
     cutoutPercentage: 33,
     title: {
       display: !!title,
-      text: title
+      text: title,
+      fontColor: reportThemes.textColor
     },
     legend: {
       // display: false,
-      position: 'right'
+      position: 'right',
+      labels: {
+        fontColor: reportThemes.textColor
+      }
     },
     tooltips: {
       callbacks: {
@@ -132,7 +136,9 @@ function PieChart (
     },
     plugins: {
       [PieChartDataLabelPlugin.id]: {
-        valueFormatter
+        valueFormatter,
+        textColor: reportThemes.textColor,
+        background: reportThemes.backgroundColor
       },
       [ChartClickPlugin.id]: {
         pie: true,
@@ -182,4 +188,4 @@ function PieChart (
   );
 }
 
-export default observer(PieChart);
+export default inject('reportThemes')(observer(PieChart));

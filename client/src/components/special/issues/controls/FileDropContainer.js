@@ -184,9 +184,9 @@ export default class FileDropContainer extends React.Component {
           !this.state.progressHidden &&
           <Row type="flex" className={styles.uploadOverlay} align="middle" justify="center">
             <div
+              className="cp-overlay"
               style={{
-                backgroundColor: '#ccc',
-                opacity: 0.125,
+                opacity: 0.5,
                 width: '100%',
                 height: '100%',
                 position: 'absolute'
