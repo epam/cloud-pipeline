@@ -19,7 +19,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Input,
-  Select
+  Select,
+  Icon,
+  Tooltip
 } from 'antd';
 import {validateName} from './utilities/theme-validation';
 import {ColorVariables, VariableNames} from './utilities/variable-descriptions';
@@ -57,7 +59,8 @@ const FormItem = (
     flex = false,
     control,
     titleClassName,
-    hidden
+    hidden,
+    hint
   }
 ) => (
   <div
@@ -104,6 +107,11 @@ const FormItem = (
       }
       {
         !control && {children}
+      }
+      {hint &&
+        <Tooltip title={hint} placement="left">
+          <Icon type="question-circle" />
+        </Tooltip>
       }
     </div>
     <div
@@ -446,6 +454,7 @@ class UIThemeEditForm extends React.PureComponent {
                       hidden={advanced && !expandedState[section]}
                       property={variable}
                       validation={validation}
+                      hint={VariableNames[variable]}
                     >
                       <ColorVariable
                         disabled={readOnly}
