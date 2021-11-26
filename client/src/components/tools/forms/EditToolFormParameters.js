@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
@@ -24,8 +24,11 @@ import Dropdown from 'rc-dropdown';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import roleModel from '../../../utils/roleModel';
 import styles from './EditToolFormParameters.css';
 
+@inject('runDefaultParameters')
+@roleModel.authenticationInfo
 @observer
 export default class EditToolFormParameters extends React.Component {
   static propTypes = {
@@ -51,6 +54,17 @@ export default class EditToolFormParameters extends React.Component {
       return this.props.skippedSystemParameters;
     }
     return [];
+  }
+
+  @computed
+  get authenticatedUserRolesNames () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return [];
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.map(r => r.name);
   }
 
   openBucketBrowser = (index) => {
@@ -380,6 +394,26 @@ export default class EditToolFormParameters extends React.Component {
     });
   };
 
+  isSystemParameter = (parameter) => {
+    if (this.props.runDefaultParameters.loaded) {
+      return (this.props.runDefaultParameters.value || [])
+        .filter(p => p.name === parameter.name).length > 0;
+    }
+    return false;
+  };
+
+  isSystemParameterRestrictedByRole = (parameter) => {
+    if (this.isSystemParameter(parameter)) {
+      const [systemParam] = (this.props.runDefaultParameters.value || [])
+        .filter(p => p.name === parameter.name);
+      if (systemParam && systemParam.roles && systemParam.roles.length > 0) {
+        return systemParam.roles
+          .some(roleName => this.authenticatedUserRolesNames.includes(roleName));
+      }
+    }
+    return false;
+  };
+
   validate = (parameters, updateState = false) => {
     parameters = (parameters || this.state.parameters);
     const validation = parameters.map(() => {
@@ -388,8 +422,13 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < parameters.length; i++) {
       if (!parameters[i].name) {
         validation[i].error = 'Parameter name is required';
-      } else if ((parameters[i].name || '').toUpperCase() === CP_CAP_LIMIT_MOUNTS) {
-        validation[i].error = 'Parameter name is reserved';
+      } else if (!this.props.isSystemParameters &&
+        this.isSystemParameterRestrictedByRole({name: parameters[i].name || ''})
+      ) {
+        validation[i].error = 'This parameter is not allowed for use';
+      } else if (!this.props.isSystemParameters &&
+        this.isSystemParameter({name: parameters[i].name || ''})) {
+        validation[i].error = 'Name is reserved for system parameter';
       } else if (parameters
         .map(p => (p.name || '').toLowerCase())
         .filter(n => n === (parameters[i].name || '').toLowerCase()).length > 1) {
