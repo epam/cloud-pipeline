@@ -2198,7 +2198,7 @@ export default `
   border-color: @table-border-color;
 }
 @THEME .cp-metadata-item-row {
-  color: @application-color-faded;
+  color: @application-color;
 }
 @THEME .cp-metadata-item-row.key {
   background-color: @element-selected-background-color;
