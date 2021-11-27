@@ -79,6 +79,7 @@ export default class HomePage extends React.Component {
 
   initializeContainer = (container) => {
     if (container) {
+      console.log(container, container.clientWidth);
       this.setState({
         container,
         containerWidth: container.clientWidth || window.innerWidth,
@@ -238,16 +239,41 @@ export default class HomePage extends React.Component {
     }, 250);
   };
 
+  checkContainerSizeChanged = () => {
+    this.checkContainerSizeChangedFrame = requestAnimationFrame(() => {
+      const {
+        container,
+        containerWidth,
+        containerHeight
+      } = this.state;
+      if (
+        container &&
+        (
+          (container.clientWidth && container.clientWidth !== containerWidth) ||
+          (container.clientHeight && container.clientHeight !== containerHeight)
+        )
+      ) {
+        this.setState({
+          containerWidth: container.clientWidth,
+          containerHeight: container.clientHeight
+        });
+      }
+      this.checkContainerSizeChanged();
+    });
+  };
+
   componentDidMount () {
     this.updateInterval = setInterval(() => {
       this.refresh();
     }, UPDATE_TIMEOUT);
     window.addEventListener('resize', this.onWindowResized);
+    this.checkContainerSizeChanged();
   }
 
   componentWillUnmount () {
     clearInterval(this.updateInterval);
     localStorage.setItem('LAST_VISITED', moment.utc().format('YYYY-MM-DD HH:mm:ss'));
     window.removeEventListener('resize', this.onWindowResized);
+    cancelAnimationFrame(this.checkContainerSizeChangedFrame);
   }
 }
