@@ -348,4 +348,13 @@ const VariableNames = {
   [Variables.backgroundImage]: 'backgroundImage'
 };
 
-export {ColorVariables, Variables, VariableNames};
+const VariableDescriptions = {
+  [Variables.applicationBackgroundColor]: 'Application background color'
+};
+
+export {
+  ColorVariables,
+  Variables,
+  VariableNames,
+  VariableDescriptions
+};

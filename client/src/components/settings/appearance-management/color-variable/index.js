@@ -356,6 +356,7 @@ class ColorVariable extends React.Component {
         {this.renderAsColor()}
         <Select
           allowClear
+          showSearch
           disabled={disabled}
           className={
             classNames(
@@ -368,6 +369,12 @@ class ColorVariable extends React.Component {
           value={key === types.color ? undefined : key}
           style={{width: 250}}
           onChange={this.onChangeType}
+          filterOption={
+            (input, option) => {
+              const value = VariableNames[option.key] || option.key;
+              return (value.toLowerCase().indexOf(input.toLowerCase()) >= 0);
+            }
+          }
         >
           {
             variables.map(variable => (
