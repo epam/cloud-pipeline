@@ -104,6 +104,9 @@ public final class BillingUtils {
     public static final String SORT_AGG = "sort";
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
 
+    private BillingUtils() {
+    }
+
     public static String asString(final Object value) {
         return value instanceof LocalDateTime ? asString((LocalDateTime) value)
                 : value instanceof YearMonth ? asString((YearMonth) value)

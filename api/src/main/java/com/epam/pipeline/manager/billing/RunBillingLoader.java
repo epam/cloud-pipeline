@@ -65,9 +65,9 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                                       final BillingDiscount discount,
                                                       final int pageSize) {
         return new ElasticMultiBucketsIterator(BillingUtils.RUN_ID_FIELD, pageSize,
-                pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
-                billingHelper.searchWith(elasticSearchClient),
-                billingHelper::getTerms);
+            pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
+            billingHelper.searchWith(elasticSearchClient),
+            billingHelper::getTerms);
     }
 
     private SearchRequest getBillingsRequest(final LocalDate from,
@@ -92,10 +92,10 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
 
     private Stream<RunBilling> billings(final SearchResponse response) {
         return billingHelper.termBuckets(response.getAggregations(), BillingUtils.RUN_ID_FIELD)
-                .map(bucket -> getRunBilling(bucket.getKeyAsString(), bucket.getAggregations()));
+                .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()));
     }
 
-    private RunBilling getRunBilling(final String id, final Aggregations aggregations) {
+    private RunBilling getBilling(final String id, final Aggregations aggregations) {
         final Optional<Long> cost = billingHelper.getCostSum(aggregations);
         final Optional<Long> duration = billingHelper.getRunUsageSum(aggregations);
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);

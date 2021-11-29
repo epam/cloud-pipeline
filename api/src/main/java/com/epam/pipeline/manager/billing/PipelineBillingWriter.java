@@ -21,19 +21,19 @@ public class PipelineBillingWriter implements BillingWriter<PipelineBilling> {
                                  final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
                 Arrays.asList(
-                        BillingUtils.PIPELINE_COLUMN,
-                        BillingUtils.OWNER_COLUMN),
+                    BillingUtils.PIPELINE_COLUMN,
+                    BillingUtils.OWNER_COLUMN),
                 Arrays.asList(
-                        BillingUtils.RUNS_COUNT_COLUMN,
-                        BillingUtils.DURATION_COLUMN,
-                        BillingUtils.COST_COLUMN),
+                    BillingUtils.RUNS_COUNT_COLUMN,
+                    BillingUtils.DURATION_COLUMN,
+                    BillingUtils.COST_COLUMN),
                 Arrays.asList(
-                        PipelineBilling::getName,
-                        PipelineBilling::getOwner),
+                    PipelineBilling::getName,
+                    PipelineBilling::getOwner),
                 Arrays.asList(
-                        metrics -> BillingUtils.asString(metrics.getRunsNumber()),
-                        metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
-                        metrics -> BillingUtils.asCostString(metrics.getRunsCost())));
+                    metrics -> BillingUtils.asString(metrics.getRunsNumber()),
+                    metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
+                    metrics -> BillingUtils.asCostString(metrics.getRunsCost())));
     }
 
     @Override

@@ -73,9 +73,9 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
                                                       final BillingDiscount discount,
                                                       final int pageSize) {
         return new ElasticMultiBucketsIterator(BillingUtils.TOOL_FIELD, pageSize,
-                pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
-                billingHelper.searchWith(elasticSearchClient),
-                billingHelper::getTerms);
+            pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
+            billingHelper.searchWith(elasticSearchClient),
+            billingHelper::getTerms);
     }
 
     private SearchRequest getBillingsRequest(final LocalDate from,
@@ -120,17 +120,17 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .build())
-                .periodMetrics(getPeriodMetrics(aggregations))
+                .periodMetrics(getMetrics(aggregations))
                 .build();
     }
 
-    private Map<Temporal, ToolBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<Temporal, ToolBillingMetrics> getMetrics(final Aggregations aggregations) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
-                .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
+                .map(bucket -> getMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<Temporal, ToolBillingMetrics> getPeriodMetrics(final String period, final Aggregations aggregations) {
+    private Pair<Temporal, ToolBillingMetrics> getMetrics(final String period, final Aggregations aggregations) {
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 ToolBillingMetrics.builder()

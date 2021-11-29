@@ -28,69 +28,69 @@ public class BillingConfiguration {
     public BillingExporter runBillingExporter(final RunBillingLoader runBillingLoader,
                                               final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("Runs Report",
-                BillingExportType.RUN,
-                runBillingLoader,
-                (request, writer) -> new RunBillingWriter(writer),
-                elasticHelper);
+            BillingExportType.RUN,
+            runBillingLoader,
+            (request, writer) -> new RunBillingWriter(writer),
+            elasticHelper);
     }
 
     @Bean
     public BillingExporter userBillingExporter(final UserBillingLoader userBillingLoader,
                                                final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("General Users Report",
-                BillingExportType.USER,
-                userBillingLoader,
-                (request, writer) -> new UserBillingWriter(writer, request.getFrom(), request.getTo()),
-                elasticHelper);
+            BillingExportType.USER,
+            userBillingLoader,
+            (request, writer) -> new UserBillingWriter(writer, request.getFrom(), request.getTo()),
+            elasticHelper);
     }
 
     @Bean
     public BillingExporter billingCenterBillingExporter(final BillingCenterBillingLoader billingCenterBillingLoader,
                                                         final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("General Billing Centers Report",
-                BillingExportType.BILLING_CENTER,
-                billingCenterBillingLoader,
-                (request, writer) -> new BillingCenterBillingWriter(writer, request.getFrom(), request.getTo()),
-                elasticHelper);
+            BillingExportType.BILLING_CENTER,
+            billingCenterBillingLoader,
+            (request, writer) -> new BillingCenterBillingWriter(writer, request.getFrom(), request.getTo()),
+            elasticHelper);
     }
 
     @Bean
     public BillingExporter storageBillingExporter(final StorageBillingLoader storageBillingLoader,
                                                   final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("Storages Report",
-                BillingExportType.STORAGE,
-                storageBillingLoader,
-                (request, writer) -> new StorageBillingWriter(writer, request.getFrom(), request.getTo()),
-                elasticHelper);
+            BillingExportType.STORAGE,
+            storageBillingLoader,
+            (request, writer) -> new StorageBillingWriter(writer, request.getFrom(), request.getTo()),
+            elasticHelper);
     }
 
     @Bean
     public BillingExporter instanceBillingExporter(final InstanceBillingLoader instanceBillingLoader,
                                                    final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("Instances Report",
-                BillingExportType.INSTANCE,
-                instanceBillingLoader,
-                (request, writer) -> new InstanceBillingWriter(writer, request.getFrom(), request.getTo()),
-                elasticHelper);
+            BillingExportType.INSTANCE,
+            instanceBillingLoader,
+            (request, writer) -> new InstanceBillingWriter(writer, request.getFrom(), request.getTo()),
+            elasticHelper);
     }
 
     @Bean
     public BillingExporter pipelineBillingExporter(final PipelineBillingLoader pipelineBillingLoader,
                                                    final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("Pipelines Report",
-                BillingExportType.PIPELINE,
-                pipelineBillingLoader,
-                (request, writer) -> new PipelineBillingWriter(writer, request.getFrom(), request.getTo()),
-                elasticHelper);
+            BillingExportType.PIPELINE,
+            pipelineBillingLoader,
+            (request, writer) -> new PipelineBillingWriter(writer, request.getFrom(), request.getTo()),
+            elasticHelper);
     }
 
     @Bean
     public BillingExporter toolBillingExporter(final ToolBillingLoader toolBillingLoader,
                                                final GlobalSearchElasticHelper elasticHelper) {
         return new CommonBillingExporter<>("Tools reports",
-                BillingExportType.TOOL,
-                toolBillingLoader,
-                (request, writer) -> new ToolBillingWriter(writer, request.getFrom(), request.getTo()),
-                elasticHelper);
+            BillingExportType.TOOL,
+            toolBillingLoader,
+            (request, writer) -> new ToolBillingWriter(writer, request.getFrom(), request.getTo()),
+            elasticHelper);
     }
 }

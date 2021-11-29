@@ -63,10 +63,9 @@ public class BillingExportManager {
             builder.append(" (");
         }
         if (discount.hasComputes()) {
-
             builder.append("Computes ")
                     .append(discountFormat.format(discount.getComputes()))
-                    .append("%");
+                    .append('%');
         }
         if (discount.hasStorages()) {
             if (discount.hasComputes()) {
@@ -74,10 +73,10 @@ public class BillingExportManager {
             }
             builder.append("Storages ")
                     .append(discountFormat.format(discount.getStorages()))
-                    .append("%");
+                    .append('%');
         }
         if (discount.hasComputes() || discount.hasStorages()) {
-            builder.append(")");
+            builder.append(')');
         }
         return builder.append(" - ")
                 .append(request.getFrom())

@@ -19,29 +19,29 @@ public class StorageBillingWriter implements BillingWriter<StorageBilling> {
                                 final LocalDate to) {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
                 Arrays.asList(
-                        BillingUtils.STORAGE_COLUMN,
-                        BillingUtils.OWNER_COLUMN,
-                        BillingUtils.BILLING_CENTER_COLUMN,
-                        BillingUtils.TYPE_COLUMN,
-                        BillingUtils.REGION_COLUMN,
-                        BillingUtils.PROVIDER_COLUMN,
-                        BillingUtils.CREATED_COLUMN),
+                    BillingUtils.STORAGE_COLUMN,
+                    BillingUtils.OWNER_COLUMN,
+                    BillingUtils.BILLING_CENTER_COLUMN,
+                    BillingUtils.TYPE_COLUMN,
+                    BillingUtils.REGION_COLUMN,
+                    BillingUtils.PROVIDER_COLUMN,
+                    BillingUtils.CREATED_COLUMN),
                 Arrays.asList(
-                        BillingUtils.COST_COLUMN,
-                        BillingUtils.AVERAGE_VOLUME_COLUMN,
-                        BillingUtils.CURRENT_VOLUME_COLUMN),
+                    BillingUtils.COST_COLUMN,
+                    BillingUtils.AVERAGE_VOLUME_COLUMN,
+                    BillingUtils.CURRENT_VOLUME_COLUMN),
                 Arrays.asList(
-                        StorageBilling::getName,
-                        StorageBilling::getOwner,
-                        StorageBilling::getBillingCenter,
-                        b -> BillingUtils.asString(b.getType()),
-                        StorageBilling::getRegion,
-                        StorageBilling::getProvider,
-                        b -> BillingUtils.asString(b.getCreated())),
+                    StorageBilling::getName,
+                    StorageBilling::getOwner,
+                    StorageBilling::getBillingCenter,
+                    b -> BillingUtils.asString(b.getType()),
+                    StorageBilling::getRegion,
+                    StorageBilling::getProvider,
+                    b -> BillingUtils.asString(b.getCreated())),
                 Arrays.asList(
-                        metrics -> BillingUtils.asCostString(metrics.getCost()),
-                        metrics -> BillingUtils.asVolumeString(metrics.getAverageVolume()),
-                        metrics -> BillingUtils.asVolumeString(metrics.getCurrentVolume())));
+                    metrics -> BillingUtils.asCostString(metrics.getCost()),
+                    metrics -> BillingUtils.asVolumeString(metrics.getAverageVolume()),
+                    metrics -> BillingUtils.asVolumeString(metrics.getCurrentVolume())));
     }
 
     @Override

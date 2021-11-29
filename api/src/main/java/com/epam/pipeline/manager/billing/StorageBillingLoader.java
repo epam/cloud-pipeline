@@ -76,9 +76,9 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                                                       final BillingDiscount discount,
                                                       final int pageSize) {
         return new ElasticMultiBucketsIterator(BillingUtils.STORAGE_ID_FIELD, pageSize,
-                pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
-                billingHelper.searchWith(elasticSearchClient),
-                billingHelper::getTerms);
+            pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
+            billingHelper.searchWith(elasticSearchClient),
+            billingHelper::getTerms);
     }
 
     private SearchRequest getBillingsRequest(final LocalDate from,
@@ -125,26 +125,28 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                 .totalMetrics(StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .currentVolume(Long.valueOf(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
+                        .currentVolume(Long.valueOf(BillingUtils.asString(
+                                topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
                         .build())
-                .periodMetrics(getPeriodMetrics(aggregations))
+                .periodMetrics(getMetrics(aggregations))
                 .build();
     }
 
-    private Map<Temporal, StorageBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<Temporal, StorageBillingMetrics> getMetrics(final Aggregations aggregations) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
-                .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
+                .map(bucket -> getMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<Temporal, StorageBillingMetrics> getPeriodMetrics(final String period, final Aggregations aggregations) {
+    private Pair<Temporal, StorageBillingMetrics> getMetrics(final String period, final Aggregations aggregations) {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .currentVolume(Long.valueOf(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
+                        .currentVolume(Long.valueOf(BillingUtils.asString(
+                                topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
                         .build());
     }
 

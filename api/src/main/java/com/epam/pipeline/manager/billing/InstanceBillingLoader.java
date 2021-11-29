@@ -72,9 +72,9 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
                                                       final BillingDiscount discount,
                                                       final int pageSize) {
         return new ElasticMultiBucketsIterator(BillingUtils.INSTANCE_TYPE_FIELD, pageSize,
-                pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
-                billingHelper.searchWith(elasticSearchClient),
-                billingHelper::getTerms);
+            pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
+            billingHelper.searchWith(elasticSearchClient),
+            billingHelper::getTerms);
     }
 
     private SearchRequest getBillingsRequest(final LocalDate from,
@@ -118,17 +118,17 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
                         .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
                         .build())
-                .periodMetrics(getPeriodMetrics(aggregations))
+                .periodMetrics(getMetrics(aggregations))
                 .build();
     }
 
-    private Map<Temporal, InstanceBillingMetrics> getPeriodMetrics(final Aggregations aggregations) {
+    private Map<Temporal, InstanceBillingMetrics> getMetrics(final Aggregations aggregations) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
-                .map(bucket -> getPeriodMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
+                .map(bucket -> getMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<Temporal, InstanceBillingMetrics> getPeriodMetrics(final String period, final Aggregations aggregations) {
+    private Pair<Temporal, InstanceBillingMetrics> getMetrics(final String period, final Aggregations aggregations) {
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 InstanceBillingMetrics.builder()

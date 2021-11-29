@@ -23,14 +23,14 @@ public class InstanceBillingWriter implements BillingWriter<InstanceBilling> {
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
                 Collections.singletonList(BillingUtils.INSTANCE_COLUMN),
                 Arrays.asList(
-                        BillingUtils.RUNS_COUNT_COLUMN,
-                        BillingUtils.DURATION_COLUMN,
-                        BillingUtils.COST_COLUMN),
+                    BillingUtils.RUNS_COUNT_COLUMN,
+                    BillingUtils.DURATION_COLUMN,
+                    BillingUtils.COST_COLUMN),
                 Collections.singletonList(InstanceBilling::getName),
                 Arrays.asList(
-                        metrics -> BillingUtils.asString(metrics.getRunsNumber()),
-                        metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
-                        metrics -> BillingUtils.asCostString(metrics.getRunsCost())));
+                    metrics -> BillingUtils.asString(metrics.getRunsNumber()),
+                    metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
+                    metrics -> BillingUtils.asCostString(metrics.getRunsCost())));
     }
 
     @Override

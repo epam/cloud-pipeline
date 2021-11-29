@@ -21,16 +21,16 @@ public class BillingCenterBillingWriter implements BillingWriter<BillingCenterGe
         this.writer = new PeriodBillingWriter<>(writer, from, to, TABLE_NAME,
                 Collections.singletonList(BillingUtils.BILLING_CENTER_COLUMN),
                 Arrays.asList(
-                        BillingUtils.RUNS_COUNT_COLUMN,
-                        BillingUtils.RUNS_DURATIONS_COLUMN,
-                        BillingUtils.RUNS_COSTS_COLUMN,
-                        BillingUtils.STORAGES_COSTS_COLUMN),
+                    BillingUtils.RUNS_COUNT_COLUMN,
+                    BillingUtils.RUNS_DURATIONS_COLUMN,
+                    BillingUtils.RUNS_COSTS_COLUMN,
+                    BillingUtils.STORAGES_COSTS_COLUMN),
                 Collections.singletonList(BillingCenterGeneralBilling::getName),
                 Arrays.asList(
-                        metrics -> BillingUtils.asString(metrics.getRunsNumber()),
-                        metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
-                        metrics -> BillingUtils.asCostString(metrics.getRunsCost()),
-                        metrics -> BillingUtils.asCostString(metrics.getStoragesCost())));
+                    metrics -> BillingUtils.asString(metrics.getRunsNumber()),
+                    metrics -> BillingUtils.asDurationString(metrics.getRunsDuration()),
+                    metrics -> BillingUtils.asCostString(metrics.getRunsCost()),
+                    metrics -> BillingUtils.asCostString(metrics.getStoragesCost())));
     }
 
     @Override

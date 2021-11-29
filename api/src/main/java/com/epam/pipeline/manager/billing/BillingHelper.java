@@ -91,15 +91,20 @@ public class BillingHelper {
                 commonPrefix,
                 BillingUtils.ES_WILDCARD + BillingUtils.STORAGE + BillingUtils.ES_WILDCARD,
                 BillingUtils.ES_MONTHLY_DATE_REGEXP);
-        this.costAggregation = AggregationBuilders.sum(BillingUtils.COST_FIELD).field(BillingUtils.COST_FIELD);
-        this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG).field(BillingUtils.RUN_USAGE_FIELD);
-        this.uniqueRunsAggregation = AggregationBuilders.count(BillingUtils.RUN_COUNT_AGG).field(BillingUtils.RUN_ID_FIELD);
-        this.storageUsageGroupingAggregation = AggregationBuilders
-                .terms(BillingUtils.STORAGE_GROUPING_AGG).field(BillingUtils.STORAGE_ID_FIELD).size(Integer.MAX_VALUE)
-                .subAggregation(AggregationBuilders.avg(BillingUtils.SINGLE_STORAGE_USAGE_AGG).field(BillingUtils.STORAGE_USAGE_FIELD));
+        this.costAggregation = AggregationBuilders.sum(BillingUtils.COST_FIELD)
+                .field(BillingUtils.COST_FIELD);
+        this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG)
+                .field(BillingUtils.RUN_USAGE_FIELD);
+        this.uniqueRunsAggregation = AggregationBuilders.count(BillingUtils.RUN_COUNT_AGG)
+                .field(BillingUtils.RUN_ID_FIELD);
+        this.storageUsageGroupingAggregation = AggregationBuilders.terms(BillingUtils.STORAGE_GROUPING_AGG)
+                .field(BillingUtils.STORAGE_ID_FIELD)
+                .size(Integer.MAX_VALUE)
+                .subAggregation(AggregationBuilders.avg(BillingUtils.SINGLE_STORAGE_USAGE_AGG)
+                        .field(BillingUtils.STORAGE_USAGE_FIELD));
         this.storageUsageTotalAggregation = PipelineAggregatorBuilders
                 .sumBucket(BillingUtils.TOTAL_STORAGE_USAGE_AGG,
-                        String.format("%s.%s", BillingUtils.STORAGE_GROUPING_AGG, BillingUtils.SINGLE_STORAGE_USAGE_AGG));
+                        fieldsPath(BillingUtils.STORAGE_GROUPING_AGG, BillingUtils.SINGLE_STORAGE_USAGE_AGG));
         this.lastByDateStorageDocAggregation = AggregationBuilders.topHits(BillingUtils.BUCKET_DOCUMENTS)
                 .size(1)
                 .fetchSource(BillingUtils.STORAGE_USAGE_FIELD, null)
@@ -154,8 +159,8 @@ public class BillingHelper {
     private BoolQueryBuilder queryByFilters(final Map<String, List<String>> filters) {
         return MapUtils.emptyIfNull(filters).entrySet().stream()
                 .reduce(QueryBuilders.boolQuery(),
-                        (query, entry) -> query.filter(QueryBuilders.termsQuery(entry.getKey(), entry.getValue())),
-                        BoolQueryBuilder::filter);
+                    (query, entry) -> query.filter(QueryBuilders.termsQuery(entry.getKey(), entry.getValue())),
+                    BoolQueryBuilder::filter);
     }
 
     private RangeQueryBuilder queryByDate(final LocalDate from, final LocalDate to) {
@@ -253,31 +258,40 @@ public class BillingHelper {
 
     public SumBucketPipelineAggregationBuilder aggregateRunUsageSumBucket() {
         return PipelineAggregatorBuilders.sumBucket(BillingUtils.RUN_USAGE_AGG,
-                bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.RUN_USAGE_AGG));
+                aggsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.RUN_USAGE_AGG));
     }
 
     public SumBucketPipelineAggregationBuilder aggregateRunCostSumBucket() {
         return PipelineAggregatorBuilders.sumBucket(BillingUtils.RUN_COST_AGG,
-                bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.RUN_COST_AGG, BillingUtils.COST_FIELD));
+                aggsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.RUN_COST_AGG, BillingUtils.COST_FIELD));
     }
 
     public SumBucketPipelineAggregationBuilder aggregateStorageCostSumBucket() {
         return PipelineAggregatorBuilders.sumBucket(BillingUtils.STORAGE_COST_AGG,
-                bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.STORAGE_COST_AGG, BillingUtils.COST_FIELD));
+                aggsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.STORAGE_COST_AGG,
+                        BillingUtils.COST_FIELD));
     }
 
     public SumBucketPipelineAggregationBuilder aggregateCostSumBucket() {
         return PipelineAggregatorBuilders.sumBucket(BillingUtils.COST_FIELD,
-                bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.COST_FIELD));
+                aggsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.COST_FIELD));
     }
 
     public AvgBucketPipelineAggregationBuilder aggregateStorageUsageAverageBucket() {
         return PipelineAggregatorBuilders.avgBucket(BillingUtils.STORAGE_USAGE_AGG,
-                bucketsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.STORAGE_USAGE_AGG));
+                aggsPath(BillingUtils.HISTOGRAM_AGGREGATION_NAME, BillingUtils.STORAGE_USAGE_AGG));
     }
 
-    private String bucketsPath(final String... paths) {
-        return String.join(BillingUtils.ES_DOC_AGGS_SEPARATOR, paths);
+    private String aggsPath(final String... paths) {
+        return bucketsPath(BillingUtils.ES_DOC_AGGS_SEPARATOR, paths);
+    }
+
+    private String fieldsPath(final String... paths) {
+        return bucketsPath(BillingUtils.ES_DOC_FIELDS_SEPARATOR, paths);
+    }
+
+    private String bucketsPath(final String separator, final String[] paths) {
+        return String.join(separator, paths);
     }
 
     public Optional<Long> getRunUsageSum(final Aggregations aggregations) {
