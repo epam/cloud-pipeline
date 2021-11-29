@@ -265,9 +265,8 @@ class Pipeline(API):
         api = cls.instance()
         response_data = api.call('/run/defaultParameters', None)
         result = []
-        if 'payload' in response_data:
-            for parameter_json in response_data['payload']:
-                result.append(PipelineRunParameterModel.load_from_default_system_parameter(parameter_json))
+        for parameter_json in response_data.get('payload', []):
+            result.append(PipelineRunParameterModel.load_from_default_system_parameter(parameter_json))
         return result
 
     @classmethod

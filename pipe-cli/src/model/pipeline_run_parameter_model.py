@@ -24,16 +24,8 @@ class PipelineRunParameterModel(object):
 
     @staticmethod
     def load_from_default_system_parameter(parameter_json):
-        parameter_name = None
-        parameter_value = None
-        parameter_type = None
-        parameter_roles = []
-        if 'name' in parameter_json:
-            parameter_name = parameter_json['name']
-        if 'defaultValue' in parameter_json:
-            parameter_value = parameter_json['defaultValue']
-        if 'type' in parameter_json:
-            parameter_type = parameter_json['type']
-        if 'roles' in parameter_json:
-            parameter_roles = parameter_json['roles']
+        parameter_name = parameter_json.get('name')
+        parameter_value = parameter_json.get('defaultValue')
+        parameter_type = parameter_json.get('type')
+        parameter_roles = parameter_json.get('roles', [])
         return PipelineRunParameterModel(parameter_name, parameter_value, parameter_type, None, roles=parameter_roles)
