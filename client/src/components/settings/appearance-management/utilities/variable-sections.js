@@ -97,7 +97,12 @@ const input = [
 const main = [
   Variables.applicationBackgroundColor,
   Variables.panelBackgroundColor,
-  Variables.applicationColor
+  Variables.applicationColor,
+  {
+    key: Variables.backgroundImage,
+    advanced: true,
+    type: 'image'
+  }
 ];
 
 const menus = [

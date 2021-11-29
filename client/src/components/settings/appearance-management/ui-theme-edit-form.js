@@ -36,6 +36,7 @@ import getBaseThemes from './utilities/get-base-themes';
 import {sections, sectionsConfiguration} from './utilities/variable-sections';
 import ElementPreview from './element-preview';
 import styles from './ui-theme-edit-form.css';
+import {ImageUploader} from './image-uploader/image-uploader';
 
 const Title = ({className, title, required}) => (
   <span
@@ -244,6 +245,7 @@ class UIThemeEditForm extends React.PureComponent {
   };
 
   build = () => {
+    console.log('build');
     return new Promise((resolve) => {
       const {
         theme = {},
@@ -458,20 +460,20 @@ class UIThemeEditForm extends React.PureComponent {
                 className={styles.sectionContent}
               >
                 <div className={styles.properties}>
-                  {
-                    sectionsConfiguration[section]
-                      .map(({key: variable, advanced = false}) => (
-                        <FormItem
-                          key={variable}
-                          title={VariableNames[variable] || variable}
-                          flex
-                          control
-                          titleClassName={styles.extended}
-                          hidden={advanced && !expandedState[section]}
-                          property={variable}
-                          validation={validation}
-                          hint={VariableDescriptions[variable]}
-                        >
+                  {sectionsConfiguration[section]
+                    .map(({key: variable, advanced = false, type = 'color'}) => (
+                      <FormItem
+                        key={variable}
+                        title={VariableNames[variable] || variable}
+                        flex
+                        control
+                        titleClassName={styles.extended}
+                        hidden={advanced && !expandedState[section]}
+                        property={variable}
+                        validation={validation}
+                        hint={VariableDescriptions[variable]}
+                      >
+                        { type === 'color' ? (
                           <ColorVariable
                             disabled={readOnly}
                             value={themeProperties[variable] || mergedProperties[variable]}
@@ -481,9 +483,16 @@ class UIThemeEditForm extends React.PureComponent {
                             variables={ColorVariables}
                             onChange={this.onChangeConfigurationVariable(variable)}
                           />
-                        </FormItem>
-                      ))
-                  }
+                        ) : (
+                          <ImageUploader
+                            maxSize={null}
+                            img={themeProperties[variable] || mergedProperties[variable]}
+                            modified={!!themeProperties[variable]}
+                            onChange={this.onChangeConfigurationVariable(variable)}
+                          />
+                        )}
+                      </FormItem>
+                    ))}
                 </div>
                 <ElementPreview
                   className={

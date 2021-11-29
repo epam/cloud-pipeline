@@ -345,7 +345,7 @@ const VariableNames = {
   [Variables.codeBackgroundColor]: 'Code editor background color',
   [Variables.searchHighlightTextColor]: 'Search results: highlighted text color',
   [Variables.searchHighlightTextBackgroundColor]: 'Search results: highlighted text background',
-  [Variables.backgroundImage]: 'backgroundImage'
+  [Variables.backgroundImage]: 'Background Image'
 };
 
 const VariableDescriptions = {

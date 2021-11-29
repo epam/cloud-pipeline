@@ -274,7 +274,8 @@ export default `
 @THEME .ant-input-number,
 @THEME .ant-input-number-input,
 @THEME .ant-input-number-handler-wrap,
-@THEME .cp-limit-mounts-input {
+@THEME .cp-limit-mounts-input,
+@THEME .ant-upload {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
@@ -678,7 +679,7 @@ export default `
 }
 @THEME .ant-radio-button-wrapper,
 @THEME .ant-radio-inner {
-  background-color: @panel-background-color;
+  background-color: transparent;
   color: @application-color;
   border-color: @input-border;
 }
@@ -694,6 +695,10 @@ export default `
 @THEME .ant-radio:hover .ant-radio-inner,
 @THEME .ant-radio-focused .ant-radio-inner {
   color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME .ant-radio-inner::after {
+  background-color: @primary-color;
 }
 @THEME .ant-radio-button-wrapper-checked {
   border-color: @primary-color;
@@ -1618,6 +1623,29 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
+}
+
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -2070,8 +2098,8 @@ export default `
   background: @modal-mask-background;
 }
 @THEME .cp-search-preview {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
+  background-color: fade(@card-background-color, 100%);
+  border: 1px solid fade(@panel-border-color, 100%);
 }
 @THEME .cp-search-preview-button {
   color: @application-color;
