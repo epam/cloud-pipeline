@@ -128,7 +128,7 @@ public class KubernetesManager {
     @Value("${kube.deployment.refresh.retries:15}")
     private Integer deploymentRefreshRetries;
 
-    @Value("${kube.label.length.limit:254}")
+    @Value("${kube.annotation.value.length.limit:254}")
     private Integer kubeAnnotationLengthLimit;
 
     public List<Service> getServicesByLabel(final String label) {
