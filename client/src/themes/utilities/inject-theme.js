@@ -14,10 +14,10 @@
  *  limitations under the License.
  */
 
-import template from './theme.less.template';
+import themesTemplate from './theme.less.template';
 import {parseFunctions} from './parse-configuration';
 
-function generateTheme (theme = {}) {
+function generateTheme (theme = {}, template = themesTemplate) {
   const {
     identifier,
     configuration,
@@ -53,6 +53,22 @@ function injectCss (identifier, css) {
     document.head.append(style);
   }
   style.textContent = css;
+}
+
+function ejectCss (identifier) {
+  const domIdentifier = `cp-theme-${identifier}`;
+  let style = document.getElementById(domIdentifier);
+  if (style) {
+    document.head.removeChild(style);
+  }
+}
+
+export function ejectTheme (theme) {
+  try {
+    ejectCss(theme.identifier);
+  } catch (e) {
+    console.warn(`Error ejecting theme: ${e.message}`);
+  }
 }
 
 export default function injectTheme (theme) {

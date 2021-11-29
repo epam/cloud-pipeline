@@ -20,9 +20,11 @@ import getThemes, {
   DefaultLightThemeIdentifier,
   DefaultThemeIdentifier,
   ThemesPreferenceName,
-  generateIdentifier, saveThemes
+  generateIdentifier,
+  saveThemes,
+  getTheme
 } from './themes';
-import injectTheme from './utilities/inject-theme';
+import injectTheme, {ejectTheme} from './utilities/inject-theme';
 import './default.theme.less';
 
 const _TEMPORARY_SYNC_WITH_SYSTEM_KEY = 'CP-THEMES-SYNC-WITH-SYSTEM';
@@ -30,7 +32,10 @@ const _TEMPORARY_LIGHT_THEME_KEY = 'CP-THEMES-SYSTEM-LIGHT';
 const _TEMPORARY_DARK_THEME_KEY = 'CP-THEMES-SYSTEM-DARK';
 const _TEMPORARY_SINGLE_THEME_KEY = 'CP-THEMES-SINGLE';
 
-const DEBUG = true;
+const DEBUG = process.env.DEVELOPMENT;
+if (DEBUG) {
+  console.log('UI Themes mode: DEBUG. You can press "[" and "]" keys to switch between themes');
+}
 
 class CloudPipelineThemes {
   @observable themes = [];
@@ -218,6 +223,47 @@ class CloudPipelineThemes {
       theme = this.singleTheme;
     }
     this.setTheme(theme || this.currentTheme || DefaultLightThemeIdentifier);
+  }
+
+  startTestingTheme (theme) {
+    if (theme) {
+      let {identifier} = theme;
+      if (!identifier) {
+        identifier = 'new-theme';
+      }
+      identifier = identifier.concat('-testing');
+      const regExp = new RegExp(`^${identifier}(-[\d]+|)$`, 'i');
+      const count = this.themes.filter(o => regExp.test(o.identifier));
+      if (count > 1) {
+        identifier = identifier.concat(`-${count + 1}`);
+      }
+      if (this.testingThemeIdentifier && this.testingThemeIdentifier !== identifier) {
+        this.stopTestingTheme();
+      }
+      this.testingThemeIdentifier = identifier;
+      const {
+        properties,
+        extends: baseTheme
+      } = theme;
+      const testingTheme = getTheme(
+        {
+          identifier: identifier.concat('.themes-management'),
+          configuration: properties,
+          extends: baseTheme
+        },
+        this.themes.slice()
+      );
+      injectTheme(testingTheme);
+      return this.testingThemeIdentifier;
+    }
+    return undefined;
+  }
+
+  stopTestingTheme () {
+    if (this.testingThemeIdentifier) {
+      ejectTheme({identifier: this.testingThemeIdentifier});
+    }
+    this.testingThemeIdentifier = undefined;
   }
 
   setTheme (themeIdentifier) {

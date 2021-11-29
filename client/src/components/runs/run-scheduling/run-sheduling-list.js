@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import daysOfWeek from './days-of-week';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 import RunScheduleDialog from './run-scheduling-dialog';
@@ -80,7 +81,13 @@ export default class RunSchedulingList extends React.Component {
       <a
         key="configure scheduling trigger"
         onClick={this.openRunSchedulingDialog}
-        style={{color: '#777', textDecoration: 'underline'}}>
+        className={
+          classNames(
+            'cp-text',
+            'underline'
+          )
+        }
+      >
         <Icon type="setting" />
         Configure
       </a>

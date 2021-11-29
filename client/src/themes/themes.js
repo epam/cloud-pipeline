@@ -110,8 +110,6 @@ export function saveThemes (themes) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(themes || []);
     const request = new PreferencesUpdate();
-    console.log(themes);
-    console.log(payload);
     request
       .send([{
         name: ThemesPreferenceName,
@@ -128,6 +126,12 @@ export function saveThemes (themes) {
       })
       .catch(reject);
   });
+}
+
+export function getTheme (theme, themes) {
+  const result = getThemeConfiguration(theme, themes);
+  result.getParsedConfiguration = parseConfiguration.bind(result, result.configuration);
+  return result;
 }
 
 export default function getThemes () {
@@ -153,11 +157,7 @@ export default function getThemes () {
             ...themes,
             ...customThemesProcessed
           ]
-            .map(theme => getThemeConfiguration(theme, themes))
-            .map(theme => {
-              theme.getParsedConfiguration = parseConfiguration.bind(theme, theme.configuration);
-              return theme;
-            })
+            .map(theme => getTheme(theme, themes))
         );
       });
   });

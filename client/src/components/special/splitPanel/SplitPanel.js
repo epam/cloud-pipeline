@@ -459,7 +459,7 @@ export class SplitPanel extends React.Component {
               vertical: this.isVertical,
               horizontal: !this.isVertical
             },
-            transparentClass
+            this.props.className
           )
         }
         ref={this.initializeSplitPane}

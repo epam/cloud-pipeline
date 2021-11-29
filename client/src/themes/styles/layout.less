@@ -317,7 +317,8 @@ h5 {
 
 .cp-error .ant-input,
 .ant-input.cp-error,
-.ant-select.cp-error .ant-select-selection {
+.ant-select.cp-error .ant-select-selection,
+.ant-input-number.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
@@ -325,6 +326,7 @@ h5 {
 
 .cp-error .ant-input:hover:not(.ant-input-disabled),
 .ant-input.cp-error:hover:not(.ant-input-disabled),
+.ant-input-number.cp-error:hover:not(.ant-input-disabled),
 .ant-select.cp-error:not(.ant-select-disabled) .ant-select-selection:hover {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
@@ -334,6 +336,9 @@ h5 {
 .cp-error .ant-input:active:not(.ant-input-disabled),
 .ant-input.cp-error:focus:not(.ant-input-disabled),
 .ant-input.cp-error:active:not(.ant-input-disabled),
+.ant-input-number.cp-error:focus:not(.ant-input-disabled),
+.ant-input-number.cp-error:active:not(.ant-input-disabled),
+.ant-input-number.cp-error.ant-input-number-focused:not(.ant-input-number-disabled),
 .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:focus,
 .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:active {
   border-color: @color-red;
@@ -353,7 +358,7 @@ h5 {
 }
 
 .ant-modal-content {
-  background-color: fade(@card-background-color, 200%);
+  background-color: fade(@card-background-color, 100%);
   color: @application-color;
 }
 
@@ -527,7 +532,11 @@ h5 {
   height: 100%;
   display: flex;
   flex-direction: row;
-  background-color: @application-background-color;
+  background-color: transparent;
+}
+
+.cp-transparent-background {
+  background-color: transparent !important;
 }
 
 .cp-transparent-background {
@@ -712,6 +721,10 @@ h5 {
 
 .ant-radio-button-wrapper:first-child {
   border-left-color: @input-border;
+}
+
+.ant-radio-button-wrapper:not(:first-child)::before {
+  background-color: @input-border;
 }
 
 .ant-radio-button-wrapper-focused,
@@ -932,7 +945,7 @@ li.ant-calendar-time-picker-select-option-selected {
 .rc-menu,
 .rc-dropdown-menu,
 .ant-mention-dropdown {
-  background-color: fade(@panel-background-color, 200%);
+  background-color: fade(@panel-background-color, 100%);
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1111,7 +1124,7 @@ li.ant-calendar-time-picker-select-option-selected {
 }
 
 .ant-calendar {
-  background-color: fade(@panel-background-color, 200%);
+  background-color: fade(@panel-background-color, 100%);
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
   border-color: @panel-background-color;
   color: @application-color;
@@ -1286,7 +1299,7 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-popover-inner {
-  background-color: fade(@card-background-color, 200%);
+  background-color: fade(@card-background-color, 100%);
   border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1457,6 +1470,11 @@ li.ant-time-picker-panel-select-option-selected {
 
 .ReactTable.-striped .rt-tr.-odd {
   background-color: @even-element-background;
+}
+
+.ReactTable.-highlight .rt-tbody .rt-tr:not(.-padRow):hover {
+  background-color: @element-selected-background-color;
+  color: @element-selected-color;
 }
 
 .ant-form-item-label label {

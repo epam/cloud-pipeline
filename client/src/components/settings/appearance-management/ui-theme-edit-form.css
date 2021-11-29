@@ -29,6 +29,21 @@
   margin-left: 15px;
 }
 
+.section .section-content {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 5px 0;
+}
+
+.section .section-content .properties {
+  flex: 0 0 auto;
+}
+
+.section .section-content .previews {
+  flex: 1;
+  min-width: 200px;
+}
+
 .form-item {
   display: flex;
   align-items: center;

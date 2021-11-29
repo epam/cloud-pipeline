@@ -34,11 +34,12 @@ function getStaticResourcePath (url) {
 }
 
 function staticResource (url) {
-  const uri = getStaticResourcePath(url);
+  const e = /^['"]?(.+)['"]?$/.exec(url.slice(1, -1));
+  const uri = getStaticResourcePath(e[1]);
   if (!uri) {
     return undefined;
   }
-  return `url(${uri})`;
+  return `url('${uri}')`;
 }
 
 export function parseFunctions (content) {

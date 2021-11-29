@@ -350,13 +350,15 @@ export default `
 }
 @THEME .cp-error .ant-input,
 @THEME .ant-input.cp-error,
-@THEME .ant-select.cp-error .ant-select-selection {
+@THEME .ant-select.cp-error .ant-select-selection,
+@THEME .ant-input-number.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
 }
 @THEME .cp-error .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:hover:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error:hover:not(.ant-input-disabled),
 @THEME .ant-select.cp-error:not(.ant-select-disabled) .ant-select-selection:hover {
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
@@ -365,6 +367,9 @@ export default `
 @THEME .cp-error .ant-input:active:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:focus:not(.ant-input-disabled),
 @THEME .ant-input.cp-error:active:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error:focus:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error:active:not(.ant-input-disabled),
+@THEME .ant-input-number.cp-error.ant-input-number-focused:not(.ant-input-number-disabled),
 @THEME .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:focus,
 @THEME .ant-select:not(.ant-select-disabled) .ant-select-selection.cp-error:active {
   border-color: @color-red;
@@ -380,7 +385,7 @@ export default `
   background-color: @modal-mask-background;
 }
 @THEME .ant-modal-content {
-  background-color: fade(@card-background-color, 200%);
+  background-color: fade(@card-background-color, 100%);
   color: @application-color;
 }
 @THEME .ant-confirm-body,
@@ -522,7 +527,10 @@ export default `
   height: 100%;
   display: flex;
   flex-direction: row;
-  background-color: @application-background-color;
+  background-color: transparent;
+}
+@THEME .cp-transparent-background {
+  background-color: transparent !important;
 }
 @THEME .cp-transparent-background {
   background-color: transparent !important;
@@ -678,6 +686,9 @@ export default `
 }
 @THEME .ant-radio-button-wrapper:first-child {
   border-left-color: @input-border;
+}
+@THEME .ant-radio-button-wrapper:not(:first-child)::before {
+  background-color: @input-border;
 }
 @THEME .ant-radio-button-wrapper-focused,
 @THEME .ant-radio-button-wrapper:hover {
@@ -857,7 +868,7 @@ export default `
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
-  background-color: fade(@panel-background-color, 200%);
+  background-color: fade(@panel-background-color, 100%);
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1007,7 +1018,7 @@ export default `
   color: @primary-color;
 }
 @THEME .ant-calendar {
-  background-color: fade(@panel-background-color, 200%);
+  background-color: fade(@panel-background-color, 100%);
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
   border-color: @panel-background-color;
   color: @application-color;
@@ -1152,7 +1163,7 @@ export default `
   border-bottom-color: @card-background-color;
 }
 @THEME .ant-popover-inner {
-  background-color: fade(@card-background-color, 200%);
+  background-color: fade(@card-background-color, 100%);
   border-color: @card-border-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
@@ -1287,6 +1298,10 @@ export default `
 }
 @THEME .ReactTable.-striped .rt-tr.-odd {
   background-color: @even-element-background;
+}
+@THEME .ReactTable.-highlight .rt-tbody .rt-tr:not(.-padRow):hover {
+  background-color: @element-selected-background-color;
+  color: @element-selected-color;
 }
 @THEME .ant-form-item-label label {
   color: @application-color-accent;
@@ -1479,6 +1494,13 @@ export default `
   justify-content: center;
   font-size: larger;
   text-decoration: none;
+}
+@THEME .cp-navigation-panel .cp-divider.cp-navigation-divider {
+  background-color: @navigation-item-color;
+  opacity: 0.5;
+  margin: 0 4px;
+  width: calc(100% - 8px);
+  border: none;
 }
 @THEME .cp-navigation-panel .cp-navigation-menu-item.selected {
   background-color: @navigation-panel-highlighted-color;
@@ -1808,6 +1830,14 @@ export default `
 @THEME .cp-stop-run-modal-confirm-icon {
   color: @color-yellow;
 }
+@THEME .cp-maintenance-rule-deleted {
+  background-color: fade(@color-red, 10%);
+}
+@THEME .ant-input.cp-system-parameter-name-input {
+  color: @application-color-accent;
+  border: none;
+  background-color: transparent;
+}
 
 @THEME .cp-billing-menu {
   width: fit-content;
@@ -1859,7 +1889,7 @@ export default `
   background-color: @card-background-color;
 }
 @THEME .cp-billing-calendar-container {
-  background-color: fade(@panel-background-color, 200%);
+  background-color: fade(@panel-background-color, 100%);
   box-shadow: 0 0 2px 2px @card-hovered-shadow-color;
   color: @application-color;
 }
@@ -2190,11 +2220,11 @@ export default `
   background-color: @tag-value-background-color;
 }
 @THEME .cp-library-metadata-additional-actions {
-  background-color: inherit;
-  border-color: @input-border;
+  background-color: @card-background-color;
+  border-color: @table-border-color;
 }
 @THEME .cp-metadata-item-row {
-  color: @application-color-faded;
+  color: @application-color;
 }
 @THEME .cp-metadata-item-row.key {
   background-color: @element-selected-background-color;
@@ -2246,7 +2276,8 @@ export default `
   background-color: @element-selected-background-color;
 }
 @THEME .cp-library-metadata-table {
-  border: 1px solid @input-border;
+  border: 1px solid @table-border-color;
+  background-color: @card-background-color;
 }
 @THEME .cp-library-metadata-table-cell {
   border-right: 1px solid fadeout(@application-color, 90%);
