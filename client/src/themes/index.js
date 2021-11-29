@@ -20,9 +20,11 @@ import getThemes, {
   DefaultLightThemeIdentifier,
   DefaultThemeIdentifier,
   ThemesPreferenceName,
-  generateIdentifier, saveThemes
+  generateIdentifier,
+  saveThemes,
+  getTheme
 } from './themes';
-import injectTheme from './utilities/inject-theme';
+import injectTheme, {ejectTheme} from './utilities/inject-theme';
 import './default.theme.less';
 
 const _TEMPORARY_SYNC_WITH_SYSTEM_KEY = 'CP-THEMES-SYNC-WITH-SYSTEM';
@@ -221,6 +223,47 @@ class CloudPipelineThemes {
       theme = this.singleTheme;
     }
     this.setTheme(theme || this.currentTheme || DefaultLightThemeIdentifier);
+  }
+
+  startTestingTheme (theme) {
+    if (theme) {
+      let {identifier} = theme;
+      if (!identifier) {
+        identifier = 'new-theme';
+      }
+      identifier = identifier.concat('-testing');
+      const regExp = new RegExp(`^${identifier}(-[\d]+|)$`, 'i');
+      const count = this.themes.filter(o => regExp.test(o.identifier));
+      if (count > 1) {
+        identifier = identifier.concat(`-${count + 1}`);
+      }
+      if (this.testingThemeIdentifier && this.testingThemeIdentifier !== identifier) {
+        this.stopTestingTheme();
+      }
+      this.testingThemeIdentifier = identifier;
+      const {
+        properties,
+        extends: baseTheme
+      } = theme;
+      const testingTheme = getTheme(
+        {
+          identifier: identifier.concat('.themes-management'),
+          configuration: properties,
+          extends: baseTheme
+        },
+        this.themes.slice()
+      );
+      injectTheme(testingTheme);
+      return this.testingThemeIdentifier;
+    }
+    return undefined;
+  }
+
+  stopTestingTheme () {
+    if (this.testingThemeIdentifier) {
+      ejectTheme({identifier: this.testingThemeIdentifier});
+    }
+    this.testingThemeIdentifier = undefined;
   }
 
   setTheme (themeIdentifier) {

@@ -35,6 +35,7 @@ import styles from './appearance-management.css';
 class AppearanceManagement extends React.Component {
   state = {
     editableTheme: undefined,
+    editableThemePreviewClassName: undefined,
     modified: false,
     themePayload: undefined,
     valid: true,
@@ -56,10 +57,10 @@ class AppearanceManagement extends React.Component {
       const theme = themes.find(o => o.identifier === identifier);
       this.setState({
         editableTheme: theme,
-        themePayload: {theme},
+        themePayload: {...theme},
         modified: false,
         valid: true
-      });
+      }, this.injectEditableThemeStyles);
     };
     return (
       <div
@@ -81,6 +82,35 @@ class AppearanceManagement extends React.Component {
     );
   };
 
+  injectEditableThemeStyles = () => {
+    const {
+      themes: themesStore
+    } = this.props;
+    const {
+      editableTheme,
+      themePayload
+    } = this.state;
+    if (themesStore && themePayload && editableTheme) {
+      const {identifier} = editableTheme;
+      const previewClassName = themesStore.startTestingTheme({...themePayload, identifier});
+      this.setState({
+        editableThemePreviewClassName: previewClassName
+      });
+    }
+  };
+
+  ejectEditableThemeStyles = () => {
+    const {
+      themes: themesStore
+    } = this.props;
+    if (themesStore) {
+      themesStore.stopTestingTheme();
+      this.setState({
+        editableThemePreviewClassName: undefined
+      });
+    }
+  };
+
   onChangeTheme = (payload, valid) => {
     const {
       editableTheme
@@ -90,7 +120,7 @@ class AppearanceManagement extends React.Component {
         themePayload: payload,
         modified: !themesAreEqual(payload, editableTheme),
         valid
-      });
+      }, this.injectEditableThemeStyles);
     }
   };
 
@@ -105,7 +135,7 @@ class AppearanceManagement extends React.Component {
       themePayload: {...newTheme},
       modified: false,
       valid: validateTheme(newTheme, this.themes)
-    });
+    }, this.injectEditableThemeStyles);
   };
 
   onSaveTheme = async () => {
@@ -169,6 +199,7 @@ class AppearanceManagement extends React.Component {
           .catch(e => message.error(e.message, 5))
           .then(() => {
             hide();
+            this.ejectEditableThemeStyles();
             this.setState({pending: false});
           });
       });
@@ -181,7 +212,7 @@ class AppearanceManagement extends React.Component {
       themePayload: undefined,
       modified: false,
       valid: true
-    });
+    }, this.ejectEditableThemeStyles);
   };
 
   renderActions = () => {
@@ -244,7 +275,8 @@ class AppearanceManagement extends React.Component {
       authenticatedUserInfo.value.admin;
     const {
       editableTheme,
-      pending
+      pending,
+      editableThemePreviewClassName
     } = this.state;
     const goBack = () => {
       if (editableTheme) {
@@ -307,6 +339,7 @@ class AppearanceManagement extends React.Component {
           !editableTheme && this.renderThemesSelector()
         }
         <UIThemeEditForm
+          previewClassName={editableThemePreviewClassName}
           theme={editableTheme}
           onChange={this.onChangeTheme}
           themes={this.themes}
