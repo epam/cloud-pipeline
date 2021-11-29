@@ -20,13 +20,11 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ToolVersion {
@@ -39,4 +37,8 @@ public class ToolVersion {
     private List<ConfigurationEntry> settings;
     @Builder.Default
     private boolean allowCommit = true;
+
+    public ToolVersion() {
+        this.allowCommit = true;
+    }
 }
