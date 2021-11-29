@@ -54,13 +54,14 @@ public class SystemManagementAO extends SettingsPageAO {
     public SystemManagementAO(PipelinesLibraryAO pipelinesLibraryAO) {
         super(pipelinesLibraryAO);
     }
-        public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(SYSTEM_LOGS_TAB, $$(byClassName("ystem-management__item-row")).findBy(text("LOGS")))
-        );
+
+    public final Map<Primitive, SelenideElement> elements = initialiseElements(
+            entry(SYSTEM_LOGS_TAB, $$(byClassName("ystem-management__item-row")).findBy(text("LOGS")))
+    );
 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
-        if("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
+        if ("false".equalsIgnoreCase(ADMIN_TOKEN_IS_SERVICE)) {
             return new SystemLogsAO();
         }
         return new SystemLogsAO().setIncludeServiceAccountEventsOption();
@@ -158,10 +159,10 @@ public class SystemManagementAO extends SettingsPageAO {
         }
 
         public SystemLogsAO setIncludeServiceAccountEventsOption() {
-            if($(byId("show-hide-advanced")).shouldBe(enabled).has(text("Show advanced"))) {
+            if ($(byId("show-hide-advanced")).shouldBe(enabled).has(text("Show advanced"))) {
                 click(byId("show-hide-advanced"));
             }
-            if(!$(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
+            if (!$(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"))
                     .has(cssClass("ant-checkbox-checked"))) {
                 click(byXpath(".//span[.='Include Service Account Events']/preceding-sibling::span"));
             }
