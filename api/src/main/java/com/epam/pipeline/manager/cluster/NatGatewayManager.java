@@ -225,8 +225,18 @@ public class NatGatewayManager {
     }
 
     private List<Integer> getExternalPortsSpecifiedInAnnotations(final Map<String, String> annotations) {
-        return annotations.keySet().stream()
-            .filter(key -> key.startsWith(TARGET_STATUS_LABEL_PREFIX))
+        return annotations.entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith(TARGET_STATUS_LABEL_PREFIX))
+            .sorted((statusEntry1, statusEntry2) -> {
+                if (NatRouteStatus.ACTIVE.name().equals(statusEntry1.getValue())) {
+                    return -1;
+                } else if (NatRouteStatus.ACTIVE.name().equals(statusEntry2.getValue())) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            })
+            .map(Map.Entry::getKey)
             .map(key -> key.substring(TARGET_STATUS_LABEL_PREFIX.length()))
             .map(Integer::valueOf)
             .collect(Collectors.toList());
