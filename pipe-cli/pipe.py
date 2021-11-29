@@ -1600,6 +1600,7 @@ def start_tunnel_arguments(start_tunnel_command):
     @click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel on the same local port if it has different configuration.')
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+    @functools.wraps(start_tunnel_command)
     def _start_tunnel_command_decorator(*args, **kwargs):
         return start_tunnel_command(*args, **kwargs)
     return functools.update_wrapper(_start_tunnel_command_decorator, start_tunnel_command)
