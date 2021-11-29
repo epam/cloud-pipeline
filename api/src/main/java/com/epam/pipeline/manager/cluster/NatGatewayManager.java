@@ -392,7 +392,18 @@ public class NatGatewayManager {
         final String correspondingServiceName = getProxyServiceName(route.getExternalName());
         final NatRouteStatus statusInQueue = route.getStatus();
         if (proxyServicesMapping.containsKey(correspondingServiceName)) {
-            if (!addQueuedRouteToExistingService(proxyServicesMapping.get(correspondingServiceName), route)) {
+            final Service correspondingService = proxyServicesMapping.get(correspondingServiceName);
+            if (NatRouteStatus.CREATION_SCHEDULED.equals(route.getStatus())
+                && correspondingService.getSpec().getClusterIP().equals(route.getExternalIp())) {
+                final NatRoute routeUpdate = route.toBuilder()
+                    .lastErrorMessage(messageHelper.getMessage
+                        (MessageConstants.NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE))
+                    .status(NatRouteStatus.FAILED)
+                    .build();
+                natGatewayDao.updateRoute(routeUpdate);
+                return;
+            }
+            if (!addQueuedRouteToExistingService(correspondingService, route)) {
                 log.warn(messageHelper.getMessage(
                     MessageConstants.NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED,
                     route.getRouteId(), correspondingServiceName));
