@@ -476,7 +476,8 @@ module.exports = function (webpackEnv) {
         },
         isEnvDevelopment
           ? {
-            'process.env.PUBLIC_URL': JSON.stringify('')
+            'process.env.PUBLIC_URL': JSON.stringify(''),
+            'process.env.DEVELOPMENT': JSON.stringify(true)
           }
           : undefined
       )),
