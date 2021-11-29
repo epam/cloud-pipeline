@@ -661,13 +661,14 @@ public class NatGatewayManager {
                                                         String.join(Constants.COMMA, activeRules));
     }
 
-    private HashSet<String> getActivePortForwardingRules(final Optional<ConfigMap> globalConfigMap) {
+    private Set<String> getActivePortForwardingRules(final Optional<ConfigMap> globalConfigMap) {
         return globalConfigMap.map(ConfigMap::getData)
             .map(data -> data.get(portForwardingRuleKey))
             .map(portForwardingString -> portForwardingString.split(Constants.COMMA))
-            .map(Arrays::asList)
-            .map(HashSet::new)
-            .orElse(new HashSet<>());
+            .map(Stream::of)
+            .orElse(Stream.empty())
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.toSet());
     }
 
     private boolean addDnsMask(final Service service, final Integer newPort) {
