@@ -260,13 +260,15 @@ public class NatGatewayManager {
 
         }
         refreshKubeDns();
-        return removeStatusLabels(service, port);
+        return removeStatusAnnotations(service, port);
     }
 
-    private boolean removeStatusLabels(final Service service, final Integer port) {
-        final HashSet<String> labelsToRemove =
-            new HashSet<>(Arrays.asList(getCurrentStatusLabelName(port), getTargetStatusLabelName(port)));
-        return kubernetesManager.removeLabelsFromExistingService(getServiceName(service), labelsToRemove);
+    private boolean removeStatusAnnotations(final Service service, final Integer port) {
+        final Set<String> annotationsToRemove = Stream.of(getCurrentStatusLabelName(port),
+                                                          getTargetStatusLabelName(port),
+                                                          getLastUpdateTimeLabelName(port))
+            .collect(Collectors.toSet());
+        return kubernetesManager.removeAnnotationsFromExistingService(getServiceName(service), annotationsToRemove);
     }
 
     private boolean processScheduledStartup(final Service service, final Map<Integer, ServicePort> activePorts,
@@ -591,9 +593,13 @@ public class NatGatewayManager {
             return true;
         }
         final String serviceName = getServiceName(service);
-        return activePorts.size() == 1
+        final List<ServicePort> portsUpdate = activePorts.entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(port))
+            .map(Map.Entry::getValue)
+            .collect(Collectors.toList());
+        return portsUpdate.size() == 0
                ? kubernetesManager.deleteServiceIfExists(serviceName)
-               : kubernetesManager.removePortFromExistingService(serviceName, activePorts.get(port).getName());
+               : kubernetesManager.setPortsToService(serviceName, portsUpdate);
     }
 
     private boolean removeDnsMaks(final Service service, final Map<Integer, ServicePort> activePorts,

@@ -394,25 +394,25 @@ public class KubernetesManager {
         }
     }
 
-    public boolean removeLabelsFromExistingService(final String serviceName, final Set<String> labels) {
+    public boolean removeAnnotationsFromExistingService(final String serviceName, final Set<String> annotations) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Map<String, String> correspondingLabels = client.services()
+            final Map<String, String> correspondingAnnotations = client.services()
                 .inNamespace(kubeNamespace)
                 .withName(serviceName)
                 .get()
                 .getMetadata()
-                .getLabels()
+                .getAnnotations()
                 .entrySet()
                 .stream()
-                .filter(e -> labels.contains(e.getKey()))
+                .filter(e -> annotations.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            if (MapUtils.isNotEmpty(correspondingLabels)) {
+            if (MapUtils.isNotEmpty(correspondingAnnotations)) {
                 client.services()
                     .inNamespace(kubeNamespace)
                     .withName(serviceName)
                     .edit()
                     .editMetadata()
-                    .removeFromLabels(correspondingLabels)
+                    .removeFromAnnotations(correspondingAnnotations)
                     .endMetadata()
                     .done();
             }
@@ -445,14 +445,14 @@ public class KubernetesManager {
         return serviceName + KubernetesConstants.HYPHEN + externalPort.toString();
     }
 
-    public boolean removePortFromExistingService(final String serviceName, final String portName) {
+    public boolean setPortsToService(final String serviceName, final List<ServicePort> portsUpdate) {
         try (KubernetesClient client = getKubernetesClient()) {
             client.services()
                 .inNamespace(kubeNamespace)
                 .withName(serviceName)
                 .edit()
                     .editSpec()
-                        .removeFromPorts(getTcpPortSpec(portName, null, null))
+                        .withPorts(portsUpdate)
                     .endSpec()
                 .done();
             return true;
