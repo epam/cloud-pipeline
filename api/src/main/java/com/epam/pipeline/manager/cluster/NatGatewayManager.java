@@ -212,7 +212,11 @@ public class NatGatewayManager {
     }
 
     private Map<Integer, ServicePort> getServiceActivePorts(final Service service) {
-        return service.getSpec().getPorts().stream()
+        return kubernetesManager.findServiceByName(service.getMetadata().getName())
+            .map(Service::getSpec)
+            .map(ServiceSpec::getPorts)
+            .map(Collection::stream)
+            .orElse(Stream.empty())
             .collect(Collectors.toMap(ServicePort::getPort, Function.identity()));
     }
 
@@ -257,20 +261,21 @@ public class NatGatewayManager {
                 serviceName, port,
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED));
         }
-        if (!removePortFromService(service, activePorts, port)) {
+        if (removePortFromService(service, activePorts, port)) {
+            final ServicePort removedPort = activePorts.remove(port);
+            if (removedPort != null && !refreshTinyProxy()) {
+                return setStatusFailed(
+                    serviceName, port,
+                    messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
+            }
+        } else {
             return setStatusFailed(
                 serviceName, port,
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED));
         }
-        if (activePorts.containsKey(port)
-            && !refreshTinyProxy()) {
-            return setStatusFailed(
-                serviceName, port,
-                messageHelper.getMessage(MessageConstants.NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED));
-
-        }
         refreshKubeDns();
-        return removeStatusAnnotations(service, port);
+        return activePorts.size() == 0
+               || removeStatusAnnotations(service, port);
     }
 
     private boolean removeStatusAnnotations(final Service service, final Integer port) {

@@ -1032,6 +1032,12 @@ public class KubernetesManager {
         }
     }
 
+    public Optional<Service> findServiceByName(final String serviceName) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return findServiceByName(client, serviceName);
+        }
+    }
+
     public boolean deleteService(final Service service) {
         try (KubernetesClient client = getKubernetesClient()) {
             return deleteService(client, service);
