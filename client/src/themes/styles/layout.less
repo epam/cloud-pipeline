@@ -139,7 +139,7 @@ a.cp-danger:focus,
 
 .cp-sensitive-tag {
   background-color: @color-sensitive;
-  color: @btn-color;
+  color: @btn-danger-active-color;
 }
 
 .cp-sensitive-tag.bordered {
@@ -206,6 +206,8 @@ a.cp-danger:focus,
 
 .ant-layout-sider {
   background-color: @navigation-panel-color;
+  background-image: @navigation-background-image;
+  background-size: cover;
 }
 
 .ant-layout {
@@ -227,10 +229,16 @@ h5 {
 .ant-input-number,
 .ant-input-number-input,
 .ant-input-number-handler-wrap,
-.cp-limit-mounts-input {
+.cp-limit-mounts-input,
+.ant-upload {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
+}
+
+.transparent-upload .ant-upload {
+  background-color: transparent;
+  border-color: transparent;
 }
 
 .chrome-picker input {
@@ -388,7 +396,7 @@ h5 {
   color: @application-color;
 }
 
-.cp-even-odd-element:nth-child(even) {
+.cp-even-odd-element:nth-child(even):not(.cp-table-element-selected) {
   background-color: @even-element-background;
 }
 
@@ -409,8 +417,8 @@ h5 {
 .ant-menu,
 .ant-menu-submenu > .ant-menu {
   background-color: transparent;
-  color: @menu-color;
-  border-color: @menu-border-color;
+  color: @application-color;
+  border-color: @panel-border-color;
 }
 
 .ant-menu > .ant-menu-item > a,
@@ -446,11 +454,11 @@ h5 {
 }
 
 .ant-tabs {
-  color: @menu-color;
+  color: @application-color;
 }
 
 .ant-tabs .ant-tabs-bar {
-  border-color: @menu-border-color;
+  border-color: @panel-border-color;
 }
 
 .ant-tabs .ant-tabs-bar .ant-tabs-ink-bar {
@@ -629,24 +637,24 @@ h5 {
 }
 
 .ant-btn-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 
 .ant-btn-primary:hover,
 .ant-btn-primary:focus {
-  color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 
 .ant-btn-primary.active,
 .ant-btn-primary:active,
 .ant-btn-primary.ant-btn-clicked {
-  color: @btn-color;
-  background-color: @btn-primary-active;
-  border-color: @btn-primary-active;
+  color: @primary-text-color;
+  background-color: @primary-active-color;
+  border-color: @primary-active-color;
 }
 
 .ant-btn-background-ghost.ant-btn-primary {
@@ -662,31 +670,26 @@ h5 {
 }
 
 .ant-btn-danger:focus,
-.ant-btn-danger:hover {
-  color: @btn-color;
-  background-color: @btn-danger-color;
-  border-color: @btn-danger-color;
-}
-
+.ant-btn-danger:hover,
 .ant-btn-danger.active,
 .ant-btn-danger:active {
-  color: @btn-color;
-  background-color: @btn-danger-active-color;
-  border-color: @btn-danger-active-color;
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 
 .ant-btn-group .ant-btn-primary:first-child:not(:last-child) {
-  border-right-color: @btn-primary-active;
+  border-right-color: @primary-active-color;
 }
 
 .ant-btn-group .ant-btn-primary:last-child:not(:first-child),
 .ant-btn-group .ant-btn-primary + .ant-btn-primary {
-  border-left-color: @btn-primary-active;
+  border-left-color: @primary-active-color;
 }
 
 .ant-btn-group .ant-btn-primary:not(:first-child):not(:last-child) {
-  border-right-color: @btn-primary-active;
-  border-left-color: @btn-primary-active;
+  border-right-color: @primary-active-color;
+  border-left-color: @primary-active-color;
 }
 
 .ant-btn.disabled,
@@ -711,7 +714,7 @@ h5 {
 
 .ant-radio-button-wrapper,
 .ant-radio-inner {
-  background-color: @panel-background-color;
+  background-color: transparent;
   color: @application-color;
   border-color: @input-border;
 }
@@ -730,6 +733,10 @@ h5 {
 .ant-radio:hover .ant-radio-inner,
 .ant-radio-focused .ant-radio-inner {
   color: @primary-color;
+  border-color: @primary-color;
+}
+.ant-radio-inner::after {
+  background-color: @primary-color;
 }
 
 .ant-radio-button-wrapper-checked {
@@ -969,12 +976,12 @@ li.ant-calendar-time-picker-select-option-selected {
 
 .rc-menu,
 .rc-dropdown-menu {
-  border-color: @card-border-color;
+  border-color: @panel-border-color;
 }
 
 .rc-menu > .rc-menu-item-divider,
 .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @card-border-color;
+  background-color: @panel-border-color;
 }
 
 .ant-select-selection__placeholder,
@@ -1039,8 +1046,8 @@ li.ant-calendar-time-picker-select-option-selected {
 .ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger:hover,
 .ant-dropdown-menu > .ant-dropdown-menu-item-active.cp-danger,
 .ant-dropdown-menu > .ant-dropdown-menu-item-selected.cp-danger {
-  color: @btn-color;
-  background-color: @btn-danger-active-color;
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
 }
 
 .rc-menu-item.rc-menu-item-disabled,
@@ -1050,6 +1057,14 @@ li.ant-calendar-time-picker-select-option-selected {
 .rc-dropdown-menu-item-disabled,
 .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
+}
+
+.rc-menu-item.rc-menu-item-selected {
+  background-color: fade(@panel-background-color, 100%);
+}
+
+.rc-menu-item.rc-menu-item-selected:hover {
+  background-color: @element-hover-background-color;
 }
 
 .ant-select-dropdown-menu-item-selected,
@@ -1335,23 +1350,23 @@ a[role="button"].ant-calendar-year-panel-month-select {
 }
 
 .ant-calendar .ant-calendar-ok-btn {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 
 .ant-calendar .ant-calendar-ok-btn:focus,
 .ant-calendar .ant-calendar-ok-btn:hover {
-  color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 
 .ant-calendar .ant-calendar-ok-btn.active,
 .ant-calendar .ant-calendar-ok-btn:active {
-  color: @btn-color;
-  background-color: @btn-primary-active;
-  border-color: @btn-primary-active;
+  color: @primary-text-color;
+  background-color: @primary-active-color;
+  border-color: @primary-active-color;
 }
 
 .ant-time-picker-input {

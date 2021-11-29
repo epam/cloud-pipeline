@@ -27,6 +27,11 @@
 
 @primary-color-semi-transparent: fade(@primary-color, 20%);
 
+@color-success: #09ab5a;
+@color-error: #f04134;
+@color-warning: #ff8818;
+@color-info: @primary-color;
+
 @color-green: #09ab5a;
 @color-red: #f04134;
 @color-yellow: #ff8818;
@@ -55,7 +60,7 @@
 @input-color: rgba(0, 0, 0, 0.65);
 @input-placeholder-color: rgba(0, 0, 0, 0.3);
 @input-border-hover-color: @primary-hover-color;
-@input-shadow-color: rgba(16, 142, 233, 0.2);
+@input-shadow-color: fade(@input-border-hover-color, 20%);
 @input-search-icon-color: rgba(0, 0, 0, 0.65);
 @input-search-icon-hovered-color: @primary-hover-color;
 
@@ -65,7 +70,7 @@
 @card-background-color: white;
 @card-border-color: #ddd;
 @card-hovered-shadow-color: rgba(0, 0, 0, 0.2);
-@card-actions-active-background: rgb(225, 241, 252);
+@card-actions-active-background: fade(@primary-color, 20%);
 @card-header-background: #eee;
 
 @card-service-background-color: #ffffe0;
@@ -88,6 +93,7 @@
 @nfs-icon-color: #116118;
 
 @icons-root: '/icons';
+@public-root: '/';
 @aws-icon: url('@{icons-root}/providers/aws.svg');
 @aws-icon-contrast: url('@{icons-root}/providers/aws-light.svg');
 @gcp-icon: url('@{icons-root}/providers/gcp.svg');
@@ -135,22 +141,21 @@
 @table-border-color: @card-border-color;
 @table-head-color: @application-color-accent;
 
-@menu-color: @application-color;
 @menu-active-color: @primary-color;
-@menu-border-color: @table-border-color;
 
-@btn-color: @primary-text-color;
-@btn-primary-hover: @primary-hover-color;
-@btn-primary-active: @primary-active-color;
-@btn-danger-color: @color-red;
-@btn-danger-active-color: #d73435;
+@btn-danger-color: @color-error;
+@btn-danger-background-color: @btn-disabled-background-color;
+@btn-danger-active-color: @primary-text-color;
+@btn-danger-active-background: #d73435;
+
 @btn-disabled-color: rgba(0, 0, 0, 0.25);
 @btn-disabled-background-color: #f7f7f7;
-@btn-danger-background-color: @btn-disabled-background-color;
 
 @code-background-color: darken(@card-background-color, 5%);
 
 @search-highlight-text-color: @application-color;
-@search-highlight-text-background-color: @color-yellow;
+@search-highlight-text-background-color: @color-warning;
 
 @background-image: none;
+@navigation-background-image: none;
+@logo-image: url('@{public-root}logo.png');

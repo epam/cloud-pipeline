@@ -188,8 +188,8 @@ a.cp-search-result-item.disabled,
 }
 
 .cp-search-preview {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid fade(@panel-border-color, 100%);
 }
 
 .cp-search-preview-button {
@@ -273,16 +273,16 @@ a.cp-search-result-item.disabled,
 }
 
 .cp-search-faceted-button.selected {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 
 .cp-search-faceted-button.selected:hover,
 .cp-search-faceted-button.selected:focus {
-  color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 
 .cp-search-faceted-button.disabled,

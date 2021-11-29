@@ -69,14 +69,14 @@
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button-danger {
-  background-color: @btn-danger-color;;
-  border-color: @btn-danger-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button {
@@ -85,15 +85,15 @@
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-blue {
-  color: @color-blue;
+  color: @color-info;
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-yellow {
-  color: @color-yellow;
+  color: @color-warning;
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-green {
-  color: @color-green;
+  color: @color-success;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item.selected {
@@ -122,6 +122,19 @@
   background-color: @application-color;
 }
 
+.theme-identifier .theme-preview-bordered {
+  border: 1px solid @application-color;
+}
+
 .color-presenter {
   border-color: @application-color;
+}
+
+.image-uploader {
+  border-color: @application-color;
+  background-color: @application-background-color;
+}
+
+.image-uploader .uploader-thumb-image {
+  background-color: fade(@application-background-color, 25%);
 }

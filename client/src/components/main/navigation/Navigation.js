@@ -277,7 +277,9 @@ export default class Navigation extends React.Component {
               <Button
                 id="navigation-button-logo"
                 className="cp-navigation-menu-item">
-                <img src="logo.png" style={{height: 26}} />
+                <div className="cp-navigation-item-logo">
+                  {'\u00A0'}
+                </div>
               </Button>
             </Popover>
           }

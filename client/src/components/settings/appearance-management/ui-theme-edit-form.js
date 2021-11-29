@@ -18,17 +18,30 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
+  Button,
   Input,
-  Select
+  Select,
+  Icon,
+  Tooltip, Modal
 } from 'antd';
 import {validateName} from './utilities/theme-validation';
-import {ColorVariables, VariableNames} from './utilities/variable-descriptions';
+import {
+  ColorVariables,
+  VariableNames,
+  VariableDescriptions
+} from './utilities/variable-descriptions';
 import {getThemeConfiguration, parseConfiguration} from '../../../themes/themes';
 import ColorVariable from './color-variable';
 import {ParseConfigurationError} from '../../../themes/utilities/parse-configuration';
 import getBaseThemes from './utilities/get-base-themes';
-import {sections, sectionsConfiguration} from './utilities/variable-sections';
+import {
+  sections,
+  sectionsConfiguration,
+  VariableTypes
+} from './utilities/variable-sections';
+import ElementPreview from './element-preview';
 import styles from './ui-theme-edit-form.css';
+import ImageUploader from './image-uploader';
 
 const Title = ({className, title, required}) => (
   <span
@@ -50,88 +63,96 @@ const Title = ({className, title, required}) => (
 const FormItem = (
   {
     children,
+    divider = false,
     title,
     required,
     property,
     validation = {},
     flex = false,
-    control,
     titleClassName,
-    hidden
+    hidden,
+    hint
   }
-) => (
-  <div
-    className={
-      classNames(
-        styles.formItemContainer,
-        {
-          [styles.error]: property && !!validation[property],
-          [styles.hidden]: hidden
-        }
-      )
-    }
-  >
-    <div
-      className={
-        classNames(
-          styles.formItem,
-          {
-            [styles.flex]: flex
-          }
-        )
-      }
-    >
-      <Title className={titleClassName} title={title} required={required} />
-      {
-        control && React.cloneElement(
-          children,
-          {
-            ...(children.props || {}),
-            ...(
-              children.type === ColorVariable
-                ? {error: property && !!validation[property]}
-                : {}
-            ),
-            className: classNames(
-              (children.props || {}).className,
-              styles.control,
-              {
-                'cp-error': property && !!validation[property]
-              }
-            )
-          }
-        )
-      }
-      {
-        !control && {children}
-      }
-    </div>
-    <div
-      className={
-        classNames(
-          styles.errorContainer,
-          styles.formItem
-        )
-      }
-    >
-      <Title className={titleClassName} title={title} required={required} />
-      <span
+) => {
+  if (divider) {
+    return (
+      <div
         className={
           classNames(
-            styles.errorDescription,
-            'cp-error'
+            styles.formItemDivider,
+            {[styles.hidden]: hidden}
           )
         }
       >
-        {!!property && validation[property]}
-      </span>
+        {'\u00A0'}
+      </div>
+    );
+  }
+  return (
+    <div
+      className={
+        classNames(
+          styles.formItemContainer,
+          {
+            [styles.error]: property && !!validation[property],
+            [styles.hidden]: hidden
+          }
+        )
+      }
+    >
+      <div
+        className={
+          classNames(
+            styles.formItem,
+            {
+              [styles.flex]: flex
+            }
+          )
+        }
+      >
+        <Title className={titleClassName} title={title} required={required} />
+        {children}
+        {
+          hint && (
+            <Tooltip
+              title={hint}
+              placement="left"
+            >
+              <Icon
+                type="question-circle"
+                style={{marginLeft: 5}}
+              />
+            </Tooltip>
+          )
+        }
+      </div>
+      <div
+        className={
+          classNames(
+            styles.errorContainer,
+            styles.formItem
+          )
+        }
+      >
+        <Title className={titleClassName} title={title} required={required} />
+        <span
+          className={
+            classNames(
+              styles.errorDescription,
+              'cp-error'
+            )
+          }
+        >
+          {!!property && validation[property]}
+        </span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Section = (
   {
-    expandable = {},
+    expandable,
     children,
     identifier,
     title,
@@ -190,9 +211,8 @@ class UIThemeEditForm extends React.PureComponent {
     mergedProperties: {},
     parsedValues: {},
     validation: {},
-    expandedState: {
-      background: false
-    }
+    propertiesValidation: {},
+    expandedState: {}
   };
 
   componentDidMount () {
@@ -220,60 +240,66 @@ class UIThemeEditForm extends React.PureComponent {
       name,
       extends: baseThemeIdentifier,
       themeProperties: {...(theme.properties || {})},
-      validation: {}
+      initialProperties: {...(theme.properties || {})},
+      validation: {},
+      propertiesValidation: {},
+      expandedState: {}
     }, () => this.build());
   };
 
-  build = () => {
-    return new Promise((resolve) => {
-      const {
-        theme = {},
-        themes = []
-      } = this.props;
-      const {
-        identifier
-      } = theme;
-      const {
-        themeProperties = {},
-        extends: baseThemeIdentifier
-      } = this.state;
-      const {
-        configuration: mergedProperties
-      } = getThemeConfiguration(
-        {
-          identifier,
-          extends: baseThemeIdentifier,
-          configuration: themeProperties
-        },
-        themes
-      );
-      let parsed = {};
-      let propertiesLoop = [];
-      try {
+  build = (skipProperties = false) => new Promise((resolve) => {
+    const {
+      theme = {},
+      themes = []
+    } = this.props;
+    const {
+      identifier
+    } = theme;
+    const {
+      themeProperties = {},
+      extends: baseThemeIdentifier,
+      mergedProperties: prevMergedProperties,
+      parsedValues: prevParsedValues
+    } = this.state;
+    let mergedProperties = prevMergedProperties;
+    let parsed = prevParsedValues;
+    let propertiesLoop = [];
+    try {
+      if (!skipProperties) {
+        mergedProperties = getThemeConfiguration(
+          {
+            identifier,
+            extends: baseThemeIdentifier,
+            configuration: themeProperties
+          },
+          themes
+        ).configuration;
         parsed = parseConfiguration(mergedProperties);
-      } catch (e) {
-        console.warn(e.message);
-        if (e instanceof ParseConfigurationError) {
-          propertiesLoop = e.variables.slice();
-        }
-      } finally {
-        this.setState({
-          parsedValues: parsed,
-          mergedProperties
-        }, () => resolve({
-          parsed,
-          merged: mergedProperties,
-          loops: propertiesLoop
-        }));
       }
-    });
-  };
+    } catch (e) {
+      console.warn(e.message);
+      if (e instanceof ParseConfigurationError) {
+        propertiesLoop = e.variables.slice();
+      }
+    } finally {
+      this.setState({
+        parsedValues: parsed,
+        mergedProperties
+      }, () => resolve({
+        parsed,
+        merged: mergedProperties,
+        loops: propertiesLoop,
+        skipProperties
+      }));
+    }
+  });
 
   onChange = (valid) => {
     const {
       name,
       extends: baseTheme,
-      themeProperties = {}
+      themeProperties = {},
+      parsedValues
     } = this.state;
     const {
       onChange
@@ -283,14 +309,15 @@ class UIThemeEditForm extends React.PureComponent {
         {
           name,
           extends: baseTheme,
-          properties: {...themeProperties}
+          properties: {...themeProperties},
+          parsed: parsedValues
         },
         valid
       );
     }
   };
 
-  validate = (loops = []) => {
+  validate = (loops = [], skipProperties = false) => {
     return new Promise((resolve) => {
       const {
         name
@@ -302,37 +329,49 @@ class UIThemeEditForm extends React.PureComponent {
       const {
         identifier
       } = theme;
-      const validation = {
-        name: validateName(name, themes.filter(o => o.identifier !== identifier))
+      const state = {
+        validation: {
+          name: validateName(name, themes.filter(o => o.identifier !== identifier))
+        }
       };
-      loops.forEach(variable => {
-        validation[variable] = 'Properties loop detected';
+      if (!skipProperties) {
+        state.propertiesValidation = {};
+        loops.forEach(variable => {
+          state.propertiesValidation[variable] = 'Properties loop detected';
+        });
+      }
+      this.setState(state, () => {
+        const {
+          validation = {},
+          propertiesValidation = {}
+        } = this.state;
+        resolve(
+          !Object.values(validation).some(Boolean) &&
+          !Object.values(propertiesValidation || {}).some(Boolean)
+        );
       });
-      this.setState({
-        validation
-      }, () => resolve(!Object.values(validation).some(Boolean)));
     });
   };
 
-  commitChange = () => {
-    this.build()
-      .then(({loops = []} = {}) => this.validate(loops))
+  commitChange = (skipProperties = false) => {
+    this.build(skipProperties)
+      .then(({loops = [], skipProperties} = {}) => this.validate(loops, skipProperties))
       .then((valid) => this.onChange(valid));
   };
 
   onChangeName = (e) => {
     this.setState({
       name: e.target.value
-    }, this.commitChange);
+    }, () => this.commitChange(true));
   };
 
   onChangeBaseTheme = (e) => {
     this.setState({
       extends: e
-    }, this.commitChange);
+    }, () => this.commitChange());
   };
 
-  onChangeConfigurationVariable = (variable) => (value) => {
+  onChangeConfigurationVariable = (variable, value) => {
     const {
       themeProperties = {}
     } = this.state;
@@ -345,7 +384,7 @@ class UIThemeEditForm extends React.PureComponent {
     }
     this.setState({
       themeProperties: newProperties
-    }, this.commitChange);
+    }, () => this.commitChange());
   };
 
   expandCollapseSection = (section) => {
@@ -359,12 +398,24 @@ class UIThemeEditForm extends React.PureComponent {
     });
   };
 
+  confirmRemoval = () => {
+    const {onRemove} = this.props;
+    Modal.confirm({
+      title: 'Are you sure you want to remove theme?',
+      body: 'This operation cannot be undone',
+      okText: 'Yes',
+      onOk: () => onRemove ? onRemove() : {}
+    });
+  };
+
   render () {
     const {
       name,
       extends: baseTheme,
       validation = {},
+      propertiesValidation = {},
       themeProperties = {},
+      initialProperties = {},
       mergedProperties = {},
       parsedValues = {},
       expandedState = {}
@@ -372,7 +423,9 @@ class UIThemeEditForm extends React.PureComponent {
     const {
       theme,
       themes = [],
-      readOnly
+      readOnly,
+      previewClassName,
+      removable
     } = this.props;
     if (!theme) {
       return null;
@@ -392,6 +445,12 @@ class UIThemeEditForm extends React.PureComponent {
             control
           >
             <Input
+              className={classNames(
+                styles.control,
+                {
+                  'cp-error': name && !!validation.name
+                }
+              )}
               value={name}
               disabled={readOnly}
               onChange={this.onChangeName}
@@ -407,6 +466,12 @@ class UIThemeEditForm extends React.PureComponent {
             control
           >
             <Select
+              className={classNames(
+                styles.control,
+                {
+                  'cp-error': baseTheme && !!validation.baseTheme
+                }
+              )}
               value={baseTheme}
               onChange={this.onChangeBaseTheme}
               disabled={readOnly}
@@ -424,6 +489,20 @@ class UIThemeEditForm extends React.PureComponent {
               }
             </Select>
           </FormItem>
+          {
+            removable && (
+              <div className={styles.remove}>
+                <Button
+                  disabled={readOnly}
+                  type="danger"
+                  style={{lineHeight: 1}}
+                  onClick={this.confirmRemoval}
+                >
+                  Remove theme
+                </Button>
+              </div>
+            )
+          }
         </Section>
         {
           sections.map(section => (
@@ -431,34 +510,90 @@ class UIThemeEditForm extends React.PureComponent {
               key={section}
               identifier={section}
               title={section}
-              expandable={expandedState}
+              expandable={
+                sectionsConfiguration[section].some(o => o.advanced)
+                  ? expandedState
+                  : undefined
+              }
               toggleExpanded={this.expandCollapseSection}
             >
-              {
-                sectionsConfiguration[section]
-                  .map(({key: variable, advanced = false}) => (
-                    <FormItem
-                      key={variable}
-                      title={VariableNames[variable] || variable}
-                      flex
-                      control
-                      titleClassName={styles.extended}
-                      hidden={advanced && !expandedState[section]}
-                      property={variable}
-                      validation={validation}
-                    >
-                      <ColorVariable
-                        disabled={readOnly}
-                        value={themeProperties[variable] || mergedProperties[variable]}
-                        modified={!!themeProperties[variable]}
-                        parsedValues={parsedValues}
-                        parsedValue={parsedValues[variable]}
-                        variables={ColorVariables}
-                        onChange={this.onChangeConfigurationVariable(variable)}
-                      />
-                    </FormItem>
-                  ))
-              }
+              <div
+                className={styles.sectionContent}
+              >
+                <div className={styles.properties}>
+                  {
+                    sectionsConfiguration[section]
+                      .map(({key: variable, advanced, type = VariableTypes.color}, index) => (
+                        <FormItem
+                          key={variable || `${type}-${index}`}
+                          divider={type === VariableTypes.divider}
+                          title={variable ? (VariableNames[variable] || variable) : undefined}
+                          flex
+                          control
+                          titleClassName={styles.extended}
+                          hidden={advanced && !expandedState[section]}
+                          property={variable}
+                          validation={propertiesValidation}
+                          hint={variable ? VariableDescriptions[variable] : undefined}
+                        >
+                          {
+                            type === VariableTypes.color && (
+                              <ColorVariable
+                                className={classNames(
+                                  styles.control,
+                                  {
+                                    'cp-error': variable && !!propertiesValidation[variable]
+                                  }
+                                )}
+                                variable={variable}
+                                error={variable && !!propertiesValidation[variable]}
+                                disabled={readOnly}
+                                value={themeProperties[variable] || mergedProperties[variable]}
+                                modifiedValue={themeProperties[variable]}
+                                initialValue={initialProperties[variable]}
+                                extended={!!themeProperties[variable]}
+                                parsedValue={parsedValues[variable]}
+                                parsedValues={parsedValues}
+                                variables={ColorVariables}
+                                onChange={this.onChangeConfigurationVariable}
+                              />
+                            )
+                          }
+                          {
+                            type === VariableTypes.image && (
+                              <ImageUploader
+                                className={classNames(
+                                  styles.control,
+                                  {
+                                    'cp-error': variable && !!propertiesValidation[variable]
+                                  }
+                                )}
+                                disabled={readOnly}
+                                variable={variable}
+                                maxSize={null}
+                                value={themeProperties[variable] || mergedProperties[variable]}
+                                modifiedValue={themeProperties[variable]}
+                                initialValue={initialProperties[variable]}
+                                extended={!!themeProperties[variable]}
+                                onChange={this.onChangeConfigurationVariable}
+                              />
+                            )
+                          }
+                        </FormItem>
+                      ))
+                  }
+                </div>
+                <ElementPreview
+                  className={
+                    classNames(
+                      styles.previews,
+                      previewClassName,
+                      'themes-management'
+                    )
+                  }
+                  section={section}
+                />
+              </div>
             </Section>
           ))
         }
@@ -469,9 +604,12 @@ class UIThemeEditForm extends React.PureComponent {
 
 UIThemeEditForm.propTypes = {
   onChange: PropTypes.func,
+  onRemove: PropTypes.func,
   theme: PropTypes.object,
   themes: PropTypes.array,
-  readOnly: PropTypes.bool
+  previewClassName: PropTypes.string,
+  readOnly: PropTypes.bool,
+  removable: PropTypes.bool
 };
 
 export default UIThemeEditForm;

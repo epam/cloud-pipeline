@@ -15,16 +15,20 @@
  */
 
 import {computed, observable} from 'mobx';
+import classNames from 'classnames';
 import getThemes, {
   DefaultDarkThemeIdentifier,
   DefaultLightThemeIdentifier,
   DefaultThemeIdentifier,
   ThemesPreferenceName,
   ThemesPreferenceModes,
+  extendPredefinedThemesWithCustom,
   generateIdentifier,
-  saveThemes
+  saveThemes,
+  setURLMode,
+  getTheme
 } from './themes';
-import injectTheme from './utilities/inject-theme';
+import injectTheme, {ejectTheme} from './utilities/inject-theme';
 import './default.theme.less';
 
 const _TEMPORARY_SYNC_WITH_SYSTEM_KEY = 'CP-THEMES-SYNC-WITH-SYSTEM';
@@ -35,6 +39,38 @@ const _TEMPORARY_SINGLE_THEME_KEY = 'CP-THEMES-SINGLE';
 const DEBUG = process.env.DEVELOPMENT;
 if (DEBUG) {
   console.log('UI Themes mode: DEBUG. You can press "[" and "]" keys to switch between themes');
+}
+
+function addSingleClassName (className) {
+  if (!document.body.classList.contains(className)) {
+    document.body.classList.add(className);
+  }
+}
+
+function removeSingleClassName (className) {
+  if (document.body.classList.contains(className)) {
+    document.body.classList.remove(className);
+  }
+}
+
+function removeClassNameFromBody (className) {
+  (className || '')
+    .split(' ')
+    .map(o => o.trim())
+    .filter(o => o.length)
+    .forEach(removeSingleClassName);
+}
+
+function applyClassNameToBody (className, themes = []) {
+  for (const anotherTheme of themes) {
+    console.log('remove class name from body', anotherTheme.identifier);
+    removeClassNameFromBody(anotherTheme.identifier);
+  }
+  (className || '')
+    .split(' ')
+    .map(o => o.trim())
+    .filter(o => o.length)
+    .forEach(addSingleClassName);
 }
 
 class CloudPipelineThemes {
@@ -134,7 +170,17 @@ class CloudPipelineThemes {
       this.mode = mode;
       this.themesURL = url;
       this.themes = themes;
-      this.themes.forEach(injectTheme);
+      await Promise.all(this.themes.map(injectTheme));
+    } catch (e) {
+      console.warn(`Error reading themes: ${e.message}`);
+    }
+  }
+
+  async refreshLocally (customThemes = []) {
+    try {
+      const themes = extendPredefinedThemesWithCustom(customThemes);
+      this.themes = themes || {};
+      await Promise.all(this.themes.map(injectTheme));
     } catch (e) {
       console.warn(`Error reading themes: ${e.message}`);
     }
@@ -143,11 +189,19 @@ class CloudPipelineThemes {
   async saveThemes (themes, options = {}) {
     const {
       mode = this.mode,
+      url,
       throwError = false
     } = options;
     try {
       await saveThemes(themes, mode);
-      await this.refresh();
+      if (mode === ThemesPreferenceModes.url && url) {
+        await setURLMode(url);
+      }
+      if (mode === ThemesPreferenceModes.payload) {
+        await this.refresh();
+      } else {
+        await this.refreshLocally(themes.filter(o => !o.predefined));
+      }
     } catch (e) {
       console.warn(e.message);
       if (throwError) {
@@ -238,16 +292,73 @@ class CloudPipelineThemes {
     this.setTheme(theme || this.currentTheme || DefaultLightThemeIdentifier);
   }
 
+  startTestingTheme (theme, liveUpdate = false) {
+    return new Promise((resolve) => {
+      if (theme) {
+        let {identifier} = theme;
+        if (!identifier) {
+          identifier = 'new-theme';
+        }
+        identifier = identifier.concat('-testing');
+        const regExp = new RegExp(`^${identifier}(-[\\d]+|)$`, 'i');
+        const count = this.themes.filter(o => regExp.test(o.identifier));
+        if (count > 1) {
+          identifier = identifier.concat(`-${count + 1}`);
+        }
+        if (this.testingThemeIdentifier && this.testingThemeIdentifier !== identifier) {
+          this.stopTestingTheme();
+        }
+        this.testingThemeIdentifier = identifier;
+        const {
+          properties,
+          extends: baseTheme,
+          parsed
+        } = theme;
+        const themeIdentifier = identifier.concat('.themes-management');
+        const testingTheme = parsed
+          ? {identifier: themeIdentifier, parsed}
+          : getTheme(
+            {
+              identifier: themeIdentifier,
+              configuration: properties,
+              extends: baseTheme,
+              parsed
+            },
+            this.themes.slice()
+          );
+        injectTheme({...testingTheme, identifier}).then(() => {});
+        if (liveUpdate) {
+          applyClassNameToBody(
+            classNames(this.testingThemeIdentifier, 'themes-management'),
+            this.themes
+          );
+        } else {
+          removeClassNameFromBody(
+            classNames(this.testingThemeIdentifier, 'themes-management')
+          );
+          this.setTheme(this.currentTheme);
+        }
+        resolve(this.testingThemeIdentifier);
+      } else {
+        resolve(undefined);
+      }
+    });
+  }
+
+  stopTestingTheme () {
+    if (this.testingThemeIdentifier) {
+      removeClassNameFromBody(
+        classNames(this.testingThemeIdentifier, 'themes-management')
+      );
+      ejectTheme({identifier: this.testingThemeIdentifier});
+    }
+    this.setTheme(this.currentTheme);
+    this.testingThemeIdentifier = undefined;
+  }
+
   setTheme (themeIdentifier) {
     this.currentTheme = themeIdentifier;
-    if (!document.body.classList.contains(themeIdentifier)) {
-      for (const anotherTheme of this.themes) {
-        if (document.body.classList.contains(anotherTheme.identifier)) {
-          document.body.classList.remove(anotherTheme.identifier);
-        }
-      }
-      document.body.classList.add(themeIdentifier);
-    }
+    applyClassNameToBody(themeIdentifier, this.themes);
     this.reportThemeChanged();
   }
 }

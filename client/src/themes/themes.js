@@ -146,6 +146,28 @@ function downloadThemesConfigurationFile (themes) {
   });
 }
 
+export function setURLMode (url, options = {}) {
+  const request = new PreferencesUpdate();
+  const payload = JSON.stringify({url, options});
+  return new Promise((resolve, reject) => {
+    request
+      .send([{
+        name: ThemesPreferenceName,
+        preferenceGroup: ThemesPreferenceGroup,
+        type: 'OBJECT',
+        value: payload,
+        visible: true
+      }])
+      .then(() => {
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        resolve();
+      })
+      .catch(reject);
+  });
+}
+
 export function saveThemes (themes, mode = ThemesPreferenceModes.url) {
   if (mode === ThemesPreferenceModes.url) {
     return downloadThemesConfigurationFile(themes);
@@ -219,6 +241,24 @@ function parseThemesPreference (preferenceValue) {
   }
 }
 
+export function getTheme (theme, themes) {
+  const result = getThemeConfiguration(theme, themes);
+  result.getParsedConfiguration = parseConfiguration.bind(result, result.configuration);
+  return result;
+}
+
+export function extendPredefinedThemesWithCustom (custom = []) {
+  const themes = PredefinedThemes.slice();
+  const customThemesProcessed = custom
+    .map(mapCustomTheme)
+    .map(correctCustomThemeIdentifier(themes));
+  return [
+    ...themes,
+    ...customThemesProcessed
+  ]
+    .map(theme => getTheme(theme, themes));
+}
+
 export default function getThemes () {
   return new Promise((resolve) => {
     const request = new PreferenceLoad(ThemesPreferenceName);
@@ -238,22 +278,9 @@ export default function getThemes () {
           mode = ThemesPreferenceModes.payload,
           url
         } = result;
-        const themes = PredefinedThemes.slice();
-        const customThemesProcessed = customThemes
-          .map(mapCustomTheme)
-          .map(correctCustomThemeIdentifier(themes));
-        const processedThemes = [
-          ...themes,
-          ...customThemesProcessed
-        ]
-          .map(theme => getThemeConfiguration(theme, themes))
-          .map(theme => {
-            theme.getParsedConfiguration = parseConfiguration.bind(theme, theme.configuration);
-            return theme;
-          });
         resolve({
           mode,
-          themes: processedThemes,
+          themes: extendPredefinedThemesWithCustom(customThemes),
           url
         });
       });

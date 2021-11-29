@@ -14,20 +14,21 @@
  *  limitations under the License.
  */
 
-import template from './theme.less.template';
+import themesTemplate from './theme.less.template';
 import {parseFunctions} from './parse-configuration';
 
-function generateTheme (theme = {}) {
+function generateTheme (theme = {}, template = themesTemplate) {
   const {
     identifier,
     configuration,
-    getParsedConfiguration = (() => configuration)
+    getParsedConfiguration = (() => configuration),
+    parsed
   } = theme;
-  if (!configuration || !identifier) {
+  if ((!configuration && !parsed) || !identifier) {
     return undefined;
   }
   let themeContent = template;
-  const parsedConfiguration = getParsedConfiguration() || {};
+  const parsedConfiguration = parsed || getParsedConfiguration() || {};
   const vars = Object
     .entries(parsedConfiguration)
     .sort((a, b) => b[0].length - a[0].length);
@@ -55,11 +56,31 @@ function injectCss (identifier, css) {
   style.textContent = css;
 }
 
-export default function injectTheme (theme) {
-  try {
-    console.log('injecting theme', theme.identifier);
-    injectCss(theme.identifier, generateTheme(theme));
-  } catch (e) {
-    console.warn(`Error applying theme: ${e.message}`);
+function ejectCss (identifier) {
+  const domIdentifier = `cp-theme-${identifier}`;
+  let style = document.getElementById(domIdentifier);
+  if (style) {
+    document.head.removeChild(style);
   }
+}
+
+export function ejectTheme (theme) {
+  try {
+    ejectCss(theme.identifier);
+  } catch (e) {
+    console.warn(`Error ejecting theme: ${e.message}`);
+  }
+}
+
+export default function injectTheme (theme) {
+  return new Promise((resolve) => {
+    try {
+      console.log('injecting theme', theme.identifier);
+      const cssContent = generateTheme(theme);
+      injectCss(theme.identifier, cssContent);
+    } catch (e) {
+      console.warn(`Error applying theme: ${e.message}`);
+    }
+    resolve();
+  });
 }

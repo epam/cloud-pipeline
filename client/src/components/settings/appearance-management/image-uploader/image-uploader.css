@@ -14,51 +14,70 @@
  *  limitations under the License.
  */
 
-.color-variable {
+.uploader-container {
   display: flex;
   align-items: center;
 }
 
-.color-variable > * + * {
-  margin-left: 5px;
-}
-
-.color-select-option {
-  display: flex;
-  align-items: center;
-}
-
-.color-select-option-name {
-  flex: 1;
-  overflow: hidden;
-}
-
-.color-presenter {
-  display: inline-block;
-  margin: 0 2px;
-  border: 1px solid black;
-  width: 1em;
-  height: 1em;
-  padding: 1px;
-  border-radius: 0.5em;
-}
-
-.color-presenter.borderless {
-  border: none;
-  padding: 0;
-}
-
-.color-picker.color-presenter {
+.image-container {
   margin: 0 5px;
   width: 35px;
-  height: 22px;
-  padding: 2px;
+  height: 35px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
   cursor: pointer;
 }
 
-.color-picker.color-presenter,
-.color-picker.color-presenter {
-  border-radius: 4px;
+.thumb-image,
+.thumb-image-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.thumb-image-preview {
+  background-size: cover;
+}
+
+.thumb-image {
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-container.disabled {
+  opacity: 0.75;
+}
+
+.image-container:not(.disabled):hover .thumb-image {
+  opacity: 1;
+}
+
+.input-container {
+  position: relative;
+  margin-left: 5px;
+}
+
+.input {
+  width: 250px;
+}
+
+.input.with-icon {
+  padding-right: 20px;
+}
+
+.input-info {
+  position: absolute;
+  right: 5px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
 }
 
 .button {

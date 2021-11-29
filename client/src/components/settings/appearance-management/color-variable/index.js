@@ -19,6 +19,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {ChromePicker} from 'react-color';
 import {
+  Button,
+  Checkbox,
+  Icon,
   InputNumber,
   Popover,
   Select
@@ -171,7 +174,7 @@ ColorPicker.propTypes = {
   disabled: PropTypes.bool
 };
 
-class ColorVariable extends React.Component {
+class ColorVariable extends React.PureComponent {
   componentDidMount () {
     this.updateFromProps();
   }
@@ -188,6 +191,7 @@ class ColorVariable extends React.Component {
 
   onChangeType = (newType) => {
     const {
+      variable,
       onChange,
       parsedValue,
       value
@@ -196,7 +200,7 @@ class ColorVariable extends React.Component {
       return;
     }
     if (!newType) {
-      onChange(parsedValue || '#000000');
+      onChange(variable, parsedValue || '#000000');
     } else {
       // variable
       const {
@@ -205,9 +209,9 @@ class ColorVariable extends React.Component {
         amount
       } = parse(value);
       if (type === types.function) {
-        onChange(`${f}(${newType},${Math.round(amount * 100)}%)`);
+        onChange(variable, `${f}(${newType},${Math.round(amount * 100)}%)`);
       } else {
-        onChange(newType);
+        onChange(variable, newType);
       }
     }
   };
@@ -215,12 +219,19 @@ class ColorVariable extends React.Component {
   renderAsColor = () => {
     const {
       parsedValue,
-      disabled
+      disabled,
+      variable,
+      onChange
     } = this.props;
+    const onChangeColor = (color) => {
+      if (onChange) {
+        onChange(variable, color);
+      }
+    };
     return (
       <ColorPicker
         color={parsedValue}
-        onChange={this.props.onChange}
+        onChange={onChangeColor}
         disabled={disabled}
       />
     );
@@ -229,6 +240,7 @@ class ColorVariable extends React.Component {
   renderFunction = () => {
     const {
       value,
+      variable,
       onChange,
       error,
       disabled
@@ -243,7 +255,7 @@ class ColorVariable extends React.Component {
         return;
       }
       if (!e) {
-        onChange(arg);
+        onChange(variable, arg);
       } else {
         let defaultAmount = amount;
         if (defaultAmount === undefined) {
@@ -256,14 +268,14 @@ class ColorVariable extends React.Component {
               break;
           }
         }
-        onChange(`${e}(${arg},${Math.round(defaultAmount * 100)}%)`);
+        onChange(variable, `${e}(${arg},${Math.round(defaultAmount * 100)}%)`);
       }
     };
     const onChangeAmount = (e) => {
       if (!onChange || !f) {
         return;
       }
-      onChange(`${f}(${arg},${e}%)`);
+      onChange(variable, `${f}(${arg},${e}%)`);
     };
     return [
       <Select
@@ -324,9 +336,20 @@ class ColorVariable extends React.Component {
   };
 
   onClear = () => {
-    const {onChange} = this.props;
+    const {onChange, variable} = this.props;
     if (onChange) {
-      onChange(undefined);
+      onChange(variable, undefined);
+    }
+  }
+
+  onRevert = () => {
+    const {
+      onChange,
+      variable,
+      initialValue
+    } = this.props;
+    if (onChange) {
+      onChange(variable, initialValue);
     }
   }
 
@@ -334,9 +357,11 @@ class ColorVariable extends React.Component {
     const {
       className,
       value,
+      modifiedValue,
+      initialValue,
       variables = [],
       parsedValues = {},
-      modified,
+      extended,
       error,
       disabled
     } = this.props;
@@ -356,6 +381,7 @@ class ColorVariable extends React.Component {
         {this.renderAsColor()}
         <Select
           allowClear
+          showSearch
           disabled={disabled}
           className={
             classNames(
@@ -368,6 +394,12 @@ class ColorVariable extends React.Component {
           value={key === types.color ? undefined : key}
           style={{width: 250}}
           onChange={this.onChangeType}
+          filterOption={
+            (input, option) => {
+              const value = VariableNames[option.key] || option.key;
+              return (value.toLowerCase().indexOf(input.toLowerCase()) >= 0);
+            }
+          }
         >
           {
             variables.map(variable => (
@@ -400,15 +432,24 @@ class ColorVariable extends React.Component {
           type !== types.color && this.renderFunction()
         }
         {
-          modified && !disabled && (
-            <a
-              className="cp-link"
-              onClick={this.onClear}
+          initialValue !== modifiedValue && (
+            <Button
+              disabled={disabled}
+              onClick={this.onRevert}
+              className={classNames(styles.button, styles.small)}
             >
-              Reset to default
-            </a>
+              <Icon type="rollback" />
+            </Button>
           )
         }
+        <Checkbox
+          disabled={!extended || disabled}
+          checked={!extended}
+          className={styles.button}
+          onChange={e => e.target.checked ? this.onClear() : undefined}
+        >
+          Inherited
+        </Checkbox>
       </div>
     );
   }
@@ -417,9 +458,12 @@ class ColorVariable extends React.Component {
 ColorVariable.propTypes = {
   className: PropTypes.string,
   disabled: PropTypes.bool,
+  variable: PropTypes.string,
   error: PropTypes.bool,
   value: PropTypes.string,
-  modified: PropTypes.bool,
+  modifiedValue: PropTypes.string,
+  initialValue: PropTypes.string,
+  extended: PropTypes.bool,
   parsedValues: PropTypes.object,
   parsedValue: PropTypes.string,
   onChange: PropTypes.func,

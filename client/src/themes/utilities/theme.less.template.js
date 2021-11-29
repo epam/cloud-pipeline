@@ -58,26 +58,26 @@ export default `
   margin: 2px;
 }
 @THEME.theme-preview .cp-theme-preview-button-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME.theme-preview .cp-theme-preview-button-danger {
-  background-color: @btn-danger-color;;
-  border-color: @btn-danger-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 @THEME.theme-preview .cp-theme-preview-button {
   color: @primary-color;
   background-color: @panel-background-color;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-blue {
-  color: @color-blue;
+  color: @color-info;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-yellow {
-  color: @color-yellow;
+  color: @color-warning;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-green {
-  color: @color-green;
+  color: @color-success;
 }
 @THEME.theme-preview .cp-theme-preview-navigation-menu-item.selected {
   background-color: @navigation-panel-highlighted-color;
@@ -100,8 +100,18 @@ export default `
 @THEME.theme-preview .cp-theme-preview-text {
   background-color: @application-color;
 }
+@THEME .theme-preview-bordered {
+  border: 1px solid @application-color;
+}
 @THEME .color-presenter {
   border-color: @application-color;
+}
+@THEME .image-uploader {
+  border-color: @application-color;
+  background-color: @application-background-color;
+}
+@THEME .image-uploader .uploader-thumb-image {
+  background-color: fade(@application-background-color, 25%);
 }
 
 @THEME body[class*="dark"] {
@@ -202,7 +212,7 @@ export default `
 }
 @THEME .cp-sensitive-tag {
   background-color: @color-sensitive;
-  color: @btn-color;
+  color: @btn-danger-active-color;
 }
 @THEME .cp-sensitive-tag.bordered {
   background-color: transparent;
@@ -256,6 +266,8 @@ export default `
 }
 @THEME .ant-layout-sider {
   background-color: @navigation-panel-color;
+  background-image: @navigation-background-image;
+  background-size: cover;
 }
 @THEME .ant-layout {
   background-color: @application-background-color;
@@ -274,10 +286,15 @@ export default `
 @THEME .ant-input-number,
 @THEME .ant-input-number-input,
 @THEME .ant-input-number-handler-wrap,
-@THEME .cp-limit-mounts-input {
+@THEME .cp-limit-mounts-input,
+@THEME .ant-upload {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
+}
+@THEME .transparent-upload .ant-upload {
+  background-color: transparent;
+  border-color: transparent;
 }
 @THEME .chrome-picker input {
   background-color: @input-background !important;
@@ -409,7 +426,7 @@ export default `
 @THEME .ant-modal-close:hover {
   color: @application-color;
 }
-@THEME .cp-even-odd-element:nth-child(even) {
+@THEME .cp-even-odd-element:nth-child(even):not(.cp-table-element-selected) {
   background-color: @even-element-background;
 }
 @THEME .ant-tree li .ant-tree-node-content-wrapper {
@@ -426,8 +443,8 @@ export default `
 @THEME .ant-menu,
 @THEME .ant-menu-submenu > .ant-menu {
   background-color: transparent;
-  color: @menu-color;
-  border-color: @menu-border-color;
+  color: @application-color;
+  border-color: @panel-border-color;
 }
 @THEME .ant-menu > .ant-menu-item > a,
 @THEME .ant-menu > .ant-menu-submenu > a {
@@ -458,10 +475,10 @@ export default `
   background-color: transparent;
 }
 @THEME .ant-tabs {
-  color: @menu-color;
+  color: @application-color;
 }
 @THEME .ant-tabs .ant-tabs-bar {
-  border-color: @menu-border-color;
+  border-color: @panel-border-color;
 }
 @THEME .ant-tabs .ant-tabs-bar .ant-tabs-ink-bar {
   background-color: @menu-active-color;
@@ -607,22 +624,22 @@ export default `
   border-color: @primary-color;
 }
 @THEME .ant-btn-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME .ant-btn-primary:hover,
 @THEME .ant-btn-primary:focus {
-  color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-primary.active,
 @THEME .ant-btn-primary:active,
 @THEME .ant-btn-primary.ant-btn-clicked {
-  color: @btn-color;
-  background-color: @btn-primary-active;
-  border-color: @btn-primary-active;
+  color: @primary-text-color;
+  background-color: @primary-active-color;
+  border-color: @primary-active-color;
 }
 @THEME .ant-btn-background-ghost.ant-btn-primary {
   color: @primary-color;
@@ -635,27 +652,23 @@ export default `
   border-color: @input-border;
 }
 @THEME .ant-btn-danger:focus,
-@THEME .ant-btn-danger:hover {
-  color: @btn-color;
-  background-color: @btn-danger-color;
-  border-color: @btn-danger-color;
-}
+@THEME .ant-btn-danger:hover,
 @THEME .ant-btn-danger.active,
 @THEME .ant-btn-danger:active {
-  color: @btn-color;
-  background-color: @btn-danger-active-color;
-  border-color: @btn-danger-active-color;
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 @THEME .ant-btn-group .ant-btn-primary:first-child:not(:last-child) {
-  border-right-color: @btn-primary-active;
+  border-right-color: @primary-active-color;
 }
 @THEME .ant-btn-group .ant-btn-primary:last-child:not(:first-child),
 @THEME .ant-btn-group .ant-btn-primary + .ant-btn-primary {
-  border-left-color: @btn-primary-active;
+  border-left-color: @primary-active-color;
 }
 @THEME .ant-btn-group .ant-btn-primary:not(:first-child):not(:last-child) {
-  border-right-color: @btn-primary-active;
-  border-left-color: @btn-primary-active;
+  border-right-color: @primary-active-color;
+  border-left-color: @primary-active-color;
 }
 @THEME .ant-btn.disabled,
 @THEME .ant-btn.disabled.active,
@@ -678,7 +691,7 @@ export default `
 }
 @THEME .ant-radio-button-wrapper,
 @THEME .ant-radio-inner {
-  background-color: @panel-background-color;
+  background-color: transparent;
   color: @application-color;
   border-color: @input-border;
 }
@@ -694,6 +707,10 @@ export default `
 @THEME .ant-radio:hover .ant-radio-inner,
 @THEME .ant-radio-focused .ant-radio-inner {
   color: @primary-color;
+  border-color: @primary-color;
+}
+@THEME .ant-radio-inner::after {
+  background-color: @primary-color;
 }
 @THEME .ant-radio-button-wrapper-checked {
   border-color: @primary-color;
@@ -888,11 +905,11 @@ export default `
 }
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
-  border-color: @card-border-color;
+  border-color: @panel-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @card-border-color;
+  background-color: @panel-border-color;
 }
 @THEME .ant-select-selection__placeholder,
 @THEME .ant-select-selection__clear,
@@ -949,8 +966,8 @@ export default `
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger:hover,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item-active.cp-danger,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item-selected.cp-danger {
-  color: @btn-color;
-  background-color: @btn-danger-active-color;
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
 }
 @THEME .rc-menu-item.rc-menu-item-disabled,
 @THEME .rc-menu-submenu-title.rc-menu-item-disabled,
@@ -959,6 +976,12 @@ export default `
 @THEME .rc-dropdown-menu-item-disabled,
 @THEME .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
+}
+@THEME .rc-menu-item.rc-menu-item-selected {
+  background-color: fade(@panel-background-color, 100%);
+}
+@THEME .rc-menu-item.rc-menu-item-selected:hover {
+  background-color: @element-hover-background-color;
 }
 @THEME .ant-select-dropdown-menu-item-selected,
 @THEME .ant-select-dropdown-menu-item-selected:hover {
@@ -1192,21 +1215,21 @@ export default `
   color: @application-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn:focus,
 @THEME .ant-calendar .ant-calendar-ok-btn:hover {
-  color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn.active,
 @THEME .ant-calendar .ant-calendar-ok-btn:active {
-  color: @btn-color;
-  background-color: @btn-primary-active;
-  border-color: @btn-primary-active;
+  color: @primary-text-color;
+  background-color: @primary-active-color;
+  border-color: @primary-active-color;
 }
 @THEME .ant-time-picker-input {
   color: @application-color;
@@ -1529,6 +1552,13 @@ export default `
 @THEME .cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active {
   color: @navigation-item-runs-color;
 }
+@THEME .cp-navigation-item-logo {
+  height: 26px;
+  width: 26px;
+  display: block;
+  background-image: @logo-image;
+  background-size: cover;
+}
 
 @THEME .cp-dashboard-sticky-panel {
   background-color: @application-background-color;
@@ -1540,24 +1570,28 @@ export default `
 @THEME .cp-project-tag-value {
   background-color: @tag-value-background-color;
 }
-@THEME .cp-dashboard-panel-card-header {
+@THEME .cp-dashboard-panel-card-header,
+@THEME .cp-panel-card .cp-dashboard-panel-card-header {
   background-color: @card-header-background;
+}
+@THEME .cp-panel-card.cp-card-service .cp-dashboard-panel-card-header {
+  background-color: @card-service-header-background;
 }
 @THEME .cp-nfs-storage-type {
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @color-green;
+  color: @color-info;
 }
 @THEME .cp-notification-status-warning {
-  color: @color-yellow;
+  color: @color-warning;
 }
 @THEME .cp-notification-status-critical {
-  color: @color-red;
+  color: @color-error;
 }
 @THEME .cp-new-notification {
-  border-color: @color-blue;
-  box-shadow: 0 0 1em @color-blue;
+  border-color: @color-info;
+  box-shadow: 0 0 1em @color-info;
 }
 
 @THEME .provider.aws {
@@ -1663,7 +1697,7 @@ export default `
 }
 
 @THEME .cp-tool-header {
-  border-color: @menu-border-color;
+  border-color: @panel-border-color;
 }
 @THEME .cp-tool-panel + .cp-tool-panel {
   margin-left: 10px;
@@ -1721,6 +1755,7 @@ export default `
 @THEME .cp-edit-permissions-selected-row {
   background-color: @element-selected-background-color;
 }
+
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
 }
@@ -1728,13 +1763,13 @@ export default `
   color: @color-green;
 }
 @THEME .cp-runs-table-icon-blue {
-  color: @color-blue;
+  color: @color-info;
 }
 @THEME .cp-runs-table-icon-red {
-  color: @color-red;
+  color: @color-error;
 }
 @THEME .cp-runs-table-icon-yellow {
-  color: @color-yellow;
+  color: @color-warning;
 }
 @THEME .cp-filter-popover-container {
   background-color: @card-background-color;
@@ -1788,19 +1823,19 @@ export default `
   fill: @card-background-color;
 }
 @THEME .cp-wdl-task[data-taskstatus=running] rect {
-  fill: fade(@color-blue, 20%);
-  stroke: @color-blue;
+  fill: fade(@color-info, 20%);
+  stroke: @color-info;
 }
 @THEME .cp-wdl-task[data-taskstatus=running] text {
-  fill: @color-blue;
+  fill: @color-info;
 }
 @THEME .cp-wdl-task[data-taskstatus=success] rect {
-  fill: fade(@color-green, 20%);
-  stroke: @color-green;
+  fill: fade(@color-success, 20%);
+  stroke: @color-success;
   opacity: 1;
 }
 @THEME .cp-wdl-task[data-taskstatus=success] text {
-  fill: @color-green;
+  fill: @color-success;
 }
 @THEME .cp-wdl-task[data-taskstatus=stopped] rect {
   fill: @card-background-color;
@@ -1811,18 +1846,18 @@ export default `
   fill: @application-color-faded;
 }
 @THEME .cp-wdl-task[data-taskstatus=failure] rect {
-  fill: fade(@color-red, 20%);
-  stroke: @color-red;
+  fill: fade(@color-error, 20%);
+  stroke: @color-error;
   opacity: 1;
 }
 @THEME .cp-wdl-task[data-taskstatus=failure] text {
-  fill: @color-red;
+  fill: @color-error;
 }
 @THEME .cp-stop-run-modal-confirm-icon {
   color: @color-yellow;
 }
 @THEME .cp-maintenance-rule-deleted {
-  background-color: fade(@color-red, 10%);
+  background-color: fade(@color-error, 10%);
 }
 @THEME .ant-input.cp-system-parameter-name-input {
   color: @application-color-accent;
@@ -1851,7 +1886,7 @@ export default `
 }
 @THEME .cp-billing-menu .cp-billing-sub-menu.ant-menu-submenu-open .ant-menu-submenu-title {
   background-color: transparent;
-  color: @menu-color;
+  color: @application-color;
 }
 @THEME .cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title {
   background-color: transparent;
@@ -2070,8 +2105,8 @@ export default `
   background: @modal-mask-background;
 }
 @THEME .cp-search-preview {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid fade(@panel-border-color, 100%);
 }
 @THEME .cp-search-preview-button {
   color: @application-color;
@@ -2138,15 +2173,15 @@ export default `
   border-color: @primary-color;
 }
 @THEME .cp-search-faceted-button.selected {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME .cp-search-faceted-button.selected:hover,
 @THEME .cp-search-faceted-button.selected:focus {
-  color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
@@ -2276,6 +2311,9 @@ export default `
 @THEME .cp-library-metadata-table-cell-selected {
   background-color: fadeout(@primary-hover-color, 70%);
   color: @application-color;
+}
+@THEME .cp-library-metadata-table-marker {
+  background-color: @primary-color;
 }
 @THEME .cp-library-metadata-panel-placeholder {
   color: @application-color-faded;

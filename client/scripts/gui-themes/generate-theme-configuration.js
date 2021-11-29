@@ -80,6 +80,8 @@ function generate (...args) {
       let [, variable, value] = e;
       if (/^url\('@\{icons-root\}/i.test(value)) {
         value = value.replace('url(\'@{icons-root}', '@static_resource(\'icons');
+      } else if (/^url\('@\{public-root\}/i.test(value)) {
+        value = value.replace('url(\'@{public-root}', '@static_resource(\'');
       }
       if (!ignore.some(o => o.test(variable))) {
         configuration[`@${variable}`] = value;

@@ -25,6 +25,10 @@ const Variables = {
   primaryActiveColor: '@primary-active-color',
   primaryTextColor: '@primary-text-color',
   primaryColorSemiTransparent: '@primary-color-semi-transparent',
+  colorSuccess: '@color-success',
+  colorError: '@color-error',
+  colorWarning: '@color-warning',
+  colorInfo: '@color-info',
   colorGreen: '@color-green',
   colorRed: '@color-red',
   colorYellow: '@color-yellow',
@@ -71,17 +75,17 @@ const Variables = {
   navigationPanelHighlightedColorImpersonated: '@navigation-panel-highlighted-color-impersonated',
   navigationItemColor: '@navigation-item-color',
   navigationItemRunsColor: '@navigation-item-runs-color',
-  tagKeyBackgroundColor: '@tag-key-background-color',
-  tagKeyValueDividerColor: '@tag-key-value-divider-color',
-  tagValueBackgroundColor: '@tag-value-background-color',
+  tagKeyBackgroundColor: '@tag-key-background-color',// todo
+  tagKeyValueDividerColor: '@tag-key-value-divider-color',// todo
+  tagValueBackgroundColor: '@tag-value-background-color',// todo
   nfsIconColor: '@nfs-icon-color',
   iconsRoot: '@icons-root',
-  awsIcon: '@aws-icon',
-  awsIconContrast: '@aws-icon-contrast',
-  gcpIcon: '@gcp-icon',
-  gcpIconContrast: '@gcp-icon-contrast',
-  azureIcon: '@azure-icon',
-  azureIconContrast: '@azure-icon-contrast',
+  awsIcon: '@aws-icon',// todo
+  awsIconContrast: '@aws-icon-contrast',// todo
+  gcpIcon: '@gcp-icon',// todo
+  gcpIconContrast: '@gcp-icon-contrast',// todo
+  azureIcon: '@azure-icon',// todo
+  azureIconContrast: '@azure-icon-contrast',// todo
   euRegionIcon: '@eu-region-icon',
   usRegionIcon: '@us-region-icon',
   saRegionIcon: '@sa-region-icon',
@@ -96,7 +100,7 @@ const Variables = {
   taiwanRegionIcon: '@taiwan-region-icon',
   themeTransitionDuration: '@theme-transition-duration',
   themeTransitionFunction: '@theme-transition-function',
-  modalMaskBackground: '@modal-mask-background',
+  modalMaskBackground: '@modal-mask-background',// todo
   evenElementBackground: '@even-element-background',
   alertSuccessBackground: '@alert-success-background',
   alertSuccessBorder: '@alert-success-border',
@@ -116,21 +120,19 @@ const Variables = {
   tableElementHoverColor: '@table-element-hover-color',
   tableBorderColor: '@table-border-color',
   tableHeadColor: '@table-head-color',
-  menuColor: '@menu-color',
   menuActiveColor: '@menu-active-color',
-  menuBorderColor: '@menu-border-color',
-  btnColor: '@btn-color',
-  btnPrimaryHover: '@btn-primary-hover',
-  btnPrimaryActive: '@btn-primary-active',
   btnDangerColor: '@btn-danger-color',
+  btnDangerBackgroundColor: '@btn-danger-background-color',
   btnDangerActiveColor: '@btn-danger-active-color',
+  btnDangerActiveBackground: '@btn-danger-active-background',
   btnDisabledColor: '@btn-disabled-color',
   btnDisabledBackgroundColor: '@btn-disabled-background-color',
-  btnDangerBackgroundColor: '@btn-danger-background-color',
   codeBackgroundColor: '@code-background-color',
   searchHighlightTextColor: '@search-highlight-text-color',
   searchHighlightTextBackgroundColor: '@search-highlight-text-background-color',
-  backgroundImage: '@background-image'
+  backgroundImage: '@background-image',
+  logoImage: '@logo-image',
+  navigationBackgroundImage: '@navigation-background-image'
 };
 
 const ColorVariables = [
@@ -144,10 +146,10 @@ const ColorVariables = [
   Variables.primaryActiveColor,
   Variables.primaryTextColor,
   Variables.primaryColorSemiTransparent,
-  Variables.colorGreen,
-  Variables.colorRed,
-  Variables.colorYellow,
-  Variables.colorBlue,
+  Variables.colorSuccess,
+  Variables.colorError,
+  Variables.colorWarning,
+  Variables.colorInfo,
   Variables.colorViolet,
   Variables.colorSensitive,
   Variables.colorAqua,
@@ -214,14 +216,10 @@ const ColorVariables = [
   Variables.tableElementHoverColor,
   Variables.tableBorderColor,
   Variables.tableHeadColor,
-  Variables.menuColor,
   Variables.menuActiveColor,
-  Variables.menuBorderColor,
-  Variables.btnColor,
-  Variables.btnPrimaryHover,
-  Variables.btnPrimaryActive,
-  Variables.btnDangerColor,
   Variables.btnDangerActiveColor,
+  Variables.btnDangerColor,
+  Variables.btnDangerActiveBackground,
   Variables.btnDisabledColor,
   Variables.btnDisabledBackgroundColor,
   Variables.btnDangerBackgroundColor,
@@ -240,7 +238,11 @@ const VariableNames = {
   [Variables.primaryHoverColor]: 'Primary action hovered color',
   [Variables.primaryActiveColor]: 'Primary action active color',
   [Variables.primaryTextColor]: 'Primary action text color',
-  [Variables.primaryColorSemiTransparent]: 'Primary action semi-transparent color',
+  [Variables.primaryColorSemiTransparent]: 'Metadata table selection background',
+  [Variables.colorSuccess]: 'Success status color',
+  [Variables.colorError]: 'Error status color',
+  [Variables.colorWarning]: 'Warning status color',
+  [Variables.colorInfo]: 'Info color',
   [Variables.colorGreen]: 'Green color',
   [Variables.colorRed]: 'Red color',
   [Variables.colorYellow]: 'Yellow color',
@@ -255,10 +257,10 @@ const VariableNames = {
   [Variables.colorBlueDimmed]: 'Blue dimmed color',
   [Variables.colorGrey]: 'Grey color',
   [Variables.spinner]: 'Loading indicator color',
-  [Variables.elementHoverColor]: 'Hovered element text color',
-  [Variables.elementHoverBackgroundColor]: 'Hovered element background',
-  [Variables.elementSelectedColor]: 'Selected element text color',
-  [Variables.elementSelectedBackgroundColor]: 'Selected element background',
+  [Variables.elementHoverColor]: 'Lists: hovered element text color',
+  [Variables.elementHoverBackgroundColor]: 'Lists: hovered element background',
+  [Variables.elementSelectedColor]: 'Lists: selected element text color',
+  [Variables.elementSelectedBackgroundColor]: 'Lists: selected element background',
   [Variables.inputBackground]: 'Input control background',
   [Variables.inputBackgroundDisabled]: 'Disabled input control background',
   [Variables.inputAddon]: 'Input control addon background',
@@ -284,7 +286,7 @@ const VariableNames = {
   [Variables.navigationPanelColor]: 'Navigation panel color',
   [Variables.navigationPanelColorImpersonated]: 'Impersonated navigation panel color',
   [Variables.navigationPanelHighlightedColor]: 'Navigation panel active item background',
-  [Variables.navigationPanelHighlightedColorImpersonated]: 'Impersonated navigation panel active item background',
+  [Variables.navigationPanelHighlightedColorImpersonated]: 'Impersonated active item background',
   [Variables.navigationItemColor]: 'Navigation panel icon color',
   [Variables.navigationItemRunsColor]: 'Navigation panel jobs icon color',
   [Variables.tagKeyBackgroundColor]: 'Key-value attribute: key background',
@@ -331,21 +333,28 @@ const VariableNames = {
   [Variables.tableElementHoverColor]: 'Tables: hovered element text color',
   [Variables.tableBorderColor]: 'Tables: border',
   [Variables.tableHeadColor]: 'Tables: header text color',
-  [Variables.menuColor]: 'Menu item color',
   [Variables.menuActiveColor]: 'Active/hovered menu item color',
-  [Variables.menuBorderColor]: 'Menu border color',
-  [Variables.btnColor]: 'Default button: text color',
-  [Variables.btnPrimaryHover]: 'Primary button: hovered background',
-  [Variables.btnPrimaryActive]: 'Primary button: active background',
-  [Variables.btnDangerColor]: 'Danger button color',
-  [Variables.btnDangerBackgroundColor]: 'Danger button: background',
-  [Variables.btnDangerActiveColor]: 'Danger button: active background',
-  [Variables.btnDisabledColor]: 'Disabled button color',
-  [Variables.btnDisabledBackgroundColor]: 'Disabled button background',
+  [Variables.btnDangerColor]: 'Danger button: text color',
+  [Variables.btnDangerBackgroundColor]: 'Danger button: background color',
+  [Variables.btnDangerActiveColor]: 'Danger button: active text color',
+  [Variables.btnDangerActiveBackground]: 'Danger button: active background color',
+  [Variables.btnDisabledColor]: 'Disabled button: text color',
+  [Variables.btnDisabledBackgroundColor]: 'Disabled button: background color',
   [Variables.codeBackgroundColor]: 'Code editor background color',
   [Variables.searchHighlightTextColor]: 'Search results: highlighted text color',
-  [Variables.searchHighlightTextBackgroundColor]: 'Search results: highlighted text background',
-  [Variables.backgroundImage]: 'backgroundImage'
+  [Variables.searchHighlightTextBackgroundColor]: 'Search results: highlighted background',
+  [Variables.backgroundImage]: 'Application background image',
+  [Variables.logoImage]: 'Application logo',
+  [Variables.navigationBackgroundImage]: 'Navigation panel background image'
 };
 
-export {ColorVariables, Variables, VariableNames};
+const VariableDescriptions = {
+
+};
+
+export {
+  ColorVariables,
+  Variables,
+  VariableNames,
+  VariableDescriptions
+};
