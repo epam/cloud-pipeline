@@ -152,15 +152,15 @@ const sectionsConfiguration = {
 };
 
 const orderedSections = [
-  sections.accent,
-  sections.alerts,
-  sections.buttons,
-  sections.cards,
-  sections.input,
   sections.main,
-  sections.menu,
+  sections.accent,
   sections.navigation,
-  sections.tables
+  sections.menu,
+  sections.cards,
+  sections.tables,
+  sections.buttons,
+  sections.input,
+  sections.alerts
 ];
 
 export {
