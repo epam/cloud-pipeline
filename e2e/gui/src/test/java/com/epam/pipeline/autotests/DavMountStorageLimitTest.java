@@ -61,6 +61,8 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
             " Can't request this storage to be mounted, increase quotas!";
     private final String requestInfo = "Description of the Request Filesystem access feature";
     private final String doneRequestInfo = "Help tips - how to use the Filesystem access";
+    private final String indexOfWebdav = "Index of /webdav/%s";
+    private final String fileSystemaccessEnabled = "File system access enabled till";
     private final String uiPipeFileBrowserJson = readResourceFully(UI_PIPE_FILE_BROWSER_JSON);
     private final int durationSeconds = 60;
     private final String userRoleGroup = C.ROLE_USER;
@@ -73,7 +75,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     }
 
     @BeforeMethod
-    void openApplication() {
+    void reLogin() {
         logoutIfNeeded();
         loginAs(admin);
     }
@@ -118,7 +120,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                 .sleep(10, SECONDS)
                 .inAnotherTab(webdavpage ->
                         checkWebDavPage(() -> new ToolPageAO(endpoint)
-                                .assertPageTitleIs(format("Index of /webdav/%s", user.login.toUpperCase()))
+                                .assertPageTitleIs(format(indexOfWebdav, user.login.toUpperCase()))
                                 .assertIndexContains(storage1, true),
                                 endpoint));
             sleep(durationSeconds, SECONDS);
@@ -128,7 +130,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                 .ensure(FILE_SYSTEM_ACCESS, enabled)
                 .inAnotherTab(webdavpage ->
                         checkWebDavPage(() -> new ToolPageAO(endpoint)
-                                        .assertPageTitleIs(format("Index of /webdav/%s", user.login.toUpperCase()))
+                                        .assertPageTitleIs(format(indexOfWebdav, user.login.toUpperCase()))
                                         .assertIndexContains(storage1, false),
                                 endpoint));
         } finally {
@@ -217,7 +219,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                     .selectStorage(storage1)
                     .showMetadata()
                     .click(FILE_SYSTEM_ACCESS)
-                    .ensure(FILE_SYSTEM_ACCESS, text("File system access enabled till"))
+                    .ensure(FILE_SYSTEM_ACCESS, text(fileSystemaccessEnabled))
                     .ensure(DISABLE, enabled)
                     .sleep(10, SECONDS);
             logout();
@@ -225,7 +227,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
             library()
                     .inAnotherTab(webdavpage ->
                             checkWebDavPage(() -> new ToolPageAO(endpoint)
-                                            .assertPageTitleIs(format("Index of /webdav/%s", user.login.toUpperCase()))
+                                            .assertPageTitleIs(format(indexOfWebdav, user.login.toUpperCase()))
                                             .assertIndexContains(storage1, true),
                                     endpoint));
             library()
@@ -236,7 +238,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                     .sleep(10, SECONDS)
                     .inAnotherTab(webdavpage ->
                             checkWebDavPage(() -> new ToolPageAO(endpoint)
-                                            .assertPageTitleIs(format("Index of /webdav/%s", user.login.toUpperCase()))
+                                            .assertPageTitleIs(format(indexOfWebdav, user.login.toUpperCase()))
                                             .assertIndexContains(storage1, false),
                                     endpoint));
         } finally {
@@ -263,7 +265,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                 .showMetadata()
                 .addKeyWithValue("1", "2")
                 .click(FILE_SYSTEM_ACCESS)
-                .ensure(FILE_SYSTEM_ACCESS, text("File system access enabled till"))
+                .ensure(FILE_SYSTEM_ACCESS, text(fileSystemaccessEnabled))
                 .deleteAllKeys()
                 .ensureTitleIs("Do you want to delete all metadata?")
                 .ok()
@@ -323,7 +325,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     }
 
     private String accessEnabledMessage() {
-        return format("File system access enabled till %s.",
+        return format("%s %s.", fileSystemaccessEnabled,
                 LocalDateTime.now().plusSeconds(durationSeconds)
                         .format(ofPattern("dd MMM yyyy, HH:mm")));
     }
