@@ -1257,7 +1257,11 @@ def find_tunnel_procs(run_id=None, local_ports=None):
         proc_name = proc.name()
         if proc_name not in PIPE_PROC_NAMES and not proc_name.startswith(PYTHON_PROC_PREFIX):
             continue
-        proc_args = proc.cmdline()
+        try:
+            proc_args = proc.cmdline()
+        except psutil.AccessDenied:
+            logging.debug('Process with pid %s details access is not allowed.', proc.pid)
+            continue
         if proc_name.startswith(PYTHON_PROC_PREFIX) \
                 and all(not proc_arg.endswith(PIPE_SCRIPT_NAME)
                         for proc_arg in proc_args):
