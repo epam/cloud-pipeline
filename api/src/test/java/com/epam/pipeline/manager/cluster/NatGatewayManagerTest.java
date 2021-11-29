@@ -26,7 +26,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +47,7 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
     @SpyBean
     private NatGatewayDao natGatewayDao;
 
-    @MockBean
+    @SpyBean
     private KubernetesManager kubernetesManager;
 
     @Before
