@@ -43,7 +43,7 @@ class UserOperationsManager:
     def get_all_user_roles(self):
         user_groups = self.user.get('groups', [])
         user_roles = [role.get('name') for role in self.user.get('roles', [])]
-        return set((user_groups + user_roles))
+        return set(user_groups + user_roles)
 
     def whoami(self):
         return self.user
