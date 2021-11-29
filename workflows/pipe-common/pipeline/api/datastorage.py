@@ -76,8 +76,8 @@ class DataStorage:
         policy = StoragePolicy.from_json(data['storagePolicy']) if 'storagePolicy' in data else None
         mount_status = JsonParser.get_optional_field(data, 'mountStatus', default=None)
         return DataStorage(id, name, description, path, policy, mask, type, owner, region_id, locked, parentId,
-                           mount_point, mount_options, region_name, sensitive=sensitive, tools_to_mount=tools_to_mount,
-                           mount_status=mount_status)
+                           mount_point, mount_options, region_name, sensitive=sensitive, mount_disabled=mount_disabled,
+                           tools_to_mount=tools_to_mount, mount_status=mount_status)
 
 
 class FileShareMount:

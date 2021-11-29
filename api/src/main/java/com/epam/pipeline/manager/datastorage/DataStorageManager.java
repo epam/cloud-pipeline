@@ -1031,6 +1031,10 @@ public class DataStorageManager implements SecuredEntityManager {
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
         }
 
+        if (dataStorageVO.getMountDisabled() != null) {
+            dataStorage.setMountDisabled(dataStorageVO.getMountDisabled());
+        }
+
         if (dataStorageVO.getToolsToMount() != null) {
             dataStorage.setToolsToMount(dataStorageVO.getToolsToMount());
         }

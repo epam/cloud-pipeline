@@ -62,12 +62,14 @@ class PermissionHelper:
     def is_storage_readable(cls, storage):
         return cls.is_permission_set(storage, READ_MASK)
 
+    @classmethod
+    def is_storage_mount_disabled(cls, storage):
+        return storage.mount_disabled is True
+
     # Checks that tool with its version for the current run is allowed to mount this storage
     # or there is no configured restriction for this storage
     @classmethod
     def is_storage_available_for_mount(cls, storage, run):
-        if not storage.mount_disabled:
-            return False
         if not storage.tools_to_mount:
             return True
         if run is None or not run["actualDockerImage"]:
@@ -217,9 +219,11 @@ class MountStorageTask:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
                     Logger.info('Storage is not readable', task_name=self.task_name)
                     continue
+                if PermissionHelper.is_storage_mount_disabled(storage_and_mount.storage):
+                    Logger.info('Storage disabled for mounting, skipping.', task_name=self.task_name)
+                    continue
                 if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
-                    storage_not_allowed_msg = 'Storage {} is not allowed for {} image, or it is disabled for mount at all. mount_disabled flag: {}'
-                                                    .format(storage_and_mount.storage.name, run.get("actualDockerImage", ""), storage_and_mount.storage.mount_disabled)
+                    storage_not_allowed_msg = 'Storage {} is not allowed for {} image'.format(storage_and_mount.storage.name, run.get("actualDockerImage", ""))
                     if storage_and_mount.storage.id in force_storages_list:
                         Logger.info(storage_not_allowed_msg + ', but it is forced to be mounted', task_name=self.task_name)
                     else:

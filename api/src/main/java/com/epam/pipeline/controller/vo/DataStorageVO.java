@@ -55,7 +55,7 @@ public class DataStorageVO {
     private Long fileShareMountId;
     private boolean sensitive;
     private List<ToolFingerprint> toolsToMount;
-    private boolean mountDisabled;
+    private Boolean mountDisabled;
 
     // S3 specific fields
     private String tempCredentialsRole;
