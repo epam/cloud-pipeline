@@ -861,9 +861,6 @@ public class SystemPreferences {
             "billing.export.aggregation.page.size", 5000, BILLING_GROUP, pass);
     public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = new IntPreference(
             "billing.export.period.aggregation.page.size", 1000, BILLING_GROUP, pass);
-    public static final StringPreference BILLING_EXPORT_RUN_HEADER = new StringPreference(
-            "billing.export.run.header", "Run,Owner,Billing Center,Pipeline,Tool,Type,Instance,Started,Finished,Duration (hours),Cost ($)",
-            BILLING_GROUP, pass);
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
