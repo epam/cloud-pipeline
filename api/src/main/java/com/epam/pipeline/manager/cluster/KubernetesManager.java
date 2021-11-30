@@ -996,11 +996,6 @@ public class KubernetesManager {
     }
 
     private Service createService(final KubernetesClient client, final String serviceName,
-                                  final Map<String, String> labels, final List<ServicePort> ports) {
-        return createService(client, serviceName, labels, Collections.emptyMap(), ports, labels);
-    }
-
-    private Service createService(final KubernetesClient client, final String serviceName,
                                   final Map<String, String> labels,
                                   final Map<String, String> annotations,
                                   final List<ServicePort> ports,
