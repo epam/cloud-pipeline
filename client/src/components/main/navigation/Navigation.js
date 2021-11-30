@@ -25,7 +25,7 @@ import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import RunsCounterMenuItem from './RunsCounterMenuItem';
-import SupportMenuItem from './SupportMenuItem';
+import SupportMenu from './support-menu';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 import {Pages} from '../../../utils/ui-navigation';
@@ -47,8 +47,7 @@ export default class Navigation extends React.Component {
   };
 
   state = {
-    versionInfoVisible: false,
-    supportModalVisible: false
+    versionInfoVisible: false
   };
 
   @computed
@@ -100,10 +99,6 @@ export default class Navigation extends React.Component {
 
   handleVersionInfoVisible = (visible) => {
     this.setState({versionInfoVisible: visible});
-  };
-
-  handleSupportModalVisible = (visible) => {
-    this.setState({supportModalVisible: visible});
   };
 
   async navigateToRun (runId) {
@@ -269,11 +264,9 @@ export default class Navigation extends React.Component {
             </Popover>
           }
           {menuItems}
-          <SupportMenuItem
-            className={styles.navigationMenuItem}
-            visible={this.state.supportModalVisible}
-            onVisibilityChanged={this.handleSupportModalVisible}
-            style={{
+          <SupportMenu
+            itemClassName={styles.navigationMenuItem}
+            containerStyle={{
               position: 'absolute',
               left: 0,
               bottom: activeTabPath === Pages.library ? 44 : 10,
