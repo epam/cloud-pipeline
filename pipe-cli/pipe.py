@@ -44,7 +44,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels
+from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
@@ -1726,6 +1726,16 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different,
                   retries, region, _parse_tunnel_args)
+
+
+@tunnel.command(name='list')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@common_options
+def view_tunnels(log_level):
+    def _parse_tunnel_args(args):
+        with return_tunnel_args.make_context('start', args) as ctx:
+            return return_tunnel_args.invoke(ctx)
+    list_tunnels(log_level, _parse_tunnel_args)
 
 
 @cli.command(name='update')
