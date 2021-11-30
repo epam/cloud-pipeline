@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">41m53.78s</div>
+<div class="counter">19m27.82s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,115 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="checkPipeStorageLsPaging - 1339_1"></a>
-<h3 class="failures">checkPipeStorageLsPaging - 1339_1</h3>
-<span class="code">
-<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1638056325294.364.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1638056325294.364.html
-Timeout: 1200 s.
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
-	at com.epam.pipeline.autotests.DataStoragesCLITest.checkPipeStorageLsPaging(DataStoragesCLITest.java:146)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="checkTransferBetweenRegions - 1469"></a>
-<h3 class="failures">checkTransferBetweenRegions - 1469</h3>
-<span class="code">
-<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1638057578650.365.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1638057578650.365.html
-Timeout: 1200 s.
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
-	at com.epam.pipeline.autotests.DataStoragesCLITest.checkTransferBetweenRegions(DataStoragesCLITest.java:91)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -180,27 +78,32 @@ Timeout: 0 ms.
 </tr>
 </thead>
 <tr>
-<td class="failures">checkPipeStorageLsPaging - 1339_1</td>
-<td>21m1.62s</td>
-<td class="failures">failed</td>
+<td class="success">checkPipeStorageLsPaging - 1339_1</td>
+<td>8m52.98s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkPipeStorageLsPagingOfVersions</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkPipeStorageLsPagingOfVersions - 1339_2</td>
+<td>1m3.72s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">checkTransferBetweenRegions - 1469</td>
-<td>20m52.16s</td>
-<td class="failures">failed</td>
+<td class="success">checkTransferBetweenRegions - 1469</td>
+<td>9m31.12s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 13431 from [13431]
-Returns latest run with runId 13432 from [13431, 13432]
+<pre>Returns latest run with runId 13593 from [13593]
+Returns latest run with runId 13594 from [13593, 13594]
+Returns latest run with runId 13594 from [13593, 13594]
+Returns latest run with runId 13594 from [13593, 13594]
+Returns latest run with runId 13594 from [13593, 13594]
+Returns latest run with runId 13594 from [13593, 13594]
+Returns latest run with runId 13594 from [13593, 13594]
 </pre>
 </span>
 </div>
@@ -212,7 +115,7 @@ Returns latest run with runId 13432 from [13431, 13432]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 28, 2021 1:57:56 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 30, 2021 5:04:57 PM</p>
 </div>
 </div>
 </body>
