@@ -36,7 +36,7 @@ function parseSupportTemplate (preferences, user) {
           } = user.value;
           const groups = roles
             .map(r => r.name)
-            .concat(adGroups);
+            .concat(...adGroups);
           const keys = Object.keys(parsed);
           const groupKey = keys.find(key => groups.includes(key));
           if (groupKey) {
