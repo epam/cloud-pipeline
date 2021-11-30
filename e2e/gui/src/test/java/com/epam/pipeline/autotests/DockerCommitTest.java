@@ -105,7 +105,7 @@ public class DockerCommitTest
                 );
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-692"})
     public void pushDockerFormValidation() {
         tools()
@@ -386,7 +386,7 @@ public class DockerCommitTest
                                 .deleteVersion(customTag));
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({""})
     public void validateDisableCommitFunction() {
         try {
