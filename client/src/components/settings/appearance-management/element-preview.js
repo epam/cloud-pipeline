@@ -16,13 +16,24 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Alert, Input} from 'antd';
+import {Button, Alert, Input, Table, Select, Icon} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';
 import styles from './element-preview.css';
 
 class ElementPreview extends React.Component {
+  constructor (props) {
+    super(props);
+    this.state = {
+      navigationSelected: {
+        home: false,
+        run: false,
+        search: false
+      }
+    };
+  }
+
   renderButtons = () => {
     return (<div
       className={styles.container}>
@@ -31,11 +42,6 @@ class ElementPreview extends React.Component {
         className={styles.button}
       >
         Primary
-      </Button>
-      <Button
-        className={styles.button}
-      >
-        Default
       </Button>
       <Button
         type="danger"
@@ -51,8 +57,45 @@ class ElementPreview extends React.Component {
       </Button>
     </div>);
   };
+
   renderTables = () => {
-    return null;
+    const dataSource = [{
+      key: '1',
+      column1: 'Row',
+      column2: 1,
+      column3: 'Row1'
+    }, {
+      key: '2',
+      column1: 'Row',
+      column2: 2,
+      column3: 'Row2'
+    }];
+
+    const columns = [{
+      title: 'Column1',
+      dataIndex: 'column1',
+      key: 'column1'
+    }, {
+      title: 'Column2',
+      dataIndex: 'column2',
+      key: 'column2'
+    }, {
+      title: 'Column3',
+      dataIndex: 'column3',
+      key: 'column3'
+    }];
+
+    return (
+      <div className={styles.container}>
+        <Table
+          bordered
+          size="small"
+          dataSource={dataSource}
+          columns={columns}
+          pagination={false}
+        />
+      </div>
+    );
   }
 
   renderMenu = () => (
@@ -68,18 +111,14 @@ class ElementPreview extends React.Component {
 
   renderCards = () => (
     <div className={styles.container}>
-      <div
-        className={classNames(styles.panel, 'cp-content-panel')}
-      >
-        <div
-          className="cp-content-panel-header"
-          style={{width: '100%'}}
-        >
-          <h4 style={{padding: 10}}>Header title</h4>
-        </div>
-        <div style={{padding: 10}}>
-          <p>Card content</p>
-          <p>Card content</p>
+      <div className={classNames(styles.panel, 'cp-panel')}>
+        <div className={classNames('cp-panel-card', styles.card)}>
+          <div className="cp-panel-card-title">
+            Card title
+          </div>
+          <div className="cp-panel-card-sub-text">
+            Card content
+          </div>
         </div>
       </div>
     </div>
@@ -96,8 +135,20 @@ class ElementPreview extends React.Component {
         disabled
         className={styles.input}
       />
+      <Select
+        className={styles.input}
+        placeholder="Select"
+      >
+        <Select.Option value="option1">
+          Option 1
+        </Select.Option>
+        <Select.Option value="option2">
+          Option 2
+        </Select.Option>
+      </Select>
     </div>
   );
+
   renderAlerts = () => (
     <div className={styles.container}>
       <Alert
@@ -126,7 +177,68 @@ class ElementPreview extends React.Component {
       />
     </div>
   );
-  renderNavigation = () => (<div>navigation</div>);
+
+  renderNavigation = () => (
+    <div className={styles.container}>
+      <div className={`cp-navigation-panel ${styles.navigationPanelPreview}`}>
+        <div
+          className={classNames(
+            'cp-navigation-menu-item',
+            {selected: this.state.navigationSelected.home}
+          )}
+          onClick={() => this.setState({
+            navigationSelected: {
+              home: true,
+              run: false,
+              search: false
+            }
+          })}
+        >
+          <Icon type="home" />
+        </div>
+        <div
+          className={classNames(
+            'cp-navigation-menu-item cp-runs-menu-item active',
+            {selected: this.state.navigationSelected.run}
+          )}
+          onClick={() => this.setState({
+            navigationSelected: {
+              home: false,
+              run: true,
+              search: false
+            }
+          })}
+        >
+          <Icon type="play-circle" />
+        </div>
+        <div
+          className={classNames(
+            'cp-navigation-menu-item',
+            {selected: this.state.navigationSelected.search}
+          )}
+          onClick={() => this.setState({
+            navigationSelected: {
+              home: false,
+              run: false,
+              search: true
+            }
+          })}
+        >
+          <Icon type="search" />
+        </div>
+      </div>
+    </div>
+  );
+
+  renderMain = () => (
+    <div className={styles.container}>
+      <div className={classNames('ant-layout', styles.mainLayout)}>
+        <div className={classNames('cp-panel', styles.mainPanel)}>
+          <div className={styles.mainContent}>Content</div>
+        </div>
+      </div>
+    </div>
+  )
 
   renderPreviews () {
     const {section} = this.props;
@@ -145,6 +257,8 @@ class ElementPreview extends React.Component {
         return this.renderCards();
       case sectionNames.input:
         return this.renderForms();
+      case sectionNames.main:
+        return this.renderMain();
       default:
         return null;
     }

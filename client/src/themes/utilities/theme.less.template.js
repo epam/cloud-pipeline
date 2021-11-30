@@ -866,16 +866,16 @@ export default `
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
   background-color: fade(@panel-background-color, 100%);
-  color: @application-color;
+  color: @menu-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
-  border-color: @card-border-color;
+  border-color: @menu-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @card-border-color;
+  background-color: @menu-border-color;
 }
 @THEME .ant-select-selection__placeholder,
 @THEME .ant-select-selection__clear,
@@ -902,7 +902,7 @@ export default `
 }
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
-  color: @application-color;
+  color: @menu-color;
 }
 @THEME .ant-select-dropdown-menu-item.cp-danger,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger,
@@ -942,6 +942,12 @@ export default `
 @THEME .rc-dropdown-menu-item-disabled,
 @THEME .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
+}
+@THEME .rc-menu-item.rc-menu-item-selected {
+  background-color: fade(@panel-background-color, 100%);
+}
+@THEME .rc-menu-item.rc-menu-item-selected:hover {
+  background-color: @element-hover-background-color;
 }
 @THEME .ant-select-dropdown-menu-item-selected,
 @THEME .ant-select-dropdown-menu-item-selected:hover {
@@ -2259,6 +2265,9 @@ export default `
 @THEME .cp-library-metadata-table-cell-selected {
   background-color: fadeout(@primary-hover-color, 70%);
   color: @application-color;
+}
+@THEME .cp-library-metadata-table-marker {
+  background-color: @primary-color;
 }
 @THEME .cp-library-metadata-panel-placeholder {
   color: @application-color-faded;
