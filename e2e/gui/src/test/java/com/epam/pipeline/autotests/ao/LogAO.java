@@ -141,6 +141,11 @@ public class LogAO implements AccessObject<LogAO> {
                 .messageShouldAppear("COMMIT SUCCEEDED", COMMITTING_TIMEOUT);
     }
 
+    public LogAO assertCommitButtonIsNotVisible() {
+        get(COMMIT).shouldNotBe(visible);
+        return this;
+    }
+
     public LogAO waitForPauseButton() {
         get(PAUSE).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;

@@ -101,11 +101,11 @@ public class DockerCommitTest
                 .perform(registry, group, tool, tool ->
                         tool.versions()
                                 .viewUnscannedVersions()
-                                .performIf(hasOnPage(customTag), deleteVersion(customTag))
+                                .performIf(hasOnPage(customTag), t -> t.deleteVersion(customTag))
                 );
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-692"})
     public void pushDockerFormValidation() {
         tools()
@@ -386,6 +386,35 @@ public class DockerCommitTest
                                 .deleteVersion(customTag));
     }
 
+    @Test
+    @TestCase({""})
+    public void validateDisableCommitFunction() {
+        try {
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.settings()
+                                    .allowCommit(true)
+                                    .doNotMountStoragesSelect(true)
+                                    .performIf(SAVE, enabled, ToolSettings::save)
+                                    .run(this)
+                    ).log(getLastRunId(), LogAO::waitForCommitButton);
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.settings()
+                                    .allowCommit(false)
+                                    .performIf(SAVE, enabled, ToolSettings::save)
+                                    .run(this)
+                    )
+                    .log(getLastRunId(), log -> log.waitForSshLink().assertCommitButtonIsNotVisible());
+        } finally {
+            tools().perform(registry, group, tool,
+                    tool -> tool.settings()
+                            .doNotMountStoragesSelect(false)
+                            .allowCommit(true)
+                            .performIf(SAVE, enabled, ToolSettings::save));
+        }
+    }
+
     private LogAO logAO() {
         return new LogAO();
     }
@@ -406,17 +435,6 @@ public class DockerCommitTest
         return $(byClassName("ant-table-tbody"))
                 .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .exists();
-    }
-
-    private Consumer<ToolVersions> deleteVersion(String customTag) {
-        return tool -> tool.deleteVersion(customTag);
-    }
-
-    private Consumer<ConfirmationPopupAO<Registry>> confirmGroupDeletion(final String groupName) {
-        return confirmation ->
-                confirmation.ensureTitleIs(String.format("Are you sure you want to delete '%s'?", groupName))
-                        .sleep(1, SECONDS)
-                        .ok();
     }
 
     private boolean groupHasNoText(String text) {
