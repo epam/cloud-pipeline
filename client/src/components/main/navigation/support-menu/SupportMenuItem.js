@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Button, Icon, Popover} from 'antd';
+import styles from './SupportMenu.css';
 
 function replaceLineBreaks (text) {
   if (!text) {
@@ -28,14 +29,45 @@ function replaceLineBreaks (text) {
     .replace(/\\t/g, '\t');
 }
 
-@inject('preferences', 'issuesRenderer')
+function processLinks (html) {
+  return (html || '').replace(/<a href/ig, '<a target="_blank" href');
+}
+
+function urlCheck (string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+  return url.protocol === 'http:' || url.protocol === 'https:';
+}
+
+@inject('issuesRenderer')
 @observer
 class SupportMenuItem extends React.Component {
   static propTypes = {
     className: PropTypes.string,
     onVisibilityChanged: PropTypes.func,
     visible: PropTypes.bool,
-    style: PropTypes.object
+    style: PropTypes.object,
+    content: PropTypes.string,
+    icon: PropTypes.string
+  };
+
+  renderIcon = () => {
+    const {icon} = this.props;
+    if (urlCheck(icon)) {
+      return (
+        <img
+          src={icon}
+          className={styles.externalIcon}
+        />
+      );
+    }
+    return (
+      <Icon type={icon} />
+    );
   };
 
   render () {
@@ -44,31 +76,33 @@ class SupportMenuItem extends React.Component {
       onVisibilityChanged,
       issuesRenderer,
       visible,
-      preferences,
-      style
+      style,
+      content
     } = this.props;
-    if (!preferences || !preferences.loaded || !issuesRenderer) {
+    if (!issuesRenderer) {
       return null;
     }
-    const source = replaceLineBreaks(preferences.getPreferenceValue('ui.support.template'));
+    const source = replaceLineBreaks(content);
     if (!source) {
       return null;
     }
+    const html = processLinks(issuesRenderer.render(source));
     return (
       <Popover
         content={
-          <div dangerouslySetInnerHTML={{__html: issuesRenderer.render(source)}} />
+          <div dangerouslySetInnerHTML={{__html: html}} />
         }
         placement="rightBottom"
         trigger="click"
         onVisibleChange={onVisibilityChanged}
-        visible={visible}>
+        visible={visible}
+      >
         <Button
           id="navigation-button-support"
           className={className}
           style={style}
         >
-          <Icon type="customer-service" />
+          {this.renderIcon()}
         </Button>
       </Popover>
     );
