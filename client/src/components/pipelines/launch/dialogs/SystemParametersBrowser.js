@@ -28,8 +28,8 @@ import {
   Table
 } from 'antd';
 import roleModel from '../../../../utils/roleModel';
+import LoadingView from '../../../special/LoadingView';
 import styles from './Browser.css';
-import LoadingView from "../../../special/LoadingView";
 
 @roleModel.authenticationInfo
 @inject('runDefaultParameters')
