@@ -30,6 +30,28 @@ function wrapRequest (request, payload) {
   });
 }
 
+function extendSharedItems (items = [], delimiter = '/') {
+  const itemsSet = new Set(items);
+  for (const item of items) {
+    const e = /^(.+)\.vsi$/i.exec(item);
+    if (e) {
+      const pathComponents = e[1].split(delimiter);
+      const file = pathComponents.pop();
+      const folderToAppend = [
+        ...pathComponents,
+        `_${file}_`
+      ].join(delimiter).concat('/**');
+      const wsiParserFolder = [
+        ...pathComponents,
+        '.wsiparser'
+      ].join(delimiter).concat('/**');
+      itemsSet.add(folderToAppend);
+      itemsSet.add(wsiParserFolder);
+    }
+  }
+  return [...itemsSet];
+}
+
 export default function createSharedStorage (
   preferences,
   sharedStorage,
@@ -56,7 +78,10 @@ export default function createSharedStorage (
             : ServiceTypes.objectStorage;
           const payload = {
             sourceStorageId: sharedStorage.id,
-            linkingMasks: sharedItems,
+            linkingMasks: extendSharedItems(
+              sharedItems,
+              sharedStorage ? sharedStorage.delimiter : undefined
+            ),
             parentFolderId: preferences.sharedStoragesSystemDirectory,
             path,
             shared: true,
