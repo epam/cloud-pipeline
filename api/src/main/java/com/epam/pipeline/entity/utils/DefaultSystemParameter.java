@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 public class DefaultSystemParameter {
@@ -29,6 +31,7 @@ public class DefaultSystemParameter {
     private String description;
     private String defaultValue;
     private boolean passToWorkers;
+    private Set<String> roles;
 
     public DefaultSystemParameter() {
         this.type = PipeConfValueVO.DEFAULT_TYPE;
