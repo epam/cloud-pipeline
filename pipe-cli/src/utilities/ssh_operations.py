@@ -13,10 +13,14 @@
 # limitations under the License.
 
 import collections
+
+import click
 import itertools
 import logging
 import os
 import random
+
+import prettytable
 import select
 import socket
 import stat
@@ -50,6 +54,10 @@ PIPE_SCRIPT_NAME = 'pipe.py'
 
 run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner '
                                                     'sensitive platform parameters')
+
+
+class TunnelError(Exception):
+    pass
 
 
 class PasswordlessSSHConfig:
@@ -151,7 +159,7 @@ def direct_connect(target, timeout=None, retries=None):
         return sock
     except KeyboardInterrupt:
         raise
-    except:
+    except Exception:
         if retries >= 1:
             if sock:
                 sock.close()
@@ -192,7 +200,7 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
         return sock
     except KeyboardInterrupt:
         raise
-    except:
+    except Exception:
         if retries >= 1:
             if sock:
                 sock.close()
@@ -253,7 +261,7 @@ def setup_paramiko_transport(conn_info, retries):
         transport = paramiko.Transport(sock)
         transport.start_client()
         return transport
-    except:
+    except Exception:
         if retries >= 1:
             if sock:
                 sock.close()
@@ -301,7 +309,7 @@ def is_ssh_default_root_user_enabled():
     try:
         ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
         return get_boolean(ssh_default_root_user_enabled_preference.value)
-    except:
+    except Exception:
         return True
 
 
@@ -484,9 +492,17 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                            retries, parse_tunnel_args):
     for tunnel_proc in find_tunnel_procs(run_id=None, local_ports=local_ports):
         logging.info('Process with pid %s was found (%s).', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
-        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, timeout_stop,
-                                                  replace_different, replace_existing,
-                                                  parse_tunnel_args)
+        proc_parsed_args = {}
+        try:
+            proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
+        except TunnelError:
+            if replace_existing or replace_different:
+                kill_process(tunnel_proc, timeout_stop)
+            else:
+                raise TunnelError('Existing tunnel process arguments parsing has failed. '
+                                  'Please use the following command to stop all existing tunnels and '
+                                  'then try again: \n\n'
+                                  'pipe tunnel stop')
         if not proc_parsed_args:
             return
         existing_tunnel = TunnelArgs.from_args(proc_parsed_args)
@@ -520,26 +536,19 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                               existing_tunnel.ssh_path, ssh_user,
                               existing_tunnel_remote_host, log_file, retries)
             sys.exit(0)
-        raise RuntimeError('{} tunnel already exists on the same local port.'
-                           .format('Same' if is_same_tunnel else 'Different'))
+        raise TunnelError('{} tunnel already exists on the same local port'
+                          .format('Same' if is_same_tunnel else 'Different'))
 
 
-def parse_tunnel_proc_args(proc, timeout_stop,
-                           replace_different, replace_existing,
-                           parse_start_tunnel_arguments):
+def parse_tunnel_proc_args(proc, parse_start_tunnel_arguments):
     try:
         proc_args = proc.cmdline()
         for i in range(len(proc_args)):
             if proc_args[i] == 'start':
                 return parse_start_tunnel_arguments(proc_args[i + 1:])
-    except:
+    except Exception:
         logging.debug('Existing tunnel process arguments parsing has failed.', exc_info=sys.exc_info())
-        if replace_existing or replace_different:
-            kill_process(proc, timeout_stop)
-        else:
-            raise RuntimeError('Existing tunnel process arguments parsing has failed. '
-                               'Please use the following command to stop all existing tunnels and then try again: \n\n'
-                               'pipe tunnel stop')
+        raise TunnelError('Existing tunnel process arguments parsing has failed.')
     return {}
 
 
@@ -752,7 +761,7 @@ def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_i
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         func()
-    except:
+    except Exception:
         logging.exception('Error occurred while trying to configure passwordless ssh')
         raise
     finally:
@@ -784,7 +793,7 @@ def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_inf
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         func()
-    except:
+    except Exception:
         logging.exception('Error occurred while trying to configure passwordless ssh')
         raise
     finally:
@@ -832,7 +841,7 @@ def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeo
                         client_socket, address = input.accept()
                     except KeyboardInterrupt:
                         raise
-                    except:
+                    except Exception:
                         logging.exception('Cannot establish client connection %s:%s:%s.',
                                           local_port, remote_host, remote_port)
                         break
@@ -849,7 +858,7 @@ def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeo
                                                                       retries=retries)
                     except KeyboardInterrupt:
                         raise
-                    except:
+                    except Exception:
                         logging.exception('Cannot establish tunnel connection %s:%s:%s.',
                                           local_port, remote_host, remote_port)
                         client_socket.close()
@@ -867,7 +876,7 @@ def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeo
                     read_data = input.recv(chunk_size)
                 except KeyboardInterrupt:
                     raise
-                except:
+                except Exception:
                     logging.exception('Cannot read data from socket')
                 if read_data:
                     logging.debug('Writing data...')
@@ -876,7 +885,7 @@ def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeo
                         sent_data = read_data
                     except KeyboardInterrupt:
                         raise
-                    except:
+                    except Exception:
                         logging.exception('Cannot write data to socket')
                 if not read_data or not sent_data:
                     logging.info('Closing client and tunnel connections...')
@@ -890,7 +899,7 @@ def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeo
                     break
     except KeyboardInterrupt:
         logging.info('Interrupted...')
-    except:
+    except Exception:
         logging.exception('Errored...')
         raise
     finally:
@@ -1247,6 +1256,45 @@ def kill_tunnels(run_id=None, local_ports_str=None, timeout=None, force=False, l
         logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
         logging.info('Killing the process...')
         kill_process(tunnel_proc, timeout / 1000, force)
+
+
+def list_tunnels(log_level, parse_tunnel_args):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
+    tunnels_table = prettytable.PrettyTable()
+    tunnels_table.field_names = ['PID', 'PPID', 'Owner', 'Host', 'Local Ports', 'Remote Ports']
+    tunnels_table.sortby = 'PID'
+    tunnels_table.align = 'l'
+    tunnel_procs = list(find_tunnel_procs())
+    tunnel_procs_by_ppid = {tunnel_proc.ppid(): tunnel_proc for tunnel_proc in tunnel_procs}
+    for tunnel_proc in tunnel_procs:
+        logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+        tunnel_proc_pid = tunnel_proc.pid
+        tunnel_proc_ppid = tunnel_proc.ppid()
+        tunnel_proc_username = tunnel_proc.username()
+        if tunnel_proc_pid in tunnel_procs_by_ppid:
+            continue
+        try:
+            proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
+        except TunnelError:
+            proc_parsed_args = {}
+        if not proc_parsed_args:
+            continue
+        tunnel_args = TunnelArgs.from_args(proc_parsed_args)
+        tunnels_table.add_row([tunnel_proc_pid,
+                               tunnel_proc_ppid,
+                               tunnel_proc_username,
+                               tunnel_args.host_id,
+                               stringify_ports(tunnel_args.local_ports),
+                               stringify_ports(tunnel_args.remote_ports)])
+    click.echo(tunnels_table)
+
+
+def stringify_ports(ports):
+    if not ports:
+        return ''
+    if len(ports) == 1:
+        return str(ports[0])
+    return '{}-{}'.format(ports[0], ports[-1])
 
 
 def find_tunnel_procs(run_id=None, local_ports=None):
