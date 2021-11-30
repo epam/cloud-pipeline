@@ -27,8 +27,8 @@ export default function parseRunServiceUrlConfiguration (serviceUrl) {
           if (!url) {
             url = {
               name: urlName,
-              isDefault: urlConfiguration.isDefault,
-              sameTab: urlConfiguration.sameTab,
+              isDefault: /^true$/i.test(`${urlConfiguration.isDefault}`),
+              sameTab: /^true$/i.test(`${urlConfiguration.sameTab}`),
               url: {}
             };
             result.push(url);
