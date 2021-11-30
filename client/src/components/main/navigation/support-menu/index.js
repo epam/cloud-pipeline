@@ -52,17 +52,35 @@ class SupportMenu extends React.Component {
         supportTemplate !== null
       ) {
         template = Object.entries(supportTemplate)
-          .map(([entryName, {icon, content}]) => ({
-            entryName,
-            icon,
-            content
-          }));
+          .map(([entryName, entryValue]) => {
+            if (typeof entryValue === 'string') {
+              return {
+                entryName,
+                icon: DEFAULT_MENU_ITEM.icon,
+                content: entryValue
+              };
+            } else if (typeof entryValue === 'object') {
+              const {
+                icon = DEFAULT_MENU_ITEM.icon,
+                content
+              } = entryValue;
+              return {
+                entryName,
+                icon,
+                content
+              };
+            }
+            return undefined;
+          })
+          .filter(Boolean)
+          .filter(o => o.content);
       } else if (typeof supportTemplate === 'string') {
         template = [{
           entryName: DEFAULT_MENU_ITEM.entryName,
           icon: DEFAULT_MENU_ITEM.icon,
           content: uiNavigation.supportTemplate
-        }];
+        }]
+          .filter(o => o.content);
       }
     }
     return template;
