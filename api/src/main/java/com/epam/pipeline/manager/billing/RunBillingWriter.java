@@ -2,12 +2,10 @@ package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.billing.RunBilling;
 import com.opencsv.CSVWriter;
-import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.io.Writer;
 
-@RequiredArgsConstructor
 public class RunBillingWriter implements BillingWriter<RunBilling> {
 
     private final CSVWriter writer;

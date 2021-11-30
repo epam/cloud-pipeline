@@ -3,7 +3,6 @@ package com.epam.pipeline.manager.billing;
 import com.epam.pipeline.entity.billing.ToolBilling;
 import com.epam.pipeline.entity.billing.ToolBillingMetrics;
 import com.epam.pipeline.manager.pipeline.ToolUtils;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -11,7 +10,6 @@ import java.io.Writer;
 import java.time.LocalDate;
 import java.util.Arrays;
 
-@RequiredArgsConstructor
 public class ToolBillingWriter implements BillingWriter<ToolBilling> {
 
     private static final String TABLE_NAME = "Tools";

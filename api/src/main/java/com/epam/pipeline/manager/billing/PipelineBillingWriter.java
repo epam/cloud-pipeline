@@ -2,14 +2,12 @@ package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.billing.PipelineBilling;
 import com.epam.pipeline.entity.billing.PipelineBillingMetrics;
-import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.time.LocalDate;
 import java.util.Arrays;
 
-@RequiredArgsConstructor
 public class PipelineBillingWriter implements BillingWriter<PipelineBilling> {
 
     private static final String TABLE_NAME = "Pipelines";
