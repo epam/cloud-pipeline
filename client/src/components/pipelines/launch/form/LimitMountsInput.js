@@ -100,7 +100,7 @@ export class LimitMountsInput extends React.Component {
   get availableStorages () {
     if (this.props.dataStorageAvailable.loaded) {
       return (this.props.dataStorageAvailable.value || [])
-        .filter(s => this.props.allowSensitive || !s.sensitive)
+        .filter(s => !s.mountDisabled && (this.props.allowSensitive || !s.sensitive))
         .map(s => s);
     }
     return [];

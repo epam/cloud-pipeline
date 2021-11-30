@@ -276,10 +276,11 @@ export default class DataStorage extends React.Component {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      mountPoint: storage.mountPoint,
-      mountOptions: storage.mountOptions,
+      mountDisabled: storage.mountDisabled,
+      mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
+      mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
       sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
