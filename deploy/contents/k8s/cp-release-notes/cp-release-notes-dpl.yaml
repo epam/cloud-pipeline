@@ -33,7 +33,7 @@ spec:
               command: ["/init"]
               envFrom:
                 - configMapRef:
-                    name: cp-config-global
+                    name: cp-config-release-notes
               volumeMounts:
                 - mountPath: /opt/release-notes-agent/logs
                   name: release-notes-logs

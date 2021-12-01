@@ -7,8 +7,6 @@ Changes are considered from two types of sources:
 - GitHub issues
 - Jira issues
 
-**_Note_**: If an issue is duplicated in both sources at the same time, only GitHub issue will be considered.
-
 The **Release Notes Agent** provides `send-release-notes` command which performs:
 1. Fetches a current Cloud Pipeline version.
 2. Gets an old Cloud Pipeline version is stored in a file specified in the `application.properties` file. 
