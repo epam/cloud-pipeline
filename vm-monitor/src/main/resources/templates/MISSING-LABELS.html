@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -32,8 +32,23 @@
 <body>
 <p>Dear user,</p>
 <p>*** This is a system generated email, do not reply to this email ***</p>
-<p>Looks like there is a node $templateParameters["nodeName"] in Cloud Pipeline cluster that is missing one of required labels $templateParameters["missingLabels"].</p>
-<p>This node won't be managed automatically by $templateParameters["fullPlatformName"] Platform, please verify node state and terminate it manually.</p>
+<p>Looks like there are some nodes which are missing one of the required labels:</p>
+<p>
+<table>
+    <tr><td><b>Node</b></td><td><b>Missing labels</b></td></tr>
+    #foreach( $summary in $templateParameters["missingLabelsSummaries"] )
+    <tr>
+        <td>$summary.node.name</td>
+        <td>
+            #foreach( $label in $summary.labels )
+            $label<br>
+            #end
+        </td>
+    </tr>
+    #end
+</table>
+</p>
+<p>Those nodes won't be managed automatically by $templateParameters["fullPlatformName"] Platform, please verify nodes' state and terminate them manually.</p>
 <p>Best regards,</p>
 <p>$templateParameters["fullPlatformName"] Platform</p>
 </body>

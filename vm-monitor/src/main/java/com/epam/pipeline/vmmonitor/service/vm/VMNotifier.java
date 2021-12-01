@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.vmmonitor.model.vm.MissingLabelsSummary;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 import com.epam.pipeline.vmmonitor.service.notification.VMNotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,12 +26,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Queue;
 
 @Component
 @Slf4j
@@ -41,7 +41,8 @@ public class VMNotifier {
     private final String missingNodeTemplatePath;
     private final String missingLabelsSubject;
     private final String missingLabelsTemplatePath;
-    private final List<VirtualMachine> missingNodes;
+    private final Queue<VirtualMachine> missingNodes;
+    private final Queue<MissingLabelsSummary> missingLabelsSummaries;
 
     public VMNotifier(
             final VMNotificationService notificationService,
@@ -54,43 +55,34 @@ public class VMNotifier {
         this.missingNodeTemplatePath = missingNodeTemplatePath;
         this.missingLabelsSubject = missingLabelsSubject;
         this.missingLabelsTemplatePath = missingLabelsTemplatePath;
-        this.missingNodes = new ArrayList<>();
+        this.missingNodes = new LinkedList<>();
+        this.missingLabelsSummaries = new LinkedList<>();
+    }
+
+    public void sendNotifications() {
+        notifyOnQueuedElements(missingNodeSubject, missingNodeTemplatePath, missingNodes, "nodes", "missingNodes");
+        notifyOnQueuedElements(missingLabelsSubject, missingLabelsTemplatePath, missingLabelsSummaries, "labels",
+                               "missingLabelsSummaries");
     }
 
     public void queueMissingNodeNotification(final VirtualMachine vm) {
         missingNodes.add(vm);
     }
 
-    public void notifyMissingNodes() {
-        if (CollectionUtils.isNotEmpty(missingNodes)) {
-            log.debug("Sending notification on {} missing nodes", missingNodes.size());
-            final Map<String, Object> parameters = Collections.singletonMap("missingNodes", missingNodes);
-            notificationService.sendMessage(parameters, missingNodeSubject, missingNodeTemplatePath);
-            missingNodes.clear();
+    public void queueMissingLabelsNotification(final VirtualMachine vm, final NodeInstance node,
+                                               final List<String> labels) {
+        missingLabelsSummaries.add(new MissingLabelsSummary(vm, node, labels));
+    }
+
+    private void notifyOnQueuedElements(final String emailSubject, final String emailTemplatePath,
+                                        final Queue<?> queue, final String queueName, final String parameterName) {
+        if (CollectionUtils.isNotEmpty(queue)) {
+            log.debug("Sending notification on {} missing {}}", queue.size(), queueName);
+            final Map<String, Object> parameters = Collections.singletonMap(parameterName, queue);
+            notificationService.sendMessage(parameters, emailSubject, emailTemplatePath);
+            queue.clear();
         } else {
-            log.debug("No missing nodes notifications queued.");
+            log.debug("No missing {} notifications queued.", queueName);
         }
-    }
-
-    public void notifyMissingLabels(final VirtualMachine vm,
-                                    final NodeInstance node,
-                                    final List<String> labels) {
-        final Map<String, Object> parameters = new HashMap<>();
-        addVmParameters(vm, parameters);
-        addNodeParameters(node, parameters);
-        parameters.put("missingLabels", labels.stream().collect(Collectors.joining(",")));
-        log.debug("Sending missing labels notification for VM {} {}", vm.getInstanceId(), vm.getCloudProvider());
-        notificationService.sendMessage(parameters, missingLabelsSubject, missingLabelsTemplatePath);
-    }
-
-    private void addNodeParameters(final NodeInstance node, final Map<String, Object> parameters) {
-        parameters.put("nodeName", node.getName());
-    }
-
-    private void addVmParameters(final VirtualMachine vm, final Map<String, Object> parameters) {
-        parameters.put("instanceId", vm.getInstanceId());
-        parameters.put("privateIp", vm.getPrivateIp());
-        parameters.put("provider", vm.getCloudProvider().name());
-        parameters.put("instanceName", vm.getInstanceName());
     }
 }

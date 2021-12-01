@@ -35,9 +35,9 @@
 <p>Looks like there are some Virtual Machines that are not registered in the $templateParameters["platformName"] cluster.</p>
 <p>
 <table>
-    <tr><td>Instance ID</td><td>Private IP</td><td>Provider</td></tr>
+    <tr><td><b>Instance ID</b></td><td><b>Private IP</b></td><td><b>Provider</b></td></tr>
     #foreach( $instance in $templateParameters["missingNodes"] )
-    <tr><td>$instance.instanceId</td><td>$instance.privateIp</td><td>$instance.cloudProvider</td></tr>
+        <tr><td>$instance.instanceId</td><td>$instance.privateIp</td><td>$instance.cloudProvider</td></tr>
     #end
 </table>
 </p>

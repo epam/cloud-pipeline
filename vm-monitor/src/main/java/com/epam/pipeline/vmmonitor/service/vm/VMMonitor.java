@@ -73,7 +73,7 @@ public class VMMonitor {
     public void monitor() {
         ListUtils.emptyIfNull(apiClient.loadRegions())
                 .forEach(this::checkVMs);
-        notifier.notifyMissingNodes();
+        notifier.sendNotifications();
     }
 
     @SuppressWarnings("unchecked")
@@ -173,7 +173,7 @@ public class VMMonitor {
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
         final List<String> labels = getMissingLabels(node);
         if (CollectionUtils.isNotEmpty(labels)) {
-            notifier.notifyMissingLabels(vm, node, labels);
+            notifier.queueMissingLabelsNotification(vm, node, labels);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }
