@@ -50,7 +50,7 @@ public class LdapEntityMapperTest {
         VECTOR_ATTRIBUTE_VALUES.forEach(vectorAttribute::add);
         attributes.put(vectorAttribute);
 
-        final LdapEntity entity = mapper.map(attributes, LdapEntityType.USER);
+        final LdapEntity entity = mapper.map(attributes, LdapEntityType.USER, NAME_ATTRIBUTE);
         
         assertThat(entity.getName(), is(NAME));
         assertThat(entity.getType(), is(LdapEntityType.USER));

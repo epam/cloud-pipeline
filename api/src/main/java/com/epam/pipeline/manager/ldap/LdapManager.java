@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.ldap;
 
 import com.epam.pipeline.common.MessageConstants;
@@ -11,6 +27,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ldap.TimeLimitExceededException;
 import org.springframework.ldap.core.AttributesMapper;
@@ -21,7 +38,11 @@ import org.springframework.ldap.query.SearchScope;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -44,39 +65,42 @@ public class LdapManager {
      * Searches for entities in the configured LDAP servers by the given request.
      */
     public LdapSearchResponse search(final LdapSearchRequest request) {
+        return search(request, defaultFilter(request));
+    }
+
+    public LdapSearchResponse search(final LdapSearchRequest request, final String filter) {
         Assert.notNull(request.getType(), messageHelper.getMessage(MessageConstants.ERROR_LDAP_SEARCH_TYPE_MISSING));
+        if (Objects.isNull(request.getSize())) {
+            request.setSize(responseSize());
+        }
+
         try {
-            final int size = responseSize();
-            return truncated(search(request, size), size);
+            return truncated(ldapSearch(request, filter), request.getSize());
         } catch (TimeLimitExceededException e) {
             log.warn(String.format("Time limit was exceeded during LDAP search request %s", request), e);
             return timedOut();
         }
     }
 
-    private List<LdapEntity> search(final LdapSearchRequest request, final int size) {
-        return search(queryFor(request, size), mapperFor(request));
+    private List<LdapEntity> ldapSearch(final LdapSearchRequest request, final String filter) {
+        return ldapTemplate.search(queryFor(request, filter), mapperFor(request));
     }
 
-    private List<LdapEntity> search(final LdapQuery query, final AttributesMapper<LdapEntity> mapper) {
-        return ldapTemplate.search(query, mapper);
-    }
-
-    private LdapQuery queryFor(final LdapSearchRequest request, final int size) {
+    private LdapQuery queryFor(final LdapSearchRequest request, final String filter) {
         return LdapQueryBuilder.query()
                 .base(basePath())
                 .searchScope(SearchScope.SUBTREE)
-                .countLimit(size)
+                .countLimit(request.getSize())
                 .timeLimit(responseTimeout())
-                .attributes(attributes())
-                .filter(filterFor(request));
+                .attributes(buildAttributes(request))
+                .filter(filter);
     }
 
-    private String filterFor(final LdapSearchRequest request) {
-        return String.format(filterFor(request.getType()), StringUtils.trimToEmpty(request.getQuery()));
+    private String defaultFilter(final LdapSearchRequest request) {
+        return String.format(defaultFilter(request.getType()), StringUtils.trimToEmpty(request.getQuery()));
     }
 
-    public String filterFor(final LdapEntityType type) {
+    private String defaultFilter(final LdapEntityType type) {
         switch (type) {
             case USER:
                 return userFilter();
@@ -88,7 +112,7 @@ public class LdapManager {
     }
 
     private AttributesMapper<LdapEntity> mapperFor(final LdapSearchRequest request) {
-        return attributes -> ldapEntityMapper.map(attributes, request.getType());
+        return attributes -> ldapEntityMapper.map(attributes, request.getType(), request.getNameAttribute());
     }
 
     private LdapSearchResponse truncated(final List<LdapEntity> entities, final int size) {
@@ -106,11 +130,21 @@ public class LdapManager {
                 .orElse(FALLBACK_BASE_PATH);
     }
 
-    private String[] attributes() {
+    private String[] defaultAttributes() {
         return preferenceManager.findPreference(SystemPreferences.LDAP_ENTITY_ATTRIBUTES)
                 .filter(StringUtils::isNotBlank)
                 .map(attributes -> attributes.split(","))
                 .orElse(FALLBACK_ENTITY_ATTRIBUTES);
+    }
+
+    private String[] buildAttributes(final LdapSearchRequest request) {
+        final Set<String> requestAttributes = new HashSet<>(ListUtils.emptyIfNull(request.getAttributes()));
+        final String[] defaultAttributes = defaultAttributes();
+        requestAttributes.addAll(Arrays.asList(defaultAttributes));
+        if (StringUtils.isNotBlank(request.getNameAttribute())) {
+            requestAttributes.add(request.getNameAttribute());
+        }
+        return requestAttributes.toArray(new String[]{});
     }
 
     private int responseSize() {

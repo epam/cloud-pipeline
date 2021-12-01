@@ -82,6 +82,7 @@ public interface NotificationService {
 
     }
 
-    default void notifyInactiveUsers(final List<PipelineUser> inactiveUsers) {
+    default void notifyInactiveUsers(final List<PipelineUser> inactiveUsers,
+                                     final List<PipelineUser> ldapBlockedUsers) {
     }
 }
