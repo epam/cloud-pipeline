@@ -128,6 +128,9 @@ public class KubernetesManager {
     @Value("${kube.deployment.refresh.retries:15}")
     private Integer deploymentRefreshRetries;
 
+    @Value("${kube.annotation.value.length.limit:254}")
+    private Integer kubeAnnotationLengthLimit;
+
     public List<Service> getServicesByLabel(final String label) {
         return getServicesByLabel(SERVICE_ROLE_LABEL, label);
     }
@@ -374,14 +377,15 @@ public class KubernetesManager {
         return allPodsAreReady(allServicePods);
     }
 
-    public boolean updateLabelsOfExistingService(final String serviceName, final Map<String, String> labelUpdate) {
+    public boolean updateAnnotationsOfExistingService(final String serviceName,
+                                                      final Map<String, String> annotationUpdate) {
         try (KubernetesClient client = getKubernetesClient()) {
             client.services()
                 .inNamespace(kubeNamespace)
                 .withName(serviceName)
                 .edit()
                 .editMetadata()
-                .addToLabels(labelUpdate)
+                .addToAnnotations(annotationUpdate)
                 .endMetadata()
                 .done();
             return true;
@@ -390,25 +394,25 @@ public class KubernetesManager {
         }
     }
 
-    public boolean removeLabelsFromExistingService(final String serviceName, final Set<String> labels) {
+    public boolean removeAnnotationsFromExistingService(final String serviceName, final Set<String> annotations) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Map<String, String> correspondingLabels = client.services()
+            final Map<String, String> correspondingAnnotations = client.services()
                 .inNamespace(kubeNamespace)
                 .withName(serviceName)
                 .get()
                 .getMetadata()
-                .getLabels()
+                .getAnnotations()
                 .entrySet()
                 .stream()
-                .filter(e -> labels.contains(e.getKey()))
+                .filter(e -> annotations.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            if (MapUtils.isNotEmpty(correspondingLabels)) {
+            if (MapUtils.isNotEmpty(correspondingAnnotations)) {
                 client.services()
                     .inNamespace(kubeNamespace)
                     .withName(serviceName)
                     .edit()
                     .editMetadata()
-                    .removeFromLabels(correspondingLabels)
+                    .removeFromAnnotations(correspondingAnnotations)
                     .endMetadata()
                     .done();
             }
@@ -441,14 +445,14 @@ public class KubernetesManager {
         return serviceName + KubernetesConstants.HYPHEN + externalPort.toString();
     }
 
-    public boolean removePortFromExistingService(final String serviceName, final String portName) {
+    public boolean setPortsToService(final String serviceName, final List<ServicePort> portsUpdate) {
         try (KubernetesClient client = getKubernetesClient()) {
             client.services()
                 .inNamespace(kubeNamespace)
                 .withName(serviceName)
                 .edit()
                     .editSpec()
-                        .removeFromPorts(getTcpPortSpec(portName, null, null))
+                        .withPorts(portsUpdate)
                     .endSpec()
                 .done();
             return true;
@@ -841,6 +845,11 @@ public class KubernetesManager {
         }
     }
 
+    public boolean isValidAnnotation(final String annotation) {
+        return StringUtils.isNotBlank(annotation)
+               && annotation.length() < kubeAnnotationLengthLimit;
+    }
+
     private void updateStatus(StringBuilder status, NodeCondition condition) {
         if (!status.toString().isEmpty()) {
             status.append(", ");
@@ -963,29 +972,33 @@ public class KubernetesManager {
 
     public Service createService(final String serviceName, final Map<String, String> labels,
                                  final List<ServicePort> ports) {
-        return createService(serviceName, labels, ports, labels);
+        return createService(serviceName, labels, Collections.emptyMap(), ports, labels);
     }
 
     public Service createService(final String serviceName, final Map<String, String> labels,
-                                 final List<ServicePort> ports, final Map<String, String> selector) {
+                                 final Map<String, String> annotations, final List<ServicePort> ports,
+                                 final Map<String, String> selector) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return createService(client, serviceName, labels, ports, selector);
+            return createService(client, serviceName, labels, annotations, ports, selector);
         }
     }
 
     private Service createService(final KubernetesClient client, final String serviceName,
                                   final Map<String, String> labels, final List<ServicePort> ports) {
-        return createService(client, serviceName, labels, ports, labels);
+        return createService(client, serviceName, labels, Collections.emptyMap(), ports, labels);
     }
 
     private Service createService(final KubernetesClient client, final String serviceName,
-                                  final Map<String, String> labels, final List<ServicePort> ports,
+                                  final Map<String, String> labels,
+                                  final Map<String, String> annotations,
+                                  final List<ServicePort> ports,
                                   final Map<String, String> selector) {
         final Service service = client.services().createNew()
                 .withNewMetadata()
                 .withName(serviceName)
                 .withNamespace(kubeNamespace)
                 .withLabels(labels)
+                .withAnnotations(annotations)
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(ports)
@@ -1016,6 +1029,12 @@ public class KubernetesManager {
     public Optional<Service> getService(final String labelName, final String labelValue) {
         try (KubernetesClient client = getKubernetesClient()) {
             return findServiceByLabel(client, labelName, labelValue);
+        }
+    }
+
+    public Optional<Service> findServiceByName(final String serviceName) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return findServiceByName(client, serviceName);
         }
     }
 

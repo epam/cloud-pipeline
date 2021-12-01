@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,19 @@
 # limitations under the License.
 
 class PipelineRunParameterModel(object):
-    def __init__(self, name, value, parameter_type, required):
+    def __init__(self, name, value, parameter_type, required, roles=set()):
         self.name = name
         self.value = value
         self.parameter_type = parameter_type
         if parameter_type is None:
             self.parameter_type = 'string'
         self.required = required
+        self.roles = set() if roles is None else set(roles)
+
+    @staticmethod
+    def load_from_default_system_parameter(parameter_json):
+        parameter_name = parameter_json.get('name')
+        parameter_value = parameter_json.get('defaultValue')
+        parameter_type = parameter_json.get('type')
+        parameter_roles = parameter_json.get('roles', [])
+        return PipelineRunParameterModel(parameter_name, parameter_value, parameter_type, None, roles=parameter_roles)

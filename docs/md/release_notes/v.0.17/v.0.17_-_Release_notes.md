@@ -12,6 +12,7 @@
 - [Hot node pools](#hot-node-pools)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
+- [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
 - [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
@@ -20,6 +21,9 @@
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
+- [Disable Hyper-Threading](#disable-hyper-threading)
+- [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
+- [Resolve variables for a rerun](#resolve-variables-for-a-rerun)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -454,6 +458,34 @@ Using non-required options, user can specify desired format of the exported file
 
 For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
 
+## Pause/resume runs via `pipe`
+
+Previously, users could automate the pause and resume operation for the pipeline execution only via the API calls.  
+In the current version, `pipe pause` and `pipe resume` operations are exposed to the CLI.
+
+The command to pause a specific running pipeline:
+
+``` bash
+pipe pause [OPTIONS] RUN_ID
+```
+
+Possible options:
+
+- **`--check-size`** - to check firstly if free disk space is enough for the commit operation
+- **`-s`** / **`--sync`** - to perform operation in a sync mode. This option blocks the terminal until the **_PAUSED_** status won't be returned for the pausing pipeline
+
+The command to resume a specific paused pipeline:
+
+``` bash
+pipe resume [OPTIONS] RUN_ID
+```
+
+Possible option:
+
+- **`-s`** / **`--sync`** - to perform operation in a sync mode. This option blocks the terminal until the **_RUNNING_** status won't be returned for the resuming pipeline
+
+For details and examples see here - [pause command](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#pause-a-pipeline-execution) and [resume command](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#resume-paused-pipeline-execution).
+
 ## Home storage for each user
 
 Typically each general user stores personal assets in the data storage, that is created for him/her by the Administrator.  
@@ -585,16 +617,84 @@ For more details and examples see [here](../../manual/14_CLI/14.10._SSH_tunnel.m
 
 ## Updates of Metadata object
 
-From the current version, for all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
+In the current version, several enhancements were implemented for the Metadata objects displaying and working with:
+
+### Controls placement reorganization
+
+- Several controls (for adding a new instance, upload and delete metadata, transfer to the cloud and showing attributes) were moved to **Additional parameters** control (gear icon):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_04.png)  
+    See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#additional-options).
+- **Bulk operation panel** is hidden/disabled until at least one instance is selected in a table, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_05.png)  
+    To manage selected items, click the **V** button next to the "**Show only selected items**" control to open the corresponding menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_06.png)  
+    See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#bulk-operation-panel).
+
+### Ability to show only selected instances
+
+The ability is implemented to show separately only selected metadata instances. All unselected items will be hidden. For that: select items of interest (they can be at different pages too) and click the "**Show only selected items**" button at the **Bulk operation** panel, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_07.png)  
+    For shown selected items, all functionality as for the general table is available except filtering.
+
+### Improvements in the search over the metadata
+
+- users can search over any attribute values (not only over `ID` as previously)
+- the metadata search field supports multiple terms search - in this case, multiple terms for the search should be specified space separated, e.g. `sample1 sample2`
+- the metadata search field supports a `key:value` search, where `key` is an attribute name (column header) and `value` is a term that shall be searched in that attribute values, e.g. `ID:D703`  
+    See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#search-field).
+
+### Ability to filter instances
+
+The ability is implemented to filter instances of an entity in a table. Now, user can click a special control in a header of the desired column and set one or several filters for the column values - to restrict the output table, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_08.png)  
+    See details [here](../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table.md#filter-instances).
+
+### Displaying of the creation date info
+
+For all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_01.png)
 
-In some cases, it could be convenient not to specify entity ID during import. Therefore, starting from **`v0.17`**, Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_02.png)
+### Sorting by several columns
 
-See after the creation:  
+Ability to sort a list of entities by several columns is implemented. For that, a list is being sorted by one column, then user should click the second column he(she) wants to sort by, then the third, etc.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_09.png)  
+    See details [here](../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table.md#metadata-table-sorting).
+
+### Autofill
+
+An autofill feature for metadata cells was implemented. It allows to fill metadata instances with data that are based on data in other instances in the same column/row, e.g.:
+
+- click the right-bottom corner of the cell you wish to copy and move the mouse holding the left button - vertically or horizontally, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_10.png)
+- once you will release the mouse button - selected cells will be autofilled by the value of the cell that you've dragged:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_11.png)  
+    See details [here](../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items.md#field-values-autofill).
+
+### Entity ID autogeneration
+
+In some cases, it could be convenient not to specify entity ID during import. Therefore Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_02.png)  
+    See after the creation:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+### Preselect instances for a rerun
+
+Additionally, if metadata instances were used for the run via the expansion expressions in the parameters - then for the rerun of such run, the ability to choose was implemented - to use the same resolved expressions values from the initial run or preselect another metadata instance(s) for a coming rerun, e.g.:  
+
+- imagine, that some run was launched from the detached configuration. Moreover, one configuration parameter uses the expansion expression:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_12.png)
+- for the run, some instance was selected
+- after the run is completed, user tries to rerun this run. The **Launch** form will appear. By default, parameters are substituted fully the same as they were in the initial run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_13.png)  
+    If click the **Launch** button in this case - during the rerun, all parameter(s) will use their resolved values from the initial run (previous behavior).
+- but now, the ability to preselect another metadata instance for the re-launch is implemented. For that, user can click "**v**" button near the launch button and in the appeared list click "**Select metadata entries and launch**" item:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_14.png)  
+    In this case, the pop-up will appear to select a metadata instance for which the rerun will be launched. And during the rerun, all parameter(s) that use expansion expression(s) will be resolved according to a new selected metadata instance(s):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_15.png)
+
+See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#preselect-metadata-instances-for-a-rerun).
 
 ## Custom node images
 
@@ -713,6 +813,59 @@ In the current version, the special option was implemented that allows/denies th
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_03.png)  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_04.png)
 - if a pipeline parameter has no default value - `no_override` is ignored and the parameter field will be writable in the detached configuration that uses this pipeline
+
+## Disable Hyper-Threading
+
+**Hyper-Threading technology** makes a single physical processor appear as multiple logical processors. To do this, there is one copy of the architecture state for each logical processor, and the logical processors share a single set of physical execution resources.
+
+Hyper-Threading technology is enabled by default for all nodes in **Cloud Pipeline**.
+
+But not in all cases this technology is useful. In cases when threads are operating primarily on very close or relatively close instructions or data, the overall throughput occasionally decreases compared to non-interleaved, serial execution of the lines.  
+For example, at a high performance computing that relies heavily on floating point calculations, the two threads in each core share a single floating point unit (FPU) and are often blocked by one another. In such case Hyper-Threading technology only slows computations.
+
+In the current version, the ability to disable Hyper-Threading for a specific job was implemented.  
+So, this technology can be turned on or off, as is best for a particular application at the user's discretion.
+
+In Cloud Provider environment, each vCPU is a thread of a physical processor core. All cores of the instance has two threads. Disabling of Hyper-Threading disables the set of vCPUs that are relied to the second thread, set of first thread vCPUs stays enabled (see details for `AWS` [here](https://aws.amazon.com/blogs/compute/disabling-intel-hyper-threading-technology-on-amazon-linux/)).
+
+To disable Hyper-Threading technology for a job:
+
+- set the corresponding option in "**Run capabilities**" before the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DisableHT_1.png)
+- check that Hyper-Threading was disabled via the following command after the run is launched:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DisableHT_2.png)  
+    Here you can check that only 1 thread per core is set, virtual CPUs 4-7 are offline. Only one thread is enabled (set of CPUs 0-3).
+
+For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#disable-hyper-threading).
+
+## Saving of interim data for jobs stopped by a timeout
+
+Previously, if for a job a timeout was set and it has elapsed - the job was stopped and all the data was erased.  
+In the current version, the solution to extract the current data from the timed-out jobs was implemented.
+
+Now, if a job has timed out - it will not be stopped immediately.  
+Instead, the new `OutputData` task will be triggered.  
+During this task performing, all the contents of the `$ANALYSIS_DIR` directory will be copied to all `output` storages - in the same manner, as if the job has succeeded.
+
+This feature doesn't require additional actions from the user side. Only `$ANALYSIS_DIR` and `output` paths should be defined.
+
+Additionally, a new system parameter was added - **`CP_EXEC_TIMEOUT`**. This parameter allows to define a timeout period after which the job shall be stopped. The essence of the parameter is the same as the configured value in the "**Timeout**" field. If both values are specified - for a job, `CP_EXEC_TIMEOUT` value will be used:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Timeout_01.png)
+
+## Resolve variables for a rerun
+
+Previously, if the user launched some job containing environment variables in its parameters and then, after the job was completed, user tried to rerun that job - all environment variables from the job parameters had been resolving again during the new run.  
+But for some cases, it might be needed to use in the rerun all the same values of environment variables that were in the initial run.  
+In the current version, the ability to choose was implemented - for the rerun, to resolve such variables in a new run or use their initial values.
+
+For that, when user tries to rerun some completed run that used environment variables in its parameters - at the **Launch** form, the checkbox "**Use resolved values**" appears in the **_Parameters_** section, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResolveVariablesRerun_1.png)  
+    By default, this checkbox is disabled. In this case, all environment variables are shown as is and will be resolved only during the new (re-launched) run - with the values corresponding to this new run.
+
+If this checkbox is ticked, all environment variables will be resolved with the values of the initial run. Correspondingly, parameters that use environment variables will not be changed during the new launch, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResolveVariablesRerun_2.png)
+
+See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#resolve-variables-for-a-rerun).
 
 ## AWS: seamless authentication
 

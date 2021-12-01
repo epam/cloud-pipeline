@@ -17,9 +17,8 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class UpdateToolVersionSettings extends RemotePost {
-
-  constructor (id, version) {
+  constructor (id, version, allowCommit) {
     super();
-    this.url = `/tool/${id}/settings?version=${version}`;
+    this.url = `/tool/${id}/settings?version=${version}&allowCommit=${allowCommit}`;
   }
 }

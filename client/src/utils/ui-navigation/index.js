@@ -253,13 +253,15 @@ class UINavigation {
           const parsed = JSON.parse(template);
           if (typeof parsed === 'object') {
             const {
-              groups = []
+              roles = [],
+              groups: adGroups = []
             } = this.user.value;
             const keys = Object.keys(parsed);
-            console.log(groups, keys);
+            const groups = roles
+              .map(r => r.name)
+              .concat(...adGroups);
             const groupKey = keys.find(key => groups.includes(key));
             if (groupKey) {
-              console.log('parsed', parsed[groupKey]);
               this.supportTemplate = parsed[groupKey];
             } else {
               this.supportTemplate = parsed._default;

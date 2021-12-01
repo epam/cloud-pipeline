@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Button, Icon, Popover} from 'antd';
-import {computed} from 'mobx';
+import styles from './SupportMenu.css';
 
 function replaceLineBreaks (text) {
   if (!text) {
@@ -33,26 +33,42 @@ function processLinks (html) {
   return (html || '').replace(/<a href/ig, '<a target="_blank" href');
 }
 
-@inject('issuesRenderer', 'uiNavigation')
+function urlCheck (string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+  return url.protocol === 'http:' || url.protocol === 'https:';
+}
+
+@inject('issuesRenderer')
 @observer
 class SupportMenuItem extends React.Component {
   static propTypes = {
     className: PropTypes.string,
     onVisibilityChanged: PropTypes.func,
     visible: PropTypes.bool,
-    style: PropTypes.object
+    style: PropTypes.object,
+    content: PropTypes.string,
+    icon: PropTypes.string
   };
 
-  @computed
-  get template () {
-    if (
-      this.props.uiNavigation &&
-      this.props.uiNavigation.loaded
-    ) {
-      return this.props.uiNavigation.supportTemplate;
+  renderIcon = () => {
+    const {icon} = this.props;
+    if (urlCheck(icon)) {
+      return (
+        <img
+          src={icon}
+          className={styles.externalIcon}
+        />
+      );
     }
-    return null;
-  }
+    return (
+      <Icon type={icon} />
+    );
+  };
 
   render () {
     const {
@@ -60,12 +76,13 @@ class SupportMenuItem extends React.Component {
       onVisibilityChanged,
       issuesRenderer,
       visible,
-      style
+      style,
+      content
     } = this.props;
-    if (!this.template || !issuesRenderer) {
+    if (!issuesRenderer) {
       return null;
     }
-    const source = replaceLineBreaks(this.template);
+    const source = replaceLineBreaks(content);
     if (!source) {
       return null;
     }
@@ -78,13 +95,14 @@ class SupportMenuItem extends React.Component {
         placement="rightBottom"
         trigger="click"
         onVisibleChange={onVisibilityChanged}
-        visible={visible}>
+        visible={visible}
+      >
         <Button
           id="navigation-button-support"
           className={className}
           style={style}
         >
-          <Icon type="customer-service" />
+          {this.renderIcon()}
         </Button>
       </Popover>
     );

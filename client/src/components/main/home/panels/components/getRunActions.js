@@ -51,6 +51,10 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
                 : undefined
             });
           } else {
+            const defaultUrl = regionedUrls.find(o => o.isDefault);
+            const defaultUrlRegion = defaultUrl
+              ? multiZoneManager.getDefaultURLRegion(defaultUrl.url)
+              : undefined;
             const overlay = (
               <div>
                 <ul>
@@ -72,7 +76,13 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              overlay
+              overlay,
+              action: defaultUrl && defaultUrlRegion && callbacks && callbacks.openUrl
+                ? () => callbacks.openUrl(
+                  defaultUrl.url[defaultUrlRegion],
+                  defaultUrlRegion.sameTab ? '_top' : '_blank'
+                )
+                : undefined
             });
           }
         }
@@ -85,7 +95,6 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           });
           if (
             !run.sensitive &&
-            run.platform !== 'windows' &&
             vsActions &&
             vsActions.available
           ) {

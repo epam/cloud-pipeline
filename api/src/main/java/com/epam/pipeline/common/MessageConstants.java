@@ -128,6 +128,7 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
     public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
     public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
+    public static final String ERROR_COMMIT_OPERATION_IS_FORBIDDEN = "error.run.commit.is.forbidden";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
@@ -670,6 +671,8 @@ public final class MessageConstants {
         "nat.gateway.route.creation.existing.service.add.port";
     public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
     public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
+    public static final String NAT_ROUTE_CONFIG_INVALID_MANDATORY_FIELD = "nat.gateway.route.creation.invalid.field";
+    public static final String NAT_ROUTE_CONFIG_INVALID_DESCRIPTION = "nat.gateway.route.creation.invalid.description";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
         "nat.gateway.route.creation.deploy.refresh.error";
     public static final String NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED =
@@ -684,6 +687,8 @@ public final class MessageConstants {
         "nat.gateway.route.creation.port.forwarding.missing.port.error";
     public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
         "nat.gateway.route.creation.kube.dns.restart.error";
+    public static final String NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE =
+        "nat.gateway.route.creation.invalid.external.ip";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";

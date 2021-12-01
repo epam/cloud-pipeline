@@ -107,6 +107,7 @@ public class C {
         INVALID_EXTENSION_PATH = conf.getProperty("e2e.ui.invalid.extension.path");
         ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
         ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
+        WEBDAV_ADDRESS = conf.getProperty("e2e.ui.webdav.address");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -125,6 +126,7 @@ public class C {
     public static final String DOWNLOAD_FOLDER;
 
     public static final String ROOT_ADDRESS;
+    public static final String WEBDAV_ADDRESS;
 
     public static final String ANOTHER_LOGIN;
     public static final String ANOTHER_PASSWORD;

@@ -289,5 +289,7 @@ public enum Primitive {
     CONFIGURE,
     GENERATE_URL,
     IMPERSONATE,
-    MY_PROFILE
+    MY_PROFILE,
+    FILE_SYSTEM_ACCESS,
+    DISABLE
 }

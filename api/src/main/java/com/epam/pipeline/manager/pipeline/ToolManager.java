@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,6 +214,7 @@ public class ToolManager implements SecuredEntityManager {
         loadedTool.setEndpoints(tool.getEndpoints());
         loadedTool.setDefaultCommand(tool.getDefaultCommand());
         loadedTool.setAllowSensitive(tool.isAllowSensitive());
+        loadedTool.setAllowCommit(tool.isAllowCommit());
 
         toolDao.updateTool(loadedTool);
         return loadedTool;
@@ -390,6 +391,25 @@ public class ToolManager implements SecuredEntityManager {
         } else {
             return fetchTool(registry, image);
         }
+    }
+
+    /**
+     * Checks whether commit operation is allowed for the given tool
+     *
+     * @param registry registry identifier
+     * @param image    Tool's image
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void validateCommitOperationAllowed(final String registry, final String image) {
+        final Tool tool = loadTool(registry, image);
+        Assert.isTrue(tool.isAllowCommit(),
+                      messageHelper.getMessage(MessageConstants.ERROR_COMMIT_OPERATION_IS_FORBIDDEN, image));
+        Assert.isTrue(findToolVersion(tool).map(ToolVersion::isAllowCommit).orElse(true),
+                      messageHelper.getMessage(MessageConstants.ERROR_COMMIT_OPERATION_IS_FORBIDDEN, image));
+    }
+
+    public void validateCommitOperationAllowed(final String image) {
+        validateCommitOperationAllowed(null, image);
     }
 
     /**

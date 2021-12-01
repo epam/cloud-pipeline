@@ -78,7 +78,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
-            entry(GENERATE_URL, context().find(byId("bulk-url-button")))
+            entry(GENERATE_URL, context().find(byId("bulk-url-button"))),
+            entry(HIDE_METADATA, context().find(byId("hide-metadata-button")))
     );
 
     public static By browserItem(final String name) {
@@ -424,6 +425,15 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
+        int attempt = 0;
+        int maxAttempts = 3;
+        while (get(SHOW_METADATA).is(not(visible)) && attempt < maxAttempts) {
+            if (get(HIDE_METADATA).isDisplayed()) {
+                return new MetadataSectionAO(this);
+            }
+            sleep(1, SECONDS);
+            attempt++;
+        }
         click(SHOW_METADATA);
         return new MetadataSectionAO(this);
     }
