@@ -387,7 +387,7 @@ public class DockerCommitTest
     }
 
     @Test(priority = 1)
-    @TestCase({""})
+    @TestCase({"2338"})
     public void validateDisableCommitFunction() {
         try {
             tools()
