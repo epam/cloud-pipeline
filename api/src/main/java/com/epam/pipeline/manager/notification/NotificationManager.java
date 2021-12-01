@@ -478,8 +478,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyInactiveUsers(final List<PipelineUser> inactiveUsers) {
-        if (CollectionUtils.isEmpty(inactiveUsers)) {
+    public void notifyInactiveUsers(final List<PipelineUser> inactiveUsers, final List<PipelineUser> ldapBlockedUsers) {
+        if (CollectionUtils.isEmpty(inactiveUsers) && CollectionUtils.isEmpty(ldapBlockedUsers)) {
             LOGGER.debug("No inactive users found");
             return;
         }
@@ -492,7 +492,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
 
-        final List<Long> storageIdsToLoad = inactiveUsers.stream()
+        final List<Long> storageIdsToLoad = Stream.concat(ListUtils.emptyIfNull(inactiveUsers).stream(),
+                ListUtils.emptyIfNull(ldapBlockedUsers).stream())
                 .map(PipelineUser::getDefaultStorageId)
                 .filter(Objects::nonNull)
                 .distinct()
@@ -503,7 +504,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage notificationMessage = new NotificationMessage();
         notificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-        notificationMessage.setTemplateParameters(buildUsersTemplateArguments(inactiveUsers, userStorages));
+        notificationMessage.setTemplateParameters(
+                buildUsersTemplateArguments(inactiveUsers, ldapBlockedUsers, userStorages));
         notificationMessage.setCopyUserIds(ccUserIds);
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
     }
@@ -767,12 +769,23 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         return shouldNotify(runId, notificationSettings);
     }
 
-    private Map<String, Object> buildUsersTemplateArguments(final List<PipelineUser> users,
+    private Map<String, Object> buildUsersTemplateArguments(final List<PipelineUser> pipelineUsers,
+                                                            final List<PipelineUser> ldapUsers,
                                                             final Map<Long, String> userStorages) {
         final Map<String, Object> templateArguments = new HashMap<>();
-        templateArguments.put("users", users.stream()
-                .map(user -> buildUserTemplateArguments(user, userStorages))
-                .collect(Collectors.toList()));
+
+        if (!CollectionUtils.isEmpty(pipelineUsers)) {
+            templateArguments.put("pipelineUsers", pipelineUsers.stream()
+                    .map(user -> buildUserTemplateArguments(user, userStorages))
+                    .collect(Collectors.toList()));
+        }
+
+        if (!CollectionUtils.isEmpty(ldapUsers)) {
+            templateArguments.put("ldapUsers", ldapUsers.stream()
+                    .map(user -> buildUserTemplateArguments(user, userStorages))
+                    .collect(Collectors.toList()));
+        }
+
         return templateArguments;
     }
 
