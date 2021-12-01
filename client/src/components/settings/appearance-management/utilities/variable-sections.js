@@ -57,7 +57,7 @@ const buttons = [
   Variables.primaryColor,
   Variables.primaryTextColor,
   {
-    key: Variables.btnPrimaryHover,
+    key: Variables.primaryHoverColor,
     advanced: true
   },
   {
@@ -93,6 +93,9 @@ const input = [
   Variables.inputBorder,
   Variables.inputPlaceholderColor,
   {
+    key: Variables.inputBorderHoverColor,
+    advanced: true
+  }, {
     key: Variables.inputAddon,
     advanced: true
   },
@@ -110,7 +113,14 @@ const main = [
 
 const menus = [
   Variables.menuBorderColor,
-  Variables.menuColor
+  Variables.menuColor,
+  {
+    key: Variables.elementHoverColor,
+    advanced: true
+  }, {
+    key: Variables.elementHoverBackgroundColor,
+    advanced: true
+  }
 ];
 
 const navigation = [

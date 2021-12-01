@@ -126,7 +126,6 @@ export default {
     '@menu-active-color': '@primary-color',
     '@menu-border-color': '@table-border-color',
     '@btn-color': '@primary-text-color',
-    '@btn-primary-hover': '@primary-hover-color',
     '@btn-primary-active': '@primary-active-color',
     '@btn-danger-color': '@color-red',
     '@btn-danger-active-color': '#d73435',

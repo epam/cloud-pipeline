@@ -614,8 +614,8 @@ export default `
 @THEME .ant-btn-primary:hover,
 @THEME .ant-btn-primary:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-primary.active,
 @THEME .ant-btn-primary:active,
@@ -1205,8 +1205,8 @@ export default `
 @THEME .ant-calendar .ant-calendar-ok-btn:focus,
 @THEME .ant-calendar .ant-calendar-ok-btn:hover {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn.active,
 @THEME .ant-calendar .ant-calendar-ok-btn:active {
@@ -1622,6 +1622,29 @@ export default `
 }
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
+}
+
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
 }
 
 @THEME .ant-alert {
@@ -2076,8 +2099,8 @@ export default `
   background: @modal-mask-background;
 }
 @THEME .cp-search-preview {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
+  background-color: fade(@card-background-color, 100%);
+  border: 1px solid fade(@card-background-color, 100%);
 }
 @THEME .cp-search-preview-button {
   color: @application-color;
@@ -2151,8 +2174,8 @@ export default `
 @THEME .cp-search-faceted-button.selected:hover,
 @THEME .cp-search-faceted-button.selected:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
