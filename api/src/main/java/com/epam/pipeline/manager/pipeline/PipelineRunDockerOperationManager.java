@@ -94,7 +94,7 @@ public class PipelineRunDockerOperationManager {
         String dockerImageFromRun = retrieveImageName(pipelineRun);
         String resolvedImageName = StringUtils.isEmpty(newImageName) ? dockerImageFromRun : newImageName;
 
-        toolManager.validateCommitOperationAllowed(dockerRegistry.getPath(), resolvedImageName);
+        toolManager.validateCommitOperationAllowed(pipelineRun.getActualDockerImage());
 
         //check that there is no tool with this name in another registry
         toolManager.assertThatToolUniqueAcrossRegistries(resolvedImageName, dockerRegistry.getPath());
