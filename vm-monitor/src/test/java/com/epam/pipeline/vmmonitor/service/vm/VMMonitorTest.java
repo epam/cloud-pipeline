@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class VMMonitorTest {
     private final Map<String, String> vmTags = Collections.singletonMap(RUN_ID_LABEL, RUN_ID_VALUE);
     private final Map<String, String> nodeLabels = Collections.singletonMap(POOL_ID_LABEL, POOL_ID_VALUE);
     private final AwsRegion region = new AwsRegion(CloudProvider.AWS, TEST_STRING, TEST_STRING, TEST_STRING,
-            TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, 0, true);
+            TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, 0, true, TEST_STRING);
     private VirtualMachine vm;
     private VMMonitor monitor;
 
@@ -79,7 +79,7 @@ public class VMMonitorTest {
         doReturn(Collections.singletonList(nodePool)).when(mockApiClient).loadNodePools();
         monitor.monitor();
 
-        verify(notifier, never()).notifyMissingNode(vm);
+        verify(notifier, never()).queueMissingNodeNotification(vm);
     }
 
     @Test
@@ -88,6 +88,6 @@ public class VMMonitorTest {
         doReturn(Collections.singletonList(vm)).when(mockService).fetchRunningVms(region);
         monitor.monitor();
 
-        verify(notifier).notifyMissingNode(vm);
+        verify(notifier).queueMissingNodeNotification(vm);
     }
 }
