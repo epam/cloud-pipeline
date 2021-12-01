@@ -1509,17 +1509,19 @@ def tunnel():
 
 
 @tunnel.command(name='stop')
-@click.argument('run-id', required=False, type=int)
+@click.argument('host-id', required=False)
 @click.option('-lp', '--local-port', required=False, type=str,
               help='A single local port (4567) or a range of ports (4567-4569) '
                    'to stop corresponding tunnel processes for.')
-@click.option('-t', '--timeout', required=False, type=int, default=60 * 1000,
-              help='Tunnels stopping timeout in ms.')
+@click.option('-ts', '--timeout-stop', required=False, type=int, default=60,
+              help='Maximum timeout for background tunnel process stopping in seconds.')
 @click.option('-f', '--force', required=False, is_flag=True, default=False,
-              help='Killing tunnels rather than stopping them.')
+              help='Stops existing tunnel processes non gracefully.')
+@click.option('--ignore-owner', required=False, is_flag=True, default=False,
+              help='Stops existing tunnel processes owned by other users.')
 @click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
 @common_options
-def stop_tunnel(run_id, local_port, timeout, force, log_level):
+def stop_tunnel(host_id, local_port, timeout_stop, force, ignore_owner, log_level):
     """
     Stops background tunnel processes.
 
@@ -1550,7 +1552,10 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level):
         pipe tunnel stop -lp 4567 12345
 
     """
-    kill_tunnels(run_id=run_id, local_ports_str=local_port, timeout=timeout, force=force, log_level=log_level)
+    def _parse_tunnel_args(args):
+        with return_tunnel_args.make_context('start', args) as ctx:
+            return return_tunnel_args.invoke(ctx)
+    kill_tunnels(host_id, local_port, timeout_stop, force, ignore_owner, log_level, _parse_tunnel_args)
 
 
 def start_tunnel_arguments(start_tunnel_command):
@@ -1599,6 +1604,8 @@ def start_tunnel_arguments(start_tunnel_command):
                   help='Replaces existing tunnel on the same local port.')
     @click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel on the same local port if it has different configuration.')
+    @click.option('--ignore-owner', required=False, is_flag=True, default=False,
+                  help='Replaces existing tunnel processes owned by other users.')
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
     @functools.wraps(start_tunnel_command)
     def _start_tunnel_command_decorator(*args, **kwargs):
@@ -1618,7 +1625,7 @@ def return_tunnel_args(*args, **kwargs):
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
-                 keep_existing, keep_same, replace_existing, replace_different,
+                 keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                  retries):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
@@ -1704,7 +1711,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
-                  keep_existing, keep_same, replace_existing, replace_different,
+                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                   retries, _parse_tunnel_args)
 
 
