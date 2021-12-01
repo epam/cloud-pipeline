@@ -93,11 +93,15 @@ public class PipelineRunDockerOperationManager {
                 messageHelper.getMessage(MessageConstants.ERROR_REGISTRY_NOT_FOUND, registryId));
         String dockerImageFromRun = retrieveImageName(pipelineRun);
         String resolvedImageName = StringUtils.isEmpty(newImageName) ? dockerImageFromRun : newImageName;
-
-        toolManager.validateCommitOperationAllowed(dockerRegistry.getPath(), resolvedImageName);
+        final String registryPath = dockerRegistry.getPath();
+        if (resolvedImageName.startsWith(registryPath)) {
+            toolManager.validateCommitOperationAllowed(resolvedImageName);
+        } else {
+            toolManager.validateCommitOperationAllowed(registryPath, resolvedImageName);
+        }
 
         //check that there is no tool with this name in another registry
-        toolManager.assertThatToolUniqueAcrossRegistries(resolvedImageName, dockerRegistry.getPath());
+        toolManager.assertThatToolUniqueAcrossRegistries(resolvedImageName, registryPath);
 
         return dockerContainerOperationManager.commitContainer(
                 pipelineRun,
