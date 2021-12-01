@@ -21,9 +21,12 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 import com.epam.pipeline.vmmonitor.service.notification.VMNotificationService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,7 @@ public class VMNotifier {
     private final String missingNodeTemplatePath;
     private final String missingLabelsSubject;
     private final String missingLabelsTemplatePath;
+    private final List<VirtualMachine> missingNodes;
 
     public VMNotifier(
             final VMNotificationService notificationService,
@@ -50,13 +54,22 @@ public class VMNotifier {
         this.missingNodeTemplatePath = missingNodeTemplatePath;
         this.missingLabelsSubject = missingLabelsSubject;
         this.missingLabelsTemplatePath = missingLabelsTemplatePath;
+        this.missingNodes = new ArrayList<>();
     }
 
-    public void notifyMissingNode(final VirtualMachine vm) {
-        final Map<String, Object> parameters = new HashMap<>();
-        addVmParameters(vm, parameters);
-        log.debug("Sending missing node notification for VM {} {}", vm.getInstanceId(), vm.getCloudProvider());
-        notificationService.sendMessage(parameters, missingNodeSubject, missingNodeTemplatePath);
+    public void queueMissingNodeNotification(final VirtualMachine vm) {
+        missingNodes.add(vm);
+    }
+
+    public void notifyMissingNodes() {
+        if (CollectionUtils.isNotEmpty(missingNodes)) {
+            log.debug("Sending notification on {} missing nodes", missingNodes.size());
+            final Map<String, Object> parameters = Collections.singletonMap("missingNodes", missingNodes);
+            notificationService.sendMessage(parameters, missingNodeSubject, missingNodeTemplatePath);
+            missingNodes.clear();
+        } else {
+            log.debug("No missing nodes notifications queued.");
+        }
     }
 
     public void notifyMissingLabels(final VirtualMachine vm,
