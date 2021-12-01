@@ -24,9 +24,22 @@ import {CP_CAP_LIMIT_MOUNTS} from '../../../../pipelines/launch/form/utilities/p
 
 class LimitMountsUserPreference extends React.Component {
   onChangeLimitMounts = (value) => {
-    const {onChange} = this.props;
-    if (onChange) {
-      onChange(value || undefined);
+    const {
+      metadata = {}
+    } = this.props;
+    const {value: currentValue = undefined} = metadata;
+    if (value === null) {
+      value = undefined;
+    }
+    if (value !== currentValue) {
+      const {onChange, onRemove} = this.props;
+      if (value !== undefined && onChange) {
+        onChange(value);
+      } else if (value === undefined && onRemove) {
+        onRemove();
+      } else if (onChange) {
+        onChange(value);
+      }
     }
   };
 
@@ -96,6 +109,7 @@ LimitMountsUserPreference.propTypes = {
   metadata: PropTypes.object,
   readOnly: PropTypes.bool,
   onChange: PropTypes.func,
+  onRemove: PropTypes.func,
   info: PropTypes.object
 };
 
