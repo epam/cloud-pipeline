@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public abstract class AbstractBillingWriterTest<B> {
 
-    public static final Long ONE = 1L;
-    public static final Long TEN = 10L;
+    public static final long ONE = 1L;
+    public static final long TEN = 10L;
     public static final long ONE_DOLLAR = 10_000L;
     public static final long TEN_DOLLARS = 10L * ONE_DOLLAR;
     public static final long ONE_HOUR = 60L;

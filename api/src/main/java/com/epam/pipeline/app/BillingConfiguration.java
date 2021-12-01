@@ -87,7 +87,7 @@ public class BillingConfiguration {
     @Bean
     public BillingExporter toolBillingExporter(final ToolBillingLoader toolBillingLoader,
                                                final GlobalSearchElasticHelper elasticHelper) {
-        return new CommonBillingExporter<>("Tools reports",
+        return new CommonBillingExporter<>("Tools Report",
             BillingExportType.TOOL,
             toolBillingLoader,
             (request, writer) -> new ToolBillingWriter(writer, request.getFrom(), request.getTo()),
