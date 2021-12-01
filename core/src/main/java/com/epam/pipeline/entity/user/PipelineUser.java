@@ -85,13 +85,10 @@ public class PipelineUser implements StorageContainer {
     @Transient
     private boolean admin;
 
-    @Transient
     private boolean blocked;
 
-    @Transient
     private LocalDateTime registrationDate;
 
-    @Transient
     private LocalDateTime firstLoginDate;
 
     private Long defaultStorageId;
@@ -116,7 +113,6 @@ public class PipelineUser implements StorageContainer {
 
     private LocalDateTime lastLoginDate;
 
-    @Transient
     private LocalDateTime blockDate;
 
     public PipelineUser() {
