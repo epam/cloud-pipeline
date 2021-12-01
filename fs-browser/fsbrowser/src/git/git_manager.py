@@ -69,7 +69,7 @@ class GitManager:
         items = []
         for item_name in os.listdir(self.root_folder):
             full_item_path = os.path.join(self.root_folder, item_name)
-            if os.path.isfile(full_item_path):
+            if os.path.isfile(full_item_path) or not os.path.isdir(os.path.join(self.root_folder, item_name, '.git')):
                 continue
             try:
                 versioned_storage = self.api_client.get_pipeline(item_name)
