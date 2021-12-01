@@ -1529,7 +1529,7 @@ def tunnel():
 
 
 @tunnel.command(name='stop')
-@click.argument('host-id', required=True)
+@click.argument('host-id', required=False)
 @click.option('-lp', '--local-port', required=False, type=str,
               help='A single local port (4567) or a range of ports (4567-4569) '
                    'to stop corresponding tunnel processes for.')
