@@ -366,6 +366,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
               entityClass
             },
             data: modified
+              .filter(({value}) => value !== undefined)
               .map(({key, value, type}) => ({[key]: {value, type: type || 'string'}}))
               .reduce((r, c) => ({...r, ...c}), {})
           });
@@ -675,6 +676,15 @@ export default class Metadata extends localization.LocalizedReactComponent {
       this.isReadOnlyTag(metadataItem.key);
     if (key && SpecialTags.hasOwnProperty(key)) {
       const Component = SpecialTags[key];
+      const onRemove = async () => {
+        const {error, refresh} = await this.applyRemoveChanges({item: {key}});
+        if (error) {
+          message.error(error, 5);
+        }
+        if (refresh) {
+          this.props.metadata.fetch();
+        }
+      };
       return (
         <tr
           key={`${key}_key`}
@@ -697,6 +707,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
               metadata={metadataItem}
               readOnly={readOnly}
               onChange={this.saveMetadataValue(index)}
+              onRemove={onRemove}
               info={specialTagsProperties}
               reload={this.refresh}
             />
