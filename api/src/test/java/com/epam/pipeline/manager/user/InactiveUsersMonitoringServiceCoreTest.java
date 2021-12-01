@@ -16,19 +16,24 @@
 
 package com.epam.pipeline.manager.user;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.ldap.LdapBlockedUsersManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -39,22 +44,31 @@ public class InactiveUsersMonitoringServiceCoreTest {
     private static final Integer THRESHOLD_DAYS = 3;
     private static final String USER_NAME_1 = "name1";
     private static final String USER_NAME_2 = "name2";
+    private static final String USER_NAME_3 = "name3";
     private static final Long ID_1 = 1L;
     private static final Long ID_2 = 2L;
+    private static final Long ID_3 = 3L;
 
     private final UserManager userManager = mock(UserManager.class);
     private final NotificationManager notificationManager = mock(NotificationManager.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final LdapBlockedUsersManager ldapManager = mock(LdapBlockedUsersManager.class);
     private final InactiveUsersMonitoringServiceCore monitoringService = new InactiveUsersMonitoringServiceCore(
-            userManager, notificationManager, preferenceManager);
+            userManager, notificationManager, preferenceManager, ldapManager);
 
     @Before
     public void setup() {
-        doReturn(THRESHOLD_DAYS).when(preferenceManager).getPreference(any());
+        doReturn(THRESHOLD_DAYS).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_USER_MONITOR_BLOCKED_DAYS);
+        doReturn(THRESHOLD_DAYS).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_USER_MONITOR_IDLE_DAYS);
+        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_USER_MONITOR_ENABLED);
     }
 
     @Test
-    public void shouldNotifyBlockedUsers() {
+    public void shouldNotifyBlockedPipelineUsers() {
+        doReturn(false).when(preferenceManager).getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+
         final PipelineUser blockedUser = blockedUser(USER_NAME_1, ID_1);
         final PipelineUser activeUser = activeUser(USER_NAME_2, ID_2);
 
@@ -63,7 +77,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         monitoringService.monitor();
 
         final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
-        verify(notificationManager).notifyInactiveUsers(captor.capture());
+        verify(notificationManager).notifyInactiveUsers(captor.capture(), any());
         final List<PipelineUser> resultUsers = captor.getValue();
 
         assertThat(resultUsers).hasSize(1);
@@ -71,7 +85,10 @@ public class InactiveUsersMonitoringServiceCoreTest {
     }
 
     @Test
-    public void shouldNotifyBlockedUsersByGroup() {
+    public void shouldNotifyBlockedPipelineUsersByGroup() {
+        doReturn(false).when(preferenceManager).getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+
         final GroupStatus blockedGroup = blockedGroup();
         final GroupStatus activeGroup = activeGroup();
 
@@ -84,7 +101,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         monitoringService.monitor();
 
         final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
-        verify(notificationManager).notifyInactiveUsers(captor.capture());
+        verify(notificationManager).notifyInactiveUsers(captor.capture(), any());
         final List<PipelineUser> resultUsers = captor.getValue();
 
         assertThat(resultUsers).hasSize(1);
@@ -92,7 +109,10 @@ public class InactiveUsersMonitoringServiceCoreTest {
     }
 
     @Test
-    public void shouldNotifyIdleUsers() {
+    public void shouldNotifyIdlePipelineUsers() {
+        doReturn(false).when(preferenceManager).getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+
         final PipelineUser idleUser = idleUser(USER_NAME_1, ID_1);
         final PipelineUser activeUser = activeUser(USER_NAME_2, ID_2);
 
@@ -101,7 +121,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         monitoringService.monitor();
 
         final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
-        verify(notificationManager).notifyInactiveUsers(captor.capture());
+        verify(notificationManager).notifyInactiveUsers(captor.capture(), any());
         final List<PipelineUser> resultUsers = captor.getValue();
 
         assertThat(resultUsers).hasSize(1);
@@ -109,7 +129,10 @@ public class InactiveUsersMonitoringServiceCoreTest {
     }
 
     @Test
-    public void shouldNotifyUserThatNeverLogin() {
+    public void shouldNotifyPipelineUserThatNeverLogin() {
+        doReturn(false).when(preferenceManager).getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+
         final PipelineUser inactiveUser = getPipelineUser(USER_NAME_1, ID_1);
         inactiveUser.setRegistrationDate(LocalDateTime.now().minusDays(THRESHOLD_DAYS + 2));
         final PipelineUser activeUser = activeUser(USER_NAME_2, ID_2);
@@ -119,7 +142,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
         monitoringService.monitor();
 
         final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
-        verify(notificationManager).notifyInactiveUsers(captor.capture());
+        verify(notificationManager).notifyInactiveUsers(captor.capture(), any());
         final List<PipelineUser> resultUsers = captor.getValue();
 
         assertThat(resultUsers).hasSize(1);
@@ -127,7 +150,10 @@ public class InactiveUsersMonitoringServiceCoreTest {
     }
 
     @Test
-    public void shouldNotNotifyIfAllUsersActive() {
+    public void shouldNotNotifyIfAllPipelineUsersActive() {
+        doReturn(false).when(preferenceManager).getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+
         final PipelineUser activeUser1 = activeUser(USER_NAME_2, ID_2);
         final PipelineUser activeUser2 = activeUser(USER_NAME_2, ID_2);
 
@@ -136,7 +162,51 @@ public class InactiveUsersMonitoringServiceCoreTest {
         monitoringService.monitor();
 
         final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
-        verify(notificationManager).notifyInactiveUsers(captor.capture());
+        verify(notificationManager).notifyInactiveUsers(captor.capture(), any());
+        final List<PipelineUser> resultUsers = captor.getValue();
+
+        assertThat(resultUsers).hasSize(0);
+    }
+
+    @Test
+    public void shouldBlockAndNotifyBlockedLdapUser() {
+        doReturn(true).when(preferenceManager).getPreference(
+                SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED);
+
+        final PipelineUser blockedUser = activeUser(USER_NAME_1, ID_1);
+        final PipelineUser activeUser1 = activeUser(USER_NAME_2, ID_2);
+        final PipelineUser activeUser2 = activeUser(USER_NAME_3, ID_3);
+        final List<PipelineUser> allUsers = Arrays.asList(blockedUser, activeUser1, activeUser2);
+
+        doReturn(allUsers).when(userManager).loadAllUsers();
+        doReturn(blockedUser).when(userManager).updateUserBlockingStatus(ID_1, true);
+        doReturn(Collections.singletonList(blockedUser)).when(ldapManager).filterBlockedUsers(allUsers);
+
+        monitoringService.monitor();
+
+        verify(userManager).updateUserBlockingStatus(ID_1, true);
+        verify(ldapManager).filterBlockedUsers(allUsers);
+        final ArgumentCaptor<List<PipelineUser>> usersCaptor = argumentCaptor();
+        verify(notificationManager).notifyInactiveUsers(any(), usersCaptor.capture());
+        final List<PipelineUser> resultUsers = usersCaptor.getValue();
+
+        assertThat(resultUsers).hasSize(1);
+        assertThat(resultUsers.get(0)).isEqualTo(blockedUser);
+    }
+
+    @Test
+    public void shouldNotBlockAndNotifyLdapBlockedAdmin() {
+        final PipelineUser blockedAdmin = activeUser(USER_NAME_1, ID_1);
+        blockedAdmin.setRoles(Collections.singletonList(DefaultRoles.ROLE_ADMIN.getRole()));
+
+        doReturn(Collections.singletonList(blockedAdmin)).when(userManager).loadAllUsers();
+
+        monitoringService.monitor();
+
+        notInvoked(userManager).updateUserBlockingStatus(ID_1, true);
+        notInvoked(ldapManager).filterBlockedUsers(any());
+        final ArgumentCaptor<List<PipelineUser>> captor = argumentCaptor();
+        verify(notificationManager).notifyInactiveUsers(any(), captor.capture());
         final List<PipelineUser> resultUsers = captor.getValue();
 
         assertThat(resultUsers).hasSize(0);

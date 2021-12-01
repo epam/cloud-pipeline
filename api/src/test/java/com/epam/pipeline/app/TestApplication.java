@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
+import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
@@ -138,6 +139,9 @@ public class TestApplication {
 
     @MockBean
     public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
+    public LdapManager ldapManager;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

@@ -55,6 +55,7 @@ import com.epam.pipeline.acl.notification.NotificationTemplateApiService;
 import com.epam.pipeline.acl.notification.SystemNotificationApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.acl.pipeline.PipelineConfigApiService;
+import com.epam.pipeline.manager.ldap.LdapApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -238,4 +239,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected NatGatewayApiService natGatewayApiService;
+
+    @MockBean
+    protected LdapApiService ldapApiService;
 }

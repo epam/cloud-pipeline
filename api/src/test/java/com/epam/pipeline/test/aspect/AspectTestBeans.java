@@ -105,6 +105,7 @@ import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
@@ -389,4 +390,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected NatGatewayDao natGatewayDao;
+
+    @MockBean
+    protected LdapTemplate ldapTemplate;
 }

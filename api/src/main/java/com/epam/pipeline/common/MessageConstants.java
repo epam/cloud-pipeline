@@ -89,11 +89,11 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
-    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING = 
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING =
             "error.tool.symlink.target.group.id.missing";
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND = "error.tool.symlink.source.tool.not.found";
     public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND = "error.tool.symlink.target.group.not.found";
-    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED = 
+    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED =
             "error.tool.symlink.modification.not.supported";
     public static final String ERROR_TOOL_SYMLINK_TARGET_SYMLINK = "error.tool.symlink.target.symlink";
 
@@ -599,6 +599,8 @@ public final class MessageConstants {
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY = "categorical.attribute.exists.already";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME = "categorical.attribute.null.name.key";
+    //LDAP
+    public static final String ERROR_LDAP_SEARCH_TYPE_MISSING = "error.ldap.search.type.missing";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
