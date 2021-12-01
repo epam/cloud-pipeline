@@ -432,7 +432,7 @@ def parse_scp_location(location):
 def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
-                  keep_existing, keep_same, replace_existing, replace_different,
+                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                   retries, region, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if not local_ports_str and not remote_ports_str:
@@ -455,7 +455,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
         raise RuntimeError('Option -s/--ssh can be used only for run tunnels.')
     check_existing_tunnels(host_id, local_ports, remote_ports,
                            ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
-                           keep_existing, keep_same, replace_existing, replace_different,
+                           keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                            region, retries, parse_tunnel_args)
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
@@ -485,34 +485,29 @@ def parse_ports(port_str):
 
 def check_existing_tunnels(host_id, local_ports, remote_ports,
                            ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
-                           keep_existing, keep_same, replace_existing, replace_different,
+                           keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                            region, retries, parse_tunnel_args):
-    for tunnel_proc in find_tunnel_procs(run_id=None, local_ports=local_ports):
+    for tunnel_proc, tunnel_proc_args in find_tunnel_procs():
         logging.info('Process with pid %s was found (%s).', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
-        proc_parsed_args = {}
-        try:
-            proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
-        except TunnelError:
-            if replace_existing or replace_different:
-                kill_process(tunnel_proc, timeout_stop)
-            else:
-                raise TunnelError('Existing tunnel process arguments parsing has failed. '
-                                  'Please use the following command to stop all existing tunnels and '
-                                  'then try again: \n\n'
-                                  'pipe tunnel stop')
+        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
         if not proc_parsed_args:
-            return
+            continue
         existing_tunnel = TunnelArgs.from_args(proc_parsed_args)
         creating_tunnel = TunnelArgs(host_id=host_id, local_ports=local_ports, remote_ports=remote_ports,
                                      ssh=ssh, ssh_path=ssh_path, ssh_host=ssh_host, direct=direct)
+        if not any(local_port in creating_tunnel.local_ports for local_port in existing_tunnel.local_ports):
+            continue
         logging.info('Comparing the existing tunnel process with the current process...')
         is_same_tunnel = creating_tunnel.compare(existing_tunnel)
         existing_tunnel_run_id = parse_run_identifier(existing_tunnel.host_id)
         existing_tunnel_remote_host = existing_tunnel.ssh_host or 'pipeline-{}'.format(existing_tunnel.host_id)
         if replace_existing:
             logging.info('Stopping existing tunnel...')
+            if not ignore_owner and has_different_owner(tunnel_proc):
+                raise TunnelError('Tunnel already exists on the same local ports '
+                                  'and cannot be replaced because it is owned by a different user.')
             kill_process(tunnel_proc, timeout_stop)
-            return
+            continue
         if keep_existing:
             logging.info('Skipping tunnel establishing since the tunnel already exists...')
             if existing_tunnel.ssh and has_different_owner(tunnel_proc):
@@ -523,8 +518,11 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
             sys.exit(0)
         if replace_different and not is_same_tunnel:
             logging.info('Stopping existing tunnel since it has a different configuration...')
+            if not ignore_owner and has_different_owner(tunnel_proc):
+                raise TunnelError('Tunnel already exists on the same local ports '
+                                  'and cannot be replaced because it is owned by a different user.')
             kill_process(tunnel_proc, timeout_stop)
-            return
+            continue
         if keep_same and is_same_tunnel:
             logging.info('Skipping tunnel establishing since the same tunnel already exists...')
             if existing_tunnel.ssh and has_different_owner(tunnel_proc):
@@ -533,7 +531,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                               existing_tunnel.ssh_path, ssh_user, existing_tunnel_remote_host,
                               log_file, retries)
             sys.exit(0)
-        raise TunnelError('{} tunnel already exists on the same local port'
+        raise TunnelError('{} tunnel already exists on the same local ports'
                           .format('Same' if is_same_tunnel else 'Different'))
 
 
@@ -545,7 +543,6 @@ def parse_tunnel_proc_args(proc, parse_start_tunnel_arguments):
                 return parse_start_tunnel_arguments(proc_args[i + 1:])
     except Exception:
         logging.debug('Existing tunnel process arguments parsing has failed.', exc_info=sys.exc_info())
-        raise TunnelError('Existing tunnel process arguments parsing has failed.')
     return {}
 
 
@@ -1243,16 +1240,26 @@ def perform_command(executable, log_file=None, collect_output=True, fail_on_erro
         return out
 
 
-def kill_tunnels(run_id=None, local_ports_str=None, timeout=None, force=False, log_level=None):
+def kill_tunnels(host_id, local_ports_str, timeout_stop, force, ignore_owner, log_level, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     local_ports = parse_ports(local_ports_str)
     if local_ports_str and not local_ports:
         raise RuntimeError('Either a single port (4567) or a range of ports (4567-4569) '
                            'can be specified using -lp/--local-port option.')
-    for tunnel_proc in find_tunnel_procs(run_id, local_ports):
-        logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+    for tunnel_proc, tunnel_proc_args in find_tunnel_procs():
+        logging.info('Process with pid %s was found (%s).', tunnel_proc.pid, ' '.join(tunnel_proc_args))
+        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
+        if not proc_parsed_args:
+            continue
+        tunnel_args = TunnelArgs.from_args(proc_parsed_args)
+        if tunnel_args.host_id != host_id:
+            continue
+        if not any(local_port in local_ports for local_port in tunnel_args.local_ports):
+            continue
+        if not ignore_owner and has_different_owner(tunnel_proc):
+            continue
         logging.info('Killing the process...')
-        kill_process(tunnel_proc, timeout / 1000, force)
+        kill_process(tunnel_proc, timeout_stop, force)
 
 
 def list_tunnels(log_level, parse_tunnel_args):
@@ -1262,18 +1269,15 @@ def list_tunnels(log_level, parse_tunnel_args):
     tunnels_table.sortby = 'PID'
     tunnels_table.align = 'l'
     tunnel_procs = list(find_tunnel_procs())
-    tunnel_procs_by_ppid = {tunnel_proc.ppid(): tunnel_proc for tunnel_proc in tunnel_procs}
-    for tunnel_proc in tunnel_procs:
-        logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+    tunnel_procs_by_ppid = {tunnel_proc.ppid(): tunnel_proc for tunnel_proc, tunnel_proc_args in tunnel_procs}
+    for tunnel_proc, tunnel_proc_args in tunnel_procs:
+        logging.info('Process with pid %s was found (%s).', tunnel_proc.pid, ' '.join(tunnel_proc_args))
         tunnel_proc_pid = tunnel_proc.pid
         tunnel_proc_ppid = tunnel_proc.ppid()
         tunnel_proc_username = tunnel_proc.username()
         if tunnel_proc_pid in tunnel_procs_by_ppid:
             continue
-        try:
-            proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
-        except TunnelError:
-            proc_parsed_args = {}
+        proc_parsed_args = parse_tunnel_proc_args(tunnel_proc, parse_tunnel_args)
         if not proc_parsed_args:
             continue
         tunnel_args = TunnelArgs.from_args(proc_parsed_args)
@@ -1294,37 +1298,28 @@ def stringify_ports(ports):
     return '{}-{}'.format(ports[0], ports[-1])
 
 
-def find_tunnel_procs(run_id=None, local_ports=None):
+def find_tunnel_procs():
     import psutil
     logging.info('Searching for pipe tunnel processes...')
     current_pids = get_current_pids()
-    local_ports_set = set(local_ports) if local_ports else set()
     for proc in psutil.process_iter():
-        if proc.pid in current_pids:
-            continue
         proc_name = proc.name()
-        if proc_name not in PIPE_PROC_NAMES and not proc_name.startswith(PYTHON_PROC_PREFIX):
-            continue
         try:
             proc_args = proc.cmdline()
         except psutil.AccessDenied:
             logging.debug('Process with pid %s details access is not allowed.', proc.pid)
             continue
+        if proc.pid in current_pids:
+            continue
+        if proc_name not in PIPE_PROC_NAMES \
+                and not proc_name.startswith(PYTHON_PROC_PREFIX):
+            continue
         if proc_name.startswith(PYTHON_PROC_PREFIX) \
-                and all(not proc_arg.endswith(PIPE_SCRIPT_NAME)
-                        for proc_arg in proc_args):
+                and not any(proc_arg.endswith(PIPE_SCRIPT_NAME) for proc_arg in proc_args):
             continue
-        if not all(required_arg in proc_args
-                   for required_arg in (TUNNEL_REQUIRED_ARGS + ([str(run_id)] if run_id else []))):
+        if not all(required_arg in proc_args for required_arg in TUNNEL_REQUIRED_ARGS):
             continue
-        if not local_ports_set:
-            yield proc
-        for i in range(len(proc_args)):
-            if proc_args[i] not in TUNNEL_LOCAL_PORT_ARGS:
-                continue
-            proc_local_ports = parse_ports(proc_args[i + 1])
-            if any(proc_local_port in local_ports_set for proc_local_port in proc_local_ports):
-                yield proc
+        yield proc, proc_args
 
 
 def get_current_pids():
