@@ -461,7 +461,7 @@ public class GrantPermissionManager {
     }
 
     public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
-        return storagePermission(storage.getId(), permissionName);
+        return storagePermission((AbstractSecuredEntity)storage, permissionName);
     }
 
     public boolean storagePermission(Long storageId, String permissionName) {
