@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
@@ -23,7 +23,7 @@ import {Button, Checkbox, Form, Icon, Input, Row} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
 import {MANAGEMENT_SECTION} from '../user-profile/appearance';
-import {ThemesPreferenceName} from '../../../themes';
+import {ThemesPreferenceModes, ThemesPreferenceName} from '../../../themes';
 import styles from './PreferenceGroup.css';
 
 const formatJson = (string, presentation = true, catchError = true) => {
@@ -193,6 +193,8 @@ export default class PreferenceGroup extends React.Component {
   }
 }
 
+@inject('themes')
+@observer
 class PreferenceInput extends React.Component {
   static propTypes = {
     value: PropTypes.shape({
@@ -248,8 +250,28 @@ class PreferenceInput extends React.Component {
   };
 
   renderInput = () => {
-    const {router} = this.props;
-    if (router && ThemesPreferenceName === this.props.value.name) {
+    const {
+      router,
+      themes,
+      value
+    } = this.props;
+    const themesManagementPreference = router &&
+      ThemesPreferenceName === value.name &&
+      themes &&
+      themes.mode === ThemesPreferenceModes.payload &&
+      value.value;
+    let showThemesManagementRedirection = themesManagementPreference;
+    if (themesManagementPreference) {
+      try {
+        const o = JSON.parse(value.value);
+        showThemesManagementRedirection = o && Array.isArray(o);
+      } catch (e) {
+        showThemesManagementRedirection = false;
+      }
+    }
+    if (
+      showThemesManagementRedirection
+    ) {
       return (
         <div>
           <span>You can manage UI themes at</span>

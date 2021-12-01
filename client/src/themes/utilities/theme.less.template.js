@@ -676,7 +676,8 @@ export default `
   background-color: @btn-disabled-background-color;
   border-color: @input-border;
 }
-@THEME .ant-radio-button-wrapper {
+@THEME .ant-radio-button-wrapper,
+@THEME .ant-radio-inner {
   background-color: @panel-background-color;
   color: @application-color;
   border-color: @input-border;
@@ -688,13 +689,19 @@ export default `
   background-color: @input-border;
 }
 @THEME .ant-radio-button-wrapper-focused,
-@THEME .ant-radio-button-wrapper:hover {
+@THEME .ant-radio-button-wrapper:hover,
+@THEME .ant-radio-wrapper:hover .ant-radio .ant-radio-inner,
+@THEME .ant-radio:hover .ant-radio-inner,
+@THEME .ant-radio-focused .ant-radio-inner {
   color: @primary-color;
 }
 @THEME .ant-radio-button-wrapper-checked {
   border-color: @primary-color;
   color: @primary-color;
   box-shadow: -1px 0 0 0 @primary-color;
+}
+@THEME .ant-radio-checked .ant-radio-inner {
+  border-color: @primary-color;
 }
 @THEME .ant-radio-button-wrapper-checked:first-child {
   border-color: @primary-color;
@@ -713,6 +720,16 @@ export default `
 @THEME .ant-radio-button-wrapper-checked::before {
   background-color: @primary-color !important;
   opacity: 0.1;
+}
+@THEME .ant-radio-disabled .ant-radio-inner {
+  border-color: @input-border !important;
+  background-color: @input-background-disabled;
+}
+@THEME .ant-radio-disabled .ant-radio-inner::after {
+  background-color: @input-border;
+}
+@THEME .ant-radio-disabled + span {
+  color: @application-color-faded;
 }
 @THEME .ant-table,
 @THEME .ant-table-placeholder,

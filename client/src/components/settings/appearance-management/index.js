@@ -23,6 +23,7 @@ import {computed} from 'mobx';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
 import UIThemeEditForm from './ui-theme-edit-form';
+import SaveDialog from './save-dialog';
 import ThemeCard from './theme-card';
 import themesAreEqual from './utilities/themes-are-equal';
 import validateTheme from './utilities/theme-validation';
@@ -38,7 +39,8 @@ class AppearanceManagement extends React.Component {
     modified: false,
     themePayload: undefined,
     valid: true,
-    pending: false
+    pending: false,
+    saveDialogVisible: false
   };
 
   @computed
@@ -97,18 +99,37 @@ class AppearanceManagement extends React.Component {
   onCreateTheme = () => {
     const newTheme = {
       isNew: true,
-      name: 'New theme',
       extends: DefaultThemeIdentifier
     };
     this.setState({
-      editableTheme: newTheme,
-      themePayload: {...newTheme},
-      modified: false,
+      editableTheme: {
+        ...newTheme,
+        name: 'New theme'
+      },
+      themePayload: {
+        ...newTheme
+      },
+      modified: true,
       valid: validateTheme(newTheme, this.themes)
     });
   };
 
-  onSaveTheme = async () => {
+  onSaveClicked = () => {
+    this.setState({
+      saveDialogVisible: true
+    });
+  };
+
+  closeSaveDialog = () => {
+    this.setState({
+      saveDialogVisible: false
+    });
+  };
+
+  onSaveTheme = async (options = {}) => {
+    const {
+      mode
+    } = options;
     const {
       editableTheme,
       themePayload
@@ -159,12 +180,13 @@ class AppearanceManagement extends React.Component {
         pending: true
       }, () => {
         themesStore
-          .saveThemes(themesPayload, true)
+          .saveThemes(themesPayload, {throwError: true, mode})
           .then(() => this.setState({
             editableTheme: undefined,
             themePayload: undefined,
             modified: false,
-            valid: true
+            valid: true,
+            saveDialogVisible: false
           }))
           .catch(e => message.error(e.message, 5))
           .then(() => {
@@ -206,7 +228,7 @@ class AppearanceManagement extends React.Component {
             id="save-theme-button"
             disabled={!valid || !modified}
             className={styles.action}
-            onClick={this.onSaveTheme}
+            onClick={this.onSaveClicked}
             type="primary"
           >
             {
@@ -244,7 +266,8 @@ class AppearanceManagement extends React.Component {
       authenticatedUserInfo.value.admin;
     const {
       editableTheme,
-      pending
+      pending,
+      saveDialogVisible
     } = this.state;
     const goBack = () => {
       if (editableTheme) {
@@ -311,6 +334,12 @@ class AppearanceManagement extends React.Component {
           onChange={this.onChangeTheme}
           themes={this.themes}
           readOnly={pending}
+        />
+        <SaveDialog
+          disabled={pending}
+          visible={saveDialogVisible}
+          onCancel={this.closeSaveDialog}
+          onSave={this.onSaveTheme}
         />
       </div>
     );

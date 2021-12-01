@@ -20,7 +20,9 @@ import getThemes, {
   DefaultLightThemeIdentifier,
   DefaultThemeIdentifier,
   ThemesPreferenceName,
-  generateIdentifier, saveThemes
+  ThemesPreferenceModes,
+  generateIdentifier,
+  saveThemes
 } from './themes';
 import injectTheme from './utilities/inject-theme';
 import './default.theme.less';
@@ -37,6 +39,8 @@ if (DEBUG) {
 
 class CloudPipelineThemes {
   @observable themes = [];
+  @observable mode = ThemesPreferenceModes.payload;
+  @observable themesURL;
   @observable loaded = false;
   @observable currentTheme = DefaultLightThemeIdentifier;
   @observable synchronizeWithSystem = false;
@@ -122,16 +126,27 @@ class CloudPipelineThemes {
 
   async refresh () {
     try {
-      this.themes = await getThemes();
+      const {
+        mode,
+        themes = [],
+        url
+      } = await getThemes();
+      this.mode = mode;
+      this.themesURL = url;
+      this.themes = themes;
       this.themes.forEach(injectTheme);
     } catch (e) {
       console.warn(`Error reading themes: ${e.message}`);
     }
   }
 
-  async saveThemes (themes, throwError = false) {
+  async saveThemes (themes, options = {}) {
+    const {
+      mode = this.mode,
+      throwError = false
+    } = options;
     try {
-      await saveThemes(themes);
+      await saveThemes(themes, mode);
       await this.refresh();
     } catch (e) {
       console.warn(e.message);
@@ -240,6 +255,7 @@ class CloudPipelineThemes {
 export {
   DefaultThemeIdentifier,
   ThemesPreferenceName,
+  ThemesPreferenceModes,
   generateIdentifier
 };
 export default CloudPipelineThemes;

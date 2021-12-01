@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+import FileSaver from 'file-saver';
 import DarkDimmedTheme from './dark-dimmed-theme';
 import DarkTheme from './dark-theme';
 import LightTheme from './light-theme';
@@ -97,21 +98,24 @@ const DefaultThemeIdentifier = DefaultTheme.identifier;
 
 const ThemesPreferenceName = 'ui.themes';
 const ThemesPreferenceGroup = 'User Interface';
+const ThemesPreferenceModes = {
+  url: 'url',
+  payload: 'payload'
+};
 
 export {
   DefaultDarkThemeIdentifier,
   DefaultLightThemeIdentifier,
   DefaultThemeIdentifier,
   ThemesPreferenceName,
+  ThemesPreferenceModes,
   parseConfiguration
 };
 
-export function saveThemes (themes) {
+function saveThemesAsPayload (themes) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(themes || []);
     const request = new PreferencesUpdate();
-    console.log(themes);
-    console.log(payload);
     request
       .send([{
         name: ThemesPreferenceName,
@@ -130,6 +134,91 @@ export function saveThemes (themes) {
   });
 }
 
+function downloadThemesConfigurationFile (themes) {
+  const payload = JSON.stringify(themes || []);
+  return new Promise((resolve, reject) => {
+    try {
+      FileSaver.saveAs(new Blob([payload]), 'themes.json');
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+export function saveThemes (themes, mode = ThemesPreferenceModes.url) {
+  if (mode === ThemesPreferenceModes.url) {
+    return downloadThemesConfigurationFile(themes);
+  }
+  return saveThemesAsPayload(themes);
+}
+
+function fetchThemesByUrl (url, options) {
+  return new Promise((resolve) => {
+    if (options) {
+      console.log('Fetching themes by url:', url, 'using options:', options);
+    } else {
+      console.log('Fetching themes by url:', url);
+    }
+    fetch(url, options)
+      .then(response => response.json())
+      .then((json) => {
+        if (Array.isArray(json)) {
+          resolve({
+            themes: json,
+            mode: ThemesPreferenceModes.url,
+            url
+          });
+        } else {
+          throw new Error('themes files content must be a valid JSON array');
+        }
+      })
+      .catch(e => {
+        console.warn(`Error fetching themes by url ${url}: ${e.message}`);
+        resolve({themes: [], mode: ThemesPreferenceModes.url});
+      });
+  });
+}
+
+function safeParseJson (json) {
+  try {
+    return {obj: json ? JSON.parse(json) : undefined};
+  } catch (e) {
+    return {error: e.message};
+  }
+}
+
+function parseThemesPreference (preferenceValue) {
+  if (!preferenceValue || typeof preferenceValue !== 'string') {
+    return Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload});
+  }
+  try {
+    const {obj, error} = safeParseJson(preferenceValue);
+    if (obj) {
+      if (typeof obj === 'string') {
+        return fetchThemesByUrl(obj);
+      }
+      if (obj.url) {
+        return fetchThemesByUrl(obj.url, obj.options);
+      }
+      if (Array.isArray(obj)) {
+        return Promise.resolve({
+          themes: obj,
+          mode: ThemesPreferenceModes.payload
+        });
+      }
+    } else if (preferenceValue) {
+      return fetchThemesByUrl(preferenceValue);
+    } else if (error) {
+      throw new Error(error);
+    }
+    return Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload});
+  } catch (e) {
+    console.warn(`Error parsing themes preference: ${e.message}`);
+    return Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload});
+  }
+}
+
 export default function getThemes () {
   return new Promise((resolve) => {
     const request = new PreferenceLoad(ThemesPreferenceName);
@@ -138,27 +227,35 @@ export default function getThemes () {
       .then(() => {
         if (request.loaded) {
           const {value} = request.value || {};
-          return Promise.resolve(JSON.parse(value));
+          return parseThemesPreference(value);
         }
-        return Promise.resolve([]);
+        return Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload});
       })
-      .catch(() => Promise.resolve([]))
-      .then((customThemes = []) => {
+      .catch(() => Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload}))
+      .then((result = {}) => {
+        const {
+          themes: customThemes,
+          mode = ThemesPreferenceModes.payload,
+          url
+        } = result;
         const themes = PredefinedThemes.slice();
         const customThemesProcessed = customThemes
           .map(mapCustomTheme)
           .map(correctCustomThemeIdentifier(themes));
-        resolve(
-          [
-            ...themes,
-            ...customThemesProcessed
-          ]
-            .map(theme => getThemeConfiguration(theme, themes))
-            .map(theme => {
-              theme.getParsedConfiguration = parseConfiguration.bind(theme, theme.configuration);
-              return theme;
-            })
-        );
+        const processedThemes = [
+          ...themes,
+          ...customThemesProcessed
+        ]
+          .map(theme => getThemeConfiguration(theme, themes))
+          .map(theme => {
+            theme.getParsedConfiguration = parseConfiguration.bind(theme, theme.configuration);
+            return theme;
+          });
+        resolve({
+          mode,
+          themes: processedThemes,
+          url
+        });
       });
   });
 }
