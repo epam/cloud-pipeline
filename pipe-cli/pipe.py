@@ -1623,6 +1623,8 @@ def start_tunnel_options(decorating_func):
                   help='Replaces existing tunnel on the same local port.')
     @click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel on the same local port if it has different configuration.')
+    @click.option('--ignore-existing', required=False, is_flag=True, default=False,
+                  help='Establishes tunnel ignoring any existing tunnels or occupied local ports.')
     @click.option('--ignore-owner', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel processes owned by other users.')
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
@@ -1645,7 +1647,7 @@ def return_tunnel_args(*args, **kwargs):
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
-                 keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
+                 keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                  retries, region):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
@@ -1731,7 +1733,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
-                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
+                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                   retries, region, _parse_tunnel_args)
 
 
