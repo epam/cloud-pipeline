@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Alert, Input, Icon} from 'antd';
+import {Button, Alert, Input} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';
@@ -130,8 +130,6 @@ class ElementPreview extends React.Component {
   renderPreviews () {
     const {section} = this.props;
     switch (section) {
-      case sectionNames.backgroundImage:
-        return this.renderBackgroundImage();
       case sectionNames.buttons:
         return this.renderButtons();
       case sectionNames.tables:
