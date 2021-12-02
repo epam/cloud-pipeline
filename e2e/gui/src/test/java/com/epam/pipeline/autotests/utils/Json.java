@@ -15,7 +15,10 @@
  */
 package com.epam.pipeline.autotests.utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -63,5 +66,26 @@ public interface Json {
             final ConfigurationProfile[] edited = action.apply(profiles);
             return profilesToString(edited);
         };
+    }
+
+    static SystemParameter[] stringToSystemParameters(final String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        try {
+            return mapper.readValue(json, SystemParameter[].class);
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static String systemParametersToString(final SystemParameter[] systemParameters) {
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        try {
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(systemParameters);
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
     }
 }
