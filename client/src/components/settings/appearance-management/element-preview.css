@@ -32,14 +32,43 @@
   margin: 5px 0;
 }
 
-.panel,
-.card {
+.panel {
   min-width: 200px;
-  border: 1px solid transparent;
+  padding: 10px;
+  padding-left: 3%;
+}
+
+.card {
+  padding: 10px;
+  width: 90%;
 }
 
 .input {
   min-width: 200px;
   width: 100%;
   margin: 5px 0;
+}
+
+.navigation-panel-preview {
+  flex: 0 0 64px;
+  max-width: 64px;
+  min-width: 64px;
+  width: 64px;
+  margin: auto;
+}
+
+.mainLayout {
+  width: 100px;
+  height: 100px;
+}
+
+.mainPanel {
+  width: 90px;
+  height: 90px;
+  margin: auto;
+  text-align: center;
+}
+
+.mainContent {
+  margin-top: 40px;
 }

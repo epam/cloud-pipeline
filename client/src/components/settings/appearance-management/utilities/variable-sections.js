@@ -26,11 +26,6 @@ function mapConfiguration (item) {
   return item;
 }
 
-const accent = [
-  Variables.primaryColor,
-  Variables.primaryTextColor
-];
-
 const alerts = [
   Variables.alertErrorBackground,
   {
@@ -59,7 +54,20 @@ const alerts = [
 ];
 
 const buttons = [
-  Variables.btnDangerActiveColor,
+  Variables.primaryColor,
+  Variables.primaryTextColor,
+  {
+    key: Variables.primaryHoverColor,
+    advanced: true
+  },
+  {
+    key: Variables.btnPrimaryActive,
+    advanced: true
+  },
+  {
+    key: Variables.btnDangerActiveColor,
+    advanced: true
+  },
   Variables.btnDangerBackgroundColor,
   Variables.btnDangerColor,
   Variables.btnDisabledBackgroundColor,
@@ -87,10 +95,9 @@ const input = [
   {
     key: Variables.inputAddon,
     advanced: true
-  },
-  {
+  }, {
     key: Variables.inputBackgroundDisabled,
-    adnaved: true
+    adnavced: true
   }
 ];
 
@@ -102,7 +109,14 @@ const main = [
 
 const menus = [
   Variables.menuBorderColor,
-  Variables.menuColor
+  Variables.menuColor,
+  {
+    key: Variables.elementHoverColor,
+    advanced: true
+  }, {
+    key: Variables.elementHoverBackgroundColor,
+    advanced: true
+  }
 ];
 
 const navigation = [
@@ -116,19 +130,20 @@ const navigation = [
 
 const tables = [
   Variables.tableBorderColor,
-  Variables.tableElementHoverColor,
-  Variables.tableElementSelectedBackgroundColor,
+  Variables.tableHeadColor,
   {
-    key: Variables.tableElementSelectedColor,
+    key: Variables.tableElementHoverColor,
     advanced: true
   }, {
-    key: Variables.tableHeadColor,
+    key: Variables.tableElementSelectedBackgroundColor,
+    advanced: true
+  }, {
+    key: Variables.tableElementSelectedColor,
     advanced: true
   }
 ];
 
 const sections = {
-  accent: 'Accent',
   alerts: 'Alerts',
   buttons: 'Buttons',
   cards: 'Cards',
@@ -140,7 +155,6 @@ const sections = {
 };
 
 const sectionsConfiguration = {
-  [sections.accent]: accent.map(mapConfiguration),
   [sections.alerts]: alerts.map(mapConfiguration),
   [sections.buttons]: buttons.map(mapConfiguration),
   [sections.cards]: cards.map(mapConfiguration),
@@ -153,7 +167,6 @@ const sectionsConfiguration = {
 
 const orderedSections = [
   sections.main,
-  sections.accent,
   sections.navigation,
   sections.menu,
   sections.cards,

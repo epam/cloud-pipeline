@@ -614,8 +614,8 @@ export default `
 @THEME .ant-btn-primary:hover,
 @THEME .ant-btn-primary:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-primary.active,
 @THEME .ant-btn-primary:active,
@@ -883,16 +883,16 @@ export default `
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
   background-color: fade(@panel-background-color, 100%);
-  color: @application-color;
+  color: @menu-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
-  border-color: @card-border-color;
+  border-color: @menu-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @card-border-color;
+  background-color: @menu-border-color;
 }
 @THEME .ant-select-selection__placeholder,
 @THEME .ant-select-selection__clear,
@@ -919,7 +919,7 @@ export default `
 }
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
-  color: @application-color;
+  color: @menu-color;
 }
 @THEME .ant-select-dropdown-menu-item.cp-danger,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger,
@@ -959,6 +959,12 @@ export default `
 @THEME .rc-dropdown-menu-item-disabled,
 @THEME .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
+}
+@THEME .rc-menu-item.rc-menu-item-selected {
+  background-color: fade(@panel-background-color, 100%);
+}
+@THEME .rc-menu-item.rc-menu-item-selected:hover {
+  background-color: @element-hover-background-color;
 }
 @THEME .ant-select-dropdown-menu-item-selected,
 @THEME .ant-select-dropdown-menu-item-selected:hover {
@@ -1199,8 +1205,8 @@ export default `
 @THEME .ant-calendar .ant-calendar-ok-btn:focus,
 @THEME .ant-calendar .ant-calendar-ok-btn:hover {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn.active,
 @THEME .ant-calendar .ant-calendar-ok-btn:active {
@@ -1616,6 +1622,29 @@ export default `
 }
 @THEME .flag.taiwan {
   background-image: @taiwan-region-icon;
+}
+
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
 }
 
 @THEME .ant-alert {
@@ -2070,8 +2099,8 @@ export default `
   background: @modal-mask-background;
 }
 @THEME .cp-search-preview {
-  background-color: @panel-background-color;
-  border: 1px solid @panel-border-color;
+  background-color: fade(@card-background-color, 100%);
+  border: 1px solid fade(@card-background-color, 100%);
 }
 @THEME .cp-search-preview-button {
   color: @application-color;
@@ -2145,8 +2174,8 @@ export default `
 @THEME .cp-search-faceted-button.selected:hover,
 @THEME .cp-search-faceted-button.selected:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
@@ -2276,6 +2305,9 @@ export default `
 @THEME .cp-library-metadata-table-cell-selected {
   background-color: fadeout(@primary-hover-color, 70%);
   color: @application-color;
+}
+@THEME .cp-library-metadata-table-marker {
+  background-color: @primary-color;
 }
 @THEME .cp-library-metadata-panel-placeholder {
   color: @application-color-faded;
