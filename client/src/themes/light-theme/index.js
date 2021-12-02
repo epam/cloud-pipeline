@@ -32,6 +32,10 @@ export default {
     '@primary-active-color': '#0e77ca',
     '@primary-text-color': 'white',
     '@primary-color-semi-transparent': 'fade(@primary-color, 20%)',
+    '@color-success': '#09ab5a',
+    '@color-error': '#f04134',
+    '@color-warning': '#ff8818',
+    '@color-info': '@primary-color',
     '@color-green': '#09ab5a',
     '@color-red': '#f04134',
     '@color-yellow': '#ff8818',
@@ -128,14 +132,14 @@ export default {
     '@btn-color': '@primary-text-color',
     '@btn-primary-hover': '@primary-hover-color',
     '@btn-primary-active': '@primary-active-color',
-    '@btn-danger-color': '@color-red',
+    '@btn-danger-color': '@color-error',
     '@btn-danger-active-color': '#d73435',
     '@btn-disabled-color': 'rgba(0, 0, 0, 0.25)',
     '@btn-disabled-background-color': '#f7f7f7',
     '@btn-danger-background-color': '@btn-disabled-background-color',
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@color-yellow',
+    '@search-highlight-text-background-color': '@color-warning',
     '@background-image': 'none'
   }
 };

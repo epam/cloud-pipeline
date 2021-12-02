@@ -71,13 +71,13 @@ export default `
   background-color: @panel-background-color;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-blue {
-  color: @color-blue;
+  color: @color-info;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-yellow {
-  color: @color-yellow;
+  color: @color-warning;
 }
 @THEME.theme-preview .cp-theme-priview-runs-table-icon-green {
-  color: @color-green;
+  color: @color-success;
 }
 @THEME.theme-preview .cp-theme-preview-navigation-menu-item.selected {
   background-color: @navigation-panel-highlighted-color;
@@ -1552,17 +1552,17 @@ export default `
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @color-green;
+  color: @color-info;
 }
 @THEME .cp-notification-status-warning {
-  color: @color-yellow;
+  color: @color-warning;
 }
 @THEME .cp-notification-status-critical {
-  color: @color-red;
+  color: @color-error;
 }
 @THEME .cp-new-notification {
-  border-color: @color-blue;
-  box-shadow: 0 0 1em @color-blue;
+  border-color: @color-info;
+  box-shadow: 0 0 1em @color-info;
 }
 
 @THEME .provider.aws {
@@ -1756,13 +1756,13 @@ export default `
   color: @color-green;
 }
 @THEME .cp-runs-table-icon-blue {
-  color: @color-blue;
+  color: @color-info;
 }
 @THEME .cp-runs-table-icon-red {
-  color: @color-red;
+  color: @color-error;
 }
 @THEME .cp-runs-table-icon-yellow {
-  color: @color-yellow;
+  color: @color-warning;
 }
 @THEME .cp-filter-popover-container {
   background-color: @card-background-color;
@@ -1816,19 +1816,19 @@ export default `
   fill: @card-background-color;
 }
 @THEME .cp-wdl-task[data-taskstatus=running] rect {
-  fill: fade(@color-blue, 20%);
-  stroke: @color-blue;
+  fill: fade(@color-info, 20%);
+  stroke: @color-info;
 }
 @THEME .cp-wdl-task[data-taskstatus=running] text {
-  fill: @color-blue;
+  fill: @color-info;
 }
 @THEME .cp-wdl-task[data-taskstatus=success] rect {
-  fill: fade(@color-green, 20%);
-  stroke: @color-green;
+  fill: fade(@color-success, 20%);
+  stroke: @color-success;
   opacity: 1;
 }
 @THEME .cp-wdl-task[data-taskstatus=success] text {
-  fill: @color-green;
+  fill: @color-success;
 }
 @THEME .cp-wdl-task[data-taskstatus=stopped] rect {
   fill: @card-background-color;
@@ -1839,18 +1839,18 @@ export default `
   fill: @application-color-faded;
 }
 @THEME .cp-wdl-task[data-taskstatus=failure] rect {
-  fill: fade(@color-red, 20%);
-  stroke: @color-red;
+  fill: fade(@color-error, 20%);
+  stroke: @color-error;
   opacity: 1;
 }
 @THEME .cp-wdl-task[data-taskstatus=failure] text {
-  fill: @color-red;
+  fill: @color-error;
 }
 @THEME .cp-stop-run-modal-confirm-icon {
   color: @color-yellow;
 }
 @THEME .cp-maintenance-rule-deleted {
-  background-color: fade(@color-red, 10%);
+  background-color: fade(@color-error, 10%);
 }
 @THEME .ant-input.cp-system-parameter-name-input {
   color: @application-color-accent;
