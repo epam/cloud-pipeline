@@ -1572,10 +1572,7 @@ def stop_tunnel(host_id, local_port, timeout_stop, force, ignore_owner, log_leve
         pipe tunnel stop -lp 4567 12345
 
     """
-    def _parse_tunnel_args(args):
-        with return_tunnel_args.make_context('start', args) as ctx:
-            return return_tunnel_args.invoke(ctx)
-    kill_tunnels(host_id, local_port, timeout_stop, force, ignore_owner, log_level, _parse_tunnel_args)
+    kill_tunnels(host_id, local_port, timeout_stop, force, ignore_owner, log_level, parse_tunnel_args)
 
 
 def start_tunnel_options(decorating_func):
@@ -1639,6 +1636,14 @@ def start_tunnel_options(decorating_func):
 @start_tunnel_options
 def return_tunnel_args(*args, **kwargs):
     return kwargs
+
+
+def parse_tunnel_args(args):
+    with return_tunnel_args.make_context('start', args,
+                                         ignore_unknown_options=True,
+                                         allow_extra_args=True,
+                                         resilient_parsing=True) as ctx:
+        return return_tunnel_args.invoke(ctx)
 
 
 @tunnel.command(name='start')
@@ -1727,14 +1732,11 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
-    def _parse_tunnel_args(args):
-        with return_tunnel_args.make_context('start', args) as ctx:
-            return return_tunnel_args.invoke(ctx)
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
-                  retries, region, _parse_tunnel_args)
+                  retries, region, parse_tunnel_args)
 
 
 @tunnel.command(name='list')
@@ -1751,10 +1753,7 @@ def view_tunnels(log_level):
         pipe tunnel list
 
     """
-    def _parse_tunnel_args(args):
-        with return_tunnel_args.make_context('start', args) as ctx:
-            return return_tunnel_args.invoke(ctx)
-    list_tunnels(log_level, _parse_tunnel_args)
+    list_tunnels(log_level, parse_tunnel_args)
 
 
 @cli.command(name='update')
