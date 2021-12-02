@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import collections
+import errno
+from contextlib import closing
 
 import click
 import itertools
@@ -50,6 +52,9 @@ TUNNEL_CONFLICT_ARGS = ['-ke', '--keep-existing',
                         '-ks', '--keep-same',
                         '-re', '--replace-existing',
                         '-rd', '--replace-different']
+TUNNEL_FOREGROUND_ARGS = ['--foreground']
+TUNNEL_IGNORE_EXISTING_ARGS = ['--ignore-existing']
+UNKNOWN_USER = 'unknown'
 
 run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner '
                                                     'sensitive platform parameters')
@@ -133,15 +138,24 @@ class TunnelArgs:
         return True
 
 
+class SystemProcess:
+
+    def __init__(self, pid=None, ppid=None, owner=None, args=None):
+        self.pid = pid
+        self.ppid = ppid
+        self.owner = owner
+        self.args = args or []
+
+
 class TunnelProcess:
 
-    def __init__(self, proc, args, parsed_args):
-        self.pid = proc.pid
-        self.ppid = proc.ppid()
-        self.owner = proc.username()
+    def __init__(self, pid=None, ppid=None, owner=None, args=None, proc=None, parsed_args=None):
+        self.pid = pid
+        self.ppid = ppid
+        self.owner = owner
+        self.args = args or []
         self.proc = proc
-        self.args = args
-        self.parsed_args = parsed_args
+        self.parsed_args = parsed_args or {}
 
 
 def setup_paramiko_logging():
@@ -444,7 +458,7 @@ def parse_scp_location(location):
 def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
-                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
+                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                   retries, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if not local_ports_str and not remote_ports_str:
@@ -465,10 +479,12 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
     run_id = parse_run_identifier(host_id)
     if not run_id and ssh:
         raise RuntimeError('Option -s/--ssh can be used only for run tunnels.')
-    check_existing_tunnels(host_id, local_ports, remote_ports,
-                           ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
-                           keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
-                           retries, parse_tunnel_args)
+    if not ignore_existing:
+        check_existing_tunnels(host_id, local_ports, remote_ports,
+                               ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
+                               keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
+                               retries, parse_tunnel_args)
+        check_local_ports(local_ports)
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
                              ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
@@ -545,7 +561,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                                               current_owner=get_current_user(),
                                               pipe_command=get_current_pipe_command(),
                                               local_ports=stringify_ports(existing_tunnel_args.local_ports)))
-            kill_process(existing_tunnel.proc, timeout_stop)
+            kill_tunnel(existing_tunnel.proc, existing_tunnel_args.local_ports, timeout_stop)
             continue
         if keep_existing:
             logging.info('Skipping tunnel establishing because the tunnel already exists...')
@@ -570,7 +586,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                                           current_owner=get_current_user(),
                                           pipe_command=get_current_pipe_command(),
                                           local_ports=stringify_ports(existing_tunnel_args.local_ports)))
-            kill_process(existing_tunnel.proc, timeout_stop)
+            kill_tunnel(existing_tunnel.proc, existing_tunnel_args.local_ports, timeout_stop)
             continue
         if keep_same and is_same_tunnel:
             logging.info('Skipping tunnel establishing because the same tunnel already exists...')
@@ -630,6 +646,46 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                                   '{pipe_command} tunnel stop -lp {local_ports} \n'
                                   .format(pipe_command=get_current_pipe_command(),
                                           local_ports=stringify_ports(existing_tunnel_args.local_ports)))
+
+
+def check_local_ports(local_ports):
+    procs_by_local_ports = get_procs_by_local_ports(local_ports)
+    occupied_local_ports = [local_port for local_port in find_local_ports_which_cannot_be_occupied(local_ports)
+                            if local_port not in procs_by_local_ports]
+    err_msgs = []
+    for local_port, proc in procs_by_local_ports.items():
+        if proc.pid:
+            err_msgs.append('Local port {} is occupied by process #{} with parent #{} owned by {} ({}).'
+                            .format(local_port, proc.pid, proc.ppid or '-', proc.owner or '-',
+                                    ' '.join(proc.args) or '-'))
+        else:
+            err_msgs.append('Local port {} is occupied by another process or is not allowed.'.format(local_port))
+    for local_port in occupied_local_ports:
+        err_msgs.append('Local port {} is occupied by another process or is not allowed.'.format(local_port))
+    if err_msgs:
+        raise TunnelError('Some of the local ports cannot be used: \n'
+                          ' - {}\n\n'
+                          'You can either specify other local ports to use for the tunnel '
+                          'or stop the processes which occupy the required local ports.\n'
+                          .format('\n - '.join(err_msgs)))
+
+
+def find_local_ports_which_cannot_be_occupied(local_ports):
+    logging.info('Trying to occupy local ports...')
+    for local_port in local_ports:
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
+            try:
+                server_socket.bind((os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0'), local_port))
+            except Exception:
+                logging.debug('Local port %s is occupied or not allowed.', local_port, exc_info=sys.exc_info())
+                yield local_port
+
+
+def get_procs_by_local_ports(local_ports):
+    procs_by_local_ports = {}
+    for local_port, proc in find_serving_procs(local_ports):
+        procs_by_local_ports[local_port] = proc
+    return procs_by_local_ports
 
 
 def get_current_pipe_command():
@@ -719,7 +775,9 @@ def create_background_tunnel(local_ports, remote_ports, remote_host, log_file, l
             import pty
             _, stdin = pty.openpty()
         sys_args = [sys_arg for sys_arg in sys.argv if sys_arg not in TUNNEL_CONFLICT_ARGS]
-        executable = sys_args + ['-f'] if is_frozen() else [sys.executable] + sys_args + ['-f']
+        executable = sys_args if is_frozen() else [sys.executable] + sys_args
+        executable += TUNNEL_FOREGROUND_ARGS
+        executable += TUNNEL_IGNORE_EXISTING_ARGS
         tunnel_proc = subprocess.Popen(executable, stdin=stdin, stdout=output, stderr=subprocess.STDOUT,
                                        cwd=os.getcwd(), env=os.environ.copy(), creationflags=creationflags)
         if stdin:
@@ -729,10 +787,7 @@ def create_background_tunnel(local_ports, remote_ports, remote_host, log_file, l
 
 def wait_for_background_tunnel(tunnel_proc, local_ports, timeout, polling_delay=1):
     attempts = int(timeout / polling_delay)
-    is_tunnel_ready = is_tunnel_ready_on_lin
-    is_tunnel_ready = is_tunnel_ready_on_mac if is_mac() else is_tunnel_ready
-    is_tunnel_ready = is_tunnel_ready_on_win if is_windows() else is_tunnel_ready
-    logging.debug('Waiting for tunnel process %s to listen on all the required ports...', tunnel_proc.pid)
+    logging.info('Waiting for tunnel process #%s to listen all the required ports...', tunnel_proc.pid)
     while attempts > 0:
         time.sleep(polling_delay)
         if tunnel_proc.poll() is not None:
@@ -750,70 +805,88 @@ def wait_for_background_tunnel(tunnel_proc, local_ports, timeout, polling_delay=
                        .format(timeout))
 
 
-def is_tunnel_ready_on_mac(tunnel_pid, local_ports):
-    listening_pids = list(get_listening_pids_on_mac(local_ports))
-    return is_tunnel_listen_all_ports(tunnel_pid, local_ports, listening_pids)
+def is_tunnel_ready(tunnel_pid, local_ports):
+    serving_procs = list(find_serving_procs(local_ports))
+    return is_tunnel_listen_all_ports(tunnel_pid, local_ports, serving_procs)
 
 
-def get_listening_pids_on_mac(local_ports):
-    # psutil.net_connections() is not allowed to a regular user on mac
+def find_serving_procs(local_ports):
+    return find_serving_procs_on_mac(local_ports) if is_mac() else find_serving_procs_on_lin_and_win(local_ports)
+
+
+def find_serving_procs_on_mac(local_ports):
+    logging.info('Searching for processes listening local ports...')
+    procs_by_pid = {}
     for local_port in local_ports:
         listening_pid = get_trimmed_digit_str(perform_command(['lsof', '-t',
                                                                '-i', 'TCP:' + str(local_port),
                                                                '-s', 'TCP:LISTEN'],
                                                               fail_on_error=False))
         if listening_pid:
-            yield listening_pid
+            yield local_port, get_or_set(procs_by_pid, listening_pid, get_proc_details)
+
+
+def find_serving_procs_on_lin_and_win(local_ports):
+    import psutil
+    logging.info('Searching for processes listening local ports...')
+    procs_by_pid = {}
+    for net_connection in psutil.net_connections():
+        if net_connection.laddr and net_connection.laddr.port in local_ports:
+            if net_connection.pid:
+                yield net_connection.laddr.port, get_or_set(procs_by_pid, net_connection.pid, get_proc_details)
+            else:
+                yield net_connection.laddr.port, SystemProcess()
+
+
+def get_or_set(values, key, get_value):
+    value = values.get(key)
+    if not value:
+        values[key] = value = get_value(key)
+    return value
+
+
+def get_proc_details(listening_pid):
+    import psutil
+    try:
+        proc = psutil.Process(listening_pid)
+        proc_ppid = proc.ppid()
+        proc_owner = UNKNOWN_USER
+        try:
+            proc_owner = proc.username()
+        except Exception:
+            logging.debug('Process #%s owner retrieval has failed.', listening_pid,
+                          exc_info=sys.exc_info())
+            return SystemProcess(pid=listening_pid, ppid=proc_ppid, owner=proc_owner)
+        try:
+            proc_args = proc.cmdline()
+        except psutil.AccessDenied:
+            logging.debug('Process #%s details access is denied.', proc.pid)
+            return SystemProcess(pid=listening_pid, ppid=proc_ppid, owner=proc_owner)
+        logging.info('Process #%s details were retrieved (%s).', proc.pid, ' '.join(proc_args))
+        return SystemProcess(pid=listening_pid, ppid=proc_ppid, owner=proc_owner, args=proc_args)
+    except Exception:
+        logging.debug('Process #%s details retrieval has failed.', listening_pid,
+                      exc_info=sys.exc_info())
+        return SystemProcess(pid=listening_pid)
 
 
 def get_trimmed_digit_str(digit_str):
     return int(digit_str.strip()) if digit_str and digit_str.strip().isdigit() else None
 
 
-def is_tunnel_ready_on_lin(tunnel_pid, local_ports):
-    listening_pids = list(get_listening_pids_on_lin_and_win(local_ports))
-    return is_tunnel_listen_all_ports(tunnel_pid, local_ports, listening_pids)
-
-
-def is_tunnel_ready_on_win(tunnel_pid, local_ports):
-    listening_pids = list(get_listening_pids_on_lin_and_win(local_ports))
-    listening_pid = get_single_listening_pid(local_ports, listening_pids)
-    if not listening_pid:
+def is_tunnel_listen_all_ports(tunnel_pid, local_ports, serving_procs):
+    if len(serving_procs) != len(local_ports):
+        logging.debug('Waiting for all required ports (%s/%s) to be listened...',
+                      len(serving_procs), len(local_ports))
         return False
-    logging.debug('Found a process %s that listens all required ports.', listening_pid)
-    return listening_pid == tunnel_pid
-
-
-def get_listening_pids_on_lin_and_win(local_ports):
-    import psutil
-    for net_connection in psutil.net_connections():
-        if net_connection.laddr and net_connection.laddr.port in local_ports:
-            yield net_connection.pid
-
-
-def is_tunnel_listen_all_ports(tunnel_pid, local_ports, listening_pids):
-    listening_pid = get_single_listening_pid(local_ports, listening_pids)
-    if not listening_pid:
-        return False
-    listening_parent_pid = get_parent_pid(listening_pid)
-    logging.debug('Found a process %s and its parent %s that listen all required ports.',
-                  listening_pid, listening_parent_pid or '-')
-    return tunnel_pid in [listening_pid, listening_parent_pid]
-
-
-def get_single_listening_pid(local_ports, listening_pids):
-    if len(listening_pids) != len(local_ports):
-        logging.debug('Waiting for all required ports (%s/%s) to be listened...', len(listening_pids), len(local_ports))
-        return None
-    if len(set(listening_pids)) != 1:
+    serving_proc_pids = [proc.pid for local_port, proc in serving_procs]
+    if len(set(serving_proc_pids)) != 1:
         logging.debug('Waiting for a single process to listen all required ports...')
-        return None
-    return listening_pids[0]
-
-
-def get_parent_pid(pid):
-    import psutil
-    return psutil.Process(pid).ppid() if pid else 0
+        return False
+    _, serving_proc = serving_procs[0]
+    logging.debug('Found a process #%s and its parent #%s that listen all required ports.',
+                  serving_proc.pid or '-', serving_proc.ppid or '-')
+    return tunnel_pid in [serving_proc.pid, serving_proc.ppid]
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
@@ -1000,9 +1073,14 @@ def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeo
 def serve_local_ports(local_ports):
     for local_port in local_ports:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind((os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0'), local_port))
-        server_socket.listen(5)
-        yield server_socket
+        try:
+            server_socket.bind((os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0'), local_port))
+            server_socket.listen(5)
+            yield server_socket
+        except Exception:
+            server_socket.close()
+            logging.debug('Local port %s is occupied or not allowed.', local_port, exc_info=sys.exc_info())
+            raise TunnelError('Local port {} is occupied or not allowed.'.format(local_port))
 
 
 def configure_graceful_exiting():
@@ -1357,8 +1435,7 @@ def kill_tunnels(host_id, local_ports_str, timeout_stop, force, ignore_owner, lo
                           'because it has %s owner but %s owner is required...',
                           tunnel.pid, tunnel.owner, get_current_user())
             continue
-        logging.info('Killing tunnel process #%s...', tunnel.pid)
-        kill_process(tunnel.proc, timeout_stop, force)
+        kill_tunnel(tunnel.proc, tunnel_args.local_ports, timeout_stop, force)
 
 
 def list_tunnels(log_level, parse_tunnel_args):
@@ -1398,30 +1475,43 @@ def find_tunnels(parse_tunnel_args):
     logging.info('Searching for tunnel processes...')
     current_pids = get_current_pids()
     for proc in psutil.process_iter():
-        proc_name = proc.name()
-        if PIPE_PROC_SUBSTR not in proc_name \
-                and PYTHON_PROC_SUBSTR not in proc_name:
-            continue
-        if proc.pid in current_pids:
-            logging.debug('Skipping process #%s because it is current process or its parent...', proc.pid)
-            continue
+        proc_pid = proc.pid
         try:
-            proc_args = proc.cmdline()
-        except psutil.AccessDenied:
-            logging.debug('Skipping process #%s because its details access is denied...', proc.pid)
-            continue
-        if PYTHON_PROC_SUBSTR in proc_name \
-                and not any(proc_arg.endswith(PIPE_SCRIPT_NAME) for proc_arg in proc_args):
-            continue
-        if not all(required_arg in proc_args for required_arg in TUNNEL_REQUIRED_ARGS):
-            logging.debug('Skipping process #%s because it is not pipe tunnel process...', proc.pid)
-            continue
-        proc_parsed_args = parse_tunnel_proc_args(proc_args, parse_tunnel_args)
-        if not proc_parsed_args:
-            logging.debug('Skipping process #%s because its arguments cannot be parsed...', proc.pid)
-            continue
-        logging.info('Tunnel process #%s was found (%s).', proc.pid, ' '.join(proc_args))
-        yield TunnelProcess(proc, proc_args, proc_parsed_args)
+            proc_name = proc.name()
+            if PIPE_PROC_SUBSTR not in proc_name \
+                    and PYTHON_PROC_SUBSTR not in proc_name:
+                continue
+            if proc_pid in current_pids:
+                logging.debug('Skipping process #%s because it is current process or its parent...', proc_pid)
+                continue
+            try:
+                proc_args = proc.cmdline()
+            except psutil.AccessDenied:
+                logging.debug('Skipping process #%s because its details access is denied...', proc_pid)
+                continue
+            if PYTHON_PROC_SUBSTR in proc_name \
+                    and not any(proc_arg.endswith(PIPE_SCRIPT_NAME) for proc_arg in proc_args):
+                continue
+            if not all(required_arg in proc_args for required_arg in TUNNEL_REQUIRED_ARGS):
+                logging.debug('Skipping process #%s because it is not pipe tunnel process...', proc_pid)
+                continue
+            proc_parsed_args = parse_tunnel_proc_args(proc_args, parse_tunnel_args)
+            if not proc_parsed_args:
+                logging.debug('Skipping tunnel process #%s because its arguments cannot be parsed...', proc_pid)
+                continue
+            logging.info('Tunnel process #%s was found (%s).', proc_pid, ' '.join(proc_args))
+            proc_ppid = proc.ppid()
+            proc_owner = UNKNOWN_USER
+            try:
+                proc_owner = proc.username()
+            except Exception:
+                logging.debug('Tunnel process #%s owner retrieval has failed. Using default user instead...', proc_pid,
+                              exc_info=sys.exc_info())
+            yield TunnelProcess(pid=proc_pid, ppid=proc_ppid, owner=proc_owner, args=proc_args,
+                                proc=proc, parsed_args=proc_parsed_args)
+        except Exception:
+            logging.debug('Skipping process #%s because its details retrieval has failed.', proc_pid,
+                          exc_info=sys.exc_info())
 
 
 def get_current_pids():
@@ -1445,7 +1535,13 @@ def parse_tunnel_proc_args(proc_args, parse_start_tunnel_arguments):
     return {}
 
 
-def kill_process(proc, timeout, force=False):
+def kill_tunnel(proc, local_ports, timeout, force=False):
+    logging.info('Killing tunnel process #%s...', proc.pid)
+    kill_process(proc, timeout, force)
+    wait_for_local_ports(local_ports, timeout)
+
+
+def kill_process(proc, timeout, force):
     import psutil
     import signal
     if is_windows():
@@ -1459,6 +1555,20 @@ def kill_process(proc, timeout, force=False):
             send_signal_to_process(proc, signal.SIGKILL, timeout)
 
 
+def wait_for_local_ports(local_ports, timeout, polling_delay=1):
+    attempts = int(timeout / polling_delay)
+    logging.info('Waiting for %s local ports to become unoccupied...', stringify_ports(local_ports))
+    while attempts > 0:
+        time.sleep(polling_delay)
+        if not list(find_local_ports_which_cannot_be_occupied(local_ports)):
+            logging.info('Local ports %s are not occupied anymore.', stringify_ports(local_ports))
+            return
+        logging.debug('Local ports %s are still occupied. '
+                      'Only %s attempts remain left...', stringify_ports(local_ports), attempts)
+        attempts -= 1
+    raise TunnelError('Local ports are still occupied after {} seconds.'.format(timeout))
+
+
 def send_signal_to_process(proc, signal, timeout):
     if proc.is_running():
         proc.send_signal(signal)
@@ -1466,31 +1576,15 @@ def send_signal_to_process(proc, signal, timeout):
 
 
 def run_scp_upload(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None):
-    transport = None
-    scp = None
-    try:
-        transport = setup_authenticated_paramiko_transport(run_id, user, retries)
-        scp = SCPClient(transport, progress=None if quiet else build_scp_progress())
-        scp.put(source, destination, recursive=recursive)
-    finally:
-        if scp:
-            scp.close()
-        if transport:
-            transport.close()
+    with closing(setup_authenticated_paramiko_transport(run_id, user, retries)) as transport:
+        with closing(SCPClient(transport, progress=None if quiet else build_scp_progress())) as scp:
+            scp.put(source, destination, recursive=recursive)
 
 
 def run_scp_download(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None):
-    transport = None
-    scp = None
-    try:
-        transport = setup_authenticated_paramiko_transport(run_id, user, retries)
-        scp = SCPClient(transport, progress=None if quiet else build_scp_progress())
-        scp.get(source, destination, recursive=recursive)
-    finally:
-        if scp:
-            scp.close()
-        if transport:
-            transport.close()
+    with closing(setup_authenticated_paramiko_transport(run_id, user, retries)) as transport:
+        with closing(SCPClient(transport, progress=None if quiet else build_scp_progress())) as scp:
+            scp.get(source, destination, recursive=recursive)
 
 
 def build_scp_progress():
