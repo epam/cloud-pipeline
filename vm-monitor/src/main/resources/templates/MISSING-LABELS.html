@@ -38,7 +38,7 @@
     <tr><td><b>Node</b></td><td><b>Missing labels</b></td></tr>
     #foreach( $summary in $templateParameters["missingLabelsSummaries"] )
     <tr>
-        <td>$summary.node.name</td>
+        <td>$summary.nodeName</td>
         <td>
             #foreach( $label in $summary.labels )
             $label<br>

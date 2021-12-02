@@ -69,9 +69,8 @@ public class VMNotifier {
         missingNodes.add(vm);
     }
 
-    public void queueMissingLabelsNotification(final VirtualMachine vm, final NodeInstance node,
-                                               final List<String> labels) {
-        missingLabelsSummaries.add(new MissingLabelsSummary(vm, node, labels));
+    public void queueMissingLabelsNotification(final NodeInstance node, final List<String> labels) {
+        missingLabelsSummaries.add(new MissingLabelsSummary(node.getName(), labels));
     }
 
     private void notifyOnQueuedElements(final String emailSubject, final String emailTemplatePath,

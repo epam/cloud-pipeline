@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.vmmonitor.model.vm;
 
-import com.epam.pipeline.entity.cluster.NodeInstance;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -26,7 +25,6 @@ import java.util.List;
 @Getter
 public class MissingLabelsSummary {
 
-    private final VirtualMachine vm;
-    private final NodeInstance node;
+    private final String nodeName;
     private final List<String> labels;
 }
