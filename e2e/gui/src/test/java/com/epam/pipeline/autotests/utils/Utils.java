@@ -122,6 +122,14 @@ public class Utils {
         action.perform();
     }
 
+    public static void selectAllAndClearTextField(final SelenideElement field) {
+        sleep(500, MILLISECONDS);
+        String selectAll = Keys.chord(Keys.CONTROL, "a");
+        final Actions action = actions().moveToElement(field).click().sendKeys(selectAll)
+                .sendKeys(Keys.DELETE);
+        action.perform();
+    }
+
     public static void sendKeysWithSlashes(final String text) {
         //////////////////////////////////////////////////////////////////////////
         // ! WARNING: there is robot to fix forward slashed issue

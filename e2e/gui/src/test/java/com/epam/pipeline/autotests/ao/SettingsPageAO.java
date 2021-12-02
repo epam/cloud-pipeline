@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.UnaryOperator;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -1199,6 +1200,24 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public PreferencesAO updateCodeText(final String preference, final String value, final boolean eyeIsChecked) {
+            searchPreference(preference);
+            final SelenideElement editor = $(byClassName("CodeMirror-code"));
+//            click(byClassName("CodeMirror-lines"));
+            selectAllAndClearTextField(editor);
+//            final int codeLength = editor.innerText().length();
+//            final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
+//            final Actions action = actions().moveToElement(mirrorLine).click();
+//            for (int i = 0; i < codeLength; i++) {
+//                action.sendKeys("\b").sendKeys(Keys.DELETE);
+//            }
+//            action.perform();
+            clickAndSendKeysWithSlashes(editor, value);
+            deleteExtraBrackets(editor, 500);
+            setEyeOption(eyeIsChecked);
+            return this;
+        }
+
         public String[] getLinePreference(String preference) {
             searchPreference(preference);
             String[] prefValue = new String[2];
@@ -1580,6 +1599,33 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public LaunchAO checkLaunchContainerCpuResource(final String value) {
                 ensure(getByField(LAUNCH_CONTAINER_CPU_RESOURCES), value(value));
+                return this;
+            }
+
+            public String getLaunchSystemParameters() {
+                return $$(byClassName("preference-group__preference-row")).stream()
+                        .map(SelenideElement::getText)
+                        .filter(e -> e.startsWith(LAUNCH_PARAMETERS))
+                        .map(e -> e.replaceAll("\\n[0-9]*\\n", "\n")
+                                .replaceFirst(LAUNCH_PARAMETERS + "\n", ""))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
+            }
+
+            public LaunchAO setLaunchSystemParameters(final UnaryOperator<String> action) {
+                final String launchSystemParameters = getLaunchSystemParameters();
+                final String edited = action.apply(launchSystemParameters);
+                if (launchSystemParameters.equals(edited)) {
+                    return this;
+                }
+                final SelenideElement launchSystemParameter = $$(byClassName("preference-group__preference-row")).stream()
+                        .filter(s -> s.getText().startsWith(LAUNCH_PARAMETERS))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
                 return this;
             }
         }
