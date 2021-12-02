@@ -502,6 +502,10 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
         creating_tunnel_args = TunnelArgs(host_id=host_id, local_ports=local_ports, remote_ports=remote_ports,
                                           ssh=ssh, ssh_path=ssh_path, ssh_host=ssh_host, direct=direct)
         if not any(local_port in creating_tunnel_args.local_ports for local_port in existing_tunnel_args.local_ports):
+            logging.debug('Skipping tunnel process #%s '
+                          'because it has %s local ports but %s local ports are required...',
+                          existing_tunnel.pid, stringify_ports(existing_tunnel_args.local_ports),
+                          stringify_ports(local_ports))
             continue
         logging.info('Comparing the existing tunnel with the creating tunnel...')
         is_same_tunnel = creating_tunnel_args.compare(existing_tunnel_args)
@@ -513,13 +517,27 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
             if not ignore_owner and has_different_owner(existing_tunnel.owner):
                 if is_same_tunnel:
                     raise TunnelError('Same tunnel already exists '
-                                      'and it cannot be replaced because it has different {} owner.'
-                                      .format(get_current_user()))
+                                      'and it cannot be replaced because it was launched by {tunnel_owner} user '
+                                      'which is not the same as the current user {current_owner}. \n\n'
+                                      'Normally there is no need to replace the same tunnel but if it is required '
+                                      'and if you have sufficient permissions you can stop the existing tunnel '
+                                      'by executing the following command once. \n\n'
+                                      '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
+                                      .format(tunnel_owner=existing_tunnel.owner,
+                                              current_owner=get_current_user(),
+                                              pipe_command=get_current_pipe_command(),
+                                              local_ports=stringify_ports(local_ports)))
                 else:
-                    raise TunnelError('Different tunnel already exists on the same {} local ports '
-                                      'and it cannot be replaced because it has different {} owner.'
-                                      .format(stringify_ports(existing_tunnel_args.local_ports),
-                                              get_current_user()))
+                    raise TunnelError('Different tunnel already exists on {local_ports} local ports '
+                                      'and it cannot be replaced because it was launched by {tunnel_owner} user '
+                                      'which is not the same as the current user {current_owner}. \n\n'
+                                      'If you have sufficient permissions you can stop the existing tunnel '
+                                      'by executing the following command once. \n\n'
+                                      '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
+                                      .format(tunnel_owner=existing_tunnel.owner,
+                                              current_owner=get_current_user(),
+                                              pipe_command=get_current_pipe_command(),
+                                              local_ports=stringify_ports(existing_tunnel_args.local_ports)))
             kill_process(existing_tunnel.proc, timeout_stop)
             continue
         if keep_existing:
@@ -533,10 +551,16 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
         if replace_different and not is_same_tunnel:
             logging.info('Trying to replace the existing tunnel because it is different...')
             if not ignore_owner and has_different_owner(existing_tunnel.owner):
-                raise TunnelError('Different tunnel already exists on the same {} local ports '
-                                  'and it cannot be replaced because it has different {} owner.'
-                                  .format(stringify_ports(existing_tunnel_args.local_ports),
-                                          get_current_user()))
+                raise TunnelError('Different tunnel already exists on {local_ports} local ports '
+                                  'and it cannot be replaced because it was launched by {tunnel_owner} user '
+                                  'which is not the same as the current user {current_owner}. \n\n'
+                                  'If you have sufficient permissions you can stop the existing tunnel '
+                                  'by executing the following command once. \n\n'
+                                  '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
+                                  .format(tunnel_owner=existing_tunnel.owner,
+                                          current_owner=get_current_user(),
+                                          pipe_command=get_current_pipe_command(),
+                                          local_ports=stringify_ports(existing_tunnel_args.local_ports)))
             kill_process(existing_tunnel.proc, timeout_stop)
             continue
         if keep_same and is_same_tunnel:
@@ -548,20 +572,24 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                               log_file, retries)
             sys.exit(0)
         if is_same_tunnel:
-            raise TunnelError('Same tunnel already exists.')
+            raise TunnelError('Same tunnel already exists. \n\n'
+                              'Normally there is no need to replace the same tunnel but if it is required '
+                              'you can stop the existing tunnel '
+                              'by executing the following command once. \n\n'
+                              '{pipe_command} tunnel stop -lp {local_ports} \n'
+                              .format(pipe_command=get_current_pipe_command(),
+                                      local_ports=stringify_ports(existing_tunnel_args.local_ports)))
         else:
-            raise TunnelError('Different tunnel already exists on the same {} local ports.'
-                              .format(stringify_ports(existing_tunnel_args.local_ports)))
+            raise TunnelError('Different tunnel already exists on {local_ports} local ports. \n\n'
+                              'You can stop the existing tunnel '
+                              'by executing the following command once. \n\n'
+                              '{pipe_command} tunnel stop -lp {local_ports} \n'
+                              .format(pipe_command=get_current_pipe_command(),
+                                      local_ports=stringify_ports(existing_tunnel_args.local_ports)))
 
 
-def parse_tunnel_proc_args(proc_args, parse_start_tunnel_arguments):
-    try:
-        for i in range(len(proc_args)):
-            if proc_args[i] == 'start':
-                return parse_start_tunnel_arguments(proc_args[i + 1:])
-    except Exception:
-        logging.debug('Existing tunnel process arguments parsing has failed.', exc_info=sys.exc_info())
-    return {}
+def get_current_pipe_command():
+    return sys.argv[0] if is_frozen() else (sys.executable + ' ' + sys.argv[0])
 
 
 def has_different_owner(username):
@@ -1361,6 +1389,16 @@ def get_current_pids():
     except psutil.NoSuchProcess:
         pass
     return current_pids
+
+
+def parse_tunnel_proc_args(proc_args, parse_start_tunnel_arguments):
+    try:
+        for i in range(len(proc_args)):
+            if proc_args[i] == 'start':
+                return parse_start_tunnel_arguments(proc_args[i + 1:])
+    except Exception:
+        logging.debug('Existing tunnel process arguments parsing has failed.', exc_info=sys.exc_info())
+    return {}
 
 
 def kill_process(proc, timeout, force=False):
