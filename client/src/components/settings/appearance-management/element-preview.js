@@ -117,6 +117,14 @@ class ElementPreview extends React.Component {
             Card content
           </div>
         </div>
+        <div className={classNames('cp-panel-card cp-card-service', styles.card)}>
+          <div className="cp-panel-card-title">
+            Service card title
+          </div>
+          <div className="cp-panel-card-sub-text">
+            Service card content
+          </div>
+        </div>
       </div>
     </div>
   );

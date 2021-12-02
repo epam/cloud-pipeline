@@ -93,15 +93,11 @@ const input = [
   Variables.inputBorder,
   Variables.inputPlaceholderColor,
   {
-    key: Variables.inputBorderHoverColor,
-    advanced: true
-  }, {
     key: Variables.inputAddon,
     advanced: true
-  },
-  {
+  }, {
     key: Variables.inputBackgroundDisabled,
-    adnaved: true
+    adnavced: true
   }
 ];
 

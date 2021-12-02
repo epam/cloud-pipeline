@@ -57,7 +57,7 @@ export default {
     '@input-color': '@application-color',
     '@input-placeholder-color': 'fadeout(@application-color, 40%)',
     '@input-border-hover-color': '@primary-hover-color',
-    '@input-shadow-color': 'rgba(180, 188, 196, 0.05)',
+    '@input-shadow-color': 'fade(@input-border-hover-color, 10%)',
     '@input-search-icon-color': 'rgba(180, 188, 196, 0.3)',
     '@input-search-icon-hovered-color': '@primary-hover-color',
     '@panel-background-color': 'rgb(23, 27, 33)',

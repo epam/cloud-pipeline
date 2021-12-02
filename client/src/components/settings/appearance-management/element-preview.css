@@ -35,12 +35,12 @@
 .panel {
   min-width: 200px;
   padding: 10px;
-  padding-left: 15%;
+  padding-left: 3%;
 }
 
 .card {
   padding: 10px;
-  width: 70%;
+  width: 90%;
 }
 
 .input {
