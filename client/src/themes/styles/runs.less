@@ -25,15 +25,15 @@
 }
 
 .cp-runs-table-icon-blue {
-  color: @color-blue;
+  color: @color-info;
 }
 
 .cp-runs-table-icon-red {
-  color: @color-red;
+  color: @color-error;
 }
 
 .cp-runs-table-icon-yellow {
-  color: @color-yellow;
+  color: @color-warning;
 }
 
 .cp-filter-popover-container {
@@ -102,22 +102,22 @@
 }
 
 .cp-wdl-task[data-taskstatus=running] rect {
-  fill: fade(@color-blue, 20%);
-  stroke: @color-blue;
+  fill: fade(@color-info, 20%);
+  stroke: @color-info;
 }
 
 .cp-wdl-task[data-taskstatus=running] text {
-  fill: @color-blue;
+  fill: @color-info;
 }
 
 .cp-wdl-task[data-taskstatus=success] rect {
-  fill: fade(@color-green, 20%);
-  stroke: @color-green;
+  fill: fade(@color-success, 20%);
+  stroke: @color-success;
   opacity: 1;
 }
 
 .cp-wdl-task[data-taskstatus=success] text {
-  fill: @color-green;
+  fill: @color-success;
 }
 
 .cp-wdl-task[data-taskstatus=stopped] rect {
@@ -131,13 +131,13 @@
 }
 
 .cp-wdl-task[data-taskstatus=failure] rect {
-  fill: fade(@color-red, 20%);
-  stroke: @color-red;
+  fill: fade(@color-error, 20%);
+  stroke: @color-error;
   opacity: 1;
 }
 
 .cp-wdl-task[data-taskstatus=failure] text {
-  fill: @color-red;
+  fill: @color-error;
 }
 
 .cp-stop-run-modal-confirm-icon {
@@ -145,7 +145,7 @@
 }
 
 .cp-maintenance-rule-deleted {
-  background-color: fade(@color-red, 10%);
+  background-color: fade(@color-error, 10%);
 }
 
 .ant-input.cp-system-parameter-name-input {

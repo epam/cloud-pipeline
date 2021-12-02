@@ -104,7 +104,12 @@ const input = [
 const main = [
   Variables.applicationBackgroundColor,
   Variables.panelBackgroundColor,
-  Variables.applicationColor
+  Variables.applicationColor,
+  {
+    key: Variables.backgroundImage,
+    advanced: true,
+    type: 'image'
+  }
 ];
 
 const menus = [
@@ -126,6 +131,13 @@ const navigation = [
   {key: Variables.navigationPanelColorImpersonated, advanced: true},
   {key: Variables.navigationPanelHighlightedColor, advanced: true},
   {key: Variables.navigationPanelHighlightedColorImpersonated, advanced: true}
+];
+
+const statuses = [
+  Variables.colorInfo,
+  Variables.colorSuccess,
+  Variables.colorWarning,
+  Variables.colorError
 ];
 
 const tables = [
@@ -151,6 +163,7 @@ const sections = {
   main: 'Main',
   menu: 'Menu',
   navigation: 'Navigation panel',
+  statuses: `Run's status`,
   tables: 'Tables'
 };
 
@@ -162,6 +175,7 @@ const sectionsConfiguration = {
   [sections.main]: main.map(mapConfiguration),
   [sections.menu]: menus.map(mapConfiguration),
   [sections.navigation]: navigation.map(mapConfiguration),
+  [sections.statuses]: statuses.map(mapConfiguration),
   [sections.tables]: tables.map(mapConfiguration)
 };
 
@@ -173,6 +187,7 @@ const orderedSections = [
   sections.tables,
   sections.buttons,
   sections.input,
+  sections.statuses,
   sections.alerts
 ];
 

@@ -227,7 +227,8 @@ h5 {
 .ant-input-number,
 .ant-input-number-input,
 .ant-input-number-handler-wrap,
-.cp-limit-mounts-input {
+.cp-limit-mounts-input,
+.ant-upload {
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
@@ -711,7 +712,7 @@ h5 {
 
 .ant-radio-button-wrapper,
 .ant-radio-inner {
-  background-color: @panel-background-color;
+  background-color: transparent;
   color: @application-color;
   border-color: @input-border;
 }
@@ -730,6 +731,10 @@ h5 {
 .ant-radio:hover .ant-radio-inner,
 .ant-radio-focused .ant-radio-inner {
   color: @primary-color;
+  border-color: @primary-color;
+}
+.ant-radio-inner::after {
+  background-color: @primary-color;
 }
 
 .ant-radio-button-wrapper-checked {

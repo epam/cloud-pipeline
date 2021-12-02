@@ -25,6 +25,10 @@ const Variables = {
   primaryActiveColor: '@primary-active-color',
   primaryTextColor: '@primary-text-color',
   primaryColorSemiTransparent: '@primary-color-semi-transparent',
+  colorSuccess: '@color-success',
+  colorError: '@color-error',
+  colorWarning: '@color-warning',
+  colorInfo: '@color-info',
   colorGreen: '@color-green',
   colorRed: '@color-red',
   colorYellow: '@color-yellow',
@@ -143,10 +147,10 @@ const ColorVariables = [
   Variables.primaryActiveColor,
   Variables.primaryTextColor,
   Variables.primaryColorSemiTransparent,
-  Variables.colorGreen,
-  Variables.colorRed,
-  Variables.colorYellow,
-  Variables.colorBlue,
+  Variables.colorSuccess,
+  Variables.colorError,
+  Variables.colorWarning,
+  Variables.colorInfo,
   Variables.colorViolet,
   Variables.colorSensitive,
   Variables.colorAqua,
@@ -239,6 +243,10 @@ const VariableNames = {
   [Variables.primaryActiveColor]: 'Primary action active color',
   [Variables.primaryTextColor]: 'Primary action text color',
   [Variables.primaryColorSemiTransparent]: 'Primary action semi-transparent color',
+  [Variables.colorSuccess]: 'Success status color',
+  [Variables.colorError]: 'Error status color',
+  [Variables.colorWarning]: 'Warning status color',
+  [Variables.colorInfo]: 'Info color',
   [Variables.colorGreen]: 'Green color',
   [Variables.colorRed]: 'Red color',
   [Variables.colorYellow]: 'Yellow color',
@@ -342,7 +350,7 @@ const VariableNames = {
   [Variables.codeBackgroundColor]: 'Code editor background color',
   [Variables.searchHighlightTextColor]: 'Search results: highlighted text color',
   [Variables.searchHighlightTextBackgroundColor]: 'Search results: highlighted text background',
-  [Variables.backgroundImage]: 'backgroundImage'
+  [Variables.backgroundImage]: 'Background Image'
 };
 
 const VariableDescriptions = {

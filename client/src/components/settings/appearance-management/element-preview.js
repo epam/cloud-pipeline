@@ -94,7 +94,6 @@ class ElementPreview extends React.Component {
       </div>
     );
   }
-
   renderMenu = () => (
     <div className={styles.container}>
       <Menu>

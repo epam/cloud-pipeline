@@ -67,7 +67,7 @@ function ThemeCard (
           </div>
           <div className="cp-theme-preview-navigation-menu-item selected"><Icon type="home" /></div>
           <div className="cp-theme-preview-navigation-menu-item"><Icon type="fork" /></div>
-          <div className="cp-runs-menu-item active"><Icon type="play-circle" /></div>
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}} className={classNames(styles.runIcon, 'cp-runs-menu-item active')}><Icon type="play-circle" /></div>
         </aside>
         <div style={{flex: '1 1 auto', display: 'flex', flexDirection: 'column'}}>
           <div className={styles.previewTopContainer}>
