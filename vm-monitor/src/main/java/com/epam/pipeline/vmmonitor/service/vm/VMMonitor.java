@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ public class VMMonitor {
     public void monitor() {
         ListUtils.emptyIfNull(apiClient.loadRegions())
                 .forEach(this::checkVMs);
+        notifier.sendNotifications();
     }
 
     @SuppressWarnings("unchecked")
@@ -107,7 +108,7 @@ public class VMMonitor {
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
                 if (!matchingRunExists(vm)) {
-                    notifier.notifyMissingNode(vm);
+                    notifier.queueMissingNodeNotification(vm);
                 }
             }
         } catch (Exception e) {
@@ -172,7 +173,7 @@ public class VMMonitor {
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
         final List<String> labels = getMissingLabels(node);
         if (CollectionUtils.isNotEmpty(labels)) {
-            notifier.notifyMissingLabels(vm, node, labels);
+            notifier.queueMissingLabelsNotification(node, labels);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }
