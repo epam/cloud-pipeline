@@ -14,5 +14,21 @@
     "endpoint_num_env": "CP_CAP_NM_PROXY_ENDPOINT_ID",
     "endpoint_num_default" : "0",
     "friendly_name" : "NoMachine"
+  },
+  {
+    "name": "CP_CAP_DCV_DESKTOP",
+    "endpoint_env": "CP_CAP_DCV_DESKTOP_PORT",
+    "endpoint_default" : "8099",
+    "endpoint_num_env": "CP_CAP_DCV_DESKTOP_ENDPOINT_ID",
+    "endpoint_num_default" : "0",
+    "friendly_name" : "NICE-DCV-DESKTOP"
+  },
+  {
+    "name": "CP_CAP_DCV_WEB",
+    "endpoint_env": "CP_CAP_DCV_WEB_PORT",
+    "endpoint_default" : "8443",
+    "endpoint_num_env": "CP_CAP_DCV_WEB_ENDPOINT_ID",
+    "endpoint_num_default" : "1",
+    "friendly_name" : "NICE-DCV-WEB"
   }
 ]
