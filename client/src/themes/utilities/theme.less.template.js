@@ -615,8 +615,8 @@ export default `
 @THEME .ant-btn-primary:hover,
 @THEME .ant-btn-primary:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-primary.active,
 @THEME .ant-btn-primary:active,
@@ -888,16 +888,16 @@ export default `
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
   background-color: fade(@panel-background-color, 100%);
-  color: @application-color;
+  color: @menu-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
-  border-color: @card-border-color;
+  border-color: @menu-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @card-border-color;
+  background-color: @menu-border-color;
 }
 @THEME .ant-select-selection__placeholder,
 @THEME .ant-select-selection__clear,
@@ -924,7 +924,7 @@ export default `
 }
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
-  color: @application-color;
+  color: @menu-color;
 }
 @THEME .ant-select-dropdown-menu-item.cp-danger,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger,
@@ -964,6 +964,12 @@ export default `
 @THEME .rc-dropdown-menu-item-disabled,
 @THEME .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
+}
+@THEME .rc-menu-item.rc-menu-item-selected {
+  background-color: fade(@panel-background-color, 100%);
+}
+@THEME .rc-menu-item.rc-menu-item-selected:hover {
+  background-color: @element-hover-background-color;
 }
 @THEME .ant-select-dropdown-menu-item-selected,
 @THEME .ant-select-dropdown-menu-item-selected:hover {
@@ -1204,8 +1210,8 @@ export default `
 @THEME .ant-calendar .ant-calendar-ok-btn:focus,
 @THEME .ant-calendar .ant-calendar-ok-btn:hover {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn.active,
 @THEME .ant-calendar .ant-calendar-ok-btn:active {
@@ -2098,7 +2104,7 @@ export default `
   background: @modal-mask-background;
 }
 @THEME .cp-search-preview {
-  background-color: fade(@card-background-color, 100%);
+  background-color: fade(@panel-background-color, 100%);
   border: 1px solid fade(@panel-border-color, 100%);
 }
 @THEME .cp-search-preview-button {
@@ -2173,8 +2179,8 @@ export default `
 @THEME .cp-search-faceted-button.selected:hover,
 @THEME .cp-search-faceted-button.selected:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
@@ -2304,6 +2310,9 @@ export default `
 @THEME .cp-library-metadata-table-cell-selected {
   background-color: fadeout(@primary-hover-color, 70%);
   color: @application-color;
+}
+@THEME .cp-library-metadata-table-marker {
+  background-color: @primary-color;
 }
 @THEME .cp-library-metadata-panel-placeholder {
   color: @application-color-faded;

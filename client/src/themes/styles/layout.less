@@ -638,8 +638,8 @@ h5 {
 .ant-btn-primary:hover,
 .ant-btn-primary:focus {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 
 .ant-btn-primary.active,
@@ -968,18 +968,18 @@ li.ant-calendar-time-picker-select-option-selected {
 .rc-dropdown-menu,
 .ant-mention-dropdown {
   background-color: fade(@panel-background-color, 100%);
-  color: @application-color;
+  color: @menu-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 
 .rc-menu,
 .rc-dropdown-menu {
-  border-color: @card-border-color;
+  border-color: @menu-border-color;
 }
 
 .rc-menu > .rc-menu-item-divider,
 .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @card-border-color;
+  background-color: @menu-border-color;
 }
 
 .ant-select-selection__placeholder,
@@ -1011,7 +1011,7 @@ li.ant-calendar-time-picker-select-option-selected {
 
 .rc-dropdown-menu > .rc-dropdown-menu-item,
 .ant-dropdown-menu > .ant-dropdown-menu-item {
-  color: @application-color;
+  color: @menu-color;
 }
 
 .ant-select-dropdown-menu-item.cp-danger,
@@ -1055,6 +1055,14 @@ li.ant-calendar-time-picker-select-option-selected {
 .rc-dropdown-menu-item-disabled,
 .ant-dropdown-menu-item-disabled {
   color: @application-color-disabled;
+}
+
+.rc-menu-item.rc-menu-item-selected {
+  background-color: fade(@panel-background-color, 100%);
+}
+
+.rc-menu-item.rc-menu-item-selected:hover {
+  background-color: @element-hover-background-color;
 }
 
 .ant-select-dropdown-menu-item-selected,
@@ -1348,8 +1356,8 @@ a[role="button"].ant-calendar-year-panel-month-select {
 .ant-calendar .ant-calendar-ok-btn:focus,
 .ant-calendar .ant-calendar-ok-btn:hover {
   color: @btn-color;
-  background-color: @btn-primary-hover;
-  border-color: @btn-primary-hover;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 
 .ant-calendar .ant-calendar-ok-btn.active,
