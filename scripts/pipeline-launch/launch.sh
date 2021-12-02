@@ -983,6 +983,11 @@ if check_cp_cap "CP_CAP_KUBE"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
 
+# We need to make sure that the Systemd is enabled if we use DCV
+if check_cp_cap "CP_CAP_DCV"; then
+      export CP_CAP_SYSTEMD_CONTAINER="true"
+fi
+
 echo "------"
 echo
 ######################################################
@@ -1766,6 +1771,21 @@ if [ "$CP_CAP_DESKTOP_NM" == "true" ]; then
       nomachine_setup
 else
     echo "NoMachine support is not requested"
+fi
+
+######################################################
+
+######################################################
+# Setup Nice DCV
+######################################################
+
+echo "Setup NICE DCV environment"
+echo "-"
+
+if [ "$CP_CAP_DCV" == "true" ]; then
+      nice_dcv_setup
+else
+    echo "Nice DCV support is not requested"
 fi
 
 ######################################################

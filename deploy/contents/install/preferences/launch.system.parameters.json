@@ -382,5 +382,12 @@
         "description": "SSH connection mode. Allowed values are: user, owner, owner-sshpass and root.",
         "defaultValue": "root",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_DCV",
+        "type": "boolean",
+        "description": "Enables NICE DCV Desktop environment.",
+        "defaultValue": "true",
+        "passToWorkers": false
     }
 ]
