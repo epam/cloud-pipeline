@@ -519,9 +519,12 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                     raise TunnelError('Same tunnel already exists '
                                       'and it cannot be replaced because it was launched by {tunnel_owner} user '
                                       'which is not the same as the current user {current_owner}. \n\n'
-                                      'Normally there is no need to replace the same tunnel but if it is required '
-                                      'and if you have sufficient permissions you can stop the existing tunnel '
-                                      'by executing the following command once. \n\n'
+                                      'Usually there is no need to replace the same tunnel '
+                                      'but if it is required then you can either '
+                                      'specify other local ports to use for the tunnel '
+                                      'or stop the existing tunnel if you have sufficient permissions. '
+                                      'In order to stop the existing tunnel '
+                                      'execute the following command once. \n\n'
                                       '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
                                       .format(tunnel_owner=existing_tunnel.owner,
                                               current_owner=get_current_user(),
@@ -531,8 +534,10 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                     raise TunnelError('Different tunnel already exists on {local_ports} local ports '
                                       'and it cannot be replaced because it was launched by {tunnel_owner} user '
                                       'which is not the same as the current user {current_owner}. \n\n'
-                                      'If you have sufficient permissions you can stop the existing tunnel '
-                                      'by executing the following command once. \n\n'
+                                      'You can either specify other local ports to use for the tunnel '
+                                      'or stop the existing tunnel if you have sufficient permissions. '
+                                      'In order to stop the existing tunnel '
+                                      'execute the following command once. \n\n'
                                       '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
                                       .format(tunnel_owner=existing_tunnel.owner,
                                               current_owner=get_current_user(),
@@ -554,8 +559,10 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                 raise TunnelError('Different tunnel already exists on {local_ports} local ports '
                                   'and it cannot be replaced because it was launched by {tunnel_owner} user '
                                   'which is not the same as the current user {current_owner}. \n\n'
-                                  'If you have sufficient permissions you can stop the existing tunnel '
-                                  'by executing the following command once. \n\n'
+                                  'You can either specify other local ports to use for the tunnel '
+                                  'or stop the existing tunnel if you have sufficient permissions. '
+                                  'In order to stop the existing tunnel '
+                                  'execute the following command once. \n\n'
                                   '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
                                   .format(tunnel_owner=existing_tunnel.owner,
                                           current_owner=get_current_user(),
@@ -571,21 +578,56 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                               existing_tunnel_args.ssh_path, ssh_user, existing_tunnel_remote_host,
                               log_file, retries)
             sys.exit(0)
-        if is_same_tunnel:
-            raise TunnelError('Same tunnel already exists. \n\n'
-                              'Normally there is no need to replace the same tunnel but if it is required '
-                              'you can stop the existing tunnel '
-                              'by executing the following command once. \n\n'
-                              '{pipe_command} tunnel stop -lp {local_ports} \n'
-                              .format(pipe_command=get_current_pipe_command(),
-                                      local_ports=stringify_ports(existing_tunnel_args.local_ports)))
+        if has_different_owner(existing_tunnel.owner):
+            if is_same_tunnel:
+                raise TunnelError('Same tunnel already exists on {local_ports} local ports. '
+                                  'It was launched by {tunnel_owner} user '
+                                  'which is not the same as the current user {current_owner}. \n\n'
+                                  'Usually there is no need to replace the same tunnel '
+                                  'but if it is required then you can either '
+                                  'specify other local ports to use for the tunnel '
+                                  'or stop the existing tunnel if you have sufficient permissions. '
+                                  'In order to stop the existing tunnel '
+                                  'execute the following command once. \n\n'
+                                  '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
+                                  .format(tunnel_owner=existing_tunnel.owner,
+                                          current_owner=get_current_user(),
+                                          pipe_command=get_current_pipe_command(),
+                                          local_ports=stringify_ports(existing_tunnel_args.local_ports)))
+            else:
+                raise TunnelError('Different tunnel already exists on {local_ports} local ports. '
+                                  'It was launched by {tunnel_owner} user '
+                                  'which is not the same as the current user {current_owner}. \n\n'
+                                  'You can either specify other local ports to use for the tunnel '
+                                  'or stop the existing tunnel if you have sufficient permissions. '
+                                  'In order to stop the existing tunnel '
+                                  'execute the following command once. \n\n'
+                                  '{pipe_command} tunnel stop -lp {local_ports} --ignore-owner \n'
+                                  .format(tunnel_owner=existing_tunnel.owner,
+                                          current_owner=get_current_user(),
+                                          pipe_command=get_current_pipe_command(),
+                                          local_ports=stringify_ports(existing_tunnel_args.local_ports)))
         else:
-            raise TunnelError('Different tunnel already exists on {local_ports} local ports. \n\n'
-                              'You can stop the existing tunnel '
-                              'by executing the following command once. \n\n'
-                              '{pipe_command} tunnel stop -lp {local_ports} \n'
-                              .format(pipe_command=get_current_pipe_command(),
-                                      local_ports=stringify_ports(existing_tunnel_args.local_ports)))
+            if is_same_tunnel:
+                raise TunnelError('Same tunnel already exists. \n\n'
+                                  'Usually there is no need to replace the same tunnel '
+                                  'but if it is required then you can either '
+                                  'specify other local ports to use for the tunnel '
+                                  'or stop the existing tunnel. '
+                                  'In order to stop the existing tunnel '
+                                  'execute the following command once. \n\n'
+                                  '{pipe_command} tunnel stop -lp {local_ports} \n'
+                                  .format(pipe_command=get_current_pipe_command(),
+                                          local_ports=stringify_ports(existing_tunnel_args.local_ports)))
+            else:
+                raise TunnelError('Different tunnel already exists on {local_ports} local ports. \n\n'
+                                  'You can either specify other local ports to use for the tunnel '
+                                  'or stop the existing tunnel. '
+                                  'In order to stop the existing tunnel '
+                                  'execute the following command once. \n\n'
+                                  '{pipe_command} tunnel stop -lp {local_ports} \n'
+                                  .format(pipe_command=get_current_pipe_command(),
+                                          local_ports=stringify_ports(existing_tunnel_args.local_ports)))
 
 
 def get_current_pipe_command():
