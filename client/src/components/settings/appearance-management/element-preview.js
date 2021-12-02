@@ -23,16 +23,13 @@ import {sectionNames} from './utilities/variable-sections';
 import styles from './element-preview.css';
 
 class ElementPreview extends React.Component {
-  constructor (props) {
-    super(props);
-    this.state = {
-      navigationSelected: {
-        home: false,
-        run: false,
-        search: false
-      }
-    };
-  }
+  state = {
+    navigationSelected: {
+      home: false,
+      run: false,
+      search: false
+    }
+  };
 
   renderButtons = () => {
     return (<div
