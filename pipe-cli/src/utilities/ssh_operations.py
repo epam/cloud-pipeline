@@ -651,28 +651,31 @@ def check_local_ports(local_ports):
                          if local_port not in procs_by_local_ports]
     err_msgs = []
     for local_port, proc in procs_by_local_ports.items():
-        err_msgs.append('Local port {} is occupied by process #{} with parent #{} owned by {} ({}).'
-                        .format(local_port, proc.pid, proc.ppid, proc.owner, ' '.join(proc.args)))
+        if proc.pid:
+            err_msgs.append('Local port {} is occupied by process #{} with parent #{} owned by {} ({}).'
+                            .format(local_port, proc.pid, proc.ppid or '-', proc.owner or '-',
+                                    ' '.join(proc.args) or '-'))
+        else:
+            err_msgs.append('Local port {} is occupied by another process or is not allowed.'.format(local_port))
     for local_port in inuse_local_ports:
-        err_msgs.append('Local port {} is occupied by an undetermined process.'.format(local_port))
+        err_msgs.append('Local port {} is occupied by another process or is not allowed.'.format(local_port))
     if err_msgs:
-        raise TunnelError('Some of the local ports are already used: \n'
+        raise TunnelError('Some of the local ports cannot be used: \n'
                           ' - {}\n\n'
-                          'You can either choose other local ports to use for the tunnel '
-                          'or terminate the processes which occupy the required local ports.\n'
+                          'You can either specify other local ports to use for the tunnel '
+                          'or stop the processes which occupy the required local ports.\n'
                           .format('\n - '.join(err_msgs)))
 
 
 def find_local_ports_which_cannot_be_served(local_ports):
+    logging.info('Trying to serve local ports...')
     for local_port in local_ports:
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
             try:
                 server_socket.bind((os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0'), local_port))
-            except socket.error as e:
-                if e.errno == errno.EADDRINUSE:
-                    yield local_port
-                else:
-                    raise
+            except Exception:
+                logging.debug('Local port %s is occupied or not allowed.', local_port, exc_info=sys.exc_info())
+                yield local_port
 
 
 def get_procs_by_local_ports(local_ports):
@@ -809,24 +812,27 @@ def find_serving_procs(local_ports):
 
 
 def find_serving_procs_on_mac(local_ports):
-    logging.debug('Searching for processes listening local ports...')
-    proc_details_by_pid = {}
+    logging.info('Searching for processes listening local ports...')
+    procs_by_pid = {}
     for local_port in local_ports:
         listening_pid = get_trimmed_digit_str(perform_command(['lsof', '-t',
                                                                '-i', 'TCP:' + str(local_port),
                                                                '-s', 'TCP:LISTEN'],
                                                               fail_on_error=False))
         if listening_pid:
-            yield local_port, get_or_set(proc_details_by_pid, listening_pid, get_proc_details)
+            yield local_port, get_or_set(procs_by_pid, listening_pid, get_proc_details)
 
 
 def find_serving_procs_on_lin_and_win(local_ports):
     import psutil
-    logging.debug('Searching for processes listening local ports...')
-    proc_details_by_pid = {}
+    logging.info('Searching for processes listening local ports...')
+    procs_by_pid = {}
     for net_connection in psutil.net_connections():
         if net_connection.laddr and net_connection.laddr.port in local_ports:
-            yield net_connection.laddr.port, get_or_set(proc_details_by_pid, net_connection.pid, get_proc_details)
+            if net_connection.pid:
+                yield net_connection.laddr.port, get_or_set(procs_by_pid, net_connection.pid, get_proc_details)
+            else:
+                yield net_connection.laddr.port, SystemProcess()
 
 
 def get_or_set(values, key, get_value):
@@ -870,7 +876,7 @@ def is_tunnel_listen_all_ports(tunnel_pid, local_ports, serving_procs):
         return False
     _, serving_proc = serving_procs[0]
     logging.debug('Found a process #%s and its parent #%s that listen all required ports.',
-                  serving_proc.pid, serving_proc.ppid or '-')
+                  serving_proc.pid or '-', serving_proc.ppid or '-')
     return tunnel_pid in [serving_proc.pid, serving_proc.ppid]
 
 
@@ -1062,14 +1068,10 @@ def serve_local_ports(local_ports):
             server_socket.bind((os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0'), local_port))
             server_socket.listen(5)
             yield server_socket
-        except socket.error as e:
+        except Exception:
             server_socket.close()
-            if e.errno == errno.EADDRINUSE:
-                raise TunnelError('Local port %s is already in use by another process.'.format(local_port))
-            raise
-        except BaseException:
-            server_socket.close()
-            raise
+            logging.debug('Local port %s is occupied or not allowed.', local_port, exc_info=sys.exc_info())
+            raise TunnelError('Local port {} is occupied or not allowed.'.format(local_port))
 
 
 def configure_graceful_exiting():
