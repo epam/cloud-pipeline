@@ -15,6 +15,7 @@ import {
   CP_CAP_DCV_DESKTOP
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
+import Capability from './capability';
 
 export const RUN_CAPABILITIES = {
   dinD: 'DinD',
@@ -23,7 +24,7 @@ export const RUN_CAPABILITIES = {
   noMachine: 'NoMachine',
   module: 'Module',
   disableHyperThreading: 'Disable Hyper-Threading',
-  dcv: 'Nice DCV'
+  dcv: 'NICE DCV'
 };
 
 export const RUN_CAPABILITIES_PARAMETERS = {
@@ -54,15 +55,30 @@ const PLATFORM_SPECIFIC_CAPABILITIES = {
 };
 
 const CAPABILITIES_OS_FILTERS = {
-  [RUN_CAPABILITIES.systemD]: [/^centos.*$/],
-  [RUN_CAPABILITIES.dcv]: [/^centos.*$/]
+  [RUN_CAPABILITIES.systemD]: ['centos*'],
+  [RUN_CAPABILITIES.dcv]: [
+    'centos 7*',
+    'ubuntu 18.04',
+    'ubuntu 20.04'
+  ]
 };
 
 const CAPABILITIES_CLOUD_FILTERS = {
   [RUN_CAPABILITIES.dcv]: ['aws']
 };
 
-function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
+function parseOSMask (mask) {
+  if (/^all$/i.test(mask)) {
+    return /.*/;
+  }
+  const regExpValue = mask
+    .trim()
+    .replace(/\./g, '\\.')
+    .replace(/\*/g, '.*');
+  return new RegExp(`^${regExpValue}$`, 'i');
+}
+
+function getAllPlatformCapabilities (preferences, platformInfo = {}) {
   const {
     platform,
     os,
@@ -80,7 +96,7 @@ function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
   const filterByOS = capability => os === undefined ||
     !capability.os ||
     capability.os.length === 0 ||
-    capability.os.some(osRegExp => osRegExp.test(os));
+    capability.os.some(capabilityOS => parseOSMask(capabilityOS).test(os));
   const filterByCloudProvider = capability => provider === undefined ||
     !capability.cloud ||
     capability.cloud.length === 0 ||
@@ -88,12 +104,23 @@ function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
   return capabilities.map(o => ({
     value: o,
     name: o,
-    os: CAPABILITIES_OS_FILTERS[o] || [/.*/],
+    os: CAPABILITIES_OS_FILTERS[o],
     cloud: CAPABILITIES_CLOUD_FILTERS[o]
   }))
     .concat((custom || []).filter(filterCustomCapability))
-    .filter(filterByOS)
-    .filter(filterByCloudProvider);
+    .map(capability => {
+      const enabledByOS = filterByOS(capability);
+      const enabledByCloudProvider = filterByCloudProvider(capability);
+      return {
+        ...capability,
+        disabled: !enabledByOS || !enabledByCloudProvider
+      };
+    });
+}
+
+function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
+  return getAllPlatformCapabilities(preferences, platformInfo)
+    .filter(capability => !capability.disabled);
 }
 
 @inject('preferences', 'dockerRegistries')
@@ -186,6 +213,7 @@ class RunCapabilities extends React.Component {
       preferences,
       {platform, os, provider}
     );
+    const all = getAllPlatformCapabilities(preferences, {platform, os, provider});
     const filteredValues = (values || [])
       .filter(value => capabilities.find(o => o.value === value));
     return (
@@ -202,14 +230,15 @@ class RunCapabilities extends React.Component {
         }
       >
         {
-          capabilities
+          all
             .map(capability => (
               <Select.Option
                 key={capability.value}
                 value={capability.value}
                 title={capability.description || capability.name}
+                disabled={capability.disabled}
               >
-                {capability.name}
+                <Capability capability={capability} />
               </Select.Option>
             ))
         }
