@@ -484,6 +484,12 @@
         </classes>
     </test>
 
+    <test name="LaunchParametersTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.LaunchParametersTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>

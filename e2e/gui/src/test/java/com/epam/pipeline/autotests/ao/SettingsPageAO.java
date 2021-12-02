@@ -27,6 +27,8 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -1202,7 +1204,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO updateCodeText(final String preference, final String value, final boolean eyeIsChecked) {
             searchPreference(preference);
-            final SelenideElement editor = $(byClassName("CodeMirror-code"));
+            SelenideElement editor = $(byClassName("CodeMirror-line"));
 //            click(byClassName("CodeMirror-lines"));
             selectAllAndClearTextField(editor);
 //            final int codeLength = editor.innerText().length();
@@ -1212,7 +1214,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 //                action.sendKeys("\b").sendKeys(Keys.DELETE);
 //            }
 //            action.perform();
-            clickAndSendKeysWithSlashes(editor, value);
+//            clickAndSendKeysWithSlashes(editor, value);
+            StringSelection stringSelection = new StringSelection(value);
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(stringSelection, null);
+            actions().moveToElement(editor).click()
+                    .sendKeys(Keys.chord(Keys.CONTROL, "v"))
+                    .perform();
             deleteExtraBrackets(editor, 500);
             setEyeOption(eyeIsChecked);
             return this;
