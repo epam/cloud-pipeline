@@ -1732,6 +1732,16 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
 @click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
 @common_options
 def view_tunnels(log_level):
+    """
+    Lists all pipe tunnels.
+
+    Examples:
+
+    I.   List all pipe tunnels.
+
+        pipe tunnel list
+
+    """
     def _parse_tunnel_args(args):
         with return_tunnel_args.make_context('start', args) as ctx:
             return return_tunnel_args.invoke(ctx)
