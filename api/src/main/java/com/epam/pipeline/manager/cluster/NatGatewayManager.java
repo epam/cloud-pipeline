@@ -439,6 +439,8 @@ public class NatGatewayManager {
         final Integer externalPort = route.getExternalPort();
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
         final Map<String, String> annotations = getRouteUpdateAnnotations(targetStatusLabelName, statusInQueue, route);
+        annotations.put(EXTERNAL_NAME_LABEL, route.getExternalName());
+        annotations.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         final List<ServicePort> servicePorts =
             Collections.singletonList(buildNewServicePort(correspondingServiceName, externalPort,
                                                           freeTargetPort.map(IntOrString::new).get()));
@@ -494,8 +496,6 @@ public class NatGatewayManager {
                                                           final NatRouteStatus statusInQueue, final NatRoute route) {
         final Integer externalPort = route.getExternalPort();
         final Map<String, String> requiredProxyServiceLabels = new HashMap<>();
-        requiredProxyServiceLabels.put(EXTERNAL_NAME_LABEL, route.getExternalName());
-        requiredProxyServiceLabels.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         requiredProxyServiceLabels.put(getCurrentStatusLabelName(externalPort), statusInQueue.name());
         requiredProxyServiceLabels.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
         final NatRouteStatus targetStatus = statusInQueue.isTerminationState()
