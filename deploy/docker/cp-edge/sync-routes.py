@@ -34,7 +34,7 @@ except ImportError:
 
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
-SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint} }}'
+SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint}, "sameTab": {is_same_tab} }}'
 EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
@@ -270,7 +270,10 @@ def read_system_endpoints():
                                                                endpoint['endpoint_default'])),
                                 "endpoint_num":  str(os.environ.get(endpoint['endpoint_num_env'],
                                                                     endpoint['endpoint_num_default'])),
-                                "friendly_name": endpoint['friendly_name']
+                                "friendly_name": endpoint['friendly_name'],
+                                "endpoint_additional": endpoint['endpoint_additional'] if 'endpoint_additional' in endpoint else '',
+                                "endpoint_same_tab": endpoint['endpoint_same_tab'] if 'endpoint_same_tab' in endpoint else None,
+                                "ssl_backend": endpoint['ssl_backend'] if 'ssl_backend' in endpoint else None
                         }
         return system_endpoints
 
@@ -304,20 +307,26 @@ def append_system_endpoints(tool_endpoints, run_details):
                         tool_endpoints[0] = json.dumps(current_tool_endpoint)
                 # Append system endpoints to the existing list
                 for system_endpoint in system_endpoints_matched:
-                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"] }}
+                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"], "additional": system_endpoint["endpoint_additional"] }}
                         system_endpoint_port = system_endpoint["endpoint"]
+                        system_endpoint_ssl_backend = system_endpoint["ssl_backend"]
+                        system_endpoint_same_tab = system_endpoint["endpoint_same_tab"]
                         system_endpoint_name = None
                         if "friendly_name" in system_endpoint:
                                 tool_endpoint["name"] = system_endpoint["friendly_name"]
                                 system_endpoint_name = system_endpoint["friendly_name"]
                         if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
                                 tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
-                        non_matching_with_system_tool_endpoints, is_default_endpoint, is_ssl_backend = \
+                        non_matching_with_system_tool_endpoints, \
+                                is_default_endpoint, \
+                                is_ssl_backend, \
+                                is_same_tab = \
                                 remove_from_tool_endpoints_if_fully_matches(system_endpoint_name,
                                                                             system_endpoint_port, tool_endpoints)
                         removed_endpoints_count = len(tool_endpoints) - len(non_matching_with_system_tool_endpoints)
                         tool_endpoint["isDefault"] = str(is_default_endpoint).lower()
-                        tool_endpoint["sslBackend"] = is_ssl_backend
+                        tool_endpoint["sslBackend"] = system_endpoint_ssl_backend if system_endpoint_ssl_backend else is_ssl_backend
+                        tool_endpoint["sameTab"] = system_endpoint_same_tab if system_endpoint_same_tab else is_same_tab
                         if removed_endpoints_count != 0:
                                 tool_endpoints = non_matching_with_system_tool_endpoints
                                 overridden_endpoints_count += removed_endpoints_count
@@ -329,6 +338,7 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
         non_matching_tool_endpoints = []
         is_default_endpoint = False
         is_ssl_backend = False
+        is_same_tab = False
         for endpoint in tool_endpoints:
                 tool_endpoint_obj = json.loads(endpoint)
                 if tool_endpoint_obj \
@@ -344,9 +354,11 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
                                 is_default_endpoint = is_default_endpoint | tool_endpoint_obj['isDefault']
                         if 'sslBackend' in tool_endpoint_obj and tool_endpoint_obj['sslBackend']:
                                 is_ssl_backend = is_ssl_backend | tool_endpoint_obj['sslBackend']
+                        if 'sameTab' in tool_endpoint_obj and tool_endpoint_obj['sameTab']:
+                                is_same_tab = is_same_tab | tool_endpoint_obj['sameTab']
                 else:
                         non_matching_tool_endpoints.append(endpoint)
-        return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend
+        return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend, is_same_tab
 
 def get_active_runs(pods):
         pod_run_ids = [x['metadata']['labels']['runid'] for x in pods]
@@ -420,6 +432,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                         is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
                                         is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
+                                        is_same_tab = '"' + str(endpoint["sameTab"]).lower() + '"' if "sameTab" in endpoint.keys() else '"false"'
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -466,6 +479,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                                         "service_name": service_name,
                                                                         "is_default_endpoint": is_default_endpoint,
                                                                         "is_ssl_backend": is_ssl_backend,
+                                                                        "is_same_tab": is_same_tab,
                                                                         "edge_num": i,
                                                                         "edge_location": edge_location,
                                                                         "custom_domain": pretty_url['domain'] if pretty_url and 'domain' in pretty_url and pretty_url['domain'] else None,
@@ -693,6 +707,7 @@ for added_route in routes_to_add:
                                           edge_port=str(edge_service_port),
                                           service_name=service_spec["service_name"],
                                           is_default_endpoint=service_spec["is_default_endpoint"],
+                                          is_same_tab=service_spec["is_same_tab"],
                                           external_schema=edge_service_external_schema)
         run_id = service_spec["run_id"]
         if run_id in service_url_dict:
