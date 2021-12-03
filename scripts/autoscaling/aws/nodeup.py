@@ -407,6 +407,11 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                     "Tags": get_tags(run_id, aws_region)
                 }
             ],
+             MetadataOptions={
+                'HttpTokens': 'optional',
+                'HttpPutResponseHopLimit': 2,
+                'HttpEndpoint': 'enabled'
+             },
             **additional_args
         )
     except ClientError as client_error:
