@@ -16,19 +16,115 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.mixins.Authorization;
+import com.epam.pipeline.autotests.mixins.Navigation;
+import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.ConfigurationPermission;
 import com.epam.pipeline.autotests.utils.Json;
+import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
-public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTest {
+import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.Utils.resourceName;
+import static java.lang.String.format;
+
+public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation, Authorization {
+
+    private static final String LAUNCH_PARAMETERS_PREFERENCE = SettingsPageAO.PreferencesAO.LaunchAO.LAUNCH_PARAMETERS;
+    private static final String LAUNCH_PARAMETER_RESOURCE = "launch-parameter";
+    private static final String CP_FSBROWSER_ENABLED = "CP_FSBROWSER_ENABLED";
+    private static final String USER_ROLE = "ROLE_PIPELINE_MANAGER";
+    private static final String PARAMETER_IS_NOT_ALLOWED_FOR_USE = "This parameter is not allowed for use";
+    private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
+    private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
+    private final String configurationDescription = "test-configuration-description";
+    private final String registry = C.DEFAULT_REGISTRY;
+    private final String group = C.DEFAULT_GROUP;
+    private final String tool = C.TESTING_TOOL_NAME;
+    private String initialLaunchSystemParameters;
+
+    @BeforeClass(alwaysRun = true)
+    public void setPreferences() {
+        library()
+                .createPipeline(pipeline);
+        Stream.of(user, userWithoutCompletedRuns).forEach(user -> {
+            addAccountToPipelinePermissions(user, pipeline);
+            givePermissions(user,
+                    PipelinePermission.allow(READ, pipeline),
+                    PipelinePermission.allow(EXECUTE, pipeline),
+                    PipelinePermission.allow(WRITE, pipeline)
+            );
+        });
+        library()
+                .createConfiguration(conf ->
+                        conf.setName(configuration).setDescription(configurationDescription).ok()
+                );
+        Stream.of(user, userWithoutCompletedRuns).forEach(user -> {
+            addAccountToConfigurationPermissions(user, configuration);
+            givePermissions(user,
+                    ConfigurationPermission.allow(READ, configuration),
+                    ConfigurationPermission.allow(EXECUTE, configuration),
+                    ConfigurationPermission.allow(WRITE, configuration)
+            );
+        });
+        initialLaunchSystemParameters = editLaunchSystemParameters();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void cleanUp() {
+        open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
+        library()
+                .removeConfigurationIfExists(configuration)
+                .removePipelineIfExists(pipeline);
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .updateCodeText(LAUNCH_PARAMETERS_PREFERENCE, initialLaunchSystemParameters, true)
+                .saveIfNeeded();
+    }
 
     @Test
     @TestCase(value = {"2342_1"})
-    public void checkSystemParametersForSpecificUsersGroups() {
-        final String launchParametersPreference = SettingsPageAO.PreferencesAO.LaunchAO.LAUNCH_PARAMETERS;
+    public void checkSystemParametersForToolAndLaunchForm() {
+        logoutIfNeeded();
+        loginAs(userWithoutCompletedRuns);
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.settings()
+                                .clickSystemParameter()
+                                .searchSystemParameter(CP_FSBROWSER_ENABLED)
+                                .validateNotFoundParameters()
+                                .cancel()
+                                .clickCustomParameter()
+                                .setName(CP_FSBROWSER_ENABLED)
+                                .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                );
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.runWithCustomSettings()
+                                .clickAddSystemParameter()
+                                .searchSystemParameter(CP_FSBROWSER_ENABLED)
+                                .validateNotFoundParameters()
+                                .cancel()
+                                .clickAddStringParameter()
+                                .setName(CP_FSBROWSER_ENABLED)
+                                .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                );
+    }
+
+    private String editLaunchSystemParameters() {
         final String launchSystemParameters = navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -38,15 +134,16 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
         final SystemParameter[] systemParameterList = Arrays.stream(systemParameters)
                 .peek(p -> {
                     if ("CP_FSBROWSER_ENABLED".equals(p.getName())) {
-                        p.setRoles(new String[] {"ROLE_ADMIN", "ROLE_ADVANCED_USER"});
+                        p.setRoles(new String[] { USER_ROLE });
                     }
                 })
                 .toArray(SystemParameter[]::new);
-        String systemParametersToString = Json.systemParametersToString(systemParameterList);
+        final String systemParametersToString = Json.systemParametersToString(systemParameterList);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .updateCodeText(launchParametersPreference, systemParametersToString, true)
+                .updateCodeText(LAUNCH_PARAMETERS_PREFERENCE, systemParametersToString, true)
                 .saveIfNeeded();
+        return launchSystemParameters;
     }
 }

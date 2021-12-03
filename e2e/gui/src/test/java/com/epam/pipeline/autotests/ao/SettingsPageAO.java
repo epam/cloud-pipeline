@@ -1204,18 +1204,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO updateCodeText(final String preference, final String value, final boolean eyeIsChecked) {
             searchPreference(preference);
-            SelenideElement editor = $(byClassName("CodeMirror-line"));
-//            click(byClassName("CodeMirror-lines"));
+            final SelenideElement editor = $(byClassName("CodeMirror-line"));
             selectAllAndClearTextField(editor);
-//            final int codeLength = editor.innerText().length();
-//            final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
-//            final Actions action = actions().moveToElement(mirrorLine).click();
-//            for (int i = 0; i < codeLength; i++) {
-//                action.sendKeys("\b").sendKeys(Keys.DELETE);
-//            }
-//            action.perform();
-//            clickAndSendKeysWithSlashes(editor, value);
-            StringSelection stringSelection = new StringSelection(value);
+            final StringSelection stringSelection = new StringSelection(value);
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(stringSelection, null);
             actions().moveToElement(editor).click()
