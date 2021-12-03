@@ -21,7 +21,10 @@
     "endpoint_default" : "8099",
     "endpoint_num_env": "CP_CAP_DCV_DESKTOP_ENDPOINT_ID",
     "endpoint_num_default" : "0",
-    "friendly_name" : "NICE-DCV-DESKTOP"
+    "friendly_name" : "NICE-DCV-DESKTOP",
+    "endpoint_additional": "proxy_set_header Connection 'upgrade'; proxy_set_header Upgrade $http_upgrade;",
+    "endpoint_same_tab": "true",
+    "ssl_backend": "true"
   },
   {
     "name": "CP_CAP_DCV_WEB",
@@ -29,6 +32,9 @@
     "endpoint_default" : "8443",
     "endpoint_num_env": "CP_CAP_DCV_WEB_ENDPOINT_ID",
     "endpoint_num_default" : "1",
-    "friendly_name" : "NICE-DCV-WEB"
+    "friendly_name" : "NICE-DCV-WEB",
+    "endpoint_additional": "proxy_set_header Connection 'upgrade'; proxy_set_header Upgrade $http_upgrade;",
+    "endpoint_same_tab": "false",
+    "ssl_backend": "true"
   }
 ]
