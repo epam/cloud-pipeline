@@ -689,8 +689,8 @@ public final class MessageConstants {
         "nat.gateway.route.creation.port.forwarding.missing.port.error";
     public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
         "nat.gateway.route.creation.kube.dns.restart.error";
-    public static final String NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE =
-        "nat.gateway.route.creation.invalid.external.ip";
+    public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
+        "nat.gateway.route.extending.invalid.external.ip";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";

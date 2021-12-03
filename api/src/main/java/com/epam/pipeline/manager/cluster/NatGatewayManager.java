@@ -393,11 +393,12 @@ public class NatGatewayManager {
         final NatRouteStatus statusInQueue = route.getStatus();
         if (proxyServicesMapping.containsKey(correspondingServiceName)) {
             final Service correspondingService = proxyServicesMapping.get(correspondingServiceName);
-            if (NatRouteStatus.CREATION_SCHEDULED.equals(route.getStatus())
-                && correspondingService.getSpec().getClusterIP().equals(route.getExternalIp())) {
+            final String externalIp = getServiceAnnotations(correspondingService).get(EXTERNAL_IP_LABEL);
+            if (!NatRouteStatus.TERMINATION_SCHEDULED.equals(statusInQueue)
+                && !externalIp.equals(route.getExternalIp())) {
                 final NatRoute routeUpdate = route.toBuilder()
                     .lastErrorMessage(messageHelper.getMessage(
-                        MessageConstants.NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE))
+                        MessageConstants.NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP))
                     .status(NatRouteStatus.FAILED)
                     .build();
                 natGatewayDao.updateRoute(routeUpdate);
