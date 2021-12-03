@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +76,8 @@ public class LdapBlockedUsersManagerTest {
                 .type(LdapEntityType.USER)
                 .nameAttribute(NAME_ATTRIBUTE)
                 .build();
-        doReturn(ldapResponse(USER_NAME_1)).when(ldapManager).search(request1, expectedFilter1);
+        doReturn(ldapResponse(USER_NAME_1.toUpperCase(Locale.ROOT))).when(ldapManager)
+                .search(request1, expectedFilter1);
         doReturn(emptyLdapResponse()).when(ldapManager).search(request2, expectedFilter2);
 
         final List<PipelineUser> result = blockedUsersManager.filterBlockedUsers(
