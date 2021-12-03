@@ -77,7 +77,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .ok();
         Stream.of(storage2, storage3, storage4).forEach(s -> givePermissionsToStorage(user, s));
         cleanToolLimitMounts();
-        cleanUserLimitMounts();
         logout();
     }
 
