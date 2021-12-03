@@ -146,7 +146,7 @@ function run_dcv {
   dcv create-session --owner $OWNER --user $OWNER session
 
   # Serve additional server to provide dcv desktop session file
-  if [ ! -z $CP_DCV_PROXY_HOST ] && [ ! -z $CP_DCV_PROXY_PORT ] && [ ! -z $CP_DCV_DESKTOP_PORT ] then; then
+  if [ ! -z $CP_DCV_PROXY_HOST ] && [ ! -z $CP_DCV_PROXY_PORT ] && [ ! -z $CP_DCV_DESKTOP_PORT ]; then
       pipe_log_info "Run DCV desktop launcher" "$DCV_INSTALL_TASK"
       nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/nice_dcv_desktop_launcher.py \
                                                           --desktop-port $CP_DCV_DESKTOP_PORT \
