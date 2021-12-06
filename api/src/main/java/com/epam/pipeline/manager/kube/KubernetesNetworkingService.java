@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class KubernetesNetworkingService {
+    private static final String CIDR_FORMAT = "%s/32";
+
     private final PreferenceManager preferenceManager;
     private final KubernetesAPIClient kubernetesClient;
     private final String kubeNamespace;
@@ -66,7 +68,7 @@ public class KubernetesNetworkingService {
         Assert.notNull(networkPolicy, String.format("Network policy '%s' was not found", networkPolicyName));
 
         final List<String> cidrs = ListUtils.emptyIfNull(ips).stream()
-                .map(ip -> String.format("%s/32", ip))
+                .map(ip -> String.format(CIDR_FORMAT, ip))
                 .collect(Collectors.toList());
         final List<NetworkPolicyEgressRule> filteredRules = networkPolicy.getSpec().getEgress().stream()
                 .filter(rule -> !ruleContainsCidr(rule, cidrs))
@@ -78,7 +80,7 @@ public class KubernetesNetworkingService {
 
     private NetworkPolicyEgressRule buildRule(final String ip) {
         final IPBlock ipBlock = new IPBlock();
-        ipBlock.setCidr(String.format("%s/32", ip));
+        ipBlock.setCidr(String.format(CIDR_FORMAT, ip));
 
         final NetworkPolicyPeer networkPolicyPeer = new NetworkPolicyPeer();
         networkPolicyPeer.setIpBlock(ipBlock);

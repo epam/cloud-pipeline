@@ -16,20 +16,8 @@
 
 package com.epam.pipeline.manager.kube;
 
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.utils.HttpClientUtils;
-import okhttp3.OkHttpClient;
 import org.springframework.stereotype.Service;
-import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
-
-import java.io.IOException;
 
 @Service
 public class KubernetesAPIClient {
@@ -41,41 +29,15 @@ public class KubernetesAPIClient {
     }
 
     public NetworkPolicy getNetworkPolicy(final String namespace, final String name) {
-        return executeRequest(api.getNetworkPolicy(namespace, name));
+        return KubernetesAPIUtils.executeRequest(api.getNetworkPolicy(namespace, name));
     }
 
     public NetworkPolicy updateNetworkPolicy(final String namespace, final String name, final NetworkPolicy policy) {
-        return executeRequest(api.updateNetworkPolicy(namespace, name, policy));
-    }
-
-    private <T> T executeRequest(final Call<T> request) {
-        try {
-            Response<T> response = request.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                throw new IllegalStateException("Error in response from kubernetes API received: "
-                        + extractErrorMessage(response));
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("Request to kubernetes API failed: " + e.getMessage());
-        }
-    }
-
-    private static String extractErrorMessage(final Response<?> response) throws IOException {
-        return response.errorBody() == null ? "" : response.errorBody().string();
+        return KubernetesAPIUtils.executeRequest(api.updateNetworkPolicy(namespace, name, policy));
     }
 
     private KubernetesAPI buildRetrofitClient() {
-        final Config kubeConfig = new Config();
-        final OkHttpClient client = HttpClientUtils.createHttpClient(kubeConfig);
-        final ObjectMapper mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        final Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(ProviderUtils.withTrailingDelimiter(kubeConfig.getMasterUrl()))
-                .addConverterFactory(JacksonConverterFactory.create(mapper))
-                .client(client)
-                .build();
-        return retrofit.create(KubernetesAPI.class);
+        return KubernetesAPIUtils.buildRetrofit()
+                .create(KubernetesAPI.class);
     }
 }

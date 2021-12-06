@@ -16,21 +16,11 @@
 
 package com.epam.pipeline.manager.cluster;
 
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.epam.pipeline.manager.kube.KubernetesAPIUtils;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.utils.HttpClientUtils;
-import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -46,7 +36,8 @@ public class KubernetesDeploymentAPIClient {
     }
 
     public Deployment updateDeployment(final String namespace, final String name) {
-        return executeRequest(kubernetesDeploymentAPI.updateDeployment(namespace, name, getUpdateTriggeringPatch()));
+        return KubernetesAPIUtils.executeRequest(kubernetesDeploymentAPI
+                .updateDeployment(namespace, name, getUpdateTriggeringPatch()));
     }
 
     private Map<String, Object> getUpdateTriggeringPatch() {
@@ -63,39 +54,8 @@ public class KubernetesDeploymentAPIClient {
                             LocalDateTime.now().format(KubernetesConstants.KUBE_LABEL_DATE_FORMATTER))))));
     }
 
-    private <T> T executeRequest(final Call<T> request) {
-        try {
-            Response<T> response = request.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                throw new IllegalStateException("Error in response from kube deployment API received: "
-                                                + extractErrorMessage(response));
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("Request to kube deployment API failed: " + e.getMessage());
-        }
-    }
-
-    private static String extractErrorMessage(final Response<?> response) throws IOException {
-        return response.errorBody() == null ? "" : response.errorBody().string();
-    }
-
     private KubernetesDeploymentAPI buildRetrofitClient(final String deploymentGroupUrlPrefix) {
-        final Config kubeConfig = new Config();
-        final OkHttpClient client = HttpClientUtils.createHttpClient(kubeConfig);
-        final ObjectMapper mapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        final Retrofit retrofit = new Retrofit.Builder()
-            .baseUrl(buildBaseUrlForDeploymentOperations(kubeConfig, deploymentGroupUrlPrefix))
-            .addConverterFactory(JacksonConverterFactory.create(mapper))
-            .client(client)
-            .build();
-        return retrofit.create(KubernetesDeploymentAPI.class);
-    }
-
-    private String buildBaseUrlForDeploymentOperations(final Config kubeConfig, final String deploymentGroupUrlPrefix) {
-        return ProviderUtils.withTrailingDelimiter(kubeConfig.getMasterUrl())
-               + ProviderUtils.withTrailingDelimiter(ProviderUtils.withoutLeadingDelimiter(deploymentGroupUrlPrefix));
+        return KubernetesAPIUtils.buildRetrofit(deploymentGroupUrlPrefix)
+                .create(KubernetesDeploymentAPI.class);
     }
 }
