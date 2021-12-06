@@ -558,7 +558,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                                               current_owner=get_current_user(),
                                               pipe_command=get_current_pipe_command(),
                                               local_ports=stringify_ports(existing_tunnel_args.local_ports)))
-            kill_process(existing_tunnel.proc, timeout_stop)
+            kill_tunnel(existing_tunnel.proc, existing_tunnel_args.local_ports, timeout_stop)
             continue
         if keep_existing:
             logging.info('Skipping tunnel establishing because the tunnel already exists...')
@@ -583,7 +583,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
                                           current_owner=get_current_user(),
                                           pipe_command=get_current_pipe_command(),
                                           local_ports=stringify_ports(existing_tunnel_args.local_ports)))
-            kill_process(existing_tunnel.proc, timeout_stop)
+            kill_tunnel(existing_tunnel.proc, existing_tunnel_args.local_ports, timeout_stop)
             continue
         if keep_same and is_same_tunnel:
             logging.info('Skipping tunnel establishing because the same tunnel already exists...')
@@ -647,8 +647,8 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
 
 def check_local_ports(local_ports):
     procs_by_local_ports = get_procs_by_local_ports(local_ports)
-    inuse_local_ports = [local_port for local_port in find_local_ports_which_cannot_be_served(local_ports)
-                         if local_port not in procs_by_local_ports]
+    occupied_local_ports = [local_port for local_port in find_local_ports_which_cannot_be_occupied(local_ports)
+                            if local_port not in procs_by_local_ports]
     err_msgs = []
     for local_port, proc in procs_by_local_ports.items():
         if proc.pid:
@@ -657,7 +657,7 @@ def check_local_ports(local_ports):
                                     ' '.join(proc.args) or '-'))
         else:
             err_msgs.append('Local port {} is occupied by another process or is not allowed.'.format(local_port))
-    for local_port in inuse_local_ports:
+    for local_port in occupied_local_ports:
         err_msgs.append('Local port {} is occupied by another process or is not allowed.'.format(local_port))
     if err_msgs:
         raise TunnelError('Some of the local ports cannot be used: \n'
@@ -667,8 +667,8 @@ def check_local_ports(local_ports):
                           .format('\n - '.join(err_msgs)))
 
 
-def find_local_ports_which_cannot_be_served(local_ports):
-    logging.info('Trying to serve local ports...')
+def find_local_ports_which_cannot_be_occupied(local_ports):
+    logging.info('Trying to occupy local ports...')
     for local_port in local_ports:
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
             try:
@@ -1427,7 +1427,7 @@ def kill_tunnels(host_id, local_ports_str, timeout_stop, force, ignore_owner, lo
                           tunnel.pid, tunnel.owner, get_current_user())
             continue
         logging.info('Killing tunnel process #%s...', tunnel.pid)
-        kill_process(tunnel.proc, timeout_stop, force)
+        kill_tunnel(tunnel.proc, tunnel_args.local_ports, timeout_stop, force)
 
 
 def list_tunnels(log_level, parse_tunnel_args):
@@ -1522,7 +1522,12 @@ def parse_tunnel_proc_args(proc_args, parse_start_tunnel_arguments):
     return {}
 
 
-def kill_process(proc, timeout, force=False):
+def kill_tunnel(proc, local_ports, timeout, force=False):
+    kill_process(proc, timeout, force)
+    wait_for_local_ports(local_ports, timeout)
+
+
+def kill_process(proc, timeout, force):
     import psutil
     import signal
     if is_windows():
@@ -1534,6 +1539,20 @@ def kill_process(proc, timeout, force=False):
             send_signal_to_process(proc, signal.SIGTERM, timeout)
         except psutil.TimeoutExpired:
             send_signal_to_process(proc, signal.SIGKILL, timeout)
+
+
+def wait_for_local_ports(local_ports, timeout, polling_delay=1):
+    attempts = int(timeout / polling_delay)
+    logging.debug('Waiting for %s local ports to become unoccupied...', stringify_ports(local_ports))
+    while attempts > 0:
+        time.sleep(polling_delay)
+        if not list(find_local_ports_which_cannot_be_occupied(local_ports)):
+            logging.info('Local ports %s are not occupied anymore.', stringify_ports(local_ports))
+            return
+        logging.debug('Local ports %s are still occupied. '
+                      'Only %s attempts remain left...', attempts)
+        attempts -= 1
+    raise TunnelError('Local ports are still occupied after {} seconds.'.format(timeout))
 
 
 def send_signal_to_process(proc, signal, timeout):
